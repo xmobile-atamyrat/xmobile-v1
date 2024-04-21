@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "npx prisma migrate dev",
+    "db:generate": "npx prisma generate dev",
     "db:studio": "npx prisma studio",
     "prepare": "husky"
   },
