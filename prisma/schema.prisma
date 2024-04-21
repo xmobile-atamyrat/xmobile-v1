@@ -21,9 +21,9 @@ model Category {
 
   predId          String?     @unique
   pred            Category?   @relation("succCategory", references: [id], fields: [predId], onDelete: Cascade)
-  succ            Category[]  @relation("succCategory")
+  succ            Category[]   @relation("succCategory")
 
-  products        Product[]   
+  products        Product[]
 }
 
 
@@ -34,5 +34,6 @@ model Product {
   imgUrl          String?
   price           String?
 
-  categories      Category[]  
+  categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
+  categoryId      String
 }
