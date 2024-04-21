@@ -6,7 +6,7 @@ import dbClient from '@/lib/dbClient';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi>,
+  res: NextApiResponse<ResponseApi<User>>,
 ) {
   switch (req.method) {
     case 'POST':
@@ -30,6 +30,17 @@ export default async function handler(
           message: (error as Error).message,
         });
       }
+    case 'GET':
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: 'asdf',
+          email: 'intizar.tashov22@gmail.com',
+          name: 'Intizar',
+          password: 'asdf',
+          phoneNumber: 'asdf',
+        },
+      });
     default:
       return res
         .status(405)
