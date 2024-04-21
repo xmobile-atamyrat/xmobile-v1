@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,4 +13,26 @@ model User {
   email           String
   password        String
   phoneNumber     String?
+}
+
+model Category {
+  id              String      @id @default(uuid())
+  name            String
+
+  predId          String?     @unique
+  pred            Category?   @relation("succCategory", references: [id], fields: [predId], onDelete: Cascade)
+  succ            Category[]  @relation("succCategory")
+
+  products        Product[]   
+}
+
+
+model Product {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  imgUrl          String?
+  price           String?
+
+  categories      Category[]  
 }
