@@ -11,6 +11,10 @@
     "db:studio": "npx prisma studio"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/icons-material": "^5.15.15",
+    "@mui/material": "^5.15.15",
     "@prisma/client": "^5.12.1",
     "next": "14.2.1",
     "react": "^18",
