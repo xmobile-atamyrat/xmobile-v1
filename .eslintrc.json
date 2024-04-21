@@ -1,3 +1,14 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": [
+    "next/core-web-vitals",
+    "airbnb-base",
+    "eslint:recommended",
+    "plugin:prettier/recommended"
+  ],
+  "plugins": ["prettier", "unused-imports"],
+  "rules": {
+    "prettier/prettier": "error",
+    "unused-imports/no-unused-imports": "error",
+    "import/extensions": "off"
+  }
 }
