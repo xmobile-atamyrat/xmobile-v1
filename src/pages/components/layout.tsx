@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import CustomAppBar from '@/pages/components/Appbar';
 import CustomDrawer from '@/pages/components/Drawer';
+import EditCategoriesDialog from '@/pages/components/EditCategoriesDialog';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] = useState(false);
@@ -15,7 +16,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       >
         {children}
       </Box>
-      {editCategoriesModal && <div></div>}
+      {editCategoriesModal && (
+        <EditCategoriesDialog
+          handleClose={() => setEditCategoriesModal(false)}
+        />
+      )}
     </Box>
   );
 }
