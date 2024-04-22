@@ -9,6 +9,7 @@
   "rules": {
     "prettier/prettier": "error",
     "unused-imports/no-unused-imports": "error",
-    "import/extensions": "off"
+    "import/extensions": "off",
+    "no-await-in-loop": "off"
   }
 }
