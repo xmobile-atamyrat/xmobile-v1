@@ -16,14 +16,14 @@ model User {
 }
 
 model Category {
-  id              String      @id @default(uuid())
-  name            String
+  id                              String      @id @default(uuid())
+  name                            String
 
-  predId          String?     @unique
-  pred            Category?   @relation("succCategory", references: [id], fields: [predId], onDelete: Cascade)
-  succ            Category[]   @relation("succCategory")
+  predecessorId                   String?     @unique
+  predecessorCategory             Category?   @relation("succCategory", references: [id], fields: [predecessorId], onDelete: Cascade)
+  successorCategories               Category[]   @relation("succCategory")
 
-  products        Product[]
+  products                        Product[]
 }
 
 
