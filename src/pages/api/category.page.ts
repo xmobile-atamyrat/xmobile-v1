@@ -34,6 +34,7 @@ export default async function handler(
       const category = await getCategory(query.categoryId as string);
       return res.status(200).json({ success: true, data: category });
     } catch (error) {
+      console.log(error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't get categories" });
@@ -49,6 +50,7 @@ export default async function handler(
       });
       return res.status(200).json({ success: true, data: category });
     } catch (error) {
+      console.log(error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });

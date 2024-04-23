@@ -19,9 +19,9 @@ model Category {
   id                              String      @id @default(uuid())
   name                            String
 
-  predecessorId                   String?     @unique
+  predecessorId                   String?
   predecessorCategory             Category?   @relation("succCategory", references: [id], fields: [predecessorId], onDelete: Cascade)
-  successorCategories               Category[]   @relation("succCategory")
+  successorCategories             Category[]   @relation("succCategory")
 
   products                        Product[]
 }
