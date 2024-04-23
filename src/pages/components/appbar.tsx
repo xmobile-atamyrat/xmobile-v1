@@ -15,6 +15,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import MailIcon from '@mui/icons-material/Mail';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
+import { appBarHeight } from '@/pages/lib/constants';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -159,7 +160,10 @@ export default function CustomAppBar() {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          height: appBarHeight,
+        }}
       >
         <Toolbar>
           <IconButton
