@@ -53,14 +53,14 @@ async function handleGetProduct(query: {
     if (successorCategories?.length === 0)
       return { resp: { success: true, data: products }, status: 200 };
 
-    const queue = successorCategories;
-    const allProducts = products;
+    const queue = successorCategories!;
+    const allProducts = products!;
     while (queue.length > 0) {
       const { id } = queue.shift()!;
       const { products: sucProducts, successorCategories: newSucCat } =
         (await getCategory(id as string))!;
-      allProducts.push(...sucProducts);
-      queue.push(...newSucCat);
+      allProducts.push(...sucProducts!);
+      queue.push(...newSucCat!);
     }
 
     return { resp: { success: true, data: allProducts }, status: 200 };
