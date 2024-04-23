@@ -10,6 +10,7 @@
     "prettier/prettier": "error",
     "unused-imports/no-unused-imports": "error",
     "import/extensions": "off",
-    "no-await-in-loop": "off"
+    "no-await-in-loop": "off",
+    "no-param-reassign": "off"
   }
 }
