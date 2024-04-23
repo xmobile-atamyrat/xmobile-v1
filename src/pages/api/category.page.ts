@@ -1,13 +1,11 @@
 import dbClient from '@/lib/dbClient';
-import { ResponseApi } from '@/pages/lib/types';
-import { Category, Product } from '@prisma/client';
+import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import { Category } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export async function getCategory(
   categoryId: string,
-): Promise<
-  (Category & { products: Product[]; successorCategories: Category[] }) | null
-> {
+): Promise<ExtendedCategory | null> {
   const category = await dbClient.category.findUnique({
     where: {
       id: categoryId,
@@ -20,6 +18,23 @@ export async function getCategory(
   return category;
 }
 
+async function recursivelyGetCategories(
+  categories: ExtendedCategory[],
+): Promise<ExtendedCategory[]> {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const category of categories) {
+    const { successorCategories } = (await dbClient.category.findUnique({
+      where: { id: category.id },
+      include: { successorCategories: true },
+    }))!;
+    category.successorCategories = successorCategories;
+    if (successorCategories.length > 0) {
+      await recursivelyGetCategories(successorCategories);
+    }
+  }
+  return categories;
+}
+
 async function handleGetCategory(query: {
   categoryId?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
@@ -29,7 +44,8 @@ async function handleGetCategory(query: {
         predecessorId: null,
       },
     });
-    return { resp: { success: true, data: categories }, status: 200 };
+    const nestedCategories = await recursivelyGetCategories(categories);
+    return { resp: { success: true, data: nestedCategories }, status: 200 };
   }
   const category = await getCategory(query.categoryId as string);
   return { resp: { success: true, data: category }, status: 200 };
