@@ -27,6 +27,53 @@ async function getProduct(productId: string): Promise<Product | null> {
   return product;
 }
 
+async function handleGetProduct(query: {
+  categoryId?: string;
+  productId?: string;
+}): Promise<{ resp: ResponseApi; status: number }> {
+  const { productId, categoryId } = query;
+  if (productId != null) {
+    const product = await getProduct(productId as string);
+    if (product == null)
+      return {
+        resp: { success: false, message: "Couldn't find the product" },
+        status: 404,
+      };
+    return { resp: { success: true, data: product }, status: 200 };
+  }
+  if (categoryId != null) {
+    const category = await getCategory(categoryId as string);
+    if (category == null)
+      return {
+        resp: { success: false, message: "Couldn't find the category" },
+        status: 404,
+      };
+
+    const { successorCategories, products } = category;
+    if (successorCategories?.length === 0)
+      return { resp: { success: true, data: products }, status: 200 };
+
+    const queue = successorCategories;
+    const allProducts = products;
+    while (queue.length > 0) {
+      const { id } = queue.shift()!;
+      const { products: sucProducts, successorCategories: newSucCat } =
+        (await getCategory(id as string))!;
+      allProducts.push(...sucProducts);
+      queue.push(...newSucCat);
+    }
+
+    return { resp: { success: true, data: allProducts }, status: 200 };
+  }
+  return {
+    resp: {
+      success: false,
+      message: 'Neither categoryId nor productId has been provided',
+    },
+    status: 404,
+  };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -42,42 +89,14 @@ export default async function handler(
         .json({ success: false, message: "Couldn't create a new product" });
     }
   } else if (method === 'GET') {
-    const { productId, categoryId } = query;
-    if (productId != null) {
-      try {
-        const product = await getProduct(productId as string);
-        if (product == null)
-          return res
-            .status(404)
-            .json({ success: false, message: "Couldn't find the product" });
-        return res.status(200).json({ success: true, data: product });
-      } catch (error) {
-        return res
-          .status(500)
-          .json({ success: false, message: "Couldn't find the product" });
-      }
-    } else if (categoryId != null) {
-      const category = await getCategory(categoryId as string);
-      if (category == null)
-        return res
-          .status(404)
-          .json({ success: false, message: "Couldn't find the category" });
-
-      const { successorCategories, products } = category;
-      if (successorCategories?.length === 0)
-        return res.status(200).json({ success: true, data: products });
-
-      const queue = successorCategories;
-      const allProducts = products;
-      while (queue.length > 0) {
-        const { id } = queue.shift()!;
-        const { products: sucProducts, successorCategories: newSucCat } =
-          (await getCategory(id as string))!;
-        allProducts.push(...sucProducts);
-        queue.push(...newSucCat);
-      }
-
-      return res.status(200).json({ success: true, data: allProducts });
+    try {
+      const { resp, status } = await handleGetProduct(query);
+      return res.status(status).json(resp);
+    } catch (error) {
+      return {
+        resp: { success: false, message: "Couldn't find the product/s" },
+        status: 500,
+      };
     }
   }
   return res
