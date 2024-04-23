@@ -20,6 +20,21 @@ export async function getCategory(
   return category;
 }
 
+async function handleGetCategory(query: {
+  categoryId?: string;
+}): Promise<{ resp: ResponseApi; status: number }> {
+  if (query.categoryId == null) {
+    const categories = await dbClient.category.findMany({
+      where: {
+        predecessorId: null,
+      },
+    });
+    return { resp: { success: true, data: categories }, status: 200 };
+  }
+  const category = await getCategory(query.categoryId as string);
+  return { resp: { success: true, data: category }, status: 200 };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -27,12 +42,8 @@ export default async function handler(
   const { body, method, query } = req;
   if (method === 'GET') {
     try {
-      if (query.categoryId == null)
-        return res
-          .status(400)
-          .json({ success: false, message: 'categoryId is not provided' });
-      const category = await getCategory(query.categoryId as string);
-      return res.status(200).json({ success: true, data: category });
+      const { resp, status } = await handleGetCategory(query);
+      return res.status(status).json(resp);
     } catch (error) {
       console.log(error);
       res
