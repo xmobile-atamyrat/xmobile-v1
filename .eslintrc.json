@@ -11,6 +11,7 @@
     "unused-imports/no-unused-imports": "error",
     "import/extensions": "off",
     "no-await-in-loop": "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    "@next/next/no-img-element": "off"
   }
 }
