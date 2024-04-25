@@ -29,25 +29,24 @@ export default function Collapsable({
   const { setSelectedCategoryId } = useCategoryContext();
   return (
     <Box sx={{ pl: pl ?? 4 }}>
-      <ListItemButton
-        sx={{
-          p: 0,
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
-        onClick={() => setSelectedCategoryId(id)}
-      >
-        {imgUrl != null && (
-          <ListItemIcon>
-            <img src={imgUrl} width={44} height={44} alt={categoryTitle} />
-          </ListItemIcon>
-        )}
-        <ListItemText primary={categoryTitle} />
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+        <ListItemButton
+          sx={{
+            p: 0,
+          }}
+          onClick={() => setSelectedCategoryId(id)}
+        >
+          {imgUrl != null && (
+            <ListItemIcon>
+              <img src={imgUrl} width={44} height={44} alt={categoryTitle} />
+            </ListItemIcon>
+          )}
+          <ListItemText primary={categoryTitle} />
+        </ListItemButton>
         <IconButton onClick={() => setOpen(!open)}>
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
-      </ListItemButton>
+      </Box>
       <Collapse in={open} timeout="auto" unmountOnExit>
         {children}
       </Collapse>

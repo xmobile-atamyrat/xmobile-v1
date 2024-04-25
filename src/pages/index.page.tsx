@@ -1,9 +1,11 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { User } from '@prisma/client';
+import { Box, Typography } from '@mui/material';
+import { Product, User } from '@prisma/client';
 import { GetStaticProps, InferGetServerSidePropsType } from 'next';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 type ReturnProps = { user?: User; categories?: ExtendedCategory[] };
 
@@ -25,13 +27,35 @@ export const getStaticProps = (async () => {
 }) satisfies GetStaticProps<ReturnProps>;
 
 export default function Home({
-  user,
   categories,
 }: InferGetServerSidePropsType<typeof getStaticProps>) {
-  const { setCategories } = useCategoryContext();
+  const { setCategories, selectedCategoryId } = useCategoryContext();
+  const [products, setProducts] = useState<Product[]>([]);
+
   useEffect(() => {
     if (categories == null) return;
     setCategories(categories);
   }, [categories, setCategories]);
-  return <div>{user?.name}</div>;
+
+  useEffect(() => {
+    if (selectedCategoryId == null) return;
+    (async () => {
+      const { success, data }: ResponseApi<Product[]> = await (
+        await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
+      ).json();
+      if (success && data != null) setProducts(data);
+    })();
+  }, [selectedCategoryId]);
+
+  return (
+    <Box className="flex flex-wrap gap-4">
+      {products.length > 0 ? (
+        products.map((product) => (
+          <ProductCard product={product} key={product.id} />
+        ))
+      ) : (
+        <Typography>No products</Typography>
+      )}
+    </Box>
+  );
 }
