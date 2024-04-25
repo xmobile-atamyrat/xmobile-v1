@@ -24,6 +24,8 @@ model Category {
   successorCategories             Category[]   @relation("succCategory")
 
   products                        Product[]
+
+  imgUrl                          String?
 }
 
 
