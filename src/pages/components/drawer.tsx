@@ -5,6 +5,7 @@ import { IconButton, Paper, Tooltip } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight } from '@/pages/lib/constants';
+import { useEffect } from 'react';
 
 const drawerWidth = 300;
 
@@ -12,10 +13,20 @@ interface CustomDrawerProps {
   handleEditCategories: () => void;
 }
 
+// function ConstructDrawerList(categories: ExtendedCategory[]): ReactNode {
+//   return (
+//     <
+//   )
+// }
+
 export default function CustomDrawer({
   handleEditCategories,
 }: CustomDrawerProps) {
   const { categories } = useCategoryContext();
+
+  useEffect(() => {
+    console.log(categories);
+  }, [categories]);
 
   return (
     <Drawer
