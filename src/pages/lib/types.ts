@@ -15,4 +15,6 @@ export interface ExtendedCategory extends Category {
 export interface CategoryContextProps {
   categories: ExtendedCategory[];
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
+  selectedCategoryId?: string;
+  setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
 }
