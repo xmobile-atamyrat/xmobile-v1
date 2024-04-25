@@ -1,3 +1,4 @@
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import {
   ListItemText,
@@ -14,6 +15,7 @@ interface CollapsableProps {
   children: ReactNode;
   categoryTitle: string;
   pl?: number;
+  id: string;
 }
 
 export default function Collapsable({
@@ -21,8 +23,10 @@ export default function Collapsable({
   children,
   imgUrl,
   pl,
+  id,
 }: CollapsableProps) {
   const [open, setOpen] = useState(false);
+  const { setSelectedCategoryId } = useCategoryContext();
   return (
     <Box sx={{ pl: pl ?? 4 }}>
       <ListItemButton
@@ -32,6 +36,7 @@ export default function Collapsable({
           flexDirection: 'row',
           alignItems: 'center',
         }}
+        onClick={() => setSelectedCategoryId(id)}
       >
         {imgUrl != null && (
           <ListItemIcon>
