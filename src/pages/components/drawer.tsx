@@ -25,26 +25,33 @@ interface CustomDrawerProps {
 function ConstructDrawerList(categories: ExtendedCategory[]): React.ReactNode {
   return (
     <List component="div" disablePadding className="flex flex-col gap-2">
-      {categories.map(({ imgUrl, name, successorCategories, predecessorId }) =>
-        successorCategories != null && successorCategories.length > 0 ? (
-          <Collapsable
-            categoryTitle={name}
-            imgUrl={imgUrl}
-            key={name}
-            pl={predecessorId == null ? 2 : 4}
-          >
-            {ConstructDrawerList(successorCategories)}
-          </Collapsable>
-        ) : (
-          <List component="div" disablePadding key={name} sx={{ pl: 4, py: 1 }}>
-            {imgUrl != null && (
-              <ListItemIcon>
-                <img src={imgUrl} width={24} height={24} alt={name} />
-              </ListItemIcon>
-            )}
-            <ListItemText primary={name} />
-          </List>
-        ),
+      {categories.map(
+        ({ id, imgUrl, name, successorCategories, predecessorId }) =>
+          successorCategories != null && successorCategories.length > 0 ? (
+            <Collapsable
+              id={id}
+              categoryTitle={name}
+              imgUrl={imgUrl}
+              key={name}
+              pl={predecessorId == null ? 2 : 4}
+            >
+              {ConstructDrawerList(successorCategories)}
+            </Collapsable>
+          ) : (
+            <List
+              component="div"
+              disablePadding
+              key={name}
+              sx={{ pl: 4, py: 1 }}
+            >
+              {imgUrl != null && (
+                <ListItemIcon>
+                  <img src={imgUrl} width={24} height={24} alt={name} />
+                </ListItemIcon>
+              )}
+              <ListItemText primary={name} />
+            </List>
+          ),
       )}
     </List>
   );
