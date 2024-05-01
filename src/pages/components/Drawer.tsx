@@ -25,6 +25,7 @@ interface CustomDrawerProps {
 
 function ConstructDrawerList(
   categories: ExtendedCategory[],
+  selectedCategoryId: string | undefined,
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>,
 ): React.ReactNode {
   return (
@@ -38,13 +39,17 @@ function ConstructDrawerList(
               imgUrl={imgUrl}
               key={name}
               pl={predecessorId == null ? 2 : 4}
+              initialOpenState={id === selectedCategoryId}
             >
-              {ConstructDrawerList(successorCategories, setSelectedCategoryId)}
+              {ConstructDrawerList(
+                successorCategories,
+                selectedCategoryId,
+                setSelectedCategoryId,
+              )}
             </Collapsable>
           ) : (
             <ListItemButton
               sx={{
-                // py: 0,
                 pl: 4,
                 display: 'flex',
                 flexDirection: 'row',
@@ -52,6 +57,7 @@ function ConstructDrawerList(
               }}
               key={name}
               onClick={() => setSelectedCategoryId(id)}
+              className={`${selectedCategoryId === id && 'bg-slate-200'}`}
             >
               {imgUrl != null && (
                 <ListItemIcon>
@@ -69,7 +75,8 @@ function ConstructDrawerList(
 export default function CustomDrawer({
   handleEditCategories,
 }: CustomDrawerProps) {
-  const { categories, setSelectedCategoryId } = useCategoryContext();
+  const { categories, selectedCategoryId, setSelectedCategoryId } =
+    useCategoryContext();
 
   return (
     <Drawer
@@ -81,7 +88,11 @@ export default function CustomDrawer({
     >
       {categories?.length > 0 && (
         <Box sx={{ overflow: 'auto', pt: `${appBarHeight * 1.5}px` }}>
-          {ConstructDrawerList(categories, setSelectedCategoryId)}
+          {ConstructDrawerList(
+            categories,
+            selectedCategoryId,
+            setSelectedCategoryId,
+          )}
         </Box>
       )}
       <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">

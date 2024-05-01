@@ -13,7 +13,10 @@ export default function ProductCard({
   product: Product;
 }) {
   return (
-    <Card sx={{ maxWidth: 250 }}>
+    <Card
+      sx={{ maxWidth: 250, ':hover': { boxShadow: 10 } }}
+      className="border-[1px]"
+    >
       {imgUrl != null && (
         <CardMedia sx={{ height: 140 }} image={imgUrl} title={name} />
       )}
