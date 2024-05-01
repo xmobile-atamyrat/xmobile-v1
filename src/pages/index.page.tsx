@@ -10,9 +10,9 @@ import { useEffect, useState } from 'react';
 type ReturnProps = { user?: User; categories?: ExtendedCategory[] };
 
 export const getStaticProps = (async () => {
-  const { success: userSuccess, data: user }: ResponseApi<User> = await (
-    await fetch(`${BASE_URL}/api/user`)
-  ).json();
+  // const { success: userSuccess, data: user }: ResponseApi<User> = await (
+  //   await fetch(`${BASE_URL}/api/user`)
+  // ).json();
   const {
     success: catSuccess,
     data: categories,
@@ -21,7 +21,7 @@ export const getStaticProps = (async () => {
   ).json();
 
   const props: ReturnProps = {};
-  if (userSuccess) props.user = user;
+  // if (userSuccess) props.user = user;
   if (catSuccess) props.categories = categories;
   return { props };
 }) satisfies GetStaticProps<ReturnProps>;
@@ -29,12 +29,14 @@ export const getStaticProps = (async () => {
 export default function Home({
   categories,
 }: InferGetServerSidePropsType<typeof getStaticProps>) {
-  const { setCategories, selectedCategoryId } = useCategoryContext();
+  const { setCategories, selectedCategoryId, setSelectedCategoryId } =
+    useCategoryContext();
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     if (categories == null) return;
     setCategories(categories);
+    setSelectedCategoryId(categories[0].id);
   }, [categories, setCategories]);
 
   useEffect(() => {
