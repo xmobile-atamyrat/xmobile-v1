@@ -16,6 +16,7 @@ interface CollapsableProps {
   categoryTitle: string;
   pl?: number;
   id: string;
+  initialOpenState: boolean;
 }
 
 export default function Collapsable({
@@ -24,12 +25,16 @@ export default function Collapsable({
   imgUrl,
   pl,
   id,
+  initialOpenState,
 }: CollapsableProps) {
-  const [open, setOpen] = useState(false);
-  const { setSelectedCategoryId } = useCategoryContext();
+  const [open, setOpen] = useState(initialOpenState);
+  const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   return (
     <Box sx={{ pl: pl ?? 4 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+      <Box
+        sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
+        className={`${selectedCategoryId === id && 'bg-slate-200'}`}
+      >
         <ListItemButton
           sx={{
             p: 0,
