@@ -34,59 +34,63 @@ export default function EditCategoriesDialog({
   whoOpened,
 }: EditCategoriesDialogProps) {
   return (
-    <Dialog open onClose={handleClose}>
-      <Box
-        component="form"
-        onSubmit={(event) => {
-          event.preventDefault();
-
-          // const jsonBytes = new FormData(event.target);
-          // console.log(jsonBytes);
-          // const jsonData = JSON.stringify(Object.entries(jsonBytes));
-          // console.log(jsonData);
-        }}
-      >
-        <DialogTitle className="w-full flex justify-center">
-          {whoOpened === 'parent'
-            ? 'Create new Category'
-            : 'Edit or Create new Category'}
-        </DialogTitle>
-        <DialogContent className="overflow-auto min-h-[600px] min-w-[600px]">
-          {whoOpened === 'parent' ? (
-            <Box className="flex flex-col items-start justify-center gap-4">
-              <TextField
-                label="Category Name"
-                name="categoryName"
-                className="m-2 min-w-[250px]"
+    <Dialog
+      open
+      onClose={handleClose}
+      component="form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(
+          event.currentTarget as unknown as HTMLFormElement,
+        );
+        const formJson = Object.fromEntries(formData.entries());
+        console.log(formJson);
+      }}
+    >
+      <DialogTitle className="w-full flex justify-center">
+        {whoOpened === 'parent'
+          ? 'Create new Category'
+          : 'Edit or Create new Category'}
+      </DialogTitle>
+      <DialogContent className="overflow-auto min-h-[600px] min-w-[600px]">
+        {whoOpened === 'parent' ? (
+          <Box className="flex flex-col items-start justify-center gap-4">
+            <TextField
+              label="Category Name"
+              name="categoryName"
+              className="m-2 min-w-[250px]"
+            />
+            <Button
+              component="label"
+              role={undefined}
+              variant="contained"
+              tabIndex={-1}
+              startIcon={<CloudUploadIcon />}
+              sx={{ textTransform: 'none' }}
+              className="m-2 min-w-[250px] h-[50px] text-[16px]"
+            >
+              Upload category image
+              <VisuallyHiddenInput
+                type="file"
+                name="categoryImage"
+                accept="image/*"
               />
-              <Button
-                component="label"
-                role={undefined}
-                variant="contained"
-                tabIndex={-1}
-                startIcon={<CloudUploadIcon />}
-                sx={{ textTransform: 'none' }}
-                className="m-2 min-w-[250px] h-[50px] text-[16px]"
-              >
-                Upload category image
-                <VisuallyHiddenInput type="file" />
-              </Button>
-            </Box>
-          ) : (
-            <Box>
-              <Typography>child opened</Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button variant="contained" color="error" onClick={handleClose}>
-            Close
-          </Button>
-          <Button variant="contained" type="submit">
-            Submit
-          </Button>
-        </DialogActions>
-      </Box>
+            </Button>
+          </Box>
+        ) : (
+          <Box>
+            <Typography>child opened</Typography>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button variant="contained" color="error" onClick={handleClose}>
+          Close
+        </Button>
+        <Button variant="contained" type="submit">
+          Submit
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }
