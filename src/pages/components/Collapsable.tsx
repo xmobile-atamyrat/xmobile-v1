@@ -8,7 +8,9 @@ import {
   IconButton,
   ListItemButton,
 } from '@mui/material';
-import { ReactNode, useState } from 'react';
+import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
+import EditIcon from '@mui/icons-material/Edit';
+import { EditCategoriesProps } from '@/pages/lib/types';
 
 interface CollapsableProps {
   imgUrl: string | null;
@@ -17,6 +19,8 @@ interface CollapsableProps {
   pl?: number;
   id: string;
   initialOpenState: boolean;
+  collapsable: boolean;
+  setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
 }
 
 export default function Collapsable({
@@ -26,10 +30,12 @@ export default function Collapsable({
   pl,
   id,
   initialOpenState,
+  collapsable,
+  setEditCategoriesModal,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
-  return (
+  return collapsable ? (
     <Box sx={{ pl: pl ?? 4 }}>
       <Box
         sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
@@ -48,6 +54,15 @@ export default function Collapsable({
           )}
           <ListItemText primary={categoryTitle} />
         </ListItemButton>
+        {selectedCategoryId === id && (
+          <IconButton
+            onClick={() =>
+              setEditCategoriesModal({ open: true, whoOpened: 'child' })
+            }
+          >
+            <EditIcon color="primary" fontSize="small" />
+          </IconButton>
+        )}
         <IconButton onClick={() => setOpen(!open)}>
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
@@ -56,5 +71,33 @@ export default function Collapsable({
         {children}
       </Collapse>
     </Box>
+  ) : (
+    <ListItemButton
+      sx={{
+        pl: 4,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
+      key={categoryTitle}
+      onClick={() => setSelectedCategoryId(id)}
+      className={`${selectedCategoryId === id && 'bg-slate-200'}`}
+    >
+      {imgUrl != null && (
+        <ListItemIcon>
+          <img src={imgUrl} width={24} height={24} alt={categoryTitle} />
+        </ListItemIcon>
+      )}
+      <ListItemText primary={categoryTitle} />
+      {selectedCategoryId === id && (
+        <IconButton
+          onClick={() =>
+            setEditCategoriesModal({ open: true, whoOpened: 'child' })
+          }
+        >
+          <EditIcon color="primary" fontSize="small" />
+        </IconButton>
+      )}
+    </ListItemButton>
   );
 }
