@@ -1,79 +1,57 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
-import {
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-  Tooltip,
-} from '@mui/material';
+import { IconButton, List, Paper, Tooltip } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight } from '@/pages/lib/constants';
-import { ExtendedCategory } from '@/pages/lib/types';
+import { EditCategoriesProps, ExtendedCategory } from '@/pages/lib/types';
 import Collapsable from '@/pages/components/Collapsable';
 import { Dispatch, SetStateAction } from 'react';
 
 const drawerWidth = 300;
 
 interface CustomDrawerProps {
-  handleEditCategories: () => void;
+  setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
 }
 
 function ConstructDrawerList(
   categories: ExtendedCategory[],
   selectedCategoryId: string | undefined,
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>,
+  setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
 ): React.ReactNode {
   return (
     <List component="div" disablePadding className="flex flex-col gap-2">
       {categories.map(
-        ({ id, imgUrl, name, successorCategories, predecessorId }) =>
-          successorCategories != null && successorCategories.length > 0 ? (
-            <Collapsable
-              id={id}
-              categoryTitle={name}
-              imgUrl={imgUrl}
-              key={name}
-              pl={predecessorId == null ? 2 : 4}
-              initialOpenState={id === selectedCategoryId}
-            >
-              {ConstructDrawerList(
-                successorCategories,
-                selectedCategoryId,
-                setSelectedCategoryId,
-              )}
-            </Collapsable>
-          ) : (
-            <ListItemButton
-              sx={{
-                pl: 4,
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-              key={name}
-              onClick={() => setSelectedCategoryId(id)}
-              className={`${selectedCategoryId === id && 'bg-slate-200'}`}
-            >
-              {imgUrl != null && (
-                <ListItemIcon>
-                  <img src={imgUrl} width={24} height={24} alt={name} />
-                </ListItemIcon>
-              )}
-              <ListItemText primary={name} />
-            </ListItemButton>
-          ),
+        ({ id, imgUrl, name, successorCategories, predecessorId }) => (
+          <Collapsable
+            id={id}
+            categoryTitle={name}
+            imgUrl={imgUrl}
+            key={name}
+            pl={predecessorId == null ? 2 : 4}
+            initialOpenState={id === selectedCategoryId}
+            collapsable={
+              successorCategories != null && successorCategories.length > 0
+            }
+            setEditCategoriesModal={setEditCategoriesModal}
+          >
+            {ConstructDrawerList(
+              successorCategories!,
+              selectedCategoryId,
+              setSelectedCategoryId,
+              setEditCategoriesModal,
+            )}
+          </Collapsable>
+        ),
       )}
     </List>
   );
 }
 
 export default function CustomDrawer({
-  handleEditCategories,
+  setEditCategoriesModal,
 }: CustomDrawerProps) {
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
@@ -92,12 +70,17 @@ export default function CustomDrawer({
             categories,
             selectedCategoryId,
             setSelectedCategoryId,
+            setEditCategoriesModal,
           )}
         </Box>
       )}
       <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">
         <Tooltip title="Edit categories">
-          <IconButton onClick={handleEditCategories}>
+          <IconButton
+            onClick={() =>
+              setEditCategoriesModal({ open: true, whoOpened: 'parent' })
+            }
+          >
             <AddCircleIcon fontSize="large" color="primary" />
           </IconButton>
         </Tooltip>
