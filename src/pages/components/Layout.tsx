@@ -21,6 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </Box>
       {editCategoriesModal.open && (
         <EditCategoriesDialog
+          whoOpened={editCategoriesModal.whoOpened}
           handleClose={() =>
             setEditCategoriesModal({ open: false, whoOpened: undefined })
           }
