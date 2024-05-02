@@ -18,3 +18,8 @@ export interface CategoryContextProps {
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
 }
+
+export interface EditCategoriesProps {
+  open: boolean;
+  whoOpened?: 'parent' | 'child';
+}
