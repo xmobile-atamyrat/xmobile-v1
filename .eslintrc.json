@@ -10,12 +10,16 @@
   "plugins": ["prettier", "unused-imports", "@typescript-eslint"],
   "rules": {
     "prettier/prettier": "error",
-    "unused-imports/no-unused-imports": "error",
     "import/extensions": "off",
     "no-await-in-loop": "off",
     "no-param-reassign": "off",
     "@next/next/no-img-element": "off",
-    "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "args": "all", "argsIgnorePattern": "^_" }
+    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "import/prefer-default-export": "off",
+    "no-new": "off"
   }
 }

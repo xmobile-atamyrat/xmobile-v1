@@ -1,4 +1,8 @@
-import { EditCategoriesProps } from '@/pages/lib/types';
+import {
+  EditCategoriesProps,
+  ExtendedCategory,
+  ResponseApi,
+} from '@/pages/lib/types';
 import {
   Box,
   Button,
@@ -12,6 +16,9 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useState } from 'react';
+import LoadingButton from '@mui/lab/LoadingButton';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -55,6 +62,9 @@ export default function EditCategoriesDialog({
   handleClose,
   whoOpened,
 }: EditCategoriesDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const { setCategories } = useCategoryContext();
+
   return (
     <Dialog
       open
@@ -62,11 +72,11 @@ export default function EditCategoriesDialog({
       component="form"
       onSubmit={async (event) => {
         event.preventDefault();
+        setLoading(true);
         const formData = new FormData(
           event.currentTarget as unknown as HTMLFormElement,
         );
         const formJson = Object.fromEntries(formData.entries());
-        console.log(formJson);
 
         if (whoOpened === 'parent') {
           const newFormData = new FormData();
@@ -79,11 +89,22 @@ export default function EditCategoriesDialog({
           newFormData.append('name', categoryName);
           newFormData.append('imageUrl', resizedImage);
 
-          const resp = await fetch(`${BASE_URL}/api/category`, {
+          await fetch(`${BASE_URL}/api/category`, {
             method: 'POST',
             body: newFormData,
           });
-          console.log(resp);
+
+          const {
+            success: catSuccess,
+            data: categories,
+          }: ResponseApi<ExtendedCategory[]> = await (
+            await fetch(`${BASE_URL}/api/category`)
+          ).json();
+
+          if (catSuccess && categories) setCategories(categories);
+
+          setLoading(false);
+          handleClose();
         } else {
           // edit category
         }
@@ -131,9 +152,9 @@ export default function EditCategoriesDialog({
         <Button variant="contained" color="error" onClick={handleClose}>
           Close
         </Button>
-        <Button variant="contained" type="submit">
+        <LoadingButton loading={loading} variant="contained" type="submit">
           Submit
-        </Button>
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

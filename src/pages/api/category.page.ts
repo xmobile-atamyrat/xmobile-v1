@@ -58,6 +58,36 @@ async function handleGetCategory(query: {
   return { resp: { success: true, data: category }, status: 200 };
 }
 
+async function handlePostCategory(req: NextApiRequest) {
+  const form = new multiparty.Form({
+    uploadDir: 'src/db/images/categories/',
+  });
+
+  const promise: Promise<{
+    success: boolean;
+    message?: string;
+    status: number;
+    data?: Category;
+  }> = new Promise((resolve) => {
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.log(err);
+        resolve({ success: false, message: err.message, status: 500 });
+      }
+      const category = await dbClient.category.create({
+        data: {
+          name: fields.name[0],
+          predecessorId: fields.predecessorId?.[0],
+          imgUrl: files.imageUrl[0].path,
+        },
+      });
+      resolve({ success: true, data: category, status: 200 });
+    });
+  });
+  const res = await promise;
+  return res;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -75,33 +105,7 @@ export default async function handler(
     }
   } else if (method === 'POST') {
     try {
-      const form = new multiparty.Form({
-        uploadDir: 'src/db/images/categories/',
-      });
-
-      const promise: Promise<{
-        success: boolean;
-        message?: string;
-        status: number;
-        data?: Category;
-      }> = new Promise((resolve) => {
-        form.parse(req, async (err, fields, files) => {
-          if (err) {
-            console.log(err);
-            resolve({ success: false, message: err.message, status: 500 });
-          }
-          console.log(files.imageUrl[0].headers);
-          const category = await dbClient.category.create({
-            data: {
-              name: fields.name[0],
-              predecessorId: fields.predecessorId?.[0],
-              imgUrl: files.imageUrl[0].path,
-            },
-          });
-          resolve({ success: true, data: category, status: 200 });
-        });
-      });
-      const { success, data, status, message } = await promise;
+      const { status, success, data, message } = await handlePostCategory(req);
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
@@ -111,6 +115,26 @@ export default async function handler(
       res
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });
+    }
+  } else if (method === 'DELETE') {
+    const { categoryId } = query;
+    if (categoryId == null) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Category ID not provided' });
+    }
+    try {
+      await dbClient.category.delete({
+        where: {
+          id: categoryId as string,
+        },
+      });
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Couldn't delete the category" });
     }
   }
   return res
