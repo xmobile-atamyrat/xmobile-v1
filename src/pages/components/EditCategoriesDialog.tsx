@@ -11,6 +11,7 @@ import {
   styled,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BASE_URL from '@/lib/ApiEndpoints';
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -29,6 +30,27 @@ interface EditCategoriesDialogProps {
   whoOpened: EditCategoriesProps['whoOpened'];
 }
 
+async function resizeImage(
+  image: File,
+  width: number,
+  height: number,
+): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        resolve(blob as Blob);
+      });
+    };
+    img.src = URL.createObjectURL(image);
+  });
+}
+
 export default function EditCategoriesDialog({
   handleClose,
   whoOpened,
@@ -38,13 +60,29 @@ export default function EditCategoriesDialog({
       open
       onClose={handleClose}
       component="form"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const formData = new FormData(
           event.currentTarget as unknown as HTMLFormElement,
         );
         const formJson = Object.fromEntries(formData.entries());
         console.log(formJson);
+
+        if (whoOpened === 'parent') {
+          const newFormData = new FormData();
+          const { categoryName, categoryImage } = formJson;
+          const resizedImage = await resizeImage(categoryImage as File, 24, 24);
+          newFormData.append('name', categoryName);
+          newFormData.append('imageUrl', resizedImage);
+
+          const resp = await fetch(`${BASE_URL}/api/category`, {
+            method: 'POST',
+            body: newFormData,
+          });
+          console.log(resp);
+        } else {
+          // edit category
+        }
       }}
     >
       <DialogTitle className="w-full flex justify-center">
@@ -52,9 +90,11 @@ export default function EditCategoriesDialog({
           ? 'Create new Category'
           : 'Edit or Create new Category'}
       </DialogTitle>
-      <DialogContent className="overflow-auto min-h-[600px] min-w-[600px]">
+      <DialogContent
+        className={`overflow-auto min-h-[${whoOpened === 'parent' ? '300px' : '600px'}] min-w-[600px]`}
+      >
         {whoOpened === 'parent' ? (
-          <Box className="flex flex-col items-start justify-center gap-4">
+          <Box className="flex flex-row items-start justify-center">
             <TextField
               label="Category Name"
               name="categoryName"
