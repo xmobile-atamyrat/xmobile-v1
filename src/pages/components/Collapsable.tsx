@@ -11,6 +11,7 @@ import {
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import { EditCategoriesProps } from '@/pages/lib/types';
+import BASE_URL from '@/lib/ApiEndpoints';
 
 interface CollapsableProps {
   imgUrl: string | null;
@@ -85,7 +86,20 @@ export default function Collapsable({
     >
       {imgUrl != null && (
         <ListItemIcon>
-          <img src={imgUrl} width={24} height={24} alt={categoryTitle} />
+          <img
+            src={imgUrl}
+            width={24}
+            height={24}
+            alt={categoryTitle}
+            onError={async (error) => {
+              error.currentTarget.onerror = null;
+              error.currentTarget.src = URL.createObjectURL(
+                await (
+                  await fetch(`${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`)
+                ).blob(),
+              );
+            }}
+          />
         </ListItemIcon>
       )}
       <ListItemText primary={categoryTitle} />

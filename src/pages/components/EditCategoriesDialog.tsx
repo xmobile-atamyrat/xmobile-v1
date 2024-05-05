@@ -71,7 +71,11 @@ export default function EditCategoriesDialog({
         if (whoOpened === 'parent') {
           const newFormData = new FormData();
           const { categoryName, categoryImage } = formJson;
-          const resizedImage = await resizeImage(categoryImage as File, 24, 24);
+          const resizedImage = await resizeImage(
+            categoryImage as File,
+            240,
+            240,
+          );
           newFormData.append('name', categoryName);
           newFormData.append('imageUrl', resizedImage);
 
