@@ -2,6 +2,13 @@ import dbClient from '@/lib/dbClient';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
+import multiparty from 'multiparty';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export async function getCategory(
   categoryId: string,
@@ -55,7 +62,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  const { body, method, query } = req;
+  const { method, query } = req;
+  console.log(method);
   if (method === 'GET') {
     try {
       const { resp, status } = await handleGetCategory(query);
@@ -68,14 +76,36 @@ export default async function handler(
     }
   } else if (method === 'POST') {
     try {
-      const { name, predecessorId } = body as Category;
-      const category = await dbClient.category.create({
-        data: {
-          name,
-          predecessorId,
-        },
+      const form = new multiparty.Form({
+        uploadDir: 'src/db/images/categories/',
       });
-      return res.status(200).json({ success: true, data: category });
+      const promise: Promise<{
+        success: boolean;
+        message?: string;
+        status: number;
+        data?: Category;
+      }> = new Promise((resolve) => {
+        form.parse(req, async (err, fields, files) => {
+          if (err) {
+            console.log(err);
+            resolve({ success: false, message: err.message, status: 500 });
+          }
+          console.log(files.imageUrl[0].headers);
+          const category = await dbClient.category.create({
+            data: {
+              name: fields.name[0],
+              predecessorId: fields.predecessorId?.[0],
+              imgUrl: files.imageUrl[0].path,
+            },
+          });
+          resolve({ success: true, data: category, status: 200 });
+        });
+      });
+      const { success, data, status, message } = await promise;
+      const retData: any = { success };
+      if (message) retData.message = message;
+      if (data) retData.data = data;
+      return res.status(status).json(retData);
     } catch (error) {
       console.log(error);
       res

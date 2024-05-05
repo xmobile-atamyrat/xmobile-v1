@@ -21,12 +21,15 @@
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "multiparty": "^4.2.3",
     "next": "14.2.1",
+    "next-connect": "^1.0.0-next.4",
     "react": "^18",
     "react-dom": "^18",
     "swr": "^2.2.5"
   },
   "devDependencies": {
+    "@types/multiparty": "^0.0.36",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
