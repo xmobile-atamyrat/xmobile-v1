@@ -5,7 +5,11 @@ import { IconButton, List, Paper, Tooltip } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight } from '@/pages/lib/constants';
-import { EditCategoriesProps, ExtendedCategory } from '@/pages/lib/types';
+import {
+  DeleteCategoriesProps,
+  EditCategoriesProps,
+  ExtendedCategory,
+} from '@/pages/lib/types';
 import Collapsable from '@/pages/components/Collapsable';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -13,6 +17,7 @@ const drawerWidth = 300;
 
 interface CustomDrawerProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
+  setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
 }
 
 function ConstructDrawerList(
@@ -20,6 +25,7 @@ function ConstructDrawerList(
   selectedCategoryId: string | undefined,
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>,
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
+  setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
 ): React.ReactNode {
   return (
     <List component="div" disablePadding className="flex flex-col gap-2">
@@ -36,12 +42,14 @@ function ConstructDrawerList(
               successorCategories != null && successorCategories.length > 0
             }
             setEditCategoriesModal={setEditCategoriesModal}
+            setDeleteCategoriesModal={setDeleteCategoriesModal}
           >
             {ConstructDrawerList(
               successorCategories!,
               selectedCategoryId,
               setSelectedCategoryId,
               setEditCategoriesModal,
+              setDeleteCategoriesModal,
             )}
           </Collapsable>
         ),
@@ -52,6 +60,7 @@ function ConstructDrawerList(
 
 export default function CustomDrawer({
   setEditCategoriesModal,
+  setDeleteCategoriesModal,
 }: CustomDrawerProps) {
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
@@ -71,6 +80,7 @@ export default function CustomDrawer({
             selectedCategoryId,
             setSelectedCategoryId,
             setEditCategoriesModal,
+            setDeleteCategoriesModal,
           )}
         </Box>
       )}
