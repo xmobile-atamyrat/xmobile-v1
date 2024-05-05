@@ -10,8 +10,9 @@ import {
 } from '@mui/material';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
-import { EditCategoriesProps } from '@/pages/lib/types';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import BASE_URL from '@/lib/ApiEndpoints';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface CollapsableProps {
   imgUrl: string | null;
@@ -22,6 +23,7 @@ interface CollapsableProps {
   initialOpenState: boolean;
   collapsable: boolean;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
+  setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
 }
 
 export default function Collapsable({
@@ -33,6 +35,7 @@ export default function Collapsable({
   initialOpenState,
   collapsable,
   setEditCategoriesModal,
+  setDeleteCategoriesModal,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
@@ -50,19 +53,43 @@ export default function Collapsable({
         >
           {imgUrl != null && (
             <ListItemIcon>
-              <img src={imgUrl} width={44} height={44} alt={categoryTitle} />
+              <img
+                src={imgUrl}
+                width={44}
+                height={44}
+                alt={categoryTitle}
+                onError={async (error) => {
+                  error.currentTarget.onerror = null;
+                  error.currentTarget.src = URL.createObjectURL(
+                    await (
+                      await fetch(
+                        `${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`,
+                      )
+                    ).blob(),
+                  );
+                }}
+              />
             </ListItemIcon>
           )}
           <ListItemText primary={categoryTitle} />
         </ListItemButton>
         {selectedCategoryId === id && (
-          <IconButton
-            onClick={() =>
-              setEditCategoriesModal({ open: true, whoOpened: 'child' })
-            }
-          >
-            <EditIcon color="primary" fontSize="small" />
-          </IconButton>
+          <Box>
+            <IconButton
+              onClick={() =>
+                setEditCategoriesModal({ open: true, whoOpened: 'child' })
+              }
+            >
+              <EditIcon color="primary" fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() =>
+                setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
+              }
+            >
+              <DeleteIcon color="error" fontSize="small" />
+            </IconButton>
+          </Box>
         )}
         <IconButton onClick={() => setOpen(!open)}>
           {open ? <ExpandLess /> : <ExpandMore />}
@@ -104,13 +131,22 @@ export default function Collapsable({
       )}
       <ListItemText primary={categoryTitle} />
       {selectedCategoryId === id && (
-        <IconButton
-          onClick={() =>
-            setEditCategoriesModal({ open: true, whoOpened: 'child' })
-          }
-        >
-          <EditIcon color="primary" fontSize="small" />
-        </IconButton>
+        <Box>
+          <IconButton
+            onClick={() =>
+              setEditCategoriesModal({ open: true, whoOpened: 'child' })
+            }
+          >
+            <EditIcon color="primary" fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() =>
+              setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
+            }
+          >
+            <DeleteIcon color="error" fontSize="small" />
+          </IconButton>
+        </Box>
       )}
     </ListItemButton>
   );

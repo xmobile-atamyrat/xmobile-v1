@@ -23,3 +23,9 @@ export interface EditCategoriesProps {
   open: boolean;
   whoOpened?: 'parent' | 'child';
 }
+
+export interface DeleteCategoriesProps {
+  categoryId?: string;
+  open: boolean;
+  imgUrl?: string | null;
+}
