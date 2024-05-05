@@ -63,7 +63,6 @@ export default async function handler(
   res: NextApiResponse<ResponseApi>,
 ) {
   const { method, query } = req;
-  console.log(method);
   if (method === 'GET') {
     try {
       const { resp, status } = await handleGetCategory(query);
@@ -79,6 +78,7 @@ export default async function handler(
       const form = new multiparty.Form({
         uploadDir: 'src/db/images/categories/',
       });
+
       const promise: Promise<{
         success: boolean;
         message?: string;
