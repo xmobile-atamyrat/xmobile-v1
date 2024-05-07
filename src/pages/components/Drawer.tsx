@@ -26,34 +26,34 @@ function ConstructDrawerList(
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>,
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
+  depth: number,
 ): React.ReactNode {
   return (
-    <List component="div" disablePadding className="flex flex-col gap-2">
-      {categories.map(
-        ({ id, imgUrl, name, successorCategories, predecessorId }) => (
-          <Collapsable
-            id={id}
-            categoryTitle={name}
-            imgUrl={imgUrl}
-            key={name}
-            pl={predecessorId == null ? 2 : 4}
-            initialOpenState={id === selectedCategoryId}
-            collapsable={
-              successorCategories != null && successorCategories.length > 0
-            }
-            setEditCategoriesModal={setEditCategoriesModal}
-            setDeleteCategoriesModal={setDeleteCategoriesModal}
-          >
-            {ConstructDrawerList(
-              successorCategories!,
-              selectedCategoryId,
-              setSelectedCategoryId,
-              setEditCategoriesModal,
-              setDeleteCategoriesModal,
-            )}
-          </Collapsable>
-        ),
-      )}
+    <List component="div" disablePadding className="flex flex-col">
+      {categories.map(({ id, imgUrl, name, successorCategories }) => (
+        <Collapsable
+          id={id}
+          categoryTitle={name}
+          imgUrl={imgUrl}
+          key={name}
+          pl={depth}
+          initialOpenState={id === selectedCategoryId}
+          collapsable={
+            successorCategories != null && successorCategories.length > 0
+          }
+          setEditCategoriesModal={setEditCategoriesModal}
+          setDeleteCategoriesModal={setDeleteCategoriesModal}
+        >
+          {ConstructDrawerList(
+            successorCategories!,
+            selectedCategoryId,
+            setSelectedCategoryId,
+            setEditCategoriesModal,
+            setDeleteCategoriesModal,
+            depth + 1,
+          )}
+        </Collapsable>
+      ))}
     </List>
   );
 }
@@ -81,6 +81,7 @@ export default function CustomDrawer({
             setSelectedCategoryId,
             setEditCategoriesModal,
             setDeleteCategoriesModal,
+            0, // depth
           )}
         </Box>
       )}
