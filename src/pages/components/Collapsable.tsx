@@ -1,24 +1,15 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import {
-  ListItemText,
-  Collapse,
-  Box,
-  ListItemIcon,
-  IconButton,
-  ListItemButton,
-} from '@mui/material';
+import { Collapse, Box, IconButton } from '@mui/material';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
-import EditIcon from '@mui/icons-material/Edit';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
-import BASE_URL from '@/lib/ApiEndpoints';
-import DeleteIcon from '@mui/icons-material/Delete';
+import CollapsableBase from '@/pages/components/CollapsableBase';
 
 interface CollapsableProps {
   imgUrl: string | null;
   children: ReactNode;
   categoryTitle: string;
-  pl?: number;
+  pl: number;
   id: string;
   initialOpenState: boolean;
   collapsable: boolean;
@@ -38,59 +29,21 @@ export default function Collapsable({
   setDeleteCategoriesModal,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
-  const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
+  const { selectedCategoryId } = useCategoryContext();
   return collapsable ? (
-    <Box sx={{ pl: pl ?? 4 }}>
+    <Box>
       <Box
         sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
         className={`${selectedCategoryId === id && 'bg-slate-200'}`}
+        style={{ paddingLeft: `${pl * 2}rem` }}
       >
-        <ListItemButton
-          sx={{
-            p: 0,
-          }}
-          onClick={() => setSelectedCategoryId(id)}
-        >
-          {imgUrl != null && (
-            <ListItemIcon>
-              <img
-                src={imgUrl}
-                width={44}
-                height={44}
-                alt={categoryTitle}
-                onError={async (error) => {
-                  error.currentTarget.onerror = null;
-                  error.currentTarget.src = URL.createObjectURL(
-                    await (
-                      await fetch(
-                        `${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`,
-                      )
-                    ).blob(),
-                  );
-                }}
-              />
-            </ListItemIcon>
-          )}
-          <ListItemText primary={categoryTitle} />
-        </ListItemButton>
-        {selectedCategoryId === id && (
-          <Box>
-            <IconButton
-              onClick={() =>
-                setEditCategoriesModal({ open: true, whoOpened: 'child' })
-              }
-            >
-              <EditIcon color="primary" fontSize="small" />
-            </IconButton>
-            <IconButton
-              onClick={() =>
-                setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
-              }
-            >
-              <DeleteIcon color="error" fontSize="small" />
-            </IconButton>
-          </Box>
-        )}
+        <CollapsableBase
+          categoryTitle={categoryTitle}
+          id={id}
+          imgUrl={imgUrl}
+          setDeleteCategoriesModal={setDeleteCategoriesModal}
+          setEditCategoriesModal={setEditCategoriesModal}
+        />
         <IconButton onClick={() => setOpen(!open)}>
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
@@ -100,54 +53,63 @@ export default function Collapsable({
       </Collapse>
     </Box>
   ) : (
-    <ListItemButton
-      sx={{
-        pl: 4,
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}
-      key={categoryTitle}
-      onClick={() => setSelectedCategoryId(id)}
-      className={`${selectedCategoryId === id && 'bg-slate-200'}`}
-    >
-      {imgUrl != null && (
-        <ListItemIcon>
-          <img
-            src={imgUrl}
-            width={24}
-            height={24}
-            alt={categoryTitle}
-            onError={async (error) => {
-              error.currentTarget.onerror = null;
-              error.currentTarget.src = URL.createObjectURL(
-                await (
-                  await fetch(`${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`)
-                ).blob(),
-              );
-            }}
-          />
-        </ListItemIcon>
-      )}
-      <ListItemText primary={categoryTitle} />
-      {selectedCategoryId === id && (
-        <Box>
-          <IconButton
-            onClick={() =>
-              setEditCategoriesModal({ open: true, whoOpened: 'child' })
-            }
-          >
-            <EditIcon color="primary" fontSize="small" />
-          </IconButton>
-          <IconButton
-            onClick={() =>
-              setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
-            }
-          >
-            <DeleteIcon color="error" fontSize="small" />
-          </IconButton>
-        </Box>
-      )}
-    </ListItemButton>
+    <Box style={{ paddingLeft: `${pl * 2}rem` }}>
+      <CollapsableBase
+        categoryTitle={categoryTitle}
+        id={id}
+        imgUrl={imgUrl}
+        setDeleteCategoriesModal={setDeleteCategoriesModal}
+        setEditCategoriesModal={setEditCategoriesModal}
+      />
+    </Box>
+    // <ListItemButton
+    //   sx={{
+    //     pl: 4,
+    //     display: 'flex',
+    //     flexDirection: 'row',
+    //     alignItems: 'center',
+    //   }}
+    //   key={categoryTitle}
+    //   onClick={() => setSelectedCategoryId(id)}
+    //   className={`${selectedCategoryId === id && 'bg-slate-200'}`}
+    // >
+    //   {imgUrl != null && (
+    //     <ListItemIcon>
+    //       <img
+    //         src={imgUrl}
+    //         width={24}
+    //         height={24}
+    //         alt={categoryTitle}
+    //         onError={async (error) => {
+    //           error.currentTarget.onerror = null;
+    //           error.currentTarget.src = URL.createObjectURL(
+    //             await (
+    //               await fetch(`${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`)
+    //             ).blob(),
+    //           );
+    //         }}
+    //       />
+    //     </ListItemIcon>
+    //   )}
+    //   <ListItemText primary={categoryTitle} />
+    //   {selectedCategoryId === id && (
+    //     <Box>
+    //       <IconButton
+    //         onClick={() =>
+    //           setEditCategoriesModal({ open: true, whoOpened: 'child' })
+    //         }
+    //       >
+    //         <EditIcon color="primary" fontSize="small" />
+    //       </IconButton>
+    //       <IconButton
+    //         onClick={() =>
+    //           setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
+    //         }
+    //       >
+    //         <DeleteIcon color="error" fontSize="small" />
+    //       </IconButton>
+    //     </Box>
+    //   )}
+    // </ListItemButton>
   );
 }
