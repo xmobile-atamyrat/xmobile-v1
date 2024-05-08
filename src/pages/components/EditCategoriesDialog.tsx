@@ -10,15 +10,17 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   TextField,
   Typography,
   styled,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import BASE_URL from '@/lib/ApiEndpoints';
-import { useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -63,7 +65,18 @@ export default function EditCategoriesDialog({
   whoOpened,
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories } = useCategoryContext();
+  const { setCategories, selectedCategoryId } = useCategoryContext();
+  const [category, setCategory] = useState<ExtendedCategory>();
+
+  useEffect(() => {
+    if (whoOpened === 'parent' || selectedCategoryId == null) return;
+    (async () => {
+      const { success, data }: ResponseApi<ExtendedCategory> = await (
+        await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`)
+      ).json();
+      if (success && data) setCategory(data);
+    })();
+  }, [selectedCategoryId, whoOpened]);
 
   return (
     <Dialog
@@ -132,7 +145,7 @@ export default function EditCategoriesDialog({
               tabIndex={-1}
               startIcon={<CloudUploadIcon />}
               sx={{ textTransform: 'none' }}
-              className="m-2 min-w-[250px] h-[50px] text-[16px]"
+              className="m-2 min-w-[250px] text-[16px]"
             >
               Upload category image
               <VisuallyHiddenInput
@@ -143,9 +156,52 @@ export default function EditCategoriesDialog({
             </Button>
           </Box>
         ) : (
-          <Box>
-            <Typography>child opened</Typography>
-          </Box>
+          category != null && (
+            <Box className="flex flex-col">
+              <Box className="flex flex-row">
+                <TextField
+                  label="Category Name"
+                  name="parentCategoryName"
+                  defaultValue={category.name}
+                  className="m-2 w-1/2"
+                />
+                <Button
+                  component="label"
+                  role={undefined}
+                  variant="contained"
+                  tabIndex={-1}
+                  startIcon={<CloudUploadIcon />}
+                  sx={{ textTransform: 'none' }}
+                  className="m-2 w-1/2 text-[16px]"
+                >
+                  Upload category image
+                  <VisuallyHiddenInput
+                    type="file"
+                    name="categoryImage"
+                    accept="image/*"
+                  />
+                </Button>
+              </Box>
+              <Box className="flex flex-col pl-12 py-2">
+                {category.successorCategories?.map((cat, index) => (
+                  <Fragment key={cat.id}>
+                    <Typography>|--- {cat.name}</Typography>
+                    {category.successorCategories &&
+                    index !== category.successorCategories.length - 1 ? (
+                      <Typography>|</Typography>
+                    ) : (
+                      <IconButton
+                        className="flex flex-row justify-start h-10 w-10"
+                        color="primary"
+                      >
+                        <AddCircleIcon />
+                      </IconButton>
+                    )}
+                  </Fragment>
+                ))}
+              </Box>
+            </Box>
+          )
         )}
       </DialogContent>
       <DialogActions>
