@@ -174,7 +174,7 @@ export default function EditCategoriesDialog({
                   sx={{ textTransform: 'none' }}
                   className="m-2 w-1/2 text-[16px]"
                 >
-                  Upload category image
+                  Change parent cat image
                   <VisuallyHiddenInput
                     type="file"
                     name="categoryImage"
@@ -185,16 +185,16 @@ export default function EditCategoriesDialog({
               <Box className="flex flex-col pl-12 py-2">
                 {category.successorCategories?.map((cat, index) => (
                   <Fragment key={cat.id}>
-                    <Typography>|--- {cat.name}</Typography>
+                    <Typography fontSize={20}>|--- {cat.name}</Typography>
                     {category.successorCategories &&
                     index !== category.successorCategories.length - 1 ? (
-                      <Typography>|</Typography>
+                      <Typography fontSize={20}>|</Typography>
                     ) : (
                       <IconButton
-                        className="flex flex-row justify-start h-10 w-10"
+                        className="flex flex-row justify-start h-12 w-12 mt-2"
                         color="primary"
                       >
-                        <AddCircleIcon />
+                        <AddCircleIcon className="w-full h-full" />
                       </IconButton>
                     )}
                   </Fragment>
