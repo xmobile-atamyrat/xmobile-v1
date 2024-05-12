@@ -10,17 +10,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   TextField,
-  Typography,
   styled,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import BASE_URL from '@/lib/ApiEndpoints';
-import { Fragment, useEffect, useState } from 'react';
+import { useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -36,7 +33,7 @@ const VisuallyHiddenInput = styled('input')({
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
-  whoOpened: EditCategoriesProps['whoOpened'];
+  editCategoriesModal: EditCategoriesProps;
 }
 
 async function resizeImage(
@@ -62,21 +59,21 @@ async function resizeImage(
 
 export default function EditCategoriesDialog({
   handleClose,
-  whoOpened,
+  editCategoriesModal,
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories, selectedCategoryId } = useCategoryContext();
-  const [category, setCategory] = useState<ExtendedCategory>();
+  const { setCategories } = useCategoryContext();
+  // const [category, setCategory] = useState<ExtendedCategory>();
 
-  useEffect(() => {
-    if (whoOpened === 'parent' || selectedCategoryId == null) return;
-    (async () => {
-      const { success, data }: ResponseApi<ExtendedCategory> = await (
-        await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`)
-      ).json();
-      if (success && data) setCategory(data);
-    })();
-  }, [selectedCategoryId, whoOpened]);
+  // useEffect(() => {
+  //   if (dialogType === 'add' || selectedCategoryId == null) return;
+  //   (async () => {
+  //     const { success, data }: ResponseApi<ExtendedCategory> = await (
+  //       await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`)
+  //     ).json();
+  //     if (success && data) setCategory(data);
+  //   })();
+  // }, [selectedCategoryId, dialogType]);
 
   return (
     <Dialog
@@ -91,7 +88,7 @@ export default function EditCategoriesDialog({
         );
         const formJson = Object.fromEntries(formData.entries());
 
-        if (whoOpened === 'parent') {
+        if (editCategoriesModal.dialogType === 'add') {
           const newFormData = new FormData();
           const { categoryName, categoryImage } = formJson;
           const resizedImage = await resizeImage(
@@ -124,14 +121,12 @@ export default function EditCategoriesDialog({
       }}
     >
       <DialogTitle className="w-full flex justify-center">
-        {whoOpened === 'parent'
-          ? 'Create new Category'
-          : 'Edit or Create new Category'}
+        {editCategoriesModal.dialogType === 'add'
+          ? 'Add new Category'
+          : 'Edit Category'}
       </DialogTitle>
-      <DialogContent
-        className={`overflow-auto min-h-[${whoOpened === 'parent' ? '300px' : '600px'}] min-w-[600px]`}
-      >
-        {whoOpened === 'parent' ? (
+      <DialogContent className={`overflow-auto min-w-[600px]`}>
+        {editCategoriesModal.dialogType === 'add' ? (
           <Box className="flex flex-row items-start justify-center">
             <TextField
               label="Category Name"
@@ -145,7 +140,7 @@ export default function EditCategoriesDialog({
               tabIndex={-1}
               startIcon={<CloudUploadIcon />}
               sx={{ textTransform: 'none' }}
-              className="m-2 min-w-[250px] text-[16px]"
+              className="m-2 min-w-[250px] text-[16px] h-[56px]"
             >
               Upload category image
               <VisuallyHiddenInput
@@ -156,52 +151,50 @@ export default function EditCategoriesDialog({
             </Button>
           </Box>
         ) : (
-          category != null && (
-            <Box className="flex flex-col">
-              <Box className="flex flex-row">
-                <TextField
-                  label="Category Name"
-                  name="parentCategoryName"
-                  defaultValue={category.name}
-                  className="m-2 w-1/2"
+          <Box className="flex flex-col">
+            <Box className="flex flex-row">
+              <TextField
+                label="Category Name"
+                name="parentCategoryName"
+                defaultValue={editCategoriesModal.categoryName || ''}
+                className="m-2 w-1/2"
+              />
+              <Button
+                component="label"
+                role={undefined}
+                variant="contained"
+                tabIndex={-1}
+                startIcon={<CloudUploadIcon />}
+                sx={{ textTransform: 'none' }}
+                className="m-2 w-1/2 text-[16px]"
+              >
+                Change image
+                <VisuallyHiddenInput
+                  type="file"
+                  name="parentCategoryImage"
+                  accept="image/*"
                 />
-                <Button
-                  component="label"
-                  role={undefined}
-                  variant="contained"
-                  tabIndex={-1}
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ textTransform: 'none' }}
-                  className="m-2 w-1/2 text-[16px]"
-                >
-                  Change parent cat image
-                  <VisuallyHiddenInput
-                    type="file"
-                    name="categoryImage"
-                    accept="image/*"
-                  />
-                </Button>
-              </Box>
-              <Box className="flex flex-col pl-12 py-2">
-                {category.successorCategories?.map((cat, index) => (
-                  <Fragment key={cat.id}>
-                    <Typography fontSize={20}>|--- {cat.name}</Typography>
-                    {category.successorCategories &&
-                    index !== category.successorCategories.length - 1 ? (
-                      <Typography fontSize={20}>|</Typography>
-                    ) : (
-                      <IconButton
-                        className="flex flex-row justify-start h-12 w-12 mt-2"
-                        color="primary"
-                      >
-                        <AddCircleIcon className="w-full h-full" />
-                      </IconButton>
-                    )}
-                  </Fragment>
-                ))}
-              </Box>
+              </Button>
             </Box>
-          )
+            {/* <Box className="flex flex-col pl-12 py-2">
+              {category.successorCategories?.map((cat, index) => (
+                <Fragment key={cat.id}>
+                  <Typography fontSize={20}>|--- {cat.name}</Typography>
+                  {category.successorCategories &&
+                  index !== category.successorCategories.length - 1 ? (
+                    <Typography fontSize={20}>|</Typography>
+                  ) : (
+                    <IconButton
+                      className="flex flex-row justify-start h-12 w-12 mt-2"
+                      color="primary"
+                    >
+                      <AddCircleIcon className="w-full h-full" />
+                    </IconButton>
+                  )}
+                </Fragment>
+              ))}
+            </Box> */}
+          </Box>
         )}
       </DialogContent>
       <DialogActions>
