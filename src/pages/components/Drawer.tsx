@@ -89,7 +89,7 @@ export default function CustomDrawer({
         <Tooltip title="Edit categories">
           <IconButton
             onClick={() =>
-              setEditCategoriesModal({ open: true, whoOpened: 'parent' })
+              setEditCategoriesModal({ open: true, dialogType: 'add' })
             }
           >
             <AddCircleIcon fontSize="large" color="primary" />

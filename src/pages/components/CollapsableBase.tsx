@@ -11,6 +11,7 @@ import { EditCategoriesProps, DeleteCategoriesProps } from '@/pages/lib/types';
 import { Dispatch, SetStateAction } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 
 interface CollapsableBaseProps {
   imgUrl: string | null;
@@ -62,7 +63,23 @@ export default function CollapsableBase({
         <Box>
           <IconButton
             onClick={() =>
-              setEditCategoriesModal({ open: true, whoOpened: 'child' })
+              setEditCategoriesModal({
+                open: true,
+                dialogType: 'add',
+                categoryId: id,
+              })
+            }
+          >
+            <AddCircleIcon color="primary" fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() =>
+              setEditCategoriesModal({
+                open: true,
+                dialogType: 'edit',
+                categoryId: id,
+                categoryName: categoryTitle,
+              })
             }
           >
             <EditIcon color="primary" fontSize="small" />
