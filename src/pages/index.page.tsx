@@ -34,10 +34,10 @@ export default function Home({
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (categories == null) return;
+    if (categories == null || categories.length === 0) return;
     setCategories(categories);
     setSelectedCategoryId(categories[0].id);
-  }, [categories, setCategories]);
+  }, [categories, setCategories, setSelectedCategoryId]);
 
   useEffect(() => {
     if (selectedCategoryId == null) return;
