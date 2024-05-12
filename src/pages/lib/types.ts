@@ -21,7 +21,9 @@ export interface CategoryContextProps {
 
 export interface EditCategoriesProps {
   open: boolean;
-  whoOpened?: 'parent' | 'child';
+  dialogType?: 'add' | 'edit';
+  categoryId?: string;
+  categoryName?: string;
 }
 
 export interface DeleteCategoriesProps {

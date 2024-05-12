@@ -62,54 +62,5 @@ export default function Collapsable({
         setEditCategoriesModal={setEditCategoriesModal}
       />
     </Box>
-    // <ListItemButton
-    //   sx={{
-    //     pl: 4,
-    //     display: 'flex',
-    //     flexDirection: 'row',
-    //     alignItems: 'center',
-    //   }}
-    //   key={categoryTitle}
-    //   onClick={() => setSelectedCategoryId(id)}
-    //   className={`${selectedCategoryId === id && 'bg-slate-200'}`}
-    // >
-    //   {imgUrl != null && (
-    //     <ListItemIcon>
-    //       <img
-    //         src={imgUrl}
-    //         width={24}
-    //         height={24}
-    //         alt={categoryTitle}
-    //         onError={async (error) => {
-    //           error.currentTarget.onerror = null;
-    //           error.currentTarget.src = URL.createObjectURL(
-    //             await (
-    //               await fetch(`${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`)
-    //             ).blob(),
-    //           );
-    //         }}
-    //       />
-    //     </ListItemIcon>
-    //   )}
-    //   <ListItemText primary={categoryTitle} />
-    //   {selectedCategoryId === id && (
-    //     <Box>
-    //       <IconButton
-    //         onClick={() =>
-    //           setEditCategoriesModal({ open: true, whoOpened: 'child' })
-    //         }
-    //       >
-    //         <EditIcon color="primary" fontSize="small" />
-    //       </IconButton>
-    //       <IconButton
-    //         onClick={() =>
-    //           setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
-    //         }
-    //       >
-    //         <DeleteIcon color="error" fontSize="small" />
-    //       </IconButton>
-    //     </Box>
-    //   )}
-    // </ListItemButton>
   );
 }
