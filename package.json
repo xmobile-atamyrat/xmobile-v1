@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preinstall": "chmod +x seed.sh && chmod +x start.sh",
     "lint": "next lint",
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate dev",
