@@ -37,3 +37,6 @@ next-env.d.ts
 
 # temporary
 db/
+
+dummy_db_data/
+!*.tar.gz
