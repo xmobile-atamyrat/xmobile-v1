@@ -3,6 +3,7 @@ import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import multiparty from 'multiparty';
+import fs from 'fs';
 
 export const config = {
   api: {
@@ -88,6 +89,50 @@ async function handlePostCategory(req: NextApiRequest) {
   return res;
 }
 
+async function handleEditCategory(req: NextApiRequest) {
+  const { categoryId } = req.query;
+  const form = new multiparty.Form({
+    uploadDir: 'src/db/images/categories/',
+  });
+
+  const promise: Promise<{
+    success: boolean;
+    message?: string;
+    status: number;
+    data?: Category;
+  }> = new Promise((resolve) => {
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.log(err);
+        resolve({ success: false, message: err.message, status: 500 });
+      }
+      const data: Partial<Category> = {};
+      if (fields.name?.length > 0) data.name = fields.name[0];
+      if (files.imageUrl?.length > 0) {
+        const currCat = await dbClient.category.findUnique({
+          where: {
+            id: categoryId as string,
+          },
+        });
+        if (currCat?.imgUrl != null) {
+          fs.unlinkSync(currCat.imgUrl);
+        }
+        data.imgUrl = files.imageUrl[0].path;
+      }
+
+      const category = await dbClient.category.update({
+        where: {
+          id: categoryId as string,
+        },
+        data,
+      });
+      resolve({ success: true, data: category, status: 200 });
+    });
+  });
+  const res = await promise;
+  return res;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -116,6 +161,25 @@ export default async function handler(
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });
     }
+  } else if (method === 'PUT') {
+    const { categoryId } = query;
+    if (categoryId == null) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Category ID not provided' });
+    }
+    try {
+      const { status, success, data, message } = await handleEditCategory(req);
+      const retData: any = { success };
+      if (message) retData.message = message;
+      if (data) retData.data = data;
+      return res.status(status).json(retData);
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Couldn't edit the category" });
+    }
   } else if (method === 'DELETE') {
     const { categoryId } = query;
     if (categoryId == null) {
@@ -124,11 +188,14 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      await dbClient.category.delete({
+      const cat = await dbClient.category.delete({
         where: {
           id: categoryId as string,
         },
       });
+      if (cat.imgUrl != null) {
+        fs.unlinkSync(cat.imgUrl);
+      }
       return res.status(200).json({ success: true });
     } catch (error) {
       console.log(error);
