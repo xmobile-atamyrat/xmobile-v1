@@ -88,9 +88,10 @@ export default function CustomDrawer({
       <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">
         <Tooltip title="Edit categories">
           <IconButton
-            onClick={() =>
-              setEditCategoriesModal({ open: true, dialogType: 'add' })
-            }
+            onClick={() => {
+              setSelectedCategoryId(undefined);
+              setEditCategoriesModal({ open: true, dialogType: 'add' });
+            }}
           >
             <AddCircleIcon fontSize="large" color="primary" />
           </IconButton>

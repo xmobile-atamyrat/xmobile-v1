@@ -62,7 +62,7 @@ export default function EditCategoriesDialog({
   editCategoriesModal,
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories } = useCategoryContext();
+  const { setCategories, selectedCategoryId } = useCategoryContext();
   // const [category, setCategory] = useState<ExtendedCategory>();
 
   // useEffect(() => {
@@ -91,13 +91,14 @@ export default function EditCategoriesDialog({
         if (editCategoriesModal.dialogType === 'add') {
           const newFormData = new FormData();
           const { categoryName, categoryImage } = formJson;
-          const resizedImage = await resizeImage(
-            categoryImage as File,
-            240,
-            240,
-          );
+          const categoryImageFile = categoryImage as File;
+          if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
+            const resizedImage = await resizeImage(categoryImageFile, 240, 240);
+            newFormData.append('imageUrl', resizedImage);
+          }
           newFormData.append('name', categoryName);
-          newFormData.append('imageUrl', resizedImage);
+          if (selectedCategoryId != null)
+            newFormData.append('predecessorId', selectedCategoryId);
 
           await fetch(`${BASE_URL}/api/category`, {
             method: 'POST',
