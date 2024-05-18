@@ -1,5 +1,6 @@
 TODO:
 
+- Currently there is new db connection on every request, solve the motherfucking issue!
 - Implement sign in/up functionality
 - Add localization support
 - Design and develop a mobile compatible UI
