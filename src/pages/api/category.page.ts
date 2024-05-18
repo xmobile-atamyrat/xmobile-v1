@@ -33,7 +33,13 @@ async function recursivelyGetCategories(
   for (const category of categories) {
     const { successorCategories } = (await dbClient.category.findUnique({
       where: { id: category.id },
-      include: { successorCategories: true },
+      include: {
+        successorCategories: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
     }))!;
     category.successorCategories = successorCategories;
     if (successorCategories.length > 0) {
@@ -50,6 +56,9 @@ async function handleGetCategory(query: {
     const categories = await dbClient.category.findMany({
       where: {
         predecessorId: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     });
     const nestedCategories = await recursivelyGetCategories(categories);
@@ -114,7 +123,7 @@ async function handleEditCategory(req: NextApiRequest) {
             id: categoryId as string,
           },
         });
-        if (currCat?.imgUrl != null) {
+        if (currCat?.imgUrl != null && fs.existsSync(currCat.imgUrl)) {
           fs.unlinkSync(currCat.imgUrl);
         }
         data.imgUrl = files.imageUrl[0].path;
@@ -193,7 +202,7 @@ export default async function handler(
           id: categoryId as string,
         },
       });
-      if (cat.imgUrl != null) {
+      if (cat.imgUrl != null && fs.existsSync(cat.imgUrl)) {
         fs.unlinkSync(cat.imgUrl);
       }
       return res.status(200).json({ success: true });
