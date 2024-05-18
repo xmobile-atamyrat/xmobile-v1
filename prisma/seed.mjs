@@ -1,4 +1,6 @@
-import dbClient from '@/lib/dbClient';
+import { PrismaClient } from '@prisma/client';
+
+const dbClient = new PrismaClient();
 
 const categories = [
   {
