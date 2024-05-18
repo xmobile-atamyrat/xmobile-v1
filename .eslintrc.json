@@ -20,6 +20,7 @@
     ],
     "@typescript-eslint/no-explicit-any": "off",
     "import/prefer-default-export": "off",
-    "no-new": "off"
+    "no-new": "off",
+    "prefer-destructuring": "off"
   }
 }

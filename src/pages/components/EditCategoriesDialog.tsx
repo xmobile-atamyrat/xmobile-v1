@@ -117,7 +117,34 @@ export default function EditCategoriesDialog({
           setLoading(false);
           handleClose();
         } else {
-          // edit category
+          const newFormData = new FormData();
+          const { editCategoryName, editCategoryImage } = formJson;
+          const categoryImageFile = editCategoryImage as File;
+          if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
+            const resizedImage = await resizeImage(categoryImageFile, 240, 240);
+            newFormData.append('imageUrl', resizedImage);
+          }
+          newFormData.append('name', editCategoryName);
+
+          await fetch(
+            `${BASE_URL}/api/category?categoryId=${selectedCategoryId}`,
+            {
+              method: 'PUT',
+              body: newFormData,
+            },
+          );
+
+          const {
+            success: catSuccess,
+            data: categories,
+          }: ResponseApi<ExtendedCategory[]> = await (
+            await fetch(`${BASE_URL}/api/category`)
+          ).json();
+
+          if (catSuccess && categories) setCategories(categories);
+
+          setLoading(false);
+          handleClose();
         }
       }}
     >
@@ -133,6 +160,7 @@ export default function EditCategoriesDialog({
               label="Category Name"
               name="categoryName"
               className="m-2 min-w-[250px]"
+              required
             />
             <Button
               component="label"
@@ -156,9 +184,10 @@ export default function EditCategoriesDialog({
             <Box className="flex flex-row">
               <TextField
                 label="Category Name"
-                name="parentCategoryName"
+                name="editCategoryName"
                 defaultValue={editCategoriesModal.categoryName || ''}
                 className="m-2 w-1/2"
+                required
               />
               <Button
                 component="label"
@@ -172,7 +201,7 @@ export default function EditCategoriesDialog({
                 Change image
                 <VisuallyHiddenInput
                   type="file"
-                  name="parentCategoryImage"
+                  name="editCategoryImage"
                   accept="image/*"
                 />
               </Button>
