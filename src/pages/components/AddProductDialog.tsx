@@ -73,7 +73,7 @@ export default function AddProductDialog({
         if (success && data != null) setProducts(data);
 
         setLoading(false);
-        // handleClose();
+        handleClose();
       }}
     >
       <DialogTitle>Add new product</DialogTitle>
