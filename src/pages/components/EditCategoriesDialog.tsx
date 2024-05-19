@@ -49,7 +49,7 @@ export default function EditCategoriesDialog({
           const { categoryName, categoryImage } = formJson;
           const categoryImageFile = categoryImage as File;
           if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
-            const resizedImage = await resizeImage(categoryImageFile, 240, 240);
+            const resizedImage = await resizeImage(categoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
           }
           newFormData.append('name', categoryName);
@@ -77,7 +77,7 @@ export default function EditCategoriesDialog({
           const { editCategoryName, editCategoryImage } = formJson;
           const categoryImageFile = editCategoryImage as File;
           if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
-            const resizedImage = await resizeImage(categoryImageFile, 240, 240);
+            const resizedImage = await resizeImage(categoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
           }
           newFormData.append('name', editCategoryName);

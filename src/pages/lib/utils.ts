@@ -39,14 +39,12 @@ export const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-export async function resizeImage(
-  image: File,
-  width: number,
-  height: number,
-): Promise<Blob> {
+export async function resizeImage(image: File, width: number): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
+      const originalRatio = img.height / img.width;
+      const height = width * originalRatio;
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
