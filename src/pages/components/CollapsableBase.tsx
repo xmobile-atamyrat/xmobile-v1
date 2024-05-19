@@ -48,9 +48,7 @@ export default function CollapsableBase({
                 error.currentTarget.onerror = null;
                 error.currentTarget.src = URL.createObjectURL(
                   await (
-                    await fetch(
-                      `${BASE_URL}/api/categoryImage?imgUrl=${imgUrl}`,
-                    )
+                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imgUrl}`)
                   ).blob(),
                 );
               }}
