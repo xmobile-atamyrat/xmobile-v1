@@ -3,19 +3,47 @@ import { getCategory } from '@/pages/api/category.page';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
+import multiparty from 'multiparty';
 
-async function createProduct(body: Product): Promise<Product> {
-  const { name, description, imgUrl, price, categoryId } = body;
-  const product = await dbClient.product.create({
-    data: {
-      name,
-      categoryId,
-      description,
-      imgUrl,
-      price,
-    },
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+interface CreateProductReturnType {
+  success: boolean;
+  message?: string;
+  status: number;
+  data?: Product;
+}
+
+async function createProduct(
+  req: NextApiRequest,
+): Promise<CreateProductReturnType> {
+  const form = new multiparty.Form({
+    uploadDir: 'src/db/images/products/',
   });
-  return product;
+  const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.log(err);
+        resolve({ success: false, message: err.message, status: 500 });
+      }
+      const product = await dbClient.product.create({
+        data: {
+          name: fields.name[0],
+          categoryId: fields.categoryId[0],
+          description: fields.description?.[0],
+          imgUrl: fields.imageUrl?.[0] ?? files.imageUrl?.[0].path,
+          price: fields.price?.[0],
+        },
+      });
+      resolve({ success: true, data: product, status: 200 });
+    });
+  });
+  const res = await promise;
+  return res;
 }
 
 async function getProduct(productId: string): Promise<Product | null> {
@@ -78,11 +106,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  const { body, method, query } = req;
+  const { method, query } = req;
   if (method === 'POST') {
     try {
-      const product = await createProduct(body);
-      return res.status(200).json({ success: true, data: product });
+      const retData = await createProduct(req);
+      return res.status(200).json(retData);
     } catch (error) {
       return res
         .status(500)
