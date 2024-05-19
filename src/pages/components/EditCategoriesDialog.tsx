@@ -11,50 +11,17 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  styled,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-
-const VisuallyHiddenInput = styled('input')({
-  clip: 'rect(0 0 0 0)',
-  clipPath: 'inset(50%)',
-  height: 1,
-  overflow: 'hidden',
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  whiteSpace: 'nowrap',
-  width: 1,
-});
+import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
   editCategoriesModal: EditCategoriesProps;
-}
-
-async function resizeImage(
-  image: File,
-  width: number,
-  height: number,
-): Promise<Blob> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        resolve(blob as Blob);
-      });
-    };
-    img.src = URL.createObjectURL(image);
-  });
 }
 
 export default function EditCategoriesDialog({
@@ -63,17 +30,6 @@ export default function EditCategoriesDialog({
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setCategories, selectedCategoryId } = useCategoryContext();
-  // const [category, setCategory] = useState<ExtendedCategory>();
-
-  // useEffect(() => {
-  //   if (dialogType === 'add' || selectedCategoryId == null) return;
-  //   (async () => {
-  //     const { success, data }: ResponseApi<ExtendedCategory> = await (
-  //       await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`)
-  //     ).json();
-  //     if (success && data) setCategory(data);
-  //   })();
-  // }, [selectedCategoryId, dialogType]);
 
   return (
     <Dialog
@@ -206,24 +162,6 @@ export default function EditCategoriesDialog({
                 />
               </Button>
             </Box>
-            {/* <Box className="flex flex-col pl-12 py-2">
-              {category.successorCategories?.map((cat, index) => (
-                <Fragment key={cat.id}>
-                  <Typography fontSize={20}>|--- {cat.name}</Typography>
-                  {category.successorCategories &&
-                  index !== category.successorCategories.length - 1 ? (
-                    <Typography fontSize={20}>|</Typography>
-                  ) : (
-                    <IconButton
-                      className="flex flex-row justify-start h-12 w-12 mt-2"
-                      color="primary"
-                    >
-                      <AddCircleIcon className="w-full h-full" />
-                    </IconButton>
-                  )}
-                </Fragment>
-              ))}
-            </Box> */}
           </Box>
         )}
       </DialogContent>

@@ -31,3 +31,8 @@ export interface DeleteCategoriesProps {
   open: boolean;
   imgUrl?: string | null;
 }
+
+export interface ProductContextProps {
+  products: Product[];
+  setProducts: Dispatch<SetStateAction<Product[]>>;
+}
