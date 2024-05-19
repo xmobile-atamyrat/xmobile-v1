@@ -56,7 +56,7 @@ export default function AddProductDialog({
           productImageFile?.name !== '' &&
           productImageFile?.size !== 0
         ) {
-          const resizedImage = await resizeImage(productImageFile, 240, 240);
+          const resizedImage = await resizeImage(productImageFile, 240);
           newFormData.append('imageUrl', resizedImage);
         }
 
