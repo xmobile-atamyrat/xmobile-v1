@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { ResponseApi } from '@/pages/lib/types';
+import { styled } from '@mui/material';
 
 export async function deleteCategory(
   categoryId: string,
@@ -24,4 +25,37 @@ export async function deleteCategory(
     }
     return false;
   }
+}
+
+export const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
+
+export async function resizeImage(
+  image: File,
+  width: number,
+  height: number,
+): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        resolve(blob as Blob);
+      });
+    };
+    img.src = URL.createObjectURL(image);
+  });
 }
