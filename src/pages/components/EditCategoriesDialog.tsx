@@ -109,13 +109,13 @@ export default function EditCategoriesDialog({
           ? 'Add new Category'
           : 'Edit Category'}
       </DialogTitle>
-      <DialogContent className={`overflow-auto min-w-[600px]`}>
+      <DialogContent className="min-w-[600px]">
         {editCategoriesModal.dialogType === 'add' ? (
-          <Box className="flex flex-row items-start justify-center">
+          <Box className="flex flex-row items-start justify-between gap-4">
             <TextField
               label="Category Name"
               name="categoryName"
-              className="m-2 min-w-[250px]"
+              className="m-2 min-w-[250px] w-1/2"
               required
             />
             <Button
@@ -125,7 +125,7 @@ export default function EditCategoriesDialog({
               tabIndex={-1}
               startIcon={<CloudUploadIcon />}
               sx={{ textTransform: 'none' }}
-              className="m-2 min-w-[250px] text-[16px] h-[56px]"
+              className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/2"
             >
               Upload category image
               <VisuallyHiddenInput
@@ -136,32 +136,30 @@ export default function EditCategoriesDialog({
             </Button>
           </Box>
         ) : (
-          <Box className="flex flex-col">
-            <Box className="flex flex-row">
-              <TextField
-                label="Category Name"
-                name="editCategoryName"
-                defaultValue={editCategoriesModal.categoryName || ''}
-                className="m-2 w-1/2"
-                required
+          <Box className="flex flex-row items-start justify-between gap-4">
+            <TextField
+              label="Category Name"
+              name="editCategoryName"
+              defaultValue={editCategoriesModal.categoryName || ''}
+              className="w-1/2"
+              required
+            />
+            <Button
+              component="label"
+              role={undefined}
+              variant="contained"
+              tabIndex={-1}
+              startIcon={<CloudUploadIcon />}
+              sx={{ textTransform: 'none' }}
+              className="m-2 w-1/2 text-[16px] h-[56px]"
+            >
+              Change image
+              <VisuallyHiddenInput
+                type="file"
+                name="editCategoryImage"
+                accept="image/*"
               />
-              <Button
-                component="label"
-                role={undefined}
-                variant="contained"
-                tabIndex={-1}
-                startIcon={<CloudUploadIcon />}
-                sx={{ textTransform: 'none' }}
-                className="m-2 w-1/2 text-[16px]"
-              >
-                Change image
-                <VisuallyHiddenInput
-                  type="file"
-                  name="editCategoryImage"
-                  accept="image/*"
-                />
-              </Button>
-            </Box>
+            </Button>
           </Box>
         )}
       </DialogContent>

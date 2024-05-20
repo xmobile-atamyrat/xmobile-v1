@@ -2,7 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import AddProductDialog from '@/pages/components/AddProductDialog';
 import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { useProductoryContext } from '@/pages/lib/ProductContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Box } from '@mui/material';
 import { Product, User } from '@prisma/client';
@@ -29,7 +29,7 @@ export default function Home({
 }: InferGetServerSidePropsType<typeof getStaticProps>) {
   const { setCategories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
-  const { products, setProducts } = useProductoryContext();
+  const { products, setProducts } = useProductContext();
   const [createProductDialog, setCreateProductDialog] = useState(false);
 
   useEffect(() => {

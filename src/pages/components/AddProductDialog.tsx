@@ -13,8 +13,8 @@ import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
-import { useProductoryContext } from '@/pages/lib/ProductContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
 
 interface AddProductDialogProps {
   handleClose: () => void;
@@ -24,7 +24,7 @@ export default function AddProductDialog({
   handleClose,
 }: AddProductDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setProducts } = useProductoryContext();
+  const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
 
   return (
@@ -95,6 +95,7 @@ export default function AddProductDialog({
           type="text"
           fullWidth
           name="description"
+          multiline
         />
         <TextField
           margin="dense"

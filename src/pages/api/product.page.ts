@@ -126,6 +126,19 @@ export default async function handler(
         status: 500,
       };
     }
+  } else if (method === 'DELETE') {
+    const { productId } = query;
+    if (productId == null)
+      return res
+        .status(404)
+        .json({ success: false, message: 'No product id provided' });
+
+    await dbClient.product.delete({
+      where: {
+        id: productId as string,
+      },
+    });
+    return res.status(200).json({ success: true });
   }
   return res
     .status(405)
