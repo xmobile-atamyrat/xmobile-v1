@@ -55,7 +55,14 @@ export default function CollapsableBase({
             />
           </ListItemIcon>
         )}
-        <ListItemText primary={categoryTitle} />
+        <ListItemText
+          primary={categoryTitle}
+          style={{
+            overflow: 'auto',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        />
       </ListItemButton>
       {selectedCategoryId === id && (
         <Box>
