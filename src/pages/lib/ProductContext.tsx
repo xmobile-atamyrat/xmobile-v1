@@ -7,7 +7,7 @@ const ProductContext = createContext<ProductContextProps>({
   setProducts: () => undefined,
 });
 
-export const useProductoryContext = () => useContext(ProductContext);
+export const useProductContext = () => useContext(ProductContext);
 
 export default function ProductContextProvider({
   children,
