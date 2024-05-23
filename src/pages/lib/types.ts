@@ -1,4 +1,4 @@
-import { Category, Product } from '@prisma/client';
+import { Category, Product, User } from '@prisma/client';
 import { Dispatch, SetStateAction } from 'react';
 
 export interface ResponseApi<K = any> {
@@ -17,6 +17,11 @@ export interface CategoryContextProps {
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
+}
+
+export interface UserContextProps {
+  user?: User;
+  setUser: Dispatch<SetStateAction<User>>;
 }
 
 export interface EditCategoriesProps {
