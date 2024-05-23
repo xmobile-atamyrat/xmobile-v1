@@ -62,7 +62,7 @@ export default function ProductCard({
                 }
               }}
             >
-              <DeleteIcon color="error" fontSize="large" onClick={() => {}} />
+              <DeleteIcon color="error" fontSize="large" />
             </IconButton>
           )}
 
