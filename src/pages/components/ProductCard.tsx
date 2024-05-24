@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 
 interface ProductCardProps {
   product?: Product;
@@ -28,6 +29,7 @@ export default function ProductCard({
   const [showDeleteIcon, setShowDeleteIcon] = useState(false);
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
+  const { user } = useUserContext();
   return (
     <Card
       sx={{
@@ -40,7 +42,7 @@ export default function ProductCard({
     >
       {product != null ? (
         <Box className="relative">
-          {showDeleteIcon && (
+          {user?.grade === 'ADMIN' && showDeleteIcon && (
             <IconButton
               style={{ position: 'absolute', right: 0 }}
               onClick={async () => {
