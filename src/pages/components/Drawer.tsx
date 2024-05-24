@@ -12,6 +12,7 @@ import {
 } from '@/pages/lib/types';
 import Collapsable from '@/pages/components/Collapsable';
 import { Dispatch, SetStateAction } from 'react';
+import { useUserContext } from '@/pages/lib/UserContext';
 
 const drawerWidth = 300;
 
@@ -64,6 +65,7 @@ export default function CustomDrawer({
 }: CustomDrawerProps) {
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
+  const { user } = useUserContext();
 
   return (
     <Drawer
@@ -85,18 +87,20 @@ export default function CustomDrawer({
           )}
         </Box>
       )}
-      <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">
-        <Tooltip title="Edit categories">
-          <IconButton
-            onClick={() => {
-              setSelectedCategoryId(undefined);
-              setEditCategoriesModal({ open: true, dialogType: 'add' });
-            }}
-          >
-            <AddCircleIcon fontSize="large" color="primary" />
-          </IconButton>
-        </Tooltip>
-      </Paper>
+      {user?.grade === 'ADMIN' && (
+        <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">
+          <Tooltip title="Edit categories">
+            <IconButton
+              onClick={() => {
+                setSelectedCategoryId(undefined);
+                setEditCategoriesModal({ open: true, dialogType: 'add' });
+              }}
+            >
+              <AddCircleIcon fontSize="large" color="primary" />
+            </IconButton>
+          </Tooltip>
+        </Paper>
+      )}
     </Drawer>
   );
 }
