@@ -3,32 +3,20 @@ import AddProductDialog from '@/pages/components/AddProductDialog';
 import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Box } from '@mui/material';
 import { Product, User } from '@prisma/client';
 import { GetStaticProps, InferGetServerSidePropsType } from 'next';
 import { useEffect, useState } from 'react';
 
-type ReturnProps = { user?: User; categories?: ExtendedCategory[] };
-
 export const getStaticProps = (async () => {
-  const {
-    success: catSuccess,
-    data: categories,
-  }: ResponseApi<ExtendedCategory[]> = await (
+  const { data: categories }: ResponseApi<ExtendedCategory[]> = await (
     await fetch(`${BASE_URL}/api/category`)
   ).json();
 
-  const { success: userSuccess, data: user }: ResponseApi<User> = await (
-    await fetch(`${BASE_URL}/api/user`)
-  ).json();
-  console.log(user);
-
-  const props: ReturnProps = {};
-  if (catSuccess) props.categories = categories;
-  if (userSuccess) props.user = user;
-  return { props };
-}) satisfies GetStaticProps<ReturnProps>;
+  return { props: { categories } };
+}) satisfies GetStaticProps<{ user?: User; categories?: ExtendedCategory[] }>;
 
 export default function Home({
   categories,
@@ -37,6 +25,7 @@ export default function Home({
     useCategoryContext();
   const { products, setProducts } = useProductContext();
   const [createProductDialog, setCreateProductDialog] = useState(false);
+  const { user } = useUserContext();
 
   useEffect(() => {
     if (categories == null || categories.length === 0) return;
@@ -56,7 +45,11 @@ export default function Home({
 
   return (
     <Box className="flex flex-wrap gap-4">
-      <ProductCard handleClickAddProduct={() => setCreateProductDialog(true)} />
+      {user?.grade === 'ADMIN' && (
+        <ProductCard
+          handleClickAddProduct={() => setCreateProductDialog(true)}
+        />
+      )}
       {products.length > 0 &&
         products.map((product) => (
           <ProductCard product={product} key={product.id} />
