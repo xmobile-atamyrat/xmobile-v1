@@ -22,6 +22,7 @@
     "import/prefer-default-export": "off",
     "no-new": "off",
     "prefer-destructuring": "off",
-    "@typescript-eslint/no-var-requires": "off"
+    "@typescript-eslint/no-var-requires": "off",
+    "import/no-extraneous-dependencies": "off"
   }
 }
