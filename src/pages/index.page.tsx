@@ -19,8 +19,14 @@ export const getStaticProps = (async () => {
     await fetch(`${BASE_URL}/api/category`)
   ).json();
 
+  const { success: userSuccess, data: user }: ResponseApi<User> = await (
+    await fetch(`${BASE_URL}/api/user`)
+  ).json();
+  console.log(user);
+
   const props: ReturnProps = {};
   if (catSuccess) props.categories = categories;
+  if (userSuccess) props.user = user;
   return { props };
 }) satisfies GetStaticProps<ReturnProps>;
 
