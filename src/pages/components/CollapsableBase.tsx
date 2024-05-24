@@ -12,6 +12,7 @@ import { Dispatch, SetStateAction } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { useUserContext } from '@/pages/lib/UserContext';
 
 interface CollapsableBaseProps {
   imgUrl: string | null;
@@ -29,6 +30,7 @@ export default function CollapsableBase({
   setDeleteCategoriesModal,
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
+  const { user } = useUserContext();
   return (
     <Box
       className={`w-full flex flex-row items-center ${selectedCategoryId === id && 'bg-slate-200'}`}
@@ -64,7 +66,7 @@ export default function CollapsableBase({
           }}
         />
       </ListItemButton>
-      {selectedCategoryId === id && (
+      {user?.grade === 'ADMIN' && selectedCategoryId === id && (
         <Box>
           <IconButton
             onClick={() =>
