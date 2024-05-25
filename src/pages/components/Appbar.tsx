@@ -106,9 +106,23 @@ export default function CustomAppBar() {
       onClose={handleMenuClose}
     >
       {user != null ? (
-        <MenuItem onClick={handleMenuClose}>Sign out</MenuItem>
+        <MenuItem
+          onClick={() => {
+            localStorage.removeItem('user');
+            router.reload();
+          }}
+        >
+          Sign out
+        </MenuItem>
       ) : (
-        <MenuItem onClick={() => router.push('/signin')}>Sign in</MenuItem>
+        <React.Fragment>
+          <MenuItem onClick={() => router.push('/user/signin')}>
+            Sign in
+          </MenuItem>
+          <MenuItem onClick={() => router.push('/user/signup')}>
+            Sign up
+          </MenuItem>
+        </React.Fragment>
       )}
     </Menu>
   );
