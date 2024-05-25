@@ -56,10 +56,32 @@ async function getProduct(productId: string): Promise<Product | null> {
 }
 
 async function handleGetProduct(query: {
+  searchKeyword?: string;
   categoryId?: string;
   productId?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
-  const { productId, categoryId } = query;
+  const { searchKeyword, productId, categoryId } = query;
+  if (searchKeyword != null) {
+    const products = await dbClient.product.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: searchKeyword,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: searchKeyword,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+    });
+    return { resp: { success: true, data: products }, status: 200 };
+  }
   if (productId != null) {
     const product = await getProduct(productId as string);
     if (product == null)
