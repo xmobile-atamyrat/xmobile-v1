@@ -260,25 +260,6 @@ export default function CustomAppBar({
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             <IconButton
-              size="large"
-              aria-label="show 4 new mails"
-              color="inherit"
-            >
-              <Badge badgeContent={4} color="error">
-                <MailIcon />
-              </Badge>
-            </IconButton>
-            <IconButton
-              size="large"
-              aria-label="show 17 new notifications"
-              color="inherit"
-            >
-              <Badge badgeContent={17} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            <IconButton
-              size="large"
               edge="end"
               aria-label="account of current user"
               aria-controls={menuId}
@@ -287,7 +268,9 @@ export default function CustomAppBar({
               color="inherit"
             >
               {user != null ? (
-                <Avatar sx={{ bgcolor: deepOrange[500] }}>
+                <Avatar
+                  sx={{ bgcolor: deepOrange[500], width: 36, height: 36 }}
+                >
                   {user.name[0].toUpperCase()}
                 </Avatar>
               ) : (
