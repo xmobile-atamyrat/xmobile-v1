@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddProductDialog from '@/pages/components/AddProductDialog';
+import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -44,19 +45,21 @@ export default function Home({
   }, [selectedCategoryId, setProducts]);
 
   return (
-    <Box className="flex flex-wrap gap-4">
-      {user?.grade === 'ADMIN' && (
-        <ProductCard
-          handleClickAddProduct={() => setCreateProductDialog(true)}
-        />
-      )}
-      {products.length > 0 &&
-        products.map((product) => (
-          <ProductCard product={product} key={product.id} />
-        ))}
-      {createProductDialog && (
-        <AddProductDialog handleClose={() => setCreateProductDialog(false)} />
-      )}
-    </Box>
+    <Layout>
+      <Box className="flex flex-wrap gap-4">
+        {user?.grade === 'ADMIN' && (
+          <ProductCard
+            handleClickAddProduct={() => setCreateProductDialog(true)}
+          />
+        )}
+        {products.length > 0 &&
+          products.map((product) => (
+            <ProductCard product={product} key={product.id} />
+          ))}
+        {createProductDialog && (
+          <AddProductDialog handleClose={() => setCreateProductDialog(false)} />
+        )}
+      </Box>
+    </Layout>
   );
 }
