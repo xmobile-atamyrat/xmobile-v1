@@ -23,6 +23,11 @@ import { useRouter } from 'next/router';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import { Dispatch, SetStateAction } from 'react';
+import { useProductContext } from '@/pages/lib/ProductContext';
+import { ResponseApi } from '@/pages/lib/types';
+import { Product } from '@prisma/client';
+import BASE_URL from '@/lib/ApiEndpoints';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -36,7 +41,7 @@ const Search = styled('div')(({ theme }) => ({
   width: '100%',
   [theme.breakpoints.up('sm')]: {
     marginLeft: theme.spacing(3),
-    width: 'auto',
+    width: '300px',
   },
 }));
 
@@ -64,7 +69,15 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-export default function CustomAppBar() {
+interface CustomAppBarProps {
+  openDrawer: boolean;
+  setOpenDrawer: Dispatch<SetStateAction<boolean>>;
+}
+
+export default function CustomAppBar({
+  setOpenDrawer,
+  openDrawer,
+}: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
     React.useState<null | HTMLElement>(null);
@@ -73,6 +86,8 @@ export default function CustomAppBar() {
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+
+  const { setProducts } = useProductContext();
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -208,6 +223,7 @@ export default function CustomAppBar() {
             color="inherit"
             aria-label="open drawer"
             sx={{ mr: 2 }}
+            onClick={() => setOpenDrawer(!openDrawer)}
           >
             <MenuIcon />
           </IconButton>
@@ -217,7 +233,7 @@ export default function CustomAppBar() {
             component="div"
             sx={{ display: { xs: 'none', sm: 'block' } }}
           >
-            XMobile
+            Xmobile
           </Typography>
           <Search>
             <SearchIconWrapper>
@@ -226,6 +242,19 @@ export default function CustomAppBar() {
             <StyledInputBase
               placeholder="Search…"
               inputProps={{ 'aria-label': 'search' }}
+              onChange={async (event) => {
+                try {
+                  const keyword = event.target.value;
+                  const { success, data }: ResponseApi<Product[]> = await (
+                    await fetch(
+                      `${BASE_URL}/api/product?searchKeyword=${keyword}`,
+                    )
+                  ).json();
+                  if (success && data != null) setProducts(data);
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
             />
           </Search>
           <Box sx={{ flexGrow: 1 }} />
