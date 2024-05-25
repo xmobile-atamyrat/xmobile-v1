@@ -16,6 +16,10 @@ import MailIcon from '@mui/icons-material/Mail';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import { appBarHeight } from '@/pages/lib/constants';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { Avatar } from '@mui/material';
+import { deepOrange } from '@mui/material/colors';
+import { useRouter } from 'next/router';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -61,6 +65,8 @@ export default function CustomAppBar() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
     React.useState<null | HTMLElement>(null);
+  const { user } = useUserContext();
+  const router = useRouter();
 
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
@@ -99,8 +105,11 @@ export default function CustomAppBar() {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-      <MenuItem onClick={handleMenuClose}>My account</MenuItem>
+      {user != null ? (
+        <MenuItem onClick={handleMenuClose}>Sign out</MenuItem>
+      ) : (
+        <MenuItem onClick={() => router.push('/signin')}>Sign in</MenuItem>
+      )}
     </Menu>
   );
 
@@ -181,7 +190,7 @@ export default function CustomAppBar() {
             component="div"
             sx={{ display: { xs: 'none', sm: 'block' } }}
           >
-            MUI
+            XMobile
           </Typography>
           <Search>
             <SearchIconWrapper>
@@ -221,7 +230,13 @@ export default function CustomAppBar() {
               onClick={handleProfileMenuOpen}
               color="inherit"
             >
-              <AccountCircle />
+              {user != null ? (
+                <Avatar sx={{ bgcolor: deepOrange[500] }}>
+                  {user.name[0].toUpperCase()}
+                </Avatar>
+              ) : (
+                <AccountCircle />
+              )}
             </IconButton>
           </Box>
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
