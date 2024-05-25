@@ -26,7 +26,14 @@ export default function Home({
     useCategoryContext();
   const { products, setProducts } = useProductContext();
   const [createProductDialog, setCreateProductDialog] = useState(false);
-  const { user } = useUserContext();
+  const { user, setUser } = useUserContext();
+
+  useEffect(() => {
+    if (user == null) {
+      const userString = localStorage.getItem('user');
+      if (userString != null) setUser(JSON.parse(userString));
+    }
+  }, [user, setUser]);
 
   useEffect(() => {
     if (categories == null || categories.length === 0) return;
