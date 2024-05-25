@@ -2,6 +2,8 @@ import {
   Box,
   Button,
   Divider,
+  IconButton,
+  InputAdornment,
   Paper,
   TextField,
   Typography,
@@ -13,11 +15,13 @@ import { User } from '@prisma/client';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { VisibilityOff, Visibility } from '@mui/icons-material';
 
 export default function Signin() {
   const { setUser } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <Box className="h-[100vh] flex justify-center items-center">
       <Paper
@@ -64,7 +68,7 @@ export default function Signin() {
       >
         <Box className="flex flex-col gap-1">
           <Box className="flex flex-row justify-between">
-            <Typography variant="h5">Signin</Typography>
+            <Typography variant="h5">Sign in</Typography>
             <Link href="/">
               <CancelIcon />
             </Link>
@@ -82,8 +86,17 @@ export default function Signin() {
           fullWidth
           required
           label="Your password"
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           name="password"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
         <Box className="flex flex-col gap-2">
           <Box className="flex flex-col gap-2 relative min-h-[70px]">
