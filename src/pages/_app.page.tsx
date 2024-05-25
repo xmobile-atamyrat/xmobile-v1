@@ -1,4 +1,3 @@
-import Layout from '@/pages/components/Layout';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
@@ -10,9 +9,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <UserContextProvider>
       <CategoryContextProvider>
         <ProductContextProvider>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          <Component {...pageProps} />
         </ProductContextProvider>
       </CategoryContextProvider>
     </UserContextProvider>
