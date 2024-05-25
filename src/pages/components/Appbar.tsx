@@ -20,6 +20,9 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { Avatar } from '@mui/material';
 import { deepOrange } from '@mui/material/colors';
 import { useRouter } from 'next/router';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -93,7 +96,7 @@ export default function CustomAppBar() {
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
-        vertical: 'top',
+        vertical: 'bottom',
         horizontal: 'right',
       }}
       id={menuId}
@@ -111,16 +114,26 @@ export default function CustomAppBar() {
             localStorage.removeItem('user');
             router.reload();
           }}
+          className="flex flex-row gap-2 items-center justify-between"
         >
-          Sign out
+          <LogoutIcon />
+          <Typography>Sign out</Typography>
         </MenuItem>
       ) : (
         <React.Fragment>
-          <MenuItem onClick={() => router.push('/user/signin')}>
-            Sign in
+          <MenuItem
+            onClick={() => router.push('/user/signin')}
+            className="flex flex-row gap-2 items-center justify-between"
+          >
+            <LoginIcon />
+            <Typography>Sign in</Typography>
           </MenuItem>
-          <MenuItem onClick={() => router.push('/user/signup')}>
-            Sign up
+          <MenuItem
+            onClick={() => router.push('/user/signup')}
+            className="flex flex-row gap-2 items-center justify-between"
+          >
+            <AppRegistrationIcon />
+            <Typography>Sign up</Typography>
           </MenuItem>
         </React.Fragment>
       )}
