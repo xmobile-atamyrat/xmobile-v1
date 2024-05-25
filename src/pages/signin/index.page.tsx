@@ -54,10 +54,11 @@ export default function Signin() {
               setErrorMessage(message);
             } else if (success && data != null) {
               setUser(data);
+              localStorage.setItem('user', JSON.stringify(data));
               router.push('/');
             }
           } catch (error) {
-            console.error(error);
+            setErrorMessage((error as Error).message);
           }
         }}
       >
