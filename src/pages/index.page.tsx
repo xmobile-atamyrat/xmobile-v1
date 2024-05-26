@@ -16,8 +16,6 @@ export const getStaticProps = (async (context) => {
     await fetch(`${BASE_URL}/api/category`)
   ).json();
 
-  console.log(context.locale);
-
   return {
     props: {
       categories,
