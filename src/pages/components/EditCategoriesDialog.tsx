@@ -18,6 +18,7 @@ import { useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -30,6 +31,7 @@ export default function EditCategoriesDialog({
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setCategories, selectedCategoryId } = useCategoryContext();
+  const t = useTranslations();
 
   return (
     <Dialog
@@ -165,7 +167,7 @@ export default function EditCategoriesDialog({
       </DialogContent>
       <DialogActions>
         <Button variant="contained" color="error" onClick={handleClose}>
-          Close
+          {t('cancel')}
         </Button>
         <LoadingButton loading={loading} variant="contained" type="submit">
           Submit

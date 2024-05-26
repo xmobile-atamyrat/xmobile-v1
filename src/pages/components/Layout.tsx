@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
-  const [openDrawer, setOpenDrawer] = useState(false);
+  const [openDrawer, setOpenDrawer] = useState(true);
   return (
     <Box sx={{ display: 'flex', pt: `${appBarHeight}px` }}>
       <CustomAppBar openDrawer={openDrawer} setOpenDrawer={setOpenDrawer} />

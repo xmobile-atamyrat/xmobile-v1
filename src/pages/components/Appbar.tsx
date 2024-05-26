@@ -135,7 +135,7 @@ export default function CustomAppBar({
           <Typography>Sign out</Typography>
         </MenuItem>
       ) : (
-        <React.Fragment>
+        <Box>
           <MenuItem
             onClick={() => router.push('/user/signin')}
             className="flex flex-row gap-2 items-center justify-between"
@@ -150,7 +150,7 @@ export default function CustomAppBar({
             <AppRegistrationIcon />
             <Typography>Sign up</Typography>
           </MenuItem>
-        </React.Fragment>
+        </Box>
       )}
     </Menu>
   );
