@@ -260,7 +260,7 @@ export default function CustomAppBar({
           </Search>
           <Box sx={{ flexGrow: 1 }} />
           <Select
-            defaultValue="tk"
+            defaultValue={router.locale}
             color="info"
             size="small"
             className="bg-white"
