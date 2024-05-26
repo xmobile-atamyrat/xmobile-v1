@@ -57,3 +57,21 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
     img.src = URL.createObjectURL(image);
   });
 }
+
+export const changeLocale = (
+  newLocale: string,
+  query: string,
+  pathname: string,
+) => {
+  const pathSegments = pathname.split('/');
+  const locales = ['en', 'tk', 'ru', 'ch']; // Replace with your actual locales
+  if (locales.includes(pathSegments[1])) {
+    pathSegments[1] = newLocale;
+  } else {
+    pathSegments.splice(1, 0, newLocale);
+  }
+  const newPathname = pathSegments.join('/');
+  const newUrl = `${newPathname}${query}`;
+
+  return newUrl;
+};
