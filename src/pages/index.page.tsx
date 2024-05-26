@@ -11,12 +11,19 @@ import { Product, User } from '@prisma/client';
 import { GetStaticProps, InferGetServerSidePropsType } from 'next';
 import { useEffect, useState } from 'react';
 
-export const getStaticProps = (async () => {
+export const getStaticProps = (async (context) => {
   const { data: categories }: ResponseApi<ExtendedCategory[]> = await (
     await fetch(`${BASE_URL}/api/category`)
   ).json();
 
-  return { props: { categories } };
+  console.log(context.locale);
+
+  return {
+    props: {
+      categories,
+      messages: (await import(`../i18n/${context.locale}.json`)).default,
+    },
+  };
 }) satisfies GetStaticProps<{ user?: User; categories?: ExtendedCategory[] }>;
 
 export default function Home({
