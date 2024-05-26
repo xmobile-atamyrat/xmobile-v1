@@ -170,7 +170,7 @@ export default function EditCategoriesDialog({
           {t('cancel')}
         </Button>
         <LoadingButton loading={loading} variant="contained" type="submit">
-          Submit
+          {t('submit')}
         </LoadingButton>
       </DialogActions>
     </Dialog>

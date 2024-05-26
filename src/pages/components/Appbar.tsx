@@ -17,7 +17,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import { appBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { Avatar } from '@mui/material';
+import { Avatar, Select } from '@mui/material';
 import { deepOrange } from '@mui/material/colors';
 import { useRouter } from 'next/router';
 import LoginIcon from '@mui/icons-material/Login';
@@ -28,6 +28,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import BASE_URL from '@/lib/ApiEndpoints';
+import { changeLocale } from '@/pages/lib/utils';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -258,6 +259,25 @@ export default function CustomAppBar({
             />
           </Search>
           <Box sx={{ flexGrow: 1 }} />
+          <Select
+            defaultValue="tk"
+            color="info"
+            size="small"
+            className="bg-white"
+            onChange={(event) => {
+              const newPath = changeLocale(
+                event.target.value,
+                window.location.search,
+                window.location.pathname,
+              );
+              window.location.pathname = newPath;
+            }}
+          >
+            <MenuItem value="tk">Türkmençe</MenuItem>
+            <MenuItem value="ch">Çärjöwçä</MenuItem>
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="ru">Русский</MenuItem>
+          </Select>
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             <IconButton
               edge="end"
