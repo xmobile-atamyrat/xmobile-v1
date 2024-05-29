@@ -1,4 +1,14 @@
 {
   "cancel": "Cancel",
-  "submit": "Submit"
+  "submit": "Submit",
+  "addNewCategory": "Add New Category",
+  "editCategory": "Edit Category",
+  "categoryName": "Category Name",
+  "inEnglish": "In English",
+  "inRussian": "In Russian",
+  "inTurkmen": "In Turkmen",
+  "inCharjov": "In Charjov",
+  "categoryLogo": "Category Logo",
+  "notRequired": "not required",
+  "test": "test"
 }

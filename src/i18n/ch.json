@@ -1,4 +1,16 @@
 {
+  "lowercaseTurkmenAlphabet": "a, b, ç, d, e, ä, f, g, h, ı, i, j, k, l, m, n, o, ö, p, r, s, ş, t, u, ü, w, y, z",
+  "uppercaseTurkmenAlpahbet": "A, B, Ç, D, E, Ä, F, G, H, I, J, K, L, M, N, O, Ö, P, R, S, Ş, T, U, Ü, W, Y, Z",
   "cancel": "Izä",
-  "submit": "Tapşyr"
+  "submit": "Tapşyr",
+  "addNewCategory": "Taza kategoriýa koş",
+  "editCategory": "Kategoriýany üýtgät",
+  "categoryName": "Kategoriýa ady",
+  "inEnglish": "Iňlisçä",
+  "inRussian": "Orusça",
+  "inTurkmen": "Türkmänçä",
+  "inCharjov": "Çärjowçä",
+  "categoryLogo": "Kategoriýa logo",
+  "notRequired": "hökman ämäz",
+  "test": "synag"
 }
