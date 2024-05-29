@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  Typography,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import BASE_URL from '@/lib/ApiEndpoints';
@@ -24,6 +25,44 @@ interface EditCategoriesDialogProps {
   handleClose: () => void;
   editCategoriesModal: EditCategoriesProps;
 }
+
+// interface EditCategoriesDialogBaseProps {
+//   textfields: {
+//     label: string;
+//     name: string;
+//     defaultValue?: string;
+//     required?: boolean;
+//   }[];
+// }
+
+// function EditCategoriesDialogBase(): ReactNode {
+//   return (
+//     <Box className="flex flex-row items-start justify-between gap-4">
+//       <TextField
+//         label="Category Name"
+//         name="categoryName"
+//         className="m-2 min-w-[250px] w-1/2"
+//         required
+//       />
+//       <Button
+//         component="label"
+//         role={undefined}
+//         variant="contained"
+//         tabIndex={-1}
+//         startIcon={<CloudUploadIcon />}
+//         sx={{ textTransform: 'none' }}
+//         className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/2"
+//       >
+//         Upload category image
+//         <VisuallyHiddenInput
+//           type="file"
+//           name="categoryImage"
+//           accept="image/*"
+//         />
+//       </Button>
+//     </Box>
+//   );
+// }
 
 export default function EditCategoriesDialog({
   handleClose,
@@ -108,34 +147,62 @@ export default function EditCategoriesDialog({
     >
       <DialogTitle className="w-full flex justify-center">
         {editCategoriesModal.dialogType === 'add'
-          ? 'Add new Category'
-          : 'Edit Category'}
+          ? t('addNewCategory')
+          : t('editCategory')}
       </DialogTitle>
       <DialogContent className="min-w-[600px]">
         {editCategoriesModal.dialogType === 'add' ? (
-          <Box className="flex flex-row items-start justify-between gap-4">
-            <TextField
-              label="Category Name"
-              name="categoryName"
-              className="m-2 min-w-[250px] w-1/2"
-              required
-            />
-            <Button
-              component="label"
-              role={undefined}
-              variant="contained"
-              tabIndex={-1}
-              startIcon={<CloudUploadIcon />}
-              sx={{ textTransform: 'none' }}
-              className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/2"
-            >
-              Upload category image
-              <VisuallyHiddenInput
-                type="file"
-                name="categoryImage"
-                accept="image/*"
+          <Box className="flex flex-col gap-4">
+            <Box>
+              <Typography>
+                {t('categoryName')}
+                <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <TextField
+                label={t('inTurkmen')}
+                name="categoryNameInTurkmen"
+                className="m-2 min-w-[250px] w-1/3"
               />
-            </Button>
+              <TextField
+                label={t('inCharjov')}
+                name="categoryNameInCharjov"
+                className="m-2 min-w-[250px] w-1/3"
+              />
+              <TextField
+                label={t('inRussian')}
+                name="categoryNameInRussian"
+                className="m-2 min-w-[250px] w-1/3"
+              />
+              <TextField
+                label={t('inEnglish')}
+                name="categoryNameInEnglish"
+                className="m-2 min-w-[250px] w-1/3"
+              />
+            </Box>
+            <Box>
+              <Typography>
+                {`${t('categoryLogo')} `}
+                <span
+                  style={{ fontSize: '12px' }}
+                >{`(${t('notRequired')})`}</span>
+              </Typography>
+              <Button
+                component="label"
+                role={undefined}
+                variant="contained"
+                tabIndex={-1}
+                startIcon={<CloudUploadIcon />}
+                sx={{ textTransform: 'none' }}
+                className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
+              >
+                Upload category image
+                <VisuallyHiddenInput
+                  type="file"
+                  name="categoryImage"
+                  accept="image/*"
+                />
+              </Button>
+            </Box>
           </Box>
         ) : (
           <Box className="flex flex-row items-start justify-between gap-4">
