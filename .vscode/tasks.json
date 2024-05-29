@@ -1,0 +1,23 @@
+{
+  "tasks": [
+    {
+      "label": "Add translation row",
+      "type": "shell",
+      "command": "node",
+      "args": ["add-translation-row.mjs", "${input:key}", "${input:value}"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "key",
+      "type": "promptString",
+      "description": "Enter the translation key."
+    },
+    {
+      "id": "value",
+      "type": "promptString",
+      "description": "Enter the translation value."
+    }
+  ]
+}
