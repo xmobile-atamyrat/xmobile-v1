@@ -4,20 +4,36 @@
       "label": "Add translation row",
       "type": "shell",
       "command": "node",
-      "args": ["add-translation-row.mjs", "${input:key}", "${input:value}"],
+      "args": [
+        "add-translation-row.mjs",
+        "${input:add_key}",
+        "${input:add_value}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Delete translation row",
+      "type": "shell",
+      "command": "node",
+      "args": ["remove-translation-row.mjs", "${input:remove_key}"],
       "problemMatcher": []
     }
   ],
   "inputs": [
     {
-      "id": "key",
+      "id": "add_key",
       "type": "promptString",
-      "description": "Enter the translation key."
+      "description": "Enter the translation key to add."
     },
     {
-      "id": "value",
+      "id": "add_value",
       "type": "promptString",
-      "description": "Enter the translation value."
+      "description": "Enter the translation value to add."
+    },
+    {
+      "id": "remove_key",
+      "type": "promptString",
+      "description": "Enter the translation key to delete."
     }
   ]
 }
