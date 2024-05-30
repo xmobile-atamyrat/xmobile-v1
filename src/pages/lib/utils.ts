@@ -77,10 +77,15 @@ export const changeLocale = (
 };
 
 export const parseCategoryName = (name: string, locale: string) => {
-  const parsedName = JSON.parse(name);
-  let categoryName = parsedName[locale];
-  if (categoryName == null) {
-    categoryName =
-      parsedName.tk ?? parsedName.ch ?? parsedName.ru ?? parsedName.en;
+  try {
+    const parsedName = JSON.parse(name);
+    let categoryName = parsedName[locale];
+    if (categoryName == null) {
+      categoryName =
+        parsedName.tk ?? parsedName.ch ?? parsedName.ru ?? parsedName.en;
+    }
+    return categoryName;
+  } catch (_) {
+    return name;
   }
 };
