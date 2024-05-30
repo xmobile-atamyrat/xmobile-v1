@@ -254,7 +254,7 @@ export default function EditCategoriesDialog({
             </Box>
           </Box>
         ) : (
-          <Box className="flex flex-row items-start justify-between gap-4">
+          <Box className="flex flex-row items-center justify-between gap-4">
             <TextField
               label="Category Name"
               name="editCategoryName"
