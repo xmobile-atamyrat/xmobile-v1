@@ -41,3 +41,10 @@ export interface ProductContextProps {
   products: Product[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
 }
+
+export interface CategoryName {
+  en: string;
+  ru: string;
+  tk: string;
+  ch: string;
+}

@@ -3,29 +3,32 @@ import { localeOptions } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { styled } from '@mui/material';
 
+// check if the image url is a local image or a remote image
+// if it is a local image, delete it from the server
+// if it is a remote image, do nothing
+// delete the category from the server
 export async function deleteCategory(
   categoryId: string,
   url: string,
 ): Promise<boolean> {
   try {
     new URL(url);
-    return true;
-  } catch (_) {
+  } catch (error) {
     const { success: imgSuccess }: ResponseApi = await (
-      await fetch(`${BASE_URL}/api/categoryImage?imgUrl=${url}`, {
+      await fetch(`${BASE_URL}/api/localImage?imgUrl=${url}`, {
         method: 'DELETE',
       })
     ).json();
-    if (imgSuccess) {
-      const { success }: ResponseApi = await (
-        await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`, {
-          method: 'DELETE',
-        })
-      ).json();
-      return success;
+    if (!imgSuccess) {
+      return false;
     }
-    return false;
   }
+  const { success }: ResponseApi = await (
+    await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`, {
+      method: 'DELETE',
+    })
+  ).json();
+  return success;
 }
 
 export const VisuallyHiddenInput = styled('input')({
