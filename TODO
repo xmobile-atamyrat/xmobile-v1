@@ -1,6 +1,4 @@
 TODO:
 
-- Currently there is new db connection on every request, solve the motherfucking issue!
-- Implement sign in/up functionality
-- Add localization support
+- delete product image on cascade delete category
 - Design and develop a mobile compatible UI
