@@ -71,6 +71,8 @@ export default function EditCategoriesDialog({
   const [loading, setLoading] = useState(false);
   const { setCategories, selectedCategoryId } = useCategoryContext();
   const t = useTranslations();
+  const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
+  const [errorMessage, setErrorMessage] = useState<string>();
 
   return (
     <Dialog
@@ -80,6 +82,8 @@ export default function EditCategoriesDialog({
       onSubmit={async (event) => {
         event.preventDefault();
         setLoading(true);
+        setErrorMessage(undefined);
+
         const formData = new FormData(
           event.currentTarget as unknown as HTMLFormElement,
         );
@@ -87,13 +91,38 @@ export default function EditCategoriesDialog({
 
         if (editCategoriesModal.dialogType === 'add') {
           const newFormData = new FormData();
-          const { categoryName, categoryImage } = formJson;
+          const {
+            categoryNameInTurkmen,
+            categoryNameInCharjov,
+            categoryNameInRussian,
+            categoryNameInEnglish,
+            categoryImage,
+          } = formJson;
+
+          if (
+            categoryNameInCharjov === '' &&
+            categoryNameInEnglish === '' &&
+            categoryNameInRussian === '' &&
+            categoryNameInTurkmen === ''
+          ) {
+            setLoading(false);
+            setErrorMessage(t('categoryNameRequired'));
+            return;
+          }
           const categoryImageFile = categoryImage as File;
           if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
             const resizedImage = await resizeImage(categoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
           }
-          newFormData.append('name', categoryName);
+          newFormData.append(
+            'name',
+            JSON.stringify({
+              en: categoryNameInEnglish,
+              ru: categoryNameInRussian,
+              tk: categoryNameInTurkmen,
+              ch: categoryNameInCharjov,
+            }),
+          );
           if (selectedCategoryId != null)
             newFormData.append('predecessorId', selectedCategoryId);
 
@@ -178,30 +207,50 @@ export default function EditCategoriesDialog({
                 name="categoryNameInEnglish"
                 className="m-2 min-w-[250px] w-1/3"
               />
+              {errorMessage && (
+                <Typography fontSize={14} color="red">
+                  {errorMessage}
+                </Typography>
+              )}
             </Box>
-            <Box>
+            <Box className="flex flex-col gap-2">
               <Typography>
                 {`${t('categoryLogo')} `}
                 <span
                   style={{ fontSize: '12px' }}
                 >{`(${t('notRequired')})`}</span>
               </Typography>
-              <Button
-                component="label"
-                role={undefined}
-                variant="contained"
-                tabIndex={-1}
-                startIcon={<CloudUploadIcon />}
-                sx={{ textTransform: 'none' }}
-                className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
-              >
-                Upload category image
-                <VisuallyHiddenInput
-                  type="file"
-                  name="categoryImage"
-                  accept="image/*"
-                />
-              </Button>
+              <Box className="flex flex-row justify-between items-start">
+                <Button
+                  component="label"
+                  role={undefined}
+                  variant="contained"
+                  tabIndex={-1}
+                  startIcon={<CloudUploadIcon />}
+                  sx={{ textTransform: 'none' }}
+                  className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
+                >
+                  {t('uploadCategoryImage')}
+                  <VisuallyHiddenInput
+                    type="file"
+                    name="categoryImage"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setCategoryLogoUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </Button>
+                {categoryLogoUrl && (
+                  <img alt="asdf" src={categoryLogoUrl} width={200} />
+                )}
+              </Box>
             </Box>
           </Box>
         ) : (
@@ -232,7 +281,7 @@ export default function EditCategoriesDialog({
           </Box>
         )}
       </DialogContent>
-      <DialogActions>
+      <DialogActions className="mb-4 mr-4">
         <Button variant="contained" color="error" onClick={handleClose}>
           {t('cancel')}
         </Button>
