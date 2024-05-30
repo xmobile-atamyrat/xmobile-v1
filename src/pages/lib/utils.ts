@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { localeOptions } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { styled } from '@mui/material';
 
@@ -64,8 +65,7 @@ export const changeLocale = (
   pathname: string,
 ) => {
   const pathSegments = pathname.split('/');
-  const locales = ['en', 'tk', 'ru', 'ch']; // Replace with your actual locales
-  if (locales.includes(pathSegments[1])) {
+  if (localeOptions.includes(pathSegments[1])) {
     pathSegments[1] = newLocale;
   } else {
     pathSegments.splice(1, 0, newLocale);
@@ -74,4 +74,13 @@ export const changeLocale = (
   const newUrl = `${newPathname}${query}`;
 
   return newUrl;
+};
+
+export const parseCategoryName = (name: string, locale: string) => {
+  const parsedName = JSON.parse(name);
+  let categoryName = parsedName[locale];
+  if (categoryName == null) {
+    categoryName =
+      parsedName.tk ?? parsedName.ch ?? parsedName.ru ?? parsedName.en;
+  }
 };

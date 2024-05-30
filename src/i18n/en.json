@@ -9,5 +9,7 @@
   "inTurkmen": "In Turkmen",
   "inCharjov": "In Charjov",
   "categoryLogo": "Category Logo",
-  "notRequired": "not required"
+  "notRequired": "not required",
+  "uploadCategoryImage": "Upload category image",
+  "categoryNameRequired": "Please provide category name at least in more language"
 }
