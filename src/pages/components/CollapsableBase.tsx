@@ -13,6 +13,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { parseCategoryName } from '@/pages/lib/utils';
+import { useRouter } from 'next/router';
 
 interface CollapsableBaseProps {
   imgUrl: string | null;
@@ -31,6 +33,7 @@ export default function CollapsableBase({
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
+  const router = useRouter();
   return (
     <Box
       className={`w-full flex flex-row items-center ${selectedCategoryId === id && 'bg-slate-200'}`}
@@ -58,7 +61,7 @@ export default function CollapsableBase({
           </ListItemIcon>
         )}
         <ListItemText
-          primary={categoryTitle}
+          primary={parseCategoryName(categoryTitle, router.locale ?? 'tk')}
           style={{
             overflow: 'auto',
             whiteSpace: 'nowrap',
