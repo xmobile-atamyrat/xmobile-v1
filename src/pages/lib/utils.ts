@@ -9,11 +9,11 @@ import { styled } from '@mui/material';
 // delete the category from the server
 export async function deleteCategory(
   categoryId: string,
-  url: string,
+  url: string | null | undefined,
 ): Promise<boolean> {
   try {
-    new URL(url);
-  } catch (error) {
+    if (url != null) new URL(url);
+  } catch (_) {
     const { success: imgSuccess }: ResponseApi = await (
       await fetch(`${BASE_URL}/api/localImage?imgUrl=${url}`, {
         method: 'DELETE',
@@ -83,7 +83,7 @@ export const parseCategoryName = (name: string, locale: string) => {
   try {
     const parsedName = JSON.parse(name);
     let categoryName = parsedName[locale];
-    if (categoryName == null) {
+    if (categoryName == null || categoryName === '') {
       categoryName =
         parsedName.tk ?? parsedName.ch ?? parsedName.ru ?? parsedName.en;
     }
