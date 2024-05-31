@@ -17,5 +17,6 @@
   "addNewProduct": "Добавить новый продукт",
   "signout": "выход",
   "signin": "Войти",
-  "signup": "Зарегистрироваться"
+  "signup": "Зарегистрироваться",
+  "categoryImageURL": "Category Image URL"
 }

@@ -51,7 +51,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           }
           handleDelete={async () => {
             const { categoryId, imgUrl } = deleteCategoriesModal;
-            if (categoryId == null || imgUrl == null) return;
+            if (categoryId == null) return;
             await deleteCategory(categoryId, imgUrl);
           }}
         />

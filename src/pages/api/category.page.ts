@@ -88,7 +88,7 @@ async function handlePostCategory(req: NextApiRequest) {
         data: {
           name: fields.name[0],
           predecessorId: fields.predecessorId?.[0],
-          imgUrl: files.imageUrl?.[0].path,
+          imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
         },
       });
       resolve({ success: true, data: category, status: 200 });
