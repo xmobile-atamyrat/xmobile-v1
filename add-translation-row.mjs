@@ -44,7 +44,13 @@ readdir(i18nDir, (err, files) => {
           });
         })
         .catch((e) => {
-          console.error(e);
+          console.error(e.message);
+          json[key] = value;
+          writeFile(filePath, JSON.stringify(json, null, 2), 'utf8', (errr) => {
+            if (errr) {
+              console.error(errr);
+            }
+          });
         });
     });
   });
