@@ -12,5 +12,8 @@
   "notRequired": "not required",
   "uploadCategoryImage": "Upload category image",
   "categoryNameRequired": "Please provide category name at least in more language",
-  "addNewProduct": "Add new product"
+  "addNewProduct": "Add new product",
+  "signout": "Sign out",
+  "signin": "Sign in",
+  "signup": "Sign up"
 }

@@ -14,5 +14,8 @@
   "notRequired": "zerur däl",
   "uploadCategoryImage": "Surat ýükläň",
   "categoryNameRequired": "Iň bolmanda has köp dilde kategoriýa adyny bermegiňizi haýyş edýäris",
-  "addNewProduct": "Täze önüm goşuň"
+  "addNewProduct": "Täze önüm goşuň",
+  "signout": "Hasabyňyzdan çykyň",
+  "signin": "Giriň",
+  "signup": "Hasaba giriň"
 }

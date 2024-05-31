@@ -28,6 +28,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { changeLocale } from '@/pages/lib/utils';
+import { useTranslations } from 'next-intl';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -87,6 +88,8 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
 
+  const t = useTranslations();
+
   const { setProducts } = useProductContext();
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -132,7 +135,7 @@ export default function CustomAppBar({
           className="flex flex-row gap-2 items-center justify-between"
         >
           <LogoutIcon />
-          <Typography>Sign out</Typography>
+          <Typography>{t('signout')}</Typography>
         </MenuItem>
       ) : (
         <Box>
@@ -141,14 +144,14 @@ export default function CustomAppBar({
             className="flex flex-row gap-2 items-center justify-between"
           >
             <LoginIcon />
-            <Typography>Sign in</Typography>
+            <Typography>{t('signin')}</Typography>
           </MenuItem>
           <MenuItem
             onClick={() => router.push('/user/signup')}
             className="flex flex-row gap-2 items-center justify-between"
           >
             <AppRegistrationIcon />
-            <Typography>Sign up</Typography>
+            <Typography>{t('signup')}</Typography>
           </MenuItem>
         </Box>
       )}
