@@ -26,44 +26,6 @@ interface EditCategoriesDialogProps {
   editCategoriesModal: EditCategoriesProps;
 }
 
-// interface EditCategoriesDialogBaseProps {
-//   textfields: {
-//     label: string;
-//     name: string;
-//     defaultValue?: string;
-//     required?: boolean;
-//   }[];
-// }
-
-// function EditCategoriesDialogBase(): ReactNode {
-//   return (
-//     <Box className="flex flex-row items-start justify-between gap-4">
-//       <TextField
-//         label="Category Name"
-//         name="categoryName"
-//         className="m-2 min-w-[250px] w-1/2"
-//         required
-//       />
-//       <Button
-//         component="label"
-//         role={undefined}
-//         variant="contained"
-//         tabIndex={-1}
-//         startIcon={<CloudUploadIcon />}
-//         sx={{ textTransform: 'none' }}
-//         className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/2"
-//       >
-//         Upload category image
-//         <VisuallyHiddenInput
-//           type="file"
-//           name="categoryImage"
-//           accept="image/*"
-//         />
-//       </Button>
-//     </Box>
-//   );
-// }
-
 export default function EditCategoriesDialog({
   handleClose,
   editCategoriesModal,
@@ -97,6 +59,7 @@ export default function EditCategoriesDialog({
             categoryNameInRussian,
             categoryNameInEnglish,
             categoryImage,
+            categoryImageUrl,
           } = formJson;
 
           if (
@@ -110,19 +73,27 @@ export default function EditCategoriesDialog({
             return;
           }
           const categoryImageFile = categoryImage as File;
-          if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
+          if (categoryImageUrl !== '') {
+            newFormData.append('imageUrl', categoryImageUrl);
+          } else if (
+            categoryImageFile?.name !== '' &&
+            categoryImageFile?.size !== 0
+          ) {
             const resizedImage = await resizeImage(categoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
           }
-          newFormData.append(
-            'name',
-            JSON.stringify({
-              en: categoryNameInEnglish,
-              ru: categoryNameInRussian,
-              tk: categoryNameInTurkmen,
-              ch: categoryNameInCharjov,
-            }),
-          );
+
+          const categoryNames: any = {};
+          if (categoryNameInTurkmen !== '')
+            categoryNames.tk = categoryNameInTurkmen;
+          if (categoryNameInCharjov !== '')
+            categoryNames.ch = categoryNameInCharjov;
+          if (categoryNameInRussian !== '')
+            categoryNames.ru = categoryNameInRussian;
+          if (categoryNameInEnglish !== '')
+            categoryNames.en = categoryNameInEnglish;
+
+          newFormData.append('name', JSON.stringify(categoryNames));
           if (selectedCategoryId != null)
             newFormData.append('predecessorId', selectedCategoryId);
 
@@ -221,32 +192,45 @@ export default function EditCategoriesDialog({
                 >{`(${t('notRequired')})`}</span>
               </Typography>
               <Box className="flex flex-row justify-between items-start">
-                <Button
-                  component="label"
-                  role={undefined}
-                  variant="contained"
-                  tabIndex={-1}
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ textTransform: 'none' }}
-                  className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
-                >
-                  {t('uploadCategoryImage')}
-                  <VisuallyHiddenInput
-                    type="file"
-                    name="categoryImage"
-                    accept="image/*"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setCategoryLogoUrl(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </Button>
+                <Box className="flex flex-col gap-2">
+                  <Button
+                    component="label"
+                    role={undefined}
+                    variant="contained"
+                    tabIndex={-1}
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ textTransform: 'none' }}
+                    className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
+                  >
+                    {t('uploadCategoryImage')}
+                    <VisuallyHiddenInput
+                      type="file"
+                      name="categoryImage"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setCategoryLogoUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                        event.target.value = '';
+                      }}
+                    />
+                  </Button>
+                  <Box sx={{ margin: '0.5rem', width: '100%' }}>
+                    <TextField
+                      label={t('categoryImageURL')}
+                      className="w-[250px]"
+                      onChange={(event) => {
+                        setCategoryLogoUrl(event.target.value);
+                      }}
+                      name="categoryImageUrl"
+                    />
+                  </Box>
+                </Box>
                 {categoryLogoUrl && (
                   <img alt="asdf" src={categoryLogoUrl} width={200} />
                 )}

@@ -15,5 +15,6 @@
   "addNewProduct": "Add new product",
   "signout": "Sign out",
   "signin": "Sign in",
-  "signup": "Sign up"
+  "signup": "Sign up",
+  "categoryImageURL": "Category Image URL"
 }
