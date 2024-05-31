@@ -17,6 +17,7 @@
 } */
 
 body {
+  height: 100vh;
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
@@ -30,4 +31,8 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+#__next {
+  height: 100vh;
 }

@@ -18,7 +18,6 @@ import MoreIcon from '@mui/icons-material/MoreVert';
 import { appBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Avatar, Select } from '@mui/material';
-import { deepOrange } from '@mui/material/colors';
 import { useRouter } from 'next/router';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -263,7 +262,6 @@ export default function CustomAppBar({
             defaultValue={router.locale}
             color="info"
             size="small"
-            className="bg-white"
             onChange={(event) => {
               const newPath = changeLocale(
                 event.target.value,
@@ -271,6 +269,10 @@ export default function CustomAppBar({
                 window.location.pathname,
               );
               window.location.pathname = newPath;
+            }}
+            style={{
+              backgroundColor: 'rgb(59 130 246 / 0.5)',
+              color: '#F5F5F5',
             }}
           >
             <MenuItem value="tk">Türkmençe</MenuItem>
@@ -288,13 +290,11 @@ export default function CustomAppBar({
               color="inherit"
             >
               {user != null ? (
-                <Avatar
-                  sx={{ bgcolor: deepOrange[500], width: 36, height: 36 }}
-                >
+                <Avatar sx={{ bgcolor: '#4c8dc1', width: 36, height: 36 }}>
                   {user.name[0].toUpperCase()}
                 </Avatar>
               ) : (
-                <AccountCircle />
+                <AccountCircle sx={{ width: 36, height: 36 }} />
               )}
             </IconButton>
           </Box>

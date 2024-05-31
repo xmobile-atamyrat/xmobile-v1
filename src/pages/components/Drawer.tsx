@@ -74,11 +74,19 @@ export default function CustomDrawer({
       variant={openDrawer ? 'permanent' : 'temporary'}
       sx={{
         width: drawerWidth,
+        height: '100%',
         [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
       }}
     >
       {categories?.length > 0 && (
-        <Box sx={{ overflow: 'auto', pt: `${appBarHeight * 1.5}px` }}>
+        <Box
+          sx={{
+            overflow: 'auto',
+            pt: `${appBarHeight * 1.5}px`,
+            height: '100vh',
+          }}
+          className="bg-[#F8F9FA]"
+        >
           {ConstructDrawerList(
             categories,
             selectedCategoryId,
