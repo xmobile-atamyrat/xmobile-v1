@@ -16,27 +16,32 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import classNames from 'classnames';
+import { useTranslations } from 'next-intl';
 
 interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
+  cardClassName?: string;
 }
 
 export default function ProductCard({
   product,
   handleClickAddProduct,
+  cardClassName,
 }: ProductCardProps) {
   const [showDeleteIcon, setShowDeleteIcon] = useState(false);
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
+  const t = useTranslations();
   return (
     <Card
       sx={{
         width: 250,
         ':hover': { boxShadow: 10 },
       }}
-      className="border-[1px] px-2 py-4 relative"
+      className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
       onMouseEnter={() => setShowDeleteIcon(true)}
       onMouseLeave={() => setShowDeleteIcon(false)}
     >
@@ -107,7 +112,7 @@ export default function ProductCard({
               component="div"
               className="flex justify-center"
             >
-              Add new product
+              {t('addNewProduct')}
             </Typography>
           </CardContent>
           <Box>

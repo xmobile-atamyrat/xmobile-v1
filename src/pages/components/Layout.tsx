@@ -15,17 +15,21 @@ export default function Layout({ children }: { children: ReactNode }) {
     useState<DeleteCategoriesProps>({ open: false });
   const [openDrawer, setOpenDrawer] = useState(true);
   return (
-    <Box sx={{ display: 'flex', pt: `${appBarHeight}px` }}>
+    <Box
+      sx={{
+        display: 'flex',
+        pt: `${appBarHeight}px`,
+        width: '100%',
+        height: '100%',
+      }}
+    >
       <CustomAppBar openDrawer={openDrawer} setOpenDrawer={setOpenDrawer} />
       <CustomDrawer
         openDrawer={openDrawer}
         setEditCategoriesModal={setEditCategoriesModal}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
       />
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, p: 3, width: '100%', height: '100%' }}
-      >
+      <Box component="main" sx={{ flexGrow: 1, width: '100%', height: '100%' }}>
         {children}
       </Box>
       {editCategoriesModal.open && (
