@@ -2,3 +2,4 @@ TODO:
 
 - delete product image on cascade delete category
 - Design and develop a mobile compatible UI
+- make eslint remove unused imports

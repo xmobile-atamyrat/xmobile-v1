@@ -58,10 +58,11 @@ export default function Home({
 
   return (
     <Layout>
-      <Box className="flex flex-wrap gap-4">
+      <Box className="flex flex-wrap gap-4 bg-[#F8F9FA] w-full h-full p-3">
         {user?.grade === 'ADMIN' && (
           <ProductCard
             handleClickAddProduct={() => setCreateProductDialog(true)}
+            cardClassName="h-[250px]"
           />
         )}
         {products.length > 0 &&
