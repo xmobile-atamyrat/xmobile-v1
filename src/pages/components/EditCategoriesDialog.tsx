@@ -19,7 +19,11 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
+import {
+  VisuallyHiddenInput,
+  addCategory,
+  resizeImage,
+} from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
 import { DeleteOutlined } from '@mui/icons-material';
 
@@ -57,64 +61,16 @@ export default function EditCategoriesDialog({
         const formJson = Object.fromEntries(formData.entries());
 
         if (editCategoriesModal.dialogType === 'add') {
-          const newFormData = new FormData();
-          const {
-            categoryNameInTurkmen,
-            categoryNameInCharjov,
-            categoryNameInRussian,
-            categoryNameInEnglish,
-          } = formJson;
-
-          if (
-            categoryNameInCharjov === '' &&
-            categoryNameInEnglish === '' &&
-            categoryNameInRussian === '' &&
-            categoryNameInTurkmen === ''
-          ) {
-            setLoading(false);
-            setErrorMessage(t('categoryNameRequired'));
-            return;
-          }
-          if (categoryImageUrl != null && categoryImageUrl !== '') {
-            newFormData.append('imageUrl', categoryImageUrl);
-          } else if (
-            categoryImageFile != null &&
-            categoryImageFile.name !== ''
-          ) {
-            const resizedImage = await resizeImage(categoryImageFile, 240);
-            newFormData.append('imageUrl', resizedImage);
-          }
-
-          const categoryNames: any = {};
-          if (categoryNameInTurkmen !== '')
-            categoryNames.tk = categoryNameInTurkmen;
-          if (categoryNameInCharjov !== '')
-            categoryNames.ch = categoryNameInCharjov;
-          if (categoryNameInRussian !== '')
-            categoryNames.ru = categoryNameInRussian;
-          if (categoryNameInEnglish !== '')
-            categoryNames.en = categoryNameInEnglish;
-
-          newFormData.append('name', JSON.stringify(categoryNames));
-          if (selectedCategoryId != null)
-            newFormData.append('predecessorId', selectedCategoryId);
-
-          await fetch(`${BASE_URL}/api/category`, {
-            method: 'POST',
-            body: newFormData,
+          await addCategory({
+            categoryImageFile,
+            categoryImageUrl,
+            formJson,
+            setCategories,
+            setLoading,
+            setErrorMessage,
+            errorMessage: t('categoryNameRequired'),
+            selectedCategoryId,
           });
-
-          const {
-            success: catSuccess,
-            data: categories,
-          }: ResponseApi<ExtendedCategory[]> = await (
-            await fetch(`${BASE_URL}/api/category`)
-          ).json();
-
-          if (catSuccess && categories) setCategories(categories);
-
-          setLoading(false);
-          handleClose();
         } else {
           const newFormData = new FormData();
           const { editCategoryName } = formJson;
@@ -142,8 +98,8 @@ export default function EditCategoriesDialog({
           if (catSuccess && categories) setCategories(categories);
 
           setLoading(false);
-          handleClose();
         }
+        handleClose();
       }}
     >
       <DialogTitle className="w-full flex justify-center">
