@@ -1,9 +1,4 @@
 import {
-  EditCategoriesProps,
-  ExtendedCategory,
-  ResponseApi,
-} from '@/pages/lib/types';
-import {
   Box,
   Button,
   Dialog,
@@ -15,17 +10,17 @@ import {
   Typography,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import BASE_URL from '@/lib/ApiEndpoints';
 import { useState } from 'react';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   VisuallyHiddenInput,
   addCategory,
-  resizeImage,
+  editCategory,
 } from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
 import { DeleteOutlined } from '@mui/icons-material';
+import { EditCategoriesProps } from '@/pages/lib/types';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -72,33 +67,14 @@ export default function EditCategoriesDialog({
             selectedCategoryId,
           });
         } else {
-          const newFormData = new FormData();
-          const { editCategoryName } = formJson;
-          if (editCategoryImageFile != null) {
-            const resizedImage = await resizeImage(editCategoryImageFile, 240);
-            newFormData.append('imageUrl', resizedImage);
-          }
-          newFormData.append('name', editCategoryName);
-
-          await fetch(
-            `${BASE_URL}/api/category?categoryId=${selectedCategoryId}`,
-            {
-              method: 'PUT',
-              body: newFormData,
-            },
-          );
-
-          const {
-            success: catSuccess,
-            data: categories,
-          }: ResponseApi<ExtendedCategory[]> = await (
-            await fetch(`${BASE_URL}/api/category`)
-          ).json();
-
-          if (catSuccess && categories) setCategories(categories);
-
-          setLoading(false);
+          await editCategory({
+            formJson,
+            editCategoryImageFile,
+            selectedCategoryId,
+            setCategories,
+          });
         }
+        setLoading(false);
         handleClose();
       }}
     >
