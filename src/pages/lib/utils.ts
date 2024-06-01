@@ -1,7 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { localeOptions } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
+import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { styled } from '@mui/material';
+import { Dispatch, SetStateAction } from 'react';
 
 // check if the image url is a local image or a remote image
 // if it is a local image, delete it from the server
@@ -91,4 +92,75 @@ export const parseCategoryName = (name: string, locale: string) => {
   } catch (_) {
     return name;
   }
+};
+
+export const addCategory = async ({
+  formJson,
+  setLoading,
+  setErrorMessage,
+  categoryImageUrl,
+  categoryImageFile,
+  selectedCategoryId,
+  setCategories,
+  errorMessage,
+}: {
+  formJson: { [k: string]: FormDataEntryValue };
+  setLoading: Dispatch<SetStateAction<boolean>>;
+  setErrorMessage: Dispatch<SetStateAction<string | undefined>>;
+  categoryImageUrl: string | undefined;
+  categoryImageFile: File | undefined;
+  selectedCategoryId: string | undefined;
+  setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
+  errorMessage: string;
+}) => {
+  const newFormData = new FormData();
+  const {
+    categoryNameInTurkmen,
+    categoryNameInCharjov,
+    categoryNameInRussian,
+    categoryNameInEnglish,
+  } = formJson;
+
+  if (
+    categoryNameInCharjov === '' &&
+    categoryNameInEnglish === '' &&
+    categoryNameInRussian === '' &&
+    categoryNameInTurkmen === ''
+  ) {
+    setLoading(false);
+    setErrorMessage(errorMessage);
+    return;
+  }
+  if (categoryImageUrl != null && categoryImageUrl !== '') {
+    newFormData.append('imageUrl', categoryImageUrl);
+  } else if (categoryImageFile != null && categoryImageFile.name !== '') {
+    const resizedImage = await resizeImage(categoryImageFile, 240);
+    newFormData.append('imageUrl', resizedImage);
+  }
+
+  const categoryNames: any = {};
+  if (categoryNameInTurkmen !== '') categoryNames.tk = categoryNameInTurkmen;
+  if (categoryNameInCharjov !== '') categoryNames.ch = categoryNameInCharjov;
+  if (categoryNameInRussian !== '') categoryNames.ru = categoryNameInRussian;
+  if (categoryNameInEnglish !== '') categoryNames.en = categoryNameInEnglish;
+
+  newFormData.append('name', JSON.stringify(categoryNames));
+  if (selectedCategoryId != null)
+    newFormData.append('predecessorId', selectedCategoryId);
+
+  await fetch(`${BASE_URL}/api/category`, {
+    method: 'POST',
+    body: newFormData,
+  });
+
+  const {
+    success: catSuccess,
+    data: categories,
+  }: ResponseApi<ExtendedCategory[]> = await (
+    await fetch(`${BASE_URL}/api/category`)
+  ).json();
+
+  if (catSuccess && categories) setCategories(categories);
+
+  setLoading(false);
 };
