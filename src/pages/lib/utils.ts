@@ -161,6 +161,38 @@ export const addCategory = async ({
   ).json();
 
   if (catSuccess && categories) setCategories(categories);
+};
 
-  setLoading(false);
+export const editCategory = async ({
+  editCategoryImageFile,
+  formJson,
+  selectedCategoryId,
+  setCategories,
+}: {
+  formJson: { [k: string]: FormDataEntryValue };
+  editCategoryImageFile: File | undefined;
+  selectedCategoryId: string | undefined;
+  setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
+}) => {
+  const newFormData = new FormData();
+  const { editCategoryName } = formJson;
+  if (editCategoryImageFile != null) {
+    const resizedImage = await resizeImage(editCategoryImageFile, 240);
+    newFormData.append('imageUrl', resizedImage);
+  }
+  newFormData.append('name', editCategoryName);
+
+  await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`, {
+    method: 'PUT',
+    body: newFormData,
+  });
+
+  const {
+    success: catSuccess,
+    data: categories,
+  }: ResponseApi<ExtendedCategory[]> = await (
+    await fetch(`${BASE_URL}/api/category`)
+  ).json();
+
+  if (catSuccess && categories) setCategories(categories);
 };
