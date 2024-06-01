@@ -10,6 +10,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   TextField,
   Typography,
 } from '@mui/material';
@@ -20,6 +21,7 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
+import { DeleteOutlined } from '@mui/icons-material';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -35,6 +37,9 @@ export default function EditCategoriesDialog({
   const t = useTranslations();
   const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [categoryImageFile, setCategoryImageFile] = useState<File>();
+  const [editCategoryImageFile, setEditCategoryImageFile] = useState<File>();
+  const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
 
   return (
     <Dialog
@@ -58,8 +63,6 @@ export default function EditCategoriesDialog({
             categoryNameInCharjov,
             categoryNameInRussian,
             categoryNameInEnglish,
-            categoryImage,
-            categoryImageUrl,
           } = formJson;
 
           if (
@@ -72,12 +75,11 @@ export default function EditCategoriesDialog({
             setErrorMessage(t('categoryNameRequired'));
             return;
           }
-          const categoryImageFile = categoryImage as File;
-          if (categoryImageUrl !== '') {
+          if (categoryImageUrl != null && categoryImageUrl !== '') {
             newFormData.append('imageUrl', categoryImageUrl);
           } else if (
-            categoryImageFile?.name !== '' &&
-            categoryImageFile?.size !== 0
+            categoryImageFile != null &&
+            categoryImageFile.name !== ''
           ) {
             const resizedImage = await resizeImage(categoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
@@ -115,10 +117,9 @@ export default function EditCategoriesDialog({
           handleClose();
         } else {
           const newFormData = new FormData();
-          const { editCategoryName, editCategoryImage } = formJson;
-          const categoryImageFile = editCategoryImage as File;
-          if (categoryImageFile?.name !== '' && categoryImageFile?.size !== 0) {
-            const resizedImage = await resizeImage(categoryImageFile, 240);
+          const { editCategoryName } = formJson;
+          if (editCategoryImageFile != null) {
+            const resizedImage = await resizeImage(editCategoryImageFile, 240);
             newFormData.append('imageUrl', resizedImage);
           }
           newFormData.append('name', editCategoryName);
@@ -209,6 +210,7 @@ export default function EditCategoriesDialog({
                       accept="image/*"
                       onChange={(event) => {
                         const file = event.target.files?.[0];
+                        setCategoryImageFile(file);
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = () => {
@@ -224,15 +226,37 @@ export default function EditCategoriesDialog({
                     <TextField
                       label={t('categoryImageURL')}
                       className="w-[250px]"
+                      value={categoryImageUrl ?? ''}
                       onChange={(event) => {
-                        setCategoryLogoUrl(event.target.value);
+                        try {
+                          const { value } = event.target;
+                          new URL(value);
+                          setCategoryImageUrl(value);
+                        } catch (_) {
+                          // do nothing
+                        }
                       }}
-                      name="categoryImageUrl"
                     />
                   </Box>
                 </Box>
-                {categoryLogoUrl && (
-                  <img alt="asdf" src={categoryLogoUrl} width={200} />
+                {(categoryLogoUrl != null || categoryImageUrl != null) && (
+                  <Box className="h-full w-full p-2 relative">
+                    <img
+                      alt="asdf"
+                      src={categoryImageUrl ?? categoryLogoUrl}
+                      width={200}
+                    />
+                    <IconButton
+                      className="absolute right-0 top-0"
+                      onClick={() => {
+                        setCategoryLogoUrl(undefined);
+                        setCategoryImageUrl(undefined);
+                        setCategoryImageFile(undefined);
+                      }}
+                    >
+                      <DeleteOutlined fontSize="medium" color="error" />
+                    </IconButton>
+                  </Box>
                 )}
               </Box>
             </Box>
@@ -260,6 +284,18 @@ export default function EditCategoriesDialog({
                 type="file"
                 name="editCategoryImage"
                 accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setEditCategoryImageFile(file);
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setCategoryLogoUrl(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                  event.target.value = '';
+                }}
               />
             </Button>
           </Box>
