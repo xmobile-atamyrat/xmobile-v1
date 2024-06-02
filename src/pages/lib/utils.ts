@@ -96,8 +96,6 @@ export const parseCategoryName = (name: string, locale: string) => {
 
 export const addCategory = async ({
   formJson,
-  setLoading,
-  setErrorMessage,
   categoryImageUrl,
   categoryImageFile,
   selectedCategoryId,
@@ -105,8 +103,6 @@ export const addCategory = async ({
   errorMessage,
 }: {
   formJson: { [k: string]: FormDataEntryValue };
-  setLoading: Dispatch<SetStateAction<boolean>>;
-  setErrorMessage: Dispatch<SetStateAction<string | undefined>>;
   categoryImageUrl: string | undefined;
   categoryImageFile: File | undefined;
   selectedCategoryId: string | undefined;
@@ -127,9 +123,7 @@ export const addCategory = async ({
     categoryNameInRussian === '' &&
     categoryNameInTurkmen === ''
   ) {
-    setLoading(false);
-    setErrorMessage(errorMessage);
-    return;
+    throw new Error(errorMessage);
   }
   if (categoryImageUrl != null && categoryImageUrl !== '') {
     newFormData.append('imageUrl', categoryImageUrl);

@@ -29,6 +29,7 @@ export interface EditCategoriesProps {
   dialogType?: 'add' | 'edit';
   categoryId?: string;
   categoryName?: string;
+  imageUrl?: string | null;
 }
 
 export interface DeleteCategoriesProps {
