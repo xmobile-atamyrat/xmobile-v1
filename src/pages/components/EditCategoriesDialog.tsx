@@ -39,6 +39,9 @@ export default function EditCategoriesDialog({
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
   const [editCategoryImageFile, setEditCategoryImageFile] = useState<File>();
   const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
+  const parsedCategoryName = JSON.parse(
+    editCategoriesModal.categoryName ?? '{}',
+  );
 
   return (
     <Dialog
@@ -56,16 +59,20 @@ export default function EditCategoriesDialog({
         const formJson = Object.fromEntries(formData.entries());
 
         if (editCategoriesModal.dialogType === 'add') {
-          await addCategory({
-            categoryImageFile,
-            categoryImageUrl,
-            formJson,
-            setCategories,
-            setLoading,
-            setErrorMessage,
-            errorMessage: t('categoryNameRequired'),
-            selectedCategoryId,
-          });
+          try {
+            await addCategory({
+              categoryImageFile,
+              categoryImageUrl,
+              formJson,
+              setCategories,
+              errorMessage: t('categoryNameRequired'),
+              selectedCategoryId,
+            });
+          } catch (error) {
+            setLoading(false);
+            setErrorMessage((error as Error).message);
+            return;
+          }
         } else {
           await editCategory({
             formJson,
@@ -194,14 +201,33 @@ export default function EditCategoriesDialog({
             </Box>
           </Box>
         ) : (
-          <Box className="flex flex-row items-center justify-between gap-4">
-            <TextField
-              label="Category Name"
-              name="editCategoryName"
-              defaultValue={editCategoriesModal.categoryName || ''}
-              className="w-1/2"
-              required
-            />
+          <Box className="flex flex-col gap-4">
+            <Box>
+              <TextField
+                label={t('inTurkmen')}
+                name="editCategoryNameInTurkmen"
+                defaultValue={parsedCategoryName?.tk || ''}
+                className="m-2 min-w-[250px] w-1/3"
+              />
+              <TextField
+                label={t('inCharjov')}
+                name="editCategoryNameInCharjov"
+                defaultValue={parsedCategoryName?.ch || ''}
+                className="m-2 min-w-[250px] w-1/3"
+              />
+              <TextField
+                label={t('inRussian')}
+                name="editCategoryNameInRussian"
+                defaultValue={parsedCategoryName?.ru || ''}
+                className="m-2 min-w-[250px] w-1/3"
+              />
+              <TextField
+                label={t('inEnglish')}
+                name="editCategoryNameInEnglish"
+                defaultValue={parsedCategoryName?.en || ''}
+                className="m-2 min-w-[250px] w-1/3"
+              />
+            </Box>
             <Button
               component="label"
               role={undefined}
