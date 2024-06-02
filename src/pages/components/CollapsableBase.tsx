@@ -89,6 +89,7 @@ export default function CollapsableBase({
                 dialogType: 'edit',
                 categoryId: id,
                 categoryName: categoryTitle,
+                imageUrl: imgUrl,
               })
             }
           >
