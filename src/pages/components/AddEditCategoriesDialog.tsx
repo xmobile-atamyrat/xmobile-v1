@@ -24,7 +24,7 @@ interface EditCategoriesDialogProps {
   editCategoriesModal: EditCategoriesProps;
 }
 
-export default function EditCategoriesDialog({
+export default function AddEditCategoriesDialog({
   handleClose,
   editCategoriesModal: { categoryName, dialogType, imageUrl },
 }: EditCategoriesDialogProps) {
