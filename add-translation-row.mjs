@@ -31,6 +31,13 @@ readdir(i18nDir, (err, files) => {
 
       // Add your key-value pair here
       const key = process.argv[2];
+      if (json[key] != null) {
+        console.log('------------------------------------');
+        console.log('Key already exists');
+        console.log('------------------------------------');
+        process.exit(0);
+      }
+
       const value = process.argv[3];
 
       translate(value, { to: lang })
