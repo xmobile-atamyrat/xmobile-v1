@@ -1,6 +1,10 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { localeOptions } from '@/pages/lib/constants';
-import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import {
+  EditCategoriesProps,
+  ExtendedCategory,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { styled } from '@mui/material';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -94,7 +98,8 @@ export const parseCategoryName = (name: string, locale: string) => {
   }
 };
 
-export const addCategory = async ({
+export const addEditCategory = async ({
+  type,
   formJson,
   categoryImageUrl,
   categoryImageFile,
@@ -102,6 +107,7 @@ export const addCategory = async ({
   setCategories,
   errorMessage,
 }: {
+  type: EditCategoriesProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   categoryImageUrl: string | undefined;
   categoryImageFile: File | undefined;
@@ -125,6 +131,13 @@ export const addCategory = async ({
   ) {
     throw new Error(errorMessage);
   }
+  const categoryNames: any = {};
+  if (categoryNameInTurkmen !== '') categoryNames.tk = categoryNameInTurkmen;
+  if (categoryNameInCharjov !== '') categoryNames.ch = categoryNameInCharjov;
+  if (categoryNameInRussian !== '') categoryNames.ru = categoryNameInRussian;
+  if (categoryNameInEnglish !== '') categoryNames.en = categoryNameInEnglish;
+  newFormData.append('name', JSON.stringify(categoryNames));
+
   if (categoryImageUrl != null && categoryImageUrl !== '') {
     newFormData.append('imageUrl', categoryImageUrl);
   } else if (categoryImageFile != null && categoryImageFile.name !== '') {
@@ -132,54 +145,19 @@ export const addCategory = async ({
     newFormData.append('imageUrl', resizedImage);
   }
 
-  const categoryNames: any = {};
-  if (categoryNameInTurkmen !== '') categoryNames.tk = categoryNameInTurkmen;
-  if (categoryNameInCharjov !== '') categoryNames.ch = categoryNameInCharjov;
-  if (categoryNameInRussian !== '') categoryNames.ru = categoryNameInRussian;
-  if (categoryNameInEnglish !== '') categoryNames.en = categoryNameInEnglish;
-
-  newFormData.append('name', JSON.stringify(categoryNames));
-  if (selectedCategoryId != null)
-    newFormData.append('predecessorId', selectedCategoryId);
-
-  await fetch(`${BASE_URL}/api/category`, {
-    method: 'POST',
-    body: newFormData,
-  });
-
-  const {
-    success: catSuccess,
-    data: categories,
-  }: ResponseApi<ExtendedCategory[]> = await (
-    await fetch(`${BASE_URL}/api/category`)
-  ).json();
-
-  if (catSuccess && categories) setCategories(categories);
-};
-
-export const editCategory = async ({
-  editCategoryImageFile,
-  formJson,
-  selectedCategoryId,
-  setCategories,
-}: {
-  formJson: { [k: string]: FormDataEntryValue };
-  editCategoryImageFile: File | undefined;
-  selectedCategoryId: string | undefined;
-  setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
-}) => {
-  const newFormData = new FormData();
-  const { editCategoryName } = formJson;
-  if (editCategoryImageFile != null) {
-    const resizedImage = await resizeImage(editCategoryImageFile, 240);
-    newFormData.append('imageUrl', resizedImage);
+  if (type === 'add') {
+    if (selectedCategoryId != null)
+      newFormData.append('predecessorId', selectedCategoryId);
+    await fetch(`${BASE_URL}/api/category`, {
+      method: 'POST',
+      body: newFormData,
+    });
+  } else {
+    await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`, {
+      method: 'PUT',
+      body: newFormData,
+    });
   }
-  newFormData.append('name', editCategoryName);
-
-  await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`, {
-    method: 'PUT',
-    body: newFormData,
-  });
 
   const {
     success: catSuccess,
