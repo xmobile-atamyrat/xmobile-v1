@@ -41,12 +41,15 @@ export default function ProductCard({
         width: 250,
         ':hover': { boxShadow: 10 },
       }}
-      className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
+      className={classNames(
+        'border-[1px] px-2 py-4 relative h-[300px]',
+        cardClassName,
+      )}
       onMouseEnter={() => setShowDeleteIcon(true)}
       onMouseLeave={() => setShowDeleteIcon(false)}
     >
       {product != null ? (
-        <Box className="relative">
+        <Box className="relative h-full w-full flex flex-col justify-between">
           {user?.grade === 'ADMIN' && showDeleteIcon && (
             <IconButton
               style={{ position: 'absolute', right: 0 }}
@@ -73,35 +76,42 @@ export default function ProductCard({
             </IconButton>
           )}
 
-          {product?.imgUrl != null && (
-            <Box className="w-full h-[100px] flex justify-center">
-              <img
-                src={product?.imgUrl}
-                alt={product?.name}
-                onError={async (error) => {
-                  error.currentTarget.onerror = null;
-                  const imgFetcher = fetch(
-                    `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
-                  );
+          <Box className="h-5/6 overflow-hidden">
+            {product?.imgUrl != null && (
+              <Box className="w-full h-[100px] flex justify-center">
+                <img
+                  src={product?.imgUrl}
+                  alt={product?.name}
+                  onError={async (error) => {
+                    error.currentTarget.onerror = null;
+                    const imgFetcher = fetch(
+                      `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
+                    );
 
-                  error.currentTarget.src = URL.createObjectURL(
-                    await (await imgFetcher).blob(),
-                  );
-                }}
-              />
+                    error.currentTarget.src = URL.createObjectURL(
+                      await (await imgFetcher).blob(),
+                    );
+                  }}
+                />
+              </Box>
+            )}
+            <Box className="p-2">
+              <Box>
+                <Typography gutterBottom variant="h5" component="div">
+                  {product?.name}
+                </Typography>
+              </Box>
+
+              <Box className="">
+                <Typography variant="body2" color="text.secondary">
+                  {product?.description}
+                </Typography>
+              </Box>
             </Box>
-          )}
-          <CardContent>
-            <Typography gutterBottom variant="h5" component="div">
-              {product?.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {product?.description}
-            </Typography>
-          </CardContent>
-          <CardActions>
+          </Box>
+          <Box className="p-1 h-1/6 flex items-end ">
             <Typography>Price: {product?.price} manat</Typography>
-          </CardActions>
+          </Box>
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
