@@ -1,12 +1,12 @@
 import { Box } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import CustomDrawer from '@/pages/components/Drawer';
-import EditCategoriesDialog from '@/pages/components/EditCategoriesDialog';
 import CustomAppBar from '@/pages/components/Appbar';
 import { appBarHeight } from '@/pages/lib/constants';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import DeleteCategoriesDialog from '@/pages/components/DeleteCategoriesDialog';
 import { deleteCategory } from '@/pages/lib/utils';
+import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -33,7 +33,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {children}
       </Box>
       {editCategoriesModal.open && (
-        <EditCategoriesDialog
+        <AddEditCategoriesDialog
           editCategoriesModal={editCategoriesModal}
           handleClose={() =>
             setEditCategoriesModal({ open: false, dialogType: undefined })
