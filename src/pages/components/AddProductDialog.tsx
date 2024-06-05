@@ -15,6 +15,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useTranslations } from 'next-intl';
 
 interface AddProductDialogProps {
   handleClose: () => void;
@@ -26,6 +27,7 @@ export default function AddProductDialog({
   const [loading, setLoading] = useState(false);
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
+  const t = useTranslations();
 
   return (
     <Dialog
@@ -76,7 +78,7 @@ export default function AddProductDialog({
         handleClose();
       }}
     >
-      <DialogTitle>Add new product</DialogTitle>
+      <DialogTitle>{t('addNewProduct')}</DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
