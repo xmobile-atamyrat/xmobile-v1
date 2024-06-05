@@ -126,8 +126,8 @@ async function handleEditCategory(req: NextApiRequest) {
         if (currCat?.imgUrl != null && fs.existsSync(currCat.imgUrl)) {
           fs.unlinkSync(currCat.imgUrl);
         }
-        data.imgUrl = files.imageUrl[0].path;
-      }
+        data.imgUrl = files.imageUrl?.[0].path;
+      } else if (fields.imageUrl?.length > 0) data.imgUrl = fields.imageUrl[0];
 
       const category = await dbClient.category.update({
         where: {
