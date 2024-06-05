@@ -59,12 +59,14 @@ export default function Home({
   return (
     <Layout>
       <Box className="flex flex-wrap gap-4 bg-[#F8F9FA] w-full h-full p-3">
-        {user?.grade === 'ADMIN' && (
-          <ProductCard
-            handleClickAddProduct={() => setCreateProductDialog(true)}
-            cardClassName="h-[250px]"
-          />
-        )}
+        {user?.grade === 'ADMIN' &&
+          categories != null &&
+          categories.length > 0 && (
+            <ProductCard
+              handleClickAddProduct={() => setCreateProductDialog(true)}
+              cardClassName="h-[250px]"
+            />
+          )}
         {products.length > 0 &&
           products.map((product) => (
             <ProductCard product={product} key={product.id} />
