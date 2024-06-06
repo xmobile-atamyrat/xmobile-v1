@@ -6,6 +6,7 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { styled } from '@mui/material';
+import { Product } from '@prisma/client';
 import { Dispatch, SetStateAction } from 'react';
 
 // check if the image url is a local image or a remote image
@@ -84,7 +85,7 @@ export const changeLocale = (
   return newUrl;
 };
 
-export const parseCategoryName = (name: string, locale: string) => {
+export const parseName = (name: string, locale: string) => {
   try {
     const parsedName = JSON.parse(name);
     let categoryName = parsedName[locale];
@@ -168,3 +169,80 @@ export const addEditCategory = async ({
 
   if (catSuccess && categories) setCategories(categories);
 };
+
+export async function addProduct({
+  formJson: {
+    productNameInCharjov,
+    productNameInEnglish,
+    productNameInRussian,
+    productNameInTurkmen,
+    productDescriptionInCharjov,
+    productDescriptionInEnglish,
+    productDescriptionInRussian,
+    productDescriptionInTurkmen,
+    price,
+  },
+  productNameRequiredError,
+  selectedCategoryId,
+  setProducts,
+  productImageUrl,
+  productImageFile,
+}: {
+  formJson: { [k: string]: FormDataEntryValue };
+  productNameRequiredError: string;
+  selectedCategoryId: string;
+  productImageUrl?: string;
+  productImageFile?: File;
+  setProducts: Dispatch<SetStateAction<Product[]>>;
+}) {
+  if (
+    productNameInCharjov === '' &&
+    productNameInEnglish === '' &&
+    productNameInRussian === '' &&
+    productNameInTurkmen === ''
+  ) {
+    throw new Error(productNameRequiredError);
+  }
+
+  const productNames: any = {};
+  if (productNameInTurkmen !== '') productNames.tk = productNameInTurkmen;
+  if (productNameInCharjov !== '') productNames.ch = productNameInCharjov;
+  if (productNameInRussian !== '') productNames.ru = productNameInRussian;
+  if (productNameInEnglish !== '') productNames.en = productNameInEnglish;
+
+  const productDescriptions: any = {};
+  if (productDescriptionInTurkmen !== '')
+    productDescriptions.tk = productDescriptionInTurkmen;
+  if (productDescriptionInCharjov !== '')
+    productDescriptions.ch = productDescriptionInCharjov;
+  if (productDescriptionInRussian !== '')
+    productDescriptions.ru = productDescriptionInRussian;
+  if (productDescriptionInEnglish !== '')
+    productDescriptions.en = productDescriptionInEnglish;
+
+  const newFormData = new FormData();
+
+  newFormData.append('name', JSON.stringify(productNames));
+  newFormData.append('categoryId', selectedCategoryId);
+
+  if (Object.keys(productDescriptions).length > 0)
+    newFormData.append('description', JSON.stringify(productDescriptions));
+  if (price) newFormData.append('price', price);
+
+  if (productImageUrl != null && productImageUrl !== '') {
+    newFormData.append('imageUrl', productImageUrl);
+  } else if (productImageFile != null && productImageFile?.name !== '') {
+    const resizedImage = await resizeImage(productImageFile, 240);
+    newFormData.append('imageUrl', resizedImage);
+  }
+
+  await fetch(`${BASE_URL}/api/product`, {
+    method: 'POST',
+    body: newFormData,
+  });
+
+  const { success, data }: ResponseApi<Product[]> = await (
+    await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
+  ).json();
+  if (success && data != null) setProducts(data);
+}

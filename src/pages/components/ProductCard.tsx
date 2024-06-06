@@ -18,6 +18,8 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
+import { parseName } from '@/pages/lib/utils';
 
 interface ProductCardProps {
   product?: Product;
@@ -35,6 +37,8 @@ export default function ProductCard({
   const { selectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
   const t = useTranslations();
+  const router = useRouter();
+
   return (
     <Card
       sx={{
@@ -98,20 +102,27 @@ export default function ProductCard({
             <Box className="p-2">
               <Box>
                 <Typography gutterBottom variant="h5" component="div">
-                  {product?.name}
+                  {parseName(product?.name, router.locale ?? 'tk')}
                 </Typography>
               </Box>
 
               <Box className="">
                 <Typography variant="body2" color="text.secondary">
-                  {product?.description}
+                  {parseName(
+                    product?.description ?? '{}',
+                    router.locale ?? 'tk',
+                  )}
                 </Typography>
               </Box>
             </Box>
           </Box>
-          <Box className="p-1 h-1/6 flex items-end ">
-            <Typography>Price: {product?.price} manat</Typography>
-          </Box>
+          {product?.price != null && (
+            <Box className="p-1 h-1/6 flex items-end ">
+              <Typography>
+                {t('price')}: {product?.price} {t('manat')}
+              </Typography>
+            </Box>
+          )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">

@@ -8,13 +8,12 @@ import {
   DialogTitle,
   IconButton,
   TextField,
+  Typography,
 } from '@mui/material';
 import { useState } from 'react';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { VisuallyHiddenInput, resizeImage } from '@/pages/lib/utils';
+import { VisuallyHiddenInput, addProduct } from '@/pages/lib/utils';
 import BASE_URL from '@/lib/ApiEndpoints';
-import { ResponseApi } from '@/pages/lib/types';
-import { Product } from '@prisma/client';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useTranslations } from 'next-intl';
@@ -36,6 +35,8 @@ export default function AddProductDialog({
   const [productLogoUrl, setProductLogoUrl] = useState<string>();
   const [productImageUrl, setProductImageUrl] = useState<string>();
 
+  const [errorMessage, setErrorMessage] = useState<string>();
+
   return (
     <Dialog
       open
@@ -46,39 +47,25 @@ export default function AddProductDialog({
         if (selectedCategoryId == null) return;
 
         setLoading(true);
+        setErrorMessage(undefined);
 
-        const formData = new FormData(
-          event.currentTarget as unknown as HTMLFormElement,
-        );
-        const { name, description, price } = Object.fromEntries(
-          formData.entries(),
-        );
-        const newFormData = new FormData();
-
-        newFormData.append('name', name);
-        newFormData.append('categoryId', selectedCategoryId);
-
-        if (description) newFormData.append('description', description);
-        if (price) newFormData.append('price', price);
-
-        if (productImageUrl != null && productImageUrl !== '') {
-          newFormData.append('imageUrl', productImageUrl);
-        } else if (productImageFile != null && productImageFile?.name !== '') {
-          const resizedImage = await resizeImage(productImageFile, 240);
-          newFormData.append('imageUrl', resizedImage);
+        try {
+          const formData = new FormData(
+            event.currentTarget as unknown as HTMLFormElement,
+          );
+          await addProduct({
+            formJson: Object.fromEntries(formData.entries()),
+            productNameRequiredError: t('productNameRequired'),
+            selectedCategoryId,
+            setProducts,
+            productImageFile,
+            productImageUrl,
+          });
+        } catch (error) {
+          setLoading(false);
+          setErrorMessage((error as Error).message);
+          return;
         }
-
-        await fetch(`${BASE_URL}/api/product`, {
-          method: 'POST',
-          body: newFormData,
-        });
-
-        const { success, data }: ResponseApi<Product[]> = await (
-          await fetch(
-            `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
-          )
-        ).json();
-        if (success && data != null) setProducts(data);
 
         setLoading(false);
         handleClose();
@@ -87,21 +74,81 @@ export default function AddProductDialog({
       <DialogTitle>{t('addNewProduct')}</DialogTitle>
       <DialogContent className="w-[600px]">
         <Box className="flex flex-col gap-2 p-2">
-          <TextField autoFocus label="Name" type="text" required name="name" />
+          <Box>
+            <Typography>
+              {t('productName')}
+              <span style={{ color: 'red' }}>*</span>
+            </Typography>
+            <TextField
+              label={t('inTurkmen')}
+              name="productNameInTurkmen"
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inCharjov')}
+              name="productNameInCharjov"
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inRussian')}
+              name="productNameInRussian"
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inEnglish')}
+              name="productNameInEnglish"
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            {errorMessage && (
+              <Typography fontSize={14} color="red">
+                {errorMessage}
+              </Typography>
+            )}
+          </Box>
+          <Box>
+            <Typography>{t('productDescription')}</Typography>
+            <TextField
+              label={t('inTurkmen')}
+              type="text"
+              name="productDescriptionInTurkmen"
+              multiline
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inCharjov')}
+              type="text"
+              name="productDescriptionInCharjov"
+              multiline
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inRussian')}
+              type="text"
+              name="productDescriptionInRussian"
+              multiline
+              className="m-2 min-w-[250px] w-1/3"
+            />
+            <TextField
+              label={t('inEnglish')}
+              type="text"
+              name="productDescriptionInEnglish"
+              multiline
+              className="m-2 min-w-[250px] w-1/3"
+            />
+          </Box>
           <TextField
-            label="Description"
-            type="text"
-            name="description"
-            multiline
+            label={t('price')}
+            type="number"
+            name="price"
+            className="m-2"
           />
-          <TextField label="Price" type="number" name="price" />
         </Box>
         <Box className="flex flex-row">
           <Box className="flex flex-col">
             <TextField
               margin="dense"
               id="imgUrl"
-              label="Image URL"
+              label={t('imageUrl')}
               type="url"
               name="imgUrl"
               className="m-2 w-[250px] text-[16px] h-[56px]"
@@ -125,7 +172,7 @@ export default function AddProductDialog({
               sx={{ textTransform: 'none' }}
               className="m-2 w-[250px] text-[16px] h-[56px]"
             >
-              Upload category image
+              {t('uploadProductImage')}
               <VisuallyHiddenInput
                 type="file"
                 name="productImage"
@@ -180,10 +227,10 @@ export default function AddProductDialog({
       <DialogActions>
         <DialogActions>
           <Button variant="contained" color="error" onClick={handleClose}>
-            Close
+            {t('cancel')}
           </Button>
           <LoadingButton loading={loading} variant="contained" type="submit">
-            Submit
+            {t('submit')}
           </LoadingButton>
         </DialogActions>
       </DialogActions>
