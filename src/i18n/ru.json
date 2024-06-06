@@ -18,5 +18,12 @@
   "signout": "выход",
   "signin": "Войти",
   "signup": "Зарегистрироваться",
-  "categoryImageURL": "Category Image URL"
+  "categoryImageURL": "Category Image URL",
+  "price": "Price",
+  "manat": "manat",
+  "productName": "Product Name",
+  "productNameRequired": "Please provide product name at least in one language",
+  "productDescription": "Product Description",
+  "imageUrl": "Image URL",
+  "uploadProductImage": "Upload product image"
 }
