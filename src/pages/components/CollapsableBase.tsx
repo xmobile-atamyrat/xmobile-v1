@@ -13,8 +13,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseCategoryName } from '@/pages/lib/utils';
 import { useRouter } from 'next/router';
+import { parseName } from '@/pages/lib/utils';
 
 interface CollapsableBaseProps {
   imgUrl: string | null;
@@ -61,7 +61,7 @@ export default function CollapsableBase({
           </ListItemIcon>
         )}
         <ListItemText
-          primary={parseCategoryName(categoryTitle, router.locale ?? 'tk')}
+          primary={parseName(categoryTitle, router.locale ?? 'tk')}
           style={{
             overflow: 'auto',
             whiteSpace: 'nowrap',
