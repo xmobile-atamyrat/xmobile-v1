@@ -23,19 +23,17 @@ export default function Signin() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <Box className="h-[100vh] flex justify-center items-center">
+    <Box className="h-[100vh] flex justify-center items-center bg-[#F8F9FA]">
       <Paper
         className="flex flex-col"
         elevation={3}
         square={false}
         sx={{
           width: '400px',
-          height: '400px',
+          height: '350px',
           borderRadius: '16px',
-          border: 2,
-          borderColor: '#dae2ed',
           p: 2,
-          gap: 3,
+          gap: 2,
         }}
         component="form"
         onSubmit={async (event) => {
@@ -122,7 +120,12 @@ export default function Signin() {
           <Divider />
           <Box className="flex flex-row justify-between">
             <Button sx={{ textTransform: 'none' }}>Forgot password?</Button>
-            <Button sx={{ textTransform: 'none' }}>Sign up</Button>
+            <Button
+              sx={{ textTransform: 'none' }}
+              onClick={() => router.push('/user/signup')}
+            >
+              Sign up
+            </Button>
           </Box>
         </Box>
       </Paper>

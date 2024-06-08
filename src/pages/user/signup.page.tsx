@@ -23,7 +23,7 @@ export default function Signup() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <Box className="h-[100vh] flex justify-center items-center">
+    <Box className="h-[100vh] flex justify-center items-center bg-[#F8F9FA]">
       <Paper
         className="flex flex-col"
         elevation={3}
@@ -32,10 +32,8 @@ export default function Signup() {
           width: '400px',
           height: '500px',
           borderRadius: '16px',
-          border: 2,
-          borderColor: '#dae2ed',
           p: 2,
-          gap: 3,
+          gap: 2,
         }}
         component="form"
         onSubmit={async (event) => {
@@ -127,6 +125,20 @@ export default function Signup() {
                 {errorMessage}
               </Typography>
             )}
+          </Box>
+
+          <Divider />
+
+          <Box className="flex flex-row justify-between items-center">
+            <Typography sx={{ textTransform: 'none' }} fontSize={14}>
+              Have an account?
+            </Typography>
+            <Button
+              sx={{ textTransform: 'none' }}
+              onClick={() => router.push('/user/signin')}
+            >
+              Sign in
+            </Button>
           </Box>
         </Box>
       </Paper>
