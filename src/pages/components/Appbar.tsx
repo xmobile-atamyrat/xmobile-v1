@@ -132,7 +132,7 @@ export default function CustomAppBar({
             localStorage.removeItem('user');
             router.reload();
           }}
-          className="flex flex-row gap-2 items-center justify-between"
+          className="flex flex-row gap-2 items-center justify-start"
         >
           <LogoutIcon />
           <Typography>{t('signout')}</Typography>
@@ -141,14 +141,14 @@ export default function CustomAppBar({
         <Box>
           <MenuItem
             onClick={() => router.push('/user/signin')}
-            className="flex flex-row gap-2 items-center justify-between"
+            className="flex flex-row gap-2 items-center justify-start"
           >
             <LoginIcon />
             <Typography>{t('signin')}</Typography>
           </MenuItem>
           <MenuItem
             onClick={() => router.push('/user/signup')}
-            className="flex flex-row gap-2 items-center justify-between"
+            className="flex flex-row gap-2 items-center justify-start"
           >
             <AppRegistrationIcon />
             <Typography>{t('signup')}</Typography>
