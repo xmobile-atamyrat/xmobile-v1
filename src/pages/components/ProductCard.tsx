@@ -53,7 +53,7 @@ export default function ProductCard({
       onMouseLeave={() => setShowDeleteIcon(false)}
     >
       {product != null ? (
-        <Box className="relative h-full w-full flex flex-col justify-between">
+        <Box className="relative h-full w-full flex flex-col justify-between p-1">
           {user?.grade === 'ADMIN' && showDeleteIcon && (
             <IconButton
               style={{ position: 'absolute', right: 0 }}
@@ -80,9 +80,9 @@ export default function ProductCard({
             </IconButton>
           )}
 
-          <Box className="h-5/6 overflow-hidden">
-            {product?.imgUrl != null && (
-              <Box className="w-full h-[100px] flex justify-center">
+          <Box className="h-5/6">
+            {product.imgUrl != null && (
+              <Box className="w-full h-1/2 flex justify-center">
                 <img
                   src={product?.imgUrl}
                   alt={product?.name}
@@ -99,21 +99,17 @@ export default function ProductCard({
                 />
               </Box>
             )}
-            <Box className="p-2">
-              <Box>
-                <Typography gutterBottom variant="h5" component="div">
-                  {parseName(product?.name, router.locale ?? 'tk')}
-                </Typography>
-              </Box>
-
-              <Box className="">
-                <Typography variant="body2" color="text.secondary">
-                  {parseName(
-                    product?.description ?? '{}',
-                    router.locale ?? 'tk',
-                  )}
-                </Typography>
-              </Box>
+            <Box>
+              <Typography gutterBottom variant="h6" component="div">
+                {parseName(product?.name, router.locale ?? 'tk')}
+              </Typography>
+            </Box>
+            <Box
+              className={`w-full overflow-scroll ${product.imgUrl != null ? 'h-1/3' : ''}`}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {parseName(product?.description ?? '{}', router.locale ?? 'tk')}
+              </Typography>
             </Box>
           </Box>
           {product?.price != null && (
