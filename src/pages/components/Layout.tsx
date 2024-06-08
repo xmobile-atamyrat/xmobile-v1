@@ -29,7 +29,11 @@ export default function Layout({ children }: { children: ReactNode }) {
         setEditCategoriesModal={setEditCategoriesModal}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
       />
-      <Box component="main" sx={{ flexGrow: 1, width: '100%', height: '100%' }}>
+      <Box
+        component="main"
+        sx={{ flexGrow: 1, width: '100%', height: '100%' }}
+        className="bg-[#F8F9FA]"
+      >
         {children}
       </Box>
       {editCategoriesModal.open && (
