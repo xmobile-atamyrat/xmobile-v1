@@ -72,8 +72,8 @@ export default function AddProductDialog({
       }}
     >
       <DialogTitle>{t('addNewProduct')}</DialogTitle>
-      <DialogContent>
-        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 ">
+      <DialogContent sx={{ padding: 0 }}>
+        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
           <Box className="w-full">
             <Typography>
               {t('productName')}
@@ -82,22 +82,22 @@ export default function AddProductDialog({
             <TextField
               label={t('inTurkmen')}
               name="productNameInTurkmen"
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inCharjov')}
               name="productNameInCharjov"
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inRussian')}
               name="productNameInRussian"
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inEnglish')}
               name="productNameInEnglish"
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             {errorMessage && (
               <Typography fontSize={14} color="red">
@@ -112,38 +112,38 @@ export default function AddProductDialog({
               type="text"
               name="productDescriptionInTurkmen"
               multiline
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inCharjov')}
               type="text"
               name="productDescriptionInCharjov"
               multiline
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inRussian')}
               type="text"
               name="productDescriptionInRussian"
               multiline
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inEnglish')}
               type="text"
               name="productDescriptionInEnglish"
               multiline
-              className="m-2 min-w-[250px] w-full sm:w-1/3"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             />
           </Box>
           <TextField
             label={t('price')}
             type="number"
             name="price"
-            className="m-2"
+            className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
           />
         </Box>
-        <Box className="flex flex-row">
+        <Box className="flex flex-col sm:flex-row p-2">
           <Box className="flex flex-col">
             <TextField
               margin="dense"
@@ -151,7 +151,7 @@ export default function AddProductDialog({
               label={t('imageUrl')}
               type="url"
               name="imgUrl"
-              className="m-2 w-[250px] text-[16px] h-[56px]"
+              className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
               value={productImageUrl ?? ''}
               onChange={(event) => {
                 try {
@@ -170,7 +170,7 @@ export default function AddProductDialog({
               tabIndex={-1}
               startIcon={<CloudUploadIcon />}
               sx={{ textTransform: 'none' }}
-              className="m-2 w-[250px] text-[16px] h-[56px]"
+              className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
             >
               {t('uploadProductImage')}
               <VisuallyHiddenInput
