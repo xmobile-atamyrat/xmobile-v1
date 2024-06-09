@@ -33,6 +33,7 @@
     "next-intl": "^3.14.1",
     "react": "^18",
     "react-dom": "^18",
+    "react-flagkit": "^2.0.4",
     "swr": "^2.2.5"
   },
   "devDependencies": {
