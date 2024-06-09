@@ -13,15 +13,15 @@ import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useTranslations } from 'next-intl';
 
-interface DeleteCategoriesDialogProps {
+interface DeleteDialogProps {
   handleClose: () => void;
   handleDelete: () => Promise<void>;
 }
 
-export default function DeleteCategoriesDialog({
+export default function DeleteDialog({
   handleClose,
   handleDelete,
-}: DeleteCategoriesDialogProps) {
+}: DeleteDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setCategories } = useCategoryContext();
   const t = useTranslations();
