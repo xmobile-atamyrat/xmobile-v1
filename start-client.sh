@@ -2,5 +2,5 @@
 
 source .env
 
-HOST=${HOST_PUBLIC_HOST:-"localhost"}
-npx next dev
+HOST=${NEXT_PUBLIC_HOST:-"localhost"}
+npx next dev -p $NEXT_PUBLIC_PORT
