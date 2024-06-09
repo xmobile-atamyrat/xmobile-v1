@@ -77,6 +77,12 @@ async function handleGetProduct(query: {
               mode: 'insensitive',
             },
           },
+          {
+            price: {
+              contains: searchKeyword,
+              mode: 'insensitive',
+            },
+          },
         ],
       },
     });
