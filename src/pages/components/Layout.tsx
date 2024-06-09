@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
-  const [openDrawer, setOpenDrawer] = useState(true);
+  const [openDrawer, setOpenDrawer] = useState(false);
   return (
     <Box
       sx={{
@@ -28,6 +28,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         openDrawer={openDrawer}
         setEditCategoriesModal={setEditCategoriesModal}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
+        closeDrawer={() => setOpenDrawer(false)}
       />
       <Box
         component="main"
