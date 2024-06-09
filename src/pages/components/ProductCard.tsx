@@ -14,9 +14,6 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import BASE_URL from '@/lib/ApiEndpoints';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useState } from 'react';
-import { useProductContext } from '@/pages/lib/ProductContext';
-import { ResponseApi } from '@/pages/lib/types';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
@@ -29,16 +26,15 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cardClassName?: string;
+  handleDeleteProduct?: (productId: string) => void;
 }
 
 export default function ProductCard({
   product,
   handleClickAddProduct,
   cardClassName,
+  handleDeleteProduct,
 }: ProductCardProps) {
-  const [showEditIcon, setShowEditIcon] = useState(false);
-  const { setProducts } = useProductContext();
-  const { selectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
   const t = useTranslations();
   const router = useRouter();
@@ -53,13 +49,11 @@ export default function ProductCard({
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
-      onMouseEnter={() => setShowEditIcon(true)}
-      onMouseLeave={() => setShowEditIcon(false)}
     >
       {product != null ? (
         <Box className="relative h-full w-full flex flex-col justify-between p-1">
-          {user?.grade === 'ADMIN' && showEditIcon && (
-            <Box>
+          {user?.grade === 'ADMIN' && (
+            <Box style={{ position: 'absolute', right: 0 }}>
               <IconButton
                 aria-label="more"
                 id="long-button"
@@ -68,7 +62,6 @@ export default function ProductCard({
                 aria-haspopup="true"
                 onClick={(event) => setAnchorEl(event.currentTarget)}
                 className="px-0"
-                style={{ position: 'absolute', right: 0 }}
               >
                 <MoreVertIcon color="primary" fontSize="small" />
               </IconButton>
@@ -84,23 +77,8 @@ export default function ProductCard({
                   </Typography>
                 </MenuItem>
                 <MenuItem
-                  onClick={async () => {
-                    try {
-                      await fetch(
-                        `${BASE_URL}/api/product?productId=${product.id}`,
-                        {
-                          method: 'DELETE',
-                        },
-                      );
-                      const { success, data }: ResponseApi<Product[]> = await (
-                        await fetch(
-                          `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
-                        )
-                      ).json();
-                      if (success && data != null) setProducts(data);
-                    } catch (error) {
-                      console.error(error);
-                    }
+                  onClick={() => {
+                    if (handleDeleteProduct) handleDeleteProduct(product.id);
                   }}
                   className="flex flex-row justify-start gap-2 items-center px-2 w-[120px] bg-[#F8F9FA]"
                 >
