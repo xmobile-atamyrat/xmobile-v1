@@ -115,7 +115,7 @@ export const addEditCategory = async ({
   selectedCategoryId: string | undefined;
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   errorMessage: string;
-}) => {
+}): Promise<string | null> => {
   const newFormData = new FormData();
   const {
     categoryNameInTurkmen,
@@ -167,7 +167,12 @@ export const addEditCategory = async ({
     await fetch(`${BASE_URL}/api/category`)
   ).json();
 
-  if (catSuccess && categories) setCategories(categories);
+  if (catSuccess && categories) {
+    setCategories(categories);
+    return categories[0]?.id;
+  }
+
+  return null;
 };
 
 export async function addProduct({

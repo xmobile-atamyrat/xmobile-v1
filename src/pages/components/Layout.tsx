@@ -15,6 +15,8 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { useTranslations } from 'next-intl';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
+import { Product } from '@prisma/client';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -23,7 +25,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     useState<DeleteCategoriesProps>({ open: false });
   const [openDrawer, setOpenDrawer] = useState(false);
   const t = useTranslations();
-  const { setCategories } = useCategoryContext();
+  const { setCategories, setSelectedCategoryId } = useCategoryContext();
+  const { setProducts } = useProductContext();
 
   return (
     <Box
@@ -79,7 +82,22 @@ export default function Layout({ children }: { children: ReactNode }) {
               await fetch(`${BASE_URL}/api/category`)
             ).json();
 
-            if (catSuccess && categories) setCategories(categories);
+            if (catSuccess && categories) {
+              setCategories(categories);
+
+              if (categories.length > 0 && categories[0]?.id != null) {
+                setSelectedCategoryId(categories[0]?.id);
+                const { success, data }: ResponseApi<Product[]> = await (
+                  await fetch(
+                    `${BASE_URL}/api/product?categoryId=${categories[0].id}`,
+                  )
+                ).json();
+                if (success && data != null) setProducts(data);
+              } else {
+                setSelectedCategoryId(undefined);
+                setProducts([]);
+              }
+            }
           }}
         />
       )}
