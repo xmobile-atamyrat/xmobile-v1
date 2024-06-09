@@ -31,20 +31,22 @@ export default function Collapsable({
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
   return collapsable ? (
-    <Box>
+    <Box className="h-[48px] w-full">
       <Box
         sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
-        className={`${selectedCategoryId === id && 'bg-slate-200'}`}
+        className={`h-full w-full ${selectedCategoryId === id && 'bg-slate-200'}`}
         style={{ paddingLeft: `${pl * 2}rem` }}
       >
-        <CollapsableBase
-          categoryTitle={categoryTitle}
-          id={id}
-          imgUrl={imgUrl}
-          setDeleteCategoriesModal={setDeleteCategoriesModal}
-          setEditCategoriesModal={setEditCategoriesModal}
-        />
-        <IconButton onClick={() => setOpen(!open)}>
+        <Box className="w-[90%]">
+          <CollapsableBase
+            categoryTitle={categoryTitle}
+            id={id}
+            imgUrl={imgUrl}
+            setDeleteCategoriesModal={setDeleteCategoriesModal}
+            setEditCategoriesModal={setEditCategoriesModal}
+          />
+        </Box>
+        <IconButton className="h-full px-0" onClick={() => setOpen(!open)}>
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
       </Box>
