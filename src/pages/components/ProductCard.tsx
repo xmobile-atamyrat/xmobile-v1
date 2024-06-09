@@ -6,6 +6,8 @@ import {
   Box,
   IconButton,
   Divider,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { Product } from '@prisma/client';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -20,6 +22,8 @@ import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { parseName } from '@/pages/lib/utils';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface ProductCardProps {
   product?: Product;
@@ -32,12 +36,14 @@ export default function ProductCard({
   handleClickAddProduct,
   cardClassName,
 }: ProductCardProps) {
-  const [showDeleteIcon, setShowDeleteIcon] = useState(false);
+  const [showEditIcon, setShowEditIcon] = useState(false);
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
   const t = useTranslations();
   const router = useRouter();
+  const [anchorEl, setAnchorEl] = useState<HTMLElement>();
+  const openEditMenu = Boolean(anchorEl);
 
   return (
     <Card
@@ -47,35 +53,64 @@ export default function ProductCard({
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
-      onMouseEnter={() => setShowDeleteIcon(true)}
-      onMouseLeave={() => setShowDeleteIcon(false)}
+      onMouseEnter={() => setShowEditIcon(true)}
+      onMouseLeave={() => setShowEditIcon(false)}
     >
       {product != null ? (
         <Box className="relative h-full w-full flex flex-col justify-between p-1">
-          {user?.grade === 'ADMIN' && showDeleteIcon && (
-            <IconButton
-              style={{ position: 'absolute', right: 0 }}
-              onClick={async () => {
-                try {
-                  await fetch(
-                    `${BASE_URL}/api/product?productId=${product.id}`,
-                    {
-                      method: 'DELETE',
-                    },
-                  );
-                  const { success, data }: ResponseApi<Product[]> = await (
-                    await fetch(
-                      `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
-                    )
-                  ).json();
-                  if (success && data != null) setProducts(data);
-                } catch (error) {
-                  console.error(error);
-                }
-              }}
-            >
-              <DeleteIcon color="error" fontSize="large" />
-            </IconButton>
+          {user?.grade === 'ADMIN' && showEditIcon && (
+            <Box>
+              <IconButton
+                aria-label="more"
+                id="long-button"
+                aria-controls={openEditMenu ? 'long-menu' : undefined}
+                aria-expanded={openEditMenu ? 'true' : undefined}
+                aria-haspopup="true"
+                onClick={(event) => setAnchorEl(event.currentTarget)}
+                className="px-0"
+                style={{ position: 'absolute', right: 0 }}
+              >
+                <MoreVertIcon color="primary" fontSize="small" />
+              </IconButton>
+              <Menu
+                open={openEditMenu}
+                onClose={() => setAnchorEl(undefined)}
+                anchorEl={anchorEl}
+              >
+                <MenuItem className="flex flex-row justify-start gap-2 items-center px-2 w-[120px] bg-[#F8F9FA]">
+                  <EditIcon color="primary" fontSize="medium" />
+                  <Typography className="overflow-x-scroll">
+                    {t('edit')}
+                  </Typography>
+                </MenuItem>
+                <MenuItem
+                  onClick={async () => {
+                    try {
+                      await fetch(
+                        `${BASE_URL}/api/product?productId=${product.id}`,
+                        {
+                          method: 'DELETE',
+                        },
+                      );
+                      const { success, data }: ResponseApi<Product[]> = await (
+                        await fetch(
+                          `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
+                        )
+                      ).json();
+                      if (success && data != null) setProducts(data);
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
+                  className="flex flex-row justify-start gap-2 items-center px-2 w-[120px] bg-[#F8F9FA]"
+                >
+                  <DeleteIcon color="error" fontSize="medium" />
+                  <Typography className="overflow-x-scroll">
+                    {t('delete')}
+                  </Typography>
+                </MenuItem>
+              </Menu>
+            </Box>
           )}
 
           <Box className="h-5/6">
