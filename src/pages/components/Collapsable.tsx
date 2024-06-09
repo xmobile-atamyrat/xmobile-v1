@@ -31,7 +31,7 @@ export default function Collapsable({
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
   return collapsable ? (
-    <Box className="h-[48px] w-full">
+    <Box className="w-full">
       <Box
         sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
         className={`h-full w-full ${selectedCategoryId === id && 'bg-slate-200'}`}
