@@ -42,13 +42,11 @@ export default function ProductCard({
   return (
     <Card
       sx={{
-        width: 250,
+        width: { xs: '100%', sm: 250 },
+        height: { xs: 250, sm: 300 },
         ':hover': { boxShadow: 10 },
       }}
-      className={classNames(
-        'border-[1px] px-2 py-4 relative h-[300px]',
-        cardClassName,
-      )}
+      className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
       onMouseEnter={() => setShowDeleteIcon(true)}
       onMouseLeave={() => setShowDeleteIcon(false)}
     >
@@ -82,7 +80,7 @@ export default function ProductCard({
 
           <Box className="h-5/6">
             {product.imgUrl != null && (
-              <Box className="w-full h-1/2 flex justify-center">
+              <Box className="w-full h-1/3 sm:h-1/2 flex justify-center">
                 <img
                   src={product?.imgUrl}
                   alt={product?.name}
@@ -100,12 +98,16 @@ export default function ProductCard({
               </Box>
             )}
             <Box>
-              <Typography gutterBottom variant="h6" component="div">
+              <Typography
+                gutterBottom
+                sx={{ fontSize: { xs: 16, sm: 20 }, mt: 1 }}
+                component="div"
+              >
                 {parseName(product?.name, router.locale ?? 'tk')}
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-scroll ${product.imgUrl != null ? 'h-1/3' : ''}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/3' : 'h-full'}`}
             >
               <Typography variant="body2" color="text.secondary">
                 {parseName(product?.description ?? '{}', router.locale ?? 'tk')}
@@ -113,8 +115,8 @@ export default function ProductCard({
             </Box>
           </Box>
           {product?.price != null && (
-            <Box className="p-1 h-1/6 flex items-end ">
-              <Typography>
+            <Box className="h-1/6 flex items-end ">
+              <Typography sx={{ fontSize: { xs: 12, sm: 16 } }}>
                 {t('price')}: {product?.price} {t('manat')}
               </Typography>
             </Box>
