@@ -6,7 +6,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { Grid } from '@mui/material';
+import { Box } from '@mui/material';
 import { Product, User } from '@prisma/client';
 import { GetStaticProps, InferGetServerSidePropsType } from 'next';
 import { useEffect, useState } from 'react';
@@ -58,26 +58,22 @@ export default function Home({
 
   return (
     <Layout>
-      <Grid container spacing={2} sx={{ p: 2 }} className="bg-[#F8F9FA]">
+      <Box className="flex flex-wrap gap-4 w-full p-3">
         {user?.grade === 'ADMIN' &&
           categories != null &&
           categories.length > 0 && (
-            <Grid item xs={6} sm>
-              <ProductCard
-                handleClickAddProduct={() => setCreateProductDialog(true)}
-              />
-            </Grid>
+            <ProductCard
+              handleClickAddProduct={() => setCreateProductDialog(true)}
+            />
           )}
         {products.length > 0 &&
           products.map((product) => (
-            <Grid key={product.id} item xs={6} sm>
-              <ProductCard product={product} key={product.id} />
-            </Grid>
+            <ProductCard product={product} key={product.id} />
           ))}
         {createProductDialog && (
           <AddProductDialog handleClose={() => setCreateProductDialog(false)} />
         )}
-      </Grid>
+      </Box>
     </Layout>
   );
 }
