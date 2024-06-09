@@ -16,12 +16,24 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { VisibilityOff, Visibility } from '@mui/icons-material';
+import { useTranslations } from 'next-intl';
+import { GetStaticProps } from 'next';
+
+export const getStaticProps = (async (context) => {
+  return {
+    props: {
+      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+    },
+  };
+}) satisfies GetStaticProps<object>;
 
 export default function Signup() {
   const { setUser } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const t = useTranslations();
+
   return (
     <Box className="h-[100vh] flex justify-center items-center bg-[#F8F9FA]">
       <Paper
@@ -29,11 +41,11 @@ export default function Signup() {
         elevation={3}
         square={false}
         sx={{
-          width: '400px',
-          height: '500px',
+          width: { xs: '90%', sm: '400px' },
+          height: { xs: '450px', sm: '500px' },
           borderRadius: '16px',
           p: 2,
-          gap: 2,
+          gap: { xs: 1, sm: 2 },
         }}
         component="form"
         onSubmit={async (event) => {
@@ -47,7 +59,7 @@ export default function Signup() {
           );
 
           if ((password as string).length < 8) {
-            setErrorMessage('Password must be at least 8 characters');
+            setErrorMessage(t('shortPassword'));
             return;
           }
 
@@ -73,25 +85,25 @@ export default function Signup() {
       >
         <Box className="flex flex-col gap-1">
           <Box className="flex flex-row justify-between">
-            <Typography variant="h5">Sign up</Typography>
+            <Typography variant="h5">{t('signUp')}</Typography>
             <Link href="/">
               <CancelIcon />
             </Link>
           </Box>
           <Divider />
         </Box>
-        <TextField fullWidth required label="Your name" name="name" />
+        <TextField fullWidth required label={t('name')} name="name" />
         <TextField
           fullWidth
           required
-          label="Your email address"
+          label={t('email')}
           type="email"
           name="email"
         />
         <TextField
           fullWidth
           required
-          label="Your password"
+          label={t('password')}
           type={showPassword ? 'text' : 'password'}
           name="password"
           InputProps={{
@@ -104,7 +116,7 @@ export default function Signup() {
             ),
           }}
         />
-        <TextField fullWidth label="Your phone number" name="phoneNumber" />
+        <TextField fullWidth label={t('phoneNumber')} name="phoneNumber" />
         <Box className="flex flex-col gap-2">
           <Box className="flex flex-col gap-2 relative min-h-[70px]">
             <Button
@@ -114,7 +126,7 @@ export default function Signup() {
               size="large"
               type="submit"
             >
-              Sign up
+              {t('signUp')}
             </Button>
             {errorMessage != null && (
               <Typography
@@ -131,13 +143,13 @@ export default function Signup() {
 
           <Box className="flex flex-row justify-between items-center">
             <Typography sx={{ textTransform: 'none' }} fontSize={14}>
-              Have an account?
+              {t('haveAccount')}
             </Typography>
             <Button
               sx={{ textTransform: 'none' }}
               onClick={() => router.push('/user/signin')}
             >
-              Sign in
+              {t('signIn')}
             </Button>
           </Box>
         </Box>

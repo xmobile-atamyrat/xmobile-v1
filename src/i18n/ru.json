@@ -31,8 +31,12 @@
   "passwordIncorrect": "неверный пароль",
   "forgotPassword": "Забыли пароль?",
   "signUp": "Зарегистрироваться",
-  "email": "Email",
-  "password": "Password",
-  "userAlreadyExists": "User already exists",
-  "search": "Поиск..."
+  "email": "Электронная почта",
+  "password": "Пароль",
+  "userAlreadyExists": "Aккаунт уже существует",
+  "search": "Поиск...",
+  "name": "Имя",
+  "haveAccount": "Eсть аккаунт?",
+  "phoneNumber": "Номер телефона",
+  "shortPassword": "Пароль должен быть не менее 8 символов"
 }
