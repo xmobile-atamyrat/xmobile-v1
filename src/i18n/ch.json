@@ -38,5 +38,8 @@
   "name": "Adyňyz",
   "haveAccount": "Akkaundyňyz barmy?",
   "phoneNumber": "Telefon nomeriňiz",
-  "shortPassword": "Parolyňyzda iň azyndan 8-tä simwol bolmaly"
+  "shortPassword": "Parolyňyzda iň azyndan 8-tä simwol bolmaly",
+  "add": "Koş",
+  "edit": "Üýtgät",
+  "delete": "Öçür"
 }

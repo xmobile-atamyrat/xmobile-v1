@@ -36,5 +36,8 @@
   "name": "Name",
   "haveAccount": "Have an account?",
   "phoneNumber": "Phone number",
-  "shortPassword": "Password must be at least 8 characters"
+  "shortPassword": "Password must be at least 8 characters",
+  "add": "Add",
+  "edit": "Edit",
+  "delete": "Delete"
 }
