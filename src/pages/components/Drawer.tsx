@@ -4,7 +4,11 @@ import Drawer from '@mui/material/Drawer';
 import { IconButton, List, Paper, Tooltip } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  drawerPaddingTopOffset,
+  mobileAppBarHeight,
+} from '@/pages/lib/constants';
 import {
   DeleteCategoriesProps,
   EditCategoriesProps,
@@ -86,7 +90,10 @@ export default function CustomDrawer({
         <Box
           sx={{
             overflow: 'auto',
-            pt: `${appBarHeight * 1.5}px`,
+            pt: {
+              xs: `${mobileAppBarHeight + drawerPaddingTopOffset}px`,
+              sm: `${appBarHeight + drawerPaddingTopOffset}px`,
+            },
             height: '100vh',
           }}
           className="bg-[#F8F9FA]"

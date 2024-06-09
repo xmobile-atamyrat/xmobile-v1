@@ -84,8 +84,8 @@ export default function AddEditCategoriesDialog({
       <DialogTitle className="w-full flex justify-center">
         {dialogType === 'add' ? t('addNewCategory') : t('editCategory')}
       </DialogTitle>
-      <DialogContent className="min-w-[600px]">
-        <Box className="flex flex-col gap-4">
+      <DialogContent sx={{ padding: 0 }}>
+        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-4 p-2">
           <Box>
             <Typography>
               {t('categoryName')}
@@ -94,25 +94,25 @@ export default function AddEditCategoriesDialog({
             <TextField
               label={t('inTurkmen')}
               name="categoryNameInTurkmen"
-              className="m-2 min-w-[250px] w-1/3"
+              className="my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedCategoryName.tk ?? ''}
             />
             <TextField
               label={t('inCharjov')}
               name="categoryNameInCharjov"
-              className="m-2 min-w-[250px] w-1/3"
+              className="my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedCategoryName.ch ?? ''}
             />
             <TextField
               label={t('inRussian')}
               name="categoryNameInRussian"
-              className="m-2 min-w-[250px] w-1/3"
+              className="my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedCategoryName.ru ?? ''}
             />
             <TextField
               label={t('inEnglish')}
               name="categoryNameInEnglish"
-              className="m-2 min-w-[250px] w-1/3"
+              className="my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedCategoryName.en ?? ''}
             />
             {errorMessage && (
@@ -121,15 +121,15 @@ export default function AddEditCategoriesDialog({
               </Typography>
             )}
           </Box>
-          <Box className="flex flex-col gap-2">
+          <Box className="flex flex-col gap-2 w-full">
             <Typography>
               {`${t('categoryLogo')} `}
               <span
                 style={{ fontSize: '12px' }}
               >{`(${t('notRequired')})`}</span>
             </Typography>
-            <Box className="flex flex-row justify-between items-start">
-              <Box className="flex flex-col gap-2">
+            <Box className="flex flex-col sm:flex-row justify-between items-start w-full">
+              <Box className="flex flex-col gap-2 w-full">
                 <Button
                   component="label"
                   role={undefined}
@@ -137,7 +137,7 @@ export default function AddEditCategoriesDialog({
                   tabIndex={-1}
                   startIcon={<CloudUploadIcon />}
                   sx={{ textTransform: 'none' }}
-                  className="m-2 min-w-[250px] text-[16px] h-[56px] w-1/3"
+                  className="my-1 sm:mr-2 min-w-[250px] text-[16px] h-[56px] w-full sm:w-1/3"
                 >
                   {t('uploadCategoryImage')}
                   <VisuallyHiddenInput
@@ -158,10 +158,10 @@ export default function AddEditCategoriesDialog({
                     }}
                   />
                 </Button>
-                <Box sx={{ margin: '0.5rem', width: '100%' }}>
+                <Box sx={{ width: '100%' }}>
                   <TextField
                     label={t('categoryImageURL')}
-                    className="w-[250px]"
+                    className="w-full sm:w-[250px]"
                     value={categoryImageUrl ?? ''}
                     onChange={(event) => {
                       try {
