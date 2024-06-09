@@ -39,5 +39,7 @@
   "shortPassword": "Password must be at least 8 characters",
   "add": "Add",
   "edit": "Edit",
-  "delete": "Delete"
+  "delete": "Delete",
+  "confirmDeleteCategory": "Are you sure you want to delete the selected categories? All the subcategories and products will be deleted as well.",
+  "deleteCategories": "Delete Categories"
 }
