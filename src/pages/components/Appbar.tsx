@@ -6,15 +6,11 @@ import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
-import Badge from '@mui/material/Badge';
 import MenuItem from '@mui/material/MenuItem';
 import Menu from '@mui/material/Menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import MailIcon from '@mui/icons-material/Mail';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import MoreIcon from '@mui/icons-material/MoreVert';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Avatar, Select } from '@mui/material';
@@ -46,12 +42,19 @@ const Search = styled('div')(({ theme }) => ({
     width: '300px',
   },
   [theme.breakpoints.down('sm')]: {
-    display: 'none',
+    marginLeft: theme.spacing(1),
+    width: '86px',
+    height: '36px',
   },
 }));
 
 const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
+  [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(0, 2),
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(0, 1),
+  },
   height: '100%',
   position: 'absolute',
   pointerEvents: 'none',
@@ -63,13 +66,19 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    // vertical padding + font size from searchIcon
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    [theme.breakpoints.up('sm')]: {
+      padding: theme.spacing(1, 1, 1, 0),
+      paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    },
     transition: theme.transitions.create('width'),
     width: '100%',
     [theme.breakpoints.up('md')]: {
       width: '20ch',
+    },
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(1, 1, 1, 0),
+      paddingLeft: `calc(1em + ${theme.spacing(2)})`,
+      fontSize: '14px',
     },
   },
 }));
@@ -84,13 +93,10 @@ export default function CustomAppBar({
   openDrawer,
 }: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
-    React.useState<null | HTMLElement>(null);
   const { user } = useUserContext();
   const router = useRouter();
 
   const isMenuOpen = Boolean(anchorEl);
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
 
   const t = useTranslations();
 
@@ -100,17 +106,8 @@ export default function CustomAppBar({
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMobileMenuClose = () => {
-    setMobileMoreAnchorEl(null);
-  };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
-    handleMobileMenuClose();
-  };
-
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMobileMoreAnchorEl(event.currentTarget);
   };
 
   const menuId = 'primary-search-account-menu';
@@ -162,58 +159,6 @@ export default function CustomAppBar({
     </Menu>
   );
 
-  const mobileMenuId = 'primary-search-account-menu-mobile';
-  const renderMobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMobileMenuOpen}
-      onClose={handleMobileMenuClose}
-    >
-      <MenuItem>
-        <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-          <Badge badgeContent={4} color="error">
-            <MailIcon />
-          </Badge>
-        </IconButton>
-        <p>Messages</p>
-      </MenuItem>
-      <MenuItem>
-        <IconButton
-          size="large"
-          aria-label="show 17 new notifications"
-          color="inherit"
-        >
-          <Badge badgeContent={17} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-        <p>Notifications</p>
-      </MenuItem>
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          <AccountCircle />
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-    </Menu>
-  );
-
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
@@ -244,10 +189,12 @@ export default function CustomAppBar({
           </Typography>
           <Search>
             <SearchIconWrapper>
-              <SearchIcon />
+              <SearchIcon
+                sx={{ color: 'white', fontSize: { xs: '20px', sm: '26px' } }}
+              />
             </SearchIconWrapper>
             <StyledInputBase
-              placeholder="Search…"
+              placeholder={t('search')}
               inputProps={{ 'aria-label': 'search' }}
               onChange={async (event) => {
                 try {
@@ -269,7 +216,13 @@ export default function CustomAppBar({
             defaultValue={router.locale}
             color="info"
             size="small"
-            sx={{ width: { xs: 100, sm: 150 } }}
+            sx={{
+              width: { xs: 80, sm: 110 },
+              height: { xs: 36, sm: 40 },
+              '& .MuiInputBase-input': {
+                padding: { xs: '8px', sm: '20px' },
+              },
+            }}
             onChange={(event) => {
               const newPath = changeLocale(
                 event.target.value,
@@ -283,40 +236,41 @@ export default function CustomAppBar({
               color: '#F5F5F5',
             }}
           >
-            <MenuItem value="tk">
-              <Box className="flex flex-row justify-start gap-2 w-full">
+            <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                 <Flag country="TM" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
-                  TKM
+                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  tkm
                 </Typography>
               </Box>
             </MenuItem>
-            <MenuItem value="ch">
-              <Box className="flex flex-row justify-start gap-2 w-full">
+            <MenuItem value="ch" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                 <Flag country="TM" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
-                  ÇÄR
+                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  {/* ÇÄR */}
+                  çär
                 </Typography>
               </Box>
             </MenuItem>
-            <MenuItem value="en">
-              <Box className="flex flex-row justify-start gap-2 w-full">
+            <MenuItem value="en" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                 <Flag country="US" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
-                  ENG
+                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  eng
                 </Typography>
               </Box>
             </MenuItem>
-            <MenuItem value="ru">
-              <Box className="flex flex-row justify-start gap-2 w-full">
+            <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                 <Flag country="RU" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
-                  RUS
+                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  rus
                 </Typography>
               </Box>
             </MenuItem>
           </Select>
-          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <Box>
             <IconButton
               edge="end"
               aria-label="account of current user"
@@ -326,29 +280,24 @@ export default function CustomAppBar({
               color="inherit"
             >
               {user != null ? (
-                <Avatar sx={{ bgcolor: '#4c8dc1', width: 36, height: 36 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: '#4c8dc1',
+                    width: { xs: 30, sm: 36 },
+                    height: { xs: 30, sm: 36 },
+                  }}
+                >
                   {user.name[0].toUpperCase()}
                 </Avatar>
               ) : (
-                <AccountCircle sx={{ width: 36, height: 36 }} />
+                <AccountCircle
+                  sx={{ width: { xs: 30, sm: 36 }, height: { xs: 30, sm: 36 } }}
+                />
               )}
-            </IconButton>
-          </Box>
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="show more"
-              aria-controls={mobileMenuId}
-              aria-haspopup="true"
-              onClick={handleMobileMenuOpen}
-              color="inherit"
-            >
-              <MoreIcon />
             </IconButton>
           </Box>
         </Toolbar>
       </AppBar>
-      {renderMobileMenu}
       {renderMenu}
     </Box>
   );

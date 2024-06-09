@@ -31,5 +31,6 @@
   "signUp": "Sign up",
   "email": "Email",
   "password": "Password",
-  "userAlreadyExists": "User already exists"
+  "userAlreadyExists": "User already exists",
+  "search": "Search..."
 }
