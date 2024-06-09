@@ -29,7 +29,8 @@ export default function AddEditCategoriesDialog({
   editCategoriesModal: { categoryName, dialogType, imageUrl },
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories, selectedCategoryId } = useCategoryContext();
+  const { setCategories, selectedCategoryId, setSelectedCategoryId } =
+    useCategoryContext();
   const t = useTranslations();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
@@ -62,7 +63,7 @@ export default function AddEditCategoriesDialog({
         );
         const formJson = Object.fromEntries(formData.entries());
         try {
-          await addEditCategory({
+          const firstCatId = await addEditCategory({
             type: dialogType,
             categoryImageFile,
             categoryImageUrl,
@@ -71,6 +72,9 @@ export default function AddEditCategoriesDialog({
             errorMessage: t('categoryNameRequired'),
             selectedCategoryId,
           });
+          if (selectedCategoryId == null && firstCatId != null) {
+            setSelectedCategoryId(firstCatId);
+          }
         } catch (error) {
           setLoading(false);
           setErrorMessage((error as Error).message);
