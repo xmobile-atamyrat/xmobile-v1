@@ -25,5 +25,13 @@
   "productNameRequired": "Kak minimum bir dildä produktyň adyny bermäli",
   "productDescription": "Produkt detallary",
   "imageUrl": "Logo URL",
-  "uploadProductImage": "Produkt surat koş"
+  "uploadProductImage": "Produkt surat koş",
+  "signIn": "Giriň",
+  "userNotFound": "Ulanyjy tapylmady",
+  "passwordIncorrect": "nädogry parol",
+  "forgotPassword": "Paroly ýatdan çykardyňyzmy?",
+  "signUp": "Hasaba giriň",
+  "email": "Email",
+  "password": "Password",
+  "userAlreadyExists": "User already exists"
 }

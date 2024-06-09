@@ -16,12 +16,23 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { VisibilityOff, Visibility } from '@mui/icons-material';
+import { useTranslations } from 'next-intl';
+import { GetStaticProps } from 'next';
+
+export const getStaticProps = (async (context) => {
+  return {
+    props: {
+      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+    },
+  };
+}) satisfies GetStaticProps<object>;
 
 export default function Signin() {
   const { setUser } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const t = useTranslations();
   return (
     <Box className="h-[100vh] flex justify-center items-center bg-[#F8F9FA]">
       <Paper
@@ -66,7 +77,7 @@ export default function Signin() {
       >
         <Box className="flex flex-col gap-1">
           <Box className="flex flex-row justify-between">
-            <Typography variant="h5">Sign in</Typography>
+            <Typography variant="h5">{t('signIn')}</Typography>
             <Link href="/">
               <CancelIcon />
             </Link>
@@ -76,14 +87,14 @@ export default function Signin() {
         <TextField
           fullWidth
           required
-          label="Your email address"
+          label={t('email')}
           type="email"
           name="email"
         />
         <TextField
           fullWidth
           required
-          label="Your password"
+          label={t('password')}
           type={showPassword ? 'text' : 'password'}
           name="password"
           InputProps={{
@@ -105,7 +116,7 @@ export default function Signin() {
               size="large"
               type="submit"
             >
-              Sign in
+              {t('signIn')}
             </Button>
             {errorMessage != null && (
               <Typography
@@ -113,18 +124,20 @@ export default function Signin() {
                 fontSize={14}
                 className="absolute bottom-0"
               >
-                {errorMessage}
+                {t(errorMessage)}
               </Typography>
             )}
           </Box>
           <Divider />
           <Box className="flex flex-row justify-between">
-            <Button sx={{ textTransform: 'none' }}>Forgot password?</Button>
+            <Button sx={{ textTransform: 'none' }}>
+              {t('forgotPassword')}
+            </Button>
             <Button
               sx={{ textTransform: 'none' }}
               onClick={() => router.push('/user/signup')}
             >
-              Sign up
+              {t('signUp')}
             </Button>
           </Box>
         </Box>

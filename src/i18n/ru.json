@@ -25,5 +25,13 @@
   "productNameRequired": "Пожалуйста, yкажите название товара хотя бы на одном языке.",
   "productDescription": "Описание продукта",
   "imageUrl": "URL изображения",
-  "uploadProductImage": "Загрузите изображение продукта"
+  "uploadProductImage": "Загрузите изображение продукта",
+  "signIn": "Войти",
+  "userNotFound": "Пользователь не найден",
+  "passwordIncorrect": "неверный пароль",
+  "forgotPassword": "Забыли пароль?",
+  "signUp": "Зарегистрироваться",
+  "email": "Email",
+  "password": "Password",
+  "userAlreadyExists": "User already exists"
 }
