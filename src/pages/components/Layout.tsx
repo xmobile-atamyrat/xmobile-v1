@@ -4,9 +4,9 @@ import CustomDrawer from '@/pages/components/Drawer';
 import CustomAppBar from '@/pages/components/Appbar';
 import { appBarHeight } from '@/pages/lib/constants';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
-import DeleteCategoriesDialog from '@/pages/components/DeleteCategoriesDialog';
 import { deleteCategory } from '@/pages/lib/utils';
 import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
+import DeleteDialog from '@/pages/components/DeleteDialog';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -46,7 +46,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       )}
       {deleteCategoriesModal.open && (
-        <DeleteCategoriesDialog
+        <DeleteDialog
           handleClose={() =>
             setDeleteCategoriesModal({
               open: false,
