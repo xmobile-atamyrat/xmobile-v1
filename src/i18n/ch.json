@@ -43,5 +43,7 @@
   "edit": "Üýtgät",
   "delete": "Öçür",
   "confirmDeleteCategory": "Saýlanan kategoriýalary pozmak isleýändigiňize ynanýarsyňyzmy? Thehli kiçi kategoriýalar we önümler hem pozular.",
-  "deleteCategories": "Kategoriýalary poz"
+  "deleteCategories": "Kategoriýalary poz",
+  "deleteProduct": "Önümi poz",
+  "confirmDeleteProduct": "Saýlanan önümi pozmak isleýändigiňize ynanýarsyňyzmy?"
 }

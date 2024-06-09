@@ -8,22 +8,22 @@ import {
 } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useState } from 'react';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import BASE_URL from '@/lib/ApiEndpoints';
 import { useTranslations } from 'next-intl';
 
 interface DeleteDialogProps {
+  title: string;
+  description: string;
   handleClose: () => void;
   handleDelete: () => Promise<void>;
 }
 
 export default function DeleteDialog({
+  description,
+  title,
   handleClose,
   handleDelete,
 }: DeleteDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories } = useCategoryContext();
   const t = useTranslations();
 
   return (
@@ -33,14 +33,19 @@ export default function DeleteDialog({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{t('deleteCategories')}</DialogTitle>
+      <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          {t('confirmDeleteCategory')}
+          {description}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} color="primary" variant="contained">
+        <Button
+          onClick={handleClose}
+          color="primary"
+          variant="contained"
+          sx={{ textTransform: 'none' }}
+        >
           {t('cancel')}
         </Button>
         <LoadingButton
@@ -48,20 +53,13 @@ export default function DeleteDialog({
           onClick={async () => {
             setLoading(true);
             await handleDelete();
-            const {
-              success: catSuccess,
-              data: categories,
-            }: ResponseApi<ExtendedCategory[]> = await (
-              await fetch(`${BASE_URL}/api/category`)
-            ).json();
-
-            if (catSuccess && categories) setCategories(categories);
             handleClose();
             setLoading(false);
           }}
           color="error"
           autoFocus
           variant="contained"
+          sx={{ textTransform: 'none' }}
         >
           {t('delete')}
         </LoadingButton>

@@ -3,10 +3,18 @@ import { ReactNode, useState } from 'react';
 import CustomDrawer from '@/pages/components/Drawer';
 import CustomAppBar from '@/pages/components/Appbar';
 import { appBarHeight } from '@/pages/lib/constants';
-import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import {
+  DeleteCategoriesProps,
+  EditCategoriesProps,
+  ExtendedCategory,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { deleteCategory } from '@/pages/lib/utils';
 import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import { useTranslations } from 'next-intl';
+import BASE_URL from '@/lib/ApiEndpoints';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -14,6 +22,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
   const [openDrawer, setOpenDrawer] = useState(false);
+  const t = useTranslations();
+  const { setCategories } = useCategoryContext();
+
   return (
     <Box
       sx={{
@@ -47,6 +58,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       )}
       {deleteCategoriesModal.open && (
         <DeleteDialog
+          description={t('confirmDeleteCategory')}
+          title={t('deleteCategories')}
           handleClose={() =>
             setDeleteCategoriesModal({
               open: false,
@@ -58,6 +71,15 @@ export default function Layout({ children }: { children: ReactNode }) {
             const { categoryId, imgUrl } = deleteCategoriesModal;
             if (categoryId == null) return;
             await deleteCategory(categoryId, imgUrl);
+
+            const {
+              success: catSuccess,
+              data: categories,
+            }: ResponseApi<ExtendedCategory[]> = await (
+              await fetch(`${BASE_URL}/api/category`)
+            ).json();
+
+            if (catSuccess && categories) setCategories(categories);
           }}
         />
       )}
