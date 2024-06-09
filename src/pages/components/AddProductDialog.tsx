@@ -72,9 +72,9 @@ export default function AddProductDialog({
       }}
     >
       <DialogTitle>{t('addNewProduct')}</DialogTitle>
-      <DialogContent className="w-[600px]">
-        <Box className="flex flex-col gap-2 p-2">
-          <Box>
+      <DialogContent>
+        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 ">
+          <Box className="w-full">
             <Typography>
               {t('productName')}
               <span style={{ color: 'red' }}>*</span>
@@ -82,22 +82,22 @@ export default function AddProductDialog({
             <TextField
               label={t('inTurkmen')}
               name="productNameInTurkmen"
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inCharjov')}
               name="productNameInCharjov"
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inRussian')}
               name="productNameInRussian"
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inEnglish')}
               name="productNameInEnglish"
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             {errorMessage && (
               <Typography fontSize={14} color="red">
@@ -112,28 +112,28 @@ export default function AddProductDialog({
               type="text"
               name="productDescriptionInTurkmen"
               multiline
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inCharjov')}
               type="text"
               name="productDescriptionInCharjov"
               multiline
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inRussian')}
               type="text"
               name="productDescriptionInRussian"
               multiline
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
             <TextField
               label={t('inEnglish')}
               type="text"
               name="productDescriptionInEnglish"
               multiline
-              className="m-2 min-w-[250px] w-1/3"
+              className="m-2 min-w-[250px] w-full sm:w-1/3"
             />
           </Box>
           <TextField
