@@ -10,7 +10,8 @@
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate dev",
     "db:studio": "npx prisma studio",
-    "prepare": "husky"
+    "prepare": "husky",
+    "tunnel": "./tunnel-client.sh"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
