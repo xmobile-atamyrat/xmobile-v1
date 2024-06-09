@@ -1,5 +1,5 @@
 {
-  "lowercaseTurkmenAlphabet": "a, b, ç, d, e, ä, f, g, h, ı, i, j, k, l, m, n, ň o, ö, p, r, s, ş, t, u, ü, w, y, z",
+  "lowercaseTurkmenAlphabet": "a, b, ç, d, e, ä, f, g, h, ı, i, j, k, l, m, n, ň, o, ö, p, r, s, ş, t, u, ü, w, y, ý, z",
   "uppercaseTurkmenAlpahbet": "A, B, Ç, D, E, Ä, F, G, H, I, J, K, L, M, N, Ň, O, Ö, P, R, S, Ş, T, U, Ü, W, Y, Z",
   "cancel": "Izä",
   "submit": "Tapşyr",
@@ -26,13 +26,17 @@
   "productDescription": "Produkt detallary",
   "imageUrl": "Logo URL",
   "uploadProductImage": "Produkt surat koş",
-  "signIn": "Giriň",
-  "userNotFound": "Ulanyjy tapylmady",
-  "passwordIncorrect": "nädogry parol",
+  "signIn": "Akkaunda gir",
+  "userNotFound": "Munaka akkaunt tapylmady",
+  "passwordIncorrect": "Parol ýalňyş",
   "forgotPassword": "Paroly ýatdan çykardyňyzmy?",
-  "signUp": "Hasaba giriň",
+  "signUp": "Akkaunt aç",
   "email": "Email",
-  "password": "Password",
+  "password": "Parol",
   "userAlreadyExists": "User already exists",
-  "search": "Gözleg ..."
+  "search": "Ahtar...",
+  "name": "Adyňyz",
+  "haveAccount": "Akkaundyňyz barmy?",
+  "phoneNumber": "Telefon nomeriňiz",
+  "shortPassword": "Parolyňyzda iň azyndan 8-tä simwol bolmaly"
 }

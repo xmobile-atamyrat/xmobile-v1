@@ -32,5 +32,9 @@
   "email": "Email",
   "password": "Password",
   "userAlreadyExists": "User already exists",
-  "search": "Search..."
+  "search": "Search...",
+  "name": "Name",
+  "haveAccount": "Have an account?",
+  "phoneNumber": "Phone number",
+  "shortPassword": "Password must be at least 8 characters"
 }

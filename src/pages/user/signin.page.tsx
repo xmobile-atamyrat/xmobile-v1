@@ -40,7 +40,7 @@ export default function Signin() {
         elevation={3}
         square={false}
         sx={{
-          width: '400px',
+          width: { xs: '90%', sm: '400px' },
           height: '350px',
           borderRadius: '16px',
           p: 2,
@@ -130,11 +130,11 @@ export default function Signin() {
           </Box>
           <Divider />
           <Box className="flex flex-row justify-between">
-            <Button sx={{ textTransform: 'none' }}>
+            <Button sx={{ textTransform: 'none', px: { xs: 0, sm: 2 } }}>
               {t('forgotPassword')}
             </Button>
             <Button
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none', px: { xs: 0, sm: 2 } }}
               onClick={() => router.push('/user/signup')}
             >
               {t('signUp')}
