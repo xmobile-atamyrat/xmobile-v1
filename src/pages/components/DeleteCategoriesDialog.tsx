@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useTranslations } from 'next-intl';
 
 interface DeleteCategoriesDialogProps {
   handleClose: () => void;
@@ -23,6 +24,8 @@ export default function DeleteCategoriesDialog({
 }: DeleteCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setCategories } = useCategoryContext();
+  const t = useTranslations();
+
   return (
     <Dialog
       open
@@ -30,16 +33,15 @@ export default function DeleteCategoriesDialog({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{'Delete Categories'}</DialogTitle>
+      <DialogTitle id="alert-dialog-title">{t('deleteCategories')}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          Are you sure you want to delete the selected categories? All the
-          subcategories and products will be deleted as well.
+          {t('confirmDeleteCategory')}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="primary" variant="contained">
-          Cancel
+          {t('cancel')}
         </Button>
         <LoadingButton
           loading={loading}
@@ -61,7 +63,7 @@ export default function DeleteCategoriesDialog({
           autoFocus
           variant="contained"
         >
-          Delete
+          {t('delete')}
         </LoadingButton>
       </DialogActions>
     </Dialog>
