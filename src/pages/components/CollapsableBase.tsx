@@ -55,8 +55,7 @@ export default function CollapsableBase({
           <ListItemIcon>
             <img
               src={imgUrl}
-              width={44}
-              height={44}
+              style={{ width: '30px', height: '30px' }}
               alt={categoryTitle}
               onError={async (error) => {
                 error.currentTarget.onerror = null;
