@@ -26,13 +26,17 @@
   "productDescription": "Önümiň detallary",
   "imageUrl": "Logotip URL",
   "uploadProductImage": "Önümiň logotipini ýükläň",
-  "signIn": "Giriň",
+  "signIn": "Akkaunda gir",
   "userNotFound": "Ulanyjy tapylmady",
-  "passwordIncorrect": "nädogry parol",
+  "passwordIncorrect": "Nädogry parol",
   "forgotPassword": "Paroly ýatdan çykardyňyzmy?",
-  "signUp": "Hasaba giriň",
+  "signUp": "Akkaunt aç",
   "email": "Email",
-  "password": "Password",
-  "userAlreadyExists": "User already exists",
-  "search": "Gözleg ..."
+  "password": "Parol",
+  "userAlreadyExists": "Akkaunt eýýäm bar",
+  "search": "Gözle...",
+  "name": "Adyňyz",
+  "haveAccount": "Hasabyňyz barmy?",
+  "phoneNumber": "Telefon belgiňiz",
+  "shortPassword": "Parol iň azyndan 8 simwoldan durmaly"
 }
