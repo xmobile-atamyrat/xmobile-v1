@@ -23,5 +23,13 @@
   "productNameRequired": "Please provide product name at least in one language",
   "productDescription": "Product Description",
   "imageUrl": "Image URL",
-  "uploadProductImage": "Upload product image"
+  "uploadProductImage": "Upload product image",
+  "signIn": "Sign in",
+  "userNotFound": "User not found",
+  "passwordIncorrect": "Incorrect password",
+  "forgotPassword": "Forgot password?",
+  "signUp": "Sign up",
+  "email": "Email",
+  "password": "Password",
+  "userAlreadyExists": "User already exists"
 }

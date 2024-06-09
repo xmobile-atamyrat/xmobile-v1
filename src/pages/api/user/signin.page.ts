@@ -19,13 +19,13 @@ export default async function handler(
       if (!user) {
         return res
           .status(400)
-          .json({ success: false, message: 'User not found' });
+          .json({ success: false, message: 'userNotFound' });
       }
       const isPasswordCorrect = await bcrypt.compare(password, user.password);
       if (!isPasswordCorrect) {
         return res
           .status(400)
-          .json({ success: false, message: 'Password incorrect' });
+          .json({ success: false, message: 'passwordIncorrect' });
       }
 
       return res.status(200).json({
