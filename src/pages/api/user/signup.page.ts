@@ -19,7 +19,7 @@ export default async function handler(
       if (existingUser) {
         return res
           .status(400)
-          .json({ success: false, message: 'User already exists' });
+          .json({ success: false, message: 'userAlreadyExists' });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await dbClient.user.create({

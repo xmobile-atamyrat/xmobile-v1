@@ -25,5 +25,13 @@
   "productNameRequired": "Iň azyndan bir dilde önümiň adyny bermegiňizi haýyş edýäris",
   "productDescription": "Önümiň detallary",
   "imageUrl": "Logotip URL",
-  "uploadProductImage": "Önümiň logotipini ýükläň"
+  "uploadProductImage": "Önümiň logotipini ýükläň",
+  "signIn": "Giriň",
+  "userNotFound": "Ulanyjy tapylmady",
+  "passwordIncorrect": "nädogry parol",
+  "forgotPassword": "Paroly ýatdan çykardyňyzmy?",
+  "signUp": "Hasaba giriň",
+  "email": "Email",
+  "password": "Password",
+  "userAlreadyExists": "User already exists"
 }
