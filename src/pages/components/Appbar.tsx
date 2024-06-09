@@ -15,7 +15,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import MailIcon from '@mui/icons-material/Mail';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
-import { appBarHeight } from '@/pages/lib/constants';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Avatar, Select } from '@mui/material';
 import { useRouter } from 'next/router';
@@ -29,6 +29,7 @@ import { Product } from '@prisma/client';
 import BASE_URL from '@/lib/ApiEndpoints';
 import { changeLocale } from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
+import Flag from 'react-flagkit';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -43,6 +44,9 @@ const Search = styled('div')(({ theme }) => ({
   [theme.breakpoints.up('sm')]: {
     marginLeft: theme.spacing(3),
     width: '300px',
+  },
+  [theme.breakpoints.down('sm')]: {
+    display: 'none',
   },
 }));
 
@@ -216,16 +220,16 @@ export default function CustomAppBar({
         position="fixed"
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          height: appBarHeight,
+          height: { xs: mobileAppBarHeight, sm: appBarHeight },
         }}
       >
-        <Toolbar>
+        <Toolbar className="flex items-center">
           <IconButton
             size="large"
             edge="start"
             color="inherit"
             aria-label="open drawer"
-            sx={{ mr: 2 }}
+            sx={{ mr: { sm: 2 } }}
             onClick={() => setOpenDrawer(!openDrawer)}
           >
             <MenuIcon />
@@ -234,7 +238,7 @@ export default function CustomAppBar({
             variant="h6"
             noWrap
             component="div"
-            sx={{ display: { xs: 'none', sm: 'block' } }}
+            sx={{ fontSize: { xs: 18, sm: 20 } }}
           >
             Xmobile
           </Typography>
@@ -265,6 +269,7 @@ export default function CustomAppBar({
             defaultValue={router.locale}
             color="info"
             size="small"
+            sx={{ width: { xs: 100, sm: 150 } }}
             onChange={(event) => {
               const newPath = changeLocale(
                 event.target.value,
@@ -278,10 +283,38 @@ export default function CustomAppBar({
               color: '#F5F5F5',
             }}
           >
-            <MenuItem value="tk">Türkmençe</MenuItem>
-            <MenuItem value="ch">Çärjöwçä</MenuItem>
-            <MenuItem value="en">English</MenuItem>
-            <MenuItem value="ru">Русский</MenuItem>
+            <MenuItem value="tk">
+              <Box className="flex flex-row justify-start gap-2 w-full">
+                <Flag country="TM" size={18} />
+                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
+                  TKM
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="ch">
+              <Box className="flex flex-row justify-start gap-2 w-full">
+                <Flag country="TM" size={18} />
+                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
+                  ÇÄR
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="en">
+              <Box className="flex flex-row justify-start gap-2 w-full">
+                <Flag country="US" size={18} />
+                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
+                  ENG
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="ru">
+              <Box className="flex flex-row justify-start gap-2 w-full">
+                <Flag country="RU" size={18} />
+                <Typography sx={{ fontSize: { xs: 14, sm: 20 } }}>
+                  RUS
+                </Typography>
+              </Box>
+            </MenuItem>
           </Select>
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             <IconButton

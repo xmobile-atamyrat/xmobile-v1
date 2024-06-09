@@ -20,6 +20,7 @@ interface CustomDrawerProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   openDrawer: boolean;
+  closeDrawer: () => void;
 }
 
 function ConstructDrawerList(
@@ -64,6 +65,7 @@ export default function CustomDrawer({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   openDrawer,
+  closeDrawer,
 }: CustomDrawerProps) {
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
@@ -71,12 +73,14 @@ export default function CustomDrawer({
 
   return (
     <Drawer
-      variant={openDrawer ? 'permanent' : 'temporary'}
+      variant="temporary"
+      open={openDrawer}
       sx={{
         width: drawerWidth,
         height: '100%',
         [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
       }}
+      onClose={closeDrawer}
     >
       {categories?.length > 0 && (
         <Box
