@@ -42,7 +42,7 @@ export default function ProductCard({
   return (
     <Card
       sx={{
-        width: { xs: '100%', sm: 250 },
+        width: { xs: '47%', sm: 250 },
         height: { xs: 250, sm: 300 },
         ':hover': { boxShadow: 10 },
       }}
@@ -107,7 +107,7 @@ export default function ProductCard({
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/3' : 'h-full'}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/2 sm:h-1/3' : 'h-full'}`}
             >
               <Typography variant="body2" color="text.secondary">
                 {parseName(product?.description ?? '{}', router.locale ?? 'tk')}
@@ -125,12 +125,7 @@ export default function ProductCard({
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
           <CardContent>
-            <Typography
-              gutterBottom
-              variant="h6"
-              component="div"
-              className="flex justify-center"
-            >
+            <Typography gutterBottom className="flex justify-center">
               {t('addNewProduct')}
             </Typography>
           </CardContent>
