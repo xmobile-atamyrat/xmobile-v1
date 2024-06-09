@@ -1,5 +1,5 @@
 TODO:
 
-- delete product image on cascade delete category
-- Design and develop a mobile compatible UI
+- category and product local images sometimes don't get deleted
+  - delete product image on cascade delete category
 - make eslint remove unused imports
