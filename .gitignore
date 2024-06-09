@@ -40,3 +40,5 @@ db/
 
 dummy_db_data/
 !*.tar.gz
+
+output.log
