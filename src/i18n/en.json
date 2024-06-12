@@ -43,5 +43,6 @@
   "confirmDeleteCategory": "Are you sure you want to delete the selected categories? All the subcategories and products will be deleted as well.",
   "deleteCategories": "Delete Categories",
   "deleteProduct": "Delete Product",
-  "confirmDeleteProduct": "Are you sure you want to delete the selected product?"
+  "confirmDeleteProduct": "Are you sure you want to delete the selected product?",
+  "dontHaveAccount": "Do not have an account?"
 }

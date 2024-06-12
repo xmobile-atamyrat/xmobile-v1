@@ -129,10 +129,10 @@ export default function Signin() {
             )}
           </Box>
           <Divider />
-          <Box className="flex flex-row justify-between">
-            <Button sx={{ textTransform: 'none', px: { xs: 0, sm: 2 } }}>
-              {t('forgotPassword')}
-            </Button>
+          <Box className="flex flex-row justify-between items-center">
+            <Typography sx={{ textTransform: 'none' }} fontSize={14}>
+              {t('dontHaveAccount')}
+            </Typography>
             <Button
               sx={{ textTransform: 'none', px: { xs: 0, sm: 2 } }}
               onClick={() => router.push('/user/signup')}
