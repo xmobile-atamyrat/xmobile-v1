@@ -13,7 +13,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { Avatar, Select } from '@mui/material';
+import { Avatar, Dialog, Select } from '@mui/material';
 import { useRouter } from 'next/router';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -42,9 +42,7 @@ const Search = styled('div')(({ theme }) => ({
     width: '300px',
   },
   [theme.breakpoints.down('sm')]: {
-    marginLeft: theme.spacing(1),
-    width: '100px',
-    height: '36px',
+    display: 'none',
   },
 }));
 
@@ -168,133 +166,144 @@ export default function CustomAppBar({
           height: { xs: mobileAppBarHeight, sm: appBarHeight },
         }}
       >
-        <Toolbar className="flex items-center">
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="open drawer"
-            sx={{ mr: { sm: 2 } }}
-            onClick={() => setOpenDrawer(!openDrawer)}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ fontSize: { xs: 18, sm: 20 } }}
-          >
-            Xmobile
-          </Typography>
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon
-                sx={{ color: 'white', fontSize: { xs: '20px', sm: '26px' } }}
-              />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder={t('search')}
-              inputProps={{ 'aria-label': 'search' }}
-              onChange={async (event) => {
-                try {
-                  const keyword = event.target.value;
-                  const { success, data }: ResponseApi<Product[]> = await (
-                    await fetch(
-                      `${BASE_URL}/api/product?searchKeyword=${keyword}`,
-                    )
-                  ).json();
-                  if (success && data != null) setProducts(data);
-                } catch (error) {
-                  console.error(error);
-                }
-              }}
-            />
-          </Search>
-          <Box sx={{ flexGrow: 1 }} />
-          <Select
-            defaultValue={router.locale}
-            color="info"
-            size="small"
-            sx={{
-              width: { xs: 80, sm: 110 },
-              height: { xs: 36, sm: 40 },
-              '& .MuiInputBase-input': {
-                padding: { xs: '8px', sm: '20px' },
-              },
-            }}
-            onChange={(event) => {
-              const newPath = changeLocale(
-                event.target.value,
-                window.location.search,
-                window.location.pathname,
-              );
-              window.location.pathname = newPath;
-            }}
-            style={{
-              backgroundColor: 'rgb(59 130 246 / 0.5)',
-              color: '#F5F5F5',
-            }}
-          >
-            <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
-                <Flag country="TM" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                  tkm
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem value="ch" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
-                <Flag country="TM" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                  {/* ÇÄR */}
-                  çär
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem value="en" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
-                <Flag country="US" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                  eng
-                </Typography>
-              </Box>
-            </MenuItem>
-            <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-              <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
-                <Flag country="RU" size={18} />
-                <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                  rus
-                </Typography>
-              </Box>
-            </MenuItem>
-          </Select>
-          <Box>
+        <Toolbar className="flex items-center justify-between">
+          <Box className="flex w-fit h-full items-center justify-start">
             <IconButton
-              edge="end"
-              aria-label="account of current user"
-              aria-controls={menuId}
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
+              size="large"
+              edge="start"
               color="inherit"
+              aria-label="open drawer"
+              sx={{ mr: { sm: 2 } }}
+              onClick={() => setOpenDrawer(!openDrawer)}
             >
-              {user != null ? (
-                <Avatar
-                  sx={{
-                    bgcolor: '#4c8dc1',
-                    width: { xs: 30, sm: 36 },
-                    height: { xs: 30, sm: 36 },
-                  }}
-                >
-                  {user.name[0].toUpperCase()}
-                </Avatar>
-              ) : (
-                <AccountCircle
-                  sx={{ width: { xs: 30, sm: 36 }, height: { xs: 30, sm: 36 } }}
-                />
-              )}
+              <MenuIcon />
             </IconButton>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ fontSize: { xs: 18, sm: 20 } }}
+            >
+              Xmobile
+            </Typography>
+          </Box>
+
+          <Box className="flex w-fit h-full items-center justify-center">
+            <Search>
+              <SearchIconWrapper>
+                <SearchIcon
+                  sx={{ color: 'white', fontSize: { xs: '20px', sm: '26px' } }}
+                />
+              </SearchIconWrapper>
+              <StyledInputBase
+                placeholder={t('search')}
+                inputProps={{ 'aria-label': 'search' }}
+                onChange={async (event) => {
+                  try {
+                    const keyword = event.target.value;
+                    const { success, data }: ResponseApi<Product[]> = await (
+                      await fetch(
+                        `${BASE_URL}/api/product?searchKeyword=${keyword}`,
+                      )
+                    ).json();
+                    if (success && data != null) setProducts(data);
+                  } catch (error) {
+                    console.error(error);
+                  }
+                }}
+              />
+            </Search>
+            <IconButton sx={{ display: { sm: 'none' } }}>
+              <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
+            </IconButton>
+            <Dialog open></Dialog>
+            <Select
+              defaultValue={router.locale}
+              color="info"
+              size="small"
+              sx={{
+                width: { xs: 80, sm: 110 },
+                height: { xs: 36, sm: 40 },
+                '& .MuiInputBase-input': {
+                  padding: { xs: '8px', sm: '20px' },
+                },
+              }}
+              onChange={(event) => {
+                const newPath = changeLocale(
+                  event.target.value,
+                  window.location.search,
+                  window.location.pathname,
+                );
+                window.location.pathname = newPath;
+              }}
+              style={{
+                backgroundColor: 'rgb(59 130 246 / 0.5)',
+                color: '#F5F5F5',
+              }}
+            >
+              <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="TM" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    tkm
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value="ch" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="TM" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    {/* ÇÄR */}
+                    çär
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value="en" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="US" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    eng
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="RU" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    rus
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </Select>
+            <Box>
+              <IconButton
+                edge="end"
+                aria-label="account of current user"
+                aria-controls={menuId}
+                aria-haspopup="true"
+                onClick={handleProfileMenuOpen}
+                color="inherit"
+              >
+                {user != null ? (
+                  <Avatar
+                    sx={{
+                      bgcolor: '#4c8dc1',
+                      width: { xs: 30, sm: 36 },
+                      height: { xs: 30, sm: 36 },
+                    }}
+                  >
+                    {user.name[0].toUpperCase()}
+                  </Avatar>
+                ) : (
+                  <AccountCircle
+                    sx={{
+                      width: { xs: 30, sm: 36 },
+                      height: { xs: 30, sm: 36 },
+                    }}
+                  />
+                )}
+              </IconButton>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>
