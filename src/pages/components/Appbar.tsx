@@ -1,30 +1,30 @@
-import * as React from 'react';
-import { styled, alpha } from '@mui/material/styles';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import InputBase from '@mui/material/InputBase';
-import MenuItem from '@mui/material/MenuItem';
-import Menu from '@mui/material/Menu';
-import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import BASE_URL from '@/lib/ApiEndpoints';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { Avatar, Dialog, Select } from '@mui/material';
-import { useRouter } from 'next/router';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { ResponseApi } from '@/pages/lib/types';
+import { changeLocale } from '@/pages/lib/utils';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
-import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
-import { Dispatch, SetStateAction } from 'react';
-import { useProductContext } from '@/pages/lib/ProductContext';
-import { ResponseApi } from '@/pages/lib/types';
+import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
+import { Avatar, Dialog, Select } from '@mui/material';
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import { alpha, styled } from '@mui/material/styles';
 import { Product } from '@prisma/client';
-import BASE_URL from '@/lib/ApiEndpoints';
-import { changeLocale } from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
+import { Dispatch, SetStateAction, useState } from 'react';
 import Flag from 'react-flagkit';
 
 const Search = styled('div')(({ theme }) => ({
@@ -90,23 +90,14 @@ export default function CustomAppBar({
   setOpenDrawer,
   openDrawer,
 }: CustomAppBarProps) {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user } = useUserContext();
   const router = useRouter();
-
   const isMenuOpen = Boolean(anchorEl);
-
   const t = useTranslations();
-
   const { setProducts } = useProductContext();
-
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const [openSearchBar, setOpenSearchBar] = useState(false);
+  const { selectedCategoryId } = useCategoryContext();
 
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
@@ -123,7 +114,7 @@ export default function CustomAppBar({
         horizontal: 'right',
       }}
       open={isMenuOpen}
-      onClose={handleMenuClose}
+      onClose={() => setAnchorEl(null)}
     >
       {user != null ? (
         <MenuItem
@@ -156,6 +147,20 @@ export default function CustomAppBar({
       )}
     </Menu>
   );
+
+  const handleSearch = async (keyword: string) => {
+    if (keyword === '') {
+      const { success, data }: ResponseApi<Product[]> = await (
+        await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
+      ).json();
+      if (success && data != null) setProducts(data);
+    } else {
+      const { success, data }: ResponseApi<Product[]> = await (
+        await fetch(`${BASE_URL}/api/product?searchKeyword=${keyword}`)
+      ).json();
+      if (success && data != null) setProducts(data);
+    }
+  };
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -200,23 +205,58 @@ export default function CustomAppBar({
                 inputProps={{ 'aria-label': 'search' }}
                 onChange={async (event) => {
                   try {
-                    const keyword = event.target.value;
-                    const { success, data }: ResponseApi<Product[]> = await (
-                      await fetch(
-                        `${BASE_URL}/api/product?searchKeyword=${keyword}`,
-                      )
-                    ).json();
-                    if (success && data != null) setProducts(data);
+                    await handleSearch(event.target.value);
                   } catch (error) {
                     console.error(error);
                   }
                 }}
               />
             </Search>
-            <IconButton sx={{ display: { sm: 'none' } }}>
+            <IconButton
+              sx={{ display: { sm: 'none' } }}
+              onClick={() => setOpenSearchBar(true)}
+            >
               <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
             </IconButton>
-            <Dialog open></Dialog>
+            <Dialog
+              open={openSearchBar}
+              onClose={() => setOpenSearchBar(false)}
+              sx={{
+                '& .MuiDialog-paper': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)', // adjust alpha value as needed
+                  width: '100%',
+                  top: '-35%',
+                },
+                backgroundColor: 'rgba(0, 0, 0, -1)',
+              }}
+            >
+              <Box
+                sx={{ padding: 1 }}
+                className="flex flex-row justify-start gap-2 items-center"
+              >
+                <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
+                <InputBase
+                  placeholder={t('search')}
+                  inputProps={{
+                    'aria-label': 'search',
+                    '&::placeholder': {
+                      color: 'white',
+                    },
+                  }}
+                  sx={{
+                    color: 'white',
+                    width: '100%',
+                  }}
+                  onChange={async (event) => {
+                    try {
+                      await handleSearch(event.target.value);
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
+                />
+              </Box>
+            </Dialog>
             <Select
               defaultValue={router.locale}
               color="info"
@@ -281,7 +321,7 @@ export default function CustomAppBar({
                 aria-label="account of current user"
                 aria-controls={menuId}
                 aria-haspopup="true"
-                onClick={handleProfileMenuOpen}
+                onClick={(event) => setAnchorEl(event.currentTarget)}
                 color="inherit"
               >
                 {user != null ? (
