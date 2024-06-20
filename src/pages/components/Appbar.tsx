@@ -237,12 +237,6 @@ export default function CustomAppBar({
                 <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
                 <InputBase
                   placeholder={t('search')}
-                  inputProps={{
-                    'aria-label': 'search',
-                    '&::placeholder': {
-                      color: 'white',
-                    },
-                  }}
                   sx={{
                     color: 'white',
                     width: '100%',
