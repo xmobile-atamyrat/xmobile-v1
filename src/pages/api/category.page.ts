@@ -1,9 +1,9 @@
 import dbClient from '@/lib/dbClient';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
-import { NextApiRequest, NextApiResponse } from 'next';
-import multiparty from 'multiparty';
 import fs from 'fs';
+import multiparty from 'multiparty';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 export const config = {
   api: {
@@ -47,6 +47,25 @@ async function recursivelyGetCategories(
     }
   }
   return categories;
+}
+
+async function recursivelyDeleteCategoryImages(
+  categoryId: string,
+): Promise<void> {
+  const category = await dbClient.category.findUnique({
+    where: {
+      id: categoryId,
+    },
+    include: {
+      successorCategories: true,
+    },
+  });
+  if (category?.imgUrl != null && fs.existsSync(category.imgUrl)) {
+    fs.unlinkSync(category.imgUrl);
+  }
+  category?.successorCategories.forEach(async ({ id }) => {
+    await recursivelyDeleteCategoryImages(id);
+  });
 }
 
 async function handleGetCategory(query: {
@@ -197,14 +216,12 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      const cat = await dbClient.category.delete({
+      await recursivelyDeleteCategoryImages(categoryId as string);
+      await dbClient.category.delete({
         where: {
           id: categoryId as string,
         },
       });
-      if (cat.imgUrl != null && fs.existsSync(cat.imgUrl)) {
-        fs.unlinkSync(cat.imgUrl);
-      }
       return res.status(200).json({ success: true });
     } catch (error) {
       console.log(error);
