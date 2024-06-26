@@ -2,8 +2,9 @@ import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
-import { NextApiRequest, NextApiResponse } from 'next';
+import fs from 'fs';
 import multiparty from 'multiparty';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 export const config = {
   api: {
@@ -161,11 +162,14 @@ export default async function handler(
         .status(404)
         .json({ success: false, message: 'No product id provided' });
 
-    await dbClient.product.delete({
+    const product = await dbClient.product.delete({
       where: {
         id: productId as string,
       },
     });
+    if (product?.imgUrl != null && fs.existsSync(product.imgUrl)) {
+      fs.unlinkSync(product.imgUrl);
+    }
     return res.status(200).json({ success: true });
   }
   return res
