@@ -49,7 +49,7 @@ async function recursivelyGetCategories(
   return categories;
 }
 
-async function recursivelyDeleteCategoryImages(
+async function recursivelyDeleteCategoryAndProductImages(
   categoryId: string,
 ): Promise<void> {
   const category = await dbClient.category.findUnique({
@@ -58,14 +58,27 @@ async function recursivelyDeleteCategoryImages(
     },
     include: {
       successorCategories: true,
+      products: true,
     },
   });
-  if (category?.imgUrl != null && fs.existsSync(category.imgUrl)) {
+
+  if (category == null) return;
+
+  if (category.imgUrl != null && fs.existsSync(category.imgUrl)) {
     fs.unlinkSync(category.imgUrl);
   }
-  category?.successorCategories.forEach(async ({ id }) => {
-    await recursivelyDeleteCategoryImages(id);
+
+  category.products.forEach(({ imgUrl }) => {
+    if (imgUrl != null && fs.existsSync(imgUrl)) {
+      fs.unlinkSync(imgUrl);
+    }
   });
+
+  await Promise.all(
+    category.successorCategories.map(async ({ id }) => {
+      await recursivelyDeleteCategoryAndProductImages(id);
+    }),
+  );
 }
 
 async function handleGetCategory(query: {
@@ -216,7 +229,7 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      await recursivelyDeleteCategoryImages(categoryId as string);
+      await recursivelyDeleteCategoryAndProductImages(categoryId as string);
       await dbClient.category.delete({
         where: {
           id: categoryId as string,
