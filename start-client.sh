@@ -7,6 +7,7 @@ CMD="npx next dev -p $NEXT_PUBLIC_PORT"
 
 if [[ -n $BG ]]; then
     CMD="$CMD &"
+    eval $CMD >> output.log 2>&1
 fi
 
-eval $CMD >> output.log 2>&1
+eval $CMD
