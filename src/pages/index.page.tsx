@@ -14,14 +14,33 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 export const getStaticProps = (async (context) => {
-  const { data: categories }: ResponseApi<ExtendedCategory[]> = await (
-    await fetch(`${BASE_URL}/api/category`)
-  ).json();
+  let categories: ExtendedCategory[] = [];
+  let messages = {};
 
+  try {
+    const categoriesResponse: ResponseApi<ExtendedCategory[]> = await (
+      await fetch(`${BASE_URL}/api/category`)
+    ).json();
+
+    if (categoriesResponse.success && categoriesResponse.data != null) {
+      categories = categoriesResponse.data;
+    }
+
+    messages = (await import(`../i18n/${context.locale}.json`)).default;
+
+    return {
+      props: {
+        categories,
+        messages,
+      },
+    };
+  } catch (error) {
+    console.error(error);
+  }
   return {
     props: {
       categories,
-      messages: (await import(`../i18n/${context.locale}.json`)).default,
+      messages,
     },
   };
 }) satisfies GetStaticProps<{ user?: User; categories?: ExtendedCategory[] }>;
