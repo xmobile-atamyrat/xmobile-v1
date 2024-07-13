@@ -11,5 +11,14 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
 
+  build_env:
+    image: build_env
+    container_name: build_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/postgres?schema=public
+    depends_on:
+      - db
+    command: 'tail -f /dev/null'
+
 volumes:
   db:
