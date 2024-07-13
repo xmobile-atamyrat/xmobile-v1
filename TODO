@@ -1,5 +1,11 @@
 TODO:
 
-- category and product local images sometimes don't get deleted
-  - delete product image on cascade delete category
+TOP PRIORITY:
+
+- local pictures are saved in the docker container and get wiped out when container exits -> persist local pictures in a volume
+
+MEDIUM PRIORITY:
+
+SMALL PRIORITY:
+
 - make eslint remove unused imports
