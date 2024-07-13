@@ -42,3 +42,6 @@ dummy_db_data/
 !*.tar.gz
 
 *.log
+
+ssh_keys
+*.tar.gz
