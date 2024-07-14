@@ -9,11 +9,12 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Box } from '@mui/material';
 import { Product, User } from '@prisma/client';
-import { GetStaticProps, InferGetServerSidePropsType } from 'next';
+import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-export const getStaticProps = (async (context) => {
+// getServerSideProps because we want to fetch the categories from the server on every request
+export const getServerSideProps: GetServerSideProps = (async (context) => {
   let categories: ExtendedCategory[] = [];
   let messages = {};
 
@@ -43,11 +44,14 @@ export const getStaticProps = (async (context) => {
       messages,
     },
   };
-}) satisfies GetStaticProps<{ user?: User; categories?: ExtendedCategory[] }>;
+}) satisfies GetServerSideProps<{
+  user?: User;
+  categories?: ExtendedCategory[];
+}>;
 
 export default function Home({
   categories,
-}: InferGetServerSidePropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { setCategories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
   const { products, setProducts } = useProductContext();
