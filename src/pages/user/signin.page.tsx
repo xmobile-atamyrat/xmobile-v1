@@ -1,3 +1,7 @@
+import { ResponseApi } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import CancelIcon from '@mui/icons-material/Cancel';
 import {
   Box,
   Button,
@@ -8,17 +12,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import CancelIcon from '@mui/icons-material/Cancel';
-import Link from 'next/link';
-import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
-import { useUserContext } from '@/pages/lib/UserContext';
-import { useState } from 'react';
-import { useRouter } from 'next/router';
-import { VisibilityOff, Visibility } from '@mui/icons-material';
-import { useTranslations } from 'next-intl';
 import { GetStaticProps } from 'next';
+import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useState } from 'react';
 
+// getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
     props: {
