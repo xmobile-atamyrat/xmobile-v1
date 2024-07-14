@@ -1,26 +1,40 @@
 # Xmobile
 
-## How to setup
+## Setup
 
-- Install `yarn`
-- Install `turbo` [link](https://turbo.build/repo/docs/installing)
-- Install packages with `yarn` command
-- Install docker desktop app and start it
-- Run the following commands to start database, server, and client:
+```bash
+yarn install
 
-  ```bash
-  # migrate db schema
-  cd apps/api
-  yarn db:generate
-  yarn db:migrate
+docker-compose up -d db
+yarn db:generate
+yarn db:migrate
 
-  # for mac and linux
-  chmod +x start.sh && ./start.sh
+yarn dev
+```
 
-  #for windows
-  docker-compose up -d # to start the db server, docker app has to be open
-  turbo dev
-  ```
+## CI/CD
+
+1. Get the xmobile ssh public and private keys along with passphrase
+
+2. Compile the app for ubuntu amd64
+
+```bash
+# one time, make scripts/build.sh executable
+chmod +x scripts/build.sh
+
+./scripts/build.sh <SSH_PASSPHRASE>
+```
+
+`build.sh` script installs the packages, compresses the whole repo to a `tar` file and copies it to the Telekom VM to the following directory: `/home/ubuntu/tar-file/xmobile-v1.tar.gz`. It's necessary to install packages on your device since the `npm registry` is blocked by the telekom firewall
+
+3. ssh into the VM, unpack the `tar` file, and copy (overwrite) ONLY the `src` dir to `xmobile-v1`
+
+4. Build and restart the app
+
+```bash
+yarn build
+./restart-server.sh
+```
 
 ## Features
 
