@@ -5,7 +5,6 @@ import { Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
-import path from 'path';
 
 export const config = {
   api: {
@@ -24,7 +23,7 @@ async function createProduct(
   req: NextApiRequest,
 ): Promise<CreateProductReturnType> {
   const form = new multiparty.Form({
-    uploadDir: path.join(__dirname, 'src/db/images/products/'),
+    uploadDir: process.env.PRODUCT_IMAGES_DIR,
   });
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {

@@ -4,7 +4,6 @@ import { Category } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
-import path from 'path';
 
 export const config = {
   api: {
@@ -103,7 +102,7 @@ async function handleGetCategory(query: {
 
 async function handlePostCategory(req: NextApiRequest) {
   const form = new multiparty.Form({
-    uploadDir: path.join(__dirname, 'src/db/images/categories/'),
+    uploadDir: process.env.CATEGORY_IMAGES_DIR,
   });
 
   const promise: Promise<{
@@ -134,7 +133,7 @@ async function handlePostCategory(req: NextApiRequest) {
 async function handleEditCategory(req: NextApiRequest) {
   const { categoryId } = req.query;
   const form = new multiparty.Form({
-    uploadDir: path.join(__dirname, 'src/db/images/categories/'),
+    uploadDir: process.env.CATEGORY_IMAGES_DIR,
   });
 
   const promise: Promise<{
