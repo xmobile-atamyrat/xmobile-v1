@@ -2,7 +2,8 @@ TODO:
 
 TOP PRIORITY:
 
-- local pictures are saved in the docker container and get wiped out when container exits -> persist local pictures in a volume
+- implement showing errors to users (get rid of all console.errors)
+  - find a way to log errors to a file
 
 MEDIUM PRIORITY:
 
