@@ -43,23 +43,22 @@ export default function ProductCard({
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const openEditMenu = Boolean(anchorEl);
-  const [imgUrl, setImgUrl] = useState<string>('/xmobile-original-logo.jpeg');
+  const [imgUrl, setImgUrl] = useState<string | null>();
 
   useEffect(() => {
     (async () => {
-      setTimeout(async () => {
-        if (product?.imgUrl != null) {
-          if (product.imgUrl.startsWith('http')) {
-            setImgUrl(product.imgUrl);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
-            );
+      if (product?.imgUrl != null) {
+        setImgUrl('/xmobile-original-logo.jpeg');
+        if (product.imgUrl.startsWith('http')) {
+          setImgUrl(product.imgUrl);
+        } else {
+          const imgFetcher = fetch(
+            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
+          );
 
-            setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
-          }
+          setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
         }
-      }, 2000);
+      }
     })();
   }, [product?.imgUrl]);
 
