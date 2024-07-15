@@ -45,5 +45,6 @@
   "deleteProduct": "Delete Product",
   "confirmDeleteProduct": "Are you sure you want to delete the selected product?",
   "dontHaveAccount": "Do not have an account?",
-  "editProduct": "Edit Product"
+  "editProduct": "Edit Product",
+  "fetchCategoriesError": "There is server error. Please, contact the administrators."
 }
