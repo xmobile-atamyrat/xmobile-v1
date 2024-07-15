@@ -1,21 +1,23 @@
 TODO:
 
 TOP PRIORITY:
-  - show default image while images are loading
-  - find good default image size for products
-  - implement showing errors to users (get rid of all console.errors)
-    - find a way to log errors to a file
-  - implement product page
-  - implement multiple images for products
-  - implement analytics page
-  - implement cart
-  - implement liking products feature -> order by likes?
-    - commenting as well?
-  - integrate payment system
+
+- find good default image size for products
+- implement showing errors to users (get rid of all console.errors)
+  - find a way to log errors to a file
+- implement product page
+- implement multiple images for products
+- implement analytics page
+- implement cart
+- implement liking products feature -> order by likes?
+  - commenting as well?
+- integrate payment system
 
 MEDIUM PRIORITY:
-  - In edit category and product, it's not possible to delete image (only replacing is allowed)
-  - Move search button as a persistent search bar
+
+- In edit category and product, it's not possible to delete image (only replacing is allowed)
+- Move search button as a persistent search bar
 
 SMALL PRIORITY:
-  - make eslint remove unused imports
+
+- make eslint remove unused imports
