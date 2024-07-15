@@ -59,3 +59,8 @@ export interface CategoryName {
   tk: string;
   ch: string;
 }
+
+export interface SnackbarProps {
+  message: string;
+  severity: 'success' | 'error' | 'info' | 'warning';
+}
