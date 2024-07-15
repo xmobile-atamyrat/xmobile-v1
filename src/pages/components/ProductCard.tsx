@@ -19,8 +19,9 @@ import {
 import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ProductCardProps {
   product?: Product;
@@ -42,6 +43,25 @@ export default function ProductCard({
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const openEditMenu = Boolean(anchorEl);
+  const [imgUrl, setImgUrl] = useState<string>('/xmobile-original-logo.jpeg');
+
+  useEffect(() => {
+    (async () => {
+      setTimeout(async () => {
+        if (product?.imgUrl != null) {
+          if (product.imgUrl.startsWith('http')) {
+            setImgUrl(product.imgUrl);
+          } else {
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
+            );
+
+            setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
+          }
+        }
+      }, 2000);
+    })();
+  }, [product?.imgUrl]);
 
   return (
     <Card
@@ -97,21 +117,13 @@ export default function ProductCard({
           )}
 
           <Box className="h-5/6">
-            {product.imgUrl != null && (
+            {imgUrl != null && (
               <Box className="w-full h-1/3 sm:h-1/2 flex justify-center">
-                <img
-                  src={product?.imgUrl}
+                <Image
+                  src={imgUrl}
                   alt={product?.name}
-                  onError={async (error) => {
-                    error.currentTarget.onerror = null;
-                    const imgFetcher = fetch(
-                      `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
-                    );
-
-                    error.currentTarget.src = URL.createObjectURL(
-                      await (await imgFetcher).blob(),
-                    );
-                  }}
+                  width={100}
+                  height={100}
                 />
               </Box>
             )}

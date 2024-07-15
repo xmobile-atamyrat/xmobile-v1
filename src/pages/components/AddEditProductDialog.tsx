@@ -2,7 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
-import { VisuallyHiddenInput, addProduct } from '@/pages/lib/utils';
+import { addEditProduct, VisuallyHiddenInput } from '@/pages/lib/utils';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { LoadingButton } from '@mui/lab';
@@ -20,15 +20,15 @@ import {
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-interface AddProductDialogProps {
+interface AddEditProductDialogProps {
   handleClose: () => void;
   args: AddEditProductProps;
 }
 
-export default function AddProductDialog({
+export default function AddEditProductDialog({
   handleClose,
   args: { description, dialogType, id, imageUrl, name, price },
-}: AddProductDialogProps) {
+}: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
@@ -69,7 +69,7 @@ export default function AddProductDialog({
           const formData = new FormData(
             event.currentTarget as unknown as HTMLFormElement,
           );
-          await addProduct({
+          await addEditProduct({
             formJson: Object.fromEntries(formData.entries()),
             productNameRequiredError: t('productNameRequired'),
             selectedCategoryId,

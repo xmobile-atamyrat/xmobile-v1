@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import AddProductDialog from '@/pages/components/AddProductDialog';
+import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -123,7 +123,7 @@ export default function Home({
             />
           ))}
         {addEditProductDialog.open && (
-          <AddProductDialog
+          <AddEditProductDialog
             args={addEditProductDialog}
             handleClose={() =>
               setAddEditProductDialog({
