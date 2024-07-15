@@ -10,8 +10,9 @@ import {
   AddEditProductProps,
   ExtendedCategory,
   ResponseApi,
+  SnackbarProps,
 } from '@/pages/lib/types';
-import { Box } from '@mui/material';
+import { Alert, Box, Snackbar } from '@mui/material';
 import { Product, User } from '@prisma/client';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
@@ -21,6 +22,7 @@ import { useEffect, useState } from 'react';
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let categories: ExtendedCategory[] = [];
   let messages = {};
+  let errorMessage: string | null = null;
 
   try {
     const categoriesResponse: ResponseApi<ExtendedCategory[]> = await (
@@ -29,32 +31,32 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
     if (categoriesResponse.success && categoriesResponse.data != null) {
       categories = categoriesResponse.data;
+    } else {
+      console.error(categoriesResponse.message);
+      errorMessage = 'fetchCategoriesError';
     }
 
     messages = (await import(`../i18n/${context.locale}.json`)).default;
-
-    return {
-      props: {
-        categories,
-        messages,
-      },
-    };
   } catch (error) {
     console.error(error);
+    errorMessage = 'fetchCategoriesError';
   }
   return {
     props: {
       categories,
       messages,
+      errorMessage,
     },
   };
 }) satisfies GetServerSideProps<{
   user?: User;
   categories?: ExtendedCategory[];
+  errorMessage: string | null;
 }>;
 
 export default function Home({
   categories,
+  errorMessage: categoryErrorMessage,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { setCategories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
@@ -66,6 +68,11 @@ export default function Home({
     show: boolean;
     productId: string;
   }>();
+  const [snackbarOpen, setSnackbarOpen] = useState(
+    categoryErrorMessage != null,
+  );
+  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+
   const t = useTranslations();
 
   useEffect(() => {
@@ -84,12 +91,19 @@ export default function Home({
   useEffect(() => {
     if (selectedCategoryId == null) return;
     (async () => {
-      const { success, data }: ResponseApi<Product[]> = await (
+      const { success, data, message }: ResponseApi<Product[]> = await (
         await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
       ).json();
       if (success && data != null) setProducts(data);
+      else console.error(message);
     })();
   }, [selectedCategoryId, setProducts]);
+
+  useEffect(() => {
+    if (categoryErrorMessage != null) {
+      setSnackbarMessage({ message: categoryErrorMessage, severity: 'error' });
+    }
+  }, [categoryErrorMessage]);
 
   return (
     <Layout>
@@ -164,6 +178,25 @@ export default function Home({
             }
           />
         )}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setSnackbarOpen(false);
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarMessage?.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {t(snackbarMessage?.message)}
+          </Alert>
+        </Snackbar>
       </Box>
     </Layout>
   );
