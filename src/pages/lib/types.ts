@@ -32,6 +32,16 @@ export interface EditCategoriesProps {
   imageUrl?: string | null;
 }
 
+export interface AddEditProductProps {
+  open: boolean;
+  dialogType?: 'add' | 'edit';
+  id?: string;
+  name?: string;
+  imageUrl?: string | null;
+  description?: string | null;
+  price?: string | null;
+}
+
 export interface DeleteCategoriesProps {
   categoryId?: string;
   open: boolean;

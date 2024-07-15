@@ -46,5 +46,6 @@
   "deleteCategories": "Удалить категории",
   "deleteProduct": "Удалить продукт",
   "confirmDeleteProduct": "Вы уверены, что хотите удалить выбранный товар?",
-  "dontHaveAccount": "Еще не регистрировались?"
+  "dontHaveAccount": "Еще не регистрировались?",
+  "editProduct": "Редактировать продукт"
 }
