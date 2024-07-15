@@ -149,6 +149,7 @@ async function handleEditProduct(
       if (fields.name?.length > 0) data.name = fields.name[0];
       if (fields.description?.length > 0)
         data.description = fields.description[0];
+      if (fields.price?.length > 0) data.price = fields.price[0];
       if (files.imageUrl?.length > 0) {
         const currProduct = await dbClient.product.findUnique({
           where: {
