@@ -10,6 +10,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  CardMedia,
   Divider,
   IconButton,
   Menu,
@@ -19,7 +20,6 @@ import {
 import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -65,8 +65,8 @@ export default function ProductCard({
   return (
     <Card
       sx={{
-        width: { xs: '47%', sm: 250 },
-        height: { xs: 250, sm: 300 },
+        width: { xs: '47%', sm: 200 },
+        height: { xs: 300, sm: 350 },
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
@@ -117,12 +117,16 @@ export default function ProductCard({
 
           <Box className="h-5/6">
             {imgUrl != null && (
-              <Box className="w-full h-1/3 sm:h-1/2 flex justify-center">
-                <Image
-                  src={imgUrl}
+              <Box className="flex justify-center">
+                <CardMedia
+                  component="img"
+                  image={imgUrl}
                   alt={product?.name}
-                  width={100}
-                  height={100}
+                  sx={{
+                    height: { xs: 120 },
+                    width: 'auto',
+                    p: 0,
+                  }}
                 />
               </Box>
             )}
@@ -136,7 +140,7 @@ export default function ProductCard({
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/2 sm:h-1/3' : 'h-full'}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/3' : 'h-full'}`}
             >
               <Typography variant="body2" color="text.secondary">
                 {parseName(product?.description ?? '{}', router.locale ?? 'tk')}
