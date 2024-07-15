@@ -2,7 +2,6 @@ TODO:
 
 TOP PRIORITY:
 
-- find good default image size for products
 - implement showing errors to users (get rid of all console.errors)
   - find a way to log errors to a file
 - implement product page

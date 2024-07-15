@@ -113,7 +113,7 @@ async function handlePostCategory(req: NextApiRequest) {
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.log(err);
+        console.error(err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const category = await dbClient.category.create({
