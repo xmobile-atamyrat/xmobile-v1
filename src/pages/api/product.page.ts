@@ -131,6 +131,49 @@ async function handleGetProduct(query: {
   };
 }
 
+async function handleEditProduct(
+  req: NextApiRequest,
+): Promise<CreateProductReturnType> {
+  const { productId } = req.query;
+  const form = new multiparty.Form({
+    uploadDir: process.env.PRODUCT_IMAGES_DIR,
+  });
+  const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.error(err);
+        resolve({ success: false, message: err.message, status: 500 });
+      }
+
+      const data: Partial<Product> = {};
+      if (fields.name?.length > 0) data.name = fields.name[0];
+      if (fields.description?.length > 0)
+        data.description = fields.description[0];
+      if (files.imageUrl?.length > 0) {
+        const currProduct = await dbClient.product.findUnique({
+          where: {
+            id: productId as string,
+          },
+        });
+        if (currProduct?.imgUrl != null && fs.existsSync(currProduct.imgUrl)) {
+          fs.unlinkSync(currProduct.imgUrl);
+        }
+        data.imgUrl = files.imageUrl?.[0].path;
+      } else if (fields.imageUrl?.length > 0) data.imgUrl = fields.imageUrl[0];
+
+      const product = await dbClient.product.update({
+        where: {
+          id: productId as string,
+        },
+        data,
+      });
+      resolve({ success: true, data: product, status: 200 });
+    });
+  });
+  const res = await promise;
+  return res;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -171,6 +214,22 @@ export default async function handler(
       fs.unlinkSync(product.imgUrl);
     }
     return res.status(200).json({ success: true });
+  } else if (method === 'PUT') {
+    const { productId } = query;
+    if (productId == null)
+      return res
+        .status(404)
+        .json({ success: false, message: 'No product id provided' });
+
+    try {
+      const retData = await handleEditProduct(req);
+      return res.status(200).json(retData);
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Couldn't update the product" });
+    }
   }
   return res
     .status(405)
