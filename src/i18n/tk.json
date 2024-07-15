@@ -47,5 +47,6 @@
   "deleteProduct": "Önümi poz",
   "confirmDeleteProduct": "Saýlanan önümi pozmak isleýändigiňize ynanýarsyňyzmy?",
   "dontHaveAccount": "Hasabyňyz ýokmy?",
-  "editProduct": "Önümi redaktirläň"
+  "editProduct": "Önümi redaktirläň",
+  "fetchCategoriesError": "Serwer ýalňyşlygy bar. Dolandyryjylar bilen habarlaşmagyňyzy haýyş edýäris."
 }
