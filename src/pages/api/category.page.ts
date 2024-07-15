@@ -144,7 +144,7 @@ async function handleEditCategory(req: NextApiRequest) {
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.log(err);
+        console.error(err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const data: Partial<Category> = {};
@@ -216,7 +216,7 @@ export default async function handler(
       if (data) retData.data = data;
       return res.status(status).json(retData);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't edit the category" });
