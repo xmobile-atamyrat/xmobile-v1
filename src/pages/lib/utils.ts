@@ -176,7 +176,7 @@ export const addEditCategory = async ({
   return null;
 };
 
-export async function addProduct({
+export async function addEditProduct({
   type,
   formJson: {
     productNameInCharjov,

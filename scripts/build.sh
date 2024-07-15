@@ -24,7 +24,7 @@ main() {
             mkdir -p /app/xmobile-v1 && \
             git clone git@github.com:xmobile-atamyrat/xmobile-v1.git /app/xmobile-v1 && \
             cd /app/xmobile-v1 && \
-            yarn install && \
+            yarn install --production && \
             tar -czvf /app/xmobile-v1.tar.gz /app/xmobile-v1
         '
         docker cp build_env:/app/xmobile-v1.tar.gz .
