@@ -44,5 +44,6 @@
   "deleteCategories": "Delete Categories",
   "deleteProduct": "Delete Product",
   "confirmDeleteProduct": "Are you sure you want to delete the selected product?",
-  "dontHaveAccount": "Do not have an account?"
+  "dontHaveAccount": "Do not have an account?",
+  "editProduct": "Edit Product"
 }
