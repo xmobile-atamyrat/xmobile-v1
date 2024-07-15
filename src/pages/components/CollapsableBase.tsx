@@ -1,4 +1,12 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   Box,
   IconButton,
@@ -9,17 +17,9 @@ import {
   MenuItem,
   Typography,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import { EditCategoriesProps, DeleteCategoriesProps } from '@/pages/lib/types';
-import { Dispatch, SetStateAction, useState } from 'react';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { useUserContext } from '@/pages/lib/UserContext';
-import { useRouter } from 'next/router';
-import { parseName } from '@/pages/lib/utils';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface CollapsableBaseProps {
   imgUrl: string | null;
@@ -30,7 +30,7 @@ interface CollapsableBaseProps {
 }
 
 export default function CollapsableBase({
-  imgUrl,
+  imgUrl: categoryImgUrl,
   categoryTitle,
   id,
   setEditCategoriesModal,
@@ -38,10 +38,27 @@ export default function CollapsableBase({
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
-  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
+  const router = useRouter();
   const openEditMenu = Boolean(anchorEl);
+  const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
+
+  useEffect(() => {
+    if (categoryImgUrl != null) {
+      setImgUrl('/xmobile-original-logo.jpeg');
+      (async () => {
+        if (categoryImgUrl.startsWith('http')) {
+          setImgUrl(categoryImgUrl);
+        } else {
+          const imgFetcher = fetch(
+            `${BASE_URL}/api/localImage?imgUrl=${categoryImgUrl}`,
+          );
+          setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
+        }
+      })();
+    }
+  }, [categoryImgUrl]);
 
   return (
     <Box
