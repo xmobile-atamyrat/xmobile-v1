@@ -6,7 +6,11 @@ import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import {
+  AddEditProductProps,
+  ExtendedCategory,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { Box } from '@mui/material';
 import { Product, User } from '@prisma/client';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
@@ -55,7 +59,8 @@ export default function Home({
   const { setCategories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
   const { products, setProducts } = useProductContext();
-  const [createProductDialog, setCreateProductDialog] = useState(false);
+  const [addEditProductDialog, setAddEditProductDialog] =
+    useState<AddEditProductProps>({ open: false });
   const { user, setUser } = useUserContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
@@ -91,7 +96,9 @@ export default function Home({
       <Box className="flex flex-wrap gap-4 w-full p-3">
         {user?.grade === 'ADMIN' && selectedCategoryId != null && (
           <ProductCard
-            handleClickAddProduct={() => setCreateProductDialog(true)}
+            handleClickAddProduct={() =>
+              setAddEditProductDialog({ open: true, dialogType: 'add' })
+            }
           />
         )}
         {products.length > 0 &&
@@ -102,10 +109,33 @@ export default function Home({
               handleDeleteProduct={(productId) =>
                 setShowDeleteProductDialog({ show: true, productId })
               }
+              handleEditProduct={() =>
+                setAddEditProductDialog({
+                  open: true,
+                  id: product.id,
+                  description: product.description,
+                  dialogType: 'edit',
+                  imageUrl: product.imgUrl,
+                  name: product.name,
+                  price: product.price,
+                })
+              }
             />
           ))}
-        {createProductDialog && (
-          <AddProductDialog handleClose={() => setCreateProductDialog(false)} />
+        {addEditProductDialog.open && (
+          <AddProductDialog
+            args={addEditProductDialog}
+            handleClose={() =>
+              setAddEditProductDialog({
+                open: false,
+                id: undefined,
+                description: undefined,
+                dialogType: undefined,
+                imageUrl: undefined,
+                name: undefined,
+              })
+            }
+          />
         )}
         {showDeleteProductDialog?.show && (
           <DeleteDialog
