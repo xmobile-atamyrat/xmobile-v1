@@ -1,32 +1,33 @@
+import BASE_URL from '@/lib/ApiEndpoints';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
-  Card,
-  CardContent,
-  Typography,
-  CardActions,
   Box,
-  IconButton,
+  Card,
+  CardActions,
+  CardContent,
   Divider,
+  IconButton,
   Menu,
   MenuItem,
+  Typography,
 } from '@mui/material';
 import { Product } from '@prisma/client';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import BASE_URL from '@/lib/ApiEndpoints';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useState } from 'react';
-import { useUserContext } from '@/pages/lib/UserContext';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { parseName } from '@/pages/lib/utils';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EditIcon from '@mui/icons-material/Edit';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cardClassName?: string;
   handleDeleteProduct?: (productId: string) => void;
+  handleEditProduct?: () => void;
 }
 
 export default function ProductCard({
@@ -34,6 +35,7 @@ export default function ProductCard({
   handleClickAddProduct,
   cardClassName,
   handleDeleteProduct,
+  handleEditProduct,
 }: ProductCardProps) {
   const { user } = useUserContext();
   const t = useTranslations();
@@ -70,7 +72,10 @@ export default function ProductCard({
                 onClose={() => setAnchorEl(undefined)}
                 anchorEl={anchorEl}
               >
-                <MenuItem className="flex flex-row justify-start gap-2 items-center px-2 w-[120px] bg-[#F8F9FA]">
+                <MenuItem
+                  className="flex flex-row justify-start gap-2 items-center px-2 w-[120px] bg-[#F8F9FA]"
+                  onClick={handleEditProduct}
+                >
                   <EditIcon color="primary" fontSize="medium" />
                   <Typography className="overflow-x-scroll">
                     {t('edit')}

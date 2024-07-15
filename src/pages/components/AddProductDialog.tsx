@@ -1,3 +1,10 @@
+import BASE_URL from '@/lib/ApiEndpoints';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
+import { AddEditProductProps } from '@/pages/lib/types';
+import { VisuallyHiddenInput, addProduct } from '@/pages/lib/utils';
+import { DeleteOutlined } from '@mui/icons-material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
@@ -10,21 +17,17 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { VisuallyHiddenInput, addProduct } from '@/pages/lib/utils';
-import BASE_URL from '@/lib/ApiEndpoints';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { useProductContext } from '@/pages/lib/ProductContext';
 import { useTranslations } from 'next-intl';
-import { DeleteOutlined } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
 
 interface AddProductDialogProps {
   handleClose: () => void;
+  args: AddEditProductProps;
 }
 
 export default function AddProductDialog({
   handleClose,
+  args: { description, dialogType, id, imageUrl, name, price },
 }: AddProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setProducts } = useProductContext();
@@ -36,6 +39,19 @@ export default function AddProductDialog({
   const [productImageUrl, setProductImageUrl] = useState<string>();
 
   const [errorMessage, setErrorMessage] = useState<string>();
+
+  const parsedProductName = JSON.parse(name ?? '{}');
+  const parsedProductDescription = JSON.parse(description ?? '{}');
+
+  useEffect(() => {
+    if (imageUrl == null) return;
+    try {
+      new URL(imageUrl);
+      setProductImageUrl(imageUrl);
+    } catch (_) {
+      setProductLogoUrl(imageUrl);
+    }
+  }, [imageUrl]);
 
   return (
     <Dialog
@@ -60,6 +76,8 @@ export default function AddProductDialog({
             setProducts,
             productImageFile,
             productImageUrl,
+            type: dialogType,
+            selectedProductId: id,
           });
         } catch (error) {
           setLoading(false);
@@ -71,7 +89,9 @@ export default function AddProductDialog({
         handleClose();
       }}
     >
-      <DialogTitle>{t('addNewProduct')}</DialogTitle>
+      <DialogTitle>
+        {dialogType === 'add' ? t('addNewProduct') : t('editProduct')}
+      </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
         <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
           <Box className="w-full">
@@ -83,21 +103,25 @@ export default function AddProductDialog({
               label={t('inTurkmen')}
               name="productNameInTurkmen"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.tk ?? ''}
             />
             <TextField
               label={t('inCharjov')}
               name="productNameInCharjov"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.ch ?? ''}
             />
             <TextField
               label={t('inRussian')}
               name="productNameInRussian"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.ru ?? ''}
             />
             <TextField
               label={t('inEnglish')}
               name="productNameInEnglish"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.en ?? ''}
             />
             {errorMessage && (
               <Typography fontSize={14} color="red">
@@ -113,6 +137,7 @@ export default function AddProductDialog({
               name="productDescriptionInTurkmen"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.tk ?? ''}
             />
             <TextField
               label={t('inCharjov')}
@@ -120,6 +145,7 @@ export default function AddProductDialog({
               name="productDescriptionInCharjov"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.ch ?? ''}
             />
             <TextField
               label={t('inRussian')}
@@ -127,6 +153,7 @@ export default function AddProductDialog({
               name="productDescriptionInRussian"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.ru ?? ''}
             />
             <TextField
               label={t('inEnglish')}
@@ -134,6 +161,7 @@ export default function AddProductDialog({
               name="productDescriptionInEnglish"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.en ?? ''}
             />
           </Box>
           <TextField
@@ -141,6 +169,7 @@ export default function AddProductDialog({
             type="number"
             name="price"
             className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+            defaultValue={price ?? ''}
           />
         </Box>
         <Box className="flex flex-col sm:flex-row p-2">
