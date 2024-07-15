@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { localeOptions } from '@/pages/lib/constants';
 import {
+  AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
   ResponseApi,
@@ -176,6 +177,7 @@ export const addEditCategory = async ({
 };
 
 export async function addProduct({
+  type,
   formJson: {
     productNameInCharjov,
     productNameInEnglish,
@@ -192,13 +194,16 @@ export async function addProduct({
   setProducts,
   productImageUrl,
   productImageFile,
+  selectedProductId,
 }: {
+  type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   productNameRequiredError: string;
   selectedCategoryId: string;
   productImageUrl?: string;
   productImageFile?: File;
   setProducts: Dispatch<SetStateAction<Product[]>>;
+  selectedProductId?: string;
 }) {
   if (
     productNameInCharjov === '' &&
@@ -241,10 +246,17 @@ export async function addProduct({
     newFormData.append('imageUrl', resizedImage);
   }
 
-  await fetch(`${BASE_URL}/api/product`, {
-    method: 'POST',
-    body: newFormData,
-  });
+  if (type === 'add') {
+    await fetch(`${BASE_URL}/api/product`, {
+      method: 'POST',
+      body: newFormData,
+    });
+  } else {
+    await fetch(`${BASE_URL}/api/product?productId=${selectedProductId}`, {
+      method: 'PUT',
+      body: newFormData,
+    });
+  }
 
   const { success, data }: ResponseApi<Product[]> = await (
     await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
