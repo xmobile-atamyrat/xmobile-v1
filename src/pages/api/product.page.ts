@@ -12,6 +12,8 @@ export const config = {
   },
 };
 
+const filepath = 'src/pages/api/product.page.ts';
+
 interface CreateProductReturnType {
   success: boolean;
   message?: string;
@@ -28,7 +30,7 @@ async function createProduct(
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error(err);
+        console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const product = await dbClient.product.create({
@@ -91,20 +93,34 @@ async function handleGetProduct(query: {
   }
   if (productId != null) {
     const product = await getProduct(productId as string);
-    if (product == null)
+    if (product == null) {
+      console.error(
+        filepath,
+        'Product not found',
+        `Method: GET`,
+        `productId: ${productId}`,
+      );
       return {
         resp: { success: false, message: "Couldn't find the product" },
         status: 404,
       };
+    }
     return { resp: { success: true, data: product }, status: 200 };
   }
   if (categoryId != null) {
     const category = await getCategory(categoryId as string);
-    if (category == null)
+    if (category == null) {
+      console.error(
+        filepath,
+        'Category not found',
+        `Method: GET`,
+        `productId: ${categoryId}`,
+      );
       return {
         resp: { success: false, message: "Couldn't find the category" },
         status: 404,
       };
+    }
 
     const { successorCategories, products } = category;
     if (successorCategories?.length === 0)
@@ -122,6 +138,12 @@ async function handleGetProduct(query: {
 
     return { resp: { success: true, data: allProducts }, status: 200 };
   }
+
+  console.error(
+    filepath,
+    'Neither categoryId nor productId has been provided',
+    `Method: GET`,
+  );
   return {
     resp: {
       success: false,
@@ -141,7 +163,7 @@ async function handleEditProduct(
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error(err);
+        console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
       }
 
@@ -185,6 +207,7 @@ export default async function handler(
       const retData = await createProduct(req);
       return res.status(200).json(retData);
     } catch (error) {
+      console.error(filepath, error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't create a new product" });
@@ -194,46 +217,58 @@ export default async function handler(
       const { resp, status } = await handleGetProduct(query);
       return res.status(status).json(resp);
     } catch (error) {
+      console.error(filepath, error);
       return {
         resp: { success: false, message: "Couldn't find the product/s" },
         status: 500,
       };
     }
   } else if (method === 'DELETE') {
-    const { productId } = query;
-    if (productId == null) {
-      console.error('No product id provided');
-      return res
-        .status(404)
-        .json({ success: false, message: 'No product id provided' });
-    }
+    try {
+      const { productId } = query;
+      if (productId == null) {
+        console.error(filepath, 'No product id provided', `Method: ${method}`);
+        return res
+          .status(404)
+          .json({ success: false, message: 'No product id provided' });
+      }
 
-    const product = await dbClient.product.delete({
-      where: {
-        id: productId as string,
-      },
-    });
-    if (product?.imgUrl != null && fs.existsSync(product.imgUrl)) {
-      fs.unlinkSync(product.imgUrl);
+      const product = await dbClient.product.delete({
+        where: {
+          id: productId as string,
+        },
+      });
+      if (product?.imgUrl != null && fs.existsSync(product.imgUrl)) {
+        fs.unlinkSync(product.imgUrl);
+      }
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(filepath, error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Couldn't delete the product" });
     }
-    return res.status(200).json({ success: true });
   } else if (method === 'PUT') {
     const { productId } = query;
-    if (productId == null)
+    if (productId == null) {
+      console.error(filepath, 'No product id provided', `Method: ${method}`);
       return res
         .status(404)
         .json({ success: false, message: 'No product id provided' });
+    }
 
     try {
       const retData = await handleEditProduct(req);
       return res.status(200).json(retData);
     } catch (error) {
-      console.error(error);
+      console.error(filepath, error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't update the product" });
     }
   }
+
+  console.error(`${filepath}: Method not allowed`);
   return res
     .status(405)
     .json({ success: false, message: 'Method not allowed' });
