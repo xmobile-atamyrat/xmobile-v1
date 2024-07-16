@@ -28,7 +28,7 @@ async function createProduct(
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.log(err);
+        console.error(err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const product = await dbClient.product.create({
@@ -201,10 +201,12 @@ export default async function handler(
     }
   } else if (method === 'DELETE') {
     const { productId } = query;
-    if (productId == null)
+    if (productId == null) {
+      console.error('No product id provided');
       return res
         .status(404)
         .json({ success: false, message: 'No product id provided' });
+    }
 
     const product = await dbClient.product.delete({
       where: {

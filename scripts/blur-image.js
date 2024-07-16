@@ -24,6 +24,6 @@ async function processImage() {
 
 processImage(imagePath).then((dataUrl) => {
   if (dataUrl) {
-    console.log('Data URL:', dataUrl);
+    console.info('Data URL:', dataUrl);
   }
 });
