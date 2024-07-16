@@ -11,6 +11,8 @@ export const config = {
   },
 };
 
+const filepath = 'src/pages/api/category.page.ts';
+
 export async function getCategory(
   categoryId: string,
 ): Promise<ExtendedCategory | null> {
@@ -29,24 +31,32 @@ export async function getCategory(
 async function recursivelyGetCategories(
   categories: ExtendedCategory[],
 ): Promise<ExtendedCategory[]> {
-  // eslint-disable-next-line no-restricted-syntax
-  for (const category of categories) {
-    const { successorCategories } = (await dbClient.category.findUnique({
-      where: { id: category.id },
-      include: {
-        successorCategories: {
-          orderBy: {
-            createdAt: 'asc',
+  const updatedCategories = await Promise.all(
+    categories.map(async (category) => {
+      const { successorCategories } =
+        (await dbClient.category.findUnique({
+          where: { id: category.id },
+          include: {
+            successorCategories: {
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
           },
-        },
-      },
-    }))!;
-    category.successorCategories = successorCategories;
-    if (successorCategories.length > 0) {
-      await recursivelyGetCategories(successorCategories);
-    }
-  }
-  return categories;
+        })) || {};
+
+      category.successorCategories = successorCategories;
+
+      if (successorCategories && successorCategories.length > 0) {
+        category.successorCategories =
+          await recursivelyGetCategories(successorCategories);
+      }
+
+      return category;
+    }),
+  );
+
+  return updatedCategories;
 }
 
 async function recursivelyDeleteCategoryAndProductImages(
@@ -113,7 +123,7 @@ async function handlePostCategory(req: NextApiRequest) {
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error(err);
+        console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const category = await dbClient.category.create({
@@ -144,7 +154,7 @@ async function handleEditCategory(req: NextApiRequest) {
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        console.error(err);
+        console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
       }
       const data: Partial<Category> = {};
@@ -184,7 +194,7 @@ export default async function handler(
       const { resp, status } = await handleGetCategory(query);
       return res.status(status).json(resp);
     } catch (error) {
-      console.error(error);
+      console.error(filepath, error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't get categories" });
@@ -197,7 +207,7 @@ export default async function handler(
       if (data) retData.data = data;
       return res.status(status).json(retData);
     } catch (error) {
-      console.error(error);
+      console.error(filepath, error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });
@@ -205,6 +215,7 @@ export default async function handler(
   } else if (method === 'PUT') {
     const { categoryId } = query;
     if (categoryId == null) {
+      console.error(filepath, `Category ID not provided. Method: ${method}`);
       return res
         .status(400)
         .json({ success: false, message: 'Category ID not provided' });
@@ -216,7 +227,7 @@ export default async function handler(
       if (data) retData.data = data;
       return res.status(status).json(retData);
     } catch (error) {
-      console.error(error);
+      console.error(filepath, error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't edit the category" });
@@ -224,6 +235,7 @@ export default async function handler(
   } else if (method === 'DELETE') {
     const { categoryId } = query;
     if (categoryId == null) {
+      console.error(filepath, `Category ID not provided. Method: ${method}`);
       return res
         .status(400)
         .json({ success: false, message: 'Category ID not provided' });
@@ -237,12 +249,14 @@ export default async function handler(
       });
       return res.status(200).json({ success: true });
     } catch (error) {
-      console.error(error);
+      console.error(filepath, error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't delete the category" });
     }
   }
+
+  console.error(`${filepath}: Method not allowed`);
   return res
     .status(405)
     .json({ success: false, message: 'Method not allowed' });
