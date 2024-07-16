@@ -1,5 +1,7 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
+import { NextApiRequest, NextApiResponse } from 'next';
+
+const filepath = 'src/pages/api/localImage.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,6 +19,12 @@ export default async function handler(
       return res.status(200).send(img);
     }
 
+    console.error(
+      filepath,
+      'Image not found',
+      `Method: ${method}`,
+      `imgUrl: ${imgUrl}`,
+    );
     return res.status(404).send('Image not found');
   }
   if (method === 'DELETE') {
@@ -25,9 +33,16 @@ export default async function handler(
       return res.status(200).json({ success: true });
     }
 
+    console.error(
+      filepath,
+      'Image not found',
+      `Method: ${method}`,
+      `imgUrl: ${imgUrl}`,
+    );
     return res.status(404).json({ success: false, message: 'Image not found' });
   }
 
+  console.error(`${filepath}: Method not allowed`);
   return res
     .status(405)
     .json({ success: false, message: 'Method not allowed' });
