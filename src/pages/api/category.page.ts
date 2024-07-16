@@ -184,7 +184,7 @@ export default async function handler(
       const { resp, status } = await handleGetCategory(query);
       return res.status(status).json(resp);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't get categories" });
@@ -197,7 +197,7 @@ export default async function handler(
       if (data) retData.data = data;
       return res.status(status).json(retData);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       res
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });
@@ -237,7 +237,7 @@ export default async function handler(
       });
       return res.status(200).json({ success: true });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res
         .status(500)
         .json({ success: false, message: "Couldn't delete the category" });
