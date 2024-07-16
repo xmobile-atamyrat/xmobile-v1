@@ -1,9 +1,10 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { User } from '@prisma/client';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { ResponseApi } from '@/pages/lib/types';
 import dbClient from '@/lib/dbClient';
+import { ResponseApi } from '@/pages/lib/types';
+import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+const filepath = 'src/pages/api/user/signup.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,6 +18,9 @@ export default async function handler(
         where: { email },
       });
       if (existingUser) {
+        console.error(
+          `${filepath}: user already exists. email: ${email}, name: ${name}`,
+        );
         return res
           .status(400)
           .json({ success: false, message: 'userAlreadyExists' });
@@ -35,6 +39,7 @@ export default async function handler(
         data: user,
       });
     } catch (error) {
+      console.error(filepath, error);
       return res.status(500).json({
         success: false,
         message: (error as Error).message,
@@ -42,6 +47,7 @@ export default async function handler(
     }
   }
 
+  console.error(`${filepath}: Method not allowed`);
   return res
     .status(405)
     .json({ success: false, message: 'Method not allowed' });

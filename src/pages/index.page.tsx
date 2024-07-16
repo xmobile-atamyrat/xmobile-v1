@@ -194,7 +194,7 @@ export default function Home({
             variant="filled"
             sx={{ width: '100%' }}
           >
-            {t(snackbarMessage?.message)}
+            {snackbarMessage?.message && t(snackbarMessage.message)}
           </Alert>
         </Snackbar>
       </Box>
