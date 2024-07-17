@@ -69,11 +69,7 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
   });
 }
 
-export const changeLocale = (
-  newLocale: string,
-  query: string,
-  pathname: string,
-) => {
+export const changeLocale = (newLocale: string, pathname: string) => {
   const pathSegments = pathname.split('/');
   if (localeOptions.includes(pathSegments[1])) {
     pathSegments[1] = newLocale;
@@ -81,7 +77,7 @@ export const changeLocale = (
     pathSegments.splice(1, 0, newLocale);
   }
   const newPathname = pathSegments.join('/');
-  const newUrl = `${newPathname}${query}`;
+  const newUrl = `${newPathname}`;
 
   return newUrl;
 };
