@@ -1,8 +1,11 @@
-import { Box } from '@mui/material';
-import { ReactNode, useState } from 'react';
-import CustomDrawer from '@/pages/components/Drawer';
+import BASE_URL from '@/lib/ApiEndpoints';
+import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
 import CustomAppBar from '@/pages/components/Appbar';
+import DeleteDialog from '@/pages/components/DeleteDialog';
+import CustomDrawer from '@/pages/components/Drawer';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight } from '@/pages/lib/constants';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   DeleteCategoriesProps,
   EditCategoriesProps,
@@ -10,13 +13,10 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { deleteCategory } from '@/pages/lib/utils';
-import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
-import DeleteDialog from '@/pages/components/DeleteDialog';
-import { useTranslations } from 'next-intl';
-import BASE_URL from '@/lib/ApiEndpoints';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { useProductContext } from '@/pages/lib/ProductContext';
+import { Box } from '@mui/material';
 import { Product } from '@prisma/client';
+import { useTranslations } from 'next-intl';
+import { ReactNode, useState } from 'react';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -29,14 +29,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { setProducts } = useProductContext();
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        pt: `${appBarHeight}px`,
-        width: '100%',
-        height: '100%',
-      }}
-    >
+    <Box>
       <CustomAppBar openDrawer={openDrawer} setOpenDrawer={setOpenDrawer} />
       <CustomDrawer
         openDrawer={openDrawer}
@@ -47,7 +40,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       <Box
         component="main"
         sx={{ flexGrow: 1, width: '100%', height: '100%' }}
-        className="bg-[#F8F9FA]"
+        className="bg-[#F8F9FA] min-h-screen"
+        pt={`${appBarHeight}px`}
       >
         {children}
       </Box>
@@ -77,19 +71,22 @@ export default function Layout({ children }: { children: ReactNode }) {
 
             const {
               success: catSuccess,
-              data: categories,
+              data: updatedCategories,
             }: ResponseApi<ExtendedCategory[]> = await (
               await fetch(`${BASE_URL}/api/category`)
             ).json();
 
-            if (catSuccess && categories) {
-              setCategories(categories);
+            if (catSuccess && updatedCategories) {
+              setCategories(updatedCategories);
 
-              if (categories.length > 0 && categories[0]?.id != null) {
-                setSelectedCategoryId(categories[0]?.id);
+              if (
+                updatedCategories.length > 0 &&
+                updatedCategories[0]?.id != null
+              ) {
+                setSelectedCategoryId(updatedCategories[0]?.id);
                 const { success, data }: ResponseApi<Product[]> = await (
                   await fetch(
-                    `${BASE_URL}/api/product?categoryId=${categories[0].id}`,
+                    `${BASE_URL}/api/product?categoryId=${updatedCategories[0].id}`,
                   )
                 ).json();
                 if (success && data != null) setProducts(data);
