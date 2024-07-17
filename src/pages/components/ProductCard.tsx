@@ -69,7 +69,10 @@ export default function ProductCard({
         height: { xs: 300, sm: 350 },
         ':hover': { boxShadow: 10 },
       }}
-      className={classNames('border-[1px] px-2 py-4 relative', cardClassName)}
+      className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
+      onClick={() => {
+        router.push(`/product?id=${product?.id}`);
+      }}
     >
       {product != null ? (
         <Box className="relative h-full w-full flex flex-col justify-between p-1">
@@ -148,8 +151,11 @@ export default function ProductCard({
             </Box>
           </Box>
           {product?.price != null && (
-            <Box className="h-1/6 flex items-end ">
-              <Typography sx={{ fontSize: { xs: 12, sm: 16 } }}>
+            <Box className="flex items-end ">
+              <Typography
+                sx={{ fontSize: { xs: 13, sm: 16 } }}
+                fontWeight={600}
+              >
                 {t('price')}: {product?.price} {t('manat')}
               </Typography>
             </Box>
