@@ -99,7 +99,7 @@ export default function Home({
   }, [categoryErrorMessage]);
 
   return (
-    <Layout>
+    <Layout showSearch>
       <Box className="flex flex-wrap gap-4 w-full p-3">
         {user?.grade === 'ADMIN' && selectedCategoryId != null && (
           <ProductCard
