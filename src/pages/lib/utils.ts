@@ -82,7 +82,7 @@ export const changeLocale = (newLocale: string, pathname: string) => {
   return newUrl;
 };
 
-export const parseName = (name: string, locale: string) => {
+export const parseName = (name: string, locale: string): string => {
   try {
     const parsedName = JSON.parse(name);
     let categoryName = parsedName[locale];
