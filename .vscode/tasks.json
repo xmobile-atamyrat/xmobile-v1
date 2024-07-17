@@ -5,7 +5,7 @@
       "type": "shell",
       "command": "node",
       "args": [
-        "add-translation-row.mjs",
+        "scripts/add-translation-row.mjs",
         "${input:add_key}",
         "${input:add_value}"
       ],
@@ -15,7 +15,7 @@
       "label": "Delete translation row",
       "type": "shell",
       "command": "node",
-      "args": ["remove-translation-row.mjs", "${input:remove_key}"],
+      "args": ["scripts/remove-translation-row.mjs", "${input:remove_key}"],
       "problemMatcher": []
     }
   ],
