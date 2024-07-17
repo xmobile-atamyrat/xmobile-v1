@@ -51,6 +51,8 @@ export interface DeleteCategoriesProps {
 export interface ProductContextProps {
   products: Product[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
+  selectedProduct?: Product;
+  setSelectedProduct: Dispatch<SetStateAction<Product | undefined>>;
 }
 
 export interface CategoryName {
