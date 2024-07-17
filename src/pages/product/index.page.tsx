@@ -15,7 +15,7 @@ export default function Product() {
   const router = useRouter();
   const { id: productId } = router.query;
   return (
-    <Layout>
+    <Layout showSearch={false}>
       <h1>Product #{productId}</h1>
     </Layout>
   );
