@@ -265,10 +265,15 @@ export default function CustomAppBar({
               onChange={(event) => {
                 const newPath = changeLocale(
                   event.target.value,
-                  window.location.search,
                   window.location.pathname,
                 );
                 window.location.pathname = newPath;
+
+                // const newPath = `/${event.target.value}`;
+                // const currentUrl = new URL(window.location.href);
+                // currentUrl.pathname = newPath;
+                // currentUrl.search = ''; // Clear any existing query parameters
+                // window.location.href = currentUrl.href;
               }}
               style={{
                 backgroundColor: 'rgb(59 130 246 / 0.5)',
@@ -287,7 +292,6 @@ export default function CustomAppBar({
                 <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                   <Flag country="TM" size={18} />
                   <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                    {/* ÇÄR */}
                     çär
                   </Typography>
                 </Box>
