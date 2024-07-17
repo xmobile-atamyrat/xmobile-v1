@@ -63,7 +63,7 @@ export default function Home({
   const { products, setProducts } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false });
-  const { user, setUser } = useUserContext();
+  const { user } = useUserContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
     productId: string;
@@ -74,13 +74,6 @@ export default function Home({
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
   const t = useTranslations();
-
-  useEffect(() => {
-    if (user == null) {
-      const userString = localStorage.getItem('user');
-      if (userString != null) setUser(JSON.parse(userString));
-    }
-  }, [user, setUser]);
 
   useEffect(() => {
     if (categories == null || categories.length === 0) return;
