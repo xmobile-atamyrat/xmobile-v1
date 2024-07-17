@@ -84,11 +84,13 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 interface CustomAppBarProps {
   openDrawer: boolean;
   setOpenDrawer: Dispatch<SetStateAction<boolean>>;
+  showSearch: boolean;
 }
 
 export default function CustomAppBar({
   setOpenDrawer,
   openDrawer,
+  showSearch,
 }: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user } = useUserContext();
@@ -212,12 +214,14 @@ export default function CustomAppBar({
                 }}
               />
             </Search>
-            <IconButton
-              sx={{ display: { sm: 'none' } }}
-              onClick={() => setOpenSearchBar(true)}
-            >
-              <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
-            </IconButton>
+            {showSearch && (
+              <IconButton
+                sx={{ display: { sm: 'none' } }}
+                onClick={() => setOpenSearchBar(true)}
+              >
+                <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
+              </IconButton>
+            )}
             <Dialog
               open={openSearchBar}
               onClose={() => setOpenSearchBar(false)}
