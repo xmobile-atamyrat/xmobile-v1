@@ -12,11 +12,12 @@ import {
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { Box } from '@mui/material';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [editCategoriesModal, setEditCategoriesModal] =
@@ -25,8 +26,31 @@ export default function Layout({ children }: { children: ReactNode }) {
     useState<DeleteCategoriesProps>({ open: false });
   const [openDrawer, setOpenDrawer] = useState(false);
   const t = useTranslations();
-  const { setCategories, setSelectedCategoryId } = useCategoryContext();
+  const { setCategories, setSelectedCategoryId, categories } =
+    useCategoryContext();
   const { setProducts } = useProductContext();
+  const { user, setUser } = useUserContext();
+
+  useEffect(() => {
+    if (categories.length > 0) return;
+    (async () => {
+      const { success, data: categoriesData }: ResponseApi<ExtendedCategory[]> =
+        await (await fetch(`${BASE_URL}/api/category`)).json();
+
+      if (success && categoriesData) {
+        setCategories(categoriesData);
+
+        // TODO: get selected category id and toggle to selected category when drawer is opened
+      }
+    })();
+  }, [categories, setCategories]);
+
+  useEffect(() => {
+    if (user == null) {
+      const userString = localStorage.getItem('user');
+      if (userString != null) setUser(JSON.parse(userString));
+    }
+  }, [user, setUser]);
 
   return (
     <Box>
