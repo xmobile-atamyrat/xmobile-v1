@@ -19,7 +19,12 @@ import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
 
-export default function Layout({ children }: { children: ReactNode }) {
+interface LayoutProps {
+  children: ReactNode;
+  showSearch: boolean;
+}
+
+export default function Layout({ children, showSearch }: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
@@ -54,7 +59,11 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <Box>
-      <CustomAppBar openDrawer={openDrawer} setOpenDrawer={setOpenDrawer} />
+      <CustomAppBar
+        openDrawer={openDrawer}
+        setOpenDrawer={setOpenDrawer}
+        showSearch={showSearch}
+      />
       <CustomDrawer
         openDrawer={openDrawer}
         setEditCategoriesModal={setEditCategoriesModal}
