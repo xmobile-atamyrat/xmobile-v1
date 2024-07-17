@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -43,6 +44,7 @@ export default function ProductCard({
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const openEditMenu = Boolean(anchorEl);
+  const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
 
   useEffect(() => {
@@ -70,9 +72,6 @@ export default function ProductCard({
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
-      onClick={() => {
-        router.push(`/product?id=${product?.id}`);
-      }}
     >
       {product != null ? (
         <Box className="relative h-full w-full flex flex-col justify-between p-1">
@@ -117,7 +116,6 @@ export default function ProductCard({
               </Menu>
             </Box>
           )}
-
           <Box className="h-5/6">
             {imgUrl != null && (
               <Box className="flex justify-center">
@@ -144,10 +142,22 @@ export default function ProductCard({
             </Box>
             <Box
               className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/3' : 'h-full'}`}
+              onClick={() => {
+                setSelectedProduct(product);
+                router.push(`/product`);
+              }}
             >
-              <Typography variant="body2" color="text.secondary">
-                {parseName(product?.description ?? '{}', router.locale ?? 'tk')}
-              </Typography>
+              {parseName(product?.description ?? '{}', router.locale ?? 'tk')
+                .split('\n')
+                .map((desc, index) => (
+                  <Typography
+                    key={`${desc}-${index}`}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {desc}
+                  </Typography>
+                ))}
             </Box>
           </Box>
           {product?.price != null && (
