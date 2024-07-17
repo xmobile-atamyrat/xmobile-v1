@@ -157,18 +157,35 @@ export default function Home({
             description={t('confirmDeleteProduct')}
             handleDelete={async () => {
               try {
-                await fetch(
-                  `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
-                  {
-                    method: 'DELETE',
-                  },
-                );
+                const { success: deleteSuccess }: ResponseApi = await (
+                  await fetch(
+                    `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
+                    {
+                      method: 'DELETE',
+                    },
+                  )
+                ).json();
+                if (!deleteSuccess) {
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'deleteProductError',
+                    severity: 'error',
+                  });
+                  return;
+                }
                 const { success, data }: ResponseApi<Product[]> = await (
                   await fetch(
                     `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
                   )
                 ).json();
-                if (success && data != null) setProducts(data);
+                if (success && data != null) {
+                  setProducts(data);
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'deleteProductSuccess',
+                    severity: 'success',
+                  });
+                }
               } catch (error) {
                 console.error(error);
               }
