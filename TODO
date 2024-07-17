@@ -3,7 +3,9 @@ TODO:
 TOP PRIORITY:
 
 - implement product page
+  - find a way to click on a product at the same time being able to click edit as admin
 - implement multiple images for products
+- implement pagination
 - make drawer toggle to selected category id
 - implement analytics page
 - implement cart
