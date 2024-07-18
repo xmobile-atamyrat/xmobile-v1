@@ -2,20 +2,12 @@
 
 SSH_PASSPHRASE=$1
 
-handle_build_env_container() {
-    if docker ps | grep -q build_env; then
-        docker exec build_env sh -c 'rm -rf /app/xmobile-v1 && rm /app/xmobile-v1.tar.gz'
-    else
-        echo "starting build_env container..."
-        docker-compose up -d build_env
-    fi
-}
-
 main() {
     if [[ -z "$SSH_PASSPHRASE" ]]; then
         echo "Skipping docker operations. Provide SSH_PASSPHRASE as the first argument to run docker operations"
     else
-        handle_build_env_container
+        docker-compose up -d build_env
+        docker exec build_env sh -c 'rm -rf /app/xmobile-v1 && rm -f /app/xmobile-v1.tar.gz'
         docker exec -e SSH_PASSPHRASE="$SSH_PASSPHRASE" build_env sh -c '
             eval $(ssh-agent -s) && \
             echo "$SSH_PASSPHRASE" | ssh-add /root/.ssh/id_rsa && \
