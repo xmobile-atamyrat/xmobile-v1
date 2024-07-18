@@ -64,7 +64,7 @@ export default function Product() {
         </Grid>
         <Grid className="flex flex-col w-full" item xs={4}>
           {parseName(product?.description ?? '{}', router.locale ?? 'tk')
-            .split('\n')
+            ?.split('\n')
             .map((desc, index) => (
               <Typography key={`${desc}-${index}`}>{desc}</Typography>
             ))}
