@@ -1,3 +1,4 @@
+import addCors from '@/pages/api/utils/addCors';
 import fs from 'fs';
 import { NextApiRequest, NextApiResponse } from 'next';
 
@@ -7,6 +8,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  addCors(res);
   const {
     query: { imgUrl },
     method,
