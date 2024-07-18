@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
 import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -11,6 +12,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<User>>,
 ) {
+  addCors(res);
   const { method } = req;
   if (method === 'POST') {
     try {

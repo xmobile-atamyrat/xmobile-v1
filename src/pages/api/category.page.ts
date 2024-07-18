@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
 import fs from 'fs';
@@ -188,6 +189,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
+  addCors(res);
   const { method, query } = req;
   if (method === 'GET') {
     try {

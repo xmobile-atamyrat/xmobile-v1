@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
+import addCors from '@/pages/api/utils/addCors';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
@@ -201,6 +202,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
+  addCors(res);
   const { method, query } = req;
   if (method === 'POST') {
     try {
