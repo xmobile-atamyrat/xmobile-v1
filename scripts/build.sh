@@ -3,7 +3,6 @@
 SSH_PASSPHRASE=$1
 
 handle_build_env_container() {
-    # if container is running then restart
     if docker ps | grep -q build_env; then
         docker exec build_env sh -c 'rm -rf /app/xmobile-v1 && rm /app/xmobile-v1.tar.gz'
     else
@@ -31,6 +30,8 @@ main() {
     fi
 
     scp -P 2222 -i ~/.ssh/xmobile xmobile-v1.tar.gz ubuntu@216.250.13.97:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+
+    rm xmobile-v1.tar.gz
 }
 
 main
