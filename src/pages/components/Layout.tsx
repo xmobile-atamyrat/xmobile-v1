@@ -48,7 +48,8 @@ export default function Layout({ children, showSearch }: LayoutProps) {
         // TODO: get selected category id and toggle to selected category when drawer is opened
       }
     })();
-  }, [categories, setCategories]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (user == null) {
