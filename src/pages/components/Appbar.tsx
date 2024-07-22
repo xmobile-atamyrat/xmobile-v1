@@ -7,6 +7,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { changeLocale } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -85,12 +86,14 @@ interface CustomAppBarProps {
   openDrawer: boolean;
   setOpenDrawer: Dispatch<SetStateAction<boolean>>;
   showSearch: boolean;
+  handleBackButton?: () => void;
 }
 
 export default function CustomAppBar({
   setOpenDrawer,
   openDrawer,
   showSearch,
+  handleBackButton,
 }: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user } = useUserContext();
@@ -175,13 +178,25 @@ export default function CustomAppBar({
       >
         <Toolbar className="flex items-center justify-between">
           <Box className="flex w-fit h-full items-center justify-start">
+            {handleBackButton && (
+              <IconButton
+                size="large"
+                edge="start"
+                color="inherit"
+                aria-label="open drawer"
+                sx={{ p: 1 }}
+                onClick={handleBackButton}
+              >
+                <ArrowBackIosIcon />
+              </IconButton>
+            )}
             <IconButton
               size="large"
               edge="start"
               color="inherit"
               aria-label="open drawer"
-              sx={{ mr: { sm: 2 } }}
               onClick={() => setOpenDrawer(!openDrawer)}
+              sx={{ p: 1, pl: '4px' }}
             >
               <MenuIcon />
             </IconButton>
@@ -189,7 +204,7 @@ export default function CustomAppBar({
               variant="h6"
               noWrap
               component="div"
-              sx={{ fontSize: { xs: 18, sm: 20 } }}
+              sx={{ fontSize: { xs: 18, sm: 20 }, p: 1, pl: '4px' }}
             >
               Xmobile
             </Typography>
