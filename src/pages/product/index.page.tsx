@@ -2,8 +2,9 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import Layout from '@/pages/components/Layout';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
-import { Box, CardMedia, Grid, Typography } from '@mui/material';
+import { Box, CardMedia, Typography } from '@mui/material';
 import { GetStaticProps } from 'next';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -20,10 +21,16 @@ export default function Product() {
   const { selectedProduct: product } = useProductContext();
   const router = useRouter();
   const [imgUrl, setImgUrl] = useState<string | null>();
+  const t = useTranslations();
 
   useEffect(() => {
+    if (product == null) {
+      router.push('/');
+      return;
+    }
+
     (async () => {
-      if (product?.imgUrl != null) {
+      if (product.imgUrl != null) {
         if (product.imgUrl.startsWith('http')) {
           setImgUrl(product.imgUrl);
         } else {
@@ -35,41 +42,43 @@ export default function Product() {
         }
       }
     })();
-  }, [product?.imgUrl]);
+  }, [product]);
 
   return (
-    <Layout showSearch={false}>
-      <Grid
-        // className="flex flex-col px-6 gap-4 h-full w-full"
-        container
-        xs={12}
-      >
-        <Grid item xs={4}>
-          <Typography variant="h4" className="text-center">
-            {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-          </Typography>
-          {imgUrl != null && (
-            <Box className="flex justify-center h-1/3 w-full">
-              <CardMedia
-                component="img"
-                image={imgUrl}
-                alt={product?.name}
-                sx={{
-                  height: 'auto',
-                  width: 'auto',
-                }}
-              />
-            </Box>
-          )}
-        </Grid>
-        <Grid className="flex flex-col w-full" item xs={4}>
-          {parseName(product?.description ?? '{}', router.locale ?? 'tk')
-            ?.split('\n')
-            .map((desc, index) => (
-              <Typography key={`${desc}-${index}`}>{desc}</Typography>
-            ))}
-        </Grid>
-      </Grid>
-    </Layout>
+    product && (
+      <Layout showSearch={false}>
+        <Box className="w-full h-full flex flex-col px-4 gap-4">
+          <Box className="w-full flex flex-col gap-2">
+            <Typography variant="h5" className="text-center">
+              {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+            </Typography>
+            {imgUrl != null && (
+              <Box className="flex justify-center h-full w-full">
+                <CardMedia
+                  component="img"
+                  image={imgUrl}
+                  alt={product?.name}
+                  sx={{
+                    width: '100%',
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+          <Box className="w-full">
+            <Typography
+              fontWeight={600}
+            >{`${product?.price} ${t('manat')}`}</Typography>
+          </Box>
+          <Box className="w-full">
+            {parseName(product?.description ?? '{}', router.locale ?? 'tk')
+              ?.split('\n')
+              .map((desc, index) => (
+                <Typography key={`${desc}-${index}`}>{desc}</Typography>
+              ))}
+          </Box>
+        </Box>
+      </Layout>
+    )
   );
 }
