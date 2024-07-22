@@ -65,7 +65,10 @@ export default function CollapsableBase({
       className={`w-full flex flex-row items-center ${selectedCategoryId === id && 'bg-slate-200'}`}
     >
       <ListItemButton
-        onClick={() => setSelectedCategoryId(id)}
+        onClick={() => {
+          setSelectedCategoryId(id);
+          if (router.pathname !== '/') router.push('/');
+        }}
         className="py-2 pr-2"
       >
         {imgUrl != null && (
