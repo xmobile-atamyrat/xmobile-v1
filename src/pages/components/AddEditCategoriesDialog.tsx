@@ -1,3 +1,10 @@
+import BASE_URL from '@/lib/ApiEndpoints';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { EditCategoriesProps } from '@/pages/lib/types';
+import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
+import { DeleteOutlined } from '@mui/icons-material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import LoadingButton from '@mui/lab/LoadingButton';
 import {
   Box,
   Button,
@@ -9,15 +16,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useEffect, useState } from 'react';
-import LoadingButton from '@mui/lab/LoadingButton';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
 import { useTranslations } from 'next-intl';
-import { DeleteOutlined } from '@mui/icons-material';
-import { EditCategoriesProps } from '@/pages/lib/types';
-import BASE_URL from '@/lib/ApiEndpoints';
+import { useEffect, useState } from 'react';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -90,7 +90,7 @@ export default function AddEditCategoriesDialog({
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
         <Box className="flex flex-col w-[300px] sm:w-[600px] gap-4 p-2">
-          <Box>
+          <Box className="flex flex-col gap-2">
             <Typography>
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
