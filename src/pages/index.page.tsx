@@ -76,10 +76,15 @@ export default function Home({
   const t = useTranslations();
 
   useEffect(() => {
-    if (categories == null || categories.length === 0) return;
+    if (
+      categories == null ||
+      categories.length === 0 ||
+      selectedCategoryId != null
+    )
+      return;
     setCategories(categories);
     setSelectedCategoryId(categories[0].id);
-  }, [categories, setCategories, setSelectedCategoryId]);
+  }, [categories, setCategories, setSelectedCategoryId, selectedCategoryId]);
 
   useEffect(() => {
     if (selectedCategoryId == null) return;

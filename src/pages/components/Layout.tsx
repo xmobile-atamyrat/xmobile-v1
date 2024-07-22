@@ -22,9 +22,14 @@ import { ReactNode, useEffect, useState } from 'react';
 interface LayoutProps {
   children: ReactNode;
   showSearch: boolean;
+  handleHeaderBackButton?: () => void;
 }
 
-export default function Layout({ children, showSearch }: LayoutProps) {
+export default function Layout({
+  children,
+  showSearch,
+  handleHeaderBackButton,
+}: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
@@ -64,6 +69,7 @@ export default function Layout({ children, showSearch }: LayoutProps) {
         openDrawer={openDrawer}
         setOpenDrawer={setOpenDrawer}
         showSearch={showSearch}
+        handleBackButton={handleHeaderBackButton}
       />
       <CustomDrawer
         openDrawer={openDrawer}
