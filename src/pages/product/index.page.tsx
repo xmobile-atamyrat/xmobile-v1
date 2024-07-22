@@ -18,7 +18,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Product() {
-  const { selectedProduct: product } = useProductContext();
+  const { selectedProduct: product, setSelectedProduct } = useProductContext();
   const router = useRouter();
   const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
@@ -46,7 +46,13 @@ export default function Product() {
 
   return (
     product && (
-      <Layout showSearch={false}>
+      <Layout
+        showSearch={false}
+        handleHeaderBackButton={() => {
+          setSelectedProduct(undefined);
+          router.push('/');
+        }}
+      >
         <Box className="w-full h-full flex flex-col px-4 gap-4">
           <Box className="w-full flex flex-col gap-2">
             <Typography variant="h5" className="text-center">
@@ -65,11 +71,13 @@ export default function Product() {
               </Box>
             )}
           </Box>
-          <Box className="w-full">
-            <Typography
-              fontWeight={600}
-            >{`${product?.price} ${t('manat')}`}</Typography>
-          </Box>
+          {product?.price != null && (
+            <Box className="w-full">
+              <Typography
+                fontWeight={600}
+              >{`${product.price} ${t('manat')}`}</Typography>
+            </Box>
+          )}
           <Box className="w-full">
             {parseName(product?.description ?? '{}', router.locale ?? 'tk')
               ?.split('\n')
