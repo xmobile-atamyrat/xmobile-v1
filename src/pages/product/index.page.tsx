@@ -1,8 +1,27 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  AddEditProductProps,
+  ResponseApi,
+  SnackbarProps,
+} from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { Box, CardMedia, Typography } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import {
+  Alert,
+  Box,
+  CardMedia,
+  IconButton,
+  Snackbar,
+  Typography,
+} from '@mui/material';
+import { Product as PrismaProduct } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -22,6 +41,17 @@ export default function Product() {
   const router = useRouter();
   const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
+  const { user } = useUserContext();
+  const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
+    show: boolean;
+    productId: string;
+  }>();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const { setProducts } = useProductContext();
+  const { selectedCategoryId } = useCategoryContext();
+  const [addEditProductDialog, setAddEditProductDialog] =
+    useState<AddEditProductProps>({ open: false });
 
   useEffect(() => {
     if (product == null) {
@@ -55,9 +85,40 @@ export default function Product() {
       >
         <Box className="w-full h-full flex flex-col px-4 gap-4">
           <Box className="w-full flex flex-col gap-2">
-            <Typography variant="h5" className="text-center">
-              {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-            </Typography>
+            <Box className="w-full flex flex-row justify-between items-center">
+              <Typography variant="h5" className="text-center">
+                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+              </Typography>
+              {user?.grade === 'ADMIN' && (
+                <Box>
+                  <IconButton
+                    onClick={() => {
+                      setAddEditProductDialog({
+                        open: true,
+                        id: product.id,
+                        description: product.description,
+                        dialogType: 'edit',
+                        imageUrl: product.imgUrl,
+                        name: product.name,
+                        price: product.price,
+                      });
+                    }}
+                  >
+                    <EditIcon color="primary" fontSize="medium" />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      setShowDeleteProductDialog({
+                        show: true,
+                        productId: product.id,
+                      });
+                    }}
+                  >
+                    <DeleteIcon color="error" fontSize="medium" />
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
             {imgUrl != null && (
               <Box className="flex justify-center h-full w-full">
                 <CardMedia
@@ -86,6 +147,99 @@ export default function Product() {
               ))}
           </Box>
         </Box>
+        {showDeleteProductDialog?.show && (
+          <DeleteDialog
+            title={t('deleteProduct')}
+            description={t('confirmDeleteProduct')}
+            handleDelete={async () => {
+              try {
+                const { success: deleteSuccess }: ResponseApi = await (
+                  await fetch(
+                    `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
+                    {
+                      method: 'DELETE',
+                    },
+                  )
+                ).json();
+                if (!deleteSuccess) {
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'deleteProductError',
+                    severity: 'error',
+                  });
+                  return;
+                }
+                const { success, data }: ResponseApi<PrismaProduct[]> = await (
+                  await fetch(
+                    `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
+                  )
+                ).json();
+                if (success && data != null) {
+                  setProducts(data);
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'deleteProductSuccess',
+                    severity: 'success',
+                  });
+                }
+                setTimeout(() => {
+                  router.push('/');
+                }, 2000);
+              } catch (error) {
+                console.error(error);
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: t('deleteProductError'),
+                  severity: 'error',
+                });
+              }
+            }}
+            handleClose={() =>
+              setShowDeleteProductDialog({ show: false, productId: '' })
+            }
+          />
+        )}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setSnackbarOpen(false);
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarMessage?.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+          </Alert>
+        </Snackbar>
+        {addEditProductDialog.open && (
+          <AddEditProductDialog
+            args={addEditProductDialog}
+            handleClose={() =>
+              setAddEditProductDialog({
+                open: false,
+                id: undefined,
+                description: undefined,
+                dialogType: undefined,
+                imageUrl: undefined,
+                name: undefined,
+              })
+            }
+            snackbarErrorHandler={(message: string) => {
+              setSnackbarOpen(true);
+              setSnackbarMessage({
+                message,
+                severity: 'error',
+              });
+            }}
+          />
+        )}
       </Layout>
     )
   );
