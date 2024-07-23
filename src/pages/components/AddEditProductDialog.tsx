@@ -23,14 +23,16 @@ import { useEffect, useState } from 'react';
 interface AddEditProductDialogProps {
   handleClose: () => void;
   args: AddEditProductProps;
+  snackbarErrorHandler?: (message: string) => void;
 }
 
 export default function AddEditProductDialog({
   handleClose,
   args: { description, dialogType, id, imageUrl, name, price },
+  snackbarErrorHandler,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setProducts } = useProductContext();
+  const { setProducts, setSelectedProduct } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const t = useTranslations();
 
@@ -69,7 +71,7 @@ export default function AddEditProductDialog({
           const formData = new FormData(
             event.currentTarget as unknown as HTMLFormElement,
           );
-          await addEditProduct({
+          const updatedProduct = await addEditProduct({
             formJson: Object.fromEntries(formData.entries()),
             productNameRequiredError: t('productNameRequired'),
             selectedCategoryId,
@@ -79,9 +81,14 @@ export default function AddEditProductDialog({
             type: dialogType,
             selectedProductId: id,
           });
+          setSelectedProduct(updatedProduct);
         } catch (error) {
           setLoading(false);
-          setErrorMessage((error as Error).message);
+          if (snackbarErrorHandler) {
+            snackbarErrorHandler(
+              dialogType === 'add' ? 'createProductError' : 'editProductError',
+            );
+          }
           return;
         }
 

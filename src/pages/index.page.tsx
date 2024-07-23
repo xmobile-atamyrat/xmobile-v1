@@ -1,6 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
-import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -64,10 +63,7 @@ export default function Home({
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false });
   const { user } = useUserContext();
-  const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
-    show: boolean;
-    productId: string;
-  }>();
+
   const [snackbarOpen, setSnackbarOpen] = useState(
     categoryErrorMessage != null,
   );
@@ -118,20 +114,20 @@ export default function Home({
             <ProductCard
               product={product}
               key={product.id}
-              handleDeleteProduct={(productId) =>
-                setShowDeleteProductDialog({ show: true, productId })
-              }
-              handleEditProduct={() =>
-                setAddEditProductDialog({
-                  open: true,
-                  id: product.id,
-                  description: product.description,
-                  dialogType: 'edit',
-                  imageUrl: product.imgUrl,
-                  name: product.name,
-                  price: product.price,
-                })
-              }
+              // handleDeleteProduct={(productId) =>
+              //   setShowDeleteProductDialog({ show: true, productId })
+              // }
+              // handleEditProduct={() =>
+              //   setAddEditProductDialog({
+              //     open: true,
+              //     id: product.id,
+              //     description: product.description,
+              //     dialogType: 'edit',
+              //     imageUrl: product.imgUrl,
+              //     name: product.name,
+              //     price: product.price,
+              //   })
+              // }
             />
           ))}
         {addEditProductDialog.open && (
@@ -147,50 +143,10 @@ export default function Home({
                 name: undefined,
               })
             }
-          />
-        )}
-        {showDeleteProductDialog?.show && (
-          <DeleteDialog
-            title={t('deleteProduct')}
-            description={t('confirmDeleteProduct')}
-            handleDelete={async () => {
-              try {
-                const { success: deleteSuccess }: ResponseApi = await (
-                  await fetch(
-                    `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
-                    {
-                      method: 'DELETE',
-                    },
-                  )
-                ).json();
-                if (!deleteSuccess) {
-                  setSnackbarOpen(true);
-                  setSnackbarMessage({
-                    message: 'deleteProductError',
-                    severity: 'error',
-                  });
-                  return;
-                }
-                const { success, data }: ResponseApi<Product[]> = await (
-                  await fetch(
-                    `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
-                  )
-                ).json();
-                if (success && data != null) {
-                  setProducts(data);
-                  setSnackbarOpen(true);
-                  setSnackbarMessage({
-                    message: 'deleteProductSuccess',
-                    severity: 'success',
-                  });
-                }
-              } catch (error) {
-                console.error(error);
-              }
+            snackbarErrorHandler={(message) => {
+              setSnackbarOpen(true);
+              setSnackbarMessage({ message, severity: 'error' });
             }}
-            handleClose={() =>
-              setShowDeleteProductDialog({ show: false, productId: '' })
-            }
           />
         )}
         <Snackbar

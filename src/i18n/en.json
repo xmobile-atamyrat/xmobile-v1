@@ -48,5 +48,7 @@
   "editProduct": "Edit Product",
   "fetchCategoriesError": "There is server error. Please, contact the administrators.",
   "deleteProductError": "Product could not be deleted!",
-  "deleteProductSuccess": "Product successfully deleted!"
+  "deleteProductSuccess": "Product successfully deleted!",
+  "createProductError": "Could not create new product",
+  "editProductError": "Could not update the product"
 }
