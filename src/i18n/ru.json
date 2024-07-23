@@ -50,5 +50,7 @@
   "editProduct": "Редактировать продукт",
   "fetchCategoriesError": "Произошла ошибка сервера. Пожалуйста, свяжитесь с администраторами.",
   "deleteProductError": "Товар не может быть удален!",
-  "deleteProductSuccess": "Товар успешно удален!"
+  "deleteProductSuccess": "Товар успешно удален!",
+  "createProductError": "Не удалось создать новый продукт",
+  "editProductError": "Не удалось обновить продукт"
 }
