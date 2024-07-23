@@ -200,7 +200,7 @@ export async function addEditProduct({
   productImageFile?: File;
   setProducts: Dispatch<SetStateAction<Product[]>>;
   selectedProductId?: string;
-}) {
+}): Promise<Product> {
   if (
     productNameInCharjov === '' &&
     productNameInEnglish === '' &&
@@ -242,20 +242,32 @@ export async function addEditProduct({
     newFormData.append('imageUrl', resizedImage);
   }
 
+  let product: Product;
   if (type === 'add') {
-    await fetch(`${BASE_URL}/api/product`, {
-      method: 'POST',
-      body: newFormData,
-    });
+    const { success, data, message }: ResponseApi<Product> = await (
+      await fetch(`${BASE_URL}/api/product`, {
+        method: 'POST',
+        body: newFormData,
+      })
+    ).json();
+    if (!success || data == null) throw new Error(message);
+    product = data;
   } else {
-    await fetch(`${BASE_URL}/api/product?productId=${selectedProductId}`, {
-      method: 'PUT',
-      body: newFormData,
-    });
+    const { success, data, message }: ResponseApi<Product> = await (
+      await fetch(`${BASE_URL}/api/product?productId=${selectedProductId}`, {
+        method: 'PUT',
+        body: newFormData,
+      })
+    ).json();
+    if (!success || data == null) throw new Error(message);
+    product = data;
   }
 
-  const { success, data }: ResponseApi<Product[]> = await (
+  const { success, data, message }: ResponseApi<Product[]> = await (
     await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
   ).json();
-  if (success && data != null) setProducts(data);
+  if (!success || data == null) throw new Error(message);
+  setProducts(data);
+
+  return product;
 }

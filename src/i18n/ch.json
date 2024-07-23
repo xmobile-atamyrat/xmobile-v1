@@ -50,5 +50,7 @@
   "editProduct": "Önümi redaktirläň",
   "fetchCategoriesError": "Serwer ýalňyşlygy bar. Dolandyryjylar bilen habarlaşmagyňyzy haýyş edýäris.",
   "deleteProductError": "Önüm öçürilip bilinmedi!",
-  "deleteProductSuccess": "Önüm üstünlikli öçürildi!"
+  "deleteProductSuccess": "Önüm üstünlikli öçürildi!",
+  "createProductError": "Täze önüm döredip bolmady",
+  "editProductError": "Önümi täzeläp bolmady"
 }
