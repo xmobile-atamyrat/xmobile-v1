@@ -61,7 +61,7 @@ export default function Home({
     useCategoryContext();
   const { products, setProducts } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false });
+    useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const { user } = useUserContext();
 
   const [snackbarOpen, setSnackbarOpen] = useState(
@@ -105,7 +105,11 @@ export default function Home({
         {user?.grade === 'ADMIN' && selectedCategoryId != null && (
           <ProductCard
             handleClickAddProduct={() =>
-              setAddEditProductDialog({ open: true, dialogType: 'add' })
+              setAddEditProductDialog({
+                open: true,
+                dialogType: 'add',
+                imageUrls: [],
+              })
             }
           />
         )}
@@ -139,7 +143,7 @@ export default function Home({
                 id: undefined,
                 description: undefined,
                 dialogType: undefined,
-                imageUrl: undefined,
+                imageUrls: [],
                 name: undefined,
               })
             }

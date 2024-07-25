@@ -10,6 +10,9 @@
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate dev",
     "db:studio": "npx prisma studio",
+    "db:migrate-dev": "npx dotenv -e .env.local -- npx prisma migrate dev",
+    "db:generate-dev": "npx dotenv -e .env.local -- npx prisma generate dev",
+    "db:studio-dev": "npx dotenv -e .env.local -- npx prisma studio",
     "prepare": "husky",
     "tunnel": "./tunnel-client.sh"
   },
@@ -44,6 +47,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitalets/google-translate-api": "^9.2.0",
+    "dotenv-cli": "^7.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.1",
     "eslint-config-prettier": "^9.1.0",
