@@ -79,10 +79,12 @@ async function recursivelyDeleteCategoryAndProductImages(
     fs.unlinkSync(category.imgUrl);
   }
 
-  category.products.forEach(({ imgUrl }) => {
-    if (imgUrl != null && fs.existsSync(imgUrl)) {
-      fs.unlinkSync(imgUrl);
-    }
+  category.products.forEach(({ imgUrls }) => {
+    imgUrls.forEach((imgUrl) => {
+      if (imgUrl != null && fs.existsSync(imgUrl)) {
+        fs.unlinkSync(imgUrl);
+      }
+    });
   });
 
   await Promise.all(

@@ -2,13 +2,18 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
-import { addEditProduct, VisuallyHiddenInput } from '@/pages/lib/utils';
+import {
+  addEditProduct,
+  isNumeric,
+  VisuallyHiddenInput,
+} from '@/pages/lib/utils';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
   Button,
+  CardMedia,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,7 +33,7 @@ interface AddEditProductDialogProps {
 
 export default function AddEditProductDialog({
   handleClose,
-  args: { description, dialogType, id, imageUrl, name, price },
+  args: { description, dialogType, id, imageUrls, name, price },
   snackbarErrorHandler,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -36,24 +41,44 @@ export default function AddEditProductDialog({
   const { selectedCategoryId } = useCategoryContext();
   const t = useTranslations();
 
-  const [productImageFile, setProductImageFile] = useState<File>();
-  const [productLogoUrl, setProductLogoUrl] = useState<string>();
-  const [productImageUrl, setProductImageUrl] = useState<string>();
+  // for existing product imageUrls the key is imageUrl
+  // for new product imageUrls the key is number
+  // this is to differentiate between the two when deleting
+  const [productImageUrls, setProductImageUrls] = useState<
+    { [key: string | number]: string }[]
+  >([]);
+  const [productImageUrlsNumberKeyCount, setProductImageUrlsNumberKeyCount] =
+    useState<number>(0);
+  const [originalDeletedProductImageUrls, setOriginalDeletedProductImageUrls] =
+    useState<string[]>([]);
 
-  const [errorMessage, setErrorMessage] = useState<string>();
+  const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
+  const [productImageFileUrls, setProductImageFileUrls] = useState<string[]>(
+    [],
+  );
 
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
 
   useEffect(() => {
-    if (imageUrl == null) return;
-    try {
-      new URL(imageUrl);
-      setProductImageUrl(imageUrl);
-    } catch (_) {
-      setProductLogoUrl(imageUrl);
-    }
-  }, [imageUrl]);
+    if (imageUrls == null || imageUrls.length === 0) return;
+    const initialProductImageUrl: { [key: string]: string }[] = [];
+    imageUrls.forEach(async (imageUrl) => {
+      try {
+        new URL(imageUrl);
+        initialProductImageUrl.push({ imageUrl });
+      } catch (_) {
+        initialProductImageUrl.push({
+          imageUrl: URL.createObjectURL(
+            await (
+              await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
+            ).blob(),
+          ),
+        });
+      }
+    });
+    setProductImageUrls(initialProductImageUrl);
+  }, [imageUrls]);
 
   return (
     <Dialog
@@ -65,7 +90,6 @@ export default function AddEditProductDialog({
         if (selectedCategoryId == null) return;
 
         setLoading(true);
-        setErrorMessage(undefined);
 
         try {
           const formData = new FormData(
@@ -76,8 +100,14 @@ export default function AddEditProductDialog({
             productNameRequiredError: t('productNameRequired'),
             selectedCategoryId,
             setProducts,
-            productImageFile,
-            productImageUrl,
+            productImageFiles,
+            deleteImageUrls: originalDeletedProductImageUrls,
+            productImageUrls: productImageUrls
+              .filter((obj) => {
+                const [key] = Object.keys(obj);
+                return isNumeric(key);
+              })
+              .map((obj) => obj[Object.keys(obj)[0]]),
             type: dialogType,
             selectedProductId: id,
           });
@@ -130,11 +160,6 @@ export default function AddEditProductDialog({
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedProductName.en ?? ''}
             />
-            {errorMessage && (
-              <Typography fontSize={14} color="red">
-                {errorMessage}
-              </Typography>
-            )}
           </Box>
           <Box>
             <Typography>{t('productDescription')}</Typography>
@@ -179,7 +204,7 @@ export default function AddEditProductDialog({
             defaultValue={price ?? ''}
           />
         </Box>
-        <Box className="flex flex-col sm:flex-row p-2">
+        <Box className="flex flex-col p-2">
           <Box className="flex flex-col">
             <TextField
               margin="dense"
@@ -188,14 +213,22 @@ export default function AddEditProductDialog({
               type="url"
               name="imgUrl"
               className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
-              value={productImageUrl ?? ''}
-              onChange={(event) => {
-                try {
-                  const { value } = event.target;
-                  new URL(value);
-                  setProductImageUrl(value);
-                } catch (_) {
-                  // do nothing
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  console.info();
+                  try {
+                    const value = (event.target as HTMLInputElement).value;
+                    new URL(value);
+                    setProductImageUrls([
+                      ...productImageUrls,
+                      { [productImageUrlsNumberKeyCount]: value },
+                    ]);
+                    setProductImageUrlsNumberKeyCount(
+                      productImageUrlsNumberKeyCount + 1,
+                    );
+                  } catch (_) {
+                    // do nothing
+                  }
                 }
               }}
             />
@@ -215,11 +248,14 @@ export default function AddEditProductDialog({
                 accept="image/*"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  setProductImageFile(file);
                   if (file) {
+                    setProductImageFiles([...productImageFiles, file]);
                     const reader = new FileReader();
                     reader.onload = () => {
-                      setProductLogoUrl(reader.result as string);
+                      setProductImageFileUrls([
+                        ...productImageFileUrls,
+                        reader.result as string,
+                      ]);
                     };
                     reader.readAsDataURL(file);
                   }
@@ -228,36 +264,62 @@ export default function AddEditProductDialog({
               />
             </Button>
           </Box>
-          {(productLogoUrl || productImageUrl) && (
-            <Box className="h-full w-full p-2 relative">
-              <img
-                alt="asdf"
-                src={productImageUrl ?? productLogoUrl}
-                width={200}
-                onError={async (error) => {
-                  if (productLogoUrl == null) return;
-                  error.currentTarget.onerror = null;
-                  error.currentTarget.src = URL.createObjectURL(
-                    await (
-                      await fetch(
-                        `${BASE_URL}/api/localImage?imgUrl=${productLogoUrl}`,
-                      )
-                    ).blob(),
-                  );
-                }}
-              />
+          {productImageUrls.map((obj, index) => {
+            const [key] = Object.keys(obj);
+            const url = obj[key];
+            return (
+              <Box className="h-full w-full p-2 relative" key={key}>
+                <CardMedia component="img" alt="asdf" src={url} width={200} />
+                <IconButton
+                  className="absolute right-0 top-0"
+                  onClick={() => {
+                    productImageUrls.forEach((objUrls) => {
+                      const [idx] = Object.keys(objUrls);
+                      if (!isNumeric(idx) && obj[idx] === url) {
+                        setOriginalDeletedProductImageUrls([
+                          ...originalDeletedProductImageUrls,
+                          objUrls[idx],
+                        ]);
+                      }
+                    });
+                    setProductImageUrls(
+                      productImageUrls.filter((_, i) => i !== index),
+                    );
+                    if (productImageFileUrls.includes(url)) {
+                      const fileIndex = productImageFileUrls.indexOf(url);
+                      setProductImageFileUrls(
+                        productImageFileUrls.filter((_, i) => i !== fileIndex),
+                      );
+                      setProductImageFiles(
+                        productImageFiles.filter((_, i) => i !== fileIndex),
+                      );
+                    }
+                  }}
+                >
+                  <DeleteOutlined fontSize="medium" color="error" />
+                </IconButton>
+              </Box>
+            );
+          })}
+          {productImageFileUrls.map((url, index) => (
+            <Box className="h-full w-full p-2 relative" key={index}>
+              <CardMedia component="img" alt="asdf" src={url} width={200} />
               <IconButton
                 className="absolute right-0 top-0"
                 onClick={() => {
-                  setProductLogoUrl(undefined);
-                  setProductImageUrl(undefined);
-                  setProductImageFile(undefined);
+                  const fileIndex = productImageFileUrls.indexOf(url);
+                  setProductImageFileUrls(
+                    productImageFileUrls.filter((_, i) => i !== fileIndex),
+                  );
+                  setProductImageFiles(
+                    productImageFiles.filter((_, i) => i !== fileIndex),
+                  );
                 }}
               >
                 <DeleteOutlined fontSize="medium" color="error" />
               </IconButton>
             </Box>
-          )}
+          ))}
         </Box>
       </DialogContent>
       <DialogActions>

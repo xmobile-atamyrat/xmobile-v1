@@ -36,20 +36,20 @@ export default function ProductCard({
 
   useEffect(() => {
     (async () => {
-      if (product?.imgUrl != null) {
+      if (product?.imgUrls[0] != null) {
         setImgUrl('/xmobile-original-logo.jpeg');
-        if (product.imgUrl.startsWith('http')) {
-          setImgUrl(product.imgUrl);
+        if (product.imgUrls[0].startsWith('http')) {
+          setImgUrl(product.imgUrls[0]);
         } else {
           const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
+            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}`,
           );
 
           setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
         }
       }
     })();
-  }, [product?.imgUrl]);
+  }, [product?.imgUrls]);
 
   return (
     <Card
@@ -93,11 +93,11 @@ export default function ProductCard({
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrl != null ? 'h-1/3' : 'h-full'}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/3' : 'h-full'}`}
             >
               {parseName(product?.description ?? '{}', router.locale ?? 'tk')
-                .split('\n')
-                .map((desc, index) => (
+                ?.split('\n')
+                ?.map((desc, index) => (
                   <Typography
                     key={`${desc}-${index}`}
                     variant="body2"
