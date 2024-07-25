@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-arm64-openssl-3.0.x"]
+  binaryTargets = ["native", "darwin-arm64", "linux-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -41,7 +41,7 @@ model Product {
   id              String      @id @default(uuid())
   name            String
   description     String?
-  imgUrl          String?
+  imgUrls         String[]
   price           String?
 
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)

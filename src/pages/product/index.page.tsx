@@ -39,7 +39,7 @@ export const getStaticProps = (async (context) => {
 export default function Product() {
   const { selectedProduct: product, setSelectedProduct } = useProductContext();
   const router = useRouter();
-  const [imgUrl, setImgUrl] = useState<string | null>();
+  const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user } = useUserContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
@@ -51,7 +51,7 @@ export default function Product() {
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false });
+    useState<AddEditProductProps>({ open: false, imageUrls: [] });
 
   useEffect(() => {
     if (product == null) {
@@ -59,19 +59,16 @@ export default function Product() {
       return;
     }
 
-    (async () => {
-      if (product.imgUrl != null) {
-        if (product.imgUrl.startsWith('http')) {
-          setImgUrl(product.imgUrl);
-        } else {
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrl}`,
-          );
-
-          setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
-        }
+    const initImgUrls: string[] = [];
+    product.imgUrls.forEach(async (imgUrl) => {
+      if (imgUrl.startsWith('http')) {
+        initImgUrls.push(imgUrl);
+      } else {
+        const imgFetcher = fetch(`${BASE_URL}/api/localImage?imgUrl=${imgUrl}`);
+        initImgUrls.push(URL.createObjectURL(await (await imgFetcher).blob()));
       }
-    })();
+    });
+    setImgUrls(initImgUrls);
   }, [product]);
 
   return (
@@ -98,7 +95,7 @@ export default function Product() {
                         id: product.id,
                         description: product.description,
                         dialogType: 'edit',
-                        imageUrl: product.imgUrl,
+                        imageUrls: product.imgUrls,
                         name: product.name,
                         price: product.price,
                       });
@@ -119,8 +116,8 @@ export default function Product() {
                 </Box>
               )}
             </Box>
-            {imgUrl != null && (
-              <Box className="flex justify-center h-full w-full">
+            {imgUrls.map((imgUrl, index) => (
+              <Box className="flex justify-center h-full w-full" key={index}>
                 <CardMedia
                   component="img"
                   image={imgUrl}
@@ -130,7 +127,7 @@ export default function Product() {
                   }}
                 />
               </Box>
-            )}
+            ))}
           </Box>
           {product?.price != null && (
             <Box className="w-full">
@@ -227,7 +224,7 @@ export default function Product() {
                 id: undefined,
                 description: undefined,
                 dialogType: undefined,
-                imageUrl: undefined,
+                imageUrls: [],
                 name: undefined,
               })
             }

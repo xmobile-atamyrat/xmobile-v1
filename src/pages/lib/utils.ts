@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { localeOptions } from '@/pages/lib/constants';
+import { localeOptions, PRODUCT_IMAGE_WIDTH } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
   EditCategoriesProps,
@@ -188,16 +188,18 @@ export async function addEditProduct({
   productNameRequiredError,
   selectedCategoryId,
   setProducts,
-  productImageUrl,
-  productImageFile,
+  productImageUrls,
+  productImageFiles,
+  deleteImageUrls,
   selectedProductId,
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   productNameRequiredError: string;
   selectedCategoryId: string;
-  productImageUrl?: string;
-  productImageFile?: File;
+  productImageUrls: string[];
+  productImageFiles: File[];
+  deleteImageUrls: string[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
   selectedProductId?: string;
 }): Promise<Product> {
@@ -235,11 +237,17 @@ export async function addEditProduct({
     newFormData.append('description', JSON.stringify(productDescriptions));
   if (price) newFormData.append('price', price);
 
-  if (productImageUrl != null && productImageUrl !== '') {
-    newFormData.append('imageUrl', productImageUrl);
-  } else if (productImageFile != null && productImageFile?.name !== '') {
-    const resizedImage = await resizeImage(productImageFile, 240);
-    newFormData.append('imageUrl', resizedImage);
+  if (productImageUrls.length > 0) {
+    newFormData.append('imageUrls', JSON.stringify(productImageUrls));
+  }
+  if (productImageFiles.length > 0) {
+    productImageFiles.forEach(async (image, index) => {
+      const resizedImage = await resizeImage(image, PRODUCT_IMAGE_WIDTH);
+      newFormData.append(`imageUrl${index}`, resizedImage);
+    });
+  }
+  if (deleteImageUrls.length > 0) {
+    newFormData.append('deleteImageUrls', JSON.stringify(deleteImageUrls));
   }
 
   let product: Product;
@@ -270,4 +278,8 @@ export async function addEditProduct({
   setProducts(data);
 
   return product;
+}
+
+export function isNumeric(value: string): boolean {
+  return !Number.isNaN(+value);
 }

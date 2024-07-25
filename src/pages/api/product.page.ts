@@ -34,12 +34,16 @@ async function createProduct(
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
       }
+
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
           categoryId: fields.categoryId[0],
           description: fields.description?.[0],
-          imgUrl: fields.imageUrl?.[0] ?? files.imageUrl?.[0].path,
+          imgUrls: [
+            ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
+            ...(files.imageUrl?.map((val: { path: string }) => val.path) ?? []),
+          ],
           price: fields.price?.[0],
         },
       });
@@ -168,22 +172,43 @@ async function handleEditProduct(
         resolve({ success: false, message: err.message, status: 500 });
       }
 
-      const data: Partial<Product> = {};
+      const data: Partial<Product> = { imgUrls: [] };
       if (fields.name?.length > 0) data.name = fields.name[0];
       if (fields.description?.length > 0)
         data.description = fields.description[0];
       if (fields.price?.length > 0) data.price = fields.price[0];
-      if (files.imageUrl?.length > 0) {
-        const currProduct = await dbClient.product.findUnique({
-          where: {
-            id: productId as string,
-          },
-        });
-        if (currProduct?.imgUrl != null && fs.existsSync(currProduct.imgUrl)) {
-          fs.unlinkSync(currProduct.imgUrl);
+
+      const currProduct = await dbClient.product.findUnique({
+        where: {
+          id: productId as string,
+        },
+      });
+      if (currProduct == null) {
+        console.error(
+          filepath,
+          'Product not found',
+          `Method: PUT`,
+          `productId: ${productId}`,
+        );
+        resolve({ success: false, message: 'Product not found', status: 404 });
+      }
+
+      const deleteImageUrls = fields.deleteImageUrls
+        ? JSON.parse(fields.deleteImageUrls[0])
+        : [];
+      currProduct?.imgUrls.forEach((imgUrl: string) => {
+        if (deleteImageUrls.includes(imgUrl)) {
+          if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
+        } else {
+          data.imgUrls!.push(imgUrl);
         }
-        data.imgUrl = files.imageUrl?.[0].path;
-      } else if (fields.imageUrl?.length > 0) data.imgUrl = fields.imageUrl[0];
+      });
+
+      data.imgUrls = [
+        ...data.imgUrls!,
+        ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
+        ...(files.imageUrl?.map((val: { path: string }) => val.path) ?? []),
+      ];
 
       const product = await dbClient.product.update({
         where: {
@@ -240,9 +265,22 @@ export default async function handler(
           id: productId as string,
         },
       });
-      if (product?.imgUrl != null && fs.existsSync(product.imgUrl)) {
-        fs.unlinkSync(product.imgUrl);
+      if (product == null) {
+        console.error(
+          filepath,
+          'Product not found',
+          `Method: ${method}`,
+          `productId: ${productId}`,
+        );
+        return res
+          .status(404)
+          .json({ success: false, message: "Couldn't find the product" });
       }
+
+      product.imgUrls.forEach((imgUrl: string) => {
+        if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
+      });
+
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error(filepath, error);
