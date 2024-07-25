@@ -37,7 +37,7 @@ export interface AddEditProductProps {
   dialogType?: 'add' | 'edit';
   id?: string;
   name?: string;
-  imageUrl?: string | null;
+  imageUrls: string[];
   description?: string | null;
   price?: string | null;
 }
