@@ -93,7 +93,7 @@ export default function ProductCard({
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/3' : 'h-full'}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/3' : 'h-4/5'}`}
             >
               {parseName(product?.description ?? '{}', router.locale ?? 'tk')
                 ?.split('\n')
