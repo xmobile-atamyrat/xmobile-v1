@@ -222,7 +222,6 @@ export default function AddEditProductDialog({
                 try {
                   const { value } = event.currentTarget;
                   new URL(value);
-                  console.info(value);
                   setProductImageUrls([
                     ...productImageUrls,
                     { [productImageUrlsNumberKeyCount]: value },
