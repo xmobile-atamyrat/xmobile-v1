@@ -38,6 +38,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-flagkit": "^2.0.4",
+    "react-slick": "^0.30.2",
+    "slick-carousel": "^1.8.1",
     "swr": "^2.2.5"
   },
   "devDependencies": {
@@ -46,6 +48,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/react-slick": "^0.23.13",
     "@vitalets/google-translate-api": "^9.2.0",
     "dotenv-cli": "^7.4.2",
     "eslint": "^8",
