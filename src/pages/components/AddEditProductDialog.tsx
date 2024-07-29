@@ -62,22 +62,26 @@ export default function AddEditProductDialog({
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
-    const initialProductImageUrl: { [key: string]: string }[] = [];
-    imageUrls.forEach(async (imageUrl) => {
-      try {
-        new URL(imageUrl);
-        initialProductImageUrl.push({ imageUrl });
-      } catch (_) {
-        initialProductImageUrl.push({
-          imageUrl: URL.createObjectURL(
-            await (
-              await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
-            ).blob(),
-          ),
-        });
-      }
-    });
-    setProductImageUrls(initialProductImageUrl);
+    (async () => {
+      const initialProductImageUrl: { [key: string]: string }[] = [];
+      await Promise.all(
+        imageUrls.map(async (imageUrl) => {
+          try {
+            new URL(imageUrl);
+            initialProductImageUrl.push({ [imageUrl]: imageUrl });
+          } catch (_) {
+            initialProductImageUrl.push({
+              [imageUrl]: URL.createObjectURL(
+                await (
+                  await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
+                ).blob(),
+              ),
+            });
+          }
+        }),
+      );
+      setProductImageUrls(initialProductImageUrl);
+    })();
   }, [imageUrls]);
 
   return (
@@ -95,6 +99,7 @@ export default function AddEditProductDialog({
           const formData = new FormData(
             event.currentTarget as unknown as HTMLFormElement,
           );
+
           const updatedProduct = await addEditProduct({
             formJson: Object.fromEntries(formData.entries()),
             productNameRequiredError: t('productNameRequired'),
@@ -213,22 +218,20 @@ export default function AddEditProductDialog({
               type="url"
               name="imgUrl"
               className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  console.info();
-                  try {
-                    const value = (event.target as HTMLInputElement).value;
-                    new URL(value);
-                    setProductImageUrls([
-                      ...productImageUrls,
-                      { [productImageUrlsNumberKeyCount]: value },
-                    ]);
-                    setProductImageUrlsNumberKeyCount(
-                      productImageUrlsNumberKeyCount + 1,
-                    );
-                  } catch (_) {
-                    // do nothing
-                  }
+              onChange={(event) => {
+                try {
+                  const { value } = event.currentTarget;
+                  new URL(value);
+                  console.info(value);
+                  setProductImageUrls([
+                    ...productImageUrls,
+                    { [productImageUrlsNumberKeyCount]: value },
+                  ]);
+                  setProductImageUrlsNumberKeyCount(
+                    productImageUrlsNumberKeyCount + 1,
+                  );
+                } catch (_) {
+                  // do nothing
                 }
               }}
             />
@@ -278,7 +281,7 @@ export default function AddEditProductDialog({
                       if (!isNumeric(idx) && obj[idx] === url) {
                         setOriginalDeletedProductImageUrls([
                           ...originalDeletedProductImageUrls,
-                          objUrls[idx],
+                          idx,
                         ]);
                       }
                     });
