@@ -241,10 +241,12 @@ export async function addEditProduct({
     newFormData.append('imageUrls', JSON.stringify(productImageUrls));
   }
   if (productImageFiles.length > 0) {
-    productImageFiles.forEach(async (image, index) => {
-      const resizedImage = await resizeImage(image, PRODUCT_IMAGE_WIDTH);
-      newFormData.append(`imageUrl${index}`, resizedImage);
-    });
+    await Promise.all(
+      productImageFiles.map(async (image, index) => {
+        const resizedImage = await resizeImage(image, PRODUCT_IMAGE_WIDTH);
+        newFormData.append(`imageUrl${index}`, resizedImage);
+      }),
+    );
   }
   if (deleteImageUrls.length > 0) {
     newFormData.append('deleteImageUrls', JSON.stringify(deleteImageUrls));

@@ -35,6 +35,7 @@ async function createProduct(
         resolve({ success: false, message: err.message, status: 500 });
       }
 
+      const fileKeys = Object.keys(files);
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
@@ -42,7 +43,7 @@ async function createProduct(
           description: fields.description?.[0],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-            ...(files.imageUrl?.map((val: { path: string }) => val.path) ?? []),
+            ...(fileKeys.map((key) => files[key][0].path) ?? []),
           ],
           price: fields.price?.[0],
         },
@@ -204,10 +205,11 @@ async function handleEditProduct(
         }
       });
 
+      const fileKeys = Object.keys(files);
       data.imgUrls = [
         ...data.imgUrls!,
         ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-        ...(files.imageUrl?.map((val: { path: string }) => val.path) ?? []),
+        ...(fileKeys.map((key) => files[key][0].path) ?? []),
       ];
 
       const product = await dbClient.product.update({
