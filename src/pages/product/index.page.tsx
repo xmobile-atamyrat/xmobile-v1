@@ -59,16 +59,24 @@ export default function Product() {
       return;
     }
 
-    const initImgUrls: string[] = [];
-    product.imgUrls.forEach(async (imgUrl) => {
-      if (imgUrl.startsWith('http')) {
-        initImgUrls.push(imgUrl);
-      } else {
-        const imgFetcher = fetch(`${BASE_URL}/api/localImage?imgUrl=${imgUrl}`);
-        initImgUrls.push(URL.createObjectURL(await (await imgFetcher).blob()));
-      }
-    });
-    setImgUrls(initImgUrls);
+    (async () => {
+      const initImgUrls: string[] = [];
+      await Promise.all(
+        product.imgUrls.map(async (imgUrl) => {
+          if (imgUrl.startsWith('http')) {
+            initImgUrls.push(imgUrl);
+          } else {
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
+            );
+            initImgUrls.push(
+              URL.createObjectURL(await (await imgFetcher).blob()),
+            );
+          }
+        }),
+      );
+      setImgUrls(initImgUrls);
+    })();
   }, [product]);
 
   return (
