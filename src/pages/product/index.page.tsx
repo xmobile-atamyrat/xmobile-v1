@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
+import Carousel, { NextArrow, PrevArrow } from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -26,6 +27,8 @@ import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import 'slick-carousel/slick/slick-theme.css';
+import 'slick-carousel/slick/slick.css';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -124,18 +127,26 @@ export default function Product() {
                 </Box>
               )}
             </Box>
-            {imgUrls.map((imgUrl, index) => (
-              <Box className="flex justify-center h-full w-full" key={index}>
-                <CardMedia
-                  component="img"
-                  image={imgUrl}
-                  alt={product?.name}
-                  sx={{
-                    width: '100%',
-                  }}
-                />
-              </Box>
-            ))}
+            {imgUrls.length > 0 && (
+              <Carousel
+                settings={{
+                  prevArrow: <PrevArrow />,
+                  nextArrow: <NextArrow />,
+                }}
+              >
+                {imgUrls.map((imgUrl, index) => (
+                  <CardMedia
+                    component="img"
+                    image={imgUrl}
+                    alt={product?.name}
+                    sx={{
+                      width: '100%',
+                    }}
+                    key={index}
+                  />
+                ))}
+              </Carousel>
+            )}
           </Box>
           {product?.price != null && (
             <Box className="w-full">
