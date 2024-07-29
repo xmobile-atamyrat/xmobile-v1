@@ -22,9 +22,9 @@ main() {
         docker cp build_env:/app/xmobile-v1.tar.gz .
     fi
 
-    scp xmobile-v1.tar.gz xmobile_telekom:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+    # scp xmobile-v1.tar.gz xmobile_telekom:/home/ubuntu/tar-file/xmobile-v1.tar.gz
 
-    rm xmobile-v1.tar.gz
+    # rm xmobile-v1.tar.gz
 }
 
 main
