@@ -1,6 +1,5 @@
-import { CarouselArrowProps, CarouselSettings } from '@/pages/lib/types';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Box, IconButton } from '@mui/material';
+import { CarouselSettings } from '@/pages/lib/types';
+import { Box } from '@mui/material';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
@@ -21,37 +20,11 @@ const DEFAULT_SETTINGS: CarouselSettings = {
   pauseOnHover: true,
 };
 
-export function NextArrow({ onClick }: CarouselArrowProps) {
-  return (
-    <div onClick={onClick}>
-      <IconButton
-        //   className="absolute -right-52 -top-44"
-        className="absolute"
-      >
-        <ArrowBackIcon />
-      </IconButton>
-    </div>
-  );
-}
-
-export function PrevArrow({ onClick }: CarouselArrowProps) {
-  return (
-    <div onClick={onClick}>
-      <IconButton
-        //   className="absolute -left-12 top-36"
-        className="absolute"
-      >
-        <ArrowBackIcon />
-      </IconButton>
-    </div>
-  );
-}
-
 export default function Carousel({ children, settings }: CarouselProps) {
   const updatedSettings = { ...DEFAULT_SETTINGS, ...settings };
   return (
     <Box className="w-full h-full flex justify-center relative">
-      <Box className="w-[60%]">
+      <Box className="w-[85%]">
         <Slider {...updatedSettings}>{children}</Slider>
       </Box>
     </Box>
