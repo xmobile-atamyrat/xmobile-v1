@@ -89,13 +89,16 @@ export default function ProductCard({
                 sx={{ fontSize: { xs: 16, sm: 20 }, mt: 1 }}
                 component="div"
               >
-                {parseName(product?.name, router.locale ?? 'tk')}
+                {parseName(product.name, router.locale ?? 'tk').substring(
+                  0,
+                  36,
+                )}
               </Typography>
             </Box>
             <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/3' : 'h-4/5'}`}
+              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
             >
-              {parseName(product?.description ?? '{}', router.locale ?? 'tk')
+              {parseName(product.description ?? '{}', router.locale ?? 'tk')
                 ?.split('\n')
                 ?.map((desc, index) => (
                   <Typography
@@ -108,7 +111,7 @@ export default function ProductCard({
                 ))}
             </Box>
           </Box>
-          {product?.price != null && (
+          {product.price != null && (
             <Box className="flex items-end ">
               <Typography
                 sx={{ fontSize: { xs: 13, sm: 16 } }}
