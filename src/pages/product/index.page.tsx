@@ -1,6 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
-import Carousel, { NextArrow, PrevArrow } from '@/pages/components/Carousel';
+import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -63,19 +63,15 @@ export default function Product() {
     }
 
     (async () => {
-      const initImgUrls: string[] = [];
-      await Promise.all(
+      const initImgUrls: string[] = await Promise.all(
         product.imgUrls.map(async (imgUrl) => {
           if (imgUrl.startsWith('http')) {
-            initImgUrls.push(imgUrl);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
-            );
-            initImgUrls.push(
-              URL.createObjectURL(await (await imgFetcher).blob()),
-            );
+            return imgUrl;
           }
+          const imgFetcher = fetch(
+            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
+          );
+          return URL.createObjectURL(await (await imgFetcher).blob());
         }),
       );
       setImgUrls(initImgUrls);
@@ -127,13 +123,20 @@ export default function Product() {
                 </Box>
               )}
             </Box>
-            {imgUrls.length > 0 && (
-              <Carousel
-                settings={{
-                  prevArrow: <PrevArrow />,
-                  nextArrow: <NextArrow />,
-                }}
-              >
+            {imgUrls.length === 1 && (
+              <Box className="flex w-full justify-center flex-row">
+                <CardMedia
+                  component="img"
+                  image={imgUrls[0]}
+                  alt={product?.name}
+                  sx={{
+                    width: '80%',
+                  }}
+                />
+              </Box>
+            )}
+            {imgUrls.length > 1 && (
+              <Carousel>
                 {imgUrls.map((imgUrl, index) => (
                   <CardMedia
                     component="img"
@@ -149,7 +152,7 @@ export default function Product() {
             )}
           </Box>
           {product?.price != null && (
-            <Box className="w-full">
+            <Box className="w-full mt-4">
               <Typography
                 fontWeight={600}
               >{`${product.price} ${t('manat')}`}</Typography>
