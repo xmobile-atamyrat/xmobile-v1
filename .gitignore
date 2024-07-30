@@ -43,3 +43,4 @@ dummy_db_data/
 ssh_keys
 *.tar.gz
 certificates
+categories.yaml
