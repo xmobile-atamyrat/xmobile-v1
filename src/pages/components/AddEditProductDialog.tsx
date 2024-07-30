@@ -57,28 +57,46 @@ export default function AddEditProductDialog({
     [],
   );
 
+  const [productImageOrder, setProductImageOrder] = useState<{
+    [key: number]: string;
+  }>({});
+
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
     (async () => {
-      const initialProductImageUrl: { [key: string]: string }[] = [];
-      await Promise.all(
-        imageUrls.map(async (imageUrl) => {
-          try {
-            new URL(imageUrl);
-            initialProductImageUrl.push({ [imageUrl]: imageUrl });
-          } catch (_) {
-            initialProductImageUrl.push({
-              [imageUrl]: URL.createObjectURL(
-                await (
-                  await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
-                ).blob(),
-              ),
-            });
-          }
-        }),
+      const initialProductImageUrl: { [key: string]: string }[] =
+        await Promise.all(
+          imageUrls.map(async (imageUrl) => {
+            try {
+              new URL(imageUrl);
+              return { [imageUrl]: imageUrl };
+            } catch (_) {
+              return {
+                [imageUrl]: URL.createObjectURL(
+                  await (
+                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
+                  ).blob(),
+                ),
+              };
+            }
+          }),
+        );
+      setProductImageOrder(
+        initialProductImageUrl
+          .map((obj) => {
+            const [key] = Object.keys(obj);
+            return obj[key];
+          })
+          .reduce(
+            (acc, curr, index) => {
+              acc[index + 1] = curr;
+              return acc;
+            },
+            {} as { [key: number]: string },
+          ),
       );
       setProductImageUrls(initialProductImageUrl);
     })();
@@ -300,6 +318,34 @@ export default function AddEditProductDialog({
                 >
                   <DeleteOutlined fontSize="medium" color="error" />
                 </IconButton>
+                <TextField
+                  disabled
+                  size="small"
+                  className="absolute top-0 left-0 w-14"
+                  style={{ backgroundColor: 'white' }}
+                  type="number"
+                  defaultValue={index + 1}
+                  onChange={(event) => {
+                    const newIndex = Number(event.currentTarget.value);
+                    if (newIndex > 0 && newIndex <= productImageUrls.length) {
+                      const curIndex = index + 1;
+
+                      const newProductImageOrder = { ...productImageOrder };
+                      const curUrl = newProductImageOrder[curIndex];
+                      newProductImageOrder[curIndex] =
+                        newProductImageOrder[newIndex];
+                      newProductImageOrder[newIndex] = curUrl;
+                      setProductImageOrder(newProductImageOrder);
+
+                      const newProductImageUrls = [...productImageUrls];
+                      const temp = newProductImageUrls[curIndex - 1];
+                      newProductImageUrls[curIndex - 1] =
+                        newProductImageUrls[newIndex - 1];
+                      newProductImageUrls[newIndex - 1] = temp;
+                      setProductImageUrls(newProductImageUrls);
+                    }
+                  }}
+                />
               </Box>
             );
           })}
