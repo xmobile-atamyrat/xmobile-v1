@@ -36,6 +36,20 @@ yarn build
 ./restart-server.sh
 ```
 
+## Tunnel to Telekom VM
+
+```bash
+# SSH to AWS EC2 Instance (Bastion Host)
+ssh -i ~/.ssh/aws_proxy_tunnel.pem -L 2222:216.250.13.115:2222 ubuntu@3.87.187.215
+
+# SSH into the Target VM
+ssh -i ~/.ssh/xmobile -p 2222 ubuntu@localhost
+
+# SCP into the Target VM
+scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+
+```
+
 ## Features
 
 - left side menu with categories and products
