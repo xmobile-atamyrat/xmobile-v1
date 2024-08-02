@@ -4,6 +4,7 @@ import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { appBarHeight } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -86,7 +87,10 @@ export default function Product() {
           router.push('/');
         }}
       >
-        <Box className="w-full h-full flex flex-col px-4 gap-4">
+        <Box
+          className="w-full h-full flex flex-col px-4 gap-4"
+          pt={`${appBarHeight}px`}
+        >
           <Box className="w-full flex flex-col gap-2">
             <Box className="w-full flex flex-row justify-between items-center">
               <Typography variant="h5" className="text-center">
