@@ -2,8 +2,8 @@ TODO:
 
 TOP PRIORITY:
 
-- implement re-order product images
-- cache menu images
+- Move search button as a persistent search bar
+- Add xmobile logo
 - implement pagination
 - make drawer toggle to selected category id
 - implement cart
@@ -16,8 +16,9 @@ TOP PRIORITY:
 
 MEDIUM PRIORITY:
 
+- cache menu images
+- implement re-order product images
 - In edit category and product, it's not possible to delete image (only replacing is allowed)
-- Move search button as a persistent search bar
 - Implement router stack to not allow landing directly on product before visiting main page
 
 SMALL PRIORITY:
