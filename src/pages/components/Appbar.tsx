@@ -12,7 +12,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import { Avatar, Dialog, Select } from '@mui/material';
+import { Avatar, Paper, Select } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -85,14 +85,14 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 interface CustomAppBarProps {
   openDrawer: boolean;
   setOpenDrawer: Dispatch<SetStateAction<boolean>>;
-  showSearch: boolean;
+  showSearch?: boolean;
   handleBackButton?: () => void;
 }
 
 export default function CustomAppBar({
   setOpenDrawer,
   openDrawer,
-  showSearch,
+  showSearch = false,
   handleBackButton,
 }: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -101,7 +101,6 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setProducts } = useProductContext();
-  const [openSearchBar, setOpenSearchBar] = useState(false);
   const { selectedCategoryId } = useCategoryContext();
 
   const menuId = 'primary-search-account-menu';
@@ -229,47 +228,7 @@ export default function CustomAppBar({
                 }}
               />
             </Search>
-            {showSearch && (
-              <IconButton
-                sx={{ display: { sm: 'none' } }}
-                onClick={() => setOpenSearchBar(true)}
-              >
-                <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
-              </IconButton>
-            )}
-            <Dialog
-              open={openSearchBar}
-              onClose={() => setOpenSearchBar(false)}
-              sx={{
-                '& .MuiDialog-paper': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)', // adjust alpha value as needed
-                  width: '100%',
-                  top: '-35%',
-                },
-                backgroundColor: 'rgba(0, 0, 0, -1)',
-              }}
-            >
-              <Box
-                sx={{ padding: 1 }}
-                className="flex flex-row justify-start gap-2 items-center"
-              >
-                <SearchIcon sx={{ color: 'white', fontSize: 25 }} />
-                <InputBase
-                  placeholder={t('search')}
-                  sx={{
-                    color: 'white',
-                    width: '100%',
-                  }}
-                  onChange={async (event) => {
-                    try {
-                      await handleSearch(event.target.value);
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }}
-                />
-              </Box>
-            </Dialog>
+
             <Select
               defaultValue={router.locale}
               color="info"
@@ -364,6 +323,29 @@ export default function CustomAppBar({
           </Box>
         </Toolbar>
       </AppBar>
+      {showSearch && (
+        <Box className="flex items-center justify-center w-full bg-[#F8F9FA]">
+          <Paper
+            component="form"
+            sx={{
+              p: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              mt: `${appBarHeight}px`,
+              width: '95%',
+            }}
+            className="rounded-2xl"
+          >
+            <IconButton type="button" sx={{ p: '10px' }}>
+              <SearchIcon />
+            </IconButton>
+            <InputBase
+              sx={{ ml: 1, flex: 1 }}
+              placeholder={`${t('search')}...`}
+            />
+          </Paper>
+        </Box>
+      )}
       {renderMenu}
     </Box>
   );
