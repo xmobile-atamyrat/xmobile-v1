@@ -22,7 +22,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   let categories: ExtendedCategory[] = [];
   let messages = {};
   let errorMessage: string | null = null;
-  console.info(`----------------${BASE_URL}------------`);
 
   try {
     const categoriesResponse: ResponseApi<ExtendedCategory[]> = await (
