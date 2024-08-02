@@ -8,6 +8,7 @@ import { changeLocale } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CloseIcon from '@mui/icons-material/Close';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -21,66 +22,11 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import { alpha, styled } from '@mui/material/styles';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useState } from 'react';
 import Flag from 'react-flagkit';
-
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.common.white, 0.15),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.white, 0.25),
-  },
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
-    width: '300px',
-  },
-  [theme.breakpoints.down('sm')]: {
-    display: 'none',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(0, 2),
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(0, 1),
-  },
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  '& .MuiInputBase-input': {
-    [theme.breakpoints.up('sm')]: {
-      padding: theme.spacing(1, 1, 1, 0),
-      paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    },
-    transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '20ch',
-    },
-    [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(1, 1, 1, 0),
-      paddingLeft: `calc(1em + ${theme.spacing(2)})`,
-      fontSize: '14px',
-    },
-  },
-}));
 
 interface CustomAppBarProps {
   openDrawer: boolean;
@@ -102,6 +48,7 @@ export default function CustomAppBar({
   const t = useTranslations();
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const menuId = 'primary-search-account-menu';
   const renderMenu = (
@@ -210,25 +157,6 @@ export default function CustomAppBar({
           </Box>
 
           <Box className="flex w-fit h-full items-center justify-center">
-            <Search>
-              <SearchIconWrapper>
-                <SearchIcon
-                  sx={{ color: 'white', fontSize: { xs: '20px', sm: '26px' } }}
-                />
-              </SearchIconWrapper>
-              <StyledInputBase
-                placeholder={t('search')}
-                inputProps={{ 'aria-label': 'search' }}
-                onChange={async (event) => {
-                  try {
-                    await handleSearch(event.target.value);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                }}
-              />
-            </Search>
-
             <Select
               defaultValue={router.locale}
               color="info"
@@ -342,7 +270,25 @@ export default function CustomAppBar({
             <InputBase
               sx={{ ml: 1, flex: 1 }}
               placeholder={`${t('search')}...`}
+              onChange={(e) => {
+                const keyword = e.target.value;
+                setSearchKeyword(keyword);
+                handleSearch(keyword);
+              }}
+              value={searchKeyword}
             />
+            {searchKeyword !== '' && (
+              <IconButton
+                type="button"
+                sx={{ p: '10px' }}
+                onClick={() => {
+                  setSearchKeyword('');
+                  handleSearch('');
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            )}
           </Paper>
         </Box>
       )}
