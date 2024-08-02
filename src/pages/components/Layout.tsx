@@ -4,7 +4,6 @@ import CustomAppBar from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   DeleteCategoriesProps,
@@ -21,14 +20,14 @@ import { ReactNode, useEffect, useState } from 'react';
 
 interface LayoutProps {
   children: ReactNode;
-  showSearch: boolean;
   handleHeaderBackButton?: () => void;
+  showSearch?: boolean;
 }
 
 export default function Layout({
   children,
-  showSearch,
   handleHeaderBackButton,
+  showSearch = false,
 }: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
@@ -68,9 +67,10 @@ export default function Layout({
       <CustomAppBar
         openDrawer={openDrawer}
         setOpenDrawer={setOpenDrawer}
-        showSearch={showSearch}
         handleBackButton={handleHeaderBackButton}
+        showSearch={showSearch}
       />
+
       <CustomDrawer
         openDrawer={openDrawer}
         setEditCategoriesModal={setEditCategoriesModal}
@@ -81,7 +81,6 @@ export default function Layout({
         component="main"
         sx={{ flexGrow: 1, width: '100%', height: '100%' }}
         className="bg-[#F8F9FA] min-h-screen"
-        pt={`${appBarHeight}px`}
       >
         {children}
       </Box>
