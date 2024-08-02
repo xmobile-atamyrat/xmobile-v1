@@ -81,7 +81,6 @@ export default function Product() {
   return (
     product && (
       <Layout
-        showSearch={false}
         handleHeaderBackButton={() => {
           setSelectedProduct(undefined);
           router.push('/');
