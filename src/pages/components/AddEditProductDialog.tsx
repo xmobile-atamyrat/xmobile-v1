@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { AddEditProductProps } from '@/pages/lib/types';
+import { AddEditProductProps, TagsWithImages } from '@/pages/lib/types';
 import {
   addEditProduct,
   isNumeric,
@@ -33,7 +33,15 @@ interface AddEditProductDialogProps {
 
 export default function AddEditProductDialog({
   handleClose,
-  args: { description, dialogType, id, imageUrls, name, price },
+  args: {
+    description,
+    dialogType,
+    id,
+    imageUrls,
+    name,
+    price,
+    tagsWithImages: initialTagsWithImages,
+  },
   snackbarErrorHandler,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -60,6 +68,10 @@ export default function AddEditProductDialog({
   const [productImageOrder, setProductImageOrder] = useState<{
     [key: number]: string;
   }>({});
+
+  const [tagsWithImages, setTagsWithImages] = useState<TagsWithImages>(
+    initialTagsWithImages,
+  );
 
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
@@ -101,6 +113,33 @@ export default function AddEditProductDialog({
       setProductImageUrls(initialProductImageUrl);
     })();
   }, [imageUrls]);
+
+  useEffect(() => {
+    if (tagsWithImages == null || tagsWithImages.length === 0) return;
+    (async () => {
+      const processedTagsWithImages: TagsWithImages = await Promise.all(
+        tagsWithImages.map(async (obj) => {
+          const key = Object.keys(obj)[0];
+          const processedImageUrls = await Promise.all(
+            obj[key].map(async (imageUrl) => {
+              try {
+                new URL(imageUrl);
+                return imageUrl;
+              } catch (_) {
+                return URL.createObjectURL(
+                  await (
+                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
+                  ).blob(),
+                );
+              }
+            }),
+          );
+          return { [key]: processedImageUrls };
+        }),
+      );
+      setTagsWithImages(processedTagsWithImages);
+    })();
+  }, [tagsWithImages]);
 
   return (
     <Dialog
@@ -219,16 +258,20 @@ export default function AddEditProductDialog({
               defaultValue={parsedProductDescription.en ?? ''}
             />
           </Box>
-          <TextField
-            label={t('price')}
-            type="number"
-            name="price"
-            className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-            defaultValue={price ?? ''}
-          />
         </Box>
         <Box className="flex flex-col p-2">
+          <Typography>For multiple product types:</Typography>
+        </Box>
+        <Box className="flex flex-col p-2">
+          <Typography>For a single product type:</Typography>
           <Box className="flex flex-col">
+            <TextField
+              label={t('price')}
+              type="number"
+              name="price"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={price ?? ''}
+            />
             <TextField
               margin="dense"
               id="imgUrl"
