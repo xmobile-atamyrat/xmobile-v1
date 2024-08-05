@@ -32,6 +32,8 @@ export interface EditCategoriesProps {
   imageUrl?: string | null;
 }
 
+export type TagsWithImages = { [key: string]: string[] }[];
+
 export interface AddEditProductProps {
   open: boolean;
   dialogType?: 'add' | 'edit';
@@ -40,6 +42,7 @@ export interface AddEditProductProps {
   imageUrls: string[];
   description?: string | null;
   price?: string | null;
+  tagsWithImages: TagsWithImages;
 }
 
 export interface DeleteCategoriesProps {

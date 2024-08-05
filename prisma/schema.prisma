@@ -47,6 +47,9 @@ model Product {
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   categoryId      String
 
+  // {[key: string]: string[]}[] where each tag holds an array of image urls
+  tagsWithImages  Json
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }

@@ -10,6 +10,7 @@ import {
   AddEditProductProps,
   ResponseApi,
   SnackbarProps,
+  TagsWithImages,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -55,7 +56,11 @@ export default function Product() {
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false, imageUrls: [] });
+    useState<AddEditProductProps>({
+      open: false,
+      imageUrls: [],
+      tagsWithImages: [],
+    });
 
   useEffect(() => {
     if (product == null) {
@@ -77,6 +82,7 @@ export default function Product() {
       );
       setImgUrls(initImgUrls);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
   return (
@@ -108,6 +114,8 @@ export default function Product() {
                         imageUrls: product.imgUrls,
                         name: product.name,
                         price: product.price,
+                        tagsWithImages:
+                          product.tagsWithImages as TagsWithImages,
                       });
                     }}
                   >
@@ -251,6 +259,7 @@ export default function Product() {
                 dialogType: undefined,
                 imageUrls: [],
                 name: undefined,
+                tagsWithImages: [],
               })
             }
             snackbarErrorHandler={(message: string) => {

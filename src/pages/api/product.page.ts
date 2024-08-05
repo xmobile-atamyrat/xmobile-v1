@@ -46,6 +46,7 @@ async function createProduct(
             ...(fileKeys.map((key) => files[key][0].path) ?? []),
           ],
           price: fields.price?.[0],
+          tagsWithImages: [],
         },
       });
       resolve({ success: true, data: product, status: 200 });
@@ -184,7 +185,37 @@ async function handleEditProduct(
           id: productId as string,
         },
       });
-      if (currProduct == null) {
+      if (currProduct != null) {
+        const deleteImageUrls = fields.deleteImageUrls
+          ? JSON.parse(fields.deleteImageUrls[0])
+          : [];
+        currProduct?.imgUrls.forEach((imgUrl: string) => {
+          if (deleteImageUrls.includes(imgUrl)) {
+            if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
+          } else {
+            data.imgUrls!.push(imgUrl);
+          }
+        });
+
+        const fileKeys = Object.keys(files);
+        data.imgUrls = [
+          ...data.imgUrls!,
+          ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
+          ...(fileKeys.map((key) => files[key][0].path) ?? []),
+        ];
+
+        const product = await dbClient.product.update({
+          where: {
+            id: productId as string,
+          },
+          data: {
+            ...currProduct,
+            ...data,
+            tagsWithImages: currProduct.tagsWithImages!,
+          },
+        });
+        resolve({ success: true, data: product, status: 200 });
+      } else {
         console.error(
           filepath,
           'Product not found',
@@ -193,32 +224,6 @@ async function handleEditProduct(
         );
         resolve({ success: false, message: 'Product not found', status: 404 });
       }
-
-      const deleteImageUrls = fields.deleteImageUrls
-        ? JSON.parse(fields.deleteImageUrls[0])
-        : [];
-      currProduct?.imgUrls.forEach((imgUrl: string) => {
-        if (deleteImageUrls.includes(imgUrl)) {
-          if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-        } else {
-          data.imgUrls!.push(imgUrl);
-        }
-      });
-
-      const fileKeys = Object.keys(files);
-      data.imgUrls = [
-        ...data.imgUrls!,
-        ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-        ...(fileKeys.map((key) => files[key][0].path) ?? []),
-      ];
-
-      const product = await dbClient.product.update({
-        where: {
-          id: productId as string,
-        },
-        data,
-      });
-      resolve({ success: true, data: product, status: 200 });
     });
   });
   const res = await promise;

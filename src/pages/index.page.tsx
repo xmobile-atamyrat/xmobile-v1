@@ -61,7 +61,11 @@ export default function Home({
     useCategoryContext();
   const { products, setProducts } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false, imageUrls: [] });
+    useState<AddEditProductProps>({
+      open: false,
+      imageUrls: [],
+      tagsWithImages: [],
+    });
   const { user } = useUserContext();
 
   const [snackbarOpen, setSnackbarOpen] = useState(
@@ -109,6 +113,7 @@ export default function Home({
                 open: true,
                 dialogType: 'add',
                 imageUrls: [],
+                tagsWithImages: [],
               })
             }
           />
@@ -145,6 +150,7 @@ export default function Home({
                 dialogType: undefined,
                 imageUrls: [],
                 name: undefined,
+                tagsWithImages: [],
               })
             }
             snackbarErrorHandler={(message) => {
