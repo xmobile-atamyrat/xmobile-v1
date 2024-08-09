@@ -44,3 +44,4 @@ ssh_keys
 *.tar.gz
 certificates
 categories.yaml
+*.xlsx
