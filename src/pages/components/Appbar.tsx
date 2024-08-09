@@ -2,7 +2,13 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  LOGO_COLOR,
+  LOGO_COLOR_LIGHT,
+  MAIN_BG_COLOR,
+  mobileAppBarHeight,
+} from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { changeLocale } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
@@ -13,7 +19,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import { Avatar, Paper, Select } from '@mui/material';
+import { Avatar, CardMedia, Paper, Select } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -121,6 +127,9 @@ export default function CustomAppBar({
           zIndex: (theme) => theme.zIndex.drawer + 1,
           height: { xs: mobileAppBarHeight, sm: appBarHeight },
         }}
+        style={{
+          backgroundColor: MAIN_BG_COLOR,
+        }}
       >
         <Toolbar className="flex items-center justify-between">
           <Box className="flex w-fit h-full items-center justify-start">
@@ -144,16 +153,21 @@ export default function CustomAppBar({
               onClick={() => setOpenDrawer(!openDrawer)}
               sx={{ p: 1, pl: '4px' }}
             >
-              <MenuIcon />
+              <MenuIcon
+                style={{
+                  color: LOGO_COLOR,
+                }}
+              />
             </IconButton>
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{ fontSize: { xs: 18, sm: 20 }, p: 1, pl: '4px' }}
+            <Box
+              sx={{
+                width: { xs: 100, sm: 120 },
+                height: { xs: 100, sm: 120 },
+              }}
+              className="flex items-center justify-center"
             >
-              Xmobile
-            </Typography>
+              <CardMedia component="img" src="logo-recolored-cropped.jpeg" />
+            </Box>
           </Box>
 
           <Box className="flex w-fit h-full items-center justify-center">
@@ -167,6 +181,15 @@ export default function CustomAppBar({
                 '& .MuiInputBase-input': {
                   padding: { xs: '8px', sm: '20px' },
                 },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: LOGO_COLOR, // Change border color here
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: LOGO_COLOR, // Change border color on hover
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: LOGO_COLOR, // Change border color when focused
+                },
               }}
               onChange={(event) => {
                 const newPath = changeLocale(
@@ -174,16 +197,6 @@ export default function CustomAppBar({
                   window.location.pathname,
                 );
                 window.location.pathname = newPath;
-
-                // const newPath = `/${event.target.value}`;
-                // const currentUrl = new URL(window.location.href);
-                // currentUrl.pathname = newPath;
-                // currentUrl.search = ''; // Clear any existing query parameters
-                // window.location.href = currentUrl.href;
-              }}
-              style={{
-                backgroundColor: 'rgb(59 130 246 / 0.5)',
-                color: '#F5F5F5',
               }}
             >
               <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
@@ -231,9 +244,11 @@ export default function CustomAppBar({
                 {user != null ? (
                   <Avatar
                     sx={{
-                      bgcolor: '#4c8dc1',
                       width: { xs: 30, sm: 36 },
                       height: { xs: 30, sm: 36 },
+                    }}
+                    style={{
+                      backgroundColor: LOGO_COLOR,
                     }}
                   >
                     {user.name[0].toUpperCase()}
@@ -252,7 +267,9 @@ export default function CustomAppBar({
         </Toolbar>
       </AppBar>
       {showSearch && (
-        <Box className="flex items-center justify-center w-full bg-[#F8F9FA]">
+        <Box
+          className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
+        >
           <Paper
             component="form"
             sx={{
@@ -262,13 +279,23 @@ export default function CustomAppBar({
               mt: `${appBarHeight}px`,
               width: '95%',
             }}
-            className="rounded-2xl"
+            className={`rounded-2xl`}
+            style={{
+              backgroundColor: LOGO_COLOR_LIGHT,
+            }}
           >
             <IconButton type="button" sx={{ p: '10px' }}>
-              <SearchIcon />
+              <SearchIcon sx={{ color: 'white' }} />
             </IconButton>
             <InputBase
-              sx={{ ml: 1, flex: 1 }}
+              sx={{
+                ml: 1,
+                flex: 1,
+                color: 'white', // Set text color to white
+                '& .MuiInputBase-input': {
+                  color: 'white', // Ensure the input text is white
+                },
+              }}
               placeholder={`${t('search')}...`}
               onChange={(e) => {
                 const keyword = e.target.value;
@@ -286,7 +313,7 @@ export default function CustomAppBar({
                   handleSearch('');
                 }}
               >
-                <CloseIcon />
+                <CloseIcon sx={{ color: 'white' }} />
               </IconButton>
             )}
           </Paper>

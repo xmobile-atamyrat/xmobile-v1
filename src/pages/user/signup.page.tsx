@@ -1,3 +1,4 @@
+import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
@@ -36,7 +37,9 @@ export default function Signup() {
   const t = useTranslations();
 
   return (
-    <Box className="h-[100vh] flex justify-center items-center bg-[#F8F9FA]">
+    <Box
+      className={`h-[100vh] flex justify-center items-center bg-[${MAIN_BG_COLOR}]`}
+    >
       <Paper
         className="flex flex-col"
         elevation={3}
