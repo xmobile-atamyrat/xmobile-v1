@@ -1,12 +1,9 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import { IconButton, List, Paper, Tooltip } from '@mui/material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import Collapsable from '@/pages/components/Collapsable';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   appBarHeight,
   drawerPaddingTopOffset,
+  MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import {
@@ -14,9 +11,13 @@ import {
   EditCategoriesProps,
   ExtendedCategory,
 } from '@/pages/lib/types';
-import Collapsable from '@/pages/components/Collapsable';
-import { Dispatch, SetStateAction } from 'react';
 import { useUserContext } from '@/pages/lib/UserContext';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { IconButton, List, Paper, Tooltip } from '@mui/material';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import * as React from 'react';
+import { Dispatch, SetStateAction } from 'react';
 
 const drawerWidth = 300;
 
@@ -96,7 +97,7 @@ export default function CustomDrawer({
             },
             height: '100vh',
           }}
-          className="bg-[#F8F9FA]"
+          className={`bg-[${MAIN_BG_COLOR}]`}
         >
           {ConstructDrawerList(
             categories,

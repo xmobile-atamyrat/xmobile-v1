@@ -4,6 +4,7 @@ import CustomAppBar from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   DeleteCategoriesProps,
@@ -80,7 +81,7 @@ export default function Layout({
       <Box
         component="main"
         sx={{ flexGrow: 1, width: '100%', height: '100%' }}
-        className="bg-[#F8F9FA] min-h-screen"
+        className={`bg-[${MAIN_BG_COLOR}] min-h-screen`}
       >
         {children}
       </Box>
