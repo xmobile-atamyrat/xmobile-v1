@@ -1,14 +1,26 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { localeOptions, PRODUCT_IMAGE_WIDTH } from '@/pages/lib/constants';
+import {
+  localeOptions,
+  LOGO_COLOR,
+  PRODUCT_IMAGE_WIDTH,
+} from '@/pages/lib/constants';
 import {
   AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
-import { styled } from '@mui/material';
+import { createTheme, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import { Dispatch, SetStateAction } from 'react';
+
+export const theme = createTheme({
+  palette: {
+    primary: {
+      main: LOGO_COLOR,
+    },
+  },
+});
 
 // check if the image url is a local image or a remote image
 // if it is a local image, delete it from the server
