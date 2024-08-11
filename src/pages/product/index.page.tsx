@@ -22,6 +22,8 @@ import {
   IconButton,
   Snackbar,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Product as PrismaProduct } from '@prisma/client';
 import { GetStaticProps } from 'next';
@@ -57,6 +59,8 @@ export default function Product() {
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   useEffect(() => {
     if (product == null) {
@@ -113,11 +117,17 @@ export default function Product() {
         }}
       >
         <Box
-          className="w-full h-full flex flex-col px-4 gap-4"
+          className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4`}
           pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
         >
-          <Box className="w-full flex flex-col gap-2">
-            <Box className="w-full flex flex-row justify-between items-center pb-10">
+          {/* title, images, price */}
+          <Box
+            className={`flex flex-col gap-2`}
+            style={{
+              width: isMdUp ? '50%' : '100%',
+            }}
+          >
+            <Box className="w-full flex flex-row justify-between items-center pb-4">
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
@@ -162,7 +172,7 @@ export default function Product() {
               </Box>
             )}
             {imgUrls.length > 1 && (
-              <Carousel>
+              <Carousel isMdUp={isMdUp}>
                 {imgUrls.map((imgUrl, index) => (
                   <CardMedia
                     component="img"
@@ -177,15 +187,17 @@ export default function Product() {
               </Carousel>
             )}
           </Box>
-          {product?.price != null && (
-            <Box className="w-full my-4">
-              <Typography
-                fontWeight={600}
-                fontSize={18}
-              >{`${product.price} ${t('manat')}`}</Typography>
-            </Box>
-          )}
-          <Box className="w-full">
+
+          {/* description */}
+          <Box className="flex flex-col">
+            {product?.price != null && (
+              <Box className="w-full my-4">
+                <Typography
+                  fontWeight={600}
+                  fontSize={22}
+                >{`${product.price} ${t('manat')}`}</Typography>
+              </Box>
+            )}
             {description && Object.keys(description).length > 0
               ? Object.keys(description ?? {}).map((key) => (
                   <Box key={key} className="w-full flex flex-col pb-4">
