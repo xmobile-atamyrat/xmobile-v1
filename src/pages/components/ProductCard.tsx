@@ -114,10 +114,10 @@ export default function ProductCard({
           {product.price != null && (
             <Box className="flex items-end ">
               <Typography
-                sx={{ fontSize: { xs: 13, sm: 16 } }}
+                sx={{ fontSize: { xs: 14, sm: 16 } }}
                 fontWeight={600}
               >
-                {t('price')}: {product?.price} {t('manat')}
+                {product?.price} {t('manat')}
               </Typography>
             </Box>
           )}
