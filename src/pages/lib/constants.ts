@@ -24,3 +24,13 @@ export const LOGO_COLOR_ORANGE = '#ff6f00';
  * #7F74BD
  * #A89EE0 -> lightest
  */
+
+export const PRODUCT_IMAGE_WIDTH_RESP = {
+  width: {
+    xs: '75%',
+    sm: '50%',
+    md: '40%',
+    lg: '30%',
+    xl: '20%',
+  },
+};
