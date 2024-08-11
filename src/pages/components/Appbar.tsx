@@ -171,7 +171,7 @@ export default function CustomAppBar({
               }}
               className="flex items-center justify-center"
             >
-              <CardMedia component="img" src="logo-recolored-cropped.jpeg" />
+              <CardMedia component="img" src="/logo-recolored-cropped.jpeg" />
             </Box>
           </Box>
 
