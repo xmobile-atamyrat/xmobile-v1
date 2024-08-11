@@ -157,10 +157,11 @@ export default function CustomAppBar({
                 onClick={handleBackButton}
               >
                 <ArrowBackIosIcon
-                  style={{
+                  sx={{
+                    width: { xs: 24, md: 28 },
+                    height: { xs: 24, md: 28 },
                     color: LOGO_COLOR,
                   }}
-                  fontSize="small"
                 />
               </IconButton>
             )}
