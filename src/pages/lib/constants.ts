@@ -29,8 +29,6 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   width: {
     xs: '75%',
     sm: '50%',
-    md: '40%',
-    lg: '30%',
-    xl: '20%',
+    md: '75%',
   },
 };
