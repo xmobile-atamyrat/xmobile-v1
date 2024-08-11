@@ -1,3 +1,4 @@
+import { PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { CarouselSettings } from '@/pages/lib/types';
 import { Box } from '@mui/material';
 import Slider from 'react-slick';
@@ -12,29 +13,20 @@ interface CarouselProps {
 const DEFAULT_SETTINGS: CarouselSettings = {
   dots: true,
   infinite: true,
-  speed: 500,
+  speed: 1000,
   slidesToShow: 1,
   slidesToScroll: 1,
   autoplay: true,
-  autoplaySpeed: 3000,
+  autoplaySpeed: 5000,
   pauseOnHover: true,
+  // adaptiveHeight: true,
 };
 
 export default function Carousel({ children, settings }: CarouselProps) {
   const updatedSettings = { ...DEFAULT_SETTINGS, ...settings };
   return (
     <Box className="w-full h-full flex justify-center relative">
-      <Box
-        sx={{
-          width: {
-            xs: '85%',
-            sm: '75%',
-            md: '65%',
-            lg: '55%',
-            xl: '45%',
-          },
-        }}
-      >
+      <Box sx={PRODUCT_IMAGE_WIDTH_RESP}>
         <Slider {...updatedSettings}>{children}</Slider>
       </Box>
     </Box>
