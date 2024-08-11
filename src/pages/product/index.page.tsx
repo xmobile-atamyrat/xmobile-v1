@@ -56,6 +56,7 @@ export default function Product() {
   const { selectedCategoryId } = useCategoryContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
+  const [description, setDescription] = useState<{ [key: string]: string[] }>();
 
   useEffect(() => {
     if (product == null) {
@@ -77,7 +78,31 @@ export default function Product() {
       );
       setImgUrls(initImgUrls);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
+
+  useEffect(() => {
+    const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
+    if (desc == null || desc === '') return;
+
+    const descArr = desc.split('\n').flatMap((el) => el.split(/[[\]]/));
+    const descObj: { [key: string]: string[] } = {};
+    let key: string | undefined;
+    while (descArr.length > 0) {
+      const value = descArr.shift();
+      if (value === undefined) break;
+      if (value === '') {
+        key = descArr.shift();
+        if (key === undefined) break;
+        descObj[key] = [];
+      } else {
+        if (key === undefined) break;
+        descObj[key].push(value);
+      }
+    }
+
+    setDescription(descObj);
+  }, [product?.description, router.locale]);
 
   return (
     product && (
@@ -155,18 +180,33 @@ export default function Product() {
             )}
           </Box>
           {product?.price != null && (
-            <Box className="w-full mt-4">
+            <Box className="w-full my-4">
               <Typography
                 fontWeight={600}
               >{`${product.price} ${t('manat')}`}</Typography>
             </Box>
           )}
           <Box className="w-full">
-            {parseName(product?.description ?? '{}', router.locale ?? 'tk')
-              ?.split('\n')
-              .map((desc, index) => (
-                <Typography key={`${desc}-${index}`}>{desc}</Typography>
-              ))}
+            {description && Object.keys(description).length > 0
+              ? Object.keys(description ?? {}).map((key) => (
+                  <Box key={key} className="w-full flex flex-col pb-4">
+                    <Box className="w-full flex flex-row gap-2 justify-between">
+                      <Box className="w-[30%]">
+                        <Typography fontWeight={600}>{key}</Typography>
+                      </Box>
+                      <Box className="flex flex-col w-[70%]">
+                        {description[key].map((descLine, index) => (
+                          <Typography key={index}>{descLine}</Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  </Box>
+                ))
+              : parseName(product?.description ?? '{}', router.locale ?? 'tk')
+                  ?.split('\n')
+                  .map((desc, index) => (
+                    <Typography key={`${desc}-${index}`}>{desc}</Typography>
+                  ))}
           </Box>
         </Box>
         {showDeleteProductDialog?.show && (
