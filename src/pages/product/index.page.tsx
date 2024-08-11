@@ -114,7 +114,7 @@ export default function Product() {
       >
         <Box
           className="w-full h-full flex flex-col px-4 gap-4"
-          pt={`${appBarHeight}px`}
+          pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
         >
           <Box className="w-full flex flex-col gap-2">
             <Box className="w-full flex flex-row justify-between items-center">
@@ -158,7 +158,7 @@ export default function Product() {
                   image={imgUrls[0]}
                   alt={product?.name}
                   sx={{
-                    width: '80%',
+                    width: 300,
                   }}
                 />
               </Box>
@@ -183,6 +183,7 @@ export default function Product() {
             <Box className="w-full my-4">
               <Typography
                 fontWeight={600}
+                fontSize={18}
               >{`${product.price} ${t('manat')}`}</Typography>
             </Box>
           )}
@@ -192,7 +193,9 @@ export default function Product() {
                   <Box key={key} className="w-full flex flex-col pb-4">
                     <Box className="w-full flex flex-row gap-2 justify-between">
                       <Box className="w-[30%]">
-                        <Typography fontWeight={600}>{key}</Typography>
+                        <Typography fontWeight={600} fontSize={15}>
+                          {key}
+                        </Typography>
                       </Box>
                       <Box className="flex flex-col w-[70%]">
                         {description[key].map((descLine, index) => (

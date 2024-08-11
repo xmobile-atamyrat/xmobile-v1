@@ -24,7 +24,17 @@ export default function Carousel({ children, settings }: CarouselProps) {
   const updatedSettings = { ...DEFAULT_SETTINGS, ...settings };
   return (
     <Box className="w-full h-full flex justify-center relative">
-      <Box className="w-[85%]">
+      <Box
+        sx={{
+          width: {
+            xs: '85%',
+            sm: '75%',
+            md: '65%',
+            lg: '55%',
+            xl: '45%',
+          },
+        }}
+      >
         <Slider {...updatedSettings}>{children}</Slider>
       </Box>
     </Box>
