@@ -221,7 +221,7 @@ export default function AddEditProductDialog({
           </Box>
           <TextField
             label={t('price')}
-            type="number"
+            type="text"
             name="price"
             className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             defaultValue={price ?? ''}
