@@ -4,7 +4,7 @@ import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight } from '@/pages/lib/constants';
+import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -117,7 +117,7 @@ export default function Product() {
           pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
         >
           <Box className="w-full flex flex-col gap-2">
-            <Box className="w-full flex flex-row justify-between items-center">
+            <Box className="w-full flex flex-row justify-between items-center pb-10">
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
@@ -157,9 +157,7 @@ export default function Product() {
                   component="img"
                   image={imgUrls[0]}
                   alt={product?.name}
-                  sx={{
-                    width: 300,
-                  }}
+                  sx={PRODUCT_IMAGE_WIDTH_RESP}
                 />
               </Box>
             )}
