@@ -5,13 +5,14 @@ import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { appBarHeight } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
   ExtendedCategory,
   ResponseApi,
   SnackbarProps,
 } from '@/pages/lib/types';
-import { Alert, Box, Snackbar } from '@mui/material';
+import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import { Product, User } from '@prisma/client';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
@@ -81,6 +82,8 @@ export default function Home({
     setCategories(categories);
     setSelectedCategoryId(categories[0].id);
   }, [categories, setCategories, setSelectedCategoryId, selectedCategoryId]);
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   useEffect(() => {
     if (selectedCategoryId == null) return;
@@ -101,7 +104,12 @@ export default function Home({
 
   return (
     <Layout showSearch>
-      <Box className="flex flex-wrap gap-4 w-full p-3">
+      <Box
+        className="flex flex-wrap gap-4 w-full p-3"
+        sx={{
+          mt: isMdUp ? `${appBarHeight}px` : undefined,
+        }}
+      >
         {user?.grade === 'ADMIN' && selectedCategoryId != null && (
           <ProductCard
             handleClickAddProduct={() =>
@@ -115,24 +123,7 @@ export default function Home({
         )}
         {products.length > 0 &&
           products.map((product) => (
-            <ProductCard
-              product={product}
-              key={product.id}
-              // handleDeleteProduct={(productId) =>
-              //   setShowDeleteProductDialog({ show: true, productId })
-              // }
-              // handleEditProduct={() =>
-              //   setAddEditProductDialog({
-              //     open: true,
-              //     id: product.id,
-              //     description: product.description,
-              //     dialogType: 'edit',
-              //     imageUrl: product.imgUrl,
-              //     name: product.name,
-              //     price: product.price,
-              //   })
-              // }
-            />
+            <ProductCard product={product} key={product.id} />
           ))}
         {addEditProductDialog.open && (
           <AddEditProductDialog

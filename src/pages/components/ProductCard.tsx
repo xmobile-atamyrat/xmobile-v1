@@ -91,7 +91,7 @@ export default function ProductCard({
               >
                 {parseName(product.name, router.locale ?? 'tk').substring(
                   0,
-                  36,
+                  24,
                 )}
               </Typography>
             </Box>
