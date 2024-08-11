@@ -8,6 +8,7 @@ import 'slick-carousel/slick/slick.css';
 interface CarouselProps {
   children: React.ReactNode;
   settings?: CarouselSettings;
+  isMdUp?: boolean;
 }
 
 const DEFAULT_SETTINGS: CarouselSettings = {
@@ -22,10 +23,16 @@ const DEFAULT_SETTINGS: CarouselSettings = {
   // adaptiveHeight: true,
 };
 
-export default function Carousel({ children, settings }: CarouselProps) {
+export default function Carousel({
+  children,
+  settings,
+  isMdUp = false,
+}: CarouselProps) {
   const updatedSettings = { ...DEFAULT_SETTINGS, ...settings };
   return (
-    <Box className="w-full h-full flex justify-center relative">
+    <Box
+      className={`w-full h-full flex justify-${isMdUp ? 'start' : 'center'} relative`}
+    >
       <Box sx={PRODUCT_IMAGE_WIDTH_RESP}>
         <Slider {...updatedSettings}>{children}</Slider>
       </Box>

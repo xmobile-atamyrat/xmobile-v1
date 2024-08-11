@@ -175,8 +175,8 @@ export default function CustomAppBar({
             >
               <MenuIcon
                 sx={{
-                  width: { xs: 30, md: 36 },
-                  height: { xs: 30, md: 36 },
+                  width: { xs: 30, md: 34 },
+                  height: { xs: 30, md: 34 },
                   color: LOGO_COLOR,
                 }}
               />

@@ -65,7 +65,7 @@ export default function Layout({
   }, [user, setUser]);
 
   return (
-    <Box>
+    <Box className="w-full h-full">
       <CustomAppBar
         openDrawer={openDrawer}
         setOpenDrawer={setOpenDrawer}
@@ -81,8 +81,7 @@ export default function Layout({
       />
       <Box
         component="main"
-        sx={{ flexGrow: 1, width: '100%', height: '100%' }}
-        className={`bg-[${MAIN_BG_COLOR}] min-h-screen`}
+        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative`}
       >
         {children}
       </Box>
