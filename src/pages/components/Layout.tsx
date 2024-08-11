@@ -42,6 +42,7 @@ export default function Layout({
   const { user, setUser } = useUserContext();
 
   useEffect(() => {
+    console.info(BASE_URL);
     if (categories.length > 0) return;
     (async () => {
       const { success, data: categoriesData }: ResponseApi<ExtendedCategory[]> =
