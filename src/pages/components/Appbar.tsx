@@ -142,7 +142,12 @@ export default function CustomAppBar({
                 sx={{ p: 1 }}
                 onClick={handleBackButton}
               >
-                <ArrowBackIosIcon />
+                <ArrowBackIosIcon
+                  style={{
+                    color: LOGO_COLOR,
+                  }}
+                  fontSize="small"
+                />
               </IconButton>
             )}
             <IconButton
