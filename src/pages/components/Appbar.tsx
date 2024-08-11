@@ -19,7 +19,14 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import { Avatar, CardMedia, Paper, Select } from '@mui/material';
+import {
+  Avatar,
+  CardMedia,
+  Paper,
+  Select,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -55,55 +62,8 @@ export default function CustomAppBar({
   const { setProducts } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
   const [searchKeyword, setSearchKeyword] = useState('');
-
-  const menuId = 'primary-search-account-menu';
-  const renderMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'right',
-      }}
-      id={menuId}
-      keepMounted
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
-      }}
-      open={isMenuOpen}
-      onClose={() => setAnchorEl(null)}
-    >
-      {user != null ? (
-        <MenuItem
-          onClick={() => {
-            localStorage.removeItem('user');
-            router.reload();
-          }}
-          className="flex flex-row gap-2 items-center justify-start"
-        >
-          <LogoutIcon />
-          <Typography>{t('signout')}</Typography>
-        </MenuItem>
-      ) : (
-        <Box>
-          <MenuItem
-            onClick={() => router.push('/user/signin')}
-            className="flex flex-row gap-2 items-center justify-start"
-          >
-            <LoginIcon />
-            <Typography>{t('signin')}</Typography>
-          </MenuItem>
-          <MenuItem
-            onClick={() => router.push('/user/signup')}
-            className="flex flex-row gap-2 items-center justify-start"
-          >
-            <AppRegistrationIcon />
-            <Typography>{t('signup')}</Typography>
-          </MenuItem>
-        </Box>
-      )}
-    </Menu>
-  );
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {
@@ -119,13 +79,67 @@ export default function CustomAppBar({
     }
   };
 
+  const searchBar = (
+    <Box
+      className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
+    >
+      <Paper
+        component="form"
+        sx={{
+          p: '2px 4px',
+          display: 'flex',
+          alignItems: 'center',
+          mt: isMdUp ? undefined : `${appBarHeight}px`,
+          width: '95%',
+        }}
+        className={`rounded-2xl`}
+        style={{
+          backgroundColor: LOGO_COLOR_LIGHT,
+        }}
+      >
+        <IconButton type="button" sx={{ p: '10px' }}>
+          <SearchIcon sx={{ color: 'white' }} />
+        </IconButton>
+        <InputBase
+          sx={{
+            ml: 1,
+            flex: 1,
+            color: 'white', // Set text color to white
+            '& .MuiInputBase-input': {
+              color: 'white', // Ensure the input text is white
+            },
+          }}
+          placeholder={`${t('search')}...`}
+          onChange={(e) => {
+            const keyword = e.target.value;
+            setSearchKeyword(keyword);
+            handleSearch(keyword);
+          }}
+          value={searchKeyword}
+        />
+        {searchKeyword !== '' && (
+          <IconButton
+            type="button"
+            sx={{ p: '10px' }}
+            onClick={() => {
+              setSearchKeyword('');
+              handleSearch('');
+            }}
+          >
+            <CloseIcon sx={{ color: 'white' }} />
+          </IconButton>
+        )}
+      </Paper>
+    </Box>
+  );
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
         position="fixed"
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          height: { xs: mobileAppBarHeight, sm: appBarHeight },
+          zIndex: (appBarTheme) => appBarTheme.zIndex.drawer + 1,
+          height: { xs: mobileAppBarHeight, md: appBarHeight },
         }}
         style={{
           backgroundColor: MAIN_BG_COLOR,
@@ -159,7 +173,9 @@ export default function CustomAppBar({
               sx={{ p: 1, pl: '4px' }}
             >
               <MenuIcon
-                style={{
+                sx={{
+                  width: { xs: 30, md: 36 },
+                  height: { xs: 30, md: 36 },
                   color: LOGO_COLOR,
                 }}
               />
@@ -176,6 +192,15 @@ export default function CustomAppBar({
           </Box>
 
           <Box className="flex w-fit h-full items-center justify-center">
+            {isMdUp && showSearch && (
+              <Box
+                sx={{
+                  width: 400,
+                }}
+              >
+                {searchBar}
+              </Box>
+            )}
             <Select
               defaultValue={router.locale}
               color="info"
@@ -241,7 +266,6 @@ export default function CustomAppBar({
               <IconButton
                 edge="end"
                 aria-label="account of current user"
-                aria-controls={menuId}
                 aria-haspopup="true"
                 onClick={(event) => setAnchorEl(event.currentTarget)}
                 color="inherit"
@@ -261,8 +285,9 @@ export default function CustomAppBar({
                 ) : (
                   <AccountCircle
                     sx={{
-                      width: { xs: 30, sm: 36 },
-                      height: { xs: 30, sm: 36 },
+                      width: { xs: 36, md: 42 },
+                      height: { xs: 36, md: 42 },
+                      color: LOGO_COLOR,
                     }}
                   />
                 )}
@@ -271,60 +296,51 @@ export default function CustomAppBar({
           </Box>
         </Toolbar>
       </AppBar>
-      {showSearch && (
-        <Box
-          className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
-        >
-          <Paper
-            component="form"
-            sx={{
-              p: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              mt: `${appBarHeight}px`,
-              width: '95%',
+      {showSearch && !isMdUp && searchBar}
+      <Menu
+        anchorEl={anchorEl}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={isMenuOpen}
+        onClose={() => setAnchorEl(null)}
+      >
+        {user != null ? (
+          <MenuItem
+            onClick={() => {
+              localStorage.removeItem('user');
+              router.reload();
             }}
-            className={`rounded-2xl`}
-            style={{
-              backgroundColor: LOGO_COLOR_LIGHT,
-            }}
+            className="flex flex-row gap-2 items-center justify-start"
           >
-            <IconButton type="button" sx={{ p: '10px' }}>
-              <SearchIcon sx={{ color: 'white' }} />
-            </IconButton>
-            <InputBase
-              sx={{
-                ml: 1,
-                flex: 1,
-                color: 'white', // Set text color to white
-                '& .MuiInputBase-input': {
-                  color: 'white', // Ensure the input text is white
-                },
-              }}
-              placeholder={`${t('search')}...`}
-              onChange={(e) => {
-                const keyword = e.target.value;
-                setSearchKeyword(keyword);
-                handleSearch(keyword);
-              }}
-              value={searchKeyword}
-            />
-            {searchKeyword !== '' && (
-              <IconButton
-                type="button"
-                sx={{ p: '10px' }}
-                onClick={() => {
-                  setSearchKeyword('');
-                  handleSearch('');
-                }}
-              >
-                <CloseIcon sx={{ color: 'white' }} />
-              </IconButton>
-            )}
-          </Paper>
-        </Box>
-      )}
-      {renderMenu}
+            <LogoutIcon />
+            <Typography>{t('signout')}</Typography>
+          </MenuItem>
+        ) : (
+          <Box>
+            <MenuItem
+              onClick={() => router.push('/user/signin')}
+              className="flex flex-row gap-2 items-center justify-start"
+            >
+              <LoginIcon />
+              <Typography>{t('signin')}</Typography>
+            </MenuItem>
+            <MenuItem
+              onClick={() => router.push('/user/signup')}
+              className="flex flex-row gap-2 items-center justify-start"
+            >
+              <AppRegistrationIcon />
+              <Typography>{t('signup')}</Typography>
+            </MenuItem>
+          </Box>
+        )}
+      </Menu>
     </Box>
   );
 }
