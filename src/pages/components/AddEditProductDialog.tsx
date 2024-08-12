@@ -8,6 +8,7 @@ import {
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
 import { DeleteOutlined } from '@mui/icons-material';
+import CancelIcon from '@mui/icons-material/Cancel';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -33,7 +34,7 @@ interface AddEditProductDialogProps {
 
 export default function AddEditProductDialog({
   handleClose,
-  args: { description, dialogType, id, imageUrls, name, price },
+  args: { description, dialogType, id, imageUrls, name, price, tags: initTags },
   snackbarErrorHandler,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,8 @@ export default function AddEditProductDialog({
   const [productImageOrder, setProductImageOrder] = useState<{
     [key: number]: string;
   }>({});
+
+  const [tags, setTags] = useState<string[]>([]);
 
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
@@ -102,6 +105,10 @@ export default function AddEditProductDialog({
     })();
   }, [imageUrls]);
 
+  useEffect(() => {
+    setTags(initTags ?? []);
+  }, [initTags]);
+
   return (
     <Dialog
       open
@@ -132,6 +139,7 @@ export default function AddEditProductDialog({
               })
               .map((obj) => obj[Object.keys(obj)[0]]),
             type: dialogType,
+            tags,
             selectedProductId: id,
           });
           setSelectedProduct(updatedProduct);
@@ -226,6 +234,36 @@ export default function AddEditProductDialog({
             className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
             defaultValue={price ?? ''}
           />
+        </Box>
+        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
+          <Typography>{t('tags')}:</Typography>
+          {tags.map((tag, index) => (
+            <Box className="flex flex-row gap-2" key={index}>
+              <TextField
+                type="text"
+                name={`tag${index}`}
+                className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3 md:w-full"
+                value={tag}
+                onChange={(event) => {
+                  const newTags = [...tags];
+                  newTags[index] = event.currentTarget.value;
+                  setTags(newTags);
+                }}
+              />
+              <IconButton>
+                <CancelIcon
+                  fontSize="medium"
+                  color="error"
+                  onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                />
+              </IconButton>
+            </Box>
+          ))}
+          <Box className="flex flex-row justify-end">
+            <Button variant="outlined" onClick={() => setTags([...tags, ''])}>
+              {t('add')}
+            </Button>
+          </Box>
         </Box>
         <Box className="flex flex-col p-2">
           <Box className="flex flex-col">

@@ -52,5 +52,6 @@
   "deleteProductError": "Товар не может быть удален!",
   "deleteProductSuccess": "Товар успешно удален!",
   "createProductError": "Не удалось создать новый продукт",
-  "editProductError": "Не удалось обновить продукт"
+  "editProductError": "Не удалось обновить продукт",
+  "tags": "Варианты продукта"
 }
