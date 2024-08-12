@@ -15,11 +15,15 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import {
   Alert,
   Box,
   CardMedia,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
   Snackbar,
   Typography,
   useMediaQuery,
@@ -120,7 +124,7 @@ export default function Product() {
           className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4`}
           pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
         >
-          {/* title, images, price */}
+          {/* title, images */}
           <Box
             className={`flex flex-col gap-2`}
             style={{
@@ -143,6 +147,7 @@ export default function Product() {
                         imageUrls: product.imgUrls,
                         name: product.name,
                         price: product.price,
+                        tags: product.tags,
                       });
                     }}
                   >
@@ -188,28 +193,56 @@ export default function Product() {
             )}
           </Box>
 
-          {/* description */}
+          {/* price, description */}
           <Box className="flex flex-col">
             {product?.price != null && (
               <Box className="w-full my-4">
                 <Typography
                   fontWeight={600}
-                  fontSize={22}
+                  fontSize={isMdUp ? 22 : 18}
                 >{`${product.price} ${t('manat')}`}</Typography>
               </Box>
+            )}
+            {product?.tags?.length > 0 && (
+              <List className="p-0 pb-10">
+                {product?.tags.map((tag, index) => (
+                  <ListItem key={index} sx={{ p: 0 }}>
+                    <FiberManualRecordIcon
+                      sx={{
+                        width: 16,
+                        height: 16,
+                      }}
+                      color="disabled"
+                    />
+                    <ListItemText
+                      sx={{ pl: 1 }}
+                      primary={
+                        <Typography fontSize={isMdUp ? 20 : 16}>
+                          {tag}
+                        </Typography>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
             )}
             {description && Object.keys(description).length > 0
               ? Object.keys(description ?? {}).map((key) => (
                   <Box key={key} className="w-full flex flex-col pb-4">
                     <Box className="w-full flex flex-row gap-2 justify-between">
                       <Box className="w-[30%]">
-                        <Typography fontWeight={600} fontSize={15}>
+                        <Typography
+                          fontWeight={600}
+                          fontSize={isMdUp ? 18 : 15}
+                        >
                           {key}
                         </Typography>
                       </Box>
                       <Box className="flex flex-col w-[70%]">
                         {description[key].map((descLine, index) => (
-                          <Typography key={index}>{descLine}</Typography>
+                          <Typography key={index} fontSize={isMdUp ? 18 : 15}>
+                            {descLine}
+                          </Typography>
                         ))}
                       </Box>
                     </Box>
