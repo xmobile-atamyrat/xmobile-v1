@@ -50,5 +50,6 @@
   "deleteProductError": "Product could not be deleted!",
   "deleteProductSuccess": "Product successfully deleted!",
   "createProductError": "Could not create new product",
-  "editProductError": "Could not update the product"
+  "editProductError": "Could not update the product",
+  "tags": "Product Variations"
 }
