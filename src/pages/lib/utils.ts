@@ -186,23 +186,14 @@ export const addEditCategory = async ({
 
 export async function addEditProduct({
   type,
-  formJson: {
-    productNameInCharjov,
-    productNameInEnglish,
-    productNameInRussian,
-    productNameInTurkmen,
-    productDescriptionInCharjov,
-    productDescriptionInEnglish,
-    productDescriptionInRussian,
-    productDescriptionInTurkmen,
-    price,
-  },
+  formJson,
   productNameRequiredError,
   selectedCategoryId,
   setProducts,
   productImageUrls,
   productImageFiles,
   deleteImageUrls,
+  tags,
   selectedProductId,
 }: {
   type: AddEditProductProps['dialogType'];
@@ -213,8 +204,20 @@ export async function addEditProduct({
   productImageFiles: File[];
   deleteImageUrls: string[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
+  tags: string[];
   selectedProductId?: string;
 }): Promise<Product> {
+  const {
+    productNameInCharjov,
+    productNameInEnglish,
+    productNameInRussian,
+    productNameInTurkmen,
+    productDescriptionInCharjov,
+    productDescriptionInEnglish,
+    productDescriptionInRussian,
+    productDescriptionInTurkmen,
+    price,
+  } = formJson;
   if (
     productNameInCharjov === '' &&
     productNameInEnglish === '' &&
@@ -262,6 +265,10 @@ export async function addEditProduct({
   }
   if (deleteImageUrls.length > 0) {
     newFormData.append('deleteImageUrls', JSON.stringify(deleteImageUrls));
+  }
+
+  if (tags.length > 0) {
+    newFormData.append('tags', JSON.stringify(tags));
   }
 
   let product: Product;

@@ -40,6 +40,7 @@ export interface AddEditProductProps {
   imageUrls: string[];
   description?: string | null;
   price?: string | null;
+  tags?: string[];
 }
 
 export interface DeleteCategoriesProps {
