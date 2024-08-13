@@ -15,6 +15,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import CloseIcon from '@mui/icons-material/Close';
+import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -313,16 +314,27 @@ export default function CustomAppBar({
         onClose={() => setAnchorEl(null)}
       >
         {user != null ? (
-          <MenuItem
-            onClick={() => {
-              localStorage.removeItem('user');
-              router.reload();
-            }}
-            className="flex flex-row gap-2 items-center justify-start"
-          >
-            <LogoutIcon />
-            <Typography>{t('signout')}</Typography>
-          </MenuItem>
+          <Box>
+            <MenuItem
+              onClick={() => {
+                localStorage.removeItem('user');
+                router.reload();
+              }}
+              className="flex flex-row gap-2 items-center justify-start"
+            >
+              <LogoutIcon />
+              <Typography>{t('signout')}</Typography>
+            </MenuItem>
+            {user?.grade === 'ADMIN' && (
+              <MenuItem
+                className="flex flex-row gap-2 items-center justify-start"
+                onClick={() => router.push('/product/update-prices')}
+              >
+                <DriveFolderUploadIcon />
+                <Typography>{t('updatePrices')}</Typography>
+              </MenuItem>
+            )}
+          </Box>
         ) : (
           <Box>
             <MenuItem

@@ -53,5 +53,6 @@
   "deleteProductSuccess": "Önüm üstünlikli öçürildi!",
   "createProductError": "Täze önüm döredip bolmady",
   "editProductError": "Önümi täzeläp bolmady",
-  "tags": "Önümiň Görnüşleri"
+  "tags": "Önümiň Görnüşleri",
+  "updatePrices": "Bahalary täzeläň"
 }
