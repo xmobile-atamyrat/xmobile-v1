@@ -4,6 +4,7 @@
     "module": "esnext",
     "moduleResolution": "Node",
 
+    "target": "esnext",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,

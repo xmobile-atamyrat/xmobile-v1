@@ -96,6 +96,7 @@ async function handleGetProduct(query: {
         ],
       },
     });
+    console.info(products);
     return { resp: { success: true, data: products }, status: 200 };
   }
   if (productId != null) {

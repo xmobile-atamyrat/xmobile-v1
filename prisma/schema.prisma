@@ -53,6 +53,16 @@ model Product {
   updatedAt       DateTime    @updatedAt
 }
 
+model Prices {
+  name            String    @id @unique
+  price           String    
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([price])
+}
+
 enum UserRole {
   FREE
   ADMIN
