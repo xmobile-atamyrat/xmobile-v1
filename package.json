@@ -32,17 +32,20 @@
     "next": "14.2.1",
     "next-connect": "^1.0.0-next.4",
     "next-intl": "^3.14.1",
+    "papaparse": "^5.4.1",
     "react": "^18",
     "react-dom": "^18",
     "react-flagkit": "^2.0.4",
     "react-slick": "^0.30.2",
     "slick-carousel": "^1.8.1",
-    "swr": "^2.2.5"
+    "swr": "^2.2.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/multiparty": "^0.0.36",
     "@types/node": "^20",
+    "@types/papaparse": "^5.3.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-slick": "^0.23.13",
