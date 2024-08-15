@@ -54,5 +54,9 @@
   "createProductError": "Не удалось создать новый продукт",
   "editProductError": "Не удалось обновить продукт",
   "tags": "Варианты продукта",
-  "updatePrices": "Обновить цены"
+  "updatePrices": "Обновить цены",
+  "save": "Сохранять",
+  "invalidPrice": "Недопустимое значение цены.",
+  "pricesUpdated": "Цены успешно обновлены!",
+  "updatePricesError": "Не удалось обновить цены."
 }

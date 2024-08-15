@@ -54,5 +54,9 @@
   "createProductError": "Täze önüm döredip bolmady",
   "editProductError": "Önümi täzeläp bolmady",
   "tags": "Önümiň Görnüşleri",
-  "updatePrices": "Bahalary täzeläň"
+  "updatePrices": "Bahalary täzeläň",
+  "save": "Сохранять",
+  "invalidPrice": "Nädogry baha",
+  "pricesUpdated": "Bahalar üstünlikli täzelendi!",
+  "updatePricesError": "Bahalary täzeläp bolmady"
 }
