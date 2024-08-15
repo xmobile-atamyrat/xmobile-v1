@@ -59,8 +59,44 @@ export default async function handler(
         });
         return res.status(200).json({ success: true, data: price });
       }
-      const prices = await dbClient.prices.findMany();
+      const prices = await dbClient.prices.findMany({
+        orderBy: { name: 'asc' },
+      });
       return res.status(200).json({ success: true, data: prices });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: (error as Error).message,
+      });
+    }
+  } else if (method === 'PUT') {
+    try {
+      const { pricePairs }: { pricePairs: Partial<Prices>[] } = JSON.parse(
+        req.body,
+      );
+      if (pricePairs == null) {
+        return res.status(400).json({
+          success: false,
+          message: 'No data provided',
+        });
+      }
+
+      const updatedPrices = await Promise.all(
+        pricePairs.map(async (price) => {
+          const updatedPrice = await dbClient.prices.update({
+            where: { name: price.name },
+            data: { price: price.price },
+          });
+          return updatedPrice;
+        }),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Prices updated',
+        data: updatedPrices,
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({
