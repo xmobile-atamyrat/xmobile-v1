@@ -67,6 +67,9 @@ export default function UpdatePrices({
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const [tableData, setTableData] = useState<TableData>([]);
+  const [updatedPrices, setUpdatedPrices] = useState<
+    { [key: number]: Partial<Prices> }[]
+  >([]);
 
   const [snackbarOpen, setSnackbarOpen] = useState(errorMessage != null);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -89,7 +92,7 @@ export default function UpdatePrices({
       (price: { name: string; price: string }) => [
         price.name,
         price.price,
-        parseFloat(price.price) * 20,
+        parseFloat((parseFloat(price.price) * 20).toFixed(2)),
       ],
     );
     setTableData([
@@ -105,30 +108,87 @@ export default function UpdatePrices({
           mt: isMdUp
             ? `${appBarHeight * 1.25}px`
             : `${mobileAppBarHeight * 1.25}px`,
-          px: isMdUp ? 4 : 0,
+          px: isMdUp ? 4 : 1,
         }}
         className="flex flex-col col-2 w-full h-full"
       >
-        {/* hidden price list upload button */}
-        <Box>
-          <Button
-            hidden
-            component="label"
-            role={undefined}
-            variant="contained"
-            tabIndex={-1}
-            startIcon={<CloudUploadIcon />}
-            sx={{ textTransform: 'none' }}
-            className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
-          >
-            {t('updatePrices')}
-            <VisuallyHiddenInput
-              type="file"
-              name="productImage"
-              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-              onChange={(e) => handleFileUpload(e, setTableData)}
-            />
-          </Button>
+        <Box className="flex flex-row justify-between w-full">
+          {/* left side buttons */}
+          <Box>
+            {/* hidden price list upload button */}
+            <Box>
+              <Button
+                hidden
+                component="label"
+                role={undefined}
+                variant="contained"
+                tabIndex={-1}
+                startIcon={<CloudUploadIcon />}
+                sx={{ textTransform: 'none' }}
+                className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
+              >
+                {t('updatePrices')}
+                <VisuallyHiddenInput
+                  type="file"
+                  name="productImage"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  onChange={(e) => handleFileUpload(e, setTableData)}
+                />
+              </Button>
+            </Box>
+          </Box>
+
+          {/* right side buttons */}
+          <Box>
+            {Object.keys(updatedPrices).length > 0 && (
+              <Button
+                variant="contained"
+                sx={{
+                  textTransform: 'none',
+                  fontSize: isMdUp ? 18 : 16,
+                  height: isMdUp ? 48 : 36,
+                  width: '100%',
+                }}
+                onClick={async () => {
+                  try {
+                    const data = await (
+                      await fetch(`${BASE_URL}/api/prices`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                          pricePairs: Object.keys(updatedPrices).map(
+                            (key) => updatedPrices[parseInt(key, 10)],
+                          ),
+                        }),
+                      })
+                    ).json();
+
+                    if (data.success) {
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'pricesUpdated',
+                        severity: 'success',
+                      });
+                    } else {
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'updatePricesError',
+                        severity: 'error',
+                      });
+                    }
+                  } catch (error) {
+                    console.error(error);
+                    setSnackbarOpen(true);
+                    setSnackbarMessage({
+                      message: 'updatePricesError',
+                      severity: 'error',
+                    });
+                  }
+                }}
+              >
+                <Typography>{t('save')}</Typography>
+              </Button>
+            )}
+          </Box>
         </Box>
         {tableData.length > 0 && (
           <Table>
@@ -136,7 +196,9 @@ export default function UpdatePrices({
               <TableRow>
                 {tableData[0].map((header, index) => (
                   <TableCell key={index}>
-                    <Typography fontWeight={600}>{header}</Typography>
+                    <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                      {header}
+                    </Typography>
                   </TableCell>
                 ))}
               </TableRow>
@@ -147,7 +209,30 @@ export default function UpdatePrices({
                   {row.map((cell, cellIndex) => (
                     <TableCell
                       contentEditable={cellIndex === 1}
+                      suppressContentEditableWarning
                       key={cellIndex}
+                      onInput={(e) => {
+                        const value = e.currentTarget.textContent;
+                        if (
+                          value == null ||
+                          value === '' ||
+                          Number.isNaN(parseFloat(value))
+                        ) {
+                          setSnackbarOpen(true);
+                          setSnackbarMessage({
+                            message: 'invalidPrice',
+                            severity: 'error',
+                          });
+                        }
+                        setUpdatedPrices((prevPrices) => ({
+                          ...prevPrices,
+                          [rowIndex]: {
+                            ...prevPrices[rowIndex],
+                            price: parseFloat(value as string).toString(),
+                            name: row[0] as string,
+                          },
+                        }));
+                      }}
                     >
                       {cell}
                     </TableCell>
