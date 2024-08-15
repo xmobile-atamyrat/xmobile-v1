@@ -58,5 +58,10 @@
   "save": "Сохранять",
   "invalidPrice": "Nädogry baha",
   "pricesUpdated": "Bahalar üstünlikli täzelendi!",
-  "updatePricesError": "Bahalary täzeläp bolmady"
+  "updatePricesError": "Bahalary täzeläp bolmady",
+  "deletePrice": "Önümiň bahasyny pozuň",
+  "confirmDeletePrice": "Bu önümiň bahasyny öçürmek isleýändigiňize ynanýarsyňyzmy? Önüm kartasyndan hem aýyrmagy haýyş edýäris.",
+  "priceDeleteSuccess": "Bahasy üstünlikli öçürildi!",
+  "priceDeleteFailed": "Önümiň bahasyny pozup bilmedi.",
+  "addPrice": "Add Price"
 }
