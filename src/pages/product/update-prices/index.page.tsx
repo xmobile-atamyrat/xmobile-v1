@@ -4,12 +4,17 @@ import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { VisuallyHiddenInput } from '@/pages/lib/utils';
-import { handleFileUpload, TableData } from '@/pages/product/utils';
+import {
+  handleFileUpload,
+  processPrices,
+  TableData,
+} from '@/pages/product/utils';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {
   Alert,
   Box,
   Button,
+  IconButton,
   Snackbar,
   Table,
   TableBody,
@@ -25,6 +30,9 @@ import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
+import DeleteDialog from '@/pages/components/DeleteDialog';
+import AddPrice from '@/pages/product/components/AddPrice';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -70,6 +78,10 @@ export default function UpdatePrices({
   const [updatedPrices, setUpdatedPrices] = useState<
     { [key: number]: Partial<Prices> }[]
   >([]);
+  const [hoveredPrice, setHoveredPrice] = useState<number>();
+  const [showDleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedPrice, setSelectedPrice] = useState<string>();
+  const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
 
   const [snackbarOpen, setSnackbarOpen] = useState(errorMessage != null);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -87,19 +99,12 @@ export default function UpdatePrices({
   }, [errorMessage]);
 
   useEffect(() => {
-    if (prices.length === 0) return;
-    const processedPrices = prices.map(
-      (price: { name: string; price: string }) => [
-        price.name,
-        price.price,
-        parseFloat((parseFloat(price.price) * 20).toFixed(2)),
-      ],
-    );
-    setTableData([
-      ['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'],
-      ...processedPrices,
-    ]);
+    setTableData(processPrices(prices));
   }, [prices]);
+
+  useEffect(() => {
+    console.info(updatedPrices);
+  }, [updatedPrices]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -139,7 +144,19 @@ export default function UpdatePrices({
           </Box>
 
           {/* right side buttons */}
-          <Box>
+          <Box className="flex flex-row gap-2">
+            <Button
+              variant="contained"
+              sx={{
+                textTransform: 'none',
+                fontSize: isMdUp ? 18 : 16,
+                height: isMdUp ? 48 : 36,
+                width: '100%',
+              }}
+              onClick={() => setShowCreatePriceDialog(true)}
+            >
+              <Typography>{t('addPrice')}</Typography>
+            </Button>
             {Object.keys(updatedPrices).length > 0 && (
               <Button
                 variant="contained"
@@ -205,14 +222,29 @@ export default function UpdatePrices({
             </TableHead>
             <TableBody>
               {tableData.slice(1).map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
+                <TableRow
+                  key={rowIndex}
+                  onMouseOver={() => {
+                    setHoveredPrice(rowIndex);
+                  }}
+                  onMouseOut={() => {
+                    setHoveredPrice(undefined);
+                  }}
+                >
                   {row.map((cell, cellIndex) => (
                     <TableCell
+                      className="relative"
                       contentEditable={cellIndex === 1}
                       suppressContentEditableWarning
                       key={cellIndex}
                       onInput={(e) => {
                         const value = e.currentTarget.textContent;
+                        if (value === cell) {
+                          const tempUpdatedPrices = { ...updatedPrices };
+                          delete tempUpdatedPrices[rowIndex];
+                          setUpdatedPrices(tempUpdatedPrices);
+                          return;
+                        }
                         if (
                           value == null ||
                           value === '' ||
@@ -234,6 +266,17 @@ export default function UpdatePrices({
                         }));
                       }}
                     >
+                      {cellIndex === 0 && hoveredPrice === rowIndex && (
+                        <IconButton
+                          className="absolute -left-4 top-1"
+                          onClick={() => {
+                            setSelectedPrice(cell as string);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      )}
                       {cell}
                     </TableCell>
                   ))}
@@ -262,6 +305,54 @@ export default function UpdatePrices({
             {snackbarMessage?.message && t(snackbarMessage.message)}
           </Alert>
         </Snackbar>
+
+        {showDleteDialog && (
+          <DeleteDialog
+            title={t('deletePrice')}
+            description={t('confirmDeletePrice')}
+            handleClose={async () => {
+              setShowDeleteDialog(false);
+            }}
+            handleDelete={async () => {
+              if (selectedPrice == null) return;
+              try {
+                await fetch(
+                  `${BASE_URL}/api/prices?productName=${selectedPrice}`,
+                  {
+                    method: 'DELETE',
+                  },
+                );
+                setTableData((prevData) => {
+                  const newData = prevData.filter(
+                    (row) => row[0] !== selectedPrice,
+                  );
+                  return newData;
+                });
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'priceDeleteSuccess',
+                  severity: 'success',
+                });
+              } catch (error) {
+                console.error(error);
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'priceDeleteFailed',
+                  severity: 'error',
+                });
+              }
+            }}
+          />
+        )}
+
+        {showCreatePriceDialog && (
+          <AddPrice
+            handleClose={() => setShowCreatePriceDialog(false)}
+            handleCreate={async () => {
+              // handleCreate
+            }}
+          />
+        )}
       </Box>
     </Layout>
   );
