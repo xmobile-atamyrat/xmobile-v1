@@ -1,3 +1,4 @@
+import { Prices } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -50,4 +51,14 @@ export const handleFileUpload = (
   } else {
     reader.readAsArrayBuffer(file);
   }
+};
+
+export const processPrices = (prices: Partial<Prices>[]): TableData => {
+  const processedPrices = prices.map(({ name, price }) => [
+    name,
+    price,
+    parseFloat((parseFloat(price!) * 20).toFixed(2)),
+  ]) as TableData;
+
+  return [['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'], ...processedPrices];
 };

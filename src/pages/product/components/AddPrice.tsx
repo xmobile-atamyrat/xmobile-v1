@@ -1,38 +1,38 @@
-import LoadingButton from '@mui/lab/LoadingButton';
+import { LoadingButton } from '@mui/lab';
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
+  TextField,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-interface DeleteDialogProps {
-  title: string;
-  description: string;
+interface AddPriceProps {
   handleClose: () => void;
-  handleDelete: () => Promise<void>;
+  handleCreate: () => Promise<void>;
 }
 
-export default function DeleteDialog({
-  description,
-  title,
-  handleClose,
-  handleDelete,
-}: DeleteDialogProps) {
-  const [loading, setLoading] = useState(false);
+export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
   const t = useTranslations();
-
+  const [loading, setLoading] = useState(false);
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   return (
     <Dialog open onClose={handleClose}>
-      <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
+      <DialogTitle>{t('addPrice')}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          {description}
-        </DialogContentText>
+        <Box
+          className={`flex flex-col gap-2 min-w-[${isMdUp ? '300' : '250'}px]`}
+        >
+          <TextField placeholder={t('productName')} />
+          <TextField placeholder={t('price')} />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button
@@ -47,7 +47,7 @@ export default function DeleteDialog({
           loading={loading}
           onClick={async () => {
             setLoading(true);
-            await handleDelete();
+            await handleCreate();
             handleClose();
             setLoading(false);
           }}
