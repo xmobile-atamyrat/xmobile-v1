@@ -56,5 +56,10 @@
   "save": "Save",
   "invalidPrice": "Invalid price value",
   "pricesUpdated": "Prices updated successfully!",
-  "updatePricesError": "Could not update prices."
+  "updatePricesError": "Could not update prices.",
+  "deletePrice": "Delete product price",
+  "confirmDeletePrice": "Are you sure you want to delete this product price? Please, make sure to remove it from the product card as well.",
+  "priceDeleteSuccess": "Price deleted successfully!",
+  "priceDeleteFailed": "Failed to delete product price.",
+  "addPrice": "Add Price"
 }

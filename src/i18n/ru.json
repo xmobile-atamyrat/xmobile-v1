@@ -58,5 +58,10 @@
   "save": "Сохранять",
   "invalidPrice": "Недопустимое значение цены.",
   "pricesUpdated": "Цены успешно обновлены!",
-  "updatePricesError": "Не удалось обновить цены."
+  "updatePricesError": "Не удалось обновить цены.",
+  "deletePrice": "Удалить цену товара",
+  "confirmDeletePrice": "Вы уверены, что хотите удалить эту цену на товар? Обязательно удалите его из карточки товара.",
+  "priceDeleteSuccess": "Цена успешно удалена!",
+  "priceDeleteFailed": "Не удалось удалить цену товара.",
+  "addPrice": "Add Price"
 }

@@ -1,14 +1,14 @@
+import LoadingButton from '@mui/lab/LoadingButton';
 import {
+  Button,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  DialogActions,
-  Button,
+  DialogTitle,
 } from '@mui/material';
-import LoadingButton from '@mui/lab/LoadingButton';
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 interface DeleteDialogProps {
   title: string;
@@ -27,12 +27,7 @@ export default function DeleteDialog({
   const t = useTranslations();
 
   return (
-    <Dialog
-      open
-      onClose={handleClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
+    <Dialog open onClose={handleClose}>
       <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">

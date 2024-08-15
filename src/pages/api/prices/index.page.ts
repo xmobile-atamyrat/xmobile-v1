@@ -104,6 +104,30 @@ export default async function handler(
         message: (error as Error).message,
       });
     }
+  } else if (method === 'DELETE') {
+    try {
+      const { productName } = req.query;
+      if (productName == null) {
+        return res.status(400).json({
+          success: false,
+          message: 'No product name provided',
+        });
+      }
+      const deletedPrice = await dbClient.prices.delete({
+        where: { name: productName as string },
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Price deleted',
+        data: deletedPrice,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: (error as Error).message,
+      });
+    }
   }
 
   console.error(`${filepath}: Method not allowed`);
