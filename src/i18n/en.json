@@ -52,5 +52,9 @@
   "createProductError": "Could not create new product",
   "editProductError": "Could not update the product",
   "tags": "Product Variations",
-  "updatePrices": "Update prices"
+  "updatePrices": "Update prices",
+  "save": "Save",
+  "invalidPrice": "Invalid price value",
+  "pricesUpdated": "Prices updated successfully!",
+  "updatePricesError": "Could not update prices."
 }
