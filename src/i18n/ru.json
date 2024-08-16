@@ -63,5 +63,8 @@
   "confirmDeletePrice": "Вы уверены, что хотите удалить эту цену на товар? Обязательно удалите его из карточки товара.",
   "priceDeleteSuccess": "Цена успешно удалена!",
   "priceDeleteFailed": "Не удалось удалить цену товара.",
-  "addPrice": "Add Price"
+  "addPrice": "Add Price",
+  "priceCreateFailed": "Не удалось создать цену продукта.",
+  "priceCreateSuccess": "Новая цена на товар успешно создана!",
+  "emptyField": "Обязательные поля пусты."
 }

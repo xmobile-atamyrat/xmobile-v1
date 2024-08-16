@@ -53,12 +53,21 @@ export const handleFileUpload = (
   }
 };
 
+export const parsePrice = (price?: string): number => {
+  if (price == null) return 0;
+  return parseFloat((parseFloat(price) * 20).toFixed(2));
+};
+
 export const processPrices = (prices: Partial<Prices>[]): TableData => {
   const processedPrices = prices.map(({ name, price }) => [
     name,
     price,
-    parseFloat((parseFloat(price!) * 20).toFixed(2)),
+    parsePrice(price),
   ]) as TableData;
 
   return [['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'], ...processedPrices];
+};
+
+export const isPriceValid = (price: string): boolean => {
+  return /^[0-9]*\.?[0-9]+$/.test(price);
 };

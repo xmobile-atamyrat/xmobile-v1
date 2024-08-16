@@ -61,5 +61,8 @@
   "confirmDeletePrice": "Are you sure you want to delete this product price? Please, make sure to remove it from the product card as well.",
   "priceDeleteSuccess": "Price deleted successfully!",
   "priceDeleteFailed": "Failed to delete product price.",
-  "addPrice": "Add Price"
+  "addPrice": "Add Price",
+  "priceCreateFailed": "Failed to create product price.",
+  "priceCreateSuccess": "Successfully created a new product price!",
+  "emptyField": "Required fields are empty."
 }
