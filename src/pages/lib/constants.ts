@@ -32,3 +32,5 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
     md: '75%',
   },
 };
+
+export const squareBracketRegex = /\[([^\]]+)\]/;
