@@ -42,6 +42,7 @@ export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
             onChange={(e) => {
               setValue(e.target.value);
             }}
+            type="number"
           />
         </Box>
       </DialogContent>
