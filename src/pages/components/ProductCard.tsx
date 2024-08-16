@@ -1,8 +1,9 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { squareBracketRegex } from '@/pages/lib/constants';
-import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
+import { fetchProducts } from '@/pages/lib/apis';
+import { POLL_PRODUCT_INTERVAL } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { dollarToManat, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
+import { computeProductPrice } from '@/pages/product/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -27,7 +28,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({
-  product,
+  product: initialProduct,
   handleClickAddProduct,
   cardClassName,
 }: ProductCardProps) {
@@ -35,8 +36,7 @@ export default function ProductCard({
   const router = useRouter();
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
-  const { rate } = useDollarRateContext();
-  const [price, setPrice] = useState<string>(product?.price ?? '');
+  const [product, setProduct] = useState(initialProduct);
 
   useEffect(() => {
     (async () => {
@@ -56,21 +56,26 @@ export default function ProductCard({
   }, [product?.imgUrls]);
 
   useEffect(() => {
-    if (product?.price == null || rate === 0) return;
+    if (initialProduct == null) return () => undefined;
 
-    const match = product.price.match(squareBracketRegex);
     (async () => {
-      if (match != null) {
-        const nameTag = match[1];
-        const res = await (
-          await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
-        ).json();
-        if (res.success && res.data != null) {
-          setPrice(dollarToManat(res.data.price, rate));
-        }
-      }
+      setProduct(await computeProductPrice(initialProduct));
     })();
-  }, [product?.price, rate]);
+
+    const fetchProduct = async () => {
+      try {
+        const prod = await fetchProducts({ productId: initialProduct.id });
+        setProduct(await computeProductPrice(prod[0]));
+      } catch (error) {
+        console.error('Error fetching product', error);
+      }
+    };
+
+    const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
+
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProduct]);
 
   return (
     <Card
@@ -85,7 +90,7 @@ export default function ProductCard({
         <Box
           className="relative h-full w-full flex flex-col justify-between p-1"
           onClick={() => {
-            setSelectedProduct(product);
+            setSelectedProduct(initialProduct);
             router.push(`/product`);
           }}
         >
@@ -134,7 +139,7 @@ export default function ProductCard({
           </Box>
           <Box className="flex items-end ">
             <Typography sx={{ fontSize: { xs: 14, sm: 16 } }} fontWeight={600}>
-              {price} {t('manat')}
+              {product?.price} {t('manat')}
             </Typography>
           </Box>
         </Box>
