@@ -3,14 +3,7 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { VisuallyHiddenInput } from '@/pages/lib/utils';
-import {
-  handleFileUpload,
-  parsePrice,
-  processPrices,
-  TableData,
-} from '@/pages/product/utils';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { parsePrice, processPrices, TableData } from '@/pages/product/utils';
 import {
   Alert,
   Box,
@@ -132,13 +125,9 @@ export default function UpdatePrices({
           }}
           className="flex flex-col gap-8 w-full h-full"
         >
-          <Box
-            className={`flex flex-${isMdUp ? 'row' : 'col'} w-full items-center ${!isMdUp ? 'gap-4 pl-2' : ''}`}
-          >
+          <Box className={`flex flex-col w-full justify-center gap-4 pl-2`}>
             {/* left side buttons */}
-            <Box
-              className={`w-${isMdUp ? '1/2' : 'full'} flex flex-row justify-start items-center`}
-            >
+            <Box className={`w-full flex flex-row justify-start items-center`}>
               <Box className="flex flex-row gap-2 items-center justify-center">
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                   $1 =
@@ -196,7 +185,7 @@ export default function UpdatePrices({
                 )}
               </Box>
               {/* hidden price list upload button */}
-              <Box>
+              {/* <Box>
                 <Button
                   hidden
                   component="label"
@@ -215,13 +204,11 @@ export default function UpdatePrices({
                     onChange={(e) => handleFileUpload(e, setTableData)}
                   />
                 </Button>
-              </Box>
+              </Box> */}
             </Box>
 
             {/* right side buttons */}
-            <Box
-              className={`flex flex-row gap-2 w-${isMdUp ? '1/2' : 'full'} justify-end`}
-            >
+            <Box className={`flex flex-row gap-2 w-full justify-end`}>
               <Button
                 variant="contained"
                 sx={{
