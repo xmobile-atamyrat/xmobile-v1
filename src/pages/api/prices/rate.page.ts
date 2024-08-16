@@ -62,7 +62,6 @@ export default async function handler(
           message: 'No data provided',
         });
       }
-      console.info('rate', rate);
       const result = await dbClient.dollarRate.upsert({
         where: { id: index },
         update: { rate },
