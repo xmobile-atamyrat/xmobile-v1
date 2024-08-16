@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import {
   localeOptions,
   LOGO_COLOR,
@@ -292,11 +293,10 @@ export async function addEditProduct({
     product = data;
   }
 
-  const { success, data, message }: ResponseApi<Product[]> = await (
-    await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
-  ).json();
-  if (!success || data == null) throw new Error(message);
-  setProducts(data);
+  const prods = await fetchProductsEditPrices({
+    categoryId: selectedCategoryId,
+  });
+  setProducts(prods);
 
   return product;
 }

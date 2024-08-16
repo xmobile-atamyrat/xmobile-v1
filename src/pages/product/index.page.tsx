@@ -3,6 +3,7 @@ import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -29,7 +30,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Product as PrismaProduct } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -277,19 +277,15 @@ export default function Product() {
                   });
                   return;
                 }
-                const { success, data }: ResponseApi<PrismaProduct[]> = await (
-                  await fetch(
-                    `${BASE_URL}/api/product?categoryId=${selectedCategoryId}`,
-                  )
-                ).json();
-                if (success && data != null) {
-                  setProducts(data);
-                  setSnackbarOpen(true);
-                  setSnackbarMessage({
-                    message: 'deleteProductSuccess',
-                    severity: 'success',
-                  });
-                }
+                const prods = await fetchProductsEditPrices({
+                  categoryId: selectedCategoryId,
+                });
+                setProducts(prods);
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'deleteProductSuccess',
+                  severity: 'success',
+                });
                 setTimeout(() => {
                   router.push('/');
                 }, 2000);

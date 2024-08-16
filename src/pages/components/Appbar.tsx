@@ -1,7 +1,7 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import {
   appBarHeight,
   LOGO_COLOR,
@@ -9,7 +9,6 @@ import {
   MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
 import { changeLocale } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
@@ -36,7 +35,6 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useState } from 'react';
@@ -68,15 +66,23 @@ export default function CustomAppBar({
 
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {
-      const { success, data }: ResponseApi<Product[]> = await (
-        await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
-      ).json();
-      if (success && data != null) setProducts(data);
+      try {
+        const prods = await fetchProductsEditPrices({
+          categoryId: selectedCategoryId,
+        });
+        setProducts(prods);
+      } catch (error) {
+        console.error(error);
+      }
     } else {
-      const { success, data }: ResponseApi<Product[]> = await (
-        await fetch(`${BASE_URL}/api/product?searchKeyword=${keyword}`)
-      ).json();
-      if (success && data != null) setProducts(data);
+      try {
+        const prods = await fetchProductsEditPrices({
+          searchKeyword: keyword,
+        });
+        setProducts(prods);
+      } catch (error) {
+        console.error(error);
+      }
     }
   };
 
