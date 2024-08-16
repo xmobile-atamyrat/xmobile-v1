@@ -15,7 +15,7 @@ export default async function handler(
   const { method } = req;
   if (method === 'POST') {
     try {
-      const { pricePairs }: { pricePairs: Prices[] } = req.body;
+      const { pricePairs }: { pricePairs: Prices[] } = JSON.parse(req.body);
       if (pricePairs == null) {
         return res.status(400).json({
           success: false,
