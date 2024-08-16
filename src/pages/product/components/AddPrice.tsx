@@ -29,13 +29,15 @@ export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
     <Dialog open onClose={handleClose}>
       <DialogTitle>{t('addPrice')}</DialogTitle>
       <DialogContent>
-        <Box className={`flex flex-col gap-2 w-[${isMdUp ? '500' : '250'}px]`}>
+        <Box className={`flex flex-col gap-2`}>
           <TextField
             placeholder={t('productName')}
             onChange={(e) => {
               setName(e.target.value);
             }}
-            className="w-full"
+            style={{
+              width: isMdUp ? '450px' : '250px',
+            }}
           />
           <TextField
             placeholder={t('price')}
@@ -43,6 +45,9 @@ export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
               setValue(e.target.value);
             }}
             type="number"
+            style={{
+              width: isMdUp ? '450px' : '250px',
+            }}
           />
         </Box>
       </DialogContent>
