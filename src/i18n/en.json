@@ -64,5 +64,7 @@
   "addPrice": "Add Price",
   "priceCreateFailed": "Failed to create product price.",
   "priceCreateSuccess": "Successfully created a new product price!",
-  "emptyField": "Required fields are empty."
+  "emptyField": "Required fields are empty.",
+  "rateUpdated": "Dollar rate updated successfully!",
+  "updateRateError": "Failed to update the dollar rate."
 }
