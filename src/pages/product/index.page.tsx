@@ -35,6 +35,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -226,12 +227,18 @@ export default function Product() {
           {/* price, description */}
           <Box className="flex flex-col">
             <Box className="w-full my-4">
-              <Typography
-                fontWeight={600}
-                fontSize={isMdUp ? 22 : 18}
-              >{`${product.price} ${t('manat')}`}</Typography>
+              {product.price?.includes('[') ? (
+                <CircularProgress />
+              ) : (
+                <Typography
+                  fontWeight={600}
+                  fontSize={isMdUp ? 22 : 18}
+                >{`${product.price} ${t('manat')}`}</Typography>
+              )}
             </Box>
-            {product.tags.length > 0 && (
+            {product.tags.length > 0 && product.tags[0].includes('[') ? (
+              <CircularProgress />
+            ) : (
               <List className="p-0 pb-10">
                 {product.tags.map((tag, index) => (
                   <ListItem key={index} sx={{ p: 0 }}>
