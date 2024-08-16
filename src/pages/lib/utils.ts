@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { fetchProductsEditPrices } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import {
   localeOptions,
   LOGO_COLOR,
@@ -293,10 +293,10 @@ export async function addEditProduct({
     product = data;
   }
 
-  const prods = await fetchProductsEditPrices({
+  const prods = await fetchProducts({
     categoryId: selectedCategoryId,
   });
-  setProducts(prods);
+  setProducts(prods as Product[]);
 
   return product;
 }
@@ -304,7 +304,3 @@ export async function addEditProduct({
 export function isNumeric(value: string): boolean {
   return !Number.isNaN(+value);
 }
-
-export const dollarToManat = (price: string, dollarRate: number): string => {
-  return parseFloat((parseFloat(price) * dollarRate).toFixed(2)).toString();
-};
