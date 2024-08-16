@@ -439,6 +439,20 @@ export default function UpdatePrices({
                   });
                   return false;
                 }
+                let exists = false;
+                tableData.forEach((row) => {
+                  if (row[0] === name) {
+                    exists = true;
+                  }
+                });
+                if (exists) {
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'priceExists',
+                    severity: 'error',
+                  });
+                  return false;
+                }
                 try {
                   const res = await (
                     await fetch(`${BASE_URL}/api/prices`, {
