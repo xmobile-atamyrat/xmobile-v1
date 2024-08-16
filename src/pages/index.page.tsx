@@ -65,12 +65,10 @@ export default function Home({
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const { user } = useUserContext();
-
   const [snackbarOpen, setSnackbarOpen] = useState(
     categoryErrorMessage != null,
   );
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
-
   const t = useTranslations();
 
   useEffect(() => {
