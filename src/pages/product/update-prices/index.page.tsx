@@ -6,6 +6,8 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { VisuallyHiddenInput } from '@/pages/lib/utils';
 import {
   handleFileUpload,
+  isPriceValid,
+  parsePrice,
   processPrices,
   TableData,
 } from '@/pages/product/utils';
@@ -102,10 +104,6 @@ export default function UpdatePrices({
     setTableData(processPrices(prices));
   }, [prices]);
 
-  useEffect(() => {
-    console.info(updatedPrices);
-  }, [updatedPrices]);
-
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box
@@ -117,9 +115,9 @@ export default function UpdatePrices({
         }}
         className="flex flex-col col-2 w-full h-full"
       >
-        <Box className="flex flex-row justify-between w-full">
+        <Box className="flex flex-row w-full">
           {/* left side buttons */}
-          <Box>
+          <Box className="w-1/2 flex flex-row justify-start">
             {/* hidden price list upload button */}
             <Box>
               <Button
@@ -144,14 +142,13 @@ export default function UpdatePrices({
           </Box>
 
           {/* right side buttons */}
-          <Box className="flex flex-row gap-2">
+          <Box className="flex flex-row gap-2 w-1/2 justify-end">
             <Button
               variant="contained"
               sx={{
                 textTransform: 'none',
                 fontSize: isMdUp ? 18 : 16,
                 height: isMdUp ? 48 : 36,
-                width: '100%',
               }}
               onClick={() => setShowCreatePriceDialog(true)}
             >
@@ -164,7 +161,6 @@ export default function UpdatePrices({
                   textTransform: 'none',
                   fontSize: isMdUp ? 18 : 16,
                   height: isMdUp ? 48 : 36,
-                  width: '100%',
                 }}
                 onClick={async () => {
                   try {
@@ -348,8 +344,64 @@ export default function UpdatePrices({
         {showCreatePriceDialog && (
           <AddPrice
             handleClose={() => setShowCreatePriceDialog(false)}
-            handleCreate={async () => {
-              // handleCreate
+            handleCreate={async (
+              name: string,
+              price: string,
+            ): Promise<boolean> => {
+              if (name === '' || price === '') {
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'emptyField',
+                  severity: 'error',
+                });
+                return false;
+              }
+              if (!isPriceValid(price)) {
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'invalidPrice',
+                  severity: 'error',
+                });
+                return false;
+              }
+              try {
+                const res = await (
+                  await fetch(`${BASE_URL}/api/prices`, {
+                    method: 'POST',
+                    body: JSON.stringify({ pricePairs: [{ name, price }] }),
+                  })
+                ).json();
+                if (res.success) {
+                  setTableData((prevData) => {
+                    const newData = [
+                      prevData[0],
+                      [name, price, parsePrice(price)],
+                      ...prevData.slice(1),
+                    ];
+                    return newData;
+                  });
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'priceCreateSuccess',
+                    severity: 'success',
+                  });
+                  return true;
+                }
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'priceCreateFailed',
+                  severity: 'error',
+                });
+                return false;
+              } catch (error) {
+                console.error(error);
+                setSnackbarOpen(true);
+                setSnackbarMessage({
+                  message: 'priceCreateFailed',
+                  severity: 'error',
+                });
+                return false;
+              }
             }}
           />
         )}
