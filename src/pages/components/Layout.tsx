@@ -3,6 +3,7 @@ import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog'
 import CustomAppBar from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
+import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -15,7 +16,6 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { Box } from '@mui/material';
-import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
 
@@ -104,35 +104,37 @@ export default function Layout({
             })
           }
           handleDelete={async () => {
-            const { categoryId, imgUrl } = deleteCategoriesModal;
-            if (categoryId == null) return;
-            await deleteCategory(categoryId, imgUrl);
+            try {
+              const { categoryId, imgUrl } = deleteCategoriesModal;
+              if (categoryId == null) return;
+              await deleteCategory(categoryId, imgUrl);
 
-            const {
-              success: catSuccess,
-              data: updatedCategories,
-            }: ResponseApi<ExtendedCategory[]> = await (
-              await fetch(`${BASE_URL}/api/category`)
-            ).json();
+              const {
+                success: catSuccess,
+                data: updatedCategories,
+              }: ResponseApi<ExtendedCategory[]> = await (
+                await fetch(`${BASE_URL}/api/category`)
+              ).json();
 
-            if (catSuccess && updatedCategories) {
-              setCategories(updatedCategories);
+              if (catSuccess && updatedCategories) {
+                setCategories(updatedCategories);
 
-              if (
-                updatedCategories.length > 0 &&
-                updatedCategories[0]?.id != null
-              ) {
-                setSelectedCategoryId(updatedCategories[0]?.id);
-                const { success, data }: ResponseApi<Product[]> = await (
-                  await fetch(
-                    `${BASE_URL}/api/product?categoryId=${updatedCategories[0].id}`,
-                  )
-                ).json();
-                if (success && data != null) setProducts(data);
-              } else {
-                setSelectedCategoryId(undefined);
-                setProducts([]);
+                if (
+                  updatedCategories.length > 0 &&
+                  updatedCategories[0]?.id != null
+                ) {
+                  setSelectedCategoryId(updatedCategories[0].id);
+                  const prods = await fetchProductsEditPrices({
+                    categoryId: updatedCategories[0].id,
+                  });
+                  setProducts(prods);
+                } else {
+                  setSelectedCategoryId(undefined);
+                  setProducts([]);
+                }
               }
+            } catch (error) {
+              console.error(error);
             }
           }}
         />

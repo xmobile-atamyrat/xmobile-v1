@@ -24,6 +24,11 @@ export interface UserContextProps {
   setUser: Dispatch<SetStateAction<User>>;
 }
 
+export interface DollarRateProps {
+  rate: number;
+  setRate: Dispatch<SetStateAction<number>>;
+}
+
 export interface EditCategoriesProps {
   open: boolean;
   dialogType?: 'add' | 'edit';
