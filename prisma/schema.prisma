@@ -63,6 +63,13 @@ model Prices {
   @@index([price])
 }
 
+model DollarRate {
+  id              Int         @id @default(autoincrement())
+  rate            Float       
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
 enum UserRole {
   FREE
   ADMIN

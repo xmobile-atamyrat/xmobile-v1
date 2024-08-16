@@ -66,5 +66,7 @@
   "addPrice": "Add Price",
   "priceCreateFailed": "Не удалось создать цену продукта.",
   "priceCreateSuccess": "Новая цена на товар успешно создана!",
-  "emptyField": "Обязательные поля пусты."
+  "emptyField": "Обязательные поля пусты.",
+  "rateUpdated": "Курс доллара успешно обновлен!",
+  "updateRateError": "Не удалось обновить курс доллара."
 }
