@@ -66,5 +66,6 @@
   "priceCreateSuccess": "Successfully created a new product price!",
   "emptyField": "Required fields are empty.",
   "rateUpdated": "Dollar rate updated successfully!",
-  "updateRateError": "Failed to update the dollar rate."
+  "updateRateError": "Failed to update the dollar rate.",
+  "priceExists": "Product name already exists. Names have to be unique. Please, use a different name."
 }
