@@ -66,5 +66,7 @@
   "addPrice": "Towar koş",
   "priceCreateFailed": "Önümiň bahasyny döredip bilmedi.",
   "priceCreateSuccess": "Täze önümiň bahasyny üstünlikli döretdi!",
-  "emptyField": "Gerekli meýdanlar boş."
+  "emptyField": "Gerekli meýdanlar boş.",
+  "rateUpdated": "Dollaryň bahasy üstünlikli täzelendi!",
+  "updateRateError": "Dollaryň hümmetini täzeläp bilmedi."
 }
