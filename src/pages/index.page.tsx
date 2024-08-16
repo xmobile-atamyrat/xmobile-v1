@@ -5,6 +5,7 @@ import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import { appBarHeight } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -13,7 +14,7 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
-import { Product, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -88,11 +89,14 @@ export default function Home({
   useEffect(() => {
     if (selectedCategoryId == null) return;
     (async () => {
-      const { success, data, message }: ResponseApi<Product[]> = await (
-        await fetch(`${BASE_URL}/api/product?categoryId=${selectedCategoryId}`)
-      ).json();
-      if (success && data != null) setProducts(data);
-      else console.error(message);
+      try {
+        const prods = await fetchProductsEditPrices({
+          categoryId: selectedCategoryId,
+        });
+        setProducts(prods);
+      } catch (error) {
+        console.error(error);
+      }
     })();
   }, [selectedCategoryId, setProducts]);
 
