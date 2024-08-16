@@ -169,7 +169,6 @@ export default function Product() {
                   <IconButton
                     onClick={() => {
                       if (initialProduct == null) return;
-                      console.info(initialProduct);
                       setAddEditProductDialog({
                         open: true,
                         id: initialProduct.id,

@@ -132,9 +132,13 @@ export default function UpdatePrices({
           }}
           className="flex flex-col gap-8 w-full h-full"
         >
-          <Box className="flex flex-row w-full items-center">
+          <Box
+            className={`flex flex-${isMdUp ? 'row' : 'col'} w-full items-center ${!isMdUp ? 'gap-4 pl-2' : ''}`}
+          >
             {/* left side buttons */}
-            <Box className="w-1/2 flex flex-row justify-start items-center">
+            <Box
+              className={`w-${isMdUp ? '1/2' : 'full'} flex flex-row justify-start items-center`}
+            >
               <Box className="flex flex-row gap-2 items-center justify-center">
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                   $1 =
@@ -215,7 +219,9 @@ export default function UpdatePrices({
             </Box>
 
             {/* right side buttons */}
-            <Box className="flex flex-row gap-2 w-1/2 justify-end">
+            <Box
+              className={`flex flex-row gap-2 w-${isMdUp ? '1/2' : 'full'} justify-end`}
+            >
               <Button
                 variant="contained"
                 sx={{
