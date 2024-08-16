@@ -5,7 +5,7 @@ import ProductCard from '@/pages/components/ProductCard';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { fetchProductsEditPrices } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import { appBarHeight } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -88,7 +88,7 @@ export default function Home({
     if (selectedCategoryId == null) return;
     (async () => {
       try {
-        const prods = await fetchProductsEditPrices({
+        const prods = await fetchProducts({
           categoryId: selectedCategoryId,
         });
         setProducts(prods);

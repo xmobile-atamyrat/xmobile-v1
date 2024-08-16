@@ -3,7 +3,7 @@ import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog'
 import CustomAppBar from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
-import { fetchProductsEditPrices } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -124,7 +124,7 @@ export default function Layout({
                   updatedCategories[0]?.id != null
                 ) {
                   setSelectedCategoryId(updatedCategories[0].id);
-                  const prods = await fetchProductsEditPrices({
+                  const prods = await fetchProducts({
                     categoryId: updatedCategories[0].id,
                   });
                   setProducts(prods);

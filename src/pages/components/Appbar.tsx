@@ -1,7 +1,7 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { fetchProductsEditPrices } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
   LOGO_COLOR,
@@ -67,7 +67,7 @@ export default function CustomAppBar({
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {
       try {
-        const prods = await fetchProductsEditPrices({
+        const prods = await fetchProducts({
           categoryId: selectedCategoryId,
         });
         setProducts(prods);
@@ -76,7 +76,7 @@ export default function CustomAppBar({
       }
     } else {
       try {
-        const prods = await fetchProductsEditPrices({
+        const prods = await fetchProducts({
           searchKeyword: keyword,
         });
         setProducts(prods);
