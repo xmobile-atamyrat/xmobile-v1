@@ -117,8 +117,8 @@ export default function UpdatePrices({
   }, [errorMessage]);
 
   useEffect(() => {
-    setTableData(processPrices(prices));
-  }, [prices]);
+    setTableData(processPrices(prices, dollarRate));
+  }, [prices, dollarRate]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -308,12 +308,6 @@ export default function UpdatePrices({
                         key={cellIndex}
                         onInput={(e) => {
                           const value = e.currentTarget.textContent;
-                          if (value === cell) {
-                            const tempUpdatedPrices = { ...updatedPrices };
-                            delete tempUpdatedPrices[rowIndex];
-                            setUpdatedPrices(tempUpdatedPrices);
-                            return;
-                          }
                           if (
                             value == null ||
                             value === '' ||
@@ -324,6 +318,13 @@ export default function UpdatePrices({
                               message: 'invalidPrice',
                               severity: 'error',
                             });
+                            return;
+                          }
+                          if (value === cell) {
+                            const tempUpdatedPrices = { ...updatedPrices };
+                            delete tempUpdatedPrices[rowIndex];
+                            setUpdatedPrices(tempUpdatedPrices);
+                            return;
                           }
                           setUpdatedPrices((prevPrices) => ({
                             ...prevPrices,
@@ -333,6 +334,22 @@ export default function UpdatePrices({
                               name: row[0] as string,
                             },
                           }));
+
+                          setTableData((prevData) => {
+                            const newData = prevData.map((r, i) =>
+                              i === rowIndex + 1
+                                ? [
+                                    r[0],
+                                    value,
+                                    parsePrice({
+                                      price: value!,
+                                      rate: dollarRate,
+                                    }),
+                                  ]
+                                : r,
+                            );
+                            return newData;
+                          });
                         }}
                       >
                         {cellIndex === 0 && hoveredPrice === rowIndex && (
@@ -440,7 +457,7 @@ export default function UpdatePrices({
                     setTableData((prevData) => {
                       const newData = [
                         prevData[0],
-                        [name, price, parsePrice(price)],
+                        [name, price, parsePrice({ price, rate: dollarRate })],
                         ...prevData.slice(1),
                       ];
                       return newData;

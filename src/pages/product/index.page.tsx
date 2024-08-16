@@ -3,14 +3,13 @@ import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
-import { fetchProductsEditPrices } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   appBarHeight,
+  POLL_PRODUCT_INTERVAL,
   PRODUCT_IMAGE_WIDTH_RESP,
-  squareBracketRegex,
 } from '@/pages/lib/constants';
-import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -18,7 +17,8 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { dollarToManat, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
+import { computeProductPriceTags } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -52,7 +52,9 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Product() {
-  const { selectedProduct: product, setSelectedProduct } = useProductContext();
+  const { selectedProduct: initialProduct, setSelectedProduct } =
+    useProductContext();
+  const [product, setProduct] = useState(initialProduct);
   const router = useRouter();
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
@@ -70,9 +72,6 @@ export default function Product() {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const [tags, setTags] = useState<string[]>([]);
-  const { rate } = useDollarRateContext();
-  const [price, setPrice] = useState<string>(product?.price ?? '');
 
   useEffect(() => {
     if (product == null) {
@@ -121,48 +120,26 @@ export default function Product() {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (product?.tags == null || product.tags.length === 0 || rate === 0)
-      return;
-
+    if (initialProduct == null) return () => undefined;
     (async () => {
-      const computedTags = await Promise.all(
-        product.tags.map(async (tag) => {
-          const tagMatch = tag.match(squareBracketRegex);
-          if (tagMatch != null) {
-            const nameTag = tagMatch[1];
-            const res = await (
-              await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
-            ).json();
-            if (res.success && res.data != null) {
-              return tag.replace(
-                `[${nameTag}]`,
-                dollarToManat(res.data.price, rate),
-              );
-            }
-          }
-          return tag;
-        }),
-      );
-      setTags(computedTags);
+      setProduct(await computeProductPriceTags(initialProduct));
     })();
-  }, [product?.tags, rate]);
 
-  useEffect(() => {
-    if (product?.price == null || rate === 0) return;
-
-    const match = product.price.match(squareBracketRegex);
-    (async () => {
-      if (match != null) {
-        const nameTag = match[1];
-        const res = await (
-          await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
-        ).json();
-        if (res.success && res.data != null) {
-          setPrice(dollarToManat(res.data.price, rate));
-        }
+    const fetchProduct = async () => {
+      try {
+        const prod = await fetchProducts({ productId: initialProduct.id });
+        setProduct(await computeProductPriceTags(prod[0]));
+      } catch (error) {
+        console.error('Error fetching product', error);
       }
-    })();
-  }, [product?.price, rate]);
+    };
+
+    const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
+
+    return () => clearInterval(intervalId);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProduct]);
 
   return (
     product && (
@@ -191,15 +168,17 @@ export default function Product() {
                 <Box>
                   <IconButton
                     onClick={() => {
+                      if (initialProduct == null) return;
+                      console.info(initialProduct);
                       setAddEditProductDialog({
                         open: true,
-                        id: product.id,
-                        description: product.description,
+                        id: initialProduct.id,
+                        description: initialProduct.description,
                         dialogType: 'edit',
-                        imageUrls: product.imgUrls,
-                        name: product.name,
-                        price: product.price,
-                        tags: product.tags,
+                        imageUrls: initialProduct.imgUrls,
+                        name: initialProduct.name,
+                        price: initialProduct.price,
+                        tags: initialProduct.tags,
                       });
                     }}
                   >
@@ -251,11 +230,11 @@ export default function Product() {
               <Typography
                 fontWeight={600}
                 fontSize={isMdUp ? 22 : 18}
-              >{`${price} ${t('manat')}`}</Typography>
+              >{`${product.price} ${t('manat')}`}</Typography>
             </Box>
-            {tags.length > 0 && (
+            {product.tags.length > 0 && (
               <List className="p-0 pb-10">
-                {tags.map((tag, index) => (
+                {product.tags.map((tag, index) => (
                   <ListItem key={index} sx={{ p: 0 }}>
                     <FiberManualRecordIcon
                       sx={{
@@ -327,7 +306,7 @@ export default function Product() {
                   });
                   return;
                 }
-                const prods = await fetchProductsEditPrices({
+                const prods = await fetchProducts({
                   categoryId: selectedCategoryId,
                 });
                 setProducts(prods);
