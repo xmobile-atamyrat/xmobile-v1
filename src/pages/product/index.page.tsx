@@ -5,7 +5,12 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProductsEditPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  PRODUCT_IMAGE_WIDTH_RESP,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
+import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -13,7 +18,7 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
+import { dollarToManat, parseName } from '@/pages/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -65,6 +70,9 @@ export default function Product() {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const [tags, setTags] = useState<string[]>([]);
+  const { rate } = useDollarRateContext();
+  const [price, setPrice] = useState<string>(product?.price ?? '');
 
   useEffect(() => {
     if (product == null) {
@@ -111,6 +119,50 @@ export default function Product() {
 
     setDescription(descObj);
   }, [product?.description, router.locale]);
+
+  useEffect(() => {
+    if (product?.tags == null || product.tags.length === 0 || rate === 0)
+      return;
+
+    (async () => {
+      const computedTags = await Promise.all(
+        product.tags.map(async (tag) => {
+          const tagMatch = tag.match(squareBracketRegex);
+          if (tagMatch != null) {
+            const nameTag = tagMatch[1];
+            const res = await (
+              await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
+            ).json();
+            if (res.success && res.data != null) {
+              return tag.replace(
+                `[${nameTag}]`,
+                dollarToManat(res.data.price, rate),
+              );
+            }
+          }
+          return tag;
+        }),
+      );
+      setTags(computedTags);
+    })();
+  }, [product?.tags, rate]);
+
+  useEffect(() => {
+    if (product?.price == null || rate === 0) return;
+
+    const match = product.price.match(squareBracketRegex);
+    (async () => {
+      if (match != null) {
+        const nameTag = match[1];
+        const res = await (
+          await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
+        ).json();
+        if (res.success && res.data != null) {
+          setPrice(dollarToManat(res.data.price, rate));
+        }
+      }
+    })();
+  }, [product?.price, rate]);
 
   return (
     product && (
@@ -195,17 +247,15 @@ export default function Product() {
 
           {/* price, description */}
           <Box className="flex flex-col">
-            {product?.price != null && (
-              <Box className="w-full my-4">
-                <Typography
-                  fontWeight={600}
-                  fontSize={isMdUp ? 22 : 18}
-                >{`${product.price} ${t('manat')}`}</Typography>
-              </Box>
-            )}
-            {product?.tags?.length > 0 && (
+            <Box className="w-full my-4">
+              <Typography
+                fontWeight={600}
+                fontSize={isMdUp ? 22 : 18}
+              >{`${price} ${t('manat')}`}</Typography>
+            </Box>
+            {tags.length > 0 && (
               <List className="p-0 pb-10">
-                {product?.tags.map((tag, index) => (
+                {tags.map((tag, index) => (
                   <ListItem key={index} sx={{ p: 0 }}>
                     <FiberManualRecordIcon
                       sx={{

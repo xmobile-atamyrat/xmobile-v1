@@ -304,3 +304,7 @@ export async function addEditProduct({
 export function isNumeric(value: string): boolean {
   return !Number.isNaN(+value);
 }
+
+export const dollarToManat = (price: string, dollarRate: number): string => {
+  return parseFloat((parseFloat(price) * dollarRate).toFixed(2)).toString();
+};
