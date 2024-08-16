@@ -1,6 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { squareBracketRegex } from '@/pages/lib/constants';
+import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { parseName } from '@/pages/lib/utils';
+import { dollarToManat, parseName } from '@/pages/lib/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -33,6 +35,8 @@ export default function ProductCard({
   const router = useRouter();
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
+  const { rate } = useDollarRateContext();
+  const [price, setPrice] = useState<string>(product?.price ?? '');
 
   useEffect(() => {
     (async () => {
@@ -50,6 +54,23 @@ export default function ProductCard({
       }
     })();
   }, [product?.imgUrls]);
+
+  useEffect(() => {
+    if (product?.price == null || rate === 0) return;
+
+    const match = product.price.match(squareBracketRegex);
+    (async () => {
+      if (match != null) {
+        const nameTag = match[1];
+        const res = await (
+          await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
+        ).json();
+        if (res.success && res.data != null) {
+          setPrice(dollarToManat(res.data.price, rate));
+        }
+      }
+    })();
+  }, [product?.price, rate]);
 
   return (
     <Card
@@ -111,16 +132,11 @@ export default function ProductCard({
                 ))}
             </Box>
           </Box>
-          {product.price != null && (
-            <Box className="flex items-end ">
-              <Typography
-                sx={{ fontSize: { xs: 14, sm: 16 } }}
-                fontWeight={600}
-              >
-                {product?.price} {t('manat')}
-              </Typography>
-            </Box>
-          )}
+          <Box className="flex items-end ">
+            <Typography sx={{ fontSize: { xs: 14, sm: 16 } }} fontWeight={600}>
+              {price} {t('manat')}
+            </Typography>
+          </Box>
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">

@@ -52,18 +52,14 @@ export default function AddEditProductDialog({
     useState<number>(0);
   const [originalDeletedProductImageUrls, setOriginalDeletedProductImageUrls] =
     useState<string[]>([]);
-
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [productImageFileUrls, setProductImageFileUrls] = useState<string[]>(
     [],
   );
-
   const [productImageOrder, setProductImageOrder] = useState<{
     [key: number]: string;
   }>({});
-
   const [tags, setTags] = useState<string[]>([]);
-
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
 
