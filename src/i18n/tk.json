@@ -55,7 +55,7 @@
   "editProductError": "Önümi täzeläp bolmady",
   "tags": "Önümiň Görnüşleri",
   "updatePrices": "Bahalary täzeläň",
-  "save": "Сохранять",
+  "save": "Save",
   "invalidPrice": "Nädogry baha",
   "pricesUpdated": "Bahalar üstünlikli täzelendi!",
   "updatePricesError": "Bahalary täzeläp bolmady",
@@ -63,5 +63,8 @@
   "confirmDeletePrice": "Bu önümiň bahasyny öçürmek isleýändigiňize ynanýarsyňyzmy? Önüm kartasyndan hem aýyrmagy haýyş edýäris.",
   "priceDeleteSuccess": "Bahasy üstünlikli öçürildi!",
   "priceDeleteFailed": "Önümiň bahasyny pozup bilmedi.",
-  "addPrice": "Add Price"
+  "addPrice": "Towar goş",
+  "priceCreateFailed": "Önümiň bahasyny döredip bilmedi.",
+  "priceCreateSuccess": "Täze önümiň bahasyny üstünlikli döretdi!",
+  "emptyField": "Gerekli meýdanlar boş."
 }
