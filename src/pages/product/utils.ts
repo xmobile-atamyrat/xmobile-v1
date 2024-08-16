@@ -1,4 +1,6 @@
-import { Prices } from '@prisma/client';
+import BASE_URL from '@/lib/ApiEndpoints';
+import { squareBracketRegex } from '@/pages/lib/constants';
+import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -53,16 +55,25 @@ export const handleFileUpload = (
   }
 };
 
-export const parsePrice = (price?: string): number => {
+export const parsePrice = ({
+  price,
+  rate,
+}: {
+  price?: string;
+  rate: number;
+}): number => {
   if (price == null) return 0;
-  return parseFloat((parseFloat(price) * 20).toFixed(2));
+  return parseFloat((parseFloat(price) * rate).toFixed(2));
 };
 
-export const processPrices = (prices: Partial<Prices>[]): TableData => {
+export const processPrices = (
+  prices: Partial<Prices>[],
+  rate: number,
+): TableData => {
   const processedPrices = prices.map(({ name, price }) => [
     name,
     price,
-    parsePrice(price),
+    parsePrice({ price, rate }),
   ]) as TableData;
 
   return [['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'], ...processedPrices];
@@ -70,4 +81,72 @@ export const processPrices = (prices: Partial<Prices>[]): TableData => {
 
 export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
+};
+
+export const dollarToManat = (
+  dollarRate: number,
+  price?: string | null,
+): string => {
+  if (price == null) return '0';
+  return parseFloat((parseFloat(price) * dollarRate).toFixed(2)).toString();
+};
+
+export const fetchDollarRate = async (): Promise<number> => {
+  const { success, data, message } = await (
+    await fetch(`${BASE_URL}/api/prices/rate`)
+  ).json();
+  if (!success || data == null) {
+    throw new Error('Failed to fetch dollar rate: ', message);
+  }
+  return data.rate;
+};
+
+export const computeProductPrice = async (
+  product: Product,
+  rate?: number,
+): Promise<Product> => {
+  if (rate == null) {
+    rate = await fetchDollarRate();
+  }
+  const priceMatch = product.price?.match(squareBracketRegex);
+  if (priceMatch == null) return product;
+  const res = await (
+    await fetch(`${BASE_URL}/api/prices?productName=${priceMatch[1]}`)
+  ).json();
+  if (res.success && res.data != null) {
+    const processedProduct = { ...product };
+    processedProduct.price = dollarToManat(rate, res.data.price);
+    return processedProduct;
+  }
+  return product;
+};
+
+export const computeProductPriceTags = async (
+  product: Product,
+): Promise<Product> => {
+  const rate = await fetchDollarRate();
+  const priceComputedTags = await computeProductPrice(product, rate);
+  const priceTagsComputedProduct = {
+    ...priceComputedTags,
+    tags: await Promise.all(
+      priceComputedTags.tags.map(async (tag) => {
+        const tagMatch = tag.match(squareBracketRegex);
+        if (tagMatch != null) {
+          const nameTag = tagMatch[1];
+          const res = await (
+            await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
+          ).json();
+          if (res.success && res.data != null) {
+            return tag.replace(
+              `[${nameTag}]`,
+              dollarToManat(rate, res.data.price),
+            );
+          }
+        }
+        return tag;
+      }),
+    ),
+  };
+
+  return priceTagsComputedProduct;
 };

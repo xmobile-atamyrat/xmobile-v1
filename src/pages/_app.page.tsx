@@ -1,5 +1,4 @@
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
-import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
@@ -16,15 +15,13 @@ export default function App({ Component, pageProps }: AppProps) {
       <UserContextProvider>
         <CategoryContextProvider>
           <ProductContextProvider>
-            <DollarRateContextProvider>
-              <NextIntlClientProvider
-                locale={router.locale}
-                timeZone="Asia/Ashgabat"
-                messages={pageProps.messages}
-              >
-                <Component {...pageProps} />
-              </NextIntlClientProvider>
-            </DollarRateContextProvider>
+            <NextIntlClientProvider
+              locale={router.locale}
+              timeZone="Asia/Ashgabat"
+              messages={pageProps.messages}
+            >
+              <Component {...pageProps} />
+            </NextIntlClientProvider>
           </ProductContextProvider>
         </CategoryContextProvider>
       </UserContextProvider>
