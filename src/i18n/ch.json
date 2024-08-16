@@ -68,5 +68,6 @@
   "priceCreateSuccess": "Täze önümiň bahasyny üstünlikli döretdi!",
   "emptyField": "Gerekli meýdanlar boş.",
   "rateUpdated": "Dollaryň bahasy üstünlikli täzelendi!",
-  "updateRateError": "Dollaryň hümmetini täzeläp bilmedi."
+  "updateRateError": "Dollaryň hümmetini täzeläp bilmedi.",
+  "priceExists": "Önümiň ady eýýäm bar. Atlar özboluşly bolmaly. Başga at ulanyň."
 }

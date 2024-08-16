@@ -15,6 +15,7 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
@@ -138,9 +139,16 @@ export default function ProductCard({
             </Box>
           </Box>
           <Box className="flex items-end ">
-            <Typography sx={{ fontSize: { xs: 14, sm: 16 } }} fontWeight={600}>
-              {product?.price} {t('manat')}
-            </Typography>
+            {product?.price?.includes('[') ? (
+              <CircularProgress />
+            ) : (
+              <Typography
+                sx={{ fontSize: { xs: 14, sm: 16 } }}
+                fontWeight={600}
+              >
+                {product?.price} {t('manat')}
+              </Typography>
+            )}
           </Box>
         </Box>
       ) : (
