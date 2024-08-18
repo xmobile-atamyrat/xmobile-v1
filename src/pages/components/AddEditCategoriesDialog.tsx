@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -48,6 +48,31 @@ export default function AddEditCategoriesDialog({
     }
   }, [imageUrl]);
 
+  const addEditCategoryCache = useCallback(
+    async (formJson: {
+      [k: string]: FormDataEntryValue;
+    }): Promise<string | null> => {
+      const firstCatId = await addEditCategory({
+        type: dialogType,
+        categoryImageFile,
+        categoryImageUrl,
+        formJson,
+        setCategories,
+        errorMessage: t('categoryNameRequired'),
+        selectedCategoryId,
+      });
+      return firstCatId;
+    },
+    [
+      selectedCategoryId,
+      t,
+      categoryImageFile,
+      categoryImageUrl,
+      setCategories,
+      dialogType,
+    ],
+  );
+
   return (
     <Dialog
       open
@@ -63,15 +88,7 @@ export default function AddEditCategoriesDialog({
         );
         const formJson = Object.fromEntries(formData.entries());
         try {
-          const firstCatId = await addEditCategory({
-            type: dialogType,
-            categoryImageFile,
-            categoryImageUrl,
-            formJson,
-            setCategories,
-            errorMessage: t('categoryNameRequired'),
-            selectedCategoryId,
-          });
+          const firstCatId = await addEditCategoryCache(formJson);
           if (selectedCategoryId == null && firstCatId != null) {
             setSelectedCategoryId(firstCatId);
           }

@@ -6,7 +6,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
-import { appBarHeight } from '@/pages/lib/constants';
+import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
   ExtendedCategory,
@@ -70,6 +70,8 @@ export default function Home({
   );
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   useEffect(() => {
     if (
@@ -81,11 +83,13 @@ export default function Home({
     setCategories(categories);
     setSelectedCategoryId(categories[0].id);
   }, [categories, setCategories, setSelectedCategoryId, selectedCategoryId]);
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   useEffect(() => {
-    if (selectedCategoryId == null) return;
+    if (
+      selectedCategoryId == null ||
+      selectedCategoryId === HIGHEST_LEVEL_CATEGORY_ID
+    )
+      return;
     (async () => {
       try {
         const prods = await fetchProducts({
