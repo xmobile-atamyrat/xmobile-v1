@@ -37,3 +37,5 @@ export const squareBracketRegex = /\[([^\]]+)\]/;
 
 export const POLL_DOLLAR_RATE_INTERVAL = 600_000; // 10 minutes
 export const POLL_PRODUCT_INTERVAL = 600_000; // 10 minutes
+
+export const HIGHEST_LEVEL_CATEGORY_ID = 'no_parent_category';

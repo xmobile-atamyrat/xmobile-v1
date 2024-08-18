@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
+  HIGHEST_LEVEL_CATEGORY_ID,
   localeOptions,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
@@ -157,8 +158,12 @@ export const addEditCategory = async ({
   }
 
   if (type === 'add') {
-    if (selectedCategoryId != null)
+    if (
+      selectedCategoryId != null &&
+      selectedCategoryId !== HIGHEST_LEVEL_CATEGORY_ID
+    ) {
       newFormData.append('predecessorId', selectedCategoryId);
+    }
     await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
       body: newFormData,
