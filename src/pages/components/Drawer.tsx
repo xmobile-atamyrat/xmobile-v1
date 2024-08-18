@@ -3,6 +3,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   appBarHeight,
   drawerPaddingTopOffset,
+  HIGHEST_LEVEL_CATEGORY_ID,
   MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
@@ -114,7 +115,7 @@ export default function CustomDrawer({
           <Tooltip title="Edit categories">
             <IconButton
               onClick={() => {
-                setSelectedCategoryId(undefined);
+                setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
                 setEditCategoriesModal({ open: true, dialogType: 'add' });
               }}
             >
