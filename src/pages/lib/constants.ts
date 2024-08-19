@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/prefer-default-export
 
-export const PRODUCT_IMAGE_WIDTH = 240; // px
+export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const appBarHeight = 64;
 
