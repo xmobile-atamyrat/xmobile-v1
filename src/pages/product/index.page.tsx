@@ -225,7 +225,12 @@ export default function Product() {
           </Box>
 
           {/* price, description */}
-          <Box className="flex flex-col">
+          <Box
+            className="flex flex-col"
+            style={{
+              width: isMdUp ? '50%' : '100%',
+            }}
+          >
             <Box className="w-full my-4">
               {product.price?.includes('[') ? (
                 <CircularProgress />
