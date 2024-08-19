@@ -1,5 +1,11 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import {
+  defaultProductDescCh,
+  defaultProductDescEn,
+  defaultProductDescRu,
+  defaultProductDescTk,
+} from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
 import {
@@ -196,7 +202,7 @@ export default function AddEditProductDialog({
               name="productDescriptionInTurkmen"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductDescription.tk ?? ''}
+              defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
             />
             <TextField
               label={t('inCharjov')}
@@ -204,7 +210,7 @@ export default function AddEditProductDialog({
               name="productDescriptionInCharjov"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductDescription.ch ?? ''}
+              defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
             />
             <TextField
               label={t('inRussian')}
@@ -212,7 +218,7 @@ export default function AddEditProductDialog({
               name="productDescriptionInRussian"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductDescription.ru ?? ''}
+              defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
             />
             <TextField
               label={t('inEnglish')}
@@ -220,7 +226,7 @@ export default function AddEditProductDialog({
               name="productDescriptionInEnglish"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductDescription.en ?? ''}
+              defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
             />
           </Box>
           <TextField
