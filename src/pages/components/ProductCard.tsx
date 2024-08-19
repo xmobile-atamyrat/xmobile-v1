@@ -166,7 +166,7 @@ export default function ProductCard({
                   if (handleClickAddProduct) handleClickAddProduct();
                 }}
               >
-                <AddCircleIcon fontSize="large" color="primary" />
+                <AddCircleIcon fontSize="small" color="primary" />
               </IconButton>
             </CardActions>
           </Box>
