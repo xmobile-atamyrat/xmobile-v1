@@ -101,21 +101,20 @@ export default function Product() {
     const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
     if (desc == null || desc === '') return;
 
-    const descArr = desc.split('\n').flatMap((el) => el.split(/[[\]]/));
-    const descObj: { [key: string]: string[] } = {};
-    let key: string | undefined;
-    while (descArr.length > 0) {
-      const value = descArr.shift();
-      if (value === undefined) break;
-      if (value === '') {
-        key = descArr.shift();
-        if (key === undefined) break;
-        descObj[key] = [];
-      } else {
-        if (key === undefined) break;
-        descObj[key].push(value);
-      }
+    const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
+    const result: { [key: string]: string } = {};
+
+    for (let i = 0; i < paragraphs.length; i += 2) {
+      if (i >= paragraphs.length || i + 1 >= paragraphs.length) break;
+      const header = paragraphs[i].trim();
+      const content = paragraphs[i + 1].trim();
+      result[header] = content;
     }
+
+    const descObj: { [key: string]: string[] } = {};
+    Object.keys(result).forEach((key) => {
+      descObj[key] = result[key].split('\n').filter(Boolean);
+    });
 
     setDescription(descObj);
   }, [product?.description, router.locale]);
