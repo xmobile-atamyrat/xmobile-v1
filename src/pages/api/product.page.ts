@@ -27,6 +27,7 @@ async function createProduct(
 ): Promise<CreateProductReturnType> {
   const form = new multiparty.Form({
     uploadDir: process.env.PRODUCT_IMAGES_DIR,
+    maxFilesSize: 1024 * 1024 * 10, // 10MB max size
   });
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
@@ -166,6 +167,7 @@ async function handleEditProduct(
   const { productId } = req.query;
   const form = new multiparty.Form({
     uploadDir: process.env.PRODUCT_IMAGES_DIR,
+    maxFilesSize: 1024 * 1024 * 10, // 10MB max size
   });
   const promise: Promise<CreateProductReturnType> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
