@@ -119,7 +119,7 @@ export default function CustomDrawer({
                 setEditCategoriesModal({ open: true, dialogType: 'add' });
               }}
             >
-              <AddCircleIcon fontSize="large" color="primary" />
+              <AddCircleIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
         </Paper>
