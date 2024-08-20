@@ -232,7 +232,7 @@ export default function Product() {
           >
             <Box className="w-full my-4">
               {product.price?.includes('[') ? (
-                <CircularProgress />
+                <CircularProgress size={isMdUp ? 30 : 24} />
               ) : (
                 <Typography
                   fontWeight={600}
@@ -241,28 +241,41 @@ export default function Product() {
               )}
             </Box>
             {product.tags.length > 0 && product.tags[0].includes('[') ? (
-              <CircularProgress />
+              <CircularProgress size={isMdUp ? 30 : 24} />
             ) : (
               <List className="p-0 pb-10">
-                {product.tags.map((tag, index) => (
-                  <ListItem key={index} sx={{ p: 0 }}>
-                    <FiberManualRecordIcon
-                      sx={{
-                        width: 16,
-                        height: 16,
-                      }}
-                      color="disabled"
-                    />
-                    <ListItemText
-                      sx={{ pl: 1 }}
-                      primary={
-                        <Typography fontSize={isMdUp ? 20 : 16}>
-                          {tag}
-                        </Typography>
-                      }
-                    />
-                  </ListItem>
-                ))}
+                {product.tags.map((tag, index) => {
+                  const words = tag.split(' ');
+                  const beginning = words.slice(0, -2).join(' ');
+                  const end = words.slice(-2).join(' ');
+                  return (
+                    <ListItem key={index} sx={{ p: 0 }}>
+                      <FiberManualRecordIcon
+                        sx={{
+                          width: 16,
+                          height: 16,
+                        }}
+                        color="disabled"
+                      />
+                      <ListItemText
+                        sx={{ pl: 1 }}
+                        primary={
+                          <Box className="flex flex-row">
+                            <Typography fontSize={isMdUp ? 20 : 16}>
+                              {beginning}
+                            </Typography>
+                            <Typography
+                              fontSize={isMdUp ? 20 : 16}
+                              fontWeight={600}
+                            >
+                              {end}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                  );
+                })}
               </List>
             )}
             {description && Object.keys(description).length > 0
