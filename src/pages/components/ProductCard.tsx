@@ -14,6 +14,8 @@ import {
   Divider,
   IconButton,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
@@ -38,6 +40,8 @@ export default function ProductCard({
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
   const [product, setProduct] = useState(initialProduct);
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   useEffect(() => {
     (async () => {
@@ -140,7 +144,7 @@ export default function ProductCard({
           </Box>
           <Box className="flex items-end ">
             {product?.price?.includes('[') ? (
-              <CircularProgress />
+              <CircularProgress size={isMdUp ? 30 : 24} />
             ) : (
               <Typography
                 sx={{ fontSize: { xs: 14, sm: 16 } }}
