@@ -2,13 +2,12 @@ TODO:
 
 TOP PRIORITY:
 
-- Move search button as a persistent search bar
-- Add xmobile logo
 - implement pagination
 - make drawer toggle to selected category id
 - implement cart
 - implement footer
 - implement analytics page
+- load higher quality images from drive
 - look into webview to make android and ios apps
 - implement liking products feature -> order by likes?
 - user <-> admin discussion feature
