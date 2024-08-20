@@ -260,7 +260,7 @@ export default function Product() {
                       <ListItemText
                         sx={{ pl: 1 }}
                         primary={
-                          <Box className="flex flex-row">
+                          <Box className="flex flex-row gap-4">
                             <Typography fontSize={isMdUp ? 20 : 16}>
                               {beginning}
                             </Typography>
