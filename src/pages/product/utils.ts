@@ -55,25 +55,16 @@ export const handleFileUpload = (
   }
 };
 
-export const parsePrice = ({
-  price,
-  rate,
-}: {
-  price?: string;
-  rate: number;
-}): number => {
+export const parsePrice = (price: string): number => {
   if (price == null) return 0;
-  return parseFloat((parseFloat(price) * rate).toFixed(2));
+  return parseFloat(parseFloat(price).toFixed(2));
 };
 
-export const processPrices = (
-  prices: Partial<Prices>[],
-  rate: number,
-): TableData => {
-  const processedPrices = prices.map(({ name, price }) => [
+export const processPrices = (prices: Prices[]): TableData => {
+  const processedPrices = prices.map(({ name, price, priceInTmt }) => [
     name,
     price,
-    parsePrice({ price, rate }),
+    parsePrice(priceInTmt),
   ]) as TableData;
 
   return [['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'], ...processedPrices];
@@ -149,4 +140,19 @@ export const computeProductPriceTags = async (
   };
 
   return priceTagsComputedProduct;
+};
+
+export const debounce = (
+  func: (...args: any[]) => undefined,
+  delay: number,
+) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
 };
