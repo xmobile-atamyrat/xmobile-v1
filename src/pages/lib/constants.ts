@@ -6,7 +6,7 @@ export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;
 
-export const localeOptions = ['en', 'tk', 'ru', 'ch'];
+export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
 export const drawerPaddingTopOffset = 2;
 

@@ -3,13 +3,13 @@ const nextConfig = {
   reactStrictMode: true,
   pageExtensions: ['page.tsx', 'page.ts'],
   i18n: {
-    locales: ['en', 'ru', 'tk', 'ch'],
+    locales: ['en', 'ru', 'tk', 'ch', 'tr'],
     defaultLocale: 'ru',
     localeDetection: false,
   },
-  images: {
-    domains: ['https://presumably-patient-yak.ngrok-free.app'],
-  },
+  // images: {
+  //   domains: ['https://presumably-patient-yak.ngrok-free.app'],
+  // },
 };
 
 export default nextConfig;
