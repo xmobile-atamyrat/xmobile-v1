@@ -69,5 +69,7 @@
   "emptyField": "Gerekli meýdanlar boş.",
   "rateUpdated": "Dollaryň bahasy üstünlikli täzelendi!",
   "updateRateError": "Dollaryň hümmetini täzeläp bilmedi.",
-  "priceExists": "Önümiň ady eýýäm bar. Atlar özboluşly bolmaly. Başga at ulanyň."
+  "priceExists": "Önümiň ady eýýäm bar. Atlar özboluşly bolmaly. Başga at ulanyň.",
+  "priceInDollars": "Dollaryň bahasy",
+  "priceInManat": "Manatda baha"
 }

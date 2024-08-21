@@ -1,3 +1,4 @@
+import { parsePrice } from '@/pages/product/utils';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
@@ -15,16 +16,26 @@ import { useState } from 'react';
 
 interface AddPriceProps {
   handleClose: () => void;
-  handleCreate: (name: string, value: string) => Promise<boolean>;
+  handleCreate: (
+    name: string,
+    priceInDollars: string,
+    priceInManat: string,
+  ) => Promise<boolean>;
+  dollarRate: number;
 }
 
-export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
+export default function AddPrice({
+  handleClose,
+  handleCreate,
+  dollarRate,
+}: AddPriceProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [name, setName] = useState('');
-  const [value, setValue] = useState('');
+  const [valueInDollars, setValueInDollars] = useState('');
+  const [valueInManat, setValueInManat] = useState('');
   return (
     <Dialog open onClose={handleClose}>
       <DialogTitle>{t('addPrice')}</DialogTitle>
@@ -38,16 +49,43 @@ export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
             style={{
               width: isMdUp ? '450px' : '250px',
             }}
+            required
           />
           <TextField
-            placeholder={t('price')}
+            value={valueInDollars ?? '0'}
+            placeholder={t('priceInDollars')}
             onChange={(e) => {
-              setValue(e.target.value);
+              const value = e.target.value;
+              setValueInDollars(value);
+              setValueInManat(
+                parsePrice(
+                  (parseFloat(value) * dollarRate).toString(),
+                ).toString(),
+              );
             }}
             type="number"
             style={{
               width: isMdUp ? '450px' : '250px',
             }}
+            required
+          />
+          <TextField
+            value={valueInManat ?? '0'}
+            placeholder={t('priceInManat')}
+            onChange={(e) => {
+              const value = e.target.value;
+              setValueInManat(value);
+              setValueInDollars(
+                parsePrice(
+                  (parseFloat(value) / dollarRate).toString(),
+                ).toString(),
+              );
+            }}
+            type="number"
+            style={{
+              width: isMdUp ? '450px' : '250px',
+            }}
+            required
           />
         </Box>
       </DialogContent>
@@ -64,7 +102,11 @@ export default function AddPrice({ handleClose, handleCreate }: AddPriceProps) {
           loading={loading}
           onClick={async () => {
             setLoading(true);
-            const success = await handleCreate(name, value);
+            const success = await handleCreate(
+              name,
+              valueInDollars,
+              valueInManat,
+            );
             if (success) handleClose();
             setLoading(false);
           }}
