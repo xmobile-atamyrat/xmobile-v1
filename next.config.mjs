@@ -4,7 +4,7 @@ const nextConfig = {
   pageExtensions: ['page.tsx', 'page.ts'],
   i18n: {
     locales: ['en', 'ru', 'tk', 'ch'],
-    defaultLocale: 'tk',
+    defaultLocale: 'ru',
     localeDetection: false,
   },
   images: {

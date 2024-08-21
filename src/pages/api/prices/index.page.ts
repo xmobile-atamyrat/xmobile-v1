@@ -23,14 +23,6 @@ export default async function handler(
         });
       }
 
-      const names = pricePairs.map((price) => price.name);
-      const duplicatePriceNames = (
-        await dbClient.prices.findMany({
-          where: { name: { in: names } },
-          select: { name: true },
-        })
-      ).map((price) => price.name);
-
       await dbClient.prices.createMany({
         data: pricePairs,
         skipDuplicates: true,
@@ -39,9 +31,6 @@ export default async function handler(
       return res.status(200).json({
         success: true,
         message: 'Prices updated',
-        data: {
-          'skipped products:': duplicatePriceNames,
-        },
       });
     } catch (error) {
       console.error(error);
@@ -84,9 +73,16 @@ export default async function handler(
 
       const updatedPrices = await Promise.all(
         pricePairs.map(async (price) => {
+          const data: any = {};
+          if (price.price != null) {
+            data.price = price.price;
+          }
+          if (price.priceInTmt != null) {
+            data.priceInTmt = price.priceInTmt;
+          }
           const updatedPrice = await dbClient.prices.update({
             where: { name: price.name },
-            data: { price: price.price },
+            data,
           });
           return updatedPrice;
         }),

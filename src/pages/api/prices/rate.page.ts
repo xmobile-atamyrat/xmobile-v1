@@ -62,11 +62,27 @@ export default async function handler(
           message: 'No data provided',
         });
       }
-      const result = await dbClient.dollarRate.upsert({
+      await dbClient.dollarRate.upsert({
         where: { id: index },
         update: { rate },
         create: { id: index, rate },
       });
+
+      const prices = await dbClient.prices.findMany({
+        orderBy: { name: 'asc' },
+      });
+      const result = await Promise.all(
+        prices.map(({ name, price }) =>
+          dbClient.prices.update({
+            where: { name },
+            data: {
+              priceInTmt: parseFloat(
+                (parseFloat(price) * rate).toFixed(2),
+              ).toString(),
+            },
+          }),
+        ),
+      );
 
       return res.status(200).json({
         success: true,
