@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { squareBracketRegex } from '@/pages/lib/constants';
+import { ResponseApi } from '@/pages/lib/types';
 import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
@@ -74,14 +75,6 @@ export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
 };
 
-export const dollarToManat = (
-  dollarRate: number,
-  price?: string | null,
-): string => {
-  if (price == null) return '0';
-  return parseFloat((parseFloat(price) * dollarRate).toFixed(2)).toString();
-};
-
 export const fetchDollarRate = async (): Promise<number> => {
   const { success, data, message } = await (
     await fetch(`${BASE_URL}/api/prices/rate`)
@@ -101,12 +94,12 @@ export const computeProductPrice = async (
   }
   const priceMatch = product.price?.match(squareBracketRegex);
   if (priceMatch == null) return product;
-  const res = await (
+  const res: ResponseApi<Prices> = await (
     await fetch(`${BASE_URL}/api/prices?productName=${priceMatch[1]}`)
   ).json();
   if (res.success && res.data != null) {
     const processedProduct = { ...product };
-    processedProduct.price = dollarToManat(rate, res.data.price);
+    processedProduct.price = res.data.priceInTmt;
     return processedProduct;
   }
   return product;
@@ -124,14 +117,11 @@ export const computeProductPriceTags = async (
         const tagMatch = tag.match(squareBracketRegex);
         if (tagMatch != null) {
           const nameTag = tagMatch[1];
-          const res = await (
+          const res: ResponseApi<Prices> = await (
             await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
           ).json();
           if (res.success && res.data != null) {
-            return tag.replace(
-              `[${nameTag}]`,
-              dollarToManat(rate, res.data.price),
-            );
+            return tag.replace(`[${nameTag}]`, res.data.priceInTmt);
           }
         }
         return tag;
