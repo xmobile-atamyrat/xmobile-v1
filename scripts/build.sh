@@ -30,6 +30,10 @@ main() {
 
     # Close the SSH tunnel
     # ssh -O exit -i ~/.ssh/aws_proxy_tunnel.pem ubuntu@3.87.187.215
+
+    scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@216.250.13.115:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+
+    rm -f xmobile-v1.tar.gz
 }
 
 main
