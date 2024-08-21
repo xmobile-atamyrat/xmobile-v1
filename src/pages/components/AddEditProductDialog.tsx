@@ -252,12 +252,10 @@ export default function AddEditProductDialog({
                   setTags(newTags);
                 }}
               />
-              <IconButton>
-                <CancelIcon
-                  fontSize="medium"
-                  color="error"
-                  onClick={() => setTags(tags.filter((_, i) => i !== index))}
-                />
+              <IconButton
+                onClick={() => setTags(tags.filter((_, i) => i !== index))}
+              >
+                <CancelIcon fontSize="medium" color="error" />
               </IconButton>
             </Box>
           ))}
