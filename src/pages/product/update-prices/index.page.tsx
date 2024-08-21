@@ -3,7 +3,12 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parsePrice, processPrices, TableData } from '@/pages/product/utils';
+import {
+  debounce,
+  parsePrice,
+  processPrices,
+  TableData,
+} from '@/pages/product/utils';
 import {
   Alert,
   Box,
@@ -29,10 +34,10 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import AddPrice from '@/pages/product/components/AddPrice';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = (async (context) => {
-  let prices: Partial<Prices>[] = [];
+  let prices: Prices[] = [];
   let errorMessage: string | null = null;
   let dollarRate: number = 0;
 
@@ -66,7 +71,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     },
   };
 }) satisfies GetServerSideProps<{
-  prices: Partial<Prices>[];
+  prices: Prices[];
   dollarRate: number;
   errorMessage: string | null;
 }>;
@@ -90,12 +95,68 @@ export default function UpdatePrices({
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
   const [dollarRate, setDollarRate] = useState(initialDollarRate);
-  const [showDollarRateSaveButton, setShowDollarRateSaveButton] = useState(
-    initialDollarRate !== dollarRate,
-  );
-
   const [snackbarOpen, setSnackbarOpen] = useState(errorMessage != null);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handlePriceUpdate = useCallback(
+    debounce(
+      (
+        value: string | null,
+        cellIndex: number,
+        rowIndex: number,
+        row: any[],
+      ) => {
+        if (value == null || value === '' || Number.isNaN(parseFloat(value))) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'invalidPrice',
+            severity: 'error',
+          });
+          return;
+        }
+
+        setUpdatedPrices((prevPrices) => ({
+          ...prevPrices,
+          [rowIndex]: {
+            priceInTmt:
+              cellIndex === 2
+                ? value
+                : parsePrice((parseFloat(value) * dollarRate).toString()),
+            price:
+              cellIndex === 1
+                ? value
+                : parsePrice((parseFloat(value) / dollarRate).toString()),
+            name: row[0] as string,
+          },
+        }));
+
+        setTableData((prevData) => {
+          const newData = prevData.map((prevRow, index) => {
+            if (index === rowIndex + 1) {
+              return prevRow.map((cell, idx) => {
+                if (cellIndex === 1 && idx === 2) {
+                  return parsePrice(
+                    (parseFloat(value) * dollarRate).toString(),
+                  );
+                }
+                if (cellIndex === 2 && idx === 1) {
+                  return parsePrice(
+                    (parseFloat(value) / dollarRate).toString(),
+                  );
+                }
+                return cell;
+              });
+            }
+            return prevRow;
+          });
+          return newData;
+        });
+      },
+      500,
+    ),
+    [dollarRate],
+  );
 
   useEffect(() => {
     if (user == null || user.grade !== 'ADMIN') {
@@ -110,8 +171,8 @@ export default function UpdatePrices({
   }, [errorMessage]);
 
   useEffect(() => {
-    setTableData(processPrices(prices, dollarRate));
-  }, [prices, dollarRate]);
+    setTableData(processPrices(prices));
+  }, [prices]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -139,72 +200,48 @@ export default function UpdatePrices({
                     const value = parseFloat(e.target.value);
                     if (Number.isNaN(value)) return;
                     setDollarRate(value);
-                    setShowDollarRateSaveButton(initialDollarRate !== value);
                   }}
                 />
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                   manat
                 </Typography>
-                {showDollarRateSaveButton && (
-                  <IconButton
-                    onClick={async () => {
-                      try {
-                        const data = await (
-                          await fetch(`${BASE_URL}/api/prices/rate`, {
-                            method: 'PUT',
-                            body: JSON.stringify({ rate: dollarRate }),
-                          })
-                        ).json();
+                <IconButton
+                  onClick={async () => {
+                    try {
+                      const data = await (
+                        await fetch(`${BASE_URL}/api/prices/rate`, {
+                          method: 'PUT',
+                          body: JSON.stringify({ rate: dollarRate }),
+                        })
+                      ).json();
 
-                        if (data.success) {
-                          setSnackbarOpen(true);
-                          setSnackbarMessage({
-                            message: 'rateUpdated',
-                            severity: 'success',
-                          });
-                          setShowDollarRateSaveButton(false);
-                        } else {
-                          setSnackbarOpen(true);
-                          setSnackbarMessage({
-                            message: 'updateRateError',
-                            severity: 'error',
-                          });
-                        }
-                      } catch (error) {
-                        console.error(error);
+                      if (data.success && data.data != null) {
+                        setTableData(processPrices(data.data as Prices[]));
+                        setSnackbarOpen(true);
+                        setSnackbarMessage({
+                          message: 'rateUpdated',
+                          severity: 'success',
+                        });
+                      } else {
                         setSnackbarOpen(true);
                         setSnackbarMessage({
                           message: 'updateRateError',
                           severity: 'error',
                         });
                       }
-                    }}
-                  >
-                    <CheckCircleOutlineIcon color="success" />
-                  </IconButton>
-                )}
-              </Box>
-              {/* hidden price list upload button */}
-              {/* <Box>
-                <Button
-                  hidden
-                  component="label"
-                  role={undefined}
-                  variant="contained"
-                  tabIndex={-1}
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ textTransform: 'none' }}
-                  className="my-1 sm:mr-2 w-full sm:w-[250px] text-[16px] h-[56px]"
+                    } catch (error) {
+                      console.error(error);
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'updateRateError',
+                        severity: 'error',
+                      });
+                    }
+                  }}
                 >
-                  {t('updatePrices')}
-                  <VisuallyHiddenInput
-                    type="file"
-                    name="productImage"
-                    accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-                    onChange={(e) => handleFileUpload(e, setTableData)}
-                  />
-                </Button>
-              </Box> */}
+                  <CheckCircleOutlineIcon color="success" />
+                </IconButton>
+              </Box>
             </Box>
 
             {/* right side buttons */}
@@ -296,53 +333,16 @@ export default function UpdatePrices({
                     {row.map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={cellIndex === 1}
+                        contentEditable={cellIndex !== 0}
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
-                          const value = e.currentTarget.textContent;
-                          if (
-                            value == null ||
-                            value === '' ||
-                            Number.isNaN(parseFloat(value))
-                          ) {
-                            setSnackbarOpen(true);
-                            setSnackbarMessage({
-                              message: 'invalidPrice',
-                              severity: 'error',
-                            });
-                            return;
-                          }
-                          if (value === cell) {
-                            const tempUpdatedPrices = { ...updatedPrices };
-                            delete tempUpdatedPrices[rowIndex];
-                            setUpdatedPrices(tempUpdatedPrices);
-                            return;
-                          }
-                          setUpdatedPrices((prevPrices) => ({
-                            ...prevPrices,
-                            [rowIndex]: {
-                              ...prevPrices[rowIndex],
-                              price: parseFloat(value as string).toString(),
-                              name: row[0] as string,
-                            },
-                          }));
-
-                          setTableData((prevData) => {
-                            const newData = prevData.map((r, i) =>
-                              i === rowIndex + 1
-                                ? [
-                                    r[0],
-                                    value,
-                                    parsePrice({
-                                      price: value!,
-                                      rate: dollarRate,
-                                    }),
-                                  ]
-                                : r,
-                            );
-                            return newData;
-                          });
+                          handlePriceUpdate(
+                            e.currentTarget.textContent,
+                            cellIndex,
+                            rowIndex,
+                            row,
+                          );
                         }}
                       >
                         {cellIndex === 0 && hoveredPrice === rowIndex && (
@@ -464,7 +464,7 @@ export default function UpdatePrices({
                     setTableData((prevData) => {
                       const newData = [
                         prevData[0],
-                        [name, price, parsePrice({ price, rate: dollarRate })],
+                        [name, price, parsePrice(price)],
                         ...prevData.slice(1),
                       ];
                       return newData;
