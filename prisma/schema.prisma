@@ -54,12 +54,13 @@ model Product {
 }
 
 model Prices {
-  name            String    @id @unique
+  id              String?     @default(uuid())
+  name            String      @id @unique
   price           String    
-  priceInTmt      String    @default("0")
+  priceInTmt      String      @default("0")
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([price])
 }

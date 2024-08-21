@@ -237,11 +237,27 @@ export default function CustomAppBar({
                 window.location.pathname = newPath;
               }}
             >
+              <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="RU" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    rus
+                  </Typography>
+                </Box>
+              </MenuItem>
               <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
                 <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
                   <Flag country="TM" size={18} />
                   <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
                     tkm
+                  </Typography>
+                </Box>
+              </MenuItem>
+              <MenuItem value="tr" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
+                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+                  <Flag country="TR" size={18} />
+                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                    tür
                   </Typography>
                 </Box>
               </MenuItem>
@@ -258,14 +274,6 @@ export default function CustomAppBar({
                   <Flag country="US" size={18} />
                   <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
                     eng
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
-                  <Flag country="RU" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
-                    rus
                   </Typography>
                 </Box>
               </MenuItem>
