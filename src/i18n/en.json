@@ -67,5 +67,7 @@
   "emptyField": "Required fields are empty.",
   "rateUpdated": "Dollar rate updated successfully!",
   "updateRateError": "Failed to update the dollar rate.",
-  "priceExists": "Product name already exists. Names have to be unique. Please, use a different name."
+  "priceExists": "Product name already exists. Names have to be unique. Please, use a different name.",
+  "priceInDollars": "Price in dollars",
+  "priceInManat": "Price in manat"
 }

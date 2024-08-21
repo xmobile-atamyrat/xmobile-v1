@@ -427,11 +427,17 @@ export default function UpdatePrices({
           {showCreatePriceDialog && (
             <AddPrice
               handleClose={() => setShowCreatePriceDialog(false)}
+              dollarRate={dollarRate}
               handleCreate={async (
                 name: string,
-                price: string,
+                priceInDollars: string,
+                priceInManat: string,
               ): Promise<boolean> => {
-                if (name === '') {
+                if (
+                  name === '' ||
+                  priceInDollars === '' ||
+                  priceInManat === ''
+                ) {
                   setSnackbarOpen(true);
                   setSnackbarMessage({
                     message: 'emptyField',
@@ -457,14 +463,22 @@ export default function UpdatePrices({
                   const res = await (
                     await fetch(`${BASE_URL}/api/prices`, {
                       method: 'POST',
-                      body: JSON.stringify({ pricePairs: [{ name, price }] }),
+                      body: JSON.stringify({
+                        pricePairs: [
+                          {
+                            name,
+                            price: priceInDollars,
+                            priceInTmt: priceInManat,
+                          },
+                        ],
+                      }),
                     })
                   ).json();
                   if (res.success) {
                     setTableData((prevData) => {
                       const newData = [
                         prevData[0],
-                        [name, price, parsePrice(price)],
+                        [name, priceInDollars, priceInManat],
                         ...prevData.slice(1),
                       ];
                       return newData;
