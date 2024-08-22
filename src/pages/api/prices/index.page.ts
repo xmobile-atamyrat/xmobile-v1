@@ -15,22 +15,34 @@ export default async function handler(
   const { method } = req;
   if (method === 'POST') {
     try {
-      const { pricePairs }: { pricePairs: Prices[] } = JSON.parse(req.body);
-      if (pricePairs == null) {
+      const body: Partial<Prices> = JSON.parse(req.body);
+      console.info(body);
+      if (body == null) {
         return res.status(400).json({
           success: false,
           message: 'No data provided',
         });
       }
 
-      await dbClient.prices.createMany({
-        data: pricePairs,
-        skipDuplicates: true,
+      const { name, price, priceInTmt } = body;
+      if (name == null || price == null || priceInTmt == null) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields',
+        });
+      }
+      const newPrice = await dbClient.prices.create({
+        data: {
+          name,
+          price,
+          priceInTmt,
+        },
       });
 
       return res.status(200).json({
         success: true,
         message: 'Prices updated',
+        data: newPrice,
       });
     } catch (error) {
       console.error(error);
@@ -71,9 +83,9 @@ export default async function handler(
         });
       }
 
-      const updatedPrices = await Promise.all(
+      await Promise.all(
         pricePairs.map(async (price) => {
-          const data: any = {};
+          const data: any = { name: price.name };
           if (price.price != null) {
             data.price = price.price;
           }
@@ -91,7 +103,6 @@ export default async function handler(
       return res.status(200).json({
         success: true,
         message: 'Prices updated',
-        data: updatedPrices,
       });
     } catch (error) {
       console.error(error);

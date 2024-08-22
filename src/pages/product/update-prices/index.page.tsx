@@ -1,11 +1,15 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { SnackbarProps } from '@/pages/lib/types';
+import { ResponseApi, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   debounce,
   parsePrice,
+  PRICE_DOLLAR_IDX,
+  PRICE_ID_IDX,
+  PRICE_MANAT_IDX,
+  PRICE_NAME_IDX,
   processPrices,
   TableData,
 } from '@/pages/product/utils';
@@ -108,7 +112,11 @@ export default function UpdatePrices({
         rowIndex: number,
         row: any[],
       ) => {
-        if (value == null || value === '' || Number.isNaN(parseFloat(value))) {
+        if (
+          value == null ||
+          value === '' ||
+          (cellIndex !== PRICE_NAME_IDX && Number.isNaN(parseFloat(value)))
+        ) {
           setSnackbarOpen(true);
           setSnackbarMessage({
             message: 'invalidPrice',
@@ -117,18 +125,27 @@ export default function UpdatePrices({
           return;
         }
 
+        const currPrice: Partial<Prices> = updatedPrices[rowIndex] || {};
+        currPrice.id = row[PRICE_ID_IDX] as string;
+        if (cellIndex === PRICE_MANAT_IDX) {
+          currPrice.priceInTmt = value;
+          currPrice.price = parsePrice(
+            (parseFloat(value) / dollarRate).toString(),
+          ).toString();
+        } else if (cellIndex === PRICE_DOLLAR_IDX) {
+          currPrice.price = value;
+          currPrice.priceInTmt = parsePrice(
+            (parseFloat(value) * dollarRate).toString(),
+          ).toString();
+        } else if (cellIndex === PRICE_NAME_IDX) {
+          currPrice.name = value;
+        }
+
         setUpdatedPrices((prevPrices) => ({
           ...prevPrices,
           [rowIndex]: {
-            priceInTmt:
-              cellIndex === 2
-                ? value
-                : parsePrice((parseFloat(value) * dollarRate).toString()),
-            price:
-              cellIndex === 1
-                ? value
-                : parsePrice((parseFloat(value) / dollarRate).toString()),
-            name: row[0] as string,
+            ...prevPrices[rowIndex],
+            ...currPrice,
           },
         }));
 
@@ -136,12 +153,12 @@ export default function UpdatePrices({
           const newData = prevData.map((prevRow, index) => {
             if (index === rowIndex + 1) {
               return prevRow.map((cell, idx) => {
-                if (cellIndex === 1 && idx === 2) {
+                if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
                     (parseFloat(value) * dollarRate).toString(),
                   );
                 }
-                if (cellIndex === 2 && idx === 1) {
+                if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
                   return parsePrice(
                     (parseFloat(value) / dollarRate).toString(),
                   );
@@ -334,7 +351,7 @@ export default function UpdatePrices({
                     {row.map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={cellIndex !== 3}
+                        contentEditable={cellIndex !== PRICE_ID_IDX}
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
@@ -346,43 +363,45 @@ export default function UpdatePrices({
                           );
                         }}
                       >
-                        {cellIndex === 0 && hoveredPrice === rowIndex && (
-                          <IconButton
-                            className="absolute -left-4 top-1"
-                            onClick={() => {
-                              setSelectedPrice(cell as string);
-                              setShowDeleteDialog(true);
-                            }}
-                          >
-                            <DeleteIcon color="error" />
-                          </IconButton>
-                        )}
-                        {cellIndex === 3 && hoveredPrice === rowIndex && (
-                          <IconButton
-                            className="absolute -left-4 top-1"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(
-                                  cell as string,
-                                );
-                                setSnackbarOpen(true);
-                                setSnackbarMessage({
-                                  message: 'copied',
-                                  severity: 'success',
-                                });
-                              } catch (error) {
-                                console.error(error);
-                                setSnackbarOpen(true);
-                                setSnackbarMessage({
-                                  message: 'copyFailed',
-                                  severity: 'error',
-                                });
-                              }
-                            }}
-                          >
-                            <ContentCopyIcon color="primary" />
-                          </IconButton>
-                        )}
+                        {cellIndex === PRICE_NAME_IDX &&
+                          hoveredPrice === rowIndex && (
+                            <IconButton
+                              className="absolute -left-4 top-1"
+                              onClick={() => {
+                                setSelectedPrice(row[PRICE_ID_IDX] as string);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <DeleteIcon color="error" />
+                            </IconButton>
+                          )}
+                        {cellIndex === PRICE_ID_IDX &&
+                          hoveredPrice === rowIndex && (
+                            <IconButton
+                              className="absolute -left-4 top-1"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    cell as string,
+                                  );
+                                  setSnackbarOpen(true);
+                                  setSnackbarMessage({
+                                    message: 'copied',
+                                    severity: 'success',
+                                  });
+                                } catch (error) {
+                                  console.error(error);
+                                  setSnackbarOpen(true);
+                                  setSnackbarMessage({
+                                    message: 'copyFailed',
+                                    severity: 'error',
+                                  });
+                                }
+                              }}
+                            >
+                              <ContentCopyIcon color="primary" />
+                            </IconButton>
+                          )}
                         {cell}
                       </TableCell>
                     ))}
@@ -422,15 +441,12 @@ export default function UpdatePrices({
               handleDelete={async () => {
                 if (selectedPrice == null) return;
                 try {
-                  await fetch(
-                    `${BASE_URL}/api/prices?productName=${selectedPrice}`,
-                    {
-                      method: 'DELETE',
-                    },
-                  );
+                  await fetch(`${BASE_URL}/api/prices?id=${selectedPrice}`, {
+                    method: 'DELETE',
+                  });
                   setTableData((prevData) => {
                     const newData = prevData.filter(
-                      (row) => row[0] !== selectedPrice,
+                      (row) => row[PRICE_ID_IDX] !== selectedPrice,
                     );
                     return newData;
                   });
@@ -474,7 +490,7 @@ export default function UpdatePrices({
                 }
                 let exists = false;
                 tableData.forEach((row) => {
-                  if (row[0] === name) {
+                  if (row[PRICE_NAME_IDX] === name) {
                     exists = true;
                   }
                 });
@@ -487,25 +503,21 @@ export default function UpdatePrices({
                   return false;
                 }
                 try {
-                  const res = await (
+                  const res: ResponseApi<Prices> = await (
                     await fetch(`${BASE_URL}/api/prices`, {
                       method: 'POST',
                       body: JSON.stringify({
-                        pricePairs: [
-                          {
-                            name,
-                            price: priceInDollars,
-                            priceInTmt: priceInManat,
-                          },
-                        ],
+                        name,
+                        price: priceInDollars,
+                        priceInTmt: priceInManat,
                       }),
                     })
                   ).json();
-                  if (res.success) {
+                  if (res.success && res.data != null) {
                     setTableData((prevData) => {
                       const newData = [
                         prevData[0],
-                        [name, priceInDollars, priceInManat],
+                        [name, priceInDollars, priceInManat, res.data!.id],
                         ...prevData.slice(1),
                       ];
                       return newData;
