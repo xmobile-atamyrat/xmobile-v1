@@ -8,6 +8,10 @@ import * as XLSX from 'xlsx';
 
 const regex = /(".*?"|[^",]+|(?<=,)(?=,)|(?<=,)$|^,)/g;
 export type TableData = (string | number | boolean | null)[][];
+export const PRICE_NAME_IDX = 0;
+export const PRICE_DOLLAR_IDX = 1;
+export const PRICE_MANAT_IDX = 2;
+export const PRICE_ID_IDX = 3;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -96,7 +100,7 @@ export const computeProductPrice = async (
   const priceMatch = product.price?.match(squareBracketRegex);
   if (priceMatch == null) return product;
   const res: ResponseApi<Prices> = await (
-    await fetch(`${BASE_URL}/api/prices?productName=${priceMatch[1]}`)
+    await fetch(`${BASE_URL}/api/prices?id=${priceMatch[1]}`)
   ).json();
   if (res.success && res.data != null) {
     const processedProduct = { ...product };
@@ -117,12 +121,12 @@ export const computeProductPriceTags = async (
       priceComputedTags.tags.map(async (tag) => {
         const tagMatch = tag.match(squareBracketRegex);
         if (tagMatch != null) {
-          const nameTag = tagMatch[1];
+          const idTag = tagMatch[1];
           const res: ResponseApi<Prices> = await (
-            await fetch(`${BASE_URL}/api/prices?productName=${nameTag}`)
+            await fetch(`${BASE_URL}/api/prices?id=${idTag}`)
           ).json();
           if (res.success && res.data != null) {
-            return tag.replace(`[${nameTag}]`, res.data.priceInTmt);
+            return tag.replace(`[${idTag}]`, res.data.priceInTmt);
           }
         }
         return tag;
