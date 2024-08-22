@@ -44,6 +44,8 @@ export const defaultProductDescEn =
   '[Release date]\n[Display]\n[Processor]\n[Camera]\n[Battery]\n[OS]';
 export const defaultProductDescTk =
   '[Çykan wagty]\n[Ekran]\n[Prosessor]\n[Kamera]\n[Batareýka]\n[OS]';
+export const defaultProductDescTr =
+  '[Yayın tarihi]\n[Ekran]\n[İşlemci]\n[Kamera]\n[Pil]\n[OS]';
 export const defaultProductDescCh =
   '[Çykan wagty]\n[Ekran]\n[Prosessor]\n[Kamera]\n[Batareýka]\n[OS]';
 export const defaultProductDescRu =
