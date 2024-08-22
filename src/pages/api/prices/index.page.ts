@@ -41,10 +41,10 @@ export default async function handler(
     }
   } else if (method === 'GET') {
     try {
-      const { productName } = req.query;
-      if (productName != null) {
+      const { id } = req.query;
+      if (id != null) {
         const price = await dbClient.prices.findUnique({
-          where: { name: productName as string },
+          where: { id: id as string },
         });
         return res.status(200).json({ success: true, data: price });
       }
@@ -81,7 +81,7 @@ export default async function handler(
             data.priceInTmt = price.priceInTmt;
           }
           const updatedPrice = await dbClient.prices.update({
-            where: { name: price.name },
+            where: { id: price.id },
             data,
           });
           return updatedPrice;
@@ -102,15 +102,15 @@ export default async function handler(
     }
   } else if (method === 'DELETE') {
     try {
-      const { productName } = req.query;
-      if (productName == null) {
+      const { id } = req.query;
+      if (id == null) {
         return res.status(400).json({
           success: false,
           message: 'No product name provided',
         });
       }
       const deletedPrice = await dbClient.prices.delete({
-        where: { name: productName as string },
+        where: { id: id as string },
       });
       return res.status(200).json({
         success: true,
