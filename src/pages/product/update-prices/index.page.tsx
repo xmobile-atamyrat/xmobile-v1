@@ -33,6 +33,7 @@ import { useRouter } from 'next/router';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import AddPrice from '@/pages/product/components/AddPrice';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -333,7 +334,7 @@ export default function UpdatePrices({
                     {row.map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={cellIndex !== 0}
+                        contentEditable={cellIndex !== 3}
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
@@ -354,6 +355,32 @@ export default function UpdatePrices({
                             }}
                           >
                             <DeleteIcon color="error" />
+                          </IconButton>
+                        )}
+                        {cellIndex === 3 && hoveredPrice === rowIndex && (
+                          <IconButton
+                            className="absolute -left-4 top-1"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  cell as string,
+                                );
+                                setSnackbarOpen(true);
+                                setSnackbarMessage({
+                                  message: 'copied',
+                                  severity: 'success',
+                                });
+                              } catch (error) {
+                                console.error(error);
+                                setSnackbarOpen(true);
+                                setSnackbarMessage({
+                                  message: 'copyFailed',
+                                  severity: 'error',
+                                });
+                              }
+                            }}
+                          >
+                            <ContentCopyIcon color="primary" />
                           </IconButton>
                         )}
                         {cell}
