@@ -218,17 +218,20 @@ export async function addEditProduct({
     productNameInEnglish,
     productNameInRussian,
     productNameInTurkmen,
+    productNameInTurkish,
     productDescriptionInCharjov,
     productDescriptionInEnglish,
     productDescriptionInRussian,
     productDescriptionInTurkmen,
+    productDescriptionInTurkish,
     price,
   } = formJson;
   if (
     productNameInCharjov === '' &&
     productNameInEnglish === '' &&
     productNameInRussian === '' &&
-    productNameInTurkmen === ''
+    productNameInTurkmen === '' &&
+    productNameInTurkish === ''
   ) {
     throw new Error(productNameRequiredError);
   }
@@ -238,6 +241,7 @@ export async function addEditProduct({
   if (productNameInCharjov !== '') productNames.ch = productNameInCharjov;
   if (productNameInRussian !== '') productNames.ru = productNameInRussian;
   if (productNameInEnglish !== '') productNames.en = productNameInEnglish;
+  if (productNameInTurkish !== '') productNames.tr = productNameInTurkish;
 
   const productDescriptions: any = {};
   if (productDescriptionInTurkmen !== '')
@@ -248,6 +252,8 @@ export async function addEditProduct({
     productDescriptions.ru = productDescriptionInRussian;
   if (productDescriptionInEnglish !== '')
     productDescriptions.en = productDescriptionInEnglish;
+  if (productDescriptionInTurkish !== '')
+    productDescriptions.tr = productDescriptionInTurkish;
 
   const newFormData = new FormData();
 
