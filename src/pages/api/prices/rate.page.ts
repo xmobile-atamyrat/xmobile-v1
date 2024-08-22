@@ -72,9 +72,9 @@ export default async function handler(
         orderBy: { name: 'asc' },
       });
       const result = await Promise.all(
-        prices.map(({ name, price }) =>
+        prices.map(({ id, price }) =>
           dbClient.prices.update({
-            where: { name },
+            where: { id },
             data: {
               priceInTmt: parseFloat(
                 (parseFloat(price) * rate).toFixed(2),

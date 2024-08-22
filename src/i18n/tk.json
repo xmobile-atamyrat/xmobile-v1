@@ -71,5 +71,7 @@
   "updateRateError": "Dollaryň hümmetini täzeläp bilmedi.",
   "priceExists": "Önümiň ady eýýäm bar. Atlar özboluşly bolmaly. Başga at ulanyň.",
   "priceInDollars": "Dollaryň bahasy",
-  "priceInManat": "Manatda baha"
+  "priceInManat": "Manatda baha",
+  "copyFailed": "Göçürip bolmady",
+  "copied": "Üstünlik bilen göçürildi!"
 }
