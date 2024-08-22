@@ -5,6 +5,7 @@ import {
   defaultProductDescEn,
   defaultProductDescRu,
   defaultProductDescTk,
+  defaultProductDescTr,
 } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
@@ -170,22 +171,28 @@ export default function AddEditProductDialog({
               <span style={{ color: 'red' }}>*</span>
             </Typography>
             <TextField
+              label={t('inRussian')}
+              name="productNameInRussian"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.ru ?? ''}
+            />
+            <TextField
               label={t('inTurkmen')}
               name="productNameInTurkmen"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedProductName.tk ?? ''}
             />
             <TextField
+              label={t('inTurkish')}
+              name="productNameInTurkish"
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductName.tr ?? ''}
+            />
+            <TextField
               label={t('inCharjov')}
               name="productNameInCharjov"
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedProductName.ch ?? ''}
-            />
-            <TextField
-              label={t('inRussian')}
-              name="productNameInRussian"
-              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductName.ru ?? ''}
             />
             <TextField
               label={t('inEnglish')}
@@ -197,6 +204,14 @@ export default function AddEditProductDialog({
           <Box>
             <Typography>{t('productDescription')}</Typography>
             <TextField
+              label={t('inRussian')}
+              type="text"
+              name="productDescriptionInRussian"
+              multiline
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
+            />
+            <TextField
               label={t('inTurkmen')}
               type="text"
               name="productDescriptionInTurkmen"
@@ -205,20 +220,20 @@ export default function AddEditProductDialog({
               defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
             />
             <TextField
+              label={t('inTurkish')}
+              type="text"
+              name="productDescriptionInTurkish"
+              multiline
+              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
+              defaultValue={parsedProductDescription.tr ?? defaultProductDescTr}
+            />
+            <TextField
               label={t('inCharjov')}
               type="text"
               name="productDescriptionInCharjov"
               multiline
               className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
               defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
-            />
-            <TextField
-              label={t('inRussian')}
-              type="text"
-              name="productDescriptionInRussian"
-              multiline
-              className="my-1 sm:mr-2 sm:min-w-[250px] w-full sm:w-1/3"
-              defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
             />
             <TextField
               label={t('inEnglish')}
