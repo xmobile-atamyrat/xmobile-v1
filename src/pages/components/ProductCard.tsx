@@ -86,7 +86,7 @@ export default function ProductCard({
     <Card
       sx={{
         width: { xs: '47%', sm: 200 },
-        height: { xs: 300, sm: 350 },
+        height: { xs: 250, sm: 300 },
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
@@ -157,8 +157,16 @@ export default function ProductCard({
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
-          <CardContent>
-            <Typography gutterBottom className="flex justify-center">
+          <CardContent sx={{ p: 1 }}>
+            <Typography
+              gutterBottom
+              className="flex justify-center"
+              fontSize={isMdUp ? 20 : 18}
+              fontWeight={500}
+              style={{
+                textAlign: 'center',
+              }}
+            >
               {t('addNewProduct')}
             </Typography>
           </CardContent>
@@ -170,7 +178,7 @@ export default function ProductCard({
                   if (handleClickAddProduct) handleClickAddProduct();
                 }}
               >
-                <AddCircleIcon fontSize="small" color="primary" />
+                <AddCircleIcon fontSize="large" color="primary" />
               </IconButton>
             </CardActions>
           </Box>

@@ -71,5 +71,6 @@
   "priceInDollars": "Price in dollars",
   "priceInManat": "Price in manat",
   "copyFailed": "Could not copy.",
-  "copied": "Copied successfully!"
+  "copied": "Copied successfully!",
+  "inTurkish": "In Turkish"
 }
