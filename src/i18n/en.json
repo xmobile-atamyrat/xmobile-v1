@@ -69,5 +69,7 @@
   "updateRateError": "Failed to update the dollar rate.",
   "priceExists": "Product name already exists. Names have to be unique. Please, use a different name.",
   "priceInDollars": "Price in dollars",
-  "priceInManat": "Price in manat"
+  "priceInManat": "Price in manat",
+  "copyFailed": "Could not copy.",
+  "copied": "Copied successfully!"
 }

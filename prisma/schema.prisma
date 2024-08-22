@@ -54,8 +54,8 @@ model Product {
 }
 
 model Prices {
-  id              String?     @default(uuid())
-  name            String      @id @unique
+  id              String      @id @default(uuid())
+  name            String
   price           String    
   priceInTmt      String      @default("0")
 

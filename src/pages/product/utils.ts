@@ -62,13 +62,14 @@ export const parsePrice = (price: string): number => {
 };
 
 export const processPrices = (prices: Prices[]): TableData => {
-  const processedPrices = prices.map(({ name, price, priceInTmt }) => [
+  const processedPrices = prices.map(({ id, name, price, priceInTmt }) => [
     name,
     price,
     parsePrice(priceInTmt),
+    id,
   ]) as TableData;
 
-  return [['Towar', 'Dollarda Bahasy', 'Manatda Bahasy'], ...processedPrices];
+  return [['Name', 'Dollars', 'Manat', 'ID'], ...processedPrices];
 };
 
 export const isPriceValid = (price: string): boolean => {

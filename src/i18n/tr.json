@@ -69,5 +69,7 @@
   "updateRateError": "Dolar kuru güncellenemedi.",
   "priceExists": "Ürün adı zaten var. İsimler benzersiz olmalıdır. Lütfen farklı bir isim kullanın.",
   "priceInDollars": "Dolar cinsinden fiyat",
-  "priceInManat": "Manat cinsinden fiyat"
+  "priceInManat": "Manat cinsinden fiyat",
+  "copyFailed": "Kopyalanamadı.",
+  "copied": "Başarıyla kopyalandı!"
 }
