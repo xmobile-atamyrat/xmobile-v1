@@ -46,3 +46,5 @@ certificates
 categories.yaml
 *.xlsx
 *.env
+db_backup.sql
+backup/
