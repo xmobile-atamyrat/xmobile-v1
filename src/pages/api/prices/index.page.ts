@@ -53,12 +53,39 @@ export default async function handler(
     }
   } else if (method === 'GET') {
     try {
-      const { id } = req.query;
+      const { id, searchKeyword } = req.query;
       if (id != null) {
         const price = await dbClient.prices.findUnique({
           where: { id: id as string },
         });
         return res.status(200).json({ success: true, data: price });
+      }
+      if (searchKeyword != null) {
+        const prices = await dbClient.prices.findMany({
+          where: {
+            OR: [
+              {
+                name: {
+                  contains: searchKeyword as string,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                price: {
+                  contains: searchKeyword as string,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                priceInTmt: {
+                  contains: searchKeyword as string,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+        });
+        return res.status(200).json({ success: true, data: prices });
       }
       const prices = await dbClient.prices.findMany({
         orderBy: { name: 'asc' },
