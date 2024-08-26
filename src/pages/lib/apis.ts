@@ -1,6 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { ResponseApi } from '@/pages/lib/types';
-import { Product } from '@prisma/client';
+import { Prices, Product } from '@prisma/client';
 
 export const fetchProducts = async ({
   categoryId,
@@ -31,4 +31,15 @@ export const fetchProducts = async ({
   }
 
   return Array.isArray(data) ? data : [data];
+};
+
+export const fetchPrices = async (searchKeyword: string): Promise<Prices[]> => {
+  const url = `${BASE_URL}/api/prices?searchKeyword=${searchKeyword}`;
+  const pricesResponse: ResponseApi<Prices[]> = await (await fetch(url)).json();
+
+  if (!pricesResponse.success || pricesResponse.data == null) {
+    throw new Error(pricesResponse.message);
+  }
+
+  return pricesResponse.data;
 };
