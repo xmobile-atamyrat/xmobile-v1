@@ -48,6 +48,74 @@ interface CustomAppBarProps {
   handleBackButton?: () => void;
 }
 
+export const SearchBar = ({
+  handleSearch,
+  searchKeyword,
+  searchPlaceholder,
+  setSearchKeyword,
+  mt,
+  width,
+}: {
+  searchPlaceholder: string;
+  searchKeyword: string;
+  setSearchKeyword: Dispatch<SetStateAction<string>>;
+  handleSearch: (keyword: string) => Promise<void>;
+  mt?: string;
+  width?: string;
+}) => (
+  <Box
+    className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
+  >
+    <Paper
+      component="form"
+      sx={{
+        p: '2px 4px',
+        display: 'flex',
+        alignItems: 'center',
+        mt,
+        width,
+      }}
+      className={`rounded-2xl`}
+      style={{
+        backgroundColor: LOGO_COLOR_LIGHT,
+      }}
+    >
+      <IconButton type="button" sx={{ p: '10px' }}>
+        <SearchIcon sx={{ color: 'white' }} />
+      </IconButton>
+      <InputBase
+        sx={{
+          ml: 1,
+          flex: 1,
+          color: 'white', // Set text color to white
+          '& .MuiInputBase-input': {
+            color: 'white', // Ensure the input text is white
+          },
+        }}
+        placeholder={`${searchPlaceholder}...`}
+        onChange={(e) => {
+          const keyword = e.target.value;
+          setSearchKeyword(keyword);
+          handleSearch(keyword);
+        }}
+        value={searchKeyword}
+      />
+      {searchKeyword !== '' && (
+        <IconButton
+          type="button"
+          sx={{ p: '10px' }}
+          onClick={() => {
+            setSearchKeyword('');
+            handleSearch('');
+          }}
+        >
+          <CloseIcon sx={{ color: 'white' }} />
+        </IconButton>
+      )}
+    </Paper>
+  </Box>
+);
+
 export default function CustomAppBar({
   setOpenDrawer,
   openDrawer,
@@ -91,60 +159,6 @@ export default function CustomAppBar({
       }
     }
   };
-
-  const searchBar = (
-    <Box
-      className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
-    >
-      <Paper
-        component="form"
-        sx={{
-          p: '2px 4px',
-          display: 'flex',
-          alignItems: 'center',
-          mt: isMdUp ? undefined : `${appBarHeight}px`,
-          width: '95%',
-        }}
-        className={`rounded-2xl`}
-        style={{
-          backgroundColor: LOGO_COLOR_LIGHT,
-        }}
-      >
-        <IconButton type="button" sx={{ p: '10px' }}>
-          <SearchIcon sx={{ color: 'white' }} />
-        </IconButton>
-        <InputBase
-          sx={{
-            ml: 1,
-            flex: 1,
-            color: 'white', // Set text color to white
-            '& .MuiInputBase-input': {
-              color: 'white', // Ensure the input text is white
-            },
-          }}
-          placeholder={`${t('search')}...`}
-          onChange={(e) => {
-            const keyword = e.target.value;
-            setSearchKeyword(keyword);
-            handleSearch(keyword);
-          }}
-          value={searchKeyword}
-        />
-        {searchKeyword !== '' && (
-          <IconButton
-            type="button"
-            sx={{ p: '10px' }}
-            onClick={() => {
-              setSearchKeyword('');
-              handleSearch('');
-            }}
-          >
-            <CloseIcon sx={{ color: 'white' }} />
-          </IconButton>
-        )}
-      </Paper>
-    </Box>
-  );
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -212,7 +226,14 @@ export default function CustomAppBar({
                   width: 400,
                 }}
               >
-                {searchBar}
+                {SearchBar({
+                  handleSearch,
+                  mt: isMdUp ? undefined : `${appBarHeight}px`,
+                  searchKeyword,
+                  searchPlaceholder: t('search'),
+                  setSearchKeyword,
+                  width: '95%',
+                })}
               </Box>
             )}
             <Select
@@ -319,7 +340,16 @@ export default function CustomAppBar({
           </Box>
         </Toolbar>
       </AppBar>
-      {showSearch && !isMdUp && searchBar}
+      {showSearch &&
+        !isMdUp &&
+        SearchBar({
+          handleSearch,
+          mt: isMdUp ? undefined : `${appBarHeight}px`,
+          searchKeyword,
+          searchPlaceholder: t('search'),
+          setSearchKeyword,
+          width: '95%',
+        })}
       <Menu
         anchorEl={anchorEl}
         anchorOrigin={{

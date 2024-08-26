@@ -34,7 +34,9 @@ import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
+import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import { fetchPrices } from '@/pages/lib/apis';
 import AddPrice from '@/pages/product/components/AddPrice';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -47,7 +49,9 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   let dollarRate: number = 0;
 
   try {
-    const pricesResponse = await (await fetch(`${BASE_URL}/api/prices`)).json();
+    const pricesResponse: ResponseApi<Prices[]> = await (
+      await fetch(`${BASE_URL}/api/prices`)
+    ).json();
 
     if (pricesResponse.success && pricesResponse.data != null) {
       prices = pricesResponse.data;
@@ -102,6 +106,7 @@ export default function UpdatePrices({
   const [dollarRate, setDollarRate] = useState(initialDollarRate);
   const [snackbarOpen, setSnackbarOpen] = useState(errorMessage != null);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
@@ -192,6 +197,20 @@ export default function UpdatePrices({
     setTableData(processPrices(prices));
   }, [prices]);
 
+  const handleSearch = async (keyword: string) => {
+    try {
+      const filteredPrices = await fetchPrices(keyword);
+      setTableData(processPrices(filteredPrices));
+    } catch (error) {
+      console.error(error);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'fetchPricesError',
+        severity: 'error',
+      });
+    }
+  };
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'ADMIN' && (
@@ -205,7 +224,7 @@ export default function UpdatePrices({
           className="flex flex-col gap-8 w-full h-full"
         >
           <Box className={`flex flex-col w-full justify-center gap-4 pl-2`}>
-            {/* left side buttons */}
+            {/* dollar rate */}
             <Box className={`w-full flex flex-row justify-start items-center`}>
               <Box className="flex flex-row gap-2 items-center justify-center">
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
@@ -262,66 +281,78 @@ export default function UpdatePrices({
               </Box>
             </Box>
 
-            {/* right side buttons */}
-            <Box className={`flex flex-row gap-2 w-full justify-end`}>
-              <Button
-                variant="contained"
-                sx={{
-                  textTransform: 'none',
-                  fontSize: isMdUp ? 18 : 16,
-                  height: isMdUp ? 48 : 36,
-                }}
-                onClick={() => setShowCreatePriceDialog(true)}
-              >
-                <Typography>{t('addPrice')}</Typography>
-              </Button>
-              {Object.keys(updatedPrices).length > 0 && (
+            {/* search, add price, save */}
+            <Box className={`flex flex-col gap-2 w-full max-w-[600px]`}>
+              <Box className="w-full">
+                {SearchBar({
+                  handleSearch,
+                  setSearchKeyword,
+                  searchPlaceholder: t('search'),
+                  searchKeyword,
+                  width: '100%',
+                })}
+              </Box>
+              <Box className="flex flex-row gap-2 w-full">
                 <Button
                   variant="contained"
                   sx={{
                     textTransform: 'none',
                     fontSize: isMdUp ? 18 : 16,
-                    height: isMdUp ? 48 : 36,
+                    height: isMdUp ? 52 : 42,
+                    width: 120,
                   }}
-                  onClick={async () => {
-                    try {
-                      const data = await (
-                        await fetch(`${BASE_URL}/api/prices`, {
-                          method: 'PUT',
-                          body: JSON.stringify({
-                            pricePairs: Object.keys(updatedPrices).map(
-                              (key) => updatedPrices[parseInt(key, 10)],
-                            ),
-                          }),
-                        })
-                      ).json();
+                  onClick={() => setShowCreatePriceDialog(true)}
+                >
+                  <Typography>{t('addPrice')}</Typography>
+                </Button>
+                {Object.keys(updatedPrices).length > 0 && (
+                  <Button
+                    variant="contained"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: isMdUp ? 18 : 16,
+                      height: isMdUp ? 52 : 42,
+                    }}
+                    onClick={async () => {
+                      try {
+                        const data = await (
+                          await fetch(`${BASE_URL}/api/prices`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                              pricePairs: Object.keys(updatedPrices).map(
+                                (key) => updatedPrices[parseInt(key, 10)],
+                              ),
+                            }),
+                          })
+                        ).json();
 
-                      if (data.success) {
-                        setSnackbarOpen(true);
-                        setSnackbarMessage({
-                          message: 'pricesUpdated',
-                          severity: 'success',
-                        });
-                      } else {
+                        if (data.success) {
+                          setSnackbarOpen(true);
+                          setSnackbarMessage({
+                            message: 'pricesUpdated',
+                            severity: 'success',
+                          });
+                        } else {
+                          setSnackbarOpen(true);
+                          setSnackbarMessage({
+                            message: 'updatePricesError',
+                            severity: 'error',
+                          });
+                        }
+                      } catch (error) {
+                        console.error(error);
                         setSnackbarOpen(true);
                         setSnackbarMessage({
                           message: 'updatePricesError',
                           severity: 'error',
                         });
                       }
-                    } catch (error) {
-                      console.error(error);
-                      setSnackbarOpen(true);
-                      setSnackbarMessage({
-                        message: 'updatePricesError',
-                        severity: 'error',
-                      });
-                    }
-                  }}
-                >
-                  <Typography>{t('save')}</Typography>
-                </Button>
-              )}
+                    }}
+                  >
+                    <Typography>{t('save')}</Typography>
+                  </Button>
+                )}
+              </Box>
             </Box>
           </Box>
           {tableData.length > 0 && (
