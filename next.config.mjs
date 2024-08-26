@@ -7,9 +7,6 @@ const nextConfig = {
     defaultLocale: 'ru',
     localeDetection: false,
   },
-  // images: {
-  //   domains: ['https://presumably-patient-yak.ngrok-free.app'],
-  // },
 };
 
 export default nextConfig;

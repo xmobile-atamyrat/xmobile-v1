@@ -27,7 +27,9 @@
     "@typescript-eslint/parser": "^7.8.0",
     "bcryptjs": "^2.4.3",
     "classnames": "^2.5.1",
+    "cookie": "^0.6.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "geoip-lite": "^1.4.10",
     "multiparty": "^4.2.3",
     "next": "14.2.1",
     "next-connect": "^1.0.0-next.4",
@@ -43,6 +45,8 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cookie": "^0.6.0",
+    "@types/geoip-lite": "^1.4.4",
     "@types/multiparty": "^0.0.36",
     "@types/node": "^20",
     "@types/papaparse": "^5.3.14",
