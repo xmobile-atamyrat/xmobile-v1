@@ -107,7 +107,7 @@ export default function ProductCard({
                   image={imgUrl}
                   alt={product?.name}
                   sx={{
-                    height: { xs: 120 },
+                    height: { xs: 100 },
                     width: 'auto',
                     p: 0,
                   }}
@@ -117,7 +117,7 @@ export default function ProductCard({
             <Box>
               <Typography
                 gutterBottom
-                sx={{ fontSize: { xs: 16, sm: 20 }, mt: 1 }}
+                sx={{ fontSize: { xs: 14, sm: 18 }, mt: 1 }}
                 component="div"
               >
                 {parseName(product.name, router.locale ?? 'tk').substring(
@@ -137,7 +137,7 @@ export default function ProductCard({
                     variant="body2"
                     color="text.secondary"
                   >
-                    {desc}
+                    {desc.replace('[', '').replace(']', ':')}
                   </Typography>
                 ))}
             </Box>
