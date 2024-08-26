@@ -2,7 +2,6 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   HIGHEST_LEVEL_CATEGORY_ID,
-  localeOptions,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
 } from '@/pages/lib/constants';
@@ -14,6 +13,7 @@ import {
 } from '@/pages/lib/types';
 import { createTheme, styled } from '@mui/material';
 import { Product } from '@prisma/client';
+import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
 
 export const theme = createTheme({
@@ -82,19 +82,6 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
     img.src = URL.createObjectURL(image);
   });
 }
-
-export const changeLocale = (newLocale: string, pathname: string) => {
-  const pathSegments = pathname.split('/');
-  if (localeOptions.includes(pathSegments[1])) {
-    pathSegments[1] = newLocale;
-  } else {
-    pathSegments.splice(1, 0, newLocale);
-  }
-  const newPathname = pathSegments.join('/');
-  const newUrl = `${newPathname}`;
-
-  return newUrl;
-};
 
 export const parseName = (name: string, locale: string): string => {
   try {
@@ -315,3 +302,20 @@ export async function addEditProduct({
 export function isNumeric(value: string): boolean {
   return !Number.isNaN(+value);
 }
+
+export const getCookie = (name: string): string | undefined => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return undefined;
+  }
+  const cookies = cookie.parse(document.cookie);
+  return cookies[name];
+};
+
+export const setCookie = (
+  name: string,
+  value: string,
+  options?: CookieSerializeOptions,
+) => {
+  const serializedCookie = cookie.serialize(name, value, options);
+  document.cookie = serializedCookie;
+};
