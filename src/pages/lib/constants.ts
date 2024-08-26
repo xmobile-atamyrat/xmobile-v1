@@ -1,5 +1,7 @@
 // eslint-disable-next-line import/prefer-default-export
 
+export const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
+
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const appBarHeight = 64;
@@ -50,3 +52,26 @@ export const defaultProductDescCh =
   '[Çykan wagty]\n[Ekran]\n[Prosessor]\n[Kamera]\n[Batareýka]\n[OS]';
 export const defaultProductDescRu =
   '[Дата выхода]\n[Дисплей]\n[Процессор]\n[Камера]\n[Батарея]\n[OS]';
+
+export const POST_SOVIET_COUNTRIES = [
+  'AM',
+  'AZ',
+  'BY',
+  'EE',
+  'GE',
+  'KZ',
+  'KG',
+  'LV',
+  'LT',
+  'MD',
+  'RU',
+  'TJ',
+  'TM',
+  'UA',
+  'UZ',
+];
+
+export const DUMMY_KR_IP = '59.6.230.229';
+export const DUMMY_TM_IP = '95.85.96.1';
+export const DUMMY_DUBAI_IP = '94.200.200.200';
+export const DUMMY_TR_IP = '88.240.128.0';

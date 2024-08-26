@@ -4,12 +4,13 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
+  LOCALE_COOKIE_NAME,
   LOGO_COLOR,
   LOGO_COLOR_LIGHT,
   MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
-import { changeLocale } from '@/pages/lib/utils';
+import { getCookie, setCookie } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -37,7 +38,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Flag from 'react-flagkit';
 
 interface CustomAppBarProps {
@@ -63,6 +64,11 @@ export default function CustomAppBar({
   const [searchKeyword, setSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const [selectedLocale, setSelectedLocale] = useState(router.locale);
+
+  useEffect(() => {
+    setSelectedLocale(getCookie(LOCALE_COOKIE_NAME));
+  }, []);
 
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {
@@ -210,7 +216,7 @@ export default function CustomAppBar({
               </Box>
             )}
             <Select
-              defaultValue={router.locale}
+              value={selectedLocale}
               color="info"
               size="small"
               sx={{
@@ -230,11 +236,12 @@ export default function CustomAppBar({
                 },
               }}
               onChange={(event) => {
-                const newPath = changeLocale(
-                  event.target.value,
-                  window.location.pathname,
-                );
-                window.location.pathname = newPath;
+                const newLocale = event.target.value;
+                setSelectedLocale(newLocale);
+                setCookie('NEXT_LOCALE', newLocale);
+                router.push(router.pathname, router.asPath, {
+                  locale: newLocale,
+                });
               }}
             >
               <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
