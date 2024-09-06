@@ -14,7 +14,14 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { IconButton, List, Paper, Tooltip } from '@mui/material';
+import {
+  IconButton,
+  List,
+  Paper,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import * as React from 'react';
@@ -76,6 +83,8 @@ export default function CustomDrawer({
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
   const { user } = useUserContext();
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
     <Drawer
@@ -119,7 +128,10 @@ export default function CustomDrawer({
                 setEditCategoriesModal({ open: true, dialogType: 'add' });
               }}
             >
-              <AddCircleIcon fontSize="small" color="primary" />
+              <AddCircleIcon
+                fontSize={isMdUp ? 'large' : 'small'}
+                color="primary"
+              />
             </IconButton>
           </Tooltip>
         </Paper>
