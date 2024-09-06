@@ -2,13 +2,15 @@ TODO:
 
 TOP PRIORITY:
 
-- backup db to my local laptop
-- implement pagination
+- implement analytics page
 - make drawer toggle to selected category id
 - implement cart
 - implement footer
-- implement analytics page
 - load higher quality images from drive
+- implement caching
+  - product prices
+  - some images (maybe just one per product?)
+  - alternatively make fetching products much faster (ssr price calculation?)
 - look into webview to make android and ios apps
 - implement liking products feature -> order by likes?
 - user <-> admin discussion feature
