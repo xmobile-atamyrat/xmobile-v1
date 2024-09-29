@@ -214,6 +214,8 @@ export default function CustomAppBar({
                 height: { xs: 100, sm: 120 },
               }}
               className="flex items-center justify-center"
+              onClick={() => router.push('/')}
+              component="button"
             >
               <CardMedia component="img" src="/logo-recolored-cropped.jpeg" />
             </Box>
