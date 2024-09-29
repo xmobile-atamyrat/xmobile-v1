@@ -5,11 +5,7 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  appBarHeight,
-  POLL_PRODUCT_INTERVAL,
-  PRODUCT_IMAGE_WIDTH_RESP,
-} from '@/pages/lib/constants';
+import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -120,25 +116,10 @@ export default function Product() {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (initialProduct == null) return () => undefined;
+    if (initialProduct == null) return;
     (async () => {
       setProduct(await computeProductPriceTags(initialProduct));
     })();
-
-    const fetchProduct = async () => {
-      try {
-        const prod = await fetchProducts({ productId: initialProduct.id });
-        setProduct(await computeProductPriceTags(prod[0]));
-      } catch (error) {
-        console.error('Error fetching product', error);
-      }
-    };
-
-    const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
-
-    return () => clearInterval(intervalId);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProduct]);
 
   return (
