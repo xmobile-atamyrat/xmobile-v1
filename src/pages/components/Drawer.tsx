@@ -53,7 +53,7 @@ function ConstructDrawerList(
           imgUrl={imgUrl}
           key={name}
           pl={depth}
-          initialOpenState={id === selectedCategoryId}
+          initialOpenState={true} // {id === selectedCategoryId}
           collapsable={
             successorCategories != null && successorCategories.length > 0
           }

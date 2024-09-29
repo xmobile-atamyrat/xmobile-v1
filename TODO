@@ -3,9 +3,9 @@ TODO:
 TOP PRIORITY:
 
 - implement analytics page
-- make drawer toggle to selected category id
 - implement cart
 - implement footer
+- implement pagination
 - load higher quality images from drive
 - implement caching
   - product prices
@@ -22,6 +22,7 @@ MEDIUM PRIORITY:
 - implement re-order product images
 - In edit category and product, it's not possible to delete image (only replacing is allowed)
 - Implement router stack to not allow landing directly on product before visiting main page
+-
 
 SMALL PRIORITY:
 
