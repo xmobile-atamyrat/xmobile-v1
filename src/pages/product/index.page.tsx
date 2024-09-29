@@ -5,11 +5,7 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  appBarHeight,
-  POLL_PRODUCT_INTERVAL,
-  PRODUCT_IMAGE_WIDTH_RESP,
-} from '@/pages/lib/constants';
+import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -18,7 +14,6 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPriceTags } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -53,9 +48,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Product() {
-  const { selectedProduct: initialProduct, setSelectedProduct } =
-    useProductContext();
-  const [product, setProduct] = useState(initialProduct);
+  const { selectedProduct: product, setSelectedProduct } = useProductContext();
   const router = useRouter();
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
@@ -119,27 +112,27 @@ export default function Product() {
     setDescription(descObj);
   }, [product?.description, router.locale]);
 
-  useEffect(() => {
-    if (initialProduct == null) return () => undefined;
-    (async () => {
-      setProduct(await computeProductPriceTags(initialProduct));
-    })();
+  // useEffect(() => {
+  //   if (initialProduct == null) return () => undefined;
+  //   (async () => {
+  //     setProduct(await computeProductPriceTags(initialProduct));
+  //   })();
 
-    const fetchProduct = async () => {
-      try {
-        const prod = await fetchProducts({ productId: initialProduct.id });
-        setProduct(await computeProductPriceTags(prod[0]));
-      } catch (error) {
-        console.error('Error fetching product', error);
-      }
-    };
+  //   const fetchProduct = async () => {
+  //     try {
+  //       const prod = await fetchProducts({ productId: initialProduct.id });
+  //       setProduct(await computeProductPriceTags(prod[0]));
+  //     } catch (error) {
+  //       console.error('Error fetching product', error);
+  //     }
+  //   };
 
-    const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
+  //   const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
 
-    return () => clearInterval(intervalId);
+  //   return () => clearInterval(intervalId);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProduct]);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [initialProduct]);
 
   return (
     product && (
@@ -168,16 +161,16 @@ export default function Product() {
                 <Box>
                   <IconButton
                     onClick={() => {
-                      if (initialProduct == null) return;
+                      if (product == null) return;
                       setAddEditProductDialog({
                         open: true,
-                        id: initialProduct.id,
-                        description: initialProduct.description,
+                        id: product.id,
+                        description: product.description,
                         dialogType: 'edit',
-                        imageUrls: initialProduct.imgUrls,
-                        name: initialProduct.name,
-                        price: initialProduct.price,
-                        tags: initialProduct.tags,
+                        imageUrls: product.imgUrls,
+                        name: product.name,
+                        price: product.price,
+                        tags: product.tags,
                       });
                     }}
                   >
