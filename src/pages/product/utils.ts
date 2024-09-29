@@ -92,11 +92,7 @@ export const fetchDollarRate = async (): Promise<number> => {
 
 export const computeProductPrice = async (
   product: Product,
-  rate?: number,
 ): Promise<Product> => {
-  if (rate == null) {
-    rate = await fetchDollarRate();
-  }
   const priceMatch = product.price?.match(squareBracketRegex);
   if (priceMatch == null) return product;
   const res: ResponseApi<Prices> = await (
@@ -113,8 +109,7 @@ export const computeProductPrice = async (
 export const computeProductPriceTags = async (
   product: Product,
 ): Promise<Product> => {
-  const rate = await fetchDollarRate();
-  const priceComputedTags = await computeProductPrice(product, rate);
+  const priceComputedTags = await computeProductPrice(product);
   const priceTagsComputedProduct = {
     ...priceComputedTags,
     tags: await Promise.all(

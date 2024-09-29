@@ -1,6 +1,4 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { fetchProducts } from '@/pages/lib/apis';
-import { POLL_PRODUCT_INTERVAL } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
@@ -61,25 +59,11 @@ export default function ProductCard({
   }, [product?.imgUrls]);
 
   useEffect(() => {
-    if (initialProduct == null) return () => undefined;
+    if (initialProduct == null) return;
 
     (async () => {
       setProduct(await computeProductPrice(initialProduct));
     })();
-
-    const fetchProduct = async () => {
-      try {
-        const prod = await fetchProducts({ productId: initialProduct.id });
-        setProduct(await computeProductPrice(prod[0]));
-      } catch (error) {
-        console.error('Error fetching product', error);
-      }
-    };
-
-    const intervalId = setInterval(fetchProduct, POLL_PRODUCT_INTERVAL);
-
-    return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProduct]);
 
   return (
