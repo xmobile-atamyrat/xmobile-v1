@@ -1,7 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { squareBracketRegex } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
-import { Prices, Product } from '@prisma/client';
+import { Prices } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -90,52 +88,52 @@ export const fetchDollarRate = async (): Promise<number> => {
   return data.rate;
 };
 
-export const computeProductPrice = async (
-  product: Product,
-  rate?: number,
-): Promise<Product> => {
-  if (rate == null) {
-    rate = await fetchDollarRate();
-  }
-  const priceMatch = product.price?.match(squareBracketRegex);
-  if (priceMatch == null) return product;
-  const res: ResponseApi<Prices> = await (
-    await fetch(`${BASE_URL}/api/prices?id=${priceMatch[1]}`)
-  ).json();
-  if (res.success && res.data != null) {
-    const processedProduct = { ...product };
-    processedProduct.price = res.data.priceInTmt;
-    return processedProduct;
-  }
-  return product;
-};
+// export const computeProductPrice = async (
+//   product: Product,
+//   rate?: number,
+// ): Promise<Product> => {
+//   if (rate == null) {
+//     rate = await fetchDollarRate();
+//   }
+//   const priceMatch = product.price?.match(squareBracketRegex);
+//   if (priceMatch == null) return product;
+//   const res: ResponseApi<Prices> = await (
+//     await fetch(`${BASE_URL}/api/prices?id=${priceMatch[1]}`)
+//   ).json();
+//   if (res.success && res.data != null) {
+//     const processedProduct = { ...product };
+//     processedProduct.price = res.data.priceInTmt;
+//     return processedProduct;
+//   }
+//   return product;
+// };
 
-export const computeProductPriceTags = async (
-  product: Product,
-): Promise<Product> => {
-  const rate = await fetchDollarRate();
-  const priceComputedTags = await computeProductPrice(product, rate);
-  const priceTagsComputedProduct = {
-    ...priceComputedTags,
-    tags: await Promise.all(
-      priceComputedTags.tags.map(async (tag) => {
-        const tagMatch = tag.match(squareBracketRegex);
-        if (tagMatch != null) {
-          const idTag = tagMatch[1];
-          const res: ResponseApi<Prices> = await (
-            await fetch(`${BASE_URL}/api/prices?id=${idTag}`)
-          ).json();
-          if (res.success && res.data != null) {
-            return tag.replace(`[${idTag}]`, res.data.priceInTmt);
-          }
-        }
-        return tag;
-      }),
-    ),
-  };
+// export const computeProductPriceTags = async (
+//   product: Product,
+// ): Promise<Product> => {
+//   const rate = await fetchDollarRate();
+//   const priceComputedTags = await computeProductPrice(product, rate);
+//   const priceTagsComputedProduct = {
+//     ...priceComputedTags,
+//     tags: await Promise.all(
+//       priceComputedTags.tags.map(async (tag) => {
+//         const tagMatch = tag.match(squareBracketRegex);
+//         if (tagMatch != null) {
+//           const idTag = tagMatch[1];
+//           const res: ResponseApi<Prices> = await (
+//             await fetch(`${BASE_URL}/api/prices?id=${idTag}`)
+//           ).json();
+//           if (res.success && res.data != null) {
+//             return tag.replace(`[${idTag}]`, res.data.priceInTmt);
+//           }
+//         }
+//         return tag;
+//       }),
+//     ),
+//   };
 
-  return priceTagsComputedProduct;
-};
+//   return priceTagsComputedProduct;
+// };
 
 export const debounce = (
   func: (...args: any[]) => undefined,

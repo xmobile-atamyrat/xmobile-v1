@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
 import addCors from '@/pages/api/utils/addCors';
+import { computeProductPrice } from '@/pages/api/utils/computeProductPrice';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
@@ -58,11 +59,12 @@ async function createProduct(
 }
 
 async function getProduct(productId: string): Promise<Product | null> {
-  const product = await dbClient.product.findUnique({
+  let product = await dbClient.product.findUnique({
     where: {
       id: productId,
     },
   });
+  if (product != null) product = await computeProductPrice(product);
   return product;
 }
 
@@ -97,7 +99,16 @@ async function handleGetProduct(query: {
         ],
       },
     });
-    return { resp: { success: true, data: products }, status: 200 };
+    const priceComputedProducts = await Promise.all(
+      products.map(async (product) => {
+        const data = await computeProductPrice(product);
+        return data;
+      }),
+    );
+    return {
+      resp: { success: true, data: priceComputedProducts },
+      status: 200,
+    };
   }
   if (productId != null) {
     const product = await getProduct(productId as string);
@@ -131,8 +142,21 @@ async function handleGetProduct(query: {
     }
 
     const { successorCategories, products } = category;
-    if (successorCategories?.length === 0)
+    if (successorCategories?.length === 0) {
+      if (products != null) {
+        const priceComputedProducts = await Promise.all(
+          products.map(async (product) => {
+            const data = await computeProductPrice(product);
+            return data;
+          }),
+        );
+        return {
+          resp: { success: true, data: priceComputedProducts },
+          status: 200,
+        };
+      }
       return { resp: { success: true, data: products }, status: 200 };
+    }
 
     const queue = successorCategories!;
     const allProducts = products!;
@@ -144,7 +168,16 @@ async function handleGetProduct(query: {
       queue.push(...newSucCat!);
     }
 
-    return { resp: { success: true, data: allProducts }, status: 200 };
+    const priceComputedProducts = await Promise.all(
+      allProducts.map(async (product) => {
+        const data = await computeProductPrice(product);
+        return data;
+      }),
+    );
+    return {
+      resp: { success: true, data: priceComputedProducts },
+      status: 200,
+    };
   }
 
   console.error(
