@@ -16,7 +16,6 @@ export default async function handler(
   if (method === 'POST') {
     try {
       const body: Partial<Prices> = JSON.parse(req.body);
-      console.info(body);
       if (body == null) {
         return res.status(400).json({
           success: false,
