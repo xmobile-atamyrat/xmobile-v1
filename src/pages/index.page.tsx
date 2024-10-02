@@ -6,13 +6,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
-import {
-  appBarHeight,
-  DUMMY_DUBAI_IP,
-  HIGHEST_LEVEL_CATEGORY_ID,
-  LOCALE_COOKIE_NAME,
-  POST_SOVIET_COUNTRIES,
-} from '@/pages/lib/constants';
+import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
   ExtendedCategory,
@@ -21,11 +15,8 @@ import {
 } from '@/pages/lib/types';
 import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import { User } from '@prisma/client';
-import cookie, { serialize } from 'cookie';
-import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
@@ -33,43 +24,43 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   let categories: ExtendedCategory[] = [];
   let messages = {};
   let errorMessage: string | null = null;
-  let ip;
-  let locale = 'en';
+  // let ip;
+  const locale = 'en';
 
   try {
-    if (
-      cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] == null
-    ) {
-      if (process.env.NODE_ENV === 'production') {
-        ip =
-          context.req.headers['x-real-ip'] ||
-          context.req.headers['x-forwarded-for'] ||
-          context.req.socket.remoteAddress;
+    // if (
+    //   cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] == null
+    // ) {
+    // if (process.env.NODE_ENV === 'production') {
+    //   ip =
+    //     context.req.headers['x-real-ip'] ||
+    //     context.req.headers['x-forwarded-for'] ||
+    //     context.req.socket.remoteAddress;
 
-        if (Array.isArray(ip)) {
-          ip = ip[0];
-        }
-      } else {
-        ip = DUMMY_DUBAI_IP;
-      }
-      const geo = geoip.lookup(ip || '');
-      if (geo) {
-        const { country } = geo;
-        if (country === 'TR') {
-          locale = 'tr';
-        } else if (POST_SOVIET_COUNTRIES.includes(country)) {
-          locale = 'ru';
-        }
-      }
-      context.res.setHeader(
-        'Set-Cookie',
-        serialize(LOCALE_COOKIE_NAME, locale || '', {
-          // session cookie, expires when the browser is closed
-          secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-          path: '/',
-        }),
-      );
-    }
+    //   if (Array.isArray(ip)) {
+    //     ip = ip[0];
+    //   }
+    // } else {
+    //   ip = DUMMY_DUBAI_IP;
+    // }
+    // const geo = geoip.lookup(ip || '');
+    // if (geo) {
+    //   const { country } = geo;
+    //   if (country === 'TR') {
+    //     locale = 'tr';
+    //   } else if (POST_SOVIET_COUNTRIES.includes(country)) {
+    //     locale = 'ru';
+    //   }
+    // }
+    //   context.res.setHeader(
+    //     'Set-Cookie',
+    //     serialize(LOCALE_COOKIE_NAME, locale || '', {
+    //       // session cookie, expires when the browser is closed
+    //       secure: process.env.NODE_ENV === 'production', // Use secure flag in production
+    //       path: '/',
+    //     }),
+    //   );
+    // }
 
     const categoriesResponse: ResponseApi<ExtendedCategory[]> = await (
       await fetch(`${BASE_URL}/api/category`)
@@ -103,7 +94,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 }>;
 
 export default function Home({
-  locale,
   categories,
   errorMessage: categoryErrorMessage,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
@@ -120,12 +110,12 @@ export default function Home({
   const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const router = useRouter();
+  // const router = useRouter();
 
-  useEffect(() => {
-    router.push(router.pathname, router.asPath, { locale });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // useEffect(() => {
+  //   router.push(router.pathname, router.asPath, { locale });
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   useEffect(() => {
     if (
