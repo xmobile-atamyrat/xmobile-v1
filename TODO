@@ -2,6 +2,7 @@ TODO:
 
 TOP PRIORITY:
 
+- implement new/old tar files in the server for easy rollback
 - implement analytics page
 - implement cart
 - implement footer
