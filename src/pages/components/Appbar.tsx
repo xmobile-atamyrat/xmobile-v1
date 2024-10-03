@@ -11,6 +11,7 @@ import {
 } from '@/pages/lib/constants';
 import { setCookie } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import CloseIcon from '@mui/icons-material/Close';
@@ -191,6 +192,7 @@ export default function CustomAppBar({
                 />
               </IconButton>
             )}
+
             <IconButton
               size="large"
               edge="start"
@@ -207,6 +209,7 @@ export default function CustomAppBar({
                 }}
               />
             </IconButton>
+
             <Box
               sx={{
                 width: { xs: 100, sm: 120 },
@@ -378,13 +381,22 @@ export default function CustomAppBar({
               <Typography>{t('signout')}</Typography>
             </MenuItem>
             {user?.grade === 'ADMIN' && (
-              <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
-                onClick={() => router.push('/product/update-prices')}
-              >
-                <DriveFolderUploadIcon />
-                <Typography>{t('updatePrices')}</Typography>
-              </MenuItem>
+              <>
+                <MenuItem
+                  className="flex flex-row gap-2 items-center justify-start"
+                  onClick={() => router.push('/product/update-prices')}
+                >
+                  <DriveFolderUploadIcon />
+                  <Typography>{t('updatePrices')}</Typography>
+                </MenuItem>
+                <MenuItem
+                  className="flex flex-row gap-2 items-center justify-start"
+                  onClick={() => router.push('/analytics')}
+                >
+                  <AnalyticsOutlinedIcon />
+                  <Typography>{t('analytics')}</Typography>
+                </MenuItem>
+              </>
             )}
           </Box>
         ) : (
