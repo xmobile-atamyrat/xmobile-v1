@@ -72,6 +72,14 @@ model DollarRate {
   updatedAt       DateTime    @updatedAt
 }
 
+model Analytics {
+  id              String      @id @default(uuid())
+  ip              String
+  firstEnter      DateTime    @default(now())
+  lastEnter       DateTime    @updatedAt
+  enterCount      Int         @default(0)
+}
+
 enum UserRole {
   FREE
   ADMIN
