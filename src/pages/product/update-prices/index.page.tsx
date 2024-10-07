@@ -182,12 +182,6 @@ export default function UpdatePrices({
   );
 
   useEffect(() => {
-    if (user == null || user.grade !== 'ADMIN') {
-      router.push('/');
-    }
-  }, [router, user]);
-
-  useEffect(() => {
     if (errorMessage != null) {
       setSnackbarMessage({ message: errorMessage, severity: 'error' });
     }
