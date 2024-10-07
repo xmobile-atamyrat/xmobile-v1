@@ -72,7 +72,7 @@ export default function Product() {
 
   useEffect(() => {
     if (product == null) {
-      router.push('/');
+      // router.push('/');
       return;
     }
 
