@@ -51,8 +51,10 @@ export default function ProductCard({
           const imgFetcher = fetch(
             `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}`,
           );
-
-          setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
+          const resp = await imgFetcher;
+          if (resp.ok) {
+            setImgUrl(URL.createObjectURL(await resp.blob()));
+          }
         }
       }
     })();
