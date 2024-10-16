@@ -54,7 +54,10 @@ export default function CollapsableBase({
           const imgFetcher = fetch(
             `${BASE_URL}/api/localImage?imgUrl=${categoryImgUrl}`,
           );
-          setImgUrl(URL.createObjectURL(await (await imgFetcher).blob()));
+          const resp = await imgFetcher;
+          if (resp.ok) {
+            setImgUrl(URL.createObjectURL(await resp.blob()));
+          }
         }
       })();
     }
