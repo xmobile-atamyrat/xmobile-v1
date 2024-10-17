@@ -70,7 +70,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
 export default function Home() {
   const { selectedCategoryId } = useCategoryContext();
-  const { products, setProducts } = useProductContext();
+  const { products, setProducts, searchKeyword } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const { user } = useUserContext();
@@ -93,7 +93,7 @@ export default function Home() {
     if (selectedCategoryId == null) return;
     setPage(1);
     setHasMore(true);
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, searchKeyword]);
 
   useEffect(() => {
     if (
@@ -118,10 +118,13 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const newProducts = await fetchProducts({
-        categoryId: selectedCategoryId,
-        page: page + 1,
-      });
+      const fetchProductsParams: any = { page: page + 1 };
+      if (searchKeyword) {
+        fetchProductsParams.searchKeyword = searchKeyword;
+      } else {
+        fetchProductsParams.categoryId = selectedCategoryId;
+      }
+      const newProducts = await fetchProducts(fetchProductsParams);
       setPage((prev) => prev + 1);
       setProducts((prevProducts) => [...prevProducts, ...newProducts]);
 
@@ -134,7 +137,7 @@ export default function Home() {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, selectedCategoryId, page]);
+  }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
 
   useEffect(() => {
     const handleScroll = () => {
