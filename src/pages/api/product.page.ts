@@ -14,6 +14,7 @@ export const config = {
 };
 
 const filepath = 'src/pages/api/product.page.ts';
+const productsPerPage = 20;
 
 interface CreateProductReturnType {
   success: boolean;
@@ -70,8 +71,11 @@ async function handleGetProduct(query: {
   searchKeyword?: string;
   categoryId?: string;
   productId?: string;
+  page?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
-  const { searchKeyword, productId, categoryId } = query;
+  const { searchKeyword, productId, categoryId, page } = query;
+  const parsedPage = parseInt(page || '1', 10);
+  const skip = (parsedPage - 1) * productsPerPage;
   if (searchKeyword != null) {
     const products = await dbClient.product.findMany({
       where: {
@@ -82,12 +86,12 @@ async function handleGetProduct(query: {
               mode: 'insensitive',
             },
           },
-          {
-            description: {
-              contains: searchKeyword,
-              mode: 'insensitive',
-            },
-          },
+          // {
+          //   description: {
+          //     contains: searchKeyword,
+          //     mode: 'insensitive',
+          //   },
+          // },
           {
             price: {
               contains: searchKeyword,
@@ -96,6 +100,8 @@ async function handleGetProduct(query: {
           },
         ],
       },
+      skip,
+      take: productsPerPage,
     });
     return { resp: { success: true, data: products }, status: 200 };
   }
@@ -132,7 +138,13 @@ async function handleGetProduct(query: {
 
     const { successorCategories, products } = category;
     if (successorCategories?.length === 0)
-      return { resp: { success: true, data: products }, status: 200 };
+      return {
+        resp: {
+          success: true,
+          data: products?.slice(skip, skip + productsPerPage),
+        },
+        status: 200,
+      };
 
     const queue = successorCategories!;
     const allProducts = products!;
@@ -144,7 +156,13 @@ async function handleGetProduct(query: {
       queue.push(...newSucCat!);
     }
 
-    return { resp: { success: true, data: allProducts }, status: 200 };
+    return {
+      resp: {
+        success: true,
+        data: allProducts.slice(skip, skip + productsPerPage),
+      },
+      status: 200,
+    };
   }
 
   console.error(
