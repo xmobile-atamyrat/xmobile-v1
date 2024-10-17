@@ -86,12 +86,12 @@ async function handleGetProduct(query: {
               mode: 'insensitive',
             },
           },
-          {
-            description: {
-              contains: searchKeyword,
-              mode: 'insensitive',
-            },
-          },
+          // {
+          //   description: {
+          //     contains: searchKeyword,
+          //     mode: 'insensitive',
+          //   },
+          // },
           {
             price: {
               contains: searchKeyword,
