@@ -59,6 +59,8 @@ export interface ProductContextProps {
   setProducts: Dispatch<SetStateAction<Product[]>>;
   selectedProduct?: Product;
   setSelectedProduct: Dispatch<SetStateAction<Product | undefined>>;
+  searchKeyword?: string | undefined;
+  setSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
 }
 
 export interface CategoryName {

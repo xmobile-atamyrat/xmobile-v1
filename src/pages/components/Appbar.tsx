@@ -126,9 +126,9 @@ export default function CustomAppBar({
   const router = useRouter();
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
-  const { setProducts } = useProductContext();
+  const { setProducts, setSearchKeyword } = useProductContext();
   const { selectedCategoryId } = useCategoryContext();
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru'); // router.locale);
@@ -140,6 +140,7 @@ export default function CustomAppBar({
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {
       try {
+        setSearchKeyword(undefined);
         const prods = await fetchProducts({
           categoryId: selectedCategoryId,
         });
@@ -149,6 +150,7 @@ export default function CustomAppBar({
       }
     } else {
       try {
+        setSearchKeyword(keyword);
         const prods = await fetchProducts({
           searchKeyword: keyword,
         });
@@ -230,9 +232,9 @@ export default function CustomAppBar({
                 {SearchBar({
                   handleSearch,
                   mt: isMdUp ? undefined : `${appBarHeight}px`,
-                  searchKeyword,
+                  searchKeyword: localSearchKeyword,
                   searchPlaceholder: t('search'),
-                  setSearchKeyword,
+                  setSearchKeyword: setLocalSearchKeyword,
                   width: '95%',
                 })}
               </Box>
@@ -346,9 +348,9 @@ export default function CustomAppBar({
         SearchBar({
           handleSearch,
           mt: isMdUp ? undefined : `${appBarHeight}px`,
-          searchKeyword,
+          searchKeyword: localSearchKeyword,
           searchPlaceholder: t('search'),
-          setSearchKeyword,
+          setSearchKeyword: setLocalSearchKeyword,
           width: '95%',
         })}
       <Menu
