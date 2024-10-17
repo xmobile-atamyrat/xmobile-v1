@@ -1,4 +1,3 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -7,23 +6,16 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
-import {
-  AddEditProductProps,
-  ExtendedCategory,
-  ResponseApi,
-  SnackbarProps,
-} from '@/pages/lib/types';
+import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
-import { User } from '@prisma/client';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import CircularProgress from '@mui/material/CircularProgress';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
-  let categories: ExtendedCategory[] = [];
   let messages = {};
-  let errorMessage: string | null = null;
   // let ip;
   const locale = 'en';
 
@@ -62,54 +54,34 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     //   );
     // }
 
-    const categoriesResponse: ResponseApi<ExtendedCategory[]> = await (
-      await fetch(`${BASE_URL}/api/category`)
-    ).json();
-
-    if (categoriesResponse.success && categoriesResponse.data != null) {
-      categories = categoriesResponse.data;
-    } else {
-      console.error(categoriesResponse.message);
-      errorMessage = 'fetchCategoriesError';
-    }
-
     messages = (await import(`../i18n/${context.locale}.json`)).default;
   } catch (error) {
     console.error(error);
-    errorMessage = 'fetchCategoriesError';
   }
   return {
     props: {
       locale,
-      categories,
       messages,
-      errorMessage,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string;
-  user?: User;
-  categories?: ExtendedCategory[];
-  errorMessage: string | null;
 }>;
 
-export default function Home({
-  categories,
-  errorMessage: categoryErrorMessage,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { setCategories, selectedCategoryId, setSelectedCategoryId } =
-    useCategoryContext();
+export default function Home() {
+  const { selectedCategoryId } = useCategoryContext();
   const { products, setProducts } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const { user } = useUserContext();
-  const [snackbarOpen, setSnackbarOpen] = useState(
-    categoryErrorMessage != null,
-  );
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   // const router = useRouter();
 
   // useEffect(() => {
@@ -118,15 +90,10 @@ export default function Home({
   // }, []);
 
   useEffect(() => {
-    if (
-      categories == null ||
-      categories.length === 0 ||
-      selectedCategoryId != null
-    )
-      return;
-    setCategories(categories);
-    setSelectedCategoryId(categories[0].id);
-  }, [categories, setCategories, setSelectedCategoryId, selectedCategoryId]);
+    if (selectedCategoryId == null) return;
+    setPage(1);
+    setHasMore(true);
+  }, [selectedCategoryId]);
 
   useEffect(() => {
     if (
@@ -146,11 +113,46 @@ export default function Home({
     })();
   }, [selectedCategoryId, setProducts]);
 
-  useEffect(() => {
-    if (categoryErrorMessage != null) {
-      setSnackbarMessage({ message: categoryErrorMessage, severity: 'error' });
+  const loadMoreProducts = useCallback(async () => {
+    if (isLoading || !hasMore || !selectedCategoryId) return;
+    setIsLoading(true);
+
+    try {
+      const newProducts = await fetchProducts({
+        categoryId: selectedCategoryId,
+        page: page + 1,
+      });
+      setPage((prev) => prev + 1);
+      setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+
+      if (newProducts.length === 0) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [categoryErrorMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, hasMore, selectedCategoryId, page]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollableHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const scrolledFromTop = window.scrollY;
+
+      if (scrollableHeight - scrolledFromTop === 0) {
+        loadMoreProducts();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadMoreProducts]);
 
   return (
     <Layout showSearch>
@@ -172,48 +174,53 @@ export default function Home({
           />
         )}
         {products.length > 0 &&
-          products.map((product) => (
-            <ProductCard product={product} key={product.id} />
+          products.map((product, idx) => (
+            <ProductCard product={product} key={idx} />
           ))}
-        {addEditProductDialog.open && (
-          <AddEditProductDialog
-            args={addEditProductDialog}
-            handleClose={() =>
-              setAddEditProductDialog({
-                open: false,
-                id: undefined,
-                description: undefined,
-                dialogType: undefined,
-                imageUrls: [],
-                name: undefined,
-              })
-            }
-            snackbarErrorHandler={(message) => {
-              setSnackbarOpen(true);
-              setSnackbarMessage({ message, severity: 'error' });
-            }}
-          />
-        )}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') {
-              return;
-            }
-            setSnackbarOpen(false);
-          }}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarMessage?.severity}
-            variant="filled"
-            sx={{ width: '100%' }}
-          >
-            {snackbarMessage?.message && t(snackbarMessage.message)}
-          </Alert>
-        </Snackbar>
       </Box>
+      {isLoading && (
+        <Box className="w-full flex justify-center">
+          <CircularProgress />
+        </Box>
+      )}
+      {addEditProductDialog.open && (
+        <AddEditProductDialog
+          args={addEditProductDialog}
+          handleClose={() =>
+            setAddEditProductDialog({
+              open: false,
+              id: undefined,
+              description: undefined,
+              dialogType: undefined,
+              imageUrls: [],
+              name: undefined,
+            })
+          }
+          snackbarErrorHandler={(message) => {
+            setSnackbarOpen(true);
+            setSnackbarMessage({ message, severity: 'error' });
+          }}
+        />
+      )}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setSnackbarOpen(false);
+        }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarMessage?.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage?.message && t(snackbarMessage.message)}
+        </Alert>
+      </Snackbar>
     </Layout>
   );
 }
