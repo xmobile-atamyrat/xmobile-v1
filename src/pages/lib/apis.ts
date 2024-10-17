@@ -6,21 +6,23 @@ export const fetchProducts = async ({
   categoryId,
   searchKeyword,
   productId,
+  page,
 }: {
   categoryId?: string;
   searchKeyword?: string;
   productId?: string;
+  page?: number;
 }): Promise<Product[]> => {
   if (categoryId == null && searchKeyword == null && productId == null)
     return [];
 
-  let url = `${BASE_URL}/api/product`;
+  let url = `${BASE_URL}/api/product?page=${page || 1}`;
   if (categoryId) {
-    url += `?categoryId=${categoryId}`;
+    url += `&categoryId=${categoryId}`;
   } else if (searchKeyword) {
-    url += `?searchKeyword=${searchKeyword}`;
+    url += `&searchKeyword=${searchKeyword}`;
   } else if (productId) {
-    url += `?productId=${productId}`;
+    url += `&productId=${productId}`;
   }
 
   const { success, data, message }: ResponseApi<Product[]> = await (
