@@ -12,8 +12,11 @@ services:
       - POSTGRES_PASSWORD=password
 
   build_env:
-    image: build_env
     container_name: build_env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: build_env
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/postgres?schema=public
     depends_on:
