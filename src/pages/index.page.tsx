@@ -1,3 +1,4 @@
+import dbClient from '@/lib/dbClient';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -7,7 +8,6 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
-  DUMMY_DUBAI_IP,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
   POST_SOVIET_COUNTRIES,
@@ -25,47 +25,79 @@ import { useCallback, useEffect, useState } from 'react';
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
-  let ip;
   let locale = 'en';
+  let ip =
+    context.req.headers['x-real-ip'] ||
+    context.req.headers['x-forwarded-for'] ||
+    context.req.socket.remoteAddress;
+  if (Array.isArray(ip)) {
+    ip = ip[0];
+  }
 
-  try {
-    if (
-      cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] == null
-    ) {
-      if (process.env.NODE_ENV === 'production') {
-        ip =
-          context.req.headers['x-real-ip'] ||
-          context.req.headers['x-forwarded-for'] ||
-          context.req.socket.remoteAddress;
+  if (ip && typeof ip === 'string') {
+    try {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0); // Set to 00:00:00.000
 
-        if (Array.isArray(ip)) {
-          ip = ip[0];
-        }
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+      const visitedToday = await dbClient.userVisitRecord.findFirst({
+        where: {
+          ip,
+          createdAt: {
+            gte: startOfToday,
+            lte: endOfToday,
+          },
+        },
+      });
+      if (!visitedToday) {
+        await dbClient.userVisitRecord.create({
+          data: {
+            ip,
+          },
+        });
       } else {
-        ip = DUMMY_DUBAI_IP;
+        await dbClient.userVisitRecord.update({
+          where: {
+            id: visitedToday.id,
+          },
+          data: {
+            dailyVisitCount: visitedToday.dailyVisitCount + 1,
+          },
+        });
       }
-      const geo = geoip.lookup(ip || '');
-      if (geo) {
-        const { country } = geo;
-        if (country === 'TR') {
-          locale = 'tr';
-        } else if (POST_SOVIET_COUNTRIES.includes(country)) {
-          locale = 'ru';
-        }
-      }
-      context.res.setHeader(
-        'Set-Cookie',
-        serialize(LOCALE_COOKIE_NAME, locale, {
-          // session cookie, expires when the browser is closed
-          secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-          path: '/',
-        }),
-      );
+    } catch (error) {
+      console.error(error);
     }
 
-    messages = (await import(`../i18n/${context.locale}.json`)).default;
-  } catch (error) {
-    console.error(error);
+    try {
+      if (
+        cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ==
+        null
+      ) {
+        const geo = geoip.lookup(ip || '');
+        if (geo) {
+          const { country } = geo;
+          if (country === 'TR') {
+            locale = 'tr';
+          } else if (POST_SOVIET_COUNTRIES.includes(country)) {
+            locale = 'ru';
+          }
+        }
+        context.res.setHeader(
+          'Set-Cookie',
+          serialize(LOCALE_COOKIE_NAME, locale, {
+            // session cookie, expires when the browser is closed
+            secure: process.env.NODE_ENV === 'production', // Use secure flag in production
+            path: '/',
+          }),
+        );
+      }
+
+      messages = (await import(`../i18n/${context.locale}.json`)).default;
+    } catch (error) {
+      console.error(error);
+    }
   }
   return {
     props: {
