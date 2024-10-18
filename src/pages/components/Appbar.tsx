@@ -4,12 +4,13 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
+  LOCALE_COOKIE_NAME,
   LOGO_COLOR,
   LOGO_COLOR_LIGHT,
   MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
-import { setCookie } from '@/pages/lib/utils';
+import { getCookie, setCookie } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -37,7 +38,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Flag from 'react-flagkit';
 
 interface CustomAppBarProps {
@@ -131,11 +132,11 @@ export default function CustomAppBar({
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const [selectedLocale, setSelectedLocale] = useState('ru'); // router.locale);
+  const [selectedLocale, setSelectedLocale] = useState('ru');
 
-  // useEffect(() => {
-  //   setSelectedLocale(getCookie(LOCALE_COOKIE_NAME));
-  // }, []);
+  useEffect(() => {
+    setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
+  }, []);
 
   const handleSearch = async (keyword: string) => {
     if (keyword === '') {

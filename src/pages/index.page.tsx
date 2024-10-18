@@ -5,54 +5,63 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
-import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  DUMMY_DUBAI_IP,
+  HIGHEST_LEVEL_CATEGORY_ID,
+  LOCALE_COOKIE_NAME,
+  POST_SOVIET_COUNTRIES,
+} from '@/pages/lib/constants';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { GetServerSideProps } from 'next';
+import cookie, { serialize } from 'cookie';
+import geoip from 'geoip-lite';
+import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
-  // let ip;
-  const locale = 'en';
+  let ip;
+  let locale = 'en';
 
   try {
-    // if (
-    //   cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] == null
-    // ) {
-    // if (process.env.NODE_ENV === 'production') {
-    //   ip =
-    //     context.req.headers['x-real-ip'] ||
-    //     context.req.headers['x-forwarded-for'] ||
-    //     context.req.socket.remoteAddress;
+    if (
+      cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] == null
+    ) {
+      if (process.env.NODE_ENV === 'production') {
+        ip =
+          context.req.headers['x-real-ip'] ||
+          context.req.headers['x-forwarded-for'] ||
+          context.req.socket.remoteAddress;
 
-    //   if (Array.isArray(ip)) {
-    //     ip = ip[0];
-    //   }
-    // } else {
-    //   ip = DUMMY_DUBAI_IP;
-    // }
-    // const geo = geoip.lookup(ip || '');
-    // if (geo) {
-    //   const { country } = geo;
-    //   if (country === 'TR') {
-    //     locale = 'tr';
-    //   } else if (POST_SOVIET_COUNTRIES.includes(country)) {
-    //     locale = 'ru';
-    //   }
-    // }
-    //   context.res.setHeader(
-    //     'Set-Cookie',
-    //     serialize(LOCALE_COOKIE_NAME, locale || '', {
-    //       // session cookie, expires when the browser is closed
-    //       secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-    //       path: '/',
-    //     }),
-    //   );
-    // }
+        if (Array.isArray(ip)) {
+          ip = ip[0];
+        }
+      } else {
+        ip = DUMMY_DUBAI_IP;
+      }
+      const geo = geoip.lookup(ip || '');
+      if (geo) {
+        const { country } = geo;
+        if (country === 'TR') {
+          locale = 'tr';
+        } else if (POST_SOVIET_COUNTRIES.includes(country)) {
+          locale = 'ru';
+        }
+      }
+      context.res.setHeader(
+        'Set-Cookie',
+        serialize(LOCALE_COOKIE_NAME, locale, {
+          // session cookie, expires when the browser is closed
+          secure: process.env.NODE_ENV === 'production', // Use secure flag in production
+          path: '/',
+        }),
+      );
+    }
 
     messages = (await import(`../i18n/${context.locale}.json`)).default;
   } catch (error) {
@@ -68,7 +77,9 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   locale: string;
 }>;
 
-export default function Home() {
+export default function Home({
+  locale,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { selectedCategoryId } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -82,12 +93,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  // const router = useRouter();
+  const router = useRouter();
 
-  // useEffect(() => {
-  //   router.push(router.pathname, router.asPath, { locale });
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  useEffect(() => {
+    router.push(router.pathname, router.asPath, { locale });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedCategoryId == null) return;
