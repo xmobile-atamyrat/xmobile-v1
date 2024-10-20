@@ -13,6 +13,7 @@ import {
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
+import { getCookie } from '@/pages/lib/utils';
 import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import cookie, { serialize } from 'cookie';
@@ -25,7 +26,7 @@ import { useCallback, useEffect, useState } from 'react';
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
-  let locale = 'en';
+  let locale: string | null = null;
   let ip =
     context.req.headers['x-real-ip'] ||
     context.req.headers['x-forwarded-for'] ||
@@ -84,14 +85,16 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
             locale = 'ru';
           }
         }
-        context.res.setHeader(
-          'Set-Cookie',
-          serialize(LOCALE_COOKIE_NAME, locale, {
-            // session cookie, expires when the browser is closed
-            secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-            path: '/',
-          }),
-        );
+        if (locale != null) {
+          context.res.setHeader(
+            'Set-Cookie',
+            serialize(LOCALE_COOKIE_NAME, locale, {
+              // session cookie, expires when the browser is closed
+              secure: process.env.NODE_ENV === 'production', // Use secure flag in production
+              path: '/',
+            }),
+          );
+        }
       }
 
       messages = (await import(`../i18n/${context.locale}.json`)).default;
@@ -106,7 +109,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     },
   };
 }) satisfies GetServerSideProps<{
-  locale: string;
+  locale: string | null;
 }>;
 
 export default function Home({
@@ -128,9 +131,11 @@ export default function Home({
   const router = useRouter();
 
   useEffect(() => {
-    router.push(router.pathname, router.asPath, { locale });
+    router.push(router.pathname, router.asPath, {
+      locale: locale || getCookie(LOCALE_COOKIE_NAME),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (selectedCategoryId == null) return;

@@ -74,5 +74,11 @@
   "priceInManat": "Manatda baha",
   "copyFailed": "Göçürip bolmady",
   "copied": "Üstünlik bilen göçürildi!",
-  "inTurkish": "Türkçe"
+  "inTurkish": "Türkçe",
+  "analytics": "Analitika",
+  "totalUserCount": "Jemi ulanyjy sany",
+  "dailyVisitCount": "Her günki san",
+  "lastWeekVisitCount": "Soňky 1 hepdelik sapar sany",
+  "lastMonthVisitCount": "Soňky 1 aýlyk sapar sany",
+  "telekomBalance": "Telekom Balans"
 }
