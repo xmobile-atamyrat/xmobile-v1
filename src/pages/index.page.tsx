@@ -8,7 +8,6 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
@@ -127,7 +126,7 @@ export default function Home({
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -139,27 +138,11 @@ export default function Home({
 
   useEffect(() => {
     if (selectedCategoryId == null) return;
-    setPage(1);
+    setPage(0);
     setHasMore(true);
+    setProducts([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategoryId, searchKeyword]);
-
-  useEffect(() => {
-    if (
-      selectedCategoryId == null ||
-      selectedCategoryId === HIGHEST_LEVEL_CATEGORY_ID
-    )
-      return;
-    (async () => {
-      try {
-        const prods = await fetchProducts({
-          categoryId: selectedCategoryId,
-        });
-        setProducts(prods);
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  }, [selectedCategoryId, setProducts]);
 
   const loadMoreProducts = useCallback(async () => {
     if (isLoading || !hasMore || !selectedCategoryId) return;
@@ -188,20 +171,22 @@ export default function Home({
   }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollableHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const scrolledFromTop = window.scrollY;
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    if (!loadMoreTrigger) return () => undefined;
 
-      if (scrollableHeight - scrolledFromTop === 0) {
-        loadMoreProducts();
-      }
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreProducts();
+        }
+      },
+      { rootMargin: '100px' }, // Adds a threshold for when to load
+    );
 
-    window.addEventListener('scroll', handleScroll);
+    observer.observe(loadMoreTrigger);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
     };
   }, [loadMoreProducts]);
 
@@ -228,6 +213,7 @@ export default function Home({
           products.map((product, idx) => (
             <ProductCard product={product} key={idx} />
           ))}
+        <div id="load-more-trigger"></div>
       </Box>
       {isLoading && (
         <Box className="w-full flex justify-center">

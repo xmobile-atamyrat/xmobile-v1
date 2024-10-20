@@ -27,6 +27,7 @@ interface CollapsableBaseProps {
   id: string;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
+  closeDrawer: () => void;
 }
 
 export default function CollapsableBase({
@@ -35,6 +36,7 @@ export default function CollapsableBase({
   id,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
+  closeDrawer,
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
@@ -70,6 +72,7 @@ export default function CollapsableBase({
       <ListItemButton
         onClick={() => {
           setSelectedCategoryId(id);
+          closeDrawer();
           if (router.pathname !== '/') router.push('/');
         }}
         className="py-2 pr-2"

@@ -1,9 +1,9 @@
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import { Collapse, Box, IconButton } from '@mui/material';
-import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
-import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import CollapsableBase from '@/pages/components/CollapsableBase';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Box, Collapse, IconButton } from '@mui/material';
+import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
 
 interface CollapsableProps {
   imgUrl: string | null;
@@ -15,6 +15,7 @@ interface CollapsableProps {
   collapsable: boolean;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
+  closeDrawer: () => void;
 }
 
 export default function Collapsable({
@@ -27,6 +28,7 @@ export default function Collapsable({
   collapsable,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
+  closeDrawer,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
@@ -44,6 +46,7 @@ export default function Collapsable({
             imgUrl={imgUrl}
             setDeleteCategoriesModal={setDeleteCategoriesModal}
             setEditCategoriesModal={setEditCategoriesModal}
+            closeDrawer={closeDrawer}
           />
         </Box>
         <IconButton className="h-full px-0" onClick={() => setOpen(!open)}>
@@ -62,6 +65,7 @@ export default function Collapsable({
         imgUrl={imgUrl}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
+        closeDrawer={closeDrawer}
       />
     </Box>
   );
