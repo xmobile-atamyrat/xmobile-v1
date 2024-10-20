@@ -72,5 +72,11 @@
   "priceInManat": "Manat cinsinden fiyat",
   "copyFailed": "Kopyalanamadı.",
   "copied": "Başarıyla kopyalandı!",
-  "inTurkish": "Türkçe"
+  "inTurkish": "Türkçe",
+  "analytics": "Analitik",
+  "totalUserCount": "Toplam Kullanıcı Sayısı",
+  "dailyVisitCount": "Günlük Ziyaret Sayısı",
+  "lastWeekVisitCount": "Son 1 Hafta Ziyaret Sayısı",
+  "lastMonthVisitCount": "Son 1 Aylık Ziyaret Sayısı",
+  "telekomBalance": "Telekom Balance"
 }

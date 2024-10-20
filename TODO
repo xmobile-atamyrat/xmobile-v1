@@ -3,11 +3,8 @@ TODO:
 TOP PRIORITY:
 
 - implement new/old tar files in the server for easy rollback
-- implement analytics page
 - implement cart
 - implement footer
-- implement pagination
-- load higher quality images from drive
 - implement caching
   - product prices
   - some images (maybe just one per product?)
