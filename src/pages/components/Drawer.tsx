@@ -43,6 +43,7 @@ function ConstructDrawerList(
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
   depth: number,
+  closeDrawer: () => void,
 ): React.ReactNode {
   return (
     <List component="div" disablePadding className="flex flex-col">
@@ -59,6 +60,7 @@ function ConstructDrawerList(
           }
           setEditCategoriesModal={setEditCategoriesModal}
           setDeleteCategoriesModal={setDeleteCategoriesModal}
+          closeDrawer={closeDrawer}
         >
           {ConstructDrawerList(
             successorCategories!,
@@ -67,6 +69,7 @@ function ConstructDrawerList(
             setEditCategoriesModal,
             setDeleteCategoriesModal,
             depth + 1,
+            closeDrawer,
           )}
         </Collapsable>
       ))}
@@ -116,6 +119,7 @@ export default function CustomDrawer({
             setEditCategoriesModal,
             setDeleteCategoriesModal,
             0, // depth
+            closeDrawer,
           )}
         </Box>
       )}
