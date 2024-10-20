@@ -12,6 +12,7 @@ import {
 } from '@/pages/lib/constants';
 import { getCookie, setCookie } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import CloseIcon from '@mui/icons-material/Close';
@@ -387,6 +388,15 @@ export default function CustomAppBar({
               >
                 <DriveFolderUploadIcon />
                 <Typography>{t('updatePrices')}</Typography>
+              </MenuItem>
+            )}
+            {user?.grade === 'ADMIN' && (
+              <MenuItem
+                className="flex flex-row gap-2 items-center justify-start"
+                onClick={() => router.push('/analytics')}
+              >
+                <AnalyticsIcon />
+                <Typography>{t('analytics')}</Typography>
               </MenuItem>
             )}
           </Box>
