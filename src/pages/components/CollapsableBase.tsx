@@ -2,7 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
+import { blobToBase64, parseName } from '@/pages/lib/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -47,23 +47,31 @@ export default function CollapsableBase({
   const t = useTranslations();
 
   useEffect(() => {
-    if (categoryImgUrl != null) {
-      setImgUrl('/xmobile-original-logo.jpeg');
-      (async () => {
-        if (categoryImgUrl.startsWith('http')) {
-          setImgUrl(categoryImgUrl);
-        } else {
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${categoryImgUrl}`,
-          );
-          const resp = await imgFetcher;
-          if (resp.ok) {
-            setImgUrl(URL.createObjectURL(await resp.blob()));
+    if (categoryImgUrl != null && id != null) {
+      const cacheImgUrl = sessionStorage.getItem(id);
+      if (cacheImgUrl != null) {
+        setImgUrl(cacheImgUrl);
+      } else {
+        setImgUrl('/xmobile-original-logo.jpeg');
+        (async () => {
+          if (categoryImgUrl.startsWith('http')) {
+            setImgUrl(categoryImgUrl);
+          } else {
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${categoryImgUrl}`,
+            );
+            const resp = await imgFetcher;
+            if (resp.ok) {
+              const imgBlob = await resp.blob();
+              const base64 = await blobToBase64(imgBlob);
+              setImgUrl(base64);
+              sessionStorage.setItem(id, base64);
+            }
           }
-        }
-      })();
+        })();
+      }
     }
-  }, [categoryImgUrl]);
+  }, [categoryImgUrl, id]);
 
   return (
     <Box
@@ -83,14 +91,6 @@ export default function CollapsableBase({
               src={imgUrl}
               style={{ width: '30px', height: '30px' }}
               alt={categoryTitle}
-              onError={async (error) => {
-                error.currentTarget.onerror = null;
-                error.currentTarget.src = URL.createObjectURL(
-                  await (
-                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imgUrl}`)
-                  ).blob(),
-                );
-              }}
             />
           </ListItemIcon>
         )}
