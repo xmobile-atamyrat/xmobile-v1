@@ -2,13 +2,14 @@ TODO:
 
 TOP PRIORITY:
 
-- implement new/old tar files in the server for easy rollback
-- implement cart
-- implement footer
 - implement caching
+  - category images
   - product prices
   - some images (maybe just one per product?)
   - alternatively make fetching products much faster (ssr price calculation?)
+- implement new/old tar files in the server for easy rollback
+- implement cart
+- implement footer
 - look into webview to make android and ios apps
 - implement liking products feature -> order by likes?
 - user <-> admin discussion feature
