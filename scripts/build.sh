@@ -22,16 +22,11 @@ main() {
         docker cp build_env:/app/xmobile-v1.tar.gz .
     fi
 
-    # Establish SSH tunnel to AWS EC2 Instance (Bastion Host)
-    # ssh -i ~/.ssh/aws_proxy_tunnel.pem -L 2222:216.250.13.115:2222 -N -f ubuntu@3.87.187.215
+    # remove old tar file and rename the recent one to old
+    ssh xmobile "rm -rf /home/ubuntu/tar-file/xmobile-v1-old.tar.gz && mv /home/ubuntu/tar-file/xmobile-v1.tar.gz /home/ubuntu/tar-file/xmobile-v1-old.tar.gz"
 
-    # SCP the file through the tunnel to the target VM
-    # scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/tar-file/xmobile-v1.tar.gz
-
-    # Close the SSH tunnel
-    # ssh -O exit -i ~/.ssh/aws_proxy_tunnel.pem ubuntu@3.87.187.215
-
-    scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@216.250.13.115:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+    # copy the new tar file
+    scp xmobile-v1.tar.gz xmobile:/home/ubuntu/tar-file/xmobile-v1.tar.gz
 
     rm -f xmobile-v1.tar.gz
 }
