@@ -1,26 +1,17 @@
 import dbClient from '@/lib/dbClient';
-import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Layout from '@/pages/components/Layout';
-import ProductCard from '@/pages/components/ProductCard';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { useProductContext } from '@/pages/lib/ProductContext';
-import { useUserContext } from '@/pages/lib/UserContext';
-import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
   LOCALE_COOKIE_NAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
-import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
-import { Alert, Box, Snackbar, useMediaQuery, useTheme } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -114,19 +105,11 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 export default function Home({
   locale,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { selectedCategoryId } = useCategoryContext();
-  const { products, setProducts, searchKeyword } = useProductContext();
-  const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const { user } = useUserContext();
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
-  const t = useTranslations();
+  // const [snackbarOpen, setSnackbarOpen] = useState(false);
+  // const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  // const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -136,123 +119,15 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  const loadMoreProducts = useCallback(async () => {
-    if (isLoading || !hasMore || !selectedCategoryId || page === 0) return;
-    setIsLoading(true);
-
-    try {
-      const fetchProductsParams: any = { page: page + 1 };
-      if (searchKeyword) {
-        fetchProductsParams.searchKeyword = searchKeyword;
-      } else {
-        fetchProductsParams.categoryId = selectedCategoryId;
-      }
-      const newProducts = await fetchProducts(fetchProductsParams);
-      setProducts((prevProducts) => [...prevProducts, ...newProducts]);
-      setPage((prev) => prev + 1);
-
-      if (newProducts.length === 0) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
-
-  useEffect(() => {
-    if (selectedCategoryId == null) return;
-
-    (async () => {
-      const fetchProductsParams: any = {};
-      if (searchKeyword) {
-        fetchProductsParams.searchKeyword = searchKeyword;
-      } else {
-        fetchProductsParams.categoryId = selectedCategoryId;
-      }
-      setProducts(await fetchProducts(fetchProductsParams));
-    })();
-
-    setTimeout(() => {
-      setPage(1);
-      setHasMore(true);
-    }, 2000);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategoryId, searchKeyword]);
-
-  useEffect(() => {
-    const loadMoreTrigger = document.getElementById('load-more-trigger');
-    if (!loadMoreTrigger) return () => undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreProducts();
-        }
-      },
-      { rootMargin: '100px' }, // Adds a threshold for when to load
-    );
-
-    observer.observe(loadMoreTrigger);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadMoreProducts]);
-
   return (
-    <Layout showSearch>
+    <Layout>
       <Box
         className="flex flex-wrap gap-4 w-full p-3"
         sx={{
           mt: isMdUp ? `${appBarHeight}px` : undefined,
         }}
-      >
-        {user?.grade === 'ADMIN' && selectedCategoryId != null && (
-          <ProductCard
-            handleClickAddProduct={() =>
-              setAddEditProductDialog({
-                open: true,
-                dialogType: 'add',
-                imageUrls: [],
-              })
-            }
-          />
-        )}
-        {products.length > 0 &&
-          products.map((product, idx) => (
-            <ProductCard product={product} key={idx} />
-          ))}
-      </Box>
-      <div id="load-more-trigger"></div>
-      {isLoading && (
-        <Box className="w-full flex justify-center">
-          <CircularProgress />
-        </Box>
-      )}
-      {addEditProductDialog.open && (
-        <AddEditProductDialog
-          args={addEditProductDialog}
-          handleClose={() =>
-            setAddEditProductDialog({
-              open: false,
-              id: undefined,
-              description: undefined,
-              dialogType: undefined,
-              imageUrls: [],
-              name: undefined,
-            })
-          }
-          snackbarErrorHandler={(message) => {
-            setSnackbarOpen(true);
-            setSnackbarMessage({ message, severity: 'error' });
-          }}
-        />
-      )}
-      <Snackbar
+      ></Box>
+      {/* <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={(_, reason) => {
@@ -270,7 +145,7 @@ export default function Home({
         >
           {snackbarMessage?.message && t(snackbarMessage.message)}
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
     </Layout>
   );
 }
