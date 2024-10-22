@@ -1,383 +1,161 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
-import Carousel from '@/pages/components/Carousel';
-import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import ProductCard from '@/pages/components/ProductCard';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
+import { appBarHeight } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import {
-  AddEditProductProps,
-  ResponseApi,
-  SnackbarProps,
-} from '@/pages/lib/types';
+import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
-import { computeProductPriceTags } from '@/pages/product/utils';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import {
   Alert,
   Box,
-  CardMedia,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
+  CircularProgress,
   Snackbar,
-  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
-import { GetStaticProps } from 'next';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-import 'slick-carousel/slick/slick-theme.css';
-import 'slick-carousel/slick/slick.css';
+import { useCallback, useEffect, useState } from 'react';
 
-// getStaticProps because translations are static
-export const getStaticProps = (async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
     },
   };
-}) satisfies GetStaticProps<object>;
+};
 
-export default function Product() {
-  const { selectedProduct: initialProduct, setSelectedProduct } =
-    useProductContext();
-  const [product, setProduct] = useState(initialProduct);
-  const router = useRouter();
-  const [imgUrls, setImgUrls] = useState<string[]>([]);
-  const t = useTranslations();
-  const { user } = useUserContext();
-  const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
-    show: boolean;
-    productId: string;
-  }>();
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
-  const { setProducts } = useProductContext();
+export default function Products() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const { selectedCategoryId } = useCategoryContext();
+  const { products, setProducts, searchKeyword } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const [description, setDescription] = useState<{ [key: string]: string[] }>();
+  const { user } = useUserContext();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
-  useEffect(() => {
-    if (product == null) {
-      // router.push('/');
-      return;
-    }
+  const loadMoreProducts = useCallback(async () => {
+    if (isLoading || !hasMore || !selectedCategoryId || page === 0) return;
+    setIsLoading(true);
 
-    (async () => {
-      const initImgUrls: string[] = await Promise.all(
-        product.imgUrls.map(async (imgUrl) => {
-          if (imgUrl.startsWith('http')) {
-            return imgUrl;
-          }
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
-          );
-          return URL.createObjectURL(await (await imgFetcher).blob());
-        }),
-      );
-      setImgUrls(initImgUrls);
-    })();
+    try {
+      const fetchProductsParams: any = { page: page + 1 };
+      if (searchKeyword) {
+        fetchProductsParams.searchKeyword = searchKeyword;
+      } else {
+        fetchProductsParams.categoryId = selectedCategoryId;
+      }
+      const newProducts = await fetchProducts(fetchProductsParams);
+      setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+      setPage((prev) => prev + 1);
+
+      if (newProducts.length === 0) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setIsLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product]);
+  }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
 
   useEffect(() => {
-    const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
-    if (desc == null || desc === '') return;
+    const loadMoreTrigger = document.getElementById('load-more-trigger');
+    if (!loadMoreTrigger) return () => undefined;
 
-    const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
-    const result: { [key: string]: string } = {};
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreProducts();
+        }
+      },
+      { rootMargin: '100px' }, // Adds a threshold for when to load
+    );
 
-    for (let i = 0; i < paragraphs.length; i += 2) {
-      if (i >= paragraphs.length || i + 1 >= paragraphs.length) break;
-      const header = paragraphs[i].trim();
-      const content = paragraphs[i + 1].trim();
-      result[header] = content;
-    }
+    observer.observe(loadMoreTrigger);
 
-    const descObj: { [key: string]: string[] } = {};
-    Object.keys(result).forEach((key) => {
-      descObj[key] = result[key].split('\n').filter(Boolean);
-    });
-
-    setDescription(descObj);
-  }, [product?.description, router.locale]);
-
-  useEffect(() => {
-    if (initialProduct == null) return;
-    (async () => {
-      setProduct(await computeProductPriceTags(initialProduct));
-    })();
-  }, [initialProduct]);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadMoreProducts]);
 
   return (
-    product && (
-      <Layout
-        handleHeaderBackButton={() => {
-          setSelectedProduct(undefined);
-          router.push('/');
+    <Layout showSearch>
+      <Box
+        className="flex flex-wrap gap-4 w-full p-3"
+        sx={{
+          mt: isMdUp ? `${appBarHeight}px` : undefined,
         }}
       >
-        <Box
-          className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4`}
-          pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
-        >
-          {/* title, images */}
-          <Box
-            className={`flex flex-col gap-2`}
-            style={{
-              width: isMdUp ? '50%' : '100%',
-            }}
-          >
-            <Box className="w-full flex flex-row justify-between items-center pb-4">
-              <Typography variant="h5" className="text-center">
-                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-              </Typography>
-              {user?.grade === 'ADMIN' && (
-                <Box>
-                  <IconButton
-                    onClick={() => {
-                      if (initialProduct == null) return;
-                      setAddEditProductDialog({
-                        open: true,
-                        id: initialProduct.id,
-                        description: initialProduct.description,
-                        dialogType: 'edit',
-                        imageUrls: initialProduct.imgUrls,
-                        name: initialProduct.name,
-                        price: initialProduct.price,
-                        tags: initialProduct.tags,
-                      });
-                    }}
-                  >
-                    <EditIcon color="primary" fontSize="medium" />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => {
-                      setShowDeleteProductDialog({
-                        show: true,
-                        productId: product.id,
-                      });
-                    }}
-                  >
-                    <DeleteIcon color="error" fontSize="medium" />
-                  </IconButton>
-                </Box>
-              )}
-            </Box>
-            {imgUrls.length === 1 && (
-              <Box className="flex w-full justify-center flex-row">
-                <CardMedia
-                  component="img"
-                  image={imgUrls[0]}
-                  alt={product?.name}
-                  sx={PRODUCT_IMAGE_WIDTH_RESP}
-                />
-              </Box>
-            )}
-            {imgUrls.length > 1 && (
-              <Carousel isMdUp={isMdUp}>
-                {imgUrls.map((imgUrl, index) => (
-                  <CardMedia
-                    component="img"
-                    image={imgUrl}
-                    alt={product?.name}
-                    sx={{
-                      width: '100%',
-                    }}
-                    key={index}
-                  />
-                ))}
-              </Carousel>
-            )}
-          </Box>
-
-          {/* price, description */}
-          <Box
-            className="flex flex-col"
-            style={{
-              width: isMdUp ? '50%' : '100%',
-            }}
-          >
-            <Box className="w-full my-4">
-              {product.price?.includes('[') ? (
-                <CircularProgress size={isMdUp ? 30 : 24} />
-              ) : (
-                <Typography
-                  fontWeight={600}
-                  fontSize={isMdUp ? 22 : 18}
-                >{`${product.price} ${t('manat')}`}</Typography>
-              )}
-            </Box>
-            {product.tags.length > 0 && product.tags[0].includes('[') ? (
-              <CircularProgress size={isMdUp ? 30 : 24} />
-            ) : (
-              <List className="p-0 pb-10">
-                {product.tags.map((tag, index) => {
-                  const words = tag.split(' ');
-                  const beginning = words.slice(0, -2).join(' ');
-                  const end = words.slice(-2).join(' ');
-                  return (
-                    <ListItem key={index} sx={{ p: 0 }}>
-                      <FiberManualRecordIcon
-                        sx={{
-                          width: 16,
-                          height: 16,
-                        }}
-                        color="disabled"
-                      />
-                      <ListItemText
-                        sx={{ pl: 1 }}
-                        primary={
-                          <Box className="flex flex-row gap-4">
-                            <Typography fontSize={isMdUp ? 20 : 16}>
-                              {beginning}
-                            </Typography>
-                            <Typography
-                              fontSize={isMdUp ? 20 : 16}
-                              fontWeight={600}
-                            >
-                              {end}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
-            )}
-            {description && Object.keys(description).length > 0
-              ? Object.keys(description ?? {}).map((key) => (
-                  <Box key={key} className="w-full flex flex-col pb-4">
-                    <Box className="w-full flex flex-row gap-2 justify-between">
-                      <Box className="w-[30%]">
-                        <Typography
-                          fontWeight={600}
-                          fontSize={isMdUp ? 18 : 15}
-                        >
-                          {key}
-                        </Typography>
-                      </Box>
-                      <Box className="flex flex-col w-[70%]">
-                        {description[key].map((descLine, index) => (
-                          <Typography key={index} fontSize={isMdUp ? 18 : 15}>
-                            {descLine}
-                          </Typography>
-                        ))}
-                      </Box>
-                    </Box>
-                  </Box>
-                ))
-              : parseName(product?.description ?? '{}', router.locale ?? 'tk')
-                  ?.split('\n')
-                  .map((desc, index) => (
-                    <Typography key={`${desc}-${index}`}>{desc}</Typography>
-                  ))}
-          </Box>
-        </Box>
-        {showDeleteProductDialog?.show && (
-          <DeleteDialog
-            title={t('deleteProduct')}
-            description={t('confirmDeleteProduct')}
-            handleDelete={async () => {
-              try {
-                const { success: deleteSuccess }: ResponseApi = await (
-                  await fetch(
-                    `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
-                    {
-                      method: 'DELETE',
-                    },
-                  )
-                ).json();
-                if (!deleteSuccess) {
-                  setSnackbarOpen(true);
-                  setSnackbarMessage({
-                    message: 'deleteProductError',
-                    severity: 'error',
-                  });
-                  return;
-                }
-                const prods = await fetchProducts({
-                  categoryId: selectedCategoryId,
-                });
-                setProducts(prods);
-                setSnackbarOpen(true);
-                setSnackbarMessage({
-                  message: 'deleteProductSuccess',
-                  severity: 'success',
-                });
-                setTimeout(() => {
-                  router.push('/');
-                }, 2000);
-              } catch (error) {
-                console.error(error);
-                setSnackbarOpen(true);
-                setSnackbarMessage({
-                  message: t('deleteProductError'),
-                  severity: 'error',
-                });
-              }
-            }}
-            handleClose={() =>
-              setShowDeleteProductDialog({ show: false, productId: '' })
-            }
-          />
-        )}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') {
-              return;
-            }
-            setSnackbarOpen(false);
-          }}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarMessage?.severity}
-            variant="filled"
-            sx={{ width: '100%' }}
-          >
-            {snackbarMessage?.message && t(snackbarMessage.message)}
-          </Alert>
-        </Snackbar>
-        {addEditProductDialog.open && (
-          <AddEditProductDialog
-            args={addEditProductDialog}
-            handleClose={() =>
+        {user?.grade === 'ADMIN' && selectedCategoryId != null && (
+          <ProductCard
+            handleClickAddProduct={() =>
               setAddEditProductDialog({
-                open: false,
-                id: undefined,
-                description: undefined,
-                dialogType: undefined,
+                open: true,
+                dialogType: 'add',
                 imageUrls: [],
-                name: undefined,
               })
             }
-            snackbarErrorHandler={(message: string) => {
-              setSnackbarOpen(true);
-              setSnackbarMessage({
-                message,
-                severity: 'error',
-              });
-            }}
           />
         )}
-      </Layout>
-    )
+        {products.length > 0 &&
+          products.map((product, idx) => (
+            <ProductCard product={product} key={idx} />
+          ))}
+      </Box>
+      <div id="load-more-trigger"></div>
+      {isLoading && (
+        <Box className="w-full flex justify-center">
+          <CircularProgress />
+        </Box>
+      )}
+      {addEditProductDialog.open && (
+        <AddEditProductDialog
+          args={addEditProductDialog}
+          handleClose={() =>
+            setAddEditProductDialog({
+              open: false,
+              id: undefined,
+              description: undefined,
+              dialogType: undefined,
+              imageUrls: [],
+              name: undefined,
+            })
+          }
+          snackbarErrorHandler={(message) => {
+            setSnackbarOpen(true);
+            setSnackbarMessage({ message, severity: 'error' });
+          }}
+        />
+      )}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setSnackbarOpen(false);
+        }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarMessage?.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage?.message && t(snackbarMessage.message)}
+        </Alert>
+      </Snackbar>
+    </Layout>
   );
 }
