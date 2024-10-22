@@ -82,7 +82,7 @@ export default function ProductCard({
           className="relative h-full w-full flex flex-col justify-between p-1"
           onClick={() => {
             setSelectedProduct(initialProduct);
-            router.push(`/product`);
+            router.push(`/product/detail`);
           }}
         >
           <Box className="h-5/6">
