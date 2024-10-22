@@ -136,16 +136,8 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  useEffect(() => {
-    if (selectedCategoryId == null) return;
-    setPage(0);
-    setHasMore(true);
-    setProducts([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategoryId, searchKeyword]);
-
   const loadMoreProducts = useCallback(async () => {
-    if (isLoading || !hasMore || !selectedCategoryId) return;
+    if (isLoading || !hasMore || !selectedCategoryId || page === 0) return;
     setIsLoading(true);
 
     try {
@@ -156,8 +148,8 @@ export default function Home({
         fetchProductsParams.categoryId = selectedCategoryId;
       }
       const newProducts = await fetchProducts(fetchProductsParams);
-      setPage((prev) => prev + 1);
       setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+      setPage((prev) => prev + 1);
 
       if (newProducts.length === 0) {
         setHasMore(false);
@@ -169,6 +161,27 @@ export default function Home({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
+
+  useEffect(() => {
+    if (selectedCategoryId == null) return;
+
+    (async () => {
+      const fetchProductsParams: any = {};
+      if (searchKeyword) {
+        fetchProductsParams.searchKeyword = searchKeyword;
+      } else {
+        fetchProductsParams.categoryId = selectedCategoryId;
+      }
+      setProducts(await fetchProducts(fetchProductsParams));
+    })();
+
+    setTimeout(() => {
+      setPage(1);
+      setHasMore(true);
+    }, 2000);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategoryId, searchKeyword]);
 
   useEffect(() => {
     const loadMoreTrigger = document.getElementById('load-more-trigger');
@@ -213,8 +226,8 @@ export default function Home({
           products.map((product, idx) => (
             <ProductCard product={product} key={idx} />
           ))}
-        <div id="load-more-trigger"></div>
       </Box>
+      <div id="load-more-trigger"></div>
       {isLoading && (
         <Box className="w-full flex justify-center">
           <CircularProgress />
