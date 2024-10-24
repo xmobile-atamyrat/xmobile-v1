@@ -8,13 +8,14 @@ import {
   mobileAppBarHeight,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
+import { ExtendedCategory } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -114,7 +115,11 @@ export default function Home({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
-  const { categories } = useCategoryContext();
+  const { categoryLayers } = useCategoryContext();
+  const [layer, setLayer] = useState(0);
+  const [categories, setCategories] = useState<ExtendedCategory[]>(
+    categoryLayers[0],
+  );
 
   useEffect(() => {
     router.push(router.pathname, router.asPath, {
@@ -123,18 +128,15 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
+  const handleHeaderBackButton = useCallback(() => {
+    setCategories(categoryLayers[layer - 1]);
+    setLayer((curr) => curr - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layer]);
+
   return (
     <Layout
-    // handleHeaderBackButton={
-    //   categories == null || categories.length === 0
-    //     ? undefined
-    //     : categories[0].predecessorId == null
-    //       ? undefined
-    //       : () => {
-    //           console.info('here');
-    //           setCategories(categories);
-    //         }
-    // }
+      handleHeaderBackButton={layer === 0 ? undefined : handleHeaderBackButton}
     >
       <Box
         className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
@@ -142,15 +144,26 @@ export default function Home({
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {categories.map(({ name, id, imgUrl, successorCategories }) => (
-          <CategoryCard
-            id={id}
-            name={name}
-            initialImgUrl={imgUrl ?? undefined}
-            key={id}
-            successorCats={successorCategories}
-          />
-        ))}
+        {categories.length !== 0 &&
+          categories?.map(({ id, name, imgUrl, successorCategories }) => (
+            <CategoryCard
+              id={id}
+              name={name}
+              initialImgUrl={imgUrl ?? undefined}
+              key={id}
+              onClick={() => {
+                if (
+                  successorCategories == null ||
+                  successorCategories.length === 0
+                ) {
+                  console.info(successorCategories);
+                } else {
+                  setLayer((curr) => curr + 1);
+                  setCategories(successorCategories);
+                }
+              }}
+            />
+          ))}
       </Box>
       {/* <Snackbar
         open={snackbarOpen}
