@@ -124,19 +124,31 @@ export default function Home({
   }, [locale]);
 
   return (
-    <Layout>
+    <Layout
+    // handleHeaderBackButton={
+    //   categories == null || categories.length === 0
+    //     ? undefined
+    //     : categories[0].predecessorId == null
+    //       ? undefined
+    //       : () => {
+    //           console.info('here');
+    //           setCategories(categories);
+    //         }
+    // }
+    >
       <Box
         className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
         sx={{
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {categories.map(({ name, id, imgUrl }) => (
+        {categories.map(({ name, id, imgUrl, successorCategories }) => (
           <CategoryCard
             id={id}
             name={name}
             initialImgUrl={imgUrl ?? undefined}
             key={id}
+            successorCats={successorCategories}
           />
         ))}
       </Box>
