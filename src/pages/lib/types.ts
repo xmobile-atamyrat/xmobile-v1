@@ -9,7 +9,7 @@ export interface ResponseApi<K = any> {
 
 export interface ExtendedCategory extends Category {
   products?: Product[];
-  successorCategories?: Category[];
+  successorCategories?: ExtendedCategory[];
 }
 
 export interface CategoryContextProps {
