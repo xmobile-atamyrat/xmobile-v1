@@ -1,10 +1,12 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { useMediaQuery, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -25,9 +27,10 @@ export default function CategoryCard({
   const router = useRouter();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const t = useTranslations();
 
   useEffect(() => {
-    if (initialImgUrl != null) {
+    if (initialImgUrl != null && initialImgUrl !== ALL_PRODUCTS_CATEGORY_CARD) {
       const cacheImgUrl = sessionStorage.getItem(id);
       if (cacheImgUrl != null) {
         setImgUrl(cacheImgUrl);
@@ -63,23 +66,31 @@ export default function CategoryCard({
       className={`border-[1px] ${isMdUp ? 'px-6' : 'px-4'}`}
       onClick={onClick}
     >
-      <Box
-        className={`flex flex-row justify-between items-center ${isMdUp ? 'gap-4' : 'gap-2'} w-full h-full`}
-      >
-        <Typography
-          fontWeight={600}
-          fontSize={isMdUp ? 20 : 18}
-          className="flex justify-center items-center"
+      {initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD ? (
+        <Box className="w-full h-full flex justify-center items-center">
+          <Typography fontWeight={600} fontSize={isMdUp ? 20 : 18}>
+            {t('allProducts')}
+          </Typography>
+        </Box>
+      ) : (
+        <Box
+          className={`flex flex-row justify-between items-center ${isMdUp ? 'gap-4' : 'gap-2'} w-full h-full`}
         >
-          {parseName(name, router.locale ?? 'tk')}
-        </Typography>
-        <CardMedia
-          component="img"
-          sx={{ width: { xs: 125, sm: 150 } }}
-          image={imgUrl}
-          alt="Live from space album cover"
-        />
-      </Box>
+          <Typography
+            fontWeight={600}
+            fontSize={isMdUp ? 20 : 18}
+            className="flex justify-center items-center"
+          >
+            {parseName(name, router.locale ?? 'tk')}
+          </Typography>
+          <CardMedia
+            component="img"
+            sx={{ width: { xs: 125, sm: 150 } }}
+            image={imgUrl}
+            alt="Xmobile"
+          />
+        </Box>
+      )}
     </Card>
   );
 }

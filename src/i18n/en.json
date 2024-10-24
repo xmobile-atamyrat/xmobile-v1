@@ -78,5 +78,6 @@
   "dailyVisitCount": "Daily Visit Count",
   "lastWeekVisitCount": "Last 1 Week Visit Count",
   "lastMonthVisitCount": "Last 1 Month Visit Count",
-  "telekomBalance": "Telekom Balance"
+  "telekomBalance": "Telekom Balance",
+  "allProducts": "All Products"
 }

@@ -3,6 +3,7 @@ import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
+  ALL_PRODUCTS_CATEGORY_CARD,
   appBarHeight,
   LOCALE_COOKIE_NAME,
   mobileAppBarHeight,
@@ -115,11 +116,9 @@ export default function Home({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
-  const { categoryLayers } = useCategoryContext();
+  const { categoryLayers, setSelectedCategoryId } = useCategoryContext();
   const [layer, setLayer] = useState(0);
-  const [categories, setCategories] = useState<ExtendedCategory[]>(
-    categoryLayers[0],
-  );
+  const [categories, setCategories] = useState<ExtendedCategory[]>([]);
 
   useEffect(() => {
     router.push(router.pathname, router.asPath, {
@@ -134,6 +133,11 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layer]);
 
+  useEffect(() => {
+    setCategories(categoryLayers[layer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryLayers]);
+
   return (
     <Layout
       handleHeaderBackButton={layer === 0 ? undefined : handleHeaderBackButton}
@@ -144,7 +148,18 @@ export default function Home({
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {categories.length !== 0 &&
+        {layer !== 0 && (
+          <CategoryCard
+            id=""
+            name=""
+            initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
+            onClick={() => {
+              router.push('/product');
+            }}
+          />
+        )}
+        {categories != null &&
+          categories.length !== 0 &&
           categories?.map(({ id, name, imgUrl, successorCategories }) => (
             <CategoryCard
               id={id}
@@ -156,8 +171,9 @@ export default function Home({
                   successorCategories == null ||
                   successorCategories.length === 0
                 ) {
-                  console.info(successorCategories);
+                  router.push('/product');
                 } else {
+                  setSelectedCategoryId(id);
                   setLayer((curr) => curr + 1);
                   setCategories(successorCategories);
                 }
