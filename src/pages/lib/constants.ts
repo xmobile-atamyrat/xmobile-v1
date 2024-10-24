@@ -75,3 +75,5 @@ export const DUMMY_KR_IP = '59.6.230.229';
 export const DUMMY_TM_IP = '95.85.96.1';
 export const DUMMY_DUBAI_IP = '94.200.200.200';
 export const DUMMY_TR_IP = '88.240.128.0';
+
+export const ALL_PRODUCTS_CATEGORY_CARD = 'ALL_PRODUCTS_CATEGORY_CARD';
