@@ -28,7 +28,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 export default function Products() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const { selectedCategoryId } = useCategoryContext();
@@ -41,6 +41,16 @@ export default function Products() {
   const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+
+  useEffect(() => {
+    if (selectedCategoryId == null) return;
+    (async () => {
+      setProducts(await fetchProducts({ categoryId: selectedCategoryId }));
+      setIsLoading(false);
+      setPage(1);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategoryId]);
 
   const loadMoreProducts = useCallback(async () => {
     if (isLoading || !hasMore || !selectedCategoryId || page === 0) return;
