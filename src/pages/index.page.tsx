@@ -1,8 +1,11 @@
 import dbClient from '@/lib/dbClient';
+import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   appBarHeight,
   LOCALE_COOKIE_NAME,
+  mobileAppBarHeight,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { getCookie } from '@/pages/lib/utils';
@@ -111,6 +114,7 @@ export default function Home({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
+  const { categories } = useCategoryContext();
 
   useEffect(() => {
     router.push(router.pathname, router.asPath, {
@@ -122,11 +126,20 @@ export default function Home({
   return (
     <Layout>
       <Box
-        className="flex flex-wrap gap-4 w-full p-3"
+        className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
         sx={{
-          mt: isMdUp ? `${appBarHeight}px` : undefined,
+          mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
-      ></Box>
+      >
+        {[...categories, ...categories].map(({ name, id, imgUrl }) => (
+          <CategoryCard
+            id={id}
+            name={name}
+            initialImgUrl={imgUrl ?? undefined}
+            key={id}
+          />
+        ))}
+      </Box>
       {/* <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
