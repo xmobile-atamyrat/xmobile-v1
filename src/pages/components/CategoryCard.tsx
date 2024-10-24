@@ -1,6 +1,4 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { ExtendedCategory } from '@/pages/lib/types';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { useMediaQuery, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
@@ -14,20 +12,19 @@ interface CategoryCardProps {
   name: string;
   id: string;
   initialImgUrl?: string;
-  successorCats?: ExtendedCategory[];
+  onClick: () => void;
 }
 
 export default function CategoryCard({
   initialImgUrl,
   id,
   name,
-  successorCats,
+  onClick,
 }: CategoryCardProps) {
   const [imgUrl, setImgUrl] = useState<string>();
   const router = useRouter();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const { setCategories, setSelectedCategoryId } = useCategoryContext();
 
   useEffect(() => {
     if (initialImgUrl != null) {
@@ -64,15 +61,7 @@ export default function CategoryCard({
         ':hover': { boxShadow: 10 },
       }}
       className={`border-[1px] ${isMdUp ? 'px-6' : 'px-4'}`}
-      onClick={() => {
-        console.info(successorCats);
-        if (successorCats != null && successorCats.length !== 0) {
-          setCategories(successorCats);
-        } else {
-          setSelectedCategoryId(id);
-          router.push('/product');
-        }
-      }}
+      onClick={onClick}
     >
       <Box
         className={`flex flex-row justify-between items-center ${isMdUp ? 'gap-4' : 'gap-2'} w-full h-full`}
