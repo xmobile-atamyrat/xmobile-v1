@@ -12,11 +12,15 @@ export interface ExtendedCategory extends Category {
   successorCategories?: ExtendedCategory[];
 }
 
+export type CategoryLayers = { [key: number]: ExtendedCategory[] };
+
 export interface CategoryContextProps {
   categories: ExtendedCategory[];
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
+  categoryLayers: CategoryLayers;
+  setCategoryLayers: Dispatch<SetStateAction<CategoryLayers>>;
 }
 
 export interface UserContextProps {
