@@ -131,7 +131,7 @@ export default function Home({
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {[...categories, ...categories].map(({ name, id, imgUrl }) => (
+        {categories.map(({ name, id, imgUrl }) => (
           <CategoryCard
             id={id}
             name={name}
