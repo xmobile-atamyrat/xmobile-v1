@@ -94,8 +94,8 @@ export default function CustomDrawer({
       variant="temporary"
       open={openDrawer}
       sx={{
-        width: drawerWidth,
         height: '100%',
+        width: drawerWidth,
         [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
       }}
       onClose={closeDrawer}
@@ -124,7 +124,7 @@ export default function CustomDrawer({
         </Box>
       )}
       {user?.grade === 'ADMIN' && (
-        <Paper className="h-12 w-full absolute bottom-0 bg-slate-100 flex justify-center">
+        <Paper className="h-12 w-full bg-slate-100 flex justify-center">
           <Tooltip title="Edit categories">
             <IconButton
               onClick={() => {
