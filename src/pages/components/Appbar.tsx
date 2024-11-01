@@ -141,6 +141,7 @@ export default function CustomAppBar({
   }, []);
 
   const handleSearch = async (keyword: string) => {
+    return;
     if (keyword === '') {
       try {
         setSearchKeyword(undefined);
