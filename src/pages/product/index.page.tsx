@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -41,6 +42,7 @@ export default function Products() {
   const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const router = useRouter();
 
   useEffect(() => {
     if (selectedCategoryId == null) return;
@@ -99,7 +101,12 @@ export default function Products() {
   }, [loadMoreProducts]);
 
   return (
-    <Layout showSearch>
+    <Layout
+      showSearch
+      handleHeaderBackButton={() => {
+        router.push('/');
+      }}
+    >
       <Box
         className="flex flex-wrap gap-4 w-full p-3"
         sx={{
