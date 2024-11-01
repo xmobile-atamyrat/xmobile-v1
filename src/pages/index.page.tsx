@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
+import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   ALL_PRODUCTS_CATEGORY_CARD,
@@ -123,14 +124,16 @@ export default function Home({
     categories: allCategories,
     stack,
     setStack,
+    parentCategory,
+    setParentCategory,
   } = useCategoryContext();
   const [localCategories, setLocalCategories] = useState<ExtendedCategory[]>(
     [],
   );
-  const [parentCategory, setParentCategory] = useState<ExtendedCategory>();
   const { setProducts } = useProductContext();
 
   useEffect(() => {
+    if (locale == null || router.locale === locale) return;
     router.push(router.pathname, router.asPath, {
       locale: locale || getCookie(LOCALE_COOKIE_NAME),
     });
@@ -146,22 +149,29 @@ export default function Home({
       return;
     }
 
-    const currCat = stack.pop();
+    const currCat = stack.pop()?.[0];
     setStack([...stack]);
     setParentCategory(currCat);
     if (currCat != null) {
       setSelectedCategoryId(currCat.id);
       setLocalCategories(currCat.successorCategories ?? []);
     }
-  }, [allCategories, setSelectedCategoryId, setStack, stack, router]);
+  }, [
+    allCategories,
+    setSelectedCategoryId,
+    setStack,
+    stack,
+    router,
+    setParentCategory,
+  ]);
 
   useEffect(() => {
-    if (allCategories == null) return;
+    if (allCategories == null || allCategories.length === 0) return;
 
     if (stack.length === 0) {
       setLocalCategories(allCategories);
     } else {
-      const currCat = stack.pop();
+      const currCat = stack.pop()?.[0];
       setStack([...stack]);
       setParentCategory(currCat);
       if (currCat != null) {
@@ -181,56 +191,76 @@ export default function Home({
       }
     >
       <Box
-        className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
+        className="w-full h-full flex flex-col"
         sx={{
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {stack.length > 0 && (
-          <CategoryCard
-            id=""
-            name=""
-            initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
-            onClick={() => {
-              setProducts([]);
-              if (parentCategory != null) {
-                setStack((currStack) => [...currStack, parentCategory]);
-              }
-              router.push('/product');
+        {(stack.length > 0 || parentCategory != null) && (
+          <SimpleBreadcrumbs
+            onClick={(combo: [ExtendedCategory, string]) => {
+              setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
+              handleHeaderBackButton();
+            }}
+            onClickHome={() => {
+              setParentCategory(undefined);
+              setStack([]);
+              setLocalCategories(allCategories);
             }}
           />
         )}
-        {localCategories?.map((category) => {
-          const { imgUrl, name, id, successorCategories } = category;
-          return (
+        <Box
+          className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
+        >
+          {stack.length > 0 && (
             <CategoryCard
-              id={id}
-              name={name}
-              initialImgUrl={imgUrl ?? undefined}
-              key={id}
+              id=""
+              name=""
+              initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
               onClick={() => {
+                setProducts([]);
                 if (parentCategory != null) {
-                  setStack((prevStack) => [...prevStack, parentCategory]);
+                  setStack((currStack) => [
+                    ...currStack,
+                    [parentCategory, parentCategory.name],
+                  ]);
                 }
-                setParentCategory(category);
-                setSelectedCategoryId(id);
-
-                if (
-                  successorCategories == null ||
-                  successorCategories.length === 0
-                ) {
-                  setProducts([]);
-                  if (parentCategory != null) {
-                    setStack((currStack) => [...currStack, parentCategory]);
-                  }
-                  router.push('/product');
-                } else {
-                  setLocalCategories(successorCategories);
-                }
+                router.push('/product');
               }}
             />
-          );
-        })}
+          )}
+          {localCategories?.map((category) => {
+            const { imgUrl, name, id, successorCategories } = category;
+            return (
+              <CategoryCard
+                id={id}
+                name={name}
+                initialImgUrl={imgUrl ?? undefined}
+                key={id}
+                onClick={() => {
+                  if (parentCategory != null) {
+                    setStack((prevStack) => [
+                      ...prevStack,
+                      [parentCategory, parentCategory.name],
+                    ]);
+                  }
+                  setParentCategory(category);
+                  setSelectedCategoryId(id);
+
+                  if (
+                    successorCategories == null ||
+                    successorCategories.length === 0
+                  ) {
+                    setProducts([]);
+                    router.push('/product');
+                  } else {
+                    setLocalCategories(successorCategories);
+                  }
+                }}
+              />
+            );
+          })}
+        </Box>
       </Box>
       {/* <Snackbar
         open={snackbarOpen}
