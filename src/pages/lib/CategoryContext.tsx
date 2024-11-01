@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   CategoryContextProps,
+  CategoryStack,
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
@@ -20,6 +21,8 @@ const CategoryContext = createContext<CategoryContextProps>({
   setSelectedCategoryId: () => undefined,
   stack: [],
   setStack: () => undefined,
+  parentCategory: undefined,
+  setParentCategory: () => undefined,
 });
 
 export const useCategoryContext = () => useContext(CategoryContext);
@@ -31,7 +34,8 @@ export default function CategoryContextProvider({
 }) {
   const [categories, setCategories] = useState<ExtendedCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>();
-  const [stack, setStack] = useState<ExtendedCategory[]>([]);
+  const [stack, setStack] = useState<CategoryStack>([]);
+  const [parentCategory, setParentCategory] = useState<ExtendedCategory>();
 
   const categoryContextState = useMemo(() => {
     return {
@@ -41,6 +45,8 @@ export default function CategoryContextProvider({
       setSelectedCategoryId,
       stack,
       setStack,
+      parentCategory,
+      setParentCategory,
     };
   }, [
     categories,
@@ -49,6 +55,8 @@ export default function CategoryContextProvider({
     setSelectedCategoryId,
     stack,
     setStack,
+    parentCategory,
+    setParentCategory,
   ]);
 
   useEffect(() => {
