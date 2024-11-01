@@ -38,7 +38,7 @@ export default function CollapsableBase({
   setDeleteCategoriesModal,
   closeDrawer,
 }: CollapsableBaseProps) {
-  const { selectedCategoryId } = useCategoryContext();
+  const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function CollapsableBase({
     >
       <ListItemButton
         onClick={() => {
-          // setSelectedCategoryId(id);
+          setSelectedCategoryId(id);
           closeDrawer();
           if (router.pathname !== '/') router.push('/');
         }}
