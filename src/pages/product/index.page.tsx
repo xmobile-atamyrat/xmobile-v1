@@ -1,6 +1,7 @@
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
+import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight } from '@/pages/lib/constants';
@@ -32,7 +33,7 @@ export default function Products() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
-  const { selectedCategoryId } = useCategoryContext();
+  const { selectedCategoryId, setParentCategory } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
@@ -45,7 +46,10 @@ export default function Products() {
   const router = useRouter();
 
   useEffect(() => {
-    if (selectedCategoryId == null) return;
+    if (selectedCategoryId == null) {
+      router.push('/');
+      return;
+    }
     (async () => {
       setProducts(await fetchProducts({ categoryId: selectedCategoryId }));
       setIsLoading(false);
@@ -101,78 +105,84 @@ export default function Products() {
   }, [loadMoreProducts]);
 
   return (
-    <Layout
-      showSearch
-      handleHeaderBackButton={() => {
-        router.push('/');
-      }}
-    >
-      <Box
-        className="flex flex-wrap gap-4 w-full p-3"
-        sx={{
-          mt: isMdUp ? `${appBarHeight}px` : undefined,
+    selectedCategoryId != null && (
+      <Layout
+        showSearch
+        handleHeaderBackButton={() => {
+          setParentCategory(undefined);
+          router.push('/');
         }}
       >
-        {user?.grade === 'ADMIN' && selectedCategoryId != null && (
-          <ProductCard
-            handleClickAddProduct={() =>
+        <Box className="flex flex-col w-full h-full">
+          <SimpleBreadcrumbs />
+          <Box
+            className="flex flex-wrap gap-4 w-full p-3"
+            sx={{
+              mt: isMdUp ? `${appBarHeight}px` : undefined,
+            }}
+          >
+            {user?.grade === 'ADMIN' && selectedCategoryId != null && (
+              <ProductCard
+                handleClickAddProduct={() =>
+                  setAddEditProductDialog({
+                    open: true,
+                    dialogType: 'add',
+                    imageUrls: [],
+                  })
+                }
+              />
+            )}
+            {products.length > 0 &&
+              products.map((product, idx) => (
+                <ProductCard product={product} key={idx} />
+              ))}
+          </Box>
+        </Box>
+        <div id="load-more-trigger"></div>
+        {isLoading && (
+          <Box className="w-full flex justify-center">
+            <CircularProgress />
+          </Box>
+        )}
+        {addEditProductDialog.open && (
+          <AddEditProductDialog
+            args={addEditProductDialog}
+            handleClose={() =>
               setAddEditProductDialog({
-                open: true,
-                dialogType: 'add',
+                open: false,
+                id: undefined,
+                description: undefined,
+                dialogType: undefined,
                 imageUrls: [],
+                name: undefined,
               })
             }
+            snackbarErrorHandler={(message) => {
+              setSnackbarOpen(true);
+              setSnackbarMessage({ message, severity: 'error' });
+            }}
           />
         )}
-        {products.length > 0 &&
-          products.map((product, idx) => (
-            <ProductCard product={product} key={idx} />
-          ))}
-      </Box>
-      <div id="load-more-trigger"></div>
-      {isLoading && (
-        <Box className="w-full flex justify-center">
-          <CircularProgress />
-        </Box>
-      )}
-      {addEditProductDialog.open && (
-        <AddEditProductDialog
-          args={addEditProductDialog}
-          handleClose={() =>
-            setAddEditProductDialog({
-              open: false,
-              id: undefined,
-              description: undefined,
-              dialogType: undefined,
-              imageUrls: [],
-              name: undefined,
-            })
-          }
-          snackbarErrorHandler={(message) => {
-            setSnackbarOpen(true);
-            setSnackbarMessage({ message, severity: 'error' });
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setSnackbarOpen(false);
           }}
-        />
-      )}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={(_, reason) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setSnackbarOpen(false);
-        }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage?.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
         >
-          {snackbarMessage?.message && t(snackbarMessage.message)}
-        </Alert>
-      </Snackbar>
-    </Layout>
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarMessage?.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+          </Alert>
+        </Snackbar>
+      </Layout>
+    )
   );
 }
