@@ -19,8 +19,8 @@ export interface CategoryContextProps {
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
-  categoryLayers: CategoryLayers;
-  setCategoryLayers: Dispatch<SetStateAction<CategoryLayers>>;
+  stack: Array<ExtendedCategory>;
+  setStack: Dispatch<SetStateAction<Array<ExtendedCategory>>>;
 }
 
 export interface UserContextProps {

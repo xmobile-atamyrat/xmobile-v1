@@ -1,7 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   CategoryContextProps,
-  CategoryLayers,
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
@@ -19,30 +18,11 @@ const CategoryContext = createContext<CategoryContextProps>({
   setCategories: () => undefined,
   selectedCategoryId: undefined,
   setSelectedCategoryId: () => undefined,
-  categoryLayers: [],
-  setCategoryLayers: () => undefined,
+  stack: [],
+  setStack: () => undefined,
 });
 
 export const useCategoryContext = () => useContext(CategoryContext);
-
-function constructCategoryLayers(
-  categoryLayers: CategoryLayers,
-  layer: number,
-  categories?: ExtendedCategory[],
-) {
-  if (categories == null || categories.length === 0) return;
-  categories.forEach((category) => {
-    if (categoryLayers[layer] == null) {
-      categoryLayers[layer] = [];
-    }
-    categoryLayers[layer].push(category);
-    constructCategoryLayers(
-      categoryLayers,
-      layer + 1,
-      category.successorCategories,
-    );
-  });
-}
 
 export default function CategoryContextProvider({
   children,
@@ -51,7 +31,7 @@ export default function CategoryContextProvider({
 }) {
   const [categories, setCategories] = useState<ExtendedCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>();
-  const [categoryLayers, setCategoryLayers] = useState<CategoryLayers>({});
+  const [stack, setStack] = useState<ExtendedCategory[]>([]);
 
   const categoryContextState = useMemo(() => {
     return {
@@ -59,16 +39,16 @@ export default function CategoryContextProvider({
       setCategories,
       selectedCategoryId,
       setSelectedCategoryId,
-      categoryLayers,
-      setCategoryLayers,
+      stack,
+      setStack,
     };
   }, [
     categories,
     setCategories,
     selectedCategoryId,
     setSelectedCategoryId,
-    categoryLayers,
-    setCategoryLayers,
+    stack,
+    setStack,
   ]);
 
   useEffect(() => {
@@ -78,10 +58,6 @@ export default function CategoryContextProvider({
           await (await fetch(`${BASE_URL}/api/category`)).json();
         if (success && data != null) {
           setCategories(data);
-
-          const initialCategoryLayers = {};
-          constructCategoryLayers(initialCategoryLayers, 0, data);
-          setCategoryLayers(initialCategoryLayers);
         } else {
           console.error(message);
         }
