@@ -129,7 +129,8 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setProducts, setSearchKeyword } = useProductContext();
-  const { selectedCategoryId } = useCategoryContext();
+  const { selectedCategoryId, setStack, setParentCategory } =
+    useCategoryContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -217,7 +218,11 @@ export default function CustomAppBar({
                 height: { xs: 100, sm: 120 },
               }}
               className="flex items-center justify-center"
-              onClick={() => router.push('/')}
+              onClick={() => {
+                setParentCategory(undefined);
+                setStack([]);
+                router.push('/');
+              }}
               component="button"
             >
               <CardMedia component="img" src="/logo-recolored-cropped.jpeg" />
