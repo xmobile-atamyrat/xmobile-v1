@@ -9,6 +9,7 @@ import {
   mobileAppBarHeight,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
@@ -116,9 +117,18 @@ export default function Home({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
-  const { categoryLayers, setSelectedCategoryId } = useCategoryContext();
-  const [layer, setLayer] = useState(0);
-  const [categories, setCategories] = useState<ExtendedCategory[]>([]);
+  const {
+    setSelectedCategoryId,
+    // selectedCategoryId,
+    categories: allCategories,
+    stack,
+    setStack,
+  } = useCategoryContext();
+  const [localCategories, setLocalCategories] = useState<ExtendedCategory[]>(
+    [],
+  );
+  const [parentCategory, setParentCategory] = useState<ExtendedCategory>();
+  const { setProducts } = useProductContext();
 
   useEffect(() => {
     router.push(router.pathname, router.asPath, {
@@ -128,19 +138,47 @@ export default function Home({
   }, [locale]);
 
   const handleHeaderBackButton = useCallback(() => {
-    setCategories(categoryLayers[layer - 1]);
-    setLayer((curr) => curr - 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layer]);
+    if (router.pathname.includes('product')) return;
+
+    if (stack.length === 0) {
+      setParentCategory(undefined);
+      setLocalCategories(allCategories);
+      return;
+    }
+
+    const currCat = stack.pop();
+    setStack([...stack]);
+    setParentCategory(currCat);
+    if (currCat != null) {
+      setSelectedCategoryId(currCat.id);
+      setLocalCategories(currCat.successorCategories ?? []);
+    }
+  }, [allCategories, setSelectedCategoryId, setStack, stack, router]);
 
   useEffect(() => {
-    setCategories(categoryLayers[layer]);
+    if (allCategories == null) return;
+
+    if (stack.length === 0) {
+      setLocalCategories(allCategories);
+    } else {
+      const currCat = stack.pop();
+      setStack([...stack]);
+      setParentCategory(currCat);
+      if (currCat != null) {
+        setSelectedCategoryId(currCat.id);
+        setLocalCategories(currCat.successorCategories ?? []);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryLayers]);
+  }, [allCategories]);
 
   return (
     <Layout
-      handleHeaderBackButton={layer === 0 ? undefined : handleHeaderBackButton}
+      handleHeaderBackButton={
+        stack.length === 0 && parentCategory == null
+          ? undefined
+          : handleHeaderBackButton
+      }
     >
       <Box
         className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
@@ -148,38 +186,51 @@ export default function Home({
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        {layer !== 0 && (
+        {stack.length > 0 && (
           <CategoryCard
             id=""
             name=""
             initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
             onClick={() => {
+              setProducts([]);
+              if (parentCategory != null) {
+                setStack((currStack) => [...currStack, parentCategory]);
+              }
               router.push('/product');
             }}
           />
         )}
-        {categories != null &&
-          categories.length !== 0 &&
-          categories?.map(({ id, name, imgUrl, successorCategories }) => (
+        {localCategories?.map((category) => {
+          const { imgUrl, name, id, successorCategories } = category;
+          return (
             <CategoryCard
               id={id}
               name={name}
               initialImgUrl={imgUrl ?? undefined}
               key={id}
               onClick={() => {
+                if (parentCategory != null) {
+                  setStack((prevStack) => [...prevStack, parentCategory]);
+                }
+                setParentCategory(category);
+                setSelectedCategoryId(id);
+
                 if (
                   successorCategories == null ||
                   successorCategories.length === 0
                 ) {
+                  setProducts([]);
+                  if (parentCategory != null) {
+                    setStack((currStack) => [...currStack, parentCategory]);
+                  }
                   router.push('/product');
                 } else {
-                  setSelectedCategoryId(id);
-                  setLayer((curr) => curr + 1);
-                  setCategories(successorCategories);
+                  setLocalCategories(successorCategories);
                 }
               }}
             />
-          ))}
+          );
+        })}
       </Box>
       {/* <Snackbar
         open={snackbarOpen}

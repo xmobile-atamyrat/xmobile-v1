@@ -1,6 +1,5 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
-import { blobToBase64, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
 import { useMediaQuery, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -36,22 +35,22 @@ export default function CategoryCard({
         setImgUrl(cacheImgUrl);
       } else {
         setImgUrl('/xmobile-original-logo.jpeg');
-        (async () => {
-          if (initialImgUrl.startsWith('http')) {
-            setImgUrl(initialImgUrl);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${initialImgUrl}`,
-            );
-            const resp = await imgFetcher;
-            if (resp.ok) {
-              const imgBlob = await resp.blob();
-              const base64 = await blobToBase64(imgBlob);
-              setImgUrl(base64);
-              sessionStorage.setItem(id, base64);
-            }
-          }
-        })();
+        // (async () => {
+        //   if (initialImgUrl.startsWith('http')) {
+        //     setImgUrl(initialImgUrl);
+        //   } else {
+        //     const imgFetcher = fetch(
+        //       `${BASE_URL}/api/localImage?imgUrl=${initialImgUrl}`,
+        //     );
+        //     const resp = await imgFetcher;
+        //     if (resp.ok) {
+        //       const imgBlob = await resp.blob();
+        //       const base64 = await blobToBase64(imgBlob);
+        //       setImgUrl(base64);
+        //       sessionStorage.setItem(id, base64);
+        //     }
+        //   }
+        // })();
       }
     }
   }, [initialImgUrl, id]);
