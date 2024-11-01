@@ -14,13 +14,17 @@ export interface ExtendedCategory extends Category {
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
+export type CategoryStack = [ExtendedCategory, string][]; // [category, name][]
+
 export interface CategoryContextProps {
   categories: ExtendedCategory[];
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
-  stack: Array<ExtendedCategory>;
-  setStack: Dispatch<SetStateAction<Array<ExtendedCategory>>>;
+  stack: CategoryStack;
+  setStack: Dispatch<SetStateAction<CategoryStack>>;
+  parentCategory: ExtendedCategory;
+  setParentCategory: Dispatch<SetStateAction<ExtendedCategory>>;
 }
 
 export interface UserContextProps {
