@@ -127,7 +127,7 @@ export default function Product() {
       <Layout
         handleHeaderBackButton={() => {
           setSelectedProduct(undefined);
-          router.push('/');
+          router.push('/product');
         }}
       >
         <Box
