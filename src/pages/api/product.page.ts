@@ -76,35 +76,6 @@ async function handleGetProduct(query: {
   const { searchKeyword, productId, categoryId, page } = query;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
-  if (searchKeyword != null) {
-    const products = await dbClient.product.findMany({
-      where: {
-        OR: [
-          {
-            name: {
-              contains: searchKeyword,
-              mode: 'insensitive',
-            },
-          },
-          // {
-          //   description: {
-          //     contains: searchKeyword,
-          //     mode: 'insensitive',
-          //   },
-          // },
-          {
-            price: {
-              contains: searchKeyword,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
-      skip,
-      take: productsPerPage,
-    });
-    return { resp: { success: true, data: products }, status: 200 };
-  }
   if (productId != null) {
     const product = await getProduct(productId as string);
     if (product == null) {
@@ -121,6 +92,7 @@ async function handleGetProduct(query: {
     }
     return { resp: { success: true, data: product }, status: 200 };
   }
+
   if (categoryId != null) {
     const category = await getCategory(categoryId as string);
     if (category == null) {
@@ -137,17 +109,26 @@ async function handleGetProduct(query: {
     }
 
     const { successorCategories, products } = category;
-    if (successorCategories?.length === 0)
+    if (successorCategories?.length === 0) {
+      let filteredProducts = products;
+      if (searchKeyword != null) {
+        filteredProducts = products?.filter((product) => {
+          return product.name
+            .toLocaleLowerCase()
+            .includes(searchKeyword.toLocaleLowerCase());
+        });
+      }
       return {
         resp: {
           success: true,
-          data: products?.slice(skip, skip + productsPerPage),
+          data: filteredProducts.slice(skip, skip + productsPerPage),
         },
         status: 200,
       };
+    }
 
     const queue = successorCategories!;
-    const allProducts = products!;
+    let allProducts = products!;
     while (queue.length > 0) {
       const { id } = queue.shift()!;
       const { products: sucProducts, successorCategories: newSucCat } =
@@ -156,6 +137,13 @@ async function handleGetProduct(query: {
       queue.push(...newSucCat!);
     }
 
+    if (searchKeyword != null) {
+      allProducts = allProducts.filter((product) => {
+        return product.name
+          .toLocaleLowerCase()
+          .includes(searchKeyword.toLocaleLowerCase());
+      });
+    }
     return {
       resp: {
         success: true,

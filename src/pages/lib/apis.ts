@@ -19,10 +19,14 @@ export const fetchProducts = async ({
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
   if (categoryId) {
     url += `&categoryId=${categoryId}`;
-  } else if (searchKeyword) {
-    url += `&searchKeyword=${searchKeyword}`;
+    if (searchKeyword) {
+      url += `&searchKeyword=${searchKeyword}`;
+    }
   } else if (productId) {
     url += `&productId=${productId}`;
+  } else {
+    console.error('Neither categoryId nor productId is provided');
+    return [];
   }
 
   const { success, data, message }: ResponseApi<Product[]> = await (
