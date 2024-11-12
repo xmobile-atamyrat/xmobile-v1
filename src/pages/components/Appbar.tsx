@@ -1,7 +1,6 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
   LOCALE_COOKIE_NAME,
@@ -57,10 +56,10 @@ export const SearchBar = ({
   mt,
   width,
 }: {
+  handleSearch?: (k: string) => Promise<void>;
   searchPlaceholder: string;
   searchKeyword: string;
   setSearchKeyword: Dispatch<SetStateAction<string>>;
-  handleSearch: (keyword: string) => Promise<void>;
   mt?: string;
   width?: string;
 }) => (
@@ -97,9 +96,16 @@ export const SearchBar = ({
         onChange={(e) => {
           const keyword = e.target.value;
           setSearchKeyword(keyword);
-          handleSearch(keyword);
+          if (handleSearch) {
+            handleSearch(keyword);
+          }
         }}
         value={searchKeyword}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+          }
+        }}
       />
       {searchKeyword !== '' && (
         <IconButton
@@ -107,7 +113,9 @@ export const SearchBar = ({
           sx={{ p: '10px' }}
           onClick={() => {
             setSearchKeyword('');
-            handleSearch('');
+            if (handleSearch) {
+              handleSearch('');
+            }
           }}
         >
           <CloseIcon sx={{ color: 'white' }} />
@@ -128,9 +136,8 @@ export default function CustomAppBar({
   const router = useRouter();
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
-  const { setProducts, setSearchKeyword } = useProductContext();
-  const { selectedCategoryId, setStack, setParentCategory } =
-    useCategoryContext();
+  const { setSearchKeyword } = useProductContext();
+  const { setStack, setParentCategory } = useCategoryContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -140,30 +147,16 @@ export default function CustomAppBar({
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
   }, []);
 
-  const handleSearch = async (keyword: string) => {
-    return;
-    if (keyword === '') {
-      try {
-        setSearchKeyword(undefined);
-        const prods = await fetchProducts({
-          categoryId: selectedCategoryId,
-        });
-        setProducts(prods);
-      } catch (error) {
-        console.error(error);
-      }
-    } else {
-      try {
-        setSearchKeyword(keyword);
-        const prods = await fetchProducts({
-          searchKeyword: keyword,
-        });
-        setProducts(prods);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  };
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchKeyword(localSearchKeyword);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchKeyword]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -238,7 +231,6 @@ export default function CustomAppBar({
                 }}
               >
                 {SearchBar({
-                  handleSearch,
                   mt: isMdUp ? undefined : `${appBarHeight}px`,
                   searchKeyword: localSearchKeyword,
                   searchPlaceholder: t('search'),
@@ -354,7 +346,6 @@ export default function CustomAppBar({
       {showSearch &&
         !isMdUp &&
         SearchBar({
-          handleSearch,
           mt: isMdUp ? undefined : `${appBarHeight}px`,
           searchKeyword: localSearchKeyword,
           searchPlaceholder: t('search'),
