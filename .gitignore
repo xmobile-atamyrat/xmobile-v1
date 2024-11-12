@@ -48,3 +48,4 @@ categories.yaml
 *.env
 db_backup.sql
 backup/
+backup-data.sh
