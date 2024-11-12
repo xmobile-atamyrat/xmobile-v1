@@ -54,10 +54,17 @@ scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/ta
 ```bash
 ssh xmobile
 ./scripts/backup-data.sh
-
 ./scripts/backup-production-data.sh
 
+# delete the current db container and volume
+docker-compose up db -d
+# exec into db container (from daemon)
+psql -U postgres;
+create user xmobile with password 'password';
+alter user xmobile superuser;
 
+docker cp backup/db_backup.sql db:/db_backup.sql
+docker exec -it db bash -c "PGPASSWORD='password' pg_restore -U xmobile -d postgres /db_backup.sql"
 ```
 
 ## Features
