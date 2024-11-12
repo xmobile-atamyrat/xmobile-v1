@@ -48,26 +48,20 @@ export default function Products() {
   useEffect(() => {
     if (selectedCategoryId == null) {
       router.push('/');
-      return;
     }
-    (async () => {
-      setProducts(await fetchProducts({ categoryId: selectedCategoryId }));
-      setIsLoading(false);
-      setPage(1);
-    })();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategoryId]);
 
   const loadMoreProducts = useCallback(async () => {
-    if (isLoading || !hasMore || !selectedCategoryId || page === 0) return;
+    if (isLoading || !hasMore || !selectedCategoryId) return;
     setIsLoading(true);
 
     try {
       const fetchProductsParams: any = { page: page + 1 };
+      fetchProductsParams.categoryId = selectedCategoryId;
       if (searchKeyword) {
         fetchProductsParams.searchKeyword = searchKeyword;
-      } else {
-        fetchProductsParams.categoryId = selectedCategoryId;
       }
       const newProducts = await fetchProducts(fetchProductsParams);
       setProducts((prevProducts) => [...prevProducts, ...newProducts]);
@@ -103,6 +97,14 @@ export default function Products() {
       observer.disconnect();
     };
   }, [loadMoreProducts]);
+
+  useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    setIsLoading(false);
+    setProducts([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchKeyword]);
 
   return (
     selectedCategoryId != null && (
