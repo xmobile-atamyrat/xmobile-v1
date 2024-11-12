@@ -47,6 +47,16 @@ ssh -i ~/.ssh/xmobile -p 2222 ubuntu@localhost
 
 # SCP into the Target VM
 scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/tar-file/xmobile-v1.tar.gz
+```
+
+## Backup data
+
+```bash
+ssh xmobile
+./scripts/backup-data.sh
+
+./scripts/backup-production-data.sh
+
 
 ```
 
