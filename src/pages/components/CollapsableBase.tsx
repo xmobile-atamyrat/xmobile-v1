@@ -1,6 +1,11 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import {
+  CategoryStack,
+  DeleteCategoriesProps,
+  EditCategoriesProps,
+  ExtendedCategory,
+} from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -28,6 +33,8 @@ interface CollapsableBaseProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
+  categoryStackList: CategoryStack;
+  parentCategory?: ExtendedCategory;
 }
 
 export default function CollapsableBase({
@@ -37,6 +44,8 @@ export default function CollapsableBase({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
+  categoryStackList,
+  parentCategory,
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
@@ -45,6 +54,7 @@ export default function CollapsableBase({
   const openEditMenu = Boolean(anchorEl);
   const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
+  const { setStack, setParentCategory } = useCategoryContext();
 
   useEffect(() => {
     if (categoryImgUrl != null && id != null) {
@@ -53,6 +63,9 @@ export default function CollapsableBase({
         setImgUrl(cacheImgUrl);
       } else {
         setImgUrl('/xmobile-original-logo.jpeg');
+        if (process.env.NODE_ENV === 'development') {
+          return;
+        }
         (async () => {
           if (categoryImgUrl.startsWith('http')) {
             setImgUrl(categoryImgUrl);
@@ -80,8 +93,13 @@ export default function CollapsableBase({
       <ListItemButton
         onClick={() => {
           setSelectedCategoryId(id);
+          setStack(categoryStackList);
+          if (parentCategory != null) {
+            setParentCategory(parentCategory);
+          }
           closeDrawer();
-          if (router.pathname !== '/') router.push('/');
+
+          router.push('/product');
         }}
         className="py-2 pr-2"
       >

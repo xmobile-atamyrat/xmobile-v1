@@ -59,18 +59,14 @@ export default function SimpleBreadcrumbs({
         ))}
         {stack.length > 0 ? (
           stack[stack.length - 1][0].id !== parentCategory?.id && (
-            // <Link className="py-2">
             <Typography fontSize={15}>
               {parseName(parentCategory?.name, router.locale ?? 'ru')}
             </Typography>
-            // </Link>
           )
         ) : (
-          //   <Link className="py-2">
           <Typography fontSize={15}>
             {parseName(parentCategory?.name, router.locale ?? 'ru')}
           </Typography>
-          //   </Link>
         )}
       </Breadcrumbs>
     </Box>
