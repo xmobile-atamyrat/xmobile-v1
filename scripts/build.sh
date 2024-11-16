@@ -27,8 +27,6 @@ main() {
 
     # copy the new tar file
     scp xmobile-v1.tar.gz xmobile:/home/ubuntu/tar-file/xmobile-v1.tar.gz
-
-    rm -f xmobile-v1.tar.gz
 }
 
 main
