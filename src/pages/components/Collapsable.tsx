@@ -1,6 +1,11 @@
 import CollapsableBase from '@/pages/components/CollapsableBase';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import {
+  CategoryStack,
+  DeleteCategoriesProps,
+  EditCategoriesProps,
+  ExtendedCategory,
+} from '@/pages/lib/types';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Box, Collapse, IconButton } from '@mui/material';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
@@ -16,6 +21,8 @@ interface CollapsableProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
+  categoryStackList: CategoryStack;
+  parentCategory?: ExtendedCategory;
 }
 
 export default function Collapsable({
@@ -29,6 +36,8 @@ export default function Collapsable({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
+  categoryStackList,
+  parentCategory,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
@@ -47,6 +56,8 @@ export default function Collapsable({
             setDeleteCategoriesModal={setDeleteCategoriesModal}
             setEditCategoriesModal={setEditCategoriesModal}
             closeDrawer={closeDrawer}
+            categoryStackList={categoryStackList}
+            parentCategory={parentCategory}
           />
         </Box>
         <IconButton className="h-full px-0" onClick={() => setOpen(!open)}>
@@ -66,6 +77,8 @@ export default function Collapsable({
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
         closeDrawer={closeDrawer}
+        categoryStackList={categoryStackList}
+        parentCategory={parentCategory}
       />
     </Box>
   );

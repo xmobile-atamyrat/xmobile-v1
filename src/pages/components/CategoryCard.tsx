@@ -36,6 +36,9 @@ export default function CategoryCard({
         setImgUrl(cacheImgUrl);
       } else {
         setImgUrl('/xmobile-original-logo.jpeg');
+        if (process.env.NODE_ENV === 'development') {
+          return;
+        }
         (async () => {
           if (initialImgUrl.startsWith('http')) {
             setImgUrl(initialImgUrl);

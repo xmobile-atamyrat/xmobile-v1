@@ -34,7 +34,12 @@ export default function CategoryContextProvider({
 }) {
   const [categories, setCategories] = useState<ExtendedCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>();
+
+  // stack is always two levels behind the current categories because
+  // after popping from the stack, we show the popped category's successorCategories
   const [stack, setStack] = useState<CategoryStack>([]);
+
+  // parentCategory fills in the gap between the current categories and the stack
   const [parentCategory, setParentCategory] = useState<ExtendedCategory>();
 
   const categoryContextState = useMemo(() => {

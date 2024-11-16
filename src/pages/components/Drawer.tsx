@@ -8,6 +8,7 @@ import {
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import {
+  CategoryStack,
   DeleteCategoriesProps,
   EditCategoriesProps,
   ExtendedCategory,
@@ -44,35 +45,42 @@ function ConstructDrawerList(
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
   depth: number,
   closeDrawer: () => void,
+  categoryStackList: CategoryStack,
 ): React.ReactNode {
   return (
     <List component="div" disablePadding className="flex flex-col">
-      {categories.map(({ id, imgUrl, name, successorCategories }) => (
-        <Collapsable
-          id={id}
-          categoryTitle={name}
-          imgUrl={imgUrl}
-          key={name}
-          pl={depth}
-          initialOpenState={true} // {id === selectedCategoryId}
-          collapsable={
-            successorCategories != null && successorCategories.length > 0
-          }
-          setEditCategoriesModal={setEditCategoriesModal}
-          setDeleteCategoriesModal={setDeleteCategoriesModal}
-          closeDrawer={closeDrawer}
-        >
-          {ConstructDrawerList(
-            successorCategories!,
-            selectedCategoryId,
-            setSelectedCategoryId,
-            setEditCategoriesModal,
-            setDeleteCategoriesModal,
-            depth + 1,
-            closeDrawer,
-          )}
-        </Collapsable>
-      ))}
+      {categories.map((category) => {
+        const { id, name, imgUrl, successorCategories } = category;
+        return (
+          <Collapsable
+            id={id}
+            categoryTitle={name}
+            imgUrl={imgUrl}
+            key={name}
+            pl={depth}
+            initialOpenState={true} // {id === selectedCategoryId}
+            collapsable={
+              successorCategories != null && successorCategories.length > 0
+            }
+            setEditCategoriesModal={setEditCategoriesModal}
+            setDeleteCategoriesModal={setDeleteCategoriesModal}
+            closeDrawer={closeDrawer}
+            categoryStackList={categoryStackList}
+            parentCategory={category}
+          >
+            {ConstructDrawerList(
+              successorCategories!,
+              selectedCategoryId,
+              setSelectedCategoryId,
+              setEditCategoriesModal,
+              setDeleteCategoriesModal,
+              depth + 1,
+              closeDrawer,
+              [...categoryStackList, [category, name]],
+            )}
+          </Collapsable>
+        );
+      })}
     </List>
   );
 }
@@ -120,6 +128,7 @@ export default function CustomDrawer({
             setDeleteCategoriesModal,
             0, // depth
             closeDrawer,
+            [],
           )}
         </Box>
       )}

@@ -50,6 +50,11 @@ export default function Products() {
       router.push('/');
     }
 
+    setProducts([]);
+    setPage(0);
+    setHasMore(true);
+    setIsLoading(false);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategoryId]);
 
@@ -96,7 +101,7 @@ export default function Products() {
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts]);
+  }, [loadMoreProducts, selectedCategoryId]);
 
   useEffect(() => {
     setPage(0);
