@@ -4,18 +4,10 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight } from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import {
-  Alert,
-  Box,
-  CircularProgress,
-  Snackbar,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -41,8 +33,8 @@ export default function Products() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  // const theme = useTheme();
+  // const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
 
   useEffect(() => {
@@ -124,9 +116,9 @@ export default function Products() {
           <SimpleBreadcrumbs />
           <Box
             className="flex flex-wrap gap-4 w-full p-3"
-            sx={{
-              mt: isMdUp ? `${appBarHeight}px` : undefined,
-            }}
+            // sx={{
+            //   mt: isMdUp ? `${appBarHeight}px` : undefined,
+            // }}
           >
             {user?.grade === 'ADMIN' && selectedCategoryId != null && (
               <ProductCard
