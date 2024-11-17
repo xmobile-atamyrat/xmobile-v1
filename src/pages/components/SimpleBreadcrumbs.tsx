@@ -1,8 +1,16 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { appBarHeight } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import HomeIcon from '@mui/icons-material/Home';
-import { Box, Breadcrumbs, Link, Typography } from '@mui/material';
+import {
+  Box,
+  Breadcrumbs,
+  Link,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
@@ -19,9 +27,16 @@ export default function SimpleBreadcrumbs({
     useCategoryContext();
   const router = useRouter();
   const t = useTranslations();
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   return (
-    <Box className="w-full px-3">
+    <Box
+      className={`w-full px-3`}
+      style={{
+        marginTop: isMdUp ? appBarHeight : undefined,
+      }}
+    >
       <Breadcrumbs separator="›" maxItems={3}>
         <Link
           onClick={() => {
