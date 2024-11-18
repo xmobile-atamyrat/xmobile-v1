@@ -34,7 +34,10 @@ export default function SimpleBreadcrumbs({
     <Box
       className={`w-full px-3`}
       style={{
-        marginTop: isMdUp ? appBarHeight : undefined,
+        marginTop:
+          isMdUp && router.pathname.includes('product')
+            ? appBarHeight
+            : undefined,
       }}
     >
       <Breadcrumbs separator="›" maxItems={3}>
