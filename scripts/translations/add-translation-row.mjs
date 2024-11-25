@@ -6,7 +6,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const i18nDir = join(__dirname, '../src', 'i18n');
+const i18nDir = join(__dirname, '../../src', 'i18n');
 
 readdir(i18nDir, (err, files) => {
   if (err) {
