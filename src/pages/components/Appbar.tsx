@@ -14,6 +14,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CallIcon from '@mui/icons-material/Call';
 import CloseIcon from '@mui/icons-material/Close';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LoginIcon from '@mui/icons-material/Login';
@@ -239,6 +240,7 @@ export default function CustomAppBar({
                 })}
               </Box>
             )}
+
             <Select
               value={selectedLocale}
               color="info"
@@ -309,6 +311,13 @@ export default function CustomAppBar({
                 </Box>
               </MenuItem>
             </Select>
+            <IconButton
+              color="primary"
+              sx={{ pr: 1 }}
+              onClick={() => router.push('/contact')}
+            >
+              <CallIcon />
+            </IconButton>
             <Box>
               <IconButton
                 edge="end"
