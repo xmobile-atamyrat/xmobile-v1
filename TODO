@@ -2,8 +2,10 @@ TODO:
 
 TOP PRIORITY:
 
-- implement caching:
-  - product prices
+- fix slow network loading:
+  - cache product prices -> session
+  - persist products list when going in and out of product details
+  - compress images depending on the internet speed
 - implement cart
 - implement footer
     -"research" footer in mob apps
