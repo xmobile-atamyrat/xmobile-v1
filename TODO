@@ -6,6 +6,8 @@ TOP PRIORITY:
   - product prices
 - implement cart
 - implement footer
+    -"research" footer in mob apps
+    -move contact page to footer (all pages)
 - look into webview to make android and ios apps
 - implement liking products feature -> order by likes?
 - user <-> admin discussion feature
