@@ -1,4 +1,5 @@
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
+import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
@@ -12,19 +13,21 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   return (
     <ThemeProvider theme={theme}>
-      <UserContextProvider>
-        <CategoryContextProvider>
-          <ProductContextProvider>
-            <NextIntlClientProvider
-              locale={router.locale}
-              timeZone="Asia/Ashgabat"
-              messages={pageProps.messages}
-            >
-              <Component {...pageProps} />
-            </NextIntlClientProvider>
-          </ProductContextProvider>
-        </CategoryContextProvider>
-      </UserContextProvider>
+      <NetworkContextProvider>
+        <UserContextProvider>
+          <CategoryContextProvider>
+            <ProductContextProvider>
+              <NextIntlClientProvider
+                locale={router.locale}
+                timeZone="Asia/Ashgabat"
+                messages={pageProps.messages}
+              >
+                <Component {...pageProps} />
+              </NextIntlClientProvider>
+            </ProductContextProvider>
+          </CategoryContextProvider>
+        </UserContextProvider>
+      </NetworkContextProvider>
     </ThemeProvider>
   );
 }
