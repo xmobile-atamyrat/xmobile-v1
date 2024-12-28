@@ -71,6 +71,30 @@ export interface ProductContextProps {
   setSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
 }
 
+export interface NavigatorConnection {
+  effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
+  type:
+    | 'bluetooth'
+    | 'cellular'
+    | 'ethernet'
+    | 'none'
+    | 'other'
+    | 'unknown'
+    | 'wifi'
+    | 'wimax';
+  onchange: () => void;
+}
+
+export interface NavigatorExtended extends Navigator {
+  connection: NavigatorConnection;
+}
+
+type NetworkType = 'slow' | 'fast' | 'unknown';
+export interface NetworkContextProps {
+  network: NetworkType;
+  setNetwork: Dispatch<SetStateAction<NetworkType>>;
+}
+
 export interface CategoryName {
   en: string;
   ru: string;
