@@ -7,6 +7,9 @@ TOP PRIORITY:
   - persist products list when going in and out of product details
   - compress images depending on the internet speed
 - implement cart
+- implement caching:
+  - product prices
+- implement cart (HAN is doing)
 - implement footer
 - implement caching:
   - product prices
