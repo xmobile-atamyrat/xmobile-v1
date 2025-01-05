@@ -33,7 +33,7 @@
   "signUp": "Akkaunt aç",
   "email": "Email",
   "password": "Parol",
-  "userAlreadyExists": "Munaka akkaunt u",
+  "userAlreadyExists": "Munaka akkaunt uzhe bar",
   "search": "Ahtar...",
   "name": "Adyňyz",
   "haveAccount": "Akkaundyňyz barmy?",
@@ -84,5 +84,10 @@
   "allProducts": "Productshli önümler",
   "home": "Öý",
   "contact": "Habarlaşyň",
-  "address": "Lebap welaýaty, Türkmenabat şäheri, 3-nji çärýek mikro etrapçasy, S.A.Niýazow şaýoly, \"Xmobile\" dükany."
+  "address": "Lebap welaýaty, Türkmenabat şäheri, 3-nji çärýek mikro etrapçasy, S.A.Niýazow şaýoly, \"Xmobile\" dükany.",
+  "addToCart": "Sätila koş",
+  "addToCartSuccess": "Produkt sätila koşuldy!",
+  "addToCartFail": "Produkt sätila koşulmady!",
+  "deleteFromCartSuccess": "Produkt sätildan aýryldy!",
+  "deleteFromCartFail": "Produkt sätildan aýrylmady!"
 }

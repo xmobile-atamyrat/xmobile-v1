@@ -84,5 +84,10 @@
   "allProducts": "Productshli önümler",
   "home": "Öý",
   "contact": "Habarlaşyň",
-  "address": "Lebap welaýat,  Türkmenabat şãher , 3-nji kwartal  mikroraýony, S.A. Niýazow şaýoly ,  \"Xmobile\" dükany."
+  "address": "Lebap welaýat,  Türkmenabat şãher , 3-nji kwartal  mikroraýony, S.A. Niýazow şaýoly ,  \"Xmobile\" dükany.",
+  "addToCart": "Sebede goş",
+  "addToCartSuccess": "Önüm sebede goşuldy!",
+  "addToCartFail": "Önüm sebede goşulmady!",
+  "deleteFromCartSuccess": "Önüm sebetden pozuldy!",
+  "deleteFromCartFail": "Önüm sebetden pozulmady!"
 }

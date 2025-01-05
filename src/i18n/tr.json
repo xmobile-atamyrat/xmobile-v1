@@ -82,5 +82,10 @@
   "allProducts": "Tüm Ürünler",
   "home": "Ev",
   "contact": "Temas etmek",
-  "address": "Lebap ili, Türkmenabat şehri, 3. çeyrek mikro bölgesi, S.A. Niyazov Bulvarı, \"Xmobile\" mağazası."
+  "address": "Lebap ili, Türkmenabat şehri, 3. çeyrek mikro bölgesi, S.A. Niyazov Bulvarı, \"Xmobile\" mağazası.",
+  "addToCart": "Sepete Ekle",
+  "addToCartSuccess": "Ürün başarıyla sepete eklendi!",
+  "addToCartFail": "Ürün sepete eklenemedi!",
+  "deleteFromCartSuccess": "Ürün sepetten silindi!",
+  "deleteFromCartFail": "Ürün sepetten silinemedi!"
 }

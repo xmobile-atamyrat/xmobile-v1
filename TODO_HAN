@@ -1,15 +1,28 @@
 TODO:
 
+SUGGESTIONS TO LBRO:
+
+- when adding prices to product immediately start with []
+
+TODO:
+- it should be possible to simplify cartItems and Product feth logic in cart/index.page.tsx
+- redirect to login page if not logged in (implement a system that was implemented in next.js dashboard app, mid logic where checks whetehr user exists or not then goes to the page)
+
+
+
+
+
 TOP PRIORITY:
 
 - implement caching:
   - product prices
-- implement cart (HAN is doing)
+- implement cart (CURRENTLY DOING):
+    -redirect to login page when adding to cart (*)
 - implement footer
     -"research" footer in mob apps
     -move contact page to footer (all pages)
 - look into webview to make android and ios apps
-- implement liking products feature -> order by likes?
+- implement liking products feature -> order by likes? (*)
 - user <-> admin discussion feature
 - integrate payment system
 
@@ -24,4 +37,3 @@ MEDIUM PRIORITY:
 SMALL PRIORITY:
 
 - make eslint remove unused imports
-- language url and component not the same on the start of application
