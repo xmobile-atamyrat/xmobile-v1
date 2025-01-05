@@ -35,9 +35,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
+
+// use lazy() to not to load the same compononets and functions in AddToCart
+const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -131,7 +134,7 @@ export default function Product() {
         }}
       >
         <Box
-          className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4`}
+          className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4 pb-10`}
           pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
         >
           {/* title, images */}
@@ -211,7 +214,7 @@ export default function Product() {
               width: isMdUp ? '50%' : '100%',
             }}
           >
-            <Box className="w-full my-4">
+            <Box className="w-full my-4 flex justify-between">
               {product.price?.includes('[') ? (
                 <CircularProgress size={isMdUp ? 30 : 24} />
               ) : (
@@ -286,6 +289,8 @@ export default function Product() {
                   .map((desc, index) => (
                     <Typography key={`${desc}-${index}`}>{desc}</Typography>
                   ))}
+
+            <AddToCart productId={product.id} cartAction="add" />
           </Box>
         </Box>
         {showDeleteProductDialog?.show && (
