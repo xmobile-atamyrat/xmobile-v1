@@ -48,6 +48,8 @@ export default function Products() {
   // const theme = useTheme();
   // const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
+  // UNCOMMENT FOR SEPERATE CART DIALOG
+  // const [currentProductCartDialog, setCurrentOpenCartDialog] = useState(null);
 
   useEffect(() => {
     if (selectedCategoryId == null) {
@@ -167,7 +169,14 @@ export default function Products() {
             )}
             {products.length > 0 &&
               products.map((product, idx) => (
-                <ProductCard product={product} key={idx} />
+                <ProductCard
+                  product={product}
+                  key={idx}
+                  cartProps={{ cartAction: 'add' }}
+                  // UNCOMMENT FOR SEPERATE CART DIALOG
+                  /* isCartDialogOpen={currentProductCartDialog === product.id}
+                  openCartDialog={() => {setCurrentOpenCartDialog(product.id);}} */
+                />
               ))}
           </Box>
         </Box>

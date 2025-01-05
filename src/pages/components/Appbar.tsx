@@ -21,6 +21,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
+
 import {
   Avatar,
   CardMedia,
@@ -248,7 +249,11 @@ export default function CustomAppBar({
               color="info"
               size="small"
               sx={{
-                width: { xs: 80, sm: 110 },
+                // value: { xs: selectedLocale.length, sm: selectedLocale, md: selectedLocale, lg: selectedLocale },
+                '& .MuiSelect-icon': {
+                  display: { xs: 'none', sm: 'block' }, // Show the dropdown icon
+                },
+                width: { xs: 50, sm: 110 },
                 height: { xs: 36, sm: 40 },
                 '& .MuiInputBase-input': {
                   padding: { xs: '8px', sm: '20px' },
