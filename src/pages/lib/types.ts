@@ -121,6 +121,14 @@ export interface CategoryName {
   ch: string;
 }
 
+export interface AddToCartProps {
+  cartItemId?: string;
+  userId?: string;
+  quantity?: number;
+  productId?: string;
+  cartAction?: 'add' | 'delete';
+}
+
 export interface SnackbarProps {
   message: string;
   severity: 'success' | 'error' | 'info' | 'warning';
