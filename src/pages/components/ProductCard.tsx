@@ -16,24 +16,39 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  // Dialog,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy } from 'react';
+import { AddToCartProps } from '@/pages/lib/types';
+
+// use lazy() to not to load the same compononets and functions in AddToCart
+const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cardClassName?: string;
+
+  cartProps?: AddToCartProps;
+
+  // UNCOMMENT FOR SEPERATE CART DIALOG
+  // isCartDialogOpen?: boolean;
+  // openCartDialog?: () => void;
 }
 
 export default function ProductCard({
   product: initialProduct,
   handleClickAddProduct,
   cardClassName,
+  cartProps,
+  // UNCOMMENT FOR SEPERATE CART DIALOG
+  /* isCartDialogOpen,
+  openCartDialog, */
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -89,7 +104,7 @@ export default function ProductCard({
     <Card
       sx={{
         width: { xs: '47%', sm: 200 },
-        height: { xs: 250, sm: 300 },
+        height: { xs: 260, sm: 300 },
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
@@ -149,7 +164,7 @@ export default function ProductCard({
                 ))}
             </Box>
           </Box>
-          <Box className="flex items-end ">
+          <Box className="flex items-end justify-between">
             {product?.price?.includes('[') ? (
               <CircularProgress size={isMdUp ? 30 : 24} />
             ) : (
@@ -160,6 +175,19 @@ export default function ProductCard({
                 {product?.price} {t('manat')}
               </Typography>
             )}
+          </Box>
+          <Box onClick={(e) => e.stopPropagation()}>
+            <AddToCart
+              productId={product.id}
+              cartAction={cartProps?.cartAction}
+              quantity={cartProps?.quantity}
+              cartItemId={cartProps?.cartItemId}
+            />
+            {/* UNCOMMENT FOR SEPERATE CART DIALOG */}
+            {/* <Dialog open={false} onClose={() => {}}>
+              <AddToCart productId={product.id}/>
+
+            </Dialog> */}
           </Box>
         </Box>
       ) : (
