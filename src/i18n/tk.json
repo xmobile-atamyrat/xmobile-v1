@@ -89,5 +89,6 @@
   "addToCartSuccess": "Önüm sebede goşuldy!",
   "addToCartFail": "Önüm sebede goşulmady!",
   "deleteFromCartSuccess": "Önüm sebetden pozuldy!",
-  "deleteFromCartFail": "Önüm sebetden pozulmady!"
+  "deleteFromCartFail": "Önüm sebetden pozulmady!",
+  "fetchCartItemsFail": "Sebediňizdeki önümleri alyp bolmady!"
 }

@@ -28,7 +28,7 @@ model CartItems {
   id              String      @id @default(uuid())
   quantity        Int         @default(0)
 
-  users      User    @relation(references: [id], fields: [userId], onDelete: Cascade)
+  user      User    @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId      String
   product     Product    @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String

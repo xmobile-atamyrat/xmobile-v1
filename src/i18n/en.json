@@ -87,5 +87,6 @@
   "addToCartSuccess": "Product added to cart!",
   "addToCartFail": "Failed to add product to cart!",
   "deleteFromCartSuccess": "Product deleted from cart!",
-  "deleteFromCartFail": "Failed to delete product from cart!"
+  "deleteFromCartFail": "Failed to delete product from cart!",
+  "fetchCartItemsFail": "Failed to fetch your cart items!"
 }

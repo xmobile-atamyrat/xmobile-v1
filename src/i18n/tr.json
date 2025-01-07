@@ -87,5 +87,6 @@
   "addToCartSuccess": "Ürün başarıyla sepete eklendi!",
   "addToCartFail": "Ürün sepete eklenemedi!",
   "deleteFromCartSuccess": "Ürün sepetten silindi!",
-  "deleteFromCartFail": "Ürün sepetten silinemedi!"
+  "deleteFromCartFail": "Ürün sepetten silinemedi!",
+  "fetchCartItemsFail": "Sepet öğeleri getirilemedi!"
 }

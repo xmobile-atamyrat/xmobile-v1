@@ -39,7 +39,7 @@ import { useEffect, useState, lazy } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
-// use lazy() to not to load the same compononets and functions in AddToCart
+// use lazy() not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 // getStaticProps because translations are static
