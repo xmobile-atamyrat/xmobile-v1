@@ -276,7 +276,7 @@ export default function AddEditProductDialog({
             type="text"
             name="price"
             className="my-1 sm:mr-2 w-full sm:w-2/3"
-            defaultValue={price ?? '[]'}
+            defaultValue={price ?? ''}
           />
         </Box>
 

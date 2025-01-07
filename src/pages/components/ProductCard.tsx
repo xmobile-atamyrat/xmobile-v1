@@ -182,6 +182,7 @@ export default function ProductCard({
               cartAction={cartProps?.cartAction}
               quantity={cartProps?.quantity}
               cartItemId={cartProps?.cartItemId}
+              onDelete={cartProps?.onDelete}
             />
             {/* UNCOMMENT FOR SEPERATE CART DIALOG */}
             {/* <Dialog open={false} onClose={() => {}}>
