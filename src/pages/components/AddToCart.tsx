@@ -10,13 +10,13 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import LoginIcon from '@mui/icons-material/Login';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useRouter } from 'next/router';
 
 export default function AddToCart({
   productId,
   quantity: initialQuantity = 1,
   cartAction,
   cartItemId = undefined,
+  onDelete,
 }: AddToCartProps) {
   // constants
   const [quantity, setQuantity] = useState(initialQuantity);
@@ -24,7 +24,6 @@ export default function AddToCart({
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
-  const router = useRouter();
 
   const handleProductQuantity = (action: 'add' | 'remove') => () => {
     if (action === 'add') {
@@ -38,35 +37,45 @@ export default function AddToCart({
   // addCartItems function
   const addCartItems = async () => {
     const userId = user?.id;
-    const response = await fetch(`${BASE_URL}/api/cart`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId,
-        productId,
-        quantity,
-      }),
-    });
-    const data = await response.json();
 
-    try {
-      if (data.success) {
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: t('addToCartSuccess'),
-          severity: 'success',
-        });
-      } else {
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: t(data.message),
-          severity: 'error',
-        });
+    if (userId === undefined) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: t('userNotFound'),
+        severity: 'warning',
+      });
+    } else {
+      const response = await fetch(`${BASE_URL}/api/cart`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          productId,
+          quantity,
+        }),
+      });
+
+      try {
+        const data = await response.json();
+
+        if (data.success) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: t('addToCartSuccess'),
+            severity: 'success',
+          });
+        } else {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: t(data.message),
+            severity: 'error',
+          });
+        }
+      } catch (error) {
+        console.error(t('addToCartFail'));
       }
-    } catch (error) {
-      // console.log(error);
     }
   };
 
@@ -90,7 +99,6 @@ export default function AddToCart({
           message: t('deleteFromCartSuccess'),
           severity: 'success',
         });
-        router.reload();
       } else {
         setSnackbarOpen(true);
         setSnackbarMessage({
@@ -99,7 +107,7 @@ export default function AddToCart({
         });
       }
     } catch (error) {
-      // console.log(error);
+      console.error(error);
     }
   };
 
@@ -177,6 +185,7 @@ export default function AddToCart({
             sx={{ pr: 1, paddingTop: 0 }}
             type="submit"
             onClick={() => {
+              onDelete(cartItemId);
               deleteCartItems(cartItemId);
             }}
           >
@@ -213,7 +222,7 @@ export default function AddToCart({
           sx={{ width: '100%' }}
         >
           {snackbarMessage?.message && snackbarMessage.message}
-          {snackbarMessage?.severity === 'error' && (
+          {snackbarMessage?.severity === 'warning' && (
             <Link href="user/signin">
               {`. ${t('signin')}`}
               <LoginIcon />

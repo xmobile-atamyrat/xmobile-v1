@@ -112,9 +112,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 export default function Home({
   locale,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  // const [snackbarOpen, setSnackbarOpen] = useState(false);
-  // const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
-  // const t = useTranslations();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();

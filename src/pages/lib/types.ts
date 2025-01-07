@@ -109,6 +109,7 @@ export interface AddToCartProps {
   quantity?: number;
   productId?: string;
   cartAction?: 'add' | 'delete';
+  onDelete?: (message: string) => void;
 }
 
 export interface SnackbarProps {

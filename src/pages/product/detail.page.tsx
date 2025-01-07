@@ -41,7 +41,7 @@ import 'slick-carousel/slick/slick.css';
 import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 
-// use lazy() to not to load the same compononets and functions in AddToCart
+// use lazy() not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 // getStaticProps because translations are static
