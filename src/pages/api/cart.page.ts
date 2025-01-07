@@ -3,6 +3,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { z } from 'zod';
 import dbClient from '@/lib/dbClient';
 
+const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
   userId: z.string().min(1, 'userNotFound'),
   cartItemId: z.string(),
@@ -43,27 +44,17 @@ export default async function handler(
 
       res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
-      // res.status(400).json({ success: false, message: " " + error.errors[0].path })
-      // let msg = "Couldn't add product to cart. "
-      // if (error instanceof z.ZodError) {
-      //     msg += error.errors[0].path + " not found/valid."
-      // }
-      res.status(400).json({ success: false, message: 'userNotFound' });
+      res.status(400).json({ success: false, message: error.message });
     }
   } else if (req.method === 'GET') {
-    // console.log(data);
-    // res.status(200).json({ success: true, data: data })
-
     try {
       const { userId } = FormSchema.omit({
         cartItemId: true,
         productId: true,
         quantity: true,
       }).parse(req.query);
-      // res.status(200).json({ success: true, data: userId })
 
       // get cartItem, Products by userId
-
       const cartItems = await dbClient.cartItems.findMany({
         where: {
           userId,
@@ -73,15 +64,14 @@ export default async function handler(
 
       res.status(200).json({ success: true, data: cartItems });
     } catch (error) {
-      // console.error('Error fetching cart items:', error);
       if (error instanceof z.ZodError) {
-        res
-          .status(400)
-          .json({ success: false, message: error.errors[0].message });
+        res.status(400).json({
+          success: false,
+          message: `Type of data's are incorrect. ${error.errors[0].message}`,
+        });
       } else {
-        res
-          .status(400)
-          .json({ success: false, message: 'Something went wrong' });
+        console.error(filepath, error);
+        res.status(500).json({ success: false, message: error.message });
       }
     }
   } else if (req.method === 'DELETE') {
@@ -89,7 +79,7 @@ export default async function handler(
       await dbClient.cartItems.delete({
         where: { id: data.id },
       });
-      res.status(400).json({ success: true, data: [] });
+      res.status(200).json({ success: true, data: [] });
     } catch (error) {
       res
         .status(400)
