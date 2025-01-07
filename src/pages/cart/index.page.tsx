@@ -23,6 +23,12 @@ export default function CartPage() {
   const { user } = useUserContext();
   const [cartItems, setCartItems] = useState<any[]>([]);
 
+  const onDelete = (cartItemId: string) => {
+    // brother is it okay to filter out not deleted cartItems?
+    // bcoz everytime when one product is deleted it will go through each of them
+    setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
+  };
+
   useEffect(() => {
     const fetchUserCartItems = async (userId: string | undefined) => {
       // fix this to redirect to login page
@@ -33,49 +39,18 @@ export default function CartPage() {
       try {
         const response = await fetch(`${BASE_URL}/api/cart?userId=${userId}`);
         const data = await response.json();
-        // console.log(userId);
 
         if (data.success) {
           setCartItems(data.data);
         } else {
-          // console.log(data);
+          console.error(data.message);
         }
       } catch (error) {
-        /* console.log(error); */
+        console.error('Error fetching cart data:', error);
       }
     };
     fetchUserCartItems(user?.id);
   }, [user?.id]);
-
-  /* if (cartItems !== undefined) {
-    console.log("cartCellsByUserId: ", cartItems[0]?.productId);
-  }
-   console.log("productsInUsersCart: ", products);
-
-    if (user != undefined) {
-     console.log(user);
-   } */
-
-  // console.log(user?.id);
-  // useEffect(() => {
-  //   const getUserCartItems = async () => {
-  //     try {
-  //       const res = await fetch(`${BASE_URL}/api/cart?userId=${user?.id}`);
-  //       const data = await res.json();
-
-  //       console.log(user?.id);
-
-  //       // if (!data.success) {
-  //       //   if (data.message == 'userNotFound') {
-  //       //     router.push('user/signin');
-  //       //   }
-  //       // }
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   }
-  //   console.log(getUserCartItems())
-  // }, [user?.id]);
 
   return (
     <Layout>
@@ -97,6 +72,7 @@ export default function CartPage() {
                   cartAction: 'delete',
                   quantity: cartItem?.quantity,
                   cartItemId: cartItem?.id,
+                  onDelete,
                 }}
               ></ProductCard>
             ))}
