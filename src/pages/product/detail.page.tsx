@@ -267,6 +267,7 @@ export default function Product() {
                         <Typography
                           fontWeight={600}
                           fontSize={isMdUp ? 18 : 15}
+                          sx={{ wordBreak: 'break-word' }}
                         >
                           {key}
                         </Typography>
