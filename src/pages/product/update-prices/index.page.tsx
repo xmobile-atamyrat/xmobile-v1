@@ -139,8 +139,8 @@ export default function UpdatePrices({
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          currPrice.priceInTmt = parsePrice(
-            (parseFloat(value) * dollarRate).toString(),
+          currPrice.priceInTmt = Math.ceil(
+            parseFloat(value) * dollarRate,
           ).toString();
         } else if (cellIndex === PRICE_NAME_IDX) {
           currPrice.name = value;
@@ -160,7 +160,7 @@ export default function UpdatePrices({
               return prevRow.map((cell, idx) => {
                 if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
-                    (parseFloat(value) * dollarRate).toString(),
+                    Math.ceil(parseFloat(value) * dollarRate).toString(),
                   );
                 }
                 if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
@@ -270,7 +270,7 @@ export default function UpdatePrices({
                     }
                   }}
                 >
-                  <CheckCircleOutlineIcon color="success" />
+                  <CheckCircleOutlineIcon color={'success'} />
                 </IconButton>
               </Box>
             </Box>
