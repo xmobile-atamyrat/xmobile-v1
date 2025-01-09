@@ -76,9 +76,7 @@ export default async function handler(
           dbClient.prices.update({
             where: { id },
             data: {
-              priceInTmt: parseFloat(
-                (parseFloat(price) * rate).toFixed(2),
-              ).toString(),
+              priceInTmt: Math.ceil(parseFloat(price) * rate).toString(),
             },
           }),
         ),
