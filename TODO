@@ -4,8 +4,9 @@ TOP PRIORITY:
 
 - implement caching:
   - product prices
-- implement cart (HAN is doing)
-- implement footer
+- implement cart (HAN is doing, 
+                  ->..on check)
+- implement footer (HAN is doing)
     -"research" footer in mob apps
     -move contact page to footer (all pages)
 - look into webview to make android and ios apps
@@ -25,3 +26,8 @@ SMALL PRIORITY:
 
 - make eslint remove unused imports
 - language url and component not the same on the start of application
+
+
+SUGGESTIONS?:
+
+- 

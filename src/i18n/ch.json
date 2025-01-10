@@ -90,5 +90,7 @@
   "addToCartFail": "Produkt sätila koşulmady!",
   "deleteFromCartSuccess": "Produkt sätildan aýryldy!",
   "deleteFromCartFail": "Produkt sätildan aýrylmady!",
-  "fetchCartItemsFail": "Sätildaki produktlary alyp bolmady!"
+  "fetchCartItemsFail": "Sätildaki produktlary alyp bolmady!",
+  "followUs": "Podpisatsýa edinlär",
+  "mobilePhone": "Nomer"
 }

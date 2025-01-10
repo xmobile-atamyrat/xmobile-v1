@@ -3,6 +3,7 @@ import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog'
 import CustomAppBar from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
+import Footer from '@/pages/components/Footer';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
@@ -80,9 +81,10 @@ export default function Layout({
       />
       <Box
         component="main"
-        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative`}
+        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col justify-between`}
       >
         {children}
+        <Footer />
       </Box>
       {editCategoriesModal.open && (
         <AddEditCategoriesDialog
@@ -139,6 +141,7 @@ export default function Layout({
           }}
         />
       )}
+
     </Box>
   );
 }

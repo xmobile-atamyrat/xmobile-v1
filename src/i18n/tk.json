@@ -90,5 +90,7 @@
   "addToCartFail": "Önüm sebede goşulmady!",
   "deleteFromCartSuccess": "Önüm sebetden pozuldy!",
   "deleteFromCartFail": "Önüm sebetden pozulmady!",
-  "fetchCartItemsFail": "Sebediňizdeki önümleri alyp bolmady!"
+  "fetchCartItemsFail": "Sebediňizdeki önümleri alyp bolmady!",
+  "followUs": "Bize goşulyň",
+  "mobilePhone": "Telefon"
 }
