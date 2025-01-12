@@ -12,6 +12,15 @@ yarn db:migrate
 yarn dev
 ```
 
+### Docker Setup
+```bash
+psql -U postgres
+create user xmobile with password 'password';
+grant all privileges on database postgres to xmobile;
+alter user xmobile createdb;
+grant all on schema public to xmobile;
+```
+
 ## CI/CD
 
 1. Get the xmobile ssh public and private keys along with passphrase
