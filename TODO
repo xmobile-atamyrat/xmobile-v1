@@ -8,8 +8,13 @@ TOP PRIORITY:
   - compress images depending on the internet speed
 - implement cart
 - implement footer
-    -"research" footer in mob apps
-    -move contact page to footer (all pages)
+- implement caching:
+  - product prices
+- implement cart (HAN is doing,
+  ->..on check)
+- implement footer (HAN is doing)
+  -"research" footer in mob apps
+  -move contact page to footer (all pages)
 - look into webview to make android and ios apps
 - implement liking products feature -> order by likes?
 - user <-> admin discussion feature
@@ -26,3 +31,10 @@ MEDIUM PRIORITY:
 SMALL PRIORITY:
 
 - make eslint remove unused imports
+  <<<<<<< Updated upstream
+  =======
+- language url and component not the same on the start of application
+
+SUGGESTIONS?:
+
+- > > > > > > > Stashed changes

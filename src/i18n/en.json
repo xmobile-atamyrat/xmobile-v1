@@ -81,6 +81,14 @@
   "telekomBalance": "Telekom Balance",
   "allProducts": "All Products",
   "home": "Home",
-  "contact": "Contact",
-  "address": "Lebap province, Turkmenabat city, 3rd quarter microdistrict, S.A. Niyazov Avenue, \"Xmobile\" store."
+  "contact": "Contact us",
+  "address": "Lebap province, Turkmenabat city, 3rd quarter microdistrict, S.A. Niyazov Avenue, \"Xmobile\" store.",
+  "addToCart": "Add to Cart",
+  "addToCartSuccess": "Product added to cart!",
+  "addToCartFail": "Failed to add product to cart!",
+  "deleteFromCartSuccess": "Product deleted from cart!",
+  "deleteFromCartFail": "Failed to delete product from cart!",
+  "fetchCartItemsFail": "Failed to fetch your cart items!",
+  "followUs": "Follow us",
+  "mobilePhone": "Mobile phone"
 }
