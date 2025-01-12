@@ -19,7 +19,10 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { Box } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, lazy } from 'react';
+
+// import with lazy to minimize same components and functions
+const ChatIcon = lazy(() => import('@/pages/components/Chat'));
 
 interface LayoutProps {
   children: ReactNode;
@@ -145,6 +148,12 @@ export default function Layout({
           }}
         />
       )}
+<<<<<<< Updated upstream
+=======
+
+      <ChatIcon />
+
+>>>>>>> Stashed changes
     </Box>
   );
 }

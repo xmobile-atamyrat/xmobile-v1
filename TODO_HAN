@@ -1,0 +1,45 @@
+TODO:
+
+SUGGESTIONS TO LBRO:
+
+
+TODO:
+- CART
+  - redirect to login page if not logged in (implement a system that was implemented in next.js dashboard app, mid logic where checks whetehr user exists or not then goes to the page)
+- CHAT
+  - Fix the ui of chat 
+  - make responsive for mobile
+  - unread message count
+  - typing..?
+  - SendChatSchema : content shoulnt include empty spaces
+  - improve_error handling in chat api's, if smth wrong know where it goes wrong
+
+
+
+
+
+TOP PRIORITY:
+
+- implement caching:
+  - product prices
+- implement cart (CURRENTLY DOING):
+    -redirect to login page when adding to cart (*)
+- implement footer
+    -"research" footer in mob apps
+    -move contact page to footer (all pages)
+- look into webview to make android and ios apps
+- implement liking products feature -> order by likes? (*)
+- user <-> admin discussion feature
+- integrate payment system
+
+MEDIUM PRIORITY:
+
+- cache menu images
+- implement re-order product images
+- In edit category and product, it's not possible to delete image (only replacing is allowed)
+- Implement router stack to not allow landing directly on product before visiting main page
+-
+
+SMALL PRIORITY:
+
+- make eslint remove unused imports
