@@ -260,28 +260,33 @@ export default function Product() {
               </List>
             )}
             {description && Object.keys(description).length > 0
-              ? Object.keys(description ?? {}).map((key) => (
-                  <Box key={key} className="w-full flex flex-col pb-4">
-                    <Box className="w-full flex flex-row gap-2 justify-between">
-                      <Box className="w-[30%]">
-                        <Typography
-                          fontWeight={600}
-                          fontSize={isMdUp ? 18 : 15}
-                          sx={{ wordBreak: 'break-word' }}
-                        >
-                          {key}
-                        </Typography>
-                      </Box>
-                      <Box className="flex flex-col w-[70%]">
-                        {description[key].map((descLine, index) => (
-                          <Typography key={index} fontSize={isMdUp ? 18 : 15}>
-                            {descLine}
+              ? Object.keys(description ?? {})
+                  .filter(
+                    (key) =>
+                      description[key] != null && description[key].length > 0,
+                  )
+                  .map((key) => (
+                    <Box key={key} className="w-full flex flex-col pb-4">
+                      <Box className="w-full flex flex-row gap-2 justify-between">
+                        <Box className="w-[30%]">
+                          <Typography
+                            fontWeight={600}
+                            fontSize={isMdUp ? 18 : 15}
+                            sx={{ wordBreak: 'break-word' }}
+                          >
+                            {key}
                           </Typography>
-                        ))}
+                        </Box>
+                        <Box className="flex flex-col w-[70%]">
+                          {description[key].map((descLine, index) => (
+                            <Typography key={index} fontSize={isMdUp ? 18 : 15}>
+                              {descLine}
+                            </Typography>
+                          ))}
+                        </Box>
                       </Box>
                     </Box>
-                  </Box>
-                ))
+                  ))
               : parseName(product?.description ?? '{}', router.locale ?? 'tk')
                   ?.split('\n')
                   .map((desc, index) => (

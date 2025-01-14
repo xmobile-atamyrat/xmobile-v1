@@ -120,6 +120,10 @@ export default function ProductCard({
             >
               {parseName(product.description ?? '{}', router.locale ?? 'tk')
                 ?.split('\n')
+                ?.filter((desc) => {
+                  const trimmedDesc = desc.trim().split(']');
+                  return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
+                })
                 ?.map((desc, index) => (
                   <Typography
                     key={`${desc}-${index}`}
