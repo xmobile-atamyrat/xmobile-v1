@@ -45,9 +45,6 @@ export default function ProductCard({
     (async () => {
       if (product?.imgUrls[0] != null) {
         setImgUrl('/xmobile-original-logo.jpeg');
-        if (process.env.NODE_ENV === 'development') {
-          return;
-        }
         if (product.imgUrls[0].startsWith('http')) {
           setImgUrl(product.imgUrls[0]);
         } else {
