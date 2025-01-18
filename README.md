@@ -13,6 +13,7 @@ yarn dev
 ```
 
 ### Docker Setup
+
 ```bash
 psql -U postgres
 create user xmobile with password 'password';
@@ -65,15 +66,22 @@ ssh xmobile
 ./scripts/backup-data.sh
 ./scripts/backup-production-data.sh
 
-# delete the current db container and volume
+# delete the current db container and volume and then:
 docker-compose up db -d
-# exec into db container (from daemon)
+
+# exec into db container (from daemon):
 psql -U postgres;
 create user xmobile with password 'password';
 alter user xmobile superuser;
 
+# from terminal:
 docker cp backup/db_backup.sql db:/db_backup.sql
 docker exec -it db bash -c "PGPASSWORD='password' pg_restore -U xmobile -d postgres /db_backup.sql"
+
+# from repo root:
+tar -xzvf backup/images.tar.gz -C backup
+chmod +x scripts/update-db-img-urls.sh
+./scripts/update-db-img-urls.sh
 ```
 
 ## Features
