@@ -1,11 +1,11 @@
-import Layout from '@/pages/components/Layout';
-import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { useMediaQuery, useTheme, Box } from '@mui/material';
-import { GetStaticProps } from 'next';
-import { useUserContext } from '@/pages/lib/UserContext';
-import ProductCard from '@/pages/components/ProductCard';
 import BASE_URL from '@/lib/ApiEndpoints';
+import Layout from '@/pages/components/Layout';
+import ProductCard from '@/pages/components/ProductCard';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { GetStaticProps } from 'next';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 // getStaticProps because translations are static
@@ -22,6 +22,7 @@ export default function CartPage() {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { user } = useUserContext();
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const router = useRouter();
 
   const onDelete = (cartItemId: string) => {
     // brother is it okay to filter out not deleted cartItems?
@@ -53,14 +54,14 @@ export default function CartPage() {
   }, [user?.id]);
 
   return (
-    <Layout>
+    <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box
         className="w-full h-full flex flex-col"
         sx={{
           mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
         }}
       >
-        <SimpleBreadcrumbs />
+        {/* <SimpleBreadcrumbs /> */}
         <Box className="flex flex-wrap gap-4 w-full p-3">
           {cartItems !== null &&
             cartItems?.length > 0 &&
