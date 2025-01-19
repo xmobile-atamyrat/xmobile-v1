@@ -21,6 +21,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
+import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import {
   Avatar,
   CardMedia,
@@ -246,11 +247,7 @@ export default function CustomAppBar({
               color="info"
               size="small"
               sx={{
-                // value: { xs: selectedLocale.length, sm: selectedLocale, md: selectedLocale, lg: selectedLocale },
-                '& .MuiSelect-icon': {
-                  display: { xs: 'none', sm: 'block' }, // Show the dropdown icon
-                },
-                width: { xs: 50, sm: 110 },
+                width: { xs: 80, sm: 110 },
                 height: { xs: 36, sm: 40 },
                 '& .MuiInputBase-input': {
                   padding: { xs: '8px', sm: '20px' },
@@ -315,6 +312,23 @@ export default function CustomAppBar({
                 </Box>
               </MenuItem>
             </Select>
+            <Box>
+              <IconButton
+                sx={{
+                  pl: 1,
+                  pr: 0,
+                }}
+                onClick={() => router.push('/cart')}
+              >
+                <ShoppingCartCheckoutIcon
+                  sx={{
+                    width: { xs: 30, sm: 36 },
+                    height: { xs: 30, sm: 36 },
+                    color: LOGO_COLOR,
+                  }}
+                />
+              </IconButton>
+            </Box>
             <Box>
               <IconButton
                 edge="end"
