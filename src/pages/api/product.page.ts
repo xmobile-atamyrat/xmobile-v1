@@ -384,14 +384,6 @@ export default async function handler(
         },
       });
 
-      // remove below if there's relation between product and cartItem
-      // delete deleted product from cartItems
-      await dbClient.cartItem.deleteMany({
-        where: {
-          productId: productId as string,
-        },
-      });
-
       if (product == null) {
         console.error(
           filepath,
