@@ -91,6 +91,9 @@
   "deleteFromCartSuccess": "Продукт удален из корзины!",
   "deleteFromCartFail": "Не удалось удалить продукт из корзины!",
   "fetchCartItemsFail": "Не удалось получить продукты с вашей корзины!",
+  "cartItemExistError": "Продукт уже существует в корзине!",
+  "editCartQuantitySuccess": "Количество продуктoв обновлено!",
+  "editCartQuantityFail": "Не удалось обновить количество продуктов!",
   "followUs": "Подписывайтесь на нас",
   "mobilePhone": "Телефон",
   "productVideo": "Обзор"

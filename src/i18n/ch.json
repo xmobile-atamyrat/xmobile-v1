@@ -91,6 +91,9 @@
   "deleteFromCartSuccess": "Produkt sätildan aýryldy!",
   "deleteFromCartFail": "Produkt sätildan aýrylmady!",
   "fetchCartItemsFail": "Sätildaki produktlary alyp bolmady!",
+  "cartItemExistError": "Produkt uzhe sätilä koşuldy!",
+  "editCartQuantitySuccess": "Produktyň sany üýtgädildi!",
+  "editCartQuantityFail": "Produktyň sany üýtgädilmädi!",
   "followUs": "Podpisatsýa edinlär",
   "mobilePhone": "Nomer",
   "productVideo": "Abzor"
