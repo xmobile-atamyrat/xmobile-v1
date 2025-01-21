@@ -16,7 +16,7 @@ model User {
   grade           UserRole    @default(FREE)
   phoneNumber     String?
 
-  cartItems      CartItems[]
+  cartItem        CartItem[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -24,19 +24,21 @@ model User {
 }
 
 
-model CartItems {
+model CartItem {
   id              String      @id @default(uuid())
   quantity        Int         @default(1)
 
   user            User        @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId          String
-  product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
+  // relate product and cartItem
+  // product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-
-  @@unique([userId, productId])
+  
+  // relate product and cartItem
+  // @@unique([userId, productId])
 }
 
 model Category {
@@ -65,7 +67,8 @@ model Product {
 
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   categoryId      String
-  cartItems       CartItems[]
+  // relate product with cartItem
+  // cartItem       CartItem[]
 
   tags            String[]
   videoUrls       String[]

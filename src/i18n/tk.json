@@ -91,6 +91,9 @@
   "deleteFromCartSuccess": "Önüm sebetden pozuldy!",
   "deleteFromCartFail": "Önüm sebetden pozulmady!",
   "fetchCartItemsFail": "Sebediňizdeki önümleri alyp bolmady!",
+  "cartItemExistError": "Önüm eýýäm sebede goşuldy!",
+  "editCartQuantitySuccess": "Önümiň sany üýtgedildi!",
+  "editCartQuantityFail": "Önümiň sany üýtgedilip bilmedi",
   "followUs": "Bize goşulyň",
   "mobilePhone": "Telefon",
   "productVideo": "Önümiň wideosy"
