@@ -20,7 +20,6 @@ model User {
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-
 }
 
 
@@ -30,15 +29,14 @@ model CartItem {
 
   user            User        @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId          String
-  // relate product and cartItem
-  // product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
+
+  product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  
-  // relate product and cartItem
-  // @@unique([userId, productId])
+
+  @@unique([userId, productId])
 }
 
 model Category {
@@ -67,8 +65,8 @@ model Product {
 
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   categoryId      String
-  // relate product with cartItem
-  // cartItem       CartItem[]
+
+  cartItems       CartItem[]
 
   tags            String[]
   videoUrls       String[]
