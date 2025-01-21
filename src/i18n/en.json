@@ -89,6 +89,9 @@
   "deleteFromCartSuccess": "Product deleted from cart!",
   "deleteFromCartFail": "Failed to delete product from cart!",
   "fetchCartItemsFail": "Failed to fetch your cart items!",
+  "cartItemExistError": "Product already exists in the cart!",
+  "editCartQuantitySuccess": "Cart quantity updated!",
+  "editCartQuantityFail": "Failed to update cart quantity!",
   "followUs": "Follow us",
   "mobilePhone": "Mobile phone",
   "productVideo": "Video"
