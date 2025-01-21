@@ -24,9 +24,8 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const router = useRouter();
 
+  // ondelete update cartitems
   const onDelete = (cartItemId: string) => {
-    // brother is it okay to filter out not deleted cartItems?
-    // bcoz everytime when one product is deleted it will go through each of them
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
   };
 
