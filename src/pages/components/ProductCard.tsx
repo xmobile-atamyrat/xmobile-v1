@@ -16,7 +16,6 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
-  // Dialog,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
@@ -175,21 +174,29 @@ export default function ProductCard({
                 {product?.price} {t('manat')}
               </Typography>
             )}
+            {cartProps.cartAction === 'add' && (
+              <Box onClick={(e) => e.stopPropagation()}>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  onDelete={cartProps?.onDelete}
+                />
+              </Box>
+            )}
           </Box>
-          <Box onClick={(e) => e.stopPropagation()}>
-            <AddToCart
-              productId={product.id}
-              cartAction={cartProps?.cartAction}
-              quantity={cartProps?.quantity}
-              cartItemId={cartProps?.cartItemId}
-              onDelete={cartProps?.onDelete}
-            />
-            {/* UNCOMMENT FOR SEPERATE CART DIALOG */}
-            {/* <Dialog open={false} onClose={() => {}}>
-              <AddToCart productId={product.id}/>
-
-            </Dialog> */}
-          </Box>
+          {cartProps.cartAction === 'delete' && (
+            <Box onClick={(e) => e.stopPropagation()}>
+              <AddToCart
+                productId={product.id}
+                cartAction={cartProps?.cartAction}
+                quantity={cartProps?.quantity}
+                cartItemId={cartProps?.cartItemId}
+                onDelete={cartProps?.onDelete}
+              />
+            </Box>
+          )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
