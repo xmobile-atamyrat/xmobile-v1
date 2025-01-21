@@ -1,17 +1,17 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { Box, IconButton, Input, Snackbar, Alert } from '@mui/material';
-import { ShoppingCart } from '@mui/icons-material';
-import { useState, Suspense } from 'react';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { ShoppingCart } from '@mui/icons-material';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LoginIcon from '@mui/icons-material/Login';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import { Alert, Box, IconButton, Input, Snackbar } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import LoginIcon from '@mui/icons-material/Login';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useDebouncedCallback } from 'use-debounce';
+import { Suspense, useState } from 'react';
 
+import { debounce } from '@/pages/product/utils';
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
@@ -107,7 +107,7 @@ export default function AddToCart({
   };
 
   // edit cartItems
-  const editCartItems = useDebouncedCallback(async (itemQuantity: number) => {
+  const editCartItems = debounce(async (itemQuantity: number) => {
     const response = await fetch(`${BASE_URL}/api/cart`, {
       method: 'PUT',
       headers: {
