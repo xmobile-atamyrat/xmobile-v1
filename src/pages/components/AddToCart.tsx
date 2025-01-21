@@ -153,7 +153,7 @@ export default function AddToCart({
   };
 
   return (
-    <>
+    <Box>
       <Suspense fallback={<CircularProgress />}>
         {/* addButton, deleteButton */}
         {cartAction === 'add' && (
@@ -215,7 +215,7 @@ export default function AddToCart({
                 setQuantity(Number(e.target.value));
                 editCartItems(Number(e.target.value));
               }}
-            ></Input>
+            />
 
             {/* addButton */}
             <IconButton
@@ -287,6 +287,6 @@ export default function AddToCart({
           )}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 }
