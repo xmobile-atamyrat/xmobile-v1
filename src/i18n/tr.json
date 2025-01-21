@@ -89,6 +89,9 @@
   "deleteFromCartSuccess": "Ürün sepetten silindi!",
   "deleteFromCartFail": "Ürün sepetten silinemedi!",
   "fetchCartItemsFail": "Sepet öğeleri getirilemedi!",
+  "cartItemExistError": "Ürün zaten sepette var!",
+  "editCartQuantitySuccess": "Sepet miktarı güncellendi!",
+  "editCartQuantityFail": "Sepet miktarı güncellenemedi!",
   "followUs": "Bizi takip edin",
   "mobilePhone": "Mobil Telefon",
   "productVideo": "Ürün Videosu"
