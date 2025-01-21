@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { Box, IconButton, Input, Snackbar, Alert } from '@mui/material';
 import { ShoppingCart } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
@@ -10,6 +10,9 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import LoginIcon from '@mui/icons-material/Login';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useDebouncedCallback } from 'use-debounce';
+
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
   productId,
@@ -25,15 +28,6 @@ export default function AddToCart({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
 
-  const handleProductQuantity = (action: 'add' | 'remove') => () => {
-    if (action === 'add') {
-      setQuantity(quantity + 1);
-    }
-    if (action === 'remove') {
-      if (quantity > 1) setQuantity(quantity - 1);
-    }
-  };
-
   // addCartItems function
   const addCartItems = async () => {
     const userId = user?.id;
@@ -41,12 +35,12 @@ export default function AddToCart({
     if (userId === undefined) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: t('userNotFound'),
+        message: 'userNotFound',
         severity: 'warning',
       });
     } else {
       const response = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -63,14 +57,15 @@ export default function AddToCart({
         if (data.success) {
           setSnackbarOpen(true);
           setSnackbarMessage({
-            message: t('addToCartSuccess'),
+            message: 'addToCartSuccess',
             severity: 'success',
           });
         } else {
           setSnackbarOpen(true);
           setSnackbarMessage({
-            message: t(data.message),
-            severity: 'error',
+            message: data.message,
+            severity:
+              data.message === 'cartItemExistError' ? 'warning' : 'error',
           });
         }
       } catch (error) {
@@ -96,13 +91,13 @@ export default function AddToCart({
       if (data.success) {
         setSnackbarOpen(true);
         setSnackbarMessage({
-          message: t('deleteFromCartSuccess'),
+          message: 'deleteFromCartSuccess',
           severity: 'success',
         });
       } else {
         setSnackbarOpen(true);
         setSnackbarMessage({
-          message: t('deleteFromCartFail'),
+          message: 'deleteFromCartFail',
           severity: 'error',
         });
       }
@@ -111,98 +106,160 @@ export default function AddToCart({
     }
   };
 
+  // edit cartItems
+  const editCartItems = useDebouncedCallback(async (itemQuantity: number) => {
+    const response = await fetch(`${BASE_URL}/api/cart`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: cartItemId,
+        quantity: itemQuantity,
+      }),
+    });
+
+    try {
+      const data = await response.json();
+
+      if (data.success) {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'editCartQuantitySuccess',
+          severity: 'success',
+        });
+      } else {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'editCartQuantityFail',
+          severity: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error: ', error);
+    }
+  }, 300);
+
+  const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {
+    if (action === 'add') {
+      setQuantity(quantity + 1);
+      editCartItems(quantity + 1);
+    } else if (action === 'remove') {
+      if (quantity > 1) {
+        setQuantity(quantity - 1);
+        editCartItems(quantity - 1);
+      }
+    }
+  };
+
   return (
     <>
-      <Box className="flex column-reverse">
-        {/* removeButton */}
-        <IconButton
-          onClick={handleProductQuantity('remove')}
-          sx={{ paddingTop: 0 }}
-        >
-          <RemoveCircleIcon
-            sx={{
-              fontSize: {
-                xs: '1.3rem',
-                sm: '1.5rem',
-                md: '1.7rem',
-                lg: '1.7rem',
-              },
-            }}
-            color="primary"
-          />
-        </IconButton>
-
-        {/* quantityInput */}
-        <Input
-          name="quantity"
-          inputProps={{ min: 1 }}
-          sx={{ minWidth: { xs: 15, sm: 25, md: 30, lg: 40 }, maxWidth: 50 }}
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-        ></Input>
-
-        {/* addButton */}
-        <IconButton
-          onClick={handleProductQuantity('add')}
-          sx={{ paddingTop: 0 }}
-        >
-          <AddCircleIcon
-            sx={{
-              fontSize: {
-                xs: '1.3rem',
-                sm: '1.5rem',
-                md: '1.7rem',
-                lg: '1.7rem',
-              },
-            }}
-            color="primary"
-          />
-        </IconButton>
-
+      <Suspense fallback={<CircularProgress />}>
         {/* addButton, deleteButton */}
         {cartAction === 'add' && (
-          <IconButton
-            color="primary"
-            sx={{ pr: 1, paddingTop: 0 }}
-            type="submit"
-            onClick={addCartItems}
+          <Box
+            sx={{ background: 'rgb(25, 118, 210)' }}
+            className="rounded-full hover:bg-darkblue shadow"
           >
-            <ShoppingCart
-              sx={{
-                fontSize: {
-                  xs: '1.3rem',
-                  sm: '1.5rem',
-                  md: '1.7rem',
-                  lg: '1.7rem',
-                },
-              }}
-            />
-          </IconButton>
+            <IconButton
+              sx={{ pr: 1, color: 'white' }}
+              type="submit"
+              onClick={addCartItems}
+              className="rounded-full bg-blue hover:bg-darkblue shadow"
+            >
+              <ShoppingCart
+                sx={{
+                  fontSize: {
+                    xs: '1rem',
+                    sm: '1.5rem',
+                    md: '1.7rem',
+                    lg: '1.7rem',
+                  },
+                }}
+              />
+            </IconButton>
+          </Box>
         )}
+
         {cartAction === 'delete' && (
-          <IconButton
-            color="primary"
-            sx={{ pr: 1, paddingTop: 0 }}
-            type="submit"
-            onClick={() => {
-              onDelete(cartItemId);
-              deleteCartItems(cartItemId);
-            }}
-          >
-            <DeleteIcon
-              color="error"
+          <Box className="flex column-reverse">
+            {/* removeButton */}
+            <IconButton
+              onClick={handleProductQuantity('remove')}
+              sx={{ paddingTop: 0 }}
+            >
+              <RemoveCircleIcon
+                sx={{
+                  fontSize: {
+                    xs: '1.3rem',
+                    sm: '1.5rem',
+                    md: '1.7rem',
+                    lg: '1.7rem',
+                  },
+                }}
+                color="primary"
+              />
+            </IconButton>
+
+            {/* quantityInput */}
+            <Input
+              type="number"
+              name="quantity"
+              inputProps={{ min: 1 }}
               sx={{
-                fontSize: {
-                  xs: '1.3rem',
-                  sm: '1.5rem',
-                  md: '1.7rem',
-                  lg: '1.7rem',
-                },
+                minWidth: { xs: 15, sm: 25, md: 30, lg: 40 },
+                maxWidth: 50,
               }}
-            />
-          </IconButton>
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(Number(e.target.value));
+                editCartItems(Number(e.target.value));
+              }}
+            ></Input>
+
+            {/* addButton */}
+            <IconButton
+              onClick={handleProductQuantity('add')}
+              sx={{ paddingTop: 0 }}
+            >
+              <AddCircleIcon
+                sx={{
+                  fontSize: {
+                    xs: '1.3rem',
+                    sm: '1.5rem',
+                    md: '1.7rem',
+                    lg: '1.7rem',
+                  },
+                }}
+                color="primary"
+              />
+            </IconButton>
+
+            {/* delete button */}
+            <IconButton
+              color="primary"
+              sx={{ pr: 1, paddingTop: 0 }}
+              type="submit"
+              onClick={() => {
+                onDelete(cartItemId);
+                deleteCartItems(cartItemId);
+              }}
+            >
+              <DeleteIcon
+                color="error"
+                sx={{
+                  fontSize: {
+                    xs: '1.3rem',
+                    sm: '1.5rem',
+                    md: '1.7rem',
+                    lg: '1.7rem',
+                  },
+                }}
+              />
+            </IconButton>
+          </Box>
         )}
-      </Box>
+      </Suspense>
 
       {/* snackbarPop-ups */}
       <Snackbar
@@ -221,8 +278,8 @@ export default function AddToCart({
           variant="filled"
           sx={{ width: '100%' }}
         >
-          {snackbarMessage?.message && snackbarMessage.message}
-          {snackbarMessage?.severity === 'warning' && (
+          {snackbarMessage?.message && t(snackbarMessage.message)}
+          {snackbarMessage?.message === 'userNotFound' && (
             <Link href="user/signin">
               {`. ${t('signin')}`}
               <LoginIcon />
