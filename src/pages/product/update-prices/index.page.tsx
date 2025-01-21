@@ -111,7 +111,7 @@ export default function UpdatePrices({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
     debounce(
-      (
+      async (
         value: string | null,
         cellIndex: number,
         rowIndex: number,
