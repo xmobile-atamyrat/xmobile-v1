@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -21,8 +22,7 @@ import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState, lazy } from 'react';
-import { AddToCartProps } from '@/pages/lib/types';
+import { lazy, useEffect, useState } from 'react';
 
 // use lazy() to not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
@@ -31,12 +31,7 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cardClassName?: string;
-
   cartProps?: AddToCartProps;
-
-  // UNCOMMENT FOR SEPERATE CART DIALOG
-  // isCartDialogOpen?: boolean;
-  // openCartDialog?: () => void;
 }
 
 export default function ProductCard({
@@ -44,9 +39,6 @@ export default function ProductCard({
   handleClickAddProduct,
   cardClassName,
   cartProps,
-  // UNCOMMENT FOR SEPERATE CART DIALOG
-  /* isCartDialogOpen,
-  openCartDialog, */
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -128,25 +120,27 @@ export default function ProductCard({
                 )}
               </Typography>
             </Box>
-            <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
-            >
-              {parseName(product.description ?? '{}', router.locale ?? 'tk')
-                ?.split('\n')
-                ?.filter((desc) => {
-                  const trimmedDesc = desc.trim().split(']');
-                  return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
-                })
-                ?.map((desc, index) => (
-                  <Typography
-                    key={`${desc}-${index}`}
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    {desc.replace('[', '').replace(']', ':')}
-                  </Typography>
-                ))}
-            </Box>
+            {cartProps == null && (
+              <Box
+                className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
+              >
+                {parseName(product.description ?? '{}', router.locale ?? 'tk')
+                  ?.split('\n')
+                  ?.filter((desc) => {
+                    const trimmedDesc = desc.trim().split(']');
+                    return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
+                  })
+                  ?.map((desc, index) => (
+                    <Typography
+                      key={`${desc}-${index}`}
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {desc.replace('[', '').replace(']', ':')}
+                    </Typography>
+                  ))}
+              </Box>
+            )}
           </Box>
           <Box className="flex items-end justify-between">
             {product?.price?.includes('[') ? (
