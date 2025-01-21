@@ -174,6 +174,10 @@ export default function Product() {
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
+              {/* uncomment to put cart_icon next to title */}
+              {/* <Box className="ml-10">
+                <AddToCart productId={product.id} cartAction="add" />
+              </Box> */}
               {user?.grade === 'ADMIN' && (
                 <Box>
                   <IconButton
@@ -248,15 +252,22 @@ export default function Product() {
               width: isMdUp ? '50%' : '100%',
             }}
           >
-            <Box className="w-full my-4 flex justify-between">
+            <Box className="w-full my-4 flex">
               {product.price?.includes('[') ? (
                 <CircularProgress size={isMdUp ? 30 : 24} />
               ) : (
                 <Typography
                   fontWeight={600}
                   fontSize={isMdUp ? 22 : 18}
+                  alignItems="center"
+                  display="flex"
                 >{`${product.price} ${t('manat')}`}</Typography>
               )}
+
+              {/* uncomment to put cart_icon next to price */}
+              <Box className="ml-10">
+                <AddToCart productId={product.id} cartAction="add" />
+              </Box>
             </Box>
             {product.tags.length > 0 && product.tags[0].includes('[') ? (
               <CircularProgress size={isMdUp ? 30 : 24} />
@@ -370,8 +381,6 @@ export default function Product() {
                   .map((desc, index) => (
                     <Typography key={`${desc}-${index}`}>{desc}</Typography>
                   ))}
-
-            <AddToCart productId={product.id} cartAction="add" />
           </Box>
         </Box>
         {showDeleteProductDialog?.show && (
