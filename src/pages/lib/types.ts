@@ -126,7 +126,7 @@ export interface AddToCartProps {
   userId?: string;
   quantity?: number;
   productId?: string;
-  cartAction?: 'add' | 'delete';
+  cartAction: 'add' | 'delete';
   onDelete?: (message: string) => void;
 }
 
