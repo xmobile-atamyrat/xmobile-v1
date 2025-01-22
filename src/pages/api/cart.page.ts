@@ -48,6 +48,7 @@ export default async function handler(
         res.status(400).json({ success: false, message: 'cartItemExistError' });
       }
     } catch (error) {
+      console.error(filepath, error);
       res.status(400).json({ success: false, message: error.message });
     }
   } else if (req.method === 'GET') {
@@ -58,26 +59,14 @@ export default async function handler(
         quantity: true,
       }).parse(req.query);
 
-      // get cartItem
       const cartItems = await dbClient.cartItem.findMany({
         where: {
           userId,
         },
-        // include: {product}
+        include: { product: true },
       });
 
-      // get products itself from cartItems
-      // 1. remove code below, when there's relation between product and cartItem; 2. uncomment "include: {product}" above.
-      const products = await Promise.all(
-        cartItems.map(async (cartItem) => {
-          const product = await dbClient.product.findUnique({
-            where: { id: cartItem.productId },
-          });
-          return { ...cartItem, product };
-        }),
-      );
-
-      res.status(200).json({ success: true, data: products });
+      res.status(200).json({ success: true, data: cartItems });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
@@ -96,6 +85,7 @@ export default async function handler(
       });
       res.status(200).json({ success: true, data: [] });
     } catch (error) {
+      console.error(filepath, error);
       res
         .status(400)
         .json({ success: false, message: "Couldn't delete product from cart" });
@@ -114,16 +104,9 @@ export default async function handler(
         },
       });
 
-      if (!cartItem.quantity) {
-        res.status(400).json({
-          success: false,
-          message: `${filepath}: cartItem was not found`,
-        });
-      } else {
-        res
-          .status(200)
-          .json({ success: true, data: { quantity: cartItem.quantity } });
-      }
+      res
+        .status(200)
+        .json({ success: true, data: { quantity: cartItem.quantity } });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
@@ -131,7 +114,7 @@ export default async function handler(
           message: `${filepath}: quantity/cartId type is incorrect`,
         });
       }
-
+      console.error(filepath, error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
