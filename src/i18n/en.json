@@ -83,6 +83,7 @@
   "home": "Home",
   "contact": "Contact us",
   "address": "Lebap province, Turkmenabat city, 3rd quarter microdistrict, S.A. Niyazov Avenue, \"Xmobile\" store.",
+  "cart": "Cart",
   "addToCart": "Add to Cart",
   "addToCartSuccess": "Product added to cart!",
   "addToCartFail": "Failed to add product to cart!",
@@ -92,6 +93,7 @@
   "cartItemExistError": "Product already exists in the cart!",
   "editCartQuantitySuccess": "Cart quantity updated!",
   "editCartQuantityFail": "Failed to update cart quantity!",
+  "continueShopping": "Continue shopping",
   "followUs": "Follow us",
   "mobilePhone": "Mobile phone",
   "productVideo": "Video"
