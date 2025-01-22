@@ -11,7 +11,6 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 
-import { debounce } from '@/pages/product/utils';
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
@@ -28,11 +27,10 @@ export default function AddToCart({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
 
-  // addCartItems function
   const addCartItems = async () => {
     const userId = user?.id;
 
-    if (userId === undefined) {
+    if (userId == null) {
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'userNotFound',
@@ -106,39 +104,57 @@ export default function AddToCart({
     }
   };
 
-  // edit cartItems
-  const editCartItems = debounce(async (itemQuantity: number) => {
-    const response = await fetch(`${BASE_URL}/api/cart`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: cartItemId,
-        quantity: itemQuantity,
-      }),
-    });
+  // calling editCartItems with debounce
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout>(null);
+  const debounceWithDelayedExecution = (
+    func: (...args: any[]) => undefined | Promise<any>,
+    delay: number,
+  ) => {
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      const timeout = setTimeout(() => {
+        func(...args);
+      }, delay);
 
-    try {
-      const data = await response.json();
+      setTimeoutId(timeout);
+    };
+  };
 
-      if (data.success) {
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'editCartQuantitySuccess',
-          severity: 'success',
-        });
-      } else {
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'editCartQuantityFail',
-          severity: 'error',
-        });
+  const editCartItems = debounceWithDelayedExecution(
+    async (itemQuantity: number) => {
+      const response = await fetch(`${BASE_URL}/api/cart`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: cartItemId,
+          quantity: itemQuantity,
+        }),
+      });
+
+      try {
+        const data = await response.json();
+
+        if (data.success) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'editCartQuantitySuccess',
+            severity: 'success',
+          });
+        } else {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'editCartQuantityFail',
+            severity: 'error',
+          });
+        }
+      } catch (error) {
+        console.error('Error: ', error);
       }
-    } catch (error) {
-      console.error('Error: ', error);
-    }
-  }, 300);
+    },
+    300,
+  );
 
   const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {
     if (action === 'add') {
@@ -155,7 +171,7 @@ export default function AddToCart({
   return (
     <Box>
       <Suspense fallback={<CircularProgress />}>
-        {/* addButton, deleteButton */}
+        {/* cartIcon */}
         {cartAction === 'add' && (
           <Box
             sx={{ background: 'rgb(25, 118, 210)' }}
@@ -182,12 +198,9 @@ export default function AddToCart({
         )}
 
         {cartAction === 'delete' && (
-          <Box className="flex column-reverse">
+          <Box className="flex column-reverse items-center">
             {/* removeButton */}
-            <IconButton
-              onClick={handleProductQuantity('remove')}
-              sx={{ paddingTop: 0 }}
-            >
+            <IconButton onClick={handleProductQuantity('remove')} sx={{}}>
               <RemoveCircleIcon
                 sx={{
                   fontSize: {
@@ -207,10 +220,15 @@ export default function AddToCart({
               name="quantity"
               inputProps={{ min: 1 }}
               sx={{
-                minWidth: { xs: 15, sm: 25, md: 30, lg: 40 },
+                width: 'fit-content',
+                // minWidth: { xs: 25, sm: 30, lg: 40 },
                 maxWidth: 50,
+                input: {
+                  textAlign: 'center',
+                },
               }}
               value={quantity}
+              disableUnderline
               onChange={(e) => {
                 setQuantity(Number(e.target.value));
                 editCartItems(Number(e.target.value));
@@ -220,7 +238,7 @@ export default function AddToCart({
             {/* addButton */}
             <IconButton
               onClick={handleProductQuantity('add')}
-              sx={{ paddingTop: 0 }}
+              sx={{ padding: 0.3 }}
             >
               <AddCircleIcon
                 sx={{
@@ -238,7 +256,7 @@ export default function AddToCart({
             {/* delete button */}
             <IconButton
               color="primary"
-              sx={{ pr: 1, paddingTop: 0 }}
+              sx={{ pr: 1 }}
               type="submit"
               onClick={() => {
                 onDelete(cartItemId);
