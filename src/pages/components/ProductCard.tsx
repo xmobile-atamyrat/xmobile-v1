@@ -135,25 +135,28 @@ export default function ProductCard({
                 )}
               </Typography>
             </Box>
-            <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
-            >
-              {parseName(product.description ?? '{}', router.locale ?? 'tk')
-                ?.split('\n')
-                ?.filter((desc) => {
-                  const trimmedDesc = desc.trim().split(']');
-                  return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
-                })
-                ?.map((desc, index) => (
-                  <Typography
-                    key={`${desc}-${index}`}
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    {desc.replace('[', '').replace(']', ':')}
-                  </Typography>
-                ))}
-            </Box>
+            {/* hide description on cart page */}
+            {cartProps.cartAction === 'add' && (
+              <Box
+                className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
+              >
+                {parseName(product.description ?? '{}', router.locale ?? 'tk')
+                  ?.split('\n')
+                  ?.filter((desc) => {
+                    const trimmedDesc = desc.trim().split(']');
+                    return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
+                  })
+                  ?.map((desc, index) => (
+                    <Typography
+                      key={`${desc}-${index}`}
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {desc.replace('[', '').replace(']', ':')}
+                    </Typography>
+                  ))}
+              </Box>
+            )}
           </Box>
           <Box className="flex items-end justify-between">
             {product?.price?.includes('[') ? (

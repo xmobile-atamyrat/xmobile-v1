@@ -57,7 +57,7 @@ export default function Footer() {
 
   return (
     <Box
-      className={`p-10 bg-gray-100 mt-10`}
+      className={`p-10 bg-gray-100`}
       sx={{
         height: { xs: `${maxHeight}px`, md: '50%' },
       }}

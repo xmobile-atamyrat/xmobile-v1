@@ -85,6 +85,7 @@
   "home": "Öý",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýat,  Türkmenabat şãher , 3-nji kwartal  mikroraýony, S.A. Niýazow şaýoly ,  \"Xmobile\" dükany.",
+  "cart": "Sebet",
   "addToCart": "Sebede goş",
   "addToCartSuccess": "Önüm sebede goşuldy!",
   "addToCartFail": "Önüm sebede goşulmady!",
@@ -94,6 +95,7 @@
   "cartItemExistError": "Önüm eýýäm sebede goşuldy!",
   "editCartQuantitySuccess": "Önümiň sany üýtgedildi!",
   "editCartQuantityFail": "Önümiň sany üýtgedilip bilmedi",
+  "continueShopping": "Satyn almaga dowam et",
   "followUs": "Bize goşulyň",
   "mobilePhone": "Telefon",
   "productVideo": "Önümiň wideosy"

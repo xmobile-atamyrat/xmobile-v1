@@ -85,6 +85,7 @@
   "home": "Öý",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýaty, Türkmenabat şäheri, 3-nji çärýek mikro etrapçasy, S.A.Niýazow şaýoly, \"Xmobile\" dükany.",
+  "cart": "Sätil",
   "addToCart": "Sätila koş",
   "addToCartSuccess": "Produkt sätila koşuldy!",
   "addToCartFail": "Produkt sätila koşulmady!",
@@ -94,6 +95,7 @@
   "cartItemExistError": "Produkt uzhe sätilä koşuldy!",
   "editCartQuantitySuccess": "Produktyň sany üýtgädildi!",
   "editCartQuantityFail": "Produktyň sany üýtgädilmädi!",
+  "continueShopping": "Satyn alywör",
   "followUs": "Podpisatsýa edinlär",
   "mobilePhone": "Nomer",
   "productVideo": "Abzor"

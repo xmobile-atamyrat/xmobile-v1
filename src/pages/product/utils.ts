@@ -150,7 +150,7 @@ export const computeProductPriceTags = async (
 };
 
 export const debounce = (
-  func: (...args: any[]) => undefined | Promise<any>,
+  func: (...args: any[]) => undefined,
   delay: number,
 ) => {
   let timeoutId: NodeJS.Timeout;
