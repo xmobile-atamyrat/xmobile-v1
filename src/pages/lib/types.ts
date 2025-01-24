@@ -54,6 +54,7 @@ export interface AddEditProductProps {
   description?: string | null;
   price?: string | null;
   tags?: string[];
+  videoUrls?: string[];
 }
 
 export interface DeleteCategoriesProps {
