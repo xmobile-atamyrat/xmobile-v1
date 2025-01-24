@@ -275,34 +275,29 @@ export default function AddEditProductDialog({
         <Box className="p-2 flex flex-col gap-2">
           <Typography>{t('productVideo')}:</Typography>
           {/* TODO: consider adding videoUrls dynamically (not fixed amount) */}
-          {videoUrls?.map(
-            (
-              videoUrl,
-              index, // untill useEffect((), [videoUrl]) runs, videoUrl is undefined, so we use videoUrls?.map
-            ) => (
-              <Box className="flex" key={`video-${index}`}>
-                <Box className="inline-flex p-2 items-center text-xl">
-                  {(() => {
-                    if (index === 0) return <FaTiktok className="text-black" />;
-                    if (index === 1)
-                      return <FaInstagram className="text-black" />;
-                    return <FaYoutube className="text-black" />;
-                  })()}
-                </Box>
-                <TextField
-                  type="text"
-                  name={`videoUrl${index}`}
-                  className="w-full"
-                  value={videoUrl}
-                  onChange={(event) => {
-                    const newVideoUrls = [...videoUrls];
-                    newVideoUrls[index] = event.currentTarget.value;
-                    setVideoUrls(newVideoUrls);
-                  }}
-                />
+          {videoUrls?.map((videoUrl, index) => (
+            <Box className="flex" key={`video-${index}`}>
+              <Box className="inline-flex p-2 items-center text-xl">
+                {(() => {
+                  if (index === 0) return <FaTiktok className="text-black" />;
+                  if (index === 1)
+                    return <FaInstagram className="text-black" />;
+                  return <FaYoutube className="text-black" />;
+                })()}
               </Box>
-            ),
-          )}
+              <TextField
+                type="text"
+                name={`videoUrl${index}`}
+                className="w-full"
+                value={videoUrl}
+                onChange={(event) => {
+                  const newVideoUrls = [...videoUrls];
+                  newVideoUrls[index] = event.currentTarget.value;
+                  setVideoUrls(newVideoUrls);
+                }}
+              />
+            </Box>
+          ))}
         </Box>
 
         <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
