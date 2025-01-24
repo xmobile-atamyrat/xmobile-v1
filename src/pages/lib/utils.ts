@@ -187,6 +187,7 @@ export async function addEditProduct({
   productImageFiles,
   deleteImageUrls,
   tags,
+  videoUrls,
   selectedProductId,
 }: {
   type: AddEditProductProps['dialogType'];
@@ -198,6 +199,7 @@ export async function addEditProduct({
   deleteImageUrls: string[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
   tags: string[];
+  videoUrls: string[];
   selectedProductId?: string;
 }): Promise<Product> {
   const {
@@ -268,6 +270,10 @@ export async function addEditProduct({
 
   if (tags.length > 0) {
     newFormData.append('tags', JSON.stringify(tags));
+  }
+
+  if (videoUrls.length > 0) {
+    newFormData.append('videoUrls', JSON.stringify(videoUrls));
   }
 
   let product: Product;
