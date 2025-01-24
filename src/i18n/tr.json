@@ -90,5 +90,6 @@
   "deleteFromCartFail": "Ürün sepetten silinemedi!",
   "fetchCartItemsFail": "Sepet öğeleri getirilemedi!",
   "followUs": "Bizi takip edin",
-  "mobilePhone": "Mobil Telefon"
+  "mobilePhone": "Mobil Telefon",
+  "productVideo": "Ürün Videosu"
 }

@@ -92,5 +92,6 @@
   "deleteFromCartFail": "Produkt sätildan aýrylmady!",
   "fetchCartItemsFail": "Sätildaki produktlary alyp bolmady!",
   "followUs": "Podpisatsýa edinlär",
-  "mobilePhone": "Nomer"
+  "mobilePhone": "Nomer",
+  "productVideo": "Abzor"
 }
