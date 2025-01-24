@@ -38,7 +38,8 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
-
+import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
+import Link from 'next/link';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -159,6 +160,7 @@ export default function Product() {
                         name: initialProduct.name,
                         price: initialProduct.price,
                         tags: initialProduct.tags,
+                        videoUrls: initialProduct.videoUrls,
                       });
                     }}
                   >
@@ -259,6 +261,48 @@ export default function Product() {
                 })}
               </List>
             )}
+
+            <Box>
+              {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
+                <Typography
+                  fontWeight={600}
+                  fontSize={isMdUp ? 18 : 15}
+                  sx={{ wordBreak: 'break-word' }}
+                >{`${t('productVideo')}:`}</Typography>
+              )}
+
+              <Box className="flex sm:w-1/2 p-2">
+                {product.videoUrls.map(
+                  (videoUrl, index) =>
+                    videoUrl.length !== 0 && (
+                      <Link
+                        key={index}
+                        target="_blank"
+                        href={videoUrl}
+                        className="px-3 pb-3 flex items-center flex-col md:flex-row"
+                      >
+                        <IconButton>
+                          {(() => {
+                            if (index === 0)
+                              return <FaTiktok className="text-black" />;
+                            if (index === 1)
+                              return <FaInstagram className="text-black" />;
+                            return <FaYoutube className="text-black" />;
+                          })()}
+                        </IconButton>
+                        <Typography fontSize={isMdUp ? 18 : 15}>
+                          {(() => {
+                            if (index === 0) return 'TikTok';
+                            if (index === 1) return 'Instagram';
+                            return 'Youtube';
+                          })()}
+                        </Typography>
+                      </Link>
+                    ),
+                )}
+              </Box>
+            </Box>
+
             {description && Object.keys(description).length > 0
               ? Object.keys(description ?? {})
                   .filter(

@@ -92,5 +92,6 @@
   "deleteFromCartFail": "Не удалось удалить продукт из корзины!",
   "fetchCartItemsFail": "Не удалось получить продукты с вашей корзины!",
   "followUs": "Подписывайтесь на нас",
-  "mobilePhone": "Телефон"
+  "mobilePhone": "Телефон",
+  "productVideo": "Обзор"
 }
