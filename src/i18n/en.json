@@ -90,5 +90,6 @@
   "deleteFromCartFail": "Failed to delete product from cart!",
   "fetchCartItemsFail": "Failed to fetch your cart items!",
   "followUs": "Follow us",
-  "mobilePhone": "Mobile phone"
+  "mobilePhone": "Mobile phone",
+  "productVideo": "Video"
 }
