@@ -18,6 +18,7 @@ import { useRouter } from 'next/router';
 import { Suspense, useEffect, useState } from 'react';
 import HomeIcon from '@mui/icons-material/Home';
 import { useTranslations } from 'next-intl';
+import { CartItem, Product } from '@prisma/client';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -32,7 +33,9 @@ export default function CartPage() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { user } = useUserContext();
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState<
+    (CartItem & { product: Product })[]
+  >([]);
   const router = useRouter();
   const t = useTranslations();
 
