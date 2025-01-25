@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 
 interface AddEditProductDialogProps {
   handleClose: () => void;
@@ -41,7 +42,16 @@ interface AddEditProductDialogProps {
 
 export default function AddEditProductDialog({
   handleClose,
-  args: { description, dialogType, id, imageUrls, name, price, tags: initTags },
+  args: {
+    description,
+    dialogType,
+    id,
+    imageUrls,
+    name,
+    price,
+    tags: initTags,
+    videoUrls: initVideoUrls,
+  },
   snackbarErrorHandler,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -69,6 +79,8 @@ export default function AddEditProductDialog({
   const [tags, setTags] = useState<string[]>([]);
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
+
+  const [videoUrls, setVideoUrls] = useState<string[]>(initVideoUrls);
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
@@ -112,6 +124,12 @@ export default function AddEditProductDialog({
     setTags(initTags ?? []);
   }, [initTags]);
 
+  useEffect(() => {
+    if (initVideoUrls == null || initVideoUrls.length === 0) {
+      setVideoUrls(['', '', '']);
+    }
+  }, [initVideoUrls]);
+
   return (
     <Dialog
       open
@@ -143,6 +161,7 @@ export default function AddEditProductDialog({
               .map((obj) => obj[Object.keys(obj)[0]]),
             type: dialogType,
             tags,
+            videoUrls,
             selectedProductId: id,
           });
           setSelectedProduct(updatedProduct);
@@ -252,6 +271,35 @@ export default function AddEditProductDialog({
             defaultValue={price ?? ''}
           />
         </Box>
+
+        <Box className="p-2 flex flex-col gap-2">
+          <Typography>{t('productVideo')}:</Typography>
+          {/* TODO: consider adding videoUrls dynamically (not fixed amount) */}
+          {videoUrls?.map((videoUrl, index) => (
+            <Box className="flex" key={`video-${index}`}>
+              <Box className="inline-flex p-2 items-center text-xl">
+                {(() => {
+                  if (index === 0) return <FaTiktok className="text-black" />;
+                  if (index === 1)
+                    return <FaInstagram className="text-black" />;
+                  return <FaYoutube className="text-black" />;
+                })()}
+              </Box>
+              <TextField
+                type="text"
+                name={`videoUrl${index}`}
+                className="w-full"
+                value={videoUrl}
+                onChange={(event) => {
+                  const newVideoUrls = [...videoUrls];
+                  newVideoUrls[index] = event.currentTarget.value;
+                  setVideoUrls(newVideoUrls);
+                }}
+              />
+            </Box>
+          ))}
+        </Box>
+
         <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
           <Typography>{t('tags')}:</Typography>
           {tags.map((tag, index) => (

@@ -44,6 +44,7 @@ async function createProduct(
           categoryId: fields.categoryId[0],
           description: fields.description?.[0],
           tags: fields.tags ? JSON.parse(fields.tags[0]) : [],
+          videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
             ...(fileKeys.map((key) => files[key][0].path) ?? []),
@@ -188,6 +189,8 @@ async function handleEditProduct(
         data.description = fields.description[0];
       if (fields.price?.length > 0) data.price = fields.price[0];
       if (fields.tags?.length > 0) data.tags = JSON.parse(fields.tags[0]);
+      if (fields.videoUrls?.length > 0)
+        data.videoUrls = JSON.parse(fields.videoUrls[0]);
 
       const currProduct = await dbClient.product.findUnique({
         where: {
