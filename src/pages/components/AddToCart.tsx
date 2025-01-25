@@ -200,7 +200,7 @@ export default function AddToCart({
         {cartAction === 'delete' && (
           <Box className="flex column-reverse items-center">
             {/* removeButton */}
-            <IconButton onClick={handleProductQuantity('remove')} sx={{}}>
+            <IconButton onClick={handleProductQuantity('remove')}>
               <RemoveCircleIcon
                 sx={{
                   fontSize: {
@@ -221,7 +221,6 @@ export default function AddToCart({
               inputProps={{ min: 1 }}
               sx={{
                 width: 'fit-content',
-                // minWidth: { xs: 25, sm: 30, lg: 40 },
                 maxWidth: 50,
                 input: {
                   textAlign: 'center',
