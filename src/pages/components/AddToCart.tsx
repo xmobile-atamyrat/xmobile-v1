@@ -200,7 +200,10 @@ export default function AddToCart({
         {cartAction === 'delete' && (
           <Box className="flex column-reverse items-center">
             {/* removeButton */}
-            <IconButton onClick={handleProductQuantity('remove')}>
+            <IconButton
+              sx={{ padding: 0.3 }}
+              onClick={handleProductQuantity('remove')}
+            >
               <RemoveCircleIcon
                 sx={{
                   fontSize: {
