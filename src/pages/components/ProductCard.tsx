@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
@@ -40,16 +41,17 @@ export default function ProductCard({
   const [product, setProduct] = useState(initialProduct);
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { network } = useNetworkContext();
 
   useEffect(() => {
     (async () => {
-      if (product?.imgUrls[0] != null) {
+      if (product?.imgUrls[0] != null && network !== 'unknown') {
         setImgUrl('/xmobile-original-logo.jpeg');
         if (product.imgUrls[0].startsWith('http')) {
           setImgUrl(product.imgUrls[0]);
         } else {
           const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}`,
+            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}`,
           );
           const resp = await imgFetcher;
           if (resp.ok) {
@@ -58,7 +60,7 @@ export default function ProductCard({
         }
       }
     })();
-  }, [product?.imgUrls]);
+  }, [product?.imgUrls, network]);
 
   useEffect(() => {
     if (initialProduct == null) return;

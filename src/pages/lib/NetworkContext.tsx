@@ -1,10 +1,19 @@
 import { NavigatorExtended, NetworkContextProps } from '@/pages/lib/types';
-import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 const NetworkContext = createContext<NetworkContextProps>({
   network: 'unknown',
   setNetwork: () => undefined,
 });
+
+export const useNetworkContext = () => useContext(NetworkContext);
 
 export default function NetworkContextProvider({
   children,
