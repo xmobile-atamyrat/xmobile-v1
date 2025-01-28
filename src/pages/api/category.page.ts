@@ -31,7 +31,8 @@ export async function getCategory(
   const categoryProductsWithPrices = await Promise.all(
     category.products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
-      product.price = `${product.price}{${productPrice.priceInTmt}}`;
+      if (productPrice != null)
+        product.price = `${product.price}{${productPrice?.priceInTmt}}`;
 
       return product;
     }),

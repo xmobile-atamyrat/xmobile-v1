@@ -162,8 +162,14 @@ export default function Product() {
                         dialogType: 'edit',
                         imageUrls: initialProduct.imgUrls,
                         name: initialProduct.name,
-                        price:
-                          initialProduct.price.match(squareBracketRegex)[0], // initialProduct.price = [id]{value}
+                        price: (() => {
+                          const priceMatch =
+                            initialProduct.price.match(squareBracketRegex);
+                          if (priceMatch != null) {
+                            return priceMatch[0]; // initialProduct.price = [id]{value}
+                          }
+                          return initialProduct.price;
+                        })(),
                         tags: initialProduct.tags,
                         videoUrls: initialProduct.videoUrls,
                       });
