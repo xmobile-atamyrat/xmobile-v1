@@ -5,7 +5,11 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  PRODUCT_IMAGE_WIDTH_RESP,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -158,7 +162,8 @@ export default function Product() {
                         dialogType: 'edit',
                         imageUrls: initialProduct.imgUrls,
                         name: initialProduct.name,
-                        price: initialProduct.price,
+                        price:
+                          initialProduct.price.match(squareBracketRegex)[0], // initialProduct.price = [id]{value}
                         tags: initialProduct.tags,
                         videoUrls: initialProduct.videoUrls,
                       });

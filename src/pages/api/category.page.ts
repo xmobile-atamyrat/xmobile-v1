@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
@@ -26,6 +27,18 @@ export async function getCategory(
       successorCategories: true,
     },
   });
+
+  const categoryProductsWithPrices = await Promise.all(
+    category.products.map(async (product) => {
+      const productPrice = await getPrice(product.price as string);
+      product.price = `${product.price}{${productPrice.priceInTmt}}`;
+
+      return product;
+    }),
+  );
+
+  category.products = categoryProductsWithPrices;
+
   return category;
 }
 
