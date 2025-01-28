@@ -5,6 +5,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
+import { getPrice } from '@/pages/api/prices/index.page';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export const config = {
@@ -65,6 +66,11 @@ async function getProduct(productId: string): Promise<Product | null> {
       id: productId,
     },
   });
+
+  // product.price = [id]{value}
+  const productPrice = await getPrice(product.price as string);
+  product.price = `${product.price}{${productPrice.priceInTmt}}`;
+
   return product;
 }
 

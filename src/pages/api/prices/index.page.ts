@@ -6,6 +6,22 @@ import { Prices } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/prices/index.page.ts';
+const squareBracketRegex = /\[([^\]]+)\]/;
+
+export async function getPrice(priceId: string): Promise<Prices | null> {
+  const priceMatch = priceId.match(squareBracketRegex);
+  if (priceMatch != null) {
+    priceId = priceMatch[1];
+  }
+
+  const price = await dbClient.prices.findUnique({
+    where: {
+      id: priceId,
+    },
+  });
+
+  return price;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -54,9 +70,7 @@ export default async function handler(
     try {
       const { id, searchKeyword } = req.query;
       if (id != null) {
-        const price = await dbClient.prices.findUnique({
-          where: { id: id as string },
-        });
+        const price = await getPrice(id as string);
         return res.status(200).json({ success: true, data: price });
       }
       if (searchKeyword != null) {
