@@ -183,6 +183,8 @@ export async function addEditProduct({
   productNameRequiredError,
   selectedCategoryId,
   setProducts,
+  setPrevProducts,
+  setPrevCategory,
   productImageUrls,
   productImageFiles,
   deleteImageUrls,
@@ -198,6 +200,8 @@ export async function addEditProduct({
   productImageFiles: File[];
   deleteImageUrls: string[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
+  setPrevProducts: Dispatch<SetStateAction<Product[]>>;
+  setPrevCategory: Dispatch<SetStateAction<string | undefined>>;
   tags: string[];
   videoUrls: string[];
   selectedProductId?: string;
@@ -301,6 +305,8 @@ export async function addEditProduct({
     categoryId: selectedCategoryId,
   });
   setProducts(prods as Product[]);
+  setPrevProducts(prods as Product[]);
+  setPrevCategory(selectedCategoryId);
 
   return product;
 }
