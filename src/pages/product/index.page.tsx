@@ -4,10 +4,12 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
+import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -27,6 +29,16 @@ export default function Products() {
   const [page, setPage] = useState(0);
   const { selectedCategoryId, setParentCategory } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
+  const {
+    prevPage,
+    prevCategory,
+    prevProducts,
+    prevSearchKeyword,
+    setPrevSearchKeyword,
+    setPrevCategory,
+    setPrevProducts,
+    setPrevPage,
+  } = usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const { user } = useUserContext();
@@ -60,8 +72,30 @@ export default function Products() {
       if (searchKeyword) {
         fetchProductsParams.searchKeyword = searchKeyword;
       }
-      const newProducts = await fetchProducts(fetchProductsParams);
-      setProducts((prevProducts) => [...prevProducts, ...newProducts]);
+
+      let newProducts: Product[];
+      if (
+        prevCategory === selectedCategoryId &&
+        !searchKeyword &&
+        fetchProductsParams.page <= prevPage &&
+        prevSearchKeyword === searchKeyword
+      ) {
+        newProducts = prevProducts;
+        setProducts(newProducts);
+      } else {
+        newProducts = await fetchProducts(fetchProductsParams);
+        let updatedPrevProducts = prevProducts;
+
+        setProducts((prevPageProducts) => {
+          updatedPrevProducts = [...prevPageProducts, ...newProducts];
+          return updatedPrevProducts;
+        });
+        setPrevProducts(updatedPrevProducts);
+        setPrevSearchKeyword(searchKeyword);
+        setPrevCategory(selectedCategoryId);
+
+        if (newProducts.length !== 0) setPrevPage(fetchProductsParams.page);
+      }
       setPage((prev) => prev + 1);
 
       if (newProducts.length === 0) {

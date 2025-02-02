@@ -7,6 +7,7 @@ import Footer from '@/pages/components/Footer';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   DeleteCategoriesProps,
@@ -41,6 +42,7 @@ export default function Layout({
     useCategoryContext();
   const { setProducts } = useProductContext();
   const { user, setUser } = useUserContext();
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
 
   useEffect(() => {
     if (categories.length > 0) return;
@@ -130,6 +132,8 @@ export default function Layout({
                     categoryId: updatedCategories[0].id,
                   });
                   setProducts(prods);
+                  setPrevProducts(prods);
+                  setPrevCategory(updatedCategories[0].id);
                 } else {
                   setSelectedCategoryId(undefined);
                   setProducts([]);

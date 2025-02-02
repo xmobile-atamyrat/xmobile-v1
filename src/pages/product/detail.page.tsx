@@ -44,6 +44,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -61,6 +62,7 @@ export default function Product() {
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user } = useUserContext();
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
     productId: string;
@@ -164,7 +166,7 @@ export default function Product() {
                         name: initialProduct.name,
                         price: (() => {
                           const priceMatch =
-                            initialProduct.price.match(squareBracketRegex);
+                            initialProduct.price?.match(squareBracketRegex);
                           if (priceMatch != null) {
                             return priceMatch[0]; // initialProduct.price = [id]{value}
                           }
@@ -375,6 +377,9 @@ export default function Product() {
                   categoryId: selectedCategoryId,
                 });
                 setProducts(prods);
+                setPrevCategory(selectedCategoryId);
+                setPrevProducts(prods);
+
                 setSnackbarOpen(true);
                 setSnackbarMessage({
                   message: 'deleteProductSuccess',
