@@ -9,18 +9,23 @@ const filepath = 'src/pages/api/prices/index.page.ts';
 const squareBracketRegex = /\[([^\]]+)\]/;
 
 export async function getPrice(priceId: string): Promise<Prices | null> {
-  const priceMatch = priceId.match(squareBracketRegex);
-  if (priceMatch != null) {
-    priceId = priceMatch[1];
+  if (priceId != null) {
+    const priceMatch = priceId?.match(squareBracketRegex);
+    if (priceMatch != null) {
+      priceId = priceMatch[1];
+    }
+
+    const price = await dbClient.prices.findUnique({
+      where: {
+        id: priceId,
+      },
+    });
+
+    return price;
   }
 
-  const price = await dbClient.prices.findUnique({
-    where: {
-      id: priceId,
-    },
-  });
-
-  return price;
+  console.error(filepath, 'priceId is null');
+  return null; // not to crash the website return null;
 }
 
 export default async function handler(

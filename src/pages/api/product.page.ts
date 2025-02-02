@@ -68,8 +68,8 @@ async function getProduct(productId: string): Promise<Product | null> {
   });
 
   // product.price = [id]{value}
-  const productPrice = await getPrice(product.price as string);
-  product.price = `${product.price}{${productPrice.priceInTmt}}`;
+  const productPrice = await getPrice(product?.price as string);
+  product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
 
   return product;
 }
