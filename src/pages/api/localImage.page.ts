@@ -11,7 +11,7 @@ export default async function handler(
 ) {
   addCors(res);
   const {
-    query: { imgUrl, network },
+    query: { imgUrl, network, quality },
     method,
   } = req;
 
@@ -20,16 +20,19 @@ export default async function handler(
       const img = fs.readFileSync(imgUrl as string);
       res.setHeader('Content-Type', 'image/png');
 
-      if ((network as string) === 'fast') {
+      if ((network as string) === 'fast' || img.length < 100 * 1024)
         return res.status(200).send(img);
-      }
 
-      if ((network as string) !== 'slow') {
+      if ((network as string) !== 'slow')
         console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
-      }
+
       try {
-        const compressedImg = sharp(img).png({ quality: 75 });
-        return res.status(200).send(compressedImg);
+        const compressImgParams: any = { quality: 50 };
+
+        if ((quality as string) === 'bad') compressImgParams.quality = 5;
+
+        const compressImg = sharp(img).png({ ...compressImgParams });
+        return res.status(200).send(compressImg);
       } catch (error) {
         console.error(
           filepath,

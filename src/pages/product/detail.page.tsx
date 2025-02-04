@@ -45,6 +45,7 @@ import 'slick-carousel/slick/slick.css';
 import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -76,6 +77,7 @@ export default function Product() {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { network } = useNetworkContext();
 
   useEffect(() => {
     if (product == null) {
@@ -90,7 +92,7 @@ export default function Product() {
             return imgUrl;
           }
           const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
+            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=okay`,
           );
           return URL.createObjectURL(await (await imgFetcher).blob());
         }),
