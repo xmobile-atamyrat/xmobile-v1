@@ -5,7 +5,11 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  PRODUCT_IMAGE_WIDTH_RESP,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -40,6 +44,8 @@ import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -57,6 +63,7 @@ export default function Product() {
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user } = useUserContext();
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
     productId: string;
@@ -70,6 +77,7 @@ export default function Product() {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { network } = useNetworkContext();
 
   useEffect(() => {
     if (product == null) {
@@ -84,7 +92,7 @@ export default function Product() {
             return imgUrl;
           }
           const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
+            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=okay`,
           );
           return URL.createObjectURL(await (await imgFetcher).blob());
         }),
@@ -158,7 +166,14 @@ export default function Product() {
                         dialogType: 'edit',
                         imageUrls: initialProduct.imgUrls,
                         name: initialProduct.name,
-                        price: initialProduct.price,
+                        price: (() => {
+                          const priceMatch =
+                            initialProduct.price?.match(squareBracketRegex);
+                          if (priceMatch != null) {
+                            return priceMatch[0]; // initialProduct.price = [id]{value}
+                          }
+                          return initialProduct.price;
+                        })(),
                         tags: initialProduct.tags,
                         videoUrls: initialProduct.videoUrls,
                       });
@@ -364,6 +379,9 @@ export default function Product() {
                   categoryId: selectedCategoryId,
                 });
                 setProducts(prods);
+                setPrevCategory(selectedCategoryId);
+                setPrevProducts(prods);
+
                 setSnackbarOpen(true);
                 setSnackbarMessage({
                   message: 'deleteProductSuccess',

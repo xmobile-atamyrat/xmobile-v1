@@ -7,6 +7,7 @@ import {
   defaultProductDescTk,
   defaultProductDescTr,
 } from '@/pages/lib/constants';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
 import {
@@ -79,6 +80,7 @@ export default function AddEditProductDialog({
   const [tags, setTags] = useState<string[]>([]);
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
 
   const [videoUrls, setVideoUrls] = useState<string[]>(initVideoUrls);
 
@@ -151,6 +153,8 @@ export default function AddEditProductDialog({
             productNameRequiredError: t('productNameRequired'),
             selectedCategoryId,
             setProducts,
+            setPrevProducts,
+            setPrevCategory,
             productImageFiles,
             deleteImageUrls: originalDeletedProductImageUrls,
             productImageUrls: productImageUrls

@@ -35,7 +35,6 @@ export const fetchProducts = async ({
   if (!success || data == null) {
     throw new Error(message);
   }
-
   return Array.isArray(data) ? data : [data];
 };
 

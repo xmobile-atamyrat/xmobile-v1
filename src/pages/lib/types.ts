@@ -72,6 +72,17 @@ export interface ProductContextProps {
   setSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
 }
 
+export interface PrevProductContextProps {
+  prevProducts: Product[];
+  setPrevProducts: Dispatch<SetStateAction<Product[]>>;
+  prevSearchKeyword: string | undefined;
+  setPrevSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
+  prevCategory: string | undefined;
+  setPrevCategory: Dispatch<SetStateAction<string | undefined>>;
+  prevPage: number | undefined;
+  setPrevPage: Dispatch<SetStateAction<number | undefined>>;
+}
+
 export interface NavigatorConnection {
   effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
   type:
