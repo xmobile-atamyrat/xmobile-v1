@@ -1,5 +1,6 @@
 import addCors from '@/pages/api/utils/addCors';
 import fs from 'fs';
+import sharp from 'sharp';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/localImage.page.ts';
@@ -10,7 +11,7 @@ export default async function handler(
 ) {
   addCors(res);
   const {
-    query: { imgUrl },
+    query: { imgUrl, network },
     method,
   } = req;
 
@@ -18,7 +19,25 @@ export default async function handler(
     if (fs.existsSync(imgUrl as string)) {
       const img = fs.readFileSync(imgUrl as string);
       res.setHeader('Content-Type', 'image/png');
-      return res.status(200).send(img);
+
+      if ((network as string) === 'fast') {
+        return res.status(200).send(img);
+      }
+
+      if ((network as string) !== 'slow') {
+        console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
+      }
+      try {
+        const compressedImg = sharp(img).png({ quality: 75 });
+        return res.status(200).send(compressedImg);
+      } catch (error) {
+        console.error(
+          filepath,
+          'Image compression failed',
+          `imgUrl: ${imgUrl}`,
+        );
+        res.status(400).send('Image compression failed');
+      }
     }
 
     console.error(
