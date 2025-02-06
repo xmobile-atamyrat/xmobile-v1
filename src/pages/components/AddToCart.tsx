@@ -9,9 +9,10 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { Alert, Box, IconButton, Input, Snackbar } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Suspense, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
 import CircularProgress from '@mui/material/CircularProgress';
+import { debounce } from '@/pages/product/utils';
 
 export default function AddToCart({
   productId,
@@ -104,24 +105,8 @@ export default function AddToCart({
     }
   };
 
-  // calling editCartItems with debounce
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout>(null);
-  const debounceWithDelayedExecution = (
-    func: (...args: any[]) => undefined | Promise<any>,
-    delay: number,
-  ) => {
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      const timeout = setTimeout(() => {
-        func(...args);
-      }, delay);
-
-      setTimeoutId(timeout);
-    };
-  };
-
-  const editCartItems = debounceWithDelayedExecution(
-    async (itemQuantity: number) => {
+  const editCartItems = useCallback(
+    debounce(async (itemQuantity: number) => {
       const response = await fetch(`${BASE_URL}/api/cart`, {
         method: 'PUT',
         headers: {
@@ -152,8 +137,8 @@ export default function AddToCart({
       } catch (error) {
         console.error('Error: ', error);
       }
-    },
-    300,
+    }, 300),
+    [],
   );
 
   const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {
