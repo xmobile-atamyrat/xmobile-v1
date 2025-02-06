@@ -280,6 +280,7 @@ export default async function handler(
           id: productId as string,
         },
       });
+
       if (product == null) {
         console.error(
           filepath,
