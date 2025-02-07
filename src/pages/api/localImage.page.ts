@@ -1,6 +1,7 @@
 import addCors from '@/pages/api/utils/addCors';
 import fs from 'fs';
-import sharp from 'sharp';
+import sharp, { PngOptions } from 'sharp';
+import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/localImage.page.ts';
@@ -21,15 +22,19 @@ export default async function handler(
       res.setHeader('Content-Type', 'image/png');
 
       if ((network as string) === 'fast' || img.length < 100 * 1024)
+        // don't compress images under 100KB
         return res.status(200).send(img);
 
       if ((network as string) !== 'slow')
         console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
 
       try {
-        const compressImgParams: any = { quality: 50 };
-
-        if ((quality as string) === 'bad') compressImgParams.quality = 5;
+        const compressImgParams: PngOptions = {
+          quality:
+            quality === 'bad'
+              ? IMG_COMPRESSION_QUALITY.BAD
+              : IMG_COMPRESSION_QUALITY.OKAY,
+        };
 
         const compressImg = sharp(img).png({ ...compressImgParams });
         return res.status(200).send(compressImg);
