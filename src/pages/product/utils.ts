@@ -90,6 +90,7 @@ export const fetchDollarRate = async (): Promise<number> => {
   return data.rate;
 };
 
+// returns product.price from session or fetches from db
 export const computePrice = async (priceId: string): Promise<string> => {
   const cachePrice = sessionStorage.getItem(priceId);
   if (cachePrice != null) {
@@ -107,6 +108,8 @@ export const computePrice = async (priceId: string): Promise<string> => {
   return priceId;
 };
 
+// ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
+// If {value} doesn't exist, computePrice function is used for safety
 export const computeProductPrice = async (product: Product) => {
   const priceMatchId = product.price?.match(squareBracketRegex);
   const priceMatchValue = product.price?.match(curlyBracketRegex);
@@ -122,6 +125,7 @@ export const computeProductPrice = async (product: Product) => {
   return processedProduct;
 };
 
+// ProductPriceTags have only [id], value is fetched in computePrice function.
 export const computeProductPriceTags = async (
   product: Product,
 ): Promise<Product> => {

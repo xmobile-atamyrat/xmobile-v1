@@ -35,6 +35,11 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
+export const IMG_COMPRESSION_QUALITY = {
+  BAD: 5,
+  OKAY: 50,
+};
+
 export const squareBracketRegex = /\[([^\]]+)\]/;
 export const curlyBracketRegex = /\{([^}]+)\}/;
 
