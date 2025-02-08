@@ -6,7 +6,7 @@ const nextConfig = {
     locales: ['en', 'ru', 'tk', 'ch', 'tr'],
     defaultLocale: 'ru',
     localeDetection: false,
-  },
+  }
 };
 
 export default nextConfig;
