@@ -35,7 +35,13 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
+export const IMG_COMPRESSION_QUALITY = {
+  BAD: 5,
+  OKAY: 50,
+};
+
 export const squareBracketRegex = /\[([^\]]+)\]/;
+export const curlyBracketRegex = /\{([^}]+)\}/;
 
 export const POLL_DOLLAR_RATE_INTERVAL = 600_000; // 10 minutes
 export const POLL_PRODUCT_INTERVAL = 600_000; // 10 minutes
