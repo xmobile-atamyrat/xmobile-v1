@@ -3,6 +3,7 @@ import fs from 'fs';
 import sharp, { PngOptions } from 'sharp';
 import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { createCompressedImgUrl } from '@/pages/api/product.page';
 
 const filepath = 'src/pages/api/localImage.page.ts';
 
@@ -24,20 +25,25 @@ export default async function handler(
       if ((network as string) === 'fast' || img.length < 100 * 1024)
         // don't compress images under 100KB
         return res.status(200).send(img);
-
       if ((network as string) !== 'slow')
         console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
+
+      const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
+      if (fs.existsSync(compressedImgUrl) && quality === 'bad') {
+        // images in compressed folder are in BAD quality type
+        return res.status(200).send(fs.readFileSync(compressedImgUrl));
+      }
 
       try {
         const compressImgParams: PngOptions = {
           quality:
             quality === 'bad'
-              ? IMG_COMPRESSION_QUALITY.BAD
-              : IMG_COMPRESSION_QUALITY.OKAY,
+              ? IMG_COMPRESSION_QUALITY.bad.png
+              : IMG_COMPRESSION_QUALITY.okay.png,
         };
 
-        const compressImg = sharp(img).png({ ...compressImgParams });
-        return res.status(200).send(compressImg);
+        const compressedImg = sharp(img).png({ ...compressImgParams });
+        return res.status(200).send(compressedImg);
       } catch (error) {
         console.error(
           filepath,
