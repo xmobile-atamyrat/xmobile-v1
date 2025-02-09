@@ -35,9 +35,15 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
+// compression rate varies in different image types
 export const IMG_COMPRESSION_QUALITY = {
-  BAD: 5,
-  OKAY: 50,
+  bad: {
+    jpeg: 40,
+    png: 5,
+  },
+  okay: {
+    png: 50,
+  },
 };
 
 export const squareBracketRegex = /\[([^\]]+)\]/;
