@@ -35,9 +35,20 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
+/*
+To store images in:
+  * BAD quality -> jpeg for higher compression
+  * OKAY quality -> png for less compression 
+png files can't be compressed as much as jpeg files
+*/
 export const IMG_COMPRESSION_QUALITY = {
-  BAD: 5,
-  OKAY: 50,
+  bad: {
+    jpeg: 40, // Moderate compression for JPEG (3.6MB -> 170KB, low quality)
+    png: 5, // Very high compression for PNG (3.6MB -> 300-400KB, moderate quality)
+  },
+  okay: {
+    png: 50, // moderate compression for PNG (moderate quality)
+  },
 };
 
 export const squareBracketRegex = /\[([^\]]+)\]/;
