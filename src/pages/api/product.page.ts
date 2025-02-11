@@ -26,8 +26,8 @@ interface CreateProductReturnType {
   data?: Product;
 }
 
+// changes url from images/products/img -> images/compressed/img
 export function createCompressedImgUrl(imgUrl: string) {
-  // modify here if compressed category images also exist
   if (imgUrl.indexOf('products') === -1) {
     console.error(
       filepath,
@@ -51,7 +51,6 @@ async function createCompressedImg(imgUrl: string) {
     let quality = 85;
 
     try {
-      // compress recursively
       while (
         compressedImage.length > 100 * 1024 &&
         quality > IMG_COMPRESSION_QUALITY.bad.jpeg

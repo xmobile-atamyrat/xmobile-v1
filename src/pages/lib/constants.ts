@@ -35,14 +35,19 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
-// compression rate varies in different image types
+/*
+To store images in:
+  * BAD quality -> jpeg for higher compression
+  * OKAY quality -> png for less compression 
+png files can't be compressed as much as jpeg files
+*/
 export const IMG_COMPRESSION_QUALITY = {
   bad: {
-    jpeg: 40,
-    png: 5,
+    jpeg: 40, // Moderate compression for JPEG (3.6MB -> 170KB, low quality)
+    png: 5, // Very high compression for PNG (3.6MB -> 300-400KB, moderate quality)
   },
   okay: {
-    png: 50,
+    png: 50, // moderate compression for PNG (moderate quality)
   },
 };
 
