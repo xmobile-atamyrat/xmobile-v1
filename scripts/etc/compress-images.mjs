@@ -1,19 +1,23 @@
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const IMAGE_COMPRESSION_QUALITY = 40;
+
+const IMG_COMPRESSION_QUALITY = 40; // compression in JPEG to 40% 
+const dirname = path.dirname(fileURLToPath(import.meta.url))
+
 const productionImgsPath = '/home/ubuntu/images';
-const localImgsPath = `${__dirname}/../../src/db/images`;
+const localImgsPath = `${dirname}/../../src/db/images`;
 
 const compressedImgsPath = fs.existsSync(productionImgsPath)
-  ? `${productionImgsPath}/compressed/`
-  : `${localImgsPath}/compressed/`;
+  ? `${productionImgsPath}/compressed/products/`
+  : `${localImgsPath}/compressed/products/`;
 const productImgsPath = fs.existsSync(productionImgsPath)
   ? `${productionImgsPath}/products/`
   : `${localImgsPath}/products/`;
 
-if (!fs.existsSync(compressedImgsPath)) fs.mkdirSync(compressedImgsPath);
+if (!fs.existsSync(compressedImgsPath)) fs.mkdirSync(compressedImgsPath, { recursive: true });
 
 if (fs.existsSync(productImgsPath)) {
   const imgNames = fs.readdirSync(productImgsPath);
@@ -29,7 +33,7 @@ if (fs.existsSync(productImgsPath)) {
 
       while (
         compressedImg.length > 100 * 1024 &&
-        quality > IMAGE_COMPRESSION_QUALITY
+        quality > IMG_COMPRESSION_QUALITY
       ) {
         // max compression around 100KB
         try {
