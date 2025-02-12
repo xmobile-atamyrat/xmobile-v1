@@ -26,25 +26,25 @@ interface CreateProductReturnType {
   data?: Product;
 }
 
-// changes url from images/products/img -> images/compressed/img
+// changes url from images/products/img -> images/compressed/products/img
 export function createCompressedImgUrl(imgUrl: string) {
-  if (imgUrl.indexOf('products') === -1) {
-    console.error(
-      filepath,
-      "imgUrl doesn't include /products/ folder, : ",
-      imgUrl,
-    );
-    return `${process.env.COMPRESSED_IMAGES_DIR}undefined`;
+  // Windows uses '\' in path format, replace it with '/'
+  const normalizedUrl = imgUrl.replace(/\\/g, '/');
+
+  if (!normalizedUrl.includes('products/')) {
+    console.error(filepath, 'incorrect imgUrl: ', imgUrl);
+
+    return imgUrl;
   }
-  const imgName =
-    imgUrl.split('products/').length > 1
-      ? imgUrl.split('products/')[1]
-      : imgUrl.split(`products\\`)[1];
-  return process.env.COMPRESSED_IMAGES_DIR + imgName;
+
+  const imgName = normalizedUrl.split('products/')[1];
+
+  return process.env.COMPRESSED_PRODUCT_IMAGES_DIR + imgName;
 }
 
 async function createCompressedImg(imgUrl: string) {
   const compressedImgUrl = createCompressedImgUrl(imgUrl);
+
   if (fs.existsSync(imgUrl)) {
     const image = fs.readFileSync(imgUrl);
     let compressedImage: Buffer = image;
