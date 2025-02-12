@@ -29,8 +29,7 @@ export default async function handler(
         console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
 
       const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
-      if (fs.existsSync(compressedImgUrl) && quality === 'bad') {
-        // images in compressed folder are in BAD quality type
+      if (quality === 'bad' && fs.existsSync(compressedImgUrl)) {
         return res.status(200).send(fs.readFileSync(compressedImgUrl));
       }
 
