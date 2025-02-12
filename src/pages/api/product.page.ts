@@ -27,19 +27,22 @@ interface CreateProductReturnType {
 }
 
 // changes url from images/products/img -> images/compressed/products/img
-export function createCompressedImgUrl(imgUrl: string) {
+export function createCompressedImgUrl(imgUrl: string): string {
   // Windows uses '\' in path format, replace it with '/'
   const normalizedUrl = imgUrl.replace(/\\/g, '/');
 
-  if (!normalizedUrl.includes('products/')) {
-    console.error(filepath, 'incorrect imgUrl: ', imgUrl);
+  if (normalizedUrl.includes('products/')) {
+    const imgName = normalizedUrl.split('products/')[1];
 
-    return imgUrl;
+    return process.env.COMPRESSED_PRODUCT_IMAGES_DIR + imgName;
   }
+  console.error(
+    filepath,
+    "incorrect imgUrl, products folder doesn't exist: ",
+    imgUrl,
+  );
 
-  const imgName = normalizedUrl.split('products/')[1];
-
-  return process.env.COMPRESSED_PRODUCT_IMAGES_DIR + imgName;
+  return imgUrl;
 }
 
 async function createCompressedImg(imgUrl: string) {
