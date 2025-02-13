@@ -83,6 +83,19 @@ export default function ProductCard({
     // eslint-disable-line react-hooks/exhaustive-deps
   }, [product?.imgUrls, network]);
 
+  // (uncomment) I was trying to abort fetches:
+  // useCallback(()=>{
+  // const handleAbort = () => {
+  //   // console.log('abort called');
+
+  //   abortControllers.map((abortController) => {
+  //     abortController.abort;
+  //     console.log('fetch aborted');
+  //   })
+  // }
+  // router.events.on('routeChangeStart', handleAbort);
+  // }, [router.events])
+
   useEffect(() => {
     if (initialProduct == null) return;
 
