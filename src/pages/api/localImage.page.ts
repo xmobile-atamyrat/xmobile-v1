@@ -18,22 +18,26 @@ export default async function handler(
   } = req;
 
   if (method === 'GET') {
-    if (fs.existsSync(imgUrl as string)) {
+    if (imgUrl != null && fs.existsSync(imgUrl as string)) {
       const img = fs.readFileSync(imgUrl as string);
       res.setHeader('Content-Type', 'image/png');
 
-      if ((network as string) === 'fast' || img.length < 100 * 1024)
-        // don't compress images under 100KB
-        return res.status(200).send(img);
-      if ((network as string) !== 'slow')
-        console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
-
-      const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
-      if (quality === 'bad' && fs.existsSync(compressedImgUrl)) {
-        return res.status(200).send(fs.readFileSync(compressedImgUrl));
-      }
-
       try {
+        if ((network as string) === 'fast' || img.length < 100 * 1024)
+          // don't compress images under 100KB
+          return res.status(200).send(img);
+        if ((network as string) !== 'slow')
+          console.error(
+            filepath,
+            'Network speed not found',
+            `imgUrl: ${imgUrl}`,
+          );
+
+        const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
+        if (quality === 'bad' && fs.existsSync(compressedImgUrl)) {
+          return res.status(200).send(fs.readFileSync(compressedImgUrl));
+        }
+
         if ((network as string) === 'fast' || img.length < 100 * 1024)
           // don't compress images under 100KB
           return res.status(200).send(img);
@@ -55,13 +59,13 @@ export default async function handler(
         const compressedImg = await sharp(img)
           .png({ ...compressImgParams })
           .toBuffer();
-
+        res.setHeader('Content-Type', 'image/jpeg');
         return res.status(200).send(compressedImg);
       } catch (error) {
         if (error instanceof Error && error.message.includes('sharp')) {
           console.error(
             filepath,
-            'Image compression failed. Returning original image..',
+            'Image compression failed.',
             `imgUrl: ${imgUrl}`,
             `error: ${error}`,
           );
