@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OLD_FILE="/home/ubuntu/tar-file/xmobile-v1-old.tar.gz"
-UPDATE_SERVER="/home/ubuntu/scripts/prod_scripts/update-server-source.sh"
+UPDATE_SERVER="/home/ubuntu/scripts/update-server-source.sh"
 
 if [ -f $OLD_FILE ]; then
     echo "Rollback started."
