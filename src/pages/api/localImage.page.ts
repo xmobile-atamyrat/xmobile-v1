@@ -17,65 +17,62 @@ export default async function handler(
   } = req;
 
   if (method === 'GET') {
-    try {
-      if (fs.existsSync(imgUrl as string)) {
-        const img = fs.readFileSync(imgUrl as string);
-        res.setHeader('Content-Type', 'image/png');
+    if (fs.existsSync(imgUrl as string)) {
+      const img = fs.readFileSync(imgUrl as string);
+      res.setHeader('Content-Type', 'image/png');
 
-        try {
-          if ((network as string) === 'fast' || img.length < 100 * 1024)
-            // don't compress images under 100KB
-            return res.status(200).send(img);
-
-          if ((network as string) !== 'slow')
-            console.error(
-              filepath,
-              'Network speed not found',
-              `imgUrl: ${imgUrl}`,
-            );
-        } catch (error) {
-          console.error(
-            filepath,
-            "Network status couldn't get identified",
-            `error: ${error}`,
-          );
+      try {
+        if ((network as string) === 'fast' || img.length < 100 * 1024)
+          // don't compress images under 100KB
           return res.status(200).send(img);
-        }
 
-        try {
-          const compressImgParams: PngOptions = {
-            quality:
-              quality === 'bad'
-                ? IMG_COMPRESSION_QUALITY.BAD
-                : IMG_COMPRESSION_QUALITY.OKAY,
-          };
-
-          const compressImg = await sharp(img)
-            .png({ ...compressImgParams })
-            .toBuffer();
-          return res.status(200).send(compressImg);
-        } catch (error) {
+        if ((network as string) !== 'slow')
           console.error(
             filepath,
-            'Image compression failed',
+            'Network speed not found',
+            `imgUrl: ${imgUrl}`,
+          );
+
+        const compressImgParams: PngOptions = {
+          quality:
+            quality === 'bad'
+              ? IMG_COMPRESSION_QUALITY.BAD
+              : IMG_COMPRESSION_QUALITY.OKAY,
+        };
+
+        const compressImg = await sharp(img)
+          .png({ ...compressImgParams })
+          .toBuffer();
+
+        return res.status(200).send(compressImg);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('sharp')) {
+          console.error(
+            filepath,
+            'Image compression failed. Returning original image..',
             `imgUrl: ${imgUrl}`,
             `error: ${error}`,
           );
-          res.status(400).send('Image compression failed');
+          res.status(400).send(img);
+        } else {
+          console.error(
+            filepath,
+            "Couldn't process image",
+            `imgUrl: ${imgUrl}`,
+            `error: ${error}`,
+          );
+          res.status(400).send("Couldn't process image");
         }
       }
-
-      console.error(
-        filepath,
-        'Image not found',
-        `Method: ${method}`,
-        `imgUrl: ${imgUrl}`,
-      );
-      return res.status(404).send('Image not found');
-    } catch (error) {
-      console.error(filepath, 'Request is not valid.', `error: ${error}`);
-      return res.status(500).send('Request is not valid.');
     }
+
+    console.error(
+      filepath,
+      'Image not found',
+      `Method: ${method}`,
+      `imgUrl: ${imgUrl}`,
+    );
+    return res.status(404).send('Image not found');
   }
   if (method === 'DELETE') {
     if (fs.existsSync(imgUrl as string)) {
