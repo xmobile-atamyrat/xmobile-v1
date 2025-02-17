@@ -22,7 +22,7 @@ main() {
         docker cp build_env:/app/xmobile-v1.tar.gz .
 
         # remove old tar file and rename the recent one to old
-        ssh xmobile "rm -f /home/ubuntu/tar-file/xmobile-v1-old.tar.gz && mv /home/ubuntu/tar-file/xmobile-v1.tar.gz /home/ubuntu/tar-file/xmobile-v1-old.tar.gz"
+        # ssh xmobile "rm -f /home/ubuntu/tar-file/xmobile-v1-old.tar.gz && mv /home/ubuntu/tar-file/xmobile-v1.tar.gz /home/ubuntu/tar-file/xmobile-v1-old.tar.gz"
 
         # copy the new tar file
         scp xmobile-v1.tar.gz xmobile:/home/ubuntu/tar-file/xmobile-v1.tar.gz
