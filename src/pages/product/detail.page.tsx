@@ -92,7 +92,7 @@ export default function Product() {
             return imgUrl;
           }
           const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=okay`,
+            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=bad`,
           );
           return URL.createObjectURL(await (await imgFetcher).blob());
         }),
