@@ -3,6 +3,7 @@ import fs from 'fs';
 import sharp, { PngOptions } from 'sharp';
 import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { createCompressedImgUrl } from '@/pages/api/product.page';
 
 const filepath = 'src/pages/api/localImage.page.ts';
 
@@ -17,11 +18,26 @@ export default async function handler(
   } = req;
 
   if (method === 'GET') {
-    if (fs.existsSync(imgUrl as string)) {
+    if (imgUrl != null && fs.existsSync(imgUrl as string)) {
       const img = fs.readFileSync(imgUrl as string);
       res.setHeader('Content-Type', 'image/png');
 
       try {
+        if ((network as string) === 'fast' || img.length < 100 * 1024)
+          // don't compress images under 100KB
+          return res.status(200).send(img);
+        if ((network as string) !== 'slow')
+          console.error(
+            filepath,
+            'Network speed not found',
+            `imgUrl: ${imgUrl}`,
+          );
+
+        const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
+        if (quality === 'bad' && fs.existsSync(compressedImgUrl)) {
+          return res.status(200).send(fs.readFileSync(compressedImgUrl));
+        }
+
         if ((network as string) === 'fast' || img.length < 100 * 1024)
           // don't compress images under 100KB
           return res.status(200).send(img);
@@ -36,20 +52,20 @@ export default async function handler(
         const compressImgParams: PngOptions = {
           quality:
             quality === 'bad'
-              ? IMG_COMPRESSION_QUALITY.BAD
-              : IMG_COMPRESSION_QUALITY.OKAY,
+              ? IMG_COMPRESSION_QUALITY.bad.png
+              : IMG_COMPRESSION_QUALITY.okay.png,
         };
 
-        const compressImg = await sharp(img)
+        const compressedImg = await sharp(img)
           .png({ ...compressImgParams })
           .toBuffer();
-
-        return res.status(200).send(compressImg);
+        res.setHeader('Content-Type', 'image/jpeg');
+        return res.status(200).send(compressedImg);
       } catch (error) {
         if (error instanceof Error && error.message.includes('sharp')) {
           console.error(
             filepath,
-            'Image compression failed. Returning original image..',
+            'Image compression failed.',
             `imgUrl: ${imgUrl}`,
             `error: ${error}`,
           );
