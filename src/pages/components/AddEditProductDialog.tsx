@@ -7,7 +7,6 @@ import {
   defaultProductDescTk,
   defaultProductDescTr,
 } from '@/pages/lib/constants';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
@@ -82,7 +81,6 @@ export default function AddEditProductDialog({
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
-  const { network } = useNetworkContext();
 
   const [videoUrls, setVideoUrls] = useState<string[]>(initVideoUrls);
 
@@ -99,9 +97,7 @@ export default function AddEditProductDialog({
               return {
                 [imageUrl]: URL.createObjectURL(
                   await (
-                    await fetch(
-                      `${BASE_URL}/api/localImage?imgUrl=${imageUrl}&network=${network}`,
-                    )
+                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
                   ).blob(),
                 ),
               };
@@ -124,7 +120,7 @@ export default function AddEditProductDialog({
       );
       setProductImageUrls(initialProductImageUrl);
     })();
-  }, [imageUrls, network]);
+  }, [imageUrls]);
 
   useEffect(() => {
     setTags(initTags ?? []);

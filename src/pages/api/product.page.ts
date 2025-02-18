@@ -1,14 +1,12 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
 import addCors from '@/pages/api/utils/addCors';
-import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { NextApiRequest, NextApiResponse } from 'next';
-import sharp from 'sharp';
 
 export const config = {
   api: {
@@ -26,50 +24,6 @@ interface CreateProductReturnType {
   data?: Product;
 }
 
-// changes url from images/products/img -> images/compressed/products/img
-export function createCompressedImgUrl(imgUrl: string): string {
-  // Windows uses '\' in path format, replace it with '/'
-  const normalizedUrl = imgUrl.replace(/\\/g, '/');
-
-  if (normalizedUrl.includes('products/')) {
-    const imgName = normalizedUrl.split('products/')[1];
-
-    return process.env.COMPRESSED_PRODUCT_IMAGES_DIR + imgName;
-  }
-  console.error(
-    filepath,
-    "incorrect imgUrl, products folder doesn't exist: ",
-    imgUrl,
-  );
-
-  return imgUrl;
-}
-
-async function createCompressedImg(imgUrl: string) {
-  const compressedImgUrl = createCompressedImgUrl(imgUrl);
-
-  if (fs.existsSync(imgUrl)) {
-    const image = fs.readFileSync(imgUrl);
-    let compressedImage: Buffer = image;
-    let quality = 85;
-
-    try {
-      while (
-        compressedImage.length > 100 * 1024 &&
-        quality > IMG_COMPRESSION_QUALITY.bad.jpeg
-      ) {
-        compressedImage = await sharp(image).jpeg({ quality }).toBuffer();
-        quality -= 10;
-      }
-      fs.writeFileSync(compressedImgUrl, new Uint8Array(compressedImage));
-    } catch (error) {
-      console.error(filepath, error);
-    }
-  } else {
-    console.error(filepath, `file not found: ${imgUrl}`);
-  }
-}
-
 async function createProduct(
   req: NextApiRequest,
 ): Promise<CreateProductReturnType> {
@@ -85,12 +39,6 @@ async function createProduct(
       }
 
       const fileKeys = Object.keys(files);
-      const filePaths = fileKeys.map((key) => {
-        const imgUrl = files[key][0].path;
-        createCompressedImg(imgUrl);
-        return imgUrl;
-      });
-
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
@@ -100,7 +48,7 @@ async function createProduct(
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-            ...(filePaths ?? []),
+            ...(fileKeys.map((key) => files[key][0].path) ?? []),
           ],
           price: fields.price?.[0],
         },
@@ -270,24 +218,17 @@ async function handleEditProduct(
         : [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
-          const compressedImgUrl = createCompressedImgUrl(imgUrl);
           if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-          if (fs.existsSync(compressedImgUrl)) fs.unlinkSync(compressedImgUrl);
         } else {
           data.imgUrls!.push(imgUrl);
         }
       });
 
       const fileKeys = Object.keys(files);
-      const filePaths = fileKeys.map((key) => {
-        const imgUrl = files[key][0].path;
-        createCompressedImg(imgUrl);
-        return imgUrl;
-      });
       data.imgUrls = [
         ...data.imgUrls!,
         ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-        ...(filePaths ?? []),
+        ...(fileKeys.map((key) => files[key][0].path) ?? []),
       ];
 
       const product = await dbClient.product.update({
@@ -358,9 +299,7 @@ export default async function handler(
       }
 
       product.imgUrls.forEach((imgUrl: string) => {
-        const compressedImgUrl = createCompressedImgUrl(imgUrl);
         if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-        if (fs.existsSync(compressedImgUrl)) fs.unlinkSync(compressedImgUrl);
       });
 
       return res.status(200).json({ success: true });
