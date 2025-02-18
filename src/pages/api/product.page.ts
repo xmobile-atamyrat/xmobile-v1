@@ -45,15 +45,23 @@ export function createCompressedImgUrl(imgUrl: string): string {
   return imgUrl;
 }
 
-async function createCompressedImg(imgUrl: string) {
+export async function createCompressedImg(
+  imgUrl: string,
+): Promise<Buffer> | null {
   const compressedImgUrl = createCompressedImgUrl(imgUrl);
 
   if (fs.existsSync(imgUrl)) {
-    const image = fs.readFileSync(imgUrl);
-    let compressedImage: Buffer = image;
-    let quality = 85;
-
     try {
+      if (!fs.existsSync(process.env.COMPRESSED_PRODUCT_IMAGES_DIR)) {
+        fs.mkdirSync(process.env.COMPRESSED_PRODUCT_IMAGES_DIR, {
+          recursive: true,
+        });
+      }
+
+      const image = fs.readFileSync(imgUrl);
+      let compressedImage: Buffer = image;
+      let quality = 85;
+
       while (
         compressedImage.length > 100 * 1024 &&
         quality > IMG_COMPRESSION_QUALITY.bad.jpeg
@@ -62,11 +70,15 @@ async function createCompressedImg(imgUrl: string) {
         quality -= 10;
       }
       fs.writeFileSync(compressedImgUrl, new Uint8Array(compressedImage));
+
+      return compressedImage;
     } catch (error) {
-      console.error(filepath, error);
+      console.error(filepath, 'function createCompressedImg:', error);
+      return null;
     }
   } else {
-    console.error(filepath, `file not found: ${imgUrl}`);
+    console.error(filepath, `image not found: ${imgUrl}`);
+    return null;
   }
 }
 
