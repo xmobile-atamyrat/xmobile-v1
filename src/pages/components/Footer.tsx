@@ -9,9 +9,10 @@ import {
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { FaTiktok, FaInstagram } from 'react-icons/fa';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import TikTokIcon from '@/pages/components/TikTokIcon';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -130,13 +131,13 @@ export default function Footer() {
                 href={'https://www.instagram.com/xmobiletm/'}
               >
                 <IconButton>
-                  <FaInstagram className="text-black"></FaInstagram>
+                  <InstagramIcon className="text-black"></InstagramIcon>
                 </IconButton>
                 Instagram
               </Link>
               <Link target="_blank" href={'https://www.tiktok.com/@xmobiletm'}>
                 <IconButton>
-                  <FaTiktok className="text-black"></FaTiktok>
+                  <TikTokIcon />
                 </IconButton>
                 TikTok
               </Link>
