@@ -42,10 +42,13 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
-import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import YouTubeIcon from '@mui/icons-material/YouTube';
+import TikTokIcon from '@/pages/components/TikTokIcon';
+
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -298,11 +301,10 @@ export default function Product() {
                       >
                         <IconButton>
                           {(() => {
-                            if (index === 0)
-                              return <FaTiktok className="text-black" />;
+                            if (index === 0) return <TikTokIcon />;
                             if (index === 1)
-                              return <FaInstagram className="text-black" />;
-                            return <FaYoutube className="text-black" />;
+                              return <InstagramIcon className="text-black" />;
+                            return <YouTubeIcon className="text-black" />;
                           })()}
                         </IconButton>
                         <Typography fontSize={isMdUp ? 18 : 15}>
