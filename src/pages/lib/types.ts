@@ -107,6 +107,13 @@ export interface NetworkContextProps {
   setNetwork: Dispatch<SetStateAction<NetworkType>>;
 }
 
+export interface AbortControllerContextProp {
+  abortControllersRef: React.MutableRefObject<Set<AbortController>>;
+  createAbortController: () => AbortController;
+  clearAbortController: (controller: AbortController) => void;
+  clearAllAborts: () => void;
+}
+
 export interface CategoryName {
   en: string;
   ru: string;
