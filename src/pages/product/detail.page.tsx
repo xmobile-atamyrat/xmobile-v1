@@ -48,6 +48,7 @@ import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import TikTokIcon from '@/pages/components/TikTokIcon';
+import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -81,29 +82,41 @@ export default function Product() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { network } = useNetworkContext();
+  const { createAbortController, clearAbortController } =
+    useAbortControllerContext();
 
   useEffect(() => {
     if (product == null) {
       // router.push('/');
       return;
     }
+    const abortController = createAbortController();
 
     (async () => {
-      const initImgUrls: string[] = await Promise.all(
-        product.imgUrls.map(async (imgUrl) => {
-          if (imgUrl.startsWith('http')) {
-            return imgUrl;
-          }
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=bad`,
-          );
-          return URL.createObjectURL(await (await imgFetcher).blob());
-        }),
-      );
-      setImgUrls(initImgUrls);
+      try {
+        const initImgUrls: string[] = await Promise.all(
+          product.imgUrls.map(async (imgUrl) => {
+            if (imgUrl.startsWith('http')) {
+              return imgUrl;
+            }
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=bad`,
+              { signal: abortController.signal },
+            );
+            return URL.createObjectURL(await (await imgFetcher).blob());
+          }),
+        );
+        setImgUrls(initImgUrls);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error(error);
+        }
+      } finally {
+        clearAbortController(abortController);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product]);
+  }, [product, network]);
 
   useEffect(() => {
     const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
