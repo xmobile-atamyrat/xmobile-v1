@@ -66,7 +66,10 @@ export async function createCompressedImg(
         compressedImage.length > 100 * 1024 &&
         quality > IMG_COMPRESSION_QUALITY.bad.jpeg
       ) {
-        compressedImage = await sharp(image).jpeg({ quality }).toBuffer();
+        compressedImage = await sharp(image)
+          .resize({ width: IMG_COMPRESSION_QUALITY.bad.width })
+          .jpeg({ quality })
+          .toBuffer();
         quality -= 10;
       }
       fs.writeFileSync(compressedImgUrl, new Uint8Array(compressedImage));
