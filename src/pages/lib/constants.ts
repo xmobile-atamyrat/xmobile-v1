@@ -45,6 +45,7 @@ export const IMG_COMPRESSION_QUALITY = {
   bad: {
     jpeg: 40, // Moderate compression for JPEG (3.6MB -> 170KB, low quality)
     png: 5, // Very high compression for PNG (3.6MB -> 300-400KB, moderate quality)
+    width: 300, // Resize width to 300px
   },
   okay: {
     png: 50, // moderate compression for PNG (moderate quality)
