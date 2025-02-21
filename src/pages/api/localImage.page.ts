@@ -51,6 +51,7 @@ export default async function handler(
 
           return res.status(200).send(compressedPngImg);
         }
+        return res.status(200).send(img);
       } catch (error) {
         console.error(
           filepath,
