@@ -1,7 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
 import addCors from '@/pages/api/utils/addCors';
-import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
+import {
+  IMG_COMPRESSION_MAX_QUALITY,
+  IMG_COMPRESSION_MIN_QUALITY,
+  IMG_COMPRESSION_OPTIONS,
+} from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
@@ -9,6 +13,7 @@ import multiparty from 'multiparty';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { NextApiRequest, NextApiResponse } from 'next';
 import sharp from 'sharp';
+import path from 'path';
 
 export const config = {
   api: {
@@ -27,51 +32,62 @@ interface CreateProductReturnType {
 }
 
 // changes url from images/products/img -> images/compressed/products/img
-export function createCompressedImgUrl(imgUrl: string): string {
+export function createCompressedImgUrl(
+  imgUrl: string,
+  type: 'bad' | 'good',
+): string | null {
   // Windows uses '\' in path format, replace it with '/'
   const normalizedUrl = imgUrl.replace(/\\/g, '/');
+  const imgName = path.basename(imgUrl);
 
-  if (normalizedUrl.includes('products/')) {
-    const imgName = normalizedUrl.split('products/')[1];
-
-    return process.env.COMPRESSED_PRODUCT_IMAGES_DIR + imgName;
+  if (!normalizedUrl.includes('products/')) {
+    console.error(
+      filepath,
+      "incorrect imgUrl, products folder doesn't exist in image path: ",
+      imgUrl,
+    );
   }
-  console.error(
-    filepath,
-    "incorrect imgUrl, products folder doesn't exist: ",
-    imgUrl,
-  );
 
-  return imgUrl;
+  return `${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/${imgName}`;
 }
 
 export async function createCompressedImg(
   imgUrl: string,
+  type: 'bad' | 'good',
 ): Promise<Buffer> | null {
-  const compressedImgUrl = createCompressedImgUrl(imgUrl);
-
-  if (fs.existsSync(imgUrl)) {
+  if (imgUrl != null && fs.existsSync(imgUrl)) {
     try {
-      if (!fs.existsSync(process.env.COMPRESSED_PRODUCT_IMAGES_DIR)) {
-        fs.mkdirSync(process.env.COMPRESSED_PRODUCT_IMAGES_DIR, {
+      if (
+        !fs.existsSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`)
+      ) {
+        fs.mkdirSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`, {
           recursive: true,
         });
       }
+      const img = fs.readFileSync(imgUrl);
+      let compressedImg: Buffer = img;
 
-      const image = fs.readFileSync(imgUrl);
-      let compressedImage: Buffer = image;
-      let quality = 85;
+      const targetUrl = createCompressedImgUrl(imgUrl, type);
+      const targetSize = IMG_COMPRESSION_OPTIONS[type].size;
+      const targetWidth =
+        IMG_COMPRESSION_OPTIONS[type].width === 0
+          ? null
+          : IMG_COMPRESSION_OPTIONS[type].width;
+      let quality = IMG_COMPRESSION_MAX_QUALITY;
 
       while (
-        compressedImage.length > 100 * 1024 &&
-        quality > IMG_COMPRESSION_QUALITY.bad.jpeg
+        compressedImg.length > targetSize &&
+        quality > IMG_COMPRESSION_MIN_QUALITY
       ) {
-        compressedImage = await sharp(image).jpeg({ quality }).toBuffer();
+        compressedImg = await sharp(img)
+          .resize({ width: targetWidth })
+          .jpeg({ quality, progressive: true })
+          .toBuffer();
         quality -= 10;
       }
-      fs.writeFileSync(compressedImgUrl, new Uint8Array(compressedImage));
+      fs.writeFileSync(targetUrl, new Uint8Array(compressedImg));
 
-      return compressedImage;
+      return compressedImg;
     } catch (error) {
       console.error(filepath, 'function createCompressedImg:', error);
       return null;
@@ -97,10 +113,11 @@ async function createProduct(
       }
 
       const fileKeys = Object.keys(files);
-      const filePaths = fileKeys.map((key) => {
+      fileKeys.forEach(async (key) => {
         const imgUrl = files[key][0].path;
-        createCompressedImg(imgUrl);
-        return imgUrl;
+
+        await createCompressedImg(imgUrl, 'bad');
+        await createCompressedImg(imgUrl, 'good');
       });
 
       const product = await dbClient.product.create({
@@ -112,7 +129,7 @@ async function createProduct(
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-            ...(filePaths ?? []),
+            ...(fileKeys.map((key) => files[key][0].path) ?? []),
           ],
           price: fields.price?.[0],
         },
@@ -282,24 +299,33 @@ async function handleEditProduct(
         : [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
-          const compressedImgUrl = createCompressedImgUrl(imgUrl);
+          const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
+          const lightlyCompressedImgUrl = createCompressedImgUrl(
+            imgUrl,
+            'good',
+          );
+
           if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-          if (fs.existsSync(compressedImgUrl)) fs.unlinkSync(compressedImgUrl);
+          if (fs.existsSync(heavilyCompressedImgUrl))
+            fs.unlinkSync(heavilyCompressedImgUrl);
+          if (fs.existsSync(lightlyCompressedImgUrl))
+            fs.unlinkSync(lightlyCompressedImgUrl);
         } else {
           data.imgUrls!.push(imgUrl);
         }
       });
 
       const fileKeys = Object.keys(files);
-      const filePaths = fileKeys.map((key) => {
+      fileKeys.forEach(async (key) => {
         const imgUrl = files[key][0].path;
-        createCompressedImg(imgUrl);
-        return imgUrl;
+        await createCompressedImg(imgUrl, 'bad');
+        await createCompressedImg(imgUrl, 'good');
       });
+
       data.imgUrls = [
         ...data.imgUrls!,
         ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-        ...(filePaths ?? []),
+        ...(fileKeys.map((key) => files[key][0].path) ?? []),
       ];
 
       const product = await dbClient.product.update({
@@ -370,9 +396,14 @@ export default async function handler(
       }
 
       product.imgUrls.forEach((imgUrl: string) => {
-        const compressedImgUrl = createCompressedImgUrl(imgUrl);
+        const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
+        const lightlyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'good');
+
         if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-        if (fs.existsSync(compressedImgUrl)) fs.unlinkSync(compressedImgUrl);
+        if (fs.existsSync(heavilyCompressedImgUrl))
+          fs.unlinkSync(heavilyCompressedImgUrl);
+        if (fs.existsSync(lightlyCompressedImgUrl))
+          fs.unlinkSync(lightlyCompressedImgUrl);
       });
 
       return res.status(200).json({ success: true });

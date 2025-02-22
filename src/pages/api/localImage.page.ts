@@ -1,7 +1,5 @@
 import addCors from '@/pages/api/utils/addCors';
 import fs from 'fs';
-import sharp from 'sharp';
-import { IMG_COMPRESSION_QUALITY } from '@/pages/lib/constants';
 import { NextApiRequest, NextApiResponse } from 'next';
 import {
   createCompressedImg,
@@ -16,41 +14,30 @@ export default async function handler(
 ) {
   addCors(res);
   const {
-    query: { imgUrl, network, quality },
+    query: { imgUrl, network },
     method,
   } = req;
 
   if (method === 'GET') {
     if (imgUrl != null && fs.existsSync(imgUrl as string)) {
       const img = fs.readFileSync(imgUrl as string);
-      res.setHeader('Content-Type', 'image/png');
+      const quality = network === 'fast' ? 'good' : 'bad';
+      res.setHeader('Content-Type', 'image/jpeg');
 
-      if ((network as string) === 'fast' || img.length < 100 * 1024) {
-        // don't compress images under 100KB
-        return res.status(200).send(img);
-      }
-
-      if ((network as string) !== 'slow')
+      if ((network as string) !== 'slow' && (network as string) !== 'fast')
         console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
 
       try {
-        const compressedImgUrl = createCompressedImgUrl(imgUrl as string);
-        if (quality === 'bad') {
-          res.setHeader('Content-Type', 'image/jpeg');
+        const compressedImgUrl = createCompressedImgUrl(
+          imgUrl as string,
+          quality,
+        );
 
-          const compressedImg = fs.existsSync(compressedImgUrl)
-            ? fs.readFileSync(compressedImgUrl)
-            : await createCompressedImg(imgUrl as string);
+        const compressedImg = fs.existsSync(compressedImgUrl)
+          ? fs.readFileSync(compressedImgUrl)
+          : await createCompressedImg(imgUrl as string, quality);
 
-          return res.status(200).send(compressedImg);
-        }
-        if (quality === 'okay') {
-          const compressedPngImg = await sharp(img)
-            .png({ quality: IMG_COMPRESSION_QUALITY.okay.png })
-            .toBuffer();
-
-          return res.status(200).send(compressedPngImg);
-        }
+        return res.status(200).send(compressedImg);
       } catch (error) {
         console.error(
           filepath,
