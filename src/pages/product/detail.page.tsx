@@ -100,7 +100,7 @@ export default function Product() {
               return imgUrl;
             }
             const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}&quality=bad`,
+              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}`,
               { signal: abortController.signal },
             );
             return URL.createObjectURL(await (await imgFetcher).blob());

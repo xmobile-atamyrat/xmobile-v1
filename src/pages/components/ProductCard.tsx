@@ -57,7 +57,7 @@ export default function ProductCard({
             setImgUrl(product.imgUrls[0]);
           } else {
             const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}&quality=bad`,
+              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}`,
               { signal: abortController.signal },
             );
             const resp = await imgFetcher;
