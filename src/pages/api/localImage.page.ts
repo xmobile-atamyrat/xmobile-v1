@@ -24,8 +24,14 @@ export default async function handler(
       const quality = network === 'fast' ? 'good' : 'bad';
       res.setHeader('Content-Type', 'image/jpeg');
 
-      if ((network as string) !== 'slow' && (network as string) !== 'fast')
-        console.error(filepath, 'Network speed not found', `imgUrl: ${imgUrl}`);
+      if ((network as string) !== 'slow' && (network as string) !== 'fast') {
+        console.error(
+          filepath,
+          'Network speed not found. Returned original image',
+          `imgUrl: ${imgUrl}`,
+        );
+        return res.status(200).send(img);
+      }
 
       try {
         const compressedImgUrl = createCompressedImgUrl(
@@ -45,7 +51,7 @@ export default async function handler(
           `imgUrl: ${imgUrl}`,
           `error: ${error}`,
         );
-        res.status(400).send(img);
+        return res.status(400).send(img);
       }
     }
 
