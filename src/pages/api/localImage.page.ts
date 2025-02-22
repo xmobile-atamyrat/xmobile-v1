@@ -14,7 +14,6 @@ export default async function handler(
 ) {
   addCors(res);
   const {
-    // todo: remove quality prop
     query: { imgUrl, network },
     method,
   } = req;
