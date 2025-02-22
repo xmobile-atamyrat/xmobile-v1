@@ -37,18 +37,21 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
 
 /*
 To store images in:
-  * BAD quality -> jpeg for higher compression
-  * OKAY quality -> png for less compression 
-png files can't be compressed as much as jpeg files
+  * BAD quality -> reduce quality, and resize width for higher compression
+  * GOOD quality -> reduce quality
 */
-export const IMG_COMPRESSION_QUALITY = {
+
+// These options should be kept consistent with compress-images.mjs file
+export const IMG_COMPRESSION_MIN_QUALITY = 20; // %
+export const IMG_COMPRESSION_MAX_QUALITY = 90; // %
+export const IMG_COMPRESSION_OPTIONS = {
   bad: {
-    jpeg: 40, // Moderate compression for JPEG (3.6MB -> 170KB, low quality)
-    png: 5, // Very high compression for PNG (3.6MB -> 300-400KB, moderate quality)
-    width: 300, // Resize width to 300px
+    width: 300, // px
+    size: 15 * 1024, // KB
   },
-  okay: {
-    png: 50, // moderate compression for PNG (moderate quality)
+  good: {
+    size: 150 * 1024, // KB
+    width: 0, // no change in width
   },
 };
 
