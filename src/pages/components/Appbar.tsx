@@ -209,7 +209,8 @@ export default function CustomAppBar({
             <Box
               sx={{
                 width: { xs: 100, sm: 120 },
-                height: { xs: 100, sm: 120 },
+                height: '100%',
+                // height: { xs: 100, sm: 120 },
               }}
               className="flex items-center justify-center"
               onClick={() => {
