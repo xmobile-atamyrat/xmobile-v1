@@ -182,6 +182,15 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCategories]);
 
+  // Clicking the xmobile-logo from the index page doesn't update localCategories
+  // because xmobile-logo is on appbar.tsx and it only clears `stack`.
+  // This effect resets localCategories when stack becomes empty.
+  useEffect(() => {
+    if (stack.length === 0) {
+      setLocalCategories(allCategories);
+    }
+  }, [stack]);
+
   return (
     <Layout
       handleHeaderBackButton={
