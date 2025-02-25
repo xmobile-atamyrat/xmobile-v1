@@ -46,8 +46,8 @@ export const IMG_COMPRESSION_MIN_QUALITY = 20; // %
 export const IMG_COMPRESSION_MAX_QUALITY = 90; // %
 export const IMG_COMPRESSION_OPTIONS = {
   bad: {
-    width: 300, // px
-    size: 15 * 1024, // KB
+    width: 600, // px
+    size: 50 * 1024, // KB
   },
   good: {
     size: 150 * 1024, // KB
