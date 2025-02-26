@@ -1,5 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight } from '@/pages/lib/constants';
+import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import HomeIcon from '@mui/icons-material/Home';
@@ -16,15 +16,16 @@ import { useRouter } from 'next/router';
 
 interface SimpleBreadcrumbsProps {
   onClick?: (combo: [ExtendedCategory, string]) => void;
-  onClickHome?: () => void;
 }
 
-export default function SimpleBreadcrumbs({
-  onClick,
-  onClickHome,
-}: SimpleBreadcrumbsProps) {
-  const { stack, setStack, setParentCategory, parentCategory } =
-    useCategoryContext();
+export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
+  const {
+    stack,
+    setStack,
+    setParentCategory,
+    parentCategory,
+    setSelectedCategoryId,
+  } = useCategoryContext();
   const router = useRouter();
   const t = useTranslations();
   const theme = useTheme();
@@ -43,11 +44,8 @@ export default function SimpleBreadcrumbs({
       <Breadcrumbs separator="›" maxItems={3}>
         <Link
           onClick={() => {
-            if (onClickHome) {
-              onClickHome();
-              return;
-            }
             setParentCategory(undefined);
+            setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
             setStack([]);
             router.push('/');
           }}
