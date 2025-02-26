@@ -6,6 +6,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   ALL_PRODUCTS_CATEGORY_CARD,
   appBarHeight,
+  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
   mobileAppBarHeight,
   POST_SOVIET_COUNTRIES,
@@ -120,7 +121,7 @@ export default function Home({
   const router = useRouter();
   const {
     setSelectedCategoryId,
-    // selectedCategoryId,
+    selectedCategoryId,
     categories: allCategories,
     stack,
     setStack,
@@ -182,14 +183,12 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCategories]);
 
-  // Clicking the xmobile-logo from the index page doesn't update localCategories
-  // because xmobile-logo is on appbar.tsx and it only clears `stack`.
-  // This effect resets localCategories when stack becomes empty.
+  // Reset categories to the highest level when the `home button` or `logo` is clicked on the index page.
   useEffect(() => {
-    if (stack.length === 0) {
+    if (selectedCategoryId === HIGHEST_LEVEL_CATEGORY_ID) {
       setLocalCategories(allCategories);
     }
-  }, [stack]);
+  }, [selectedCategoryId]);
 
   return (
     <Layout
@@ -210,11 +209,6 @@ export default function Home({
             onClick={(combo: [ExtendedCategory, string]) => {
               setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
               handleHeaderBackButton();
-            }}
-            onClickHome={() => {
-              setParentCategory(undefined);
-              setStack([]);
-              setLocalCategories(allCategories);
             }}
           />
         )}
