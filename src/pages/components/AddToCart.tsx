@@ -21,7 +21,6 @@ export default function AddToCart({
   cartItemId = undefined,
   onDelete,
 }: AddToCartProps) {
-  // constants
   const [quantity, setQuantity] = useState(initialQuantity);
   const { user } = useUserContext();
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -73,7 +72,6 @@ export default function AddToCart({
     }
   };
 
-  // deleteCartItems function
   const deleteCartItems = async (cartId: string) => {
     const response = await fetch(`${BASE_URL}/api/cart`, {
       method: 'DELETE',
