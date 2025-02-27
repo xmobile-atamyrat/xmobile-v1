@@ -1,11 +1,19 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
 import addCors from '@/pages/api/utils/addCors';
+import {
+  IMG_COMPRESSION_MAX_QUALITY,
+  IMG_COMPRESSION_MIN_QUALITY,
+  IMG_COMPRESSION_OPTIONS,
+} from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
+import { getPrice } from '@/pages/api/prices/index.page';
 import { NextApiRequest, NextApiResponse } from 'next';
+import sharp from 'sharp';
+import path from 'path';
 
 export const config = {
   api: {
@@ -23,6 +31,73 @@ interface CreateProductReturnType {
   data?: Product;
 }
 
+// changes url from images/products/img -> images/compressed/products/img
+export function createCompressedImgUrl(
+  imgUrl: string,
+  type: 'bad' | 'good',
+): string | null {
+  // Windows uses '\' in path format, replace it with '/'
+  const normalizedUrl = imgUrl.replace(/\\/g, '/');
+  const imgName = path.basename(imgUrl);
+
+  if (!normalizedUrl.includes('products/')) {
+    console.error(
+      filepath,
+      "incorrect imgUrl, products folder doesn't exist in image path: ",
+      imgUrl,
+    );
+  }
+
+  return `${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/${imgName}`;
+}
+
+export async function createCompressedImg(
+  imgUrl: string,
+  type: 'bad' | 'good',
+): Promise<Buffer> | null {
+  if (imgUrl != null && fs.existsSync(imgUrl)) {
+    try {
+      if (
+        !fs.existsSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`)
+      ) {
+        fs.mkdirSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`, {
+          recursive: true,
+        });
+      }
+      const img = fs.readFileSync(imgUrl);
+      let compressedImg: Buffer = img;
+
+      const targetUrl = createCompressedImgUrl(imgUrl, type);
+      const targetSize = IMG_COMPRESSION_OPTIONS[type].size;
+      const targetWidth =
+        IMG_COMPRESSION_OPTIONS[type].width === 0
+          ? null
+          : IMG_COMPRESSION_OPTIONS[type].width;
+      let quality = IMG_COMPRESSION_MAX_QUALITY;
+
+      while (
+        compressedImg.length > targetSize &&
+        quality > IMG_COMPRESSION_MIN_QUALITY
+      ) {
+        compressedImg = await sharp(img)
+          .resize({ width: targetWidth })
+          .jpeg({ quality, progressive: true })
+          .toBuffer();
+        quality -= 10;
+      }
+      fs.writeFileSync(targetUrl, new Uint8Array(compressedImg));
+
+      return compressedImg;
+    } catch (error) {
+      console.error(filepath, 'function createCompressedImg:', error);
+      return null;
+    }
+  } else {
+    console.error(filepath, `image not found: ${imgUrl}`);
+    return null;
+  }
+}
+
 async function createProduct(
   req: NextApiRequest,
 ): Promise<CreateProductReturnType> {
@@ -38,6 +113,13 @@ async function createProduct(
       }
 
       const fileKeys = Object.keys(files);
+      fileKeys.forEach(async (key) => {
+        const imgUrl = files[key][0].path;
+
+        await createCompressedImg(imgUrl, 'bad');
+        await createCompressedImg(imgUrl, 'good');
+      });
+
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
@@ -65,6 +147,11 @@ async function getProduct(productId: string): Promise<Product | null> {
       id: productId,
     },
   });
+
+  // product.price = [id]{value}
+  const productPrice = await getPrice(product?.price as string);
+  product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+
   return product;
 }
 
@@ -212,13 +299,29 @@ async function handleEditProduct(
         : [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
+          const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
+          const lightlyCompressedImgUrl = createCompressedImgUrl(
+            imgUrl,
+            'good',
+          );
+
           if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
+          if (fs.existsSync(heavilyCompressedImgUrl))
+            fs.unlinkSync(heavilyCompressedImgUrl);
+          if (fs.existsSync(lightlyCompressedImgUrl))
+            fs.unlinkSync(lightlyCompressedImgUrl);
         } else {
           data.imgUrls!.push(imgUrl);
         }
       });
 
       const fileKeys = Object.keys(files);
+      fileKeys.forEach(async (key) => {
+        const imgUrl = files[key][0].path;
+        await createCompressedImg(imgUrl, 'bad');
+        await createCompressedImg(imgUrl, 'good');
+      });
+
       data.imgUrls = [
         ...data.imgUrls!,
         ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
@@ -294,7 +397,14 @@ export default async function handler(
       }
 
       product.imgUrls.forEach((imgUrl: string) => {
+        const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
+        const lightlyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'good');
+
         if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
+        if (fs.existsSync(heavilyCompressedImgUrl))
+          fs.unlinkSync(heavilyCompressedImgUrl);
+        if (fs.existsSync(lightlyCompressedImgUrl))
+          fs.unlinkSync(lightlyCompressedImgUrl);
       });
 
       return res.status(200).json({ success: true });

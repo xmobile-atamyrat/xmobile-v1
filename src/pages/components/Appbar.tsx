@@ -3,6 +3,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   appBarHeight,
+  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
   LOGO_COLOR,
   LOGO_COLOR_LIGHT,
@@ -139,7 +140,8 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
-  const { setStack, setParentCategory } = useCategoryContext();
+  const { setStack, setParentCategory, setSelectedCategoryId } =
+    useCategoryContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -211,11 +213,12 @@ export default function CustomAppBar({
             <Box
               sx={{
                 width: { xs: 100, sm: 120 },
-                height: { xs: 100, sm: 120 },
+                height: '100%',
               }}
               className="flex items-center justify-center"
               onClick={() => {
                 setParentCategory(undefined);
+                setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
                 setStack([]);
                 router.push('/');
               }}

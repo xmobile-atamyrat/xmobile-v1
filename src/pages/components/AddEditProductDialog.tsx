@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   defaultProductDescCh,
@@ -7,6 +8,8 @@ import {
   defaultProductDescTk,
   defaultProductDescTr,
 } from '@/pages/lib/constants';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps } from '@/pages/lib/types';
 import {
@@ -14,7 +17,7 @@ import {
   isNumeric,
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
-import { DeleteOutlined } from '@mui/icons-material';
+import { DeleteOutlined, Instagram, YouTube } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { LoadingButton } from '@mui/lab';
@@ -32,7 +35,6 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 
 interface AddEditProductDialogProps {
   handleClose: () => void;
@@ -79,6 +81,8 @@ export default function AddEditProductDialog({
   const [tags, setTags] = useState<string[]>([]);
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
+  const { network } = useNetworkContext();
 
   const [videoUrls, setVideoUrls] = useState<string[]>(initVideoUrls);
 
@@ -95,7 +99,9 @@ export default function AddEditProductDialog({
               return {
                 [imageUrl]: URL.createObjectURL(
                   await (
-                    await fetch(`${BASE_URL}/api/localImage?imgUrl=${imageUrl}`)
+                    await fetch(
+                      `${BASE_URL}/api/localImage?imgUrl=${imageUrl}&network=${network}`,
+                    )
                   ).blob(),
                 ),
               };
@@ -118,7 +124,7 @@ export default function AddEditProductDialog({
       );
       setProductImageUrls(initialProductImageUrl);
     })();
-  }, [imageUrls]);
+  }, [imageUrls, network]);
 
   useEffect(() => {
     setTags(initTags ?? []);
@@ -151,6 +157,8 @@ export default function AddEditProductDialog({
             productNameRequiredError: t('productNameRequired'),
             selectedCategoryId,
             setProducts,
+            setPrevProducts,
+            setPrevCategory,
             productImageFiles,
             deleteImageUrls: originalDeletedProductImageUrls,
             productImageUrls: productImageUrls
@@ -279,10 +287,9 @@ export default function AddEditProductDialog({
             <Box className="flex" key={`video-${index}`}>
               <Box className="inline-flex p-2 items-center text-xl">
                 {(() => {
-                  if (index === 0) return <FaTiktok className="text-black" />;
-                  if (index === 1)
-                    return <FaInstagram className="text-black" />;
-                  return <FaYoutube className="text-black" />;
+                  if (index === 0) return <TikTokIcon />;
+                  if (index === 1) return <Instagram className="text-black" />;
+                  return <YouTube className="text-black" />;
                 })()}
               </Box>
               <TextField

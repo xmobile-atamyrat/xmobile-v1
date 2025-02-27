@@ -35,7 +35,28 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
+/*
+To store images in:
+  * BAD quality -> reduce quality, and resize width for higher compression
+  * GOOD quality -> reduce quality
+*/
+
+// These options should be kept consistent with compress-images.mjs file
+export const IMG_COMPRESSION_MIN_QUALITY = 20; // %
+export const IMG_COMPRESSION_MAX_QUALITY = 90; // %
+export const IMG_COMPRESSION_OPTIONS = {
+  bad: {
+    width: 600, // px
+    size: 50 * 1024, // KB
+  },
+  good: {
+    size: 150 * 1024, // KB
+    width: 0, // no change in width
+  },
+};
+
 export const squareBracketRegex = /\[([^\]]+)\]/;
+export const curlyBracketRegex = /\{([^}]+)\}/;
 
 export const POLL_DOLLAR_RATE_INTERVAL = 600_000; // 10 minutes
 export const POLL_PRODUCT_INTERVAL = 600_000; // 10 minutes

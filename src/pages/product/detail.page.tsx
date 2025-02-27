@@ -5,7 +5,11 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  PRODUCT_IMAGE_WIDTH_RESP,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -38,8 +42,13 @@ import { useRouter } from 'next/router';
 import { useEffect, useState, lazy } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
-import { FaTiktok, FaInstagram, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import YouTubeIcon from '@mui/icons-material/YouTube';
+import TikTokIcon from '@/pages/components/TikTokIcon';
+import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 
 // use lazy() not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
@@ -61,6 +70,7 @@ export default function Product() {
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user } = useUserContext();
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
     productId: string;
@@ -74,29 +84,42 @@ export default function Product() {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { network } = useNetworkContext();
+  const { createAbortController, clearAbortController } =
+    useAbortControllerContext();
 
   useEffect(() => {
     if (product == null) {
       // router.push('/');
       return;
     }
+    const abortController = createAbortController();
 
     (async () => {
-      const initImgUrls: string[] = await Promise.all(
-        product.imgUrls.map(async (imgUrl) => {
-          if (imgUrl.startsWith('http')) {
-            return imgUrl;
-          }
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${imgUrl}`,
-          );
-          return URL.createObjectURL(await (await imgFetcher).blob());
-        }),
-      );
-      setImgUrls(initImgUrls);
+      try {
+        const initImgUrls: string[] = await Promise.all(
+          product.imgUrls.map(async (imgUrl) => {
+            if (imgUrl.startsWith('http')) {
+              return imgUrl;
+            }
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}`,
+              { signal: abortController.signal },
+            );
+            return URL.createObjectURL(await (await imgFetcher).blob());
+          }),
+        );
+        setImgUrls(initImgUrls);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error(error);
+        }
+      } finally {
+        clearAbortController(abortController);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product]);
+  }, [product, network]);
 
   useEffect(() => {
     const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
@@ -166,7 +189,14 @@ export default function Product() {
                         dialogType: 'edit',
                         imageUrls: initialProduct.imgUrls,
                         name: initialProduct.name,
-                        price: initialProduct.price,
+                        price: (() => {
+                          const priceMatch =
+                            initialProduct.price?.match(squareBracketRegex);
+                          if (priceMatch != null) {
+                            return priceMatch[0]; // initialProduct.price = [id]{value}
+                          }
+                          return initialProduct.price;
+                        })(),
                         tags: initialProduct.tags,
                         videoUrls: initialProduct.videoUrls,
                       });
@@ -298,11 +328,10 @@ export default function Product() {
                       >
                         <IconButton>
                           {(() => {
-                            if (index === 0)
-                              return <FaTiktok className="text-black" />;
+                            if (index === 0) return <TikTokIcon />;
                             if (index === 1)
-                              return <FaInstagram className="text-black" />;
-                            return <FaYoutube className="text-black" />;
+                              return <InstagramIcon className="text-black" />;
+                            return <YouTubeIcon className="text-black" />;
                           })()}
                         </IconButton>
                         <Typography fontSize={isMdUp ? 18 : 15}>
@@ -379,6 +408,9 @@ export default function Product() {
                   categoryId: selectedCategoryId,
                 });
                 setProducts(prods);
+                setPrevCategory(selectedCategoryId);
+                setPrevProducts(prods);
+
                 setSnackbarOpen(true);
                 setSnackbarMessage({
                   message: 'deleteProductSuccess',

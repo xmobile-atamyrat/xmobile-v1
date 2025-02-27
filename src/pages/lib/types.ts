@@ -72,6 +72,17 @@ export interface ProductContextProps {
   setSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
 }
 
+export interface PrevProductContextProps {
+  prevProducts: Product[];
+  setPrevProducts: Dispatch<SetStateAction<Product[]>>;
+  prevSearchKeyword: string | undefined;
+  setPrevSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
+  prevCategory: string | undefined;
+  setPrevCategory: Dispatch<SetStateAction<string | undefined>>;
+  prevPage: number | undefined;
+  setPrevPage: Dispatch<SetStateAction<number | undefined>>;
+}
+
 export interface NavigatorConnection {
   effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
   type:
@@ -94,6 +105,13 @@ type NetworkType = 'slow' | 'fast' | 'unknown';
 export interface NetworkContextProps {
   network: NetworkType;
   setNetwork: Dispatch<SetStateAction<NetworkType>>;
+}
+
+export interface AbortControllerContextProp {
+  abortControllersRef: React.MutableRefObject<Set<AbortController>>;
+  createAbortController: () => AbortController;
+  clearAbortController: (controller: AbortController) => void;
+  clearAllAborts: () => void;
 }
 
 export interface CategoryName {

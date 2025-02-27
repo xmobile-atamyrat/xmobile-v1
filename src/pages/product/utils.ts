@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { squareBracketRegex } from '@/pages/lib/constants';
+import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
@@ -90,22 +90,42 @@ export const fetchDollarRate = async (): Promise<number> => {
   return data.rate;
 };
 
-export const computeProductPrice = async (
-  product: Product,
-): Promise<Product> => {
-  const priceMatch = product.price?.match(squareBracketRegex);
-  if (priceMatch == null) return product;
-  const res: ResponseApi<Prices> = await (
-    await fetch(`${BASE_URL}/api/prices?id=${priceMatch[1]}`)
-  ).json();
-  if (res.success && res.data != null) {
-    const processedProduct = { ...product };
-    processedProduct.price = res.data.priceInTmt;
-    return processedProduct;
+// returns product.price from session or fetches from db
+export const computePrice = async (priceId: string): Promise<string> => {
+  const cachePrice = sessionStorage.getItem(priceId);
+  if (cachePrice != null) {
+    return cachePrice;
   }
-  return product;
+
+  const res: ResponseApi<Prices> = await (
+    await fetch(`${BASE_URL}/api/prices?id=${priceId}`)
+  ).json();
+
+  if (res.success && res.data != null) {
+    sessionStorage.setItem(priceId, res.data.priceInTmt);
+    return res.data.priceInTmt;
+  }
+  return priceId;
 };
 
+// ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
+// If {value} doesn't exist, computePrice function is used for safety
+export const computeProductPrice = async (product: Product) => {
+  const priceMatchId = product.price?.match(squareBracketRegex);
+  const priceMatchValue = product.price?.match(curlyBracketRegex);
+  const processedProduct = { ...product };
+
+  if (priceMatchValue != null && priceMatchId != null) {
+    processedProduct.price = priceMatchValue[1];
+    sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
+  } else if (priceMatchId != null) {
+    processedProduct.price = await computePrice(priceMatchId[1]);
+  }
+
+  return processedProduct;
+};
+
+// ProductPriceTags have only [id], value is fetched in computePrice function.
 export const computeProductPriceTags = async (
   product: Product,
 ): Promise<Product> => {
@@ -117,12 +137,9 @@ export const computeProductPriceTags = async (
         const tagMatch = tag.match(squareBracketRegex);
         if (tagMatch != null) {
           const idTag = tagMatch[1];
-          const res: ResponseApi<Prices> = await (
-            await fetch(`${BASE_URL}/api/prices?id=${idTag}`)
-          ).json();
-          if (res.success && res.data != null) {
-            return tag.replace(`[${idTag}]`, res.data.priceInTmt);
-          }
+          const price = await computePrice(idTag);
+
+          return tag.replace(`[${idTag}]`, price);
         }
         return tag;
       }),

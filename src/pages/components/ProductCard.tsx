@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
@@ -48,24 +49,38 @@ export default function ProductCard({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { network } = useNetworkContext();
+  const { createAbortController, clearAbortController } =
+    useAbortControllerContext();
 
   useEffect(() => {
+    const abortController = createAbortController();
+
     (async () => {
-      if (product?.imgUrls[0] != null && network !== 'unknown') {
-        setImgUrl('/xmobile-original-logo.jpeg');
-        if (product.imgUrls[0].startsWith('http')) {
-          setImgUrl(product.imgUrls[0]);
-        } else {
-          const imgFetcher = fetch(
-            `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}`,
-          );
-          const resp = await imgFetcher;
-          if (resp.ok) {
-            setImgUrl(URL.createObjectURL(await resp.blob()));
+      try {
+        if (product?.imgUrls[0] != null && network !== 'unknown') {
+          setImgUrl('/xmobile-original-logo.jpeg');
+          if (product.imgUrls[0].startsWith('http')) {
+            setImgUrl(product.imgUrls[0]);
+          } else {
+            const imgFetcher = fetch(
+              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}`,
+              { signal: abortController.signal },
+            );
+            const resp = await imgFetcher;
+            if (resp.ok) {
+              setImgUrl(URL.createObjectURL(await resp.blob()));
+            }
           }
         }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error(error);
+        }
+      } finally {
+        clearAbortController(abortController);
       }
     })();
+    // eslint-disable-line react-hooks/exhaustive-deps
   }, [product?.imgUrls, network]);
 
   useEffect(() => {

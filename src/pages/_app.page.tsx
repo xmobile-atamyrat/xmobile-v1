@@ -1,7 +1,9 @@
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
+import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
+import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import { theme } from '@/pages/lib/utils';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
@@ -14,19 +16,23 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <NetworkContextProvider>
-        <UserContextProvider>
-          <CategoryContextProvider>
-            <ProductContextProvider>
-              <NextIntlClientProvider
-                locale={router.locale}
-                timeZone="Asia/Ashgabat"
-                messages={pageProps.messages}
-              >
-                <Component {...pageProps} />
-              </NextIntlClientProvider>
-            </ProductContextProvider>
-          </CategoryContextProvider>
-        </UserContextProvider>
+        <AbortControllerContextProvider>
+          <UserContextProvider>
+            <CategoryContextProvider>
+              <ProductContextProvider>
+                <PrevProductContextProvider>
+                  <NextIntlClientProvider
+                    locale={router.locale}
+                    timeZone="Asia/Ashgabat"
+                    messages={pageProps.messages}
+                  >
+                    <Component {...pageProps} />
+                  </NextIntlClientProvider>
+                </PrevProductContextProvider>
+              </ProductContextProvider>
+            </CategoryContextProvider>
+          </UserContextProvider>
+        </AbortControllerContextProvider>
       </NetworkContextProvider>
     </ThemeProvider>
   );
