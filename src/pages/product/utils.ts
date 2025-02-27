@@ -149,6 +149,8 @@ export const computeProductPriceTags = async (
   return priceTagsComputedProduct;
 };
 
+// Use this function inside useCallBack to retain timeoutId across renders.
+// Without it, a new debounce is created each time, defining a new timeoutId to undefined
 export const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
   return (...args: any[]) => {
@@ -160,30 +162,3 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
     }, delay);
   };
 };
-
-// both of them work
-// this specifically returns either Promise or undefined. delete code below if void above is commonly used
-
-// export const debounce = <T extends (...args: any[]) => any>(
-//   func: T,
-//   delay: number,
-// ) => {
-//   let timeoutId: NodeJS.Timeout;
-
-//   return (...args: Parameters<T>):(ReturnType<T> extends Promise<any>
-//     ? Promise<void>
-//     : undefined) => {
-//       if (timeoutId)
-//         clearTimeout(timeoutId);
-
-//       return new Promise(resolve => {
-//        timeoutId = setTimeout(() => {
-//           const result = func(...args);
-//           if (result instanceof Promise)
-//             result.then(resolve).catch((error) => {console.error('Debounce failed', error)});
-//           else
-//             resolve(result);
-//         }, delay);
-//       }) as ReturnType<T> extends Promise<any> ? Promise<void> : undefined;
-//     }
-// }
