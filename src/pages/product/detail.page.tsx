@@ -50,7 +50,6 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 
-
 // use lazy() not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
@@ -174,10 +173,6 @@ export default function Product() {
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
-              {/* uncomment to put cart_icon next to title */}
-              {/* <Box className="ml-10">
-                <AddToCart productId={product.id} cartAction="add" />
-              </Box> */}
               {user?.grade === 'ADMIN' && (
                 <Box>
                   <IconButton
@@ -264,7 +259,6 @@ export default function Product() {
                 >{`${product.price} ${t('manat')}`}</Typography>
               )}
 
-              {/* uncomment to put cart_icon next to price */}
               <Box className="ml-10">
                 <AddToCart productId={product.id} cartAction="add" />
               </Box>
