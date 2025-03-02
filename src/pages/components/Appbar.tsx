@@ -21,6 +21,8 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
+
+import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import {
   Avatar,
   CardMedia,
@@ -313,6 +315,23 @@ export default function CustomAppBar({
                 </Box>
               </MenuItem>
             </Select>
+            <Box>
+              <IconButton
+                sx={{
+                  pl: 1,
+                  pr: 0,
+                }}
+                onClick={() => router.push('/cart')}
+              >
+                <ShoppingCartCheckoutIcon
+                  sx={{
+                    width: { xs: 30, sm: 36 },
+                    height: { xs: 30, sm: 36 },
+                    color: LOGO_COLOR,
+                  }}
+                />
+              </IconButton>
+            </Box>
             <Box>
               <IconButton
                 edge="end"

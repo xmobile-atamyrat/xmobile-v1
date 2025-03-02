@@ -24,23 +24,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
 
-// Brother, or I think nowadays it is also possible to call from laptop/pc, should I uncomment this part?
-
-/* const handleClick = (number: string) => {
-	const userAgent = navigator.userAgent;
-
-	if (/android/i.test(userAgent)) {
-		// Android
-		window.location.href = `tel:${number}`;
-	} else if (/iPad|iPhone|iPod/.test(userAgent)) {
-		// iOS
-		window.location.href = `tel:${number}`;
-	} else {
-		// Web
-		console.info('Running on Web');
-	}
-}; */
-
 export default function Footer() {
   const t = useTranslations();
   const theme = useTheme();
@@ -57,7 +40,7 @@ export default function Footer() {
 
   return (
     <Box
-      className={`p-10 bg-gray-100 mt-10`}
+      className={`p-10 bg-gray-100`}
       sx={{
         height: { xs: `${maxHeight}px`, md: '50%' },
       }}

@@ -149,10 +149,9 @@ export const computeProductPriceTags = async (
   return priceTagsComputedProduct;
 };
 
-export const debounce = (
-  func: (...args: any[]) => undefined,
-  delay: number,
-) => {
+// Use this function inside useCallBack to retain timeoutId across renders.
+// Without it, a new debounce is created each time, defining a new timeoutId to undefined
+export const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
   return (...args: any[]) => {
     if (timeoutId) {

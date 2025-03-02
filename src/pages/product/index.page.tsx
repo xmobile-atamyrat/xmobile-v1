@@ -45,8 +45,6 @@ export default function Products() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
-  // const theme = useTheme();
-  // const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
 
   useEffect(() => {
@@ -167,7 +165,11 @@ export default function Products() {
             )}
             {products.length > 0 &&
               products.map((product, idx) => (
-                <ProductCard product={product} key={idx} />
+                <ProductCard
+                  product={product}
+                  key={idx}
+                  cartProps={{ cartAction: 'add' }}
+                />
               ))}
           </Box>
         </Box>

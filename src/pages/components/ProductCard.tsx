@@ -2,6 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -22,18 +23,23 @@ import { Product } from '@prisma/client';
 import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { lazy, useEffect, useState } from 'react';
+
+// use lazy() to not to load the same compononets and functions in AddToCart
+const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cardClassName?: string;
+  cartProps?: AddToCartProps;
 }
 
 export default function ProductCard({
   product: initialProduct,
   handleClickAddProduct,
   cardClassName,
+  cartProps,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -89,7 +95,7 @@ export default function ProductCard({
     <Card
       sx={{
         width: { xs: '47%', sm: 200 },
-        height: { xs: 250, sm: 300 },
+        height: { xs: 260, sm: 300 },
         ':hover': { boxShadow: 10 },
       }}
       className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
@@ -129,27 +135,30 @@ export default function ProductCard({
                 )}
               </Typography>
             </Box>
-            <Box
-              className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
-            >
-              {parseName(product.description ?? '{}', router.locale ?? 'tk')
-                ?.split('\n')
-                ?.filter((desc) => {
-                  const trimmedDesc = desc.trim().split(']');
-                  return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
-                })
-                ?.map((desc, index) => (
-                  <Typography
-                    key={`${desc}-${index}`}
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    {desc.replace('[', '').replace(']', ':')}
-                  </Typography>
-                ))}
-            </Box>
+            {/* hide description on cart page */}
+            {cartProps.cartAction === 'add' && (
+              <Box
+                className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
+              >
+                {parseName(product.description ?? '{}', router.locale ?? 'tk')
+                  ?.split('\n')
+                  ?.filter((desc) => {
+                    const trimmedDesc = desc.trim().split(']');
+                    return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
+                  })
+                  ?.map((desc, index) => (
+                    <Typography
+                      key={`${desc}-${index}`}
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {desc.replace('[', '').replace(']', ':')}
+                    </Typography>
+                  ))}
+              </Box>
+            )}
           </Box>
-          <Box className="flex items-end ">
+          <Box className="flex items-end justify-between">
             {product?.price?.includes('[') ? (
               <CircularProgress size={isMdUp ? 30 : 24} />
             ) : (
@@ -160,7 +169,29 @@ export default function ProductCard({
                 {product?.price} {t('manat')}
               </Typography>
             )}
+            {cartProps.cartAction === 'add' && (
+              <Box onClick={(e) => e.stopPropagation()}>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  onDelete={cartProps?.onDelete}
+                />
+              </Box>
+            )}
           </Box>
+          {cartProps.cartAction === 'delete' && (
+            <Box onClick={(e) => e.stopPropagation()}>
+              <AddToCart
+                productId={product.id}
+                cartAction={cartProps?.cartAction}
+                quantity={cartProps?.quantity}
+                cartItemId={cartProps?.cartItemId}
+                onDelete={cartProps?.onDelete}
+              />
+            </Box>
+          )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
