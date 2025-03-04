@@ -171,8 +171,6 @@ export default function AddToCart({
                   fontSize: {
                     xs: '1rem',
                     sm: '1.5rem',
-                    md: '1.7rem',
-                    lg: '1.7rem',
                   },
                 }}
               />
