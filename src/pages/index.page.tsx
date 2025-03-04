@@ -185,6 +185,7 @@ export default function Home({
     if (selectedCategoryId === HIGHEST_LEVEL_CATEGORY_ID) {
       setLocalCategories(allCategories);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategoryId]);
 
   return (
