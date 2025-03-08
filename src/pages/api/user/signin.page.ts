@@ -5,12 +5,13 @@ import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import jwt from 'jsonwebtoken';
 
 const filepath = 'src/pages/api/user/signin.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi<User>>,
+  res: NextApiResponse<ResponseApi<object>>,
 ) {
   addCors(res);
   const { method } = req;
@@ -37,10 +38,13 @@ export default async function handler(
           .status(400)
           .json({ success: false, message: 'passwordIncorrect' });
       }
-
+      delete user.password;
+      // todo: constant
+      const refreshToken = jwt.sign(user, process.env.NEXT_PUBLIC_JWT_AUTH_SECRET, { expiresIn: '7d' });
+      const accessToken = jwt.sign(user, process.env.NEXT_PUBLIC_JWT_AUTH_SECRET, { expiresIn: '1h' });
       return res.status(200).json({
         success: true,
-        data: user,
+        data: {refreshToken: refreshToken, accessToken: accessToken},
       });
     } catch (error) {
       console.error(error);

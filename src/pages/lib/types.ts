@@ -16,6 +16,9 @@ export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
 export type CategoryStack = [ExtendedCategory, string][]; // [category, name][]
 
+export type JwtExpiration = number | `${number}${"s" | "m" | "h" | "d" | "w"}`;
+
+
 export interface CategoryContextProps {
   categories: ExtendedCategory[];
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
@@ -27,9 +30,13 @@ export interface CategoryContextProps {
   setParentCategory: Dispatch<SetStateAction<ExtendedCategory>>;
 }
 
+export interface ProtectedUser extends Omit<User, 'password'> {}
+
 export interface UserContextProps {
   user?: User;
-  setUser: Dispatch<SetStateAction<User>>;
+  setUser: Dispatch<SetStateAction<ProtectedUser>>;
+  authToken: string;
+  setAccessToken: Dispatch<SetStateAction<string>>;
 }
 
 export interface DollarRateProps {

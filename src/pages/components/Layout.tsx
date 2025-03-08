@@ -61,7 +61,7 @@ export default function Layout({
 
   useEffect(() => {
     if (user == null) {
-      const userString = localStorage.getItem('user');
+      const userString = localStorage.getItem('user'); // todo: get from cookie: refreshtoken
       if (userString != null) setUser(JSON.parse(userString));
     }
   }, [user, setUser]);

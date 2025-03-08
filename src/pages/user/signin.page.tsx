@@ -1,6 +1,7 @@
-import { MAIN_BG_COLOR } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
+import { AUTH_REFRESH_COOKIE_NAME, MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { ProtectedUser, ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { setCookie, verifyToken } from '@/pages/lib/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -19,6 +20,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
+import jwt from 'jsonwebtoken';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -30,7 +32,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signin() {
-  const { setUser } = useUserContext();
+  const { setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +62,7 @@ export default function Signin() {
           const { email, password } = Object.fromEntries(formData.entries());
 
           try {
-            const { success, data, message }: ResponseApi<User> = await (
+            const { success, data, message } = await (
               await fetch('/api/user/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -70,8 +72,31 @@ export default function Signin() {
             if (message != null) {
               setErrorMessage(message);
             } else if (success && data != null) {
-              setUser(data);
-              localStorage.setItem('user', JSON.stringify(data));
+              console.log(data);
+              
+              const decodedUserToken = jwt.verify(data.accessToken, process.env.NEXT_PUBLIC_JWT_AUTH_SECRET);
+              console.log(decodedUserToken); 
+              setAccessToken(data.accessToken);
+              setUser(decodedUserToken as ProtectedUser);
+              
+              
+
+              // todo: where i left:
+              // -> should handle the case if token is invalid 
+              // -> if valid, assign it to UserContext
+
+              
+              // save for cookie, and get user data
+              // todo
+              // setCookie(AUTH_REFRESH_COOKIE_NAME, data.refreshToken, {
+              //   httpOnly: true, 
+              //   secure: true, 
+              //   sameSite: "strict", 
+              //   path: '/',
+              //   // todo: define constant
+              //   maxAge: 60 * 60 * 24 * 7,
+              // });
+              // localStorage.setItem('user', JSON.stringify(data));
               router.push('/');
             }
           } catch (error) {

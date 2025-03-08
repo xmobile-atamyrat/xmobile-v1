@@ -6,7 +6,12 @@ const nextConfig = {
     locales: ['en', 'ru', 'tk', 'ch', 'tr'],
     defaultLocale: 'ru',
     localeDetection: false,
-  }
+  },
+  // experimental: {
+  //   middlewarePrefetch: 'flexible',
+  // }
 };
+
+// module.exports = nextConfig;
 
 export default nextConfig;

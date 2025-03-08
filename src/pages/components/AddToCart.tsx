@@ -136,6 +136,7 @@ export default function AddToCart({
         console.error('Error: ', error);
       }
     }, 300),
+    // todo: eslint says there should be dependency
     [],
   );
 

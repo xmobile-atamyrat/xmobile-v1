@@ -9,12 +9,14 @@ import {
   AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
+  JwtExpiration,
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
+import jwt, { JwtPayload }  from 'jsonwebtoken';
 
 export const theme = createTheme({
   palette: {
@@ -320,9 +322,10 @@ export const getCookie = (name: string): string | undefined => {
     return undefined;
   }
   const cookies = cookie.parse(document.cookie);
+  // return JSON.parse(cookies[name]);
   return cookies[name];
 };
-
+// todo: remove json formatted cookies? if not used
 export const setCookie = (
   name: string,
   value: string,
@@ -340,3 +343,31 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
     reader.readAsDataURL(blob);
   });
 };
+
+export const generateToken = (data: object | string | Buffer, expiration: JwtExpiration) => {
+  const token = jwt.sign(data, process.env.JWT_AUTH_SECRET, {expiresIn: expiration});
+
+  return token;
+}
+
+// it can return validation error, which should be handled on other comps, 
+export const verifyToken = (token: string, secret: string) => {
+    const decodedToken = jwt.verify(token, secret as string) as JwtPayload;
+  
+    if (typeof decodedToken === "object" && decodedToken !== null) {
+      console.error("Decoded JWT:", decodedToken);
+    } else {
+      console.error("Invalid token");
+    }
+    return decodedToken;
+  // const decodedToken = jwt.verify(token, secret);
+
+  /*
+  jwt.verify(token, process.env.JWT_AUTH_SECRET, (err, decodedToken) => {
+    if (err) {
+      console.error('Invalid token: ', err);
+      return null;
+    }
+    return decodedToken;
+  */
+}

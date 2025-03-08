@@ -80,7 +80,7 @@ export default function ProductCard({
         clearAbortController(abortController);
       }
     })();
-    // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.imgUrls, network]);
 
   useEffect(() => {
