@@ -1,5 +1,12 @@
 # Xmobile
 
+An open-source e-commerce platform based in Turkmenistan, designed to introduce online payment and delivery systems. If you're looking to sharpen your web or mobile app development skills by working on complex systems, you're in the right place! The web is hosted at [xmobile.com.tm](xmobile.com.tm)
+
+## To contribute
+
+- Fork the repo and make a PR to the source
+- Creating issues is enabled on the repo
+
 ## Setup
 
 ```bash
@@ -22,7 +29,7 @@ alter user xmobile createdb;
 grant all on schema public to xmobile;
 ```
 
-## CI/CD
+## CI/CD (for internal)
 
 1. Get the xmobile ssh public and private keys along with passphrase
 
@@ -46,7 +53,7 @@ yarn build
 ./restart-server.sh
 ```
 
-## Tunnel to Telekom VM
+## Tunnel to Telekom VM (for internal)
 
 ```bash
 # SSH to AWS EC2 Instance (Bastion Host)
@@ -59,7 +66,7 @@ ssh -i ~/.ssh/xmobile -p 2222 ubuntu@localhost
 scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/tar-file/xmobile-v1.tar.gz
 ```
 
-## Backup data
+## Backup data (for internal)
 
 ```bash
 ssh xmobile
@@ -83,21 +90,3 @@ tar -xzvf backup/images.tar.gz -C backup
 chmod +x scripts/update-db-img-urls.sh
 ./scripts/update-db-img-urls.sh
 ```
-
-## Features
-
-- left side menu with categories and products
-- top menu
-- search functionality
-- login for admin users
-- saved products for users (cart)
-- language feature (tm, ru, en)
-- voting system for a product
-- new products category
-  - ask to add to this category when a new product is added to any other category
-  - automatically remove every 1 month (configurable)
-- photo/video advertisement adding feature
-- sample UI designs:
-  - [akyol.comt.tm](https://akyol.com.tm/index.php?route=product/category&path=72_214)
-  - [mobile.com.tm](https://mobile.com.tm/products?category=2)
-  - [gerekli.tm](https://gerekli.tm)
