@@ -5,6 +5,7 @@ export const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const appBarHeight = 64;
+export const test = 3;
 
 export const mobileAppBarHeight = 56;
 
