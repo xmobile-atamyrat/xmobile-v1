@@ -61,6 +61,15 @@ export default async function handler(
         .status(500)
         .json({ success: false, message: "Couldn't authenticate user" });
     }
+  } else if (method === 'PUT') {
+    res.setHeader(
+      'Set-Cookie',
+      `${AUTH_REFRESH_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Max-Age=${0}; Path=/`,
+    );
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'UserSession Closed' });
   } else {
     return res
       .status(405)
