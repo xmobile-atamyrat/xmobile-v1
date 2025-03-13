@@ -13,12 +13,14 @@ import {
   DeleteCategoriesProps,
   EditCategoriesProps,
   ExtendedCategory,
+  ProtectedUser,
   ResponseApi,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { deleteCategory } from '@/pages/lib/utils';
+import { deleteCategory, verifyToken } from '@/pages/lib/utils';
 import { Box } from '@mui/material';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { ReactNode, useEffect, useState } from 'react';
 
 interface LayoutProps {
@@ -41,8 +43,9 @@ export default function Layout({
   const { setCategories, setSelectedCategoryId, categories } =
     useCategoryContext();
   const { setProducts } = useProductContext();
-  const { user, setUser } = useUserContext();
+  const { user, setUser, setAccessToken } = useUserContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
+  const router = useRouter();
 
   useEffect(() => {
     if (categories.length > 0) return;
@@ -61,9 +64,32 @@ export default function Layout({
 
   useEffect(() => {
     if (user == null) {
-      const userString = localStorage.getItem('user');
-      if (userString != null) setUser(JSON.parse(userString));
+      (async () => {
+        try {
+          const { success, data, message } = await (
+            await fetch(`${BASE_URL}/api/auth`, {
+              method: 'GET',
+              credentials: 'include',
+            })
+          ).json();
+          if (success && data != null) {
+            const decodedUserToken = verifyToken(
+              data,
+              process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
+            );
+
+            setUser(decodedUserToken as ProtectedUser);
+            setAccessToken(data);
+          } else {
+            console.error(message);
+            router.push('/user/signin');
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, setUser]);
 
   return (
