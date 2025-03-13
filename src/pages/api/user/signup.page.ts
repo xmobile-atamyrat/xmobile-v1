@@ -1,5 +1,12 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
+import { generateToken } from '@/pages/api/utils/tokenUtils';
+import {
+  ACCESS_TOKEN_EXPIRY,
+  AUTH_REFRESH_COOKIE_NAME,
+  REFRESH_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY_COOKIE,
+} from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -9,7 +16,7 @@ const filepath = 'src/pages/api/user/signup.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi<User>>,
+  res: NextApiResponse<ResponseApi<string>>,
 ) {
   addCors(res);
   const { method } = req;
@@ -36,9 +43,27 @@ export default async function handler(
           phoneNumber,
         },
       });
+      delete user.password;
+
+      const refreshToken = generateToken(
+        user,
+        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
+        REFRESH_TOKEN_EXPIRY,
+      );
+      const accessToken = generateToken(
+        user,
+        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
+        ACCESS_TOKEN_EXPIRY,
+      );
+
+      res.setHeader(
+        'Set-Cookie',
+        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+      );
+
       return res.status(200).json({
         success: true,
-        data: user,
+        data: accessToken,
       });
     } catch (error) {
       console.error(filepath, error);
