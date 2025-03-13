@@ -393,8 +393,18 @@ export default function CustomAppBar({
           <Box>
             <MenuItem
               onClick={() => {
-                localStorage.removeItem('user');
-                router.reload();
+                (async () => {
+                  try {
+                    await fetch('api/auth', {
+                      method: 'PUT',
+                      credentials: 'include',
+                    });
+
+                    router.reload();
+                  } catch (error) {
+                    console.error(error);
+                  }
+                })();
               }}
               className="flex flex-row gap-2 items-center justify-start"
             >
