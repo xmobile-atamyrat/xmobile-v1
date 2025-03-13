@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ResponseApi } from '@/pages/lib/types';
 import { z } from 'zod';
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
 
 const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
@@ -18,6 +19,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
+  addCors(res);
   const data = req.body;
 
   if (req.method === 'POST') {
