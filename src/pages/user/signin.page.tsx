@@ -1,6 +1,7 @@
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
+import { ProtectedUser, ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { verifyToken } from '@/pages/lib/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -13,7 +14,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { User } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signin() {
-  const { setUser } = useUserContext();
+  const { setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +60,7 @@ export default function Signin() {
           const { email, password } = Object.fromEntries(formData.entries());
 
           try {
-            const { success, data, message }: ResponseApi<User> = await (
+            const { success, data, message }: ResponseApi<string> = await (
               await fetch('/api/user/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -70,12 +70,20 @@ export default function Signin() {
             if (message != null) {
               setErrorMessage(message);
             } else if (success && data != null) {
-              setUser(data);
-              localStorage.setItem('user', JSON.stringify(data));
+              const decodedUserToken = verifyToken(
+                data,
+                process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
+              );
+              setUser(decodedUserToken as ProtectedUser);
+              setAccessToken(data);
+
               router.push('/');
             }
           } catch (error) {
-            setErrorMessage((error as Error).message);
+            if (error.name === 'JsonWebTokenError') {
+              console.error((error as Error).message);
+              setErrorMessage('authError');
+            } else setErrorMessage((error as Error).message);
           }
         }}
       >
