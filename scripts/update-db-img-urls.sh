@@ -1,6 +1,12 @@
 #!/bin/bash
 
-source .env.local
+CURRENT_DIR=$(dirname "$(realpath "$0")")
+
+# convert to windows-style path if on windows
+if [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" ]]; then
+  CURRENT_DIR=$(cygpath -w "$CURRENT_DIR")
+fi
+source "$CURRENT_DIR/../.env.local"
 
 if [ -z "$DATABASE_URL" ]; then
   echo "DATABASE_URL is not set in the environment."
@@ -8,7 +14,6 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 DATABASE_URL=${DATABASE_URL%\?schema=public}
-CURRENT_DIR=$(pwd)
 
 psql "$DATABASE_URL" <<EOF
 UPDATE "Category"
