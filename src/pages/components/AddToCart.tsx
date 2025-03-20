@@ -136,7 +136,9 @@ export default function AddToCart({
         console.error('Error: ', error);
       }
     }, 300),
-    [],
+    // todo: eslint says there should be dependency, not so sure about passing debounce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [debounce],
   );
 
   const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {
