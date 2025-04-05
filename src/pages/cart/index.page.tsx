@@ -51,16 +51,14 @@ export default function CartPage() {
       }
 
       try {
-        const data = await fetchWithCreds(
-          accessToken,
-          `/api/cart?userId=${user.id}`,
-          'GET',
-        );
+        const { success, data, message } = await fetchWithCreds<
+          (CartItem & { product: Product })[]
+        >(accessToken, `/api/cart?userId=${user.id}`, 'GET');
 
-        if (data.success) {
-          setCartItems(data.data);
+        if (success) {
+          setCartItems(data);
         } else {
-          console.error(data.message);
+          console.error(message);
         }
       } catch (error) {
         console.error('Error fetching cart data:', error);

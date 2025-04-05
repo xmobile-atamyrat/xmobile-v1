@@ -59,7 +59,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   }
   if (method === 'PUT') {
     try {
-      const { rate }: { rate: number } = JSON.parse(req.body);
+      const { rate }: { rate: number } = req.body;
       if (rate == null) {
         return res.status(400).json({
           success: false,

@@ -99,5 +99,6 @@
   "continueShopping": "Продолжить покупки",
   "followUs": "Подписывайтесь на нас",
   "mobilePhone": "Телефон",
-  "productVideo": "Обзор"
+  "productVideo": "Обзор",
+  "fetchPricesError": "Ошибка получает цены."
 }

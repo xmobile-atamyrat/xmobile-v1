@@ -59,74 +59,76 @@ export const SearchBar = ({
   mt,
   width,
 }: {
-  handleSearch?: (k: string) => Promise<void>;
+  handleSearch?: (keyword: string) => Promise<void>;
   searchPlaceholder: string;
   searchKeyword: string;
   setSearchKeyword: Dispatch<SetStateAction<string>>;
   mt?: string;
   width?: string;
-}) => (
-  <Box
-    className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
-  >
-    <Paper
-      component="form"
-      sx={{
-        p: '2px 4px',
-        display: 'flex',
-        alignItems: 'center',
-        mt,
-        width,
-      }}
-      className={`rounded-2xl`}
-      style={{
-        backgroundColor: LOGO_COLOR_LIGHT,
-      }}
+}) => {
+  return (
+    <Box
+      className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
     >
-      <IconButton type="button" sx={{ p: '10px' }}>
-        <SearchIcon sx={{ color: 'white' }} />
-      </IconButton>
-      <InputBase
+      <Paper
+        component="form"
         sx={{
-          ml: 1,
-          flex: 1,
-          color: 'white', // Set text color to white
-          '& .MuiInputBase-input': {
-            color: 'white', // Ensure the input text is white
-          },
+          p: '2px 4px',
+          display: 'flex',
+          alignItems: 'center',
+          mt,
+          width,
         }}
-        placeholder={`${searchPlaceholder}...`}
-        onChange={(e) => {
-          const keyword = e.target.value;
-          setSearchKeyword(keyword);
-          if (handleSearch) {
-            handleSearch(keyword);
-          }
+        className={`rounded-2xl`}
+        style={{
+          backgroundColor: LOGO_COLOR_LIGHT,
         }}
-        value={searchKeyword}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-          }
-        }}
-      />
-      {searchKeyword !== '' && (
-        <IconButton
-          type="button"
-          sx={{ p: '10px' }}
-          onClick={() => {
-            setSearchKeyword('');
+      >
+        <IconButton type="button" sx={{ p: '10px' }}>
+          <SearchIcon sx={{ color: 'white' }} />
+        </IconButton>
+        <InputBase
+          sx={{
+            ml: 1,
+            flex: 1,
+            color: 'white', // Set text color to white
+            '& .MuiInputBase-input': {
+              color: 'white', // Ensure the input text is white
+            },
+          }}
+          placeholder={`${searchPlaceholder}...`}
+          onChange={(e) => {
+            const keyword = e.target.value;
+            setSearchKeyword(keyword);
             if (handleSearch) {
-              handleSearch('');
+              handleSearch(keyword);
             }
           }}
-        >
-          <CloseIcon sx={{ color: 'white' }} />
-        </IconButton>
-      )}
-    </Paper>
-  </Box>
-);
+          value={searchKeyword}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
+        />
+        {searchKeyword !== '' && (
+          <IconButton
+            type="button"
+            sx={{ p: '10px' }}
+            onClick={() => {
+              setSearchKeyword('');
+              if (handleSearch) {
+                handleSearch('');
+              }
+            }}
+          >
+            <CloseIcon sx={{ color: 'white' }} />
+          </IconButton>
+        )}
+      </Paper>
+    </Box>
+  );
+};
 
 export default function CustomAppBar({
   setOpenDrawer,

@@ -41,7 +41,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
   if (method === 'POST') {
     try {
-      const body: Partial<Prices> = JSON.parse(req.body);
+      const body: Partial<Prices> = req.body;
       if (body == null) {
         return res.status(400).json({
           success: false,
@@ -123,9 +123,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     }
   } else if (method === 'PUT') {
     try {
-      const { pricePairs }: { pricePairs: Partial<Prices>[] } = JSON.parse(
-        req.body,
-      );
+      const { pricePairs }: { pricePairs: Partial<Prices>[] } = req.body;
       if (pricePairs == null) {
         return res.status(400).json({
           success: false,

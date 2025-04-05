@@ -1,6 +1,5 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
@@ -42,7 +41,7 @@ export const handleFileUpload = (
       const jsonData = XLSX.utils.sheet_to_csv(sheet);
       const tbData = jsonData
         .split('\n')
-        .map((row) => row.match(regex) || [])
+        .map((row) => (row.match(regex) || []) as RegExpMatchArray)
         .map((row) => row.filter((_, idx) => idx === 1 || idx === 2))
         .filter((row) => row[0] !== '' && !row[1].includes('-'))
         .map((row) => [row[0], row[1].split('"').join('').trim()])
@@ -80,37 +79,35 @@ export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
 };
 
-export const fetchDollarRate = async (): Promise<number> => {
-  const { success, data, message } = await (
-    await fetch(`${BASE_URL}/api/prices/rate`)
-  ).json();
-  if (!success || data == null) {
-    throw new Error('Failed to fetch dollar rate: ', message);
-  }
-  return data.rate;
-};
-
 // returns product.price from session or fetches from db
-export const computePrice = async (priceId: string): Promise<string> => {
+export const computePrice = async (
+  priceId: string,
+  accessToken: string,
+): Promise<string> => {
   const cachePrice = sessionStorage.getItem(priceId);
   if (cachePrice != null) {
     return cachePrice;
   }
 
-  const res: ResponseApi<Prices> = await (
-    await fetch(`${BASE_URL}/api/prices?id=${priceId}`)
-  ).json();
+  const { success, data } = await fetchWithCreds<Prices>(
+    accessToken,
+    `/api/prices?id=${priceId}`,
+    'GET',
+  );
 
-  if (res.success && res.data != null) {
-    sessionStorage.setItem(priceId, res.data.priceInTmt);
-    return res.data.priceInTmt;
+  if (success) {
+    sessionStorage.setItem(priceId, data.priceInTmt);
+    return data.priceInTmt;
   }
   return priceId;
 };
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
 // If {value} doesn't exist, computePrice function is used for safety
-export const computeProductPrice = async (product: Product) => {
+export const computeProductPrice = async (
+  product: Product,
+  accessToken: string,
+) => {
   const priceMatchId = product.price?.match(squareBracketRegex);
   const priceMatchValue = product.price?.match(curlyBracketRegex);
   const processedProduct = { ...product };
@@ -119,7 +116,7 @@ export const computeProductPrice = async (product: Product) => {
     processedProduct.price = priceMatchValue[1];
     sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
   } else if (priceMatchId != null) {
-    processedProduct.price = await computePrice(priceMatchId[1]);
+    processedProduct.price = await computePrice(priceMatchId[1], accessToken);
   }
 
   return processedProduct;
@@ -128,8 +125,9 @@ export const computeProductPrice = async (product: Product) => {
 // ProductPriceTags have only [id], value is fetched in computePrice function.
 export const computeProductPriceTags = async (
   product: Product,
+  accessToken: string,
 ): Promise<Product> => {
-  const priceComputedTags = await computeProductPrice(product);
+  const priceComputedTags = await computeProductPrice(product, accessToken);
   const priceTagsComputedProduct = {
     ...priceComputedTags,
     tags: await Promise.all(
@@ -137,7 +135,7 @@ export const computeProductPriceTags = async (
         const tagMatch = tag.match(squareBracketRegex);
         if (tagMatch != null) {
           const idTag = tagMatch[1];
-          const price = await computePrice(idTag);
+          const price = await computePrice(idTag, accessToken);
 
           return tag.replace(`[${idTag}]`, price);
         }
