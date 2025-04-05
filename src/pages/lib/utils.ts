@@ -9,14 +9,12 @@ import {
   AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
-  JwtPayloadData,
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
-import jwt from 'jsonwebtoken';
 
 export const theme = createTheme({
   palette: {
@@ -341,10 +339,4 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
-};
-
-// use inside try catch
-export const verifyToken = (token: string, secret: string) => {
-  const decodedToken = jwt.verify(token, secret);
-  return (decodedToken as JwtPayloadData).data;
 };

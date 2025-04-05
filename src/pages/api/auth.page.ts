@@ -1,19 +1,22 @@
+import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
-import { generateToken, verifyToken } from '@/pages/api/utils/tokenUtils';
 import {
-  ACCESS_TOKEN_EXPIRY,
+  generateTokens,
+  verifyRefreshToken,
+} from '@/pages/api/utils/tokenUtils';
+import {
   AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY_COOKIE,
 } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
+import { User } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/auth.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi<string>>,
+  res: NextApiResponse<ResponseApi<{ accessToken: string; user: User }>>,
 ) {
   addCors(res);
   const { method } = req;
@@ -26,29 +29,24 @@ export default async function handler(
         .find((row) => row.startsWith(`${AUTH_REFRESH_COOKIE_NAME}=`))
         ?.split('=')[1];
 
-      const verifiedTokenData = verifyToken(
-        refreshToken,
-        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-      );
+      const userId = verifyRefreshToken(refreshToken);
 
-      const newRefreshToken = generateToken(
-        verifiedTokenData,
-        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-        REFRESH_TOKEN_EXPIRY,
-      );
+      const user = await dbClient.user.findUnique({
+        where: { id: userId },
+      });
+      delete user.password;
 
-      const accessToken = generateToken(
-        verifiedTokenData,
-        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-        ACCESS_TOKEN_EXPIRY,
-      );
+      const { accessToken, refreshToken: newRefreshToken } =
+        generateTokens(userId);
 
       res.setHeader(
         'Set-Cookie',
         `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
-      return res.status(200).json({ success: true, data: accessToken });
+      return res
+        .status(200)
+        .json({ success: true, data: { accessToken, user } });
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {
         console.error(filepath, ' Invalid Refresh Token; ', error);

@@ -19,7 +19,7 @@ export type CategoryStack = [ExtendedCategory, string][]; // [category, name][]
 
 export type JwtExpiration = number | `${number}${'s' | 'm' | 'h' | 'd' | 'w'}`;
 export interface JwtPayloadData extends JwtPayload {
-  data: object | string;
+  id: string;
 }
 
 export interface CategoryContextProps {
