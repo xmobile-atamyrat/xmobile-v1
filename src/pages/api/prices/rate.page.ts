@@ -1,18 +1,22 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/prices/rate.page.ts';
 const index = 1;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseApi>,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
-  const { method } = req;
+  const { method, userId } = req as AuthenticatedRequest;
+  const user = await dbClient.user.findUnique({ where: { id: userId } });
+  if (user == null || user.grade !== 'ADMIN') {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
   if (method === 'GET') {
     try {
       const rate = await dbClient.dollarRate.findUnique({
@@ -100,3 +104,5 @@ export default async function handler(
     .status(405)
     .json({ success: false, message: 'Method not allowed' });
 }
+
+export default withAuth(handler);
