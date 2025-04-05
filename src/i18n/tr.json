@@ -37,6 +37,7 @@
   "haveAccount": "Hesabınız var mı?",
   "phoneNumber": "Telefon numarası",
   "shortPassword": "Şifre en az 8 karakter olmalıdır",
+  "authError": "Kimlik doğrulama başarısız oldu. Lütfen tekrar deneyin veya bizimle iletişime geçin.",
   "add": "Ekle",
   "edit": "Düzenle",
   "delete": "Sil",
@@ -96,5 +97,6 @@
   "continueShopping": "Alışverişe devam et",
   "followUs": "Bizi takip edin",
   "mobilePhone": "Mobil Telefon",
-  "productVideo": "Ürün Videosu"
+  "productVideo": "Ürün Videosu",
+  "fetchPricesError": "Fiyatları alma hata."
 }

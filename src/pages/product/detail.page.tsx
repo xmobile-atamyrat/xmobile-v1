@@ -3,6 +3,8 @@ import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import TikTokIcon from '@/pages/components/TikTokIcon';
+import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
@@ -10,6 +12,8 @@ import {
   PRODUCT_IMAGE_WIDTH_RESP,
   squareBracketRegex,
 } from '@/pages/lib/constants';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -22,6 +26,8 @@ import { computeProductPriceTags } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import YouTubeIcon from '@mui/icons-material/YouTube';
 import {
   Alert,
   Box,
@@ -38,17 +44,11 @@ import {
 import CircularProgress from '@mui/material/CircularProgress';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState, lazy } from 'react';
+import { lazy, useEffect, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
-import Link from 'next/link';
-import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import YouTubeIcon from '@mui/icons-material/YouTube';
-import TikTokIcon from '@/pages/components/TikTokIcon';
-import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 
 // use lazy() not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
@@ -69,7 +69,7 @@ export default function Product() {
   const router = useRouter();
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
   const [showDeleteProductDialog, setShowDeleteProductDialog] = useState<{
     show: boolean;
@@ -144,11 +144,11 @@ export default function Product() {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (initialProduct == null) return;
+    if (initialProduct == null || accessToken == null) return;
     (async () => {
-      setProduct(await computeProductPriceTags(initialProduct));
+      setProduct(await computeProductPriceTags(initialProduct, accessToken));
     })();
-  }, [initialProduct]);
+  }, [initialProduct, accessToken]);
 
   return (
     product && (

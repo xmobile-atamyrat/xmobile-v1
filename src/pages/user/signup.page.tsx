@@ -30,7 +30,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signup() {
-  const { setUser } = useUserContext();
+  const { setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +68,11 @@ export default function Signup() {
           }
 
           try {
-            const { success, data, message }: ResponseApi<User> = await (
+            const {
+              success,
+              data,
+              message,
+            }: ResponseApi<{ user: User; accessToken: string }> = await (
               await fetch('/api/user/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -78,12 +82,19 @@ export default function Signup() {
             if (message != null) {
               setErrorMessage(message);
             } else if (success && data != null) {
-              setUser(data);
-              localStorage.setItem('user', JSON.stringify(data));
+              setUser(data.user);
+              setAccessToken(data.accessToken);
+
               router.push('/');
             }
           } catch (error) {
-            setErrorMessage((error as Error).message);
+            if (error.name === 'JsonWebTokenError')
+              // todo: locale
+              setErrorMessage(
+                error.name === 'JsonWebTokenError'
+                  ? 'Token Verification Failed'
+                  : (error as Error).message,
+              );
           }
         }}
       >
