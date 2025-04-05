@@ -35,7 +35,7 @@ export default function Procurement() {
             mt: isMdUp
               ? `${appBarHeight * 1.25}px`
               : `${mobileAppBarHeight * 1.25}px`,
-            p: isMdUp ? 8 : 2,
+            p: isMdUp ? 4 : 2,
           }}
           className="flex flex-col gap-4 w-full h-full"
         >
