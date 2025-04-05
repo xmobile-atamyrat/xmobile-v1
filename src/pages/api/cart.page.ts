@@ -1,6 +1,8 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
-import withAuth from '@/pages/api/utils/authMiddleware';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -19,7 +21,7 @@ const EditCartItem = FormSchema.omit({ userId: true, productId: true });
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
   const data = req.body;
-  const { userId } = req as { userId?: string };
+  const { userId } = req as AuthenticatedRequest;
 
   if (req.method === 'POST') {
     try {
