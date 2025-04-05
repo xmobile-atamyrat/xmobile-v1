@@ -113,6 +113,13 @@ model Supplier {
   updatedAt       DateTime    @updatedAt
 }
 
+model ProcurementProduct {
+  id            String      @id @default(uuid())
+  name          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
 enum UserRole {
   FREE
   ADMIN
