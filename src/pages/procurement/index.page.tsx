@@ -5,6 +5,7 @@ import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -20,6 +21,11 @@ export default function Procurement() {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const { user } = useUserContext();
+  useEffect(() => {
+    if (user?.grade !== 'SUPERUSER') {
+      router.push('/');
+    }
+  }, [user]);
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
