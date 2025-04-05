@@ -1,11 +1,6 @@
-import BASE_URL from '@/lib/ApiEndpoints';
-import {
-  ProtectedUser,
-  ResponseApi,
-  UserContextProps,
-} from '@/pages/lib/types';
-import { User } from '@prisma/client';
-import { useRouter } from 'next/router';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { ProtectedUser, UserContextProps } from '@/pages/lib/types';
+import { getCookie } from '@/pages/lib/utils';
 import {
   ReactNode,
   createContext,
@@ -31,34 +26,17 @@ export default function UserContextProvider({
 }) {
   const [user, setUser] = useState<ProtectedUser>();
   const [accessToken, setAccessToken] = useState<string>();
-  const router = useRouter();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch(`${BASE_URL}/api/auth`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const {
-          success,
-          data,
-          message,
-        }: ResponseApi<{ user: User; accessToken: string }> = await resp.json();
-        if (success && data != null) {
-          setUser(data.user);
-          setAccessToken(data.accessToken);
-        } else if (resp.status === 401) {
-          // Refresh token expired, send the user to login page
-          console.info(message);
-          router.push('/user/signin');
-        } else {
-          // don't do anything, user doesn't have an account
+    if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
+      (async () => {
+        try {
+          // fetch user data
+        } catch (error) {
+          console.error(error);
         }
-      } catch (error) {
-        console.error(error);
-      }
-    })();
+      })();
+    }
   }, []);
 
   const userContextState = useMemo(() => {

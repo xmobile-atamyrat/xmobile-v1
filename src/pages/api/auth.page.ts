@@ -1,9 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
-import {
-  generateTokens,
-  verifyRefreshToken,
-} from '@/pages/api/utils/tokenUtils';
+import { verifyToken } from '@/pages/api/utils/authMiddleware';
+import { generateTokens, REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_EXPIRY_COOKIE,
@@ -29,7 +27,7 @@ export default async function handler(
         .find((row) => row.startsWith(`${AUTH_REFRESH_COOKIE_NAME}=`))
         ?.split('=')[1];
 
-      const userId = verifyRefreshToken(refreshToken);
+      const userId = await verifyToken(refreshToken, REFRESH_SECRET);
 
       const user = await dbClient.user.findUnique({
         where: { id: userId },
