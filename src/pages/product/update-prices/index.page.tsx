@@ -1,6 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { ResponseApi, SnackbarProps } from '@/pages/lib/types';
+import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   debounce,
@@ -72,7 +72,7 @@ export default function UpdatePrices() {
   useEffect(() => {
     if (accessToken) {
       (async () => {
-        const pricesResponse: ResponseApi<Prices[]> = await fetchWithCreds(
+        const pricesResponse = await fetchWithCreds<Prices[]>(
           accessToken,
           '/api/prices',
           'GET',
