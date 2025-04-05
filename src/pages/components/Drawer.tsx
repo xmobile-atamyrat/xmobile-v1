@@ -132,7 +132,7 @@ export default function CustomDrawer({
           )}
         </Box>
       )}
-      {user?.grade === 'ADMIN' && (
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Paper className="h-12 w-full bg-slate-100 flex justify-center">
           <Tooltip title="Edit categories">
             <IconButton

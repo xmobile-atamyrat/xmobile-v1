@@ -37,7 +37,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
   if (method !== 'GET') {
     const user = await dbClient.user.findUnique({ where: { id: userId } });
-    if (user == null || user.grade !== 'ADMIN') {
+    if (user == null || !['SUPERUSER', 'ADMIN'].includes(user.grade)) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
   }

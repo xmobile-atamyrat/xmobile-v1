@@ -210,7 +210,7 @@ export default function UpdatePrices() {
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      {user?.grade === 'ADMIN' && (
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Box
           sx={{
             mt: isMdUp
