@@ -108,4 +108,5 @@ model DollarRate {
 enum UserRole {
   FREE
   ADMIN
+  SUPERUSER
 }
