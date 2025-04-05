@@ -1,4 +1,3 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { ResponseApi, SnackbarProps } from '@/pages/lib/types';
@@ -29,68 +28,29 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Prices } from '@prisma/client';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import { DollarRate, Prices } from '@prisma/client';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
 import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import { fetchPrices } from '@/pages/lib/apis';
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import AddPrice from '@/pages/product/components/AddPrice';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useEffect, useState } from 'react';
 
-export const getServerSideProps: GetServerSideProps = (async (context) => {
-  let prices: Prices[] = [];
-  let errorMessage: string | null = null;
-  let dollarRate: number = 0;
-
-  try {
-    const pricesResponse: ResponseApi<Prices[]> = await (
-      await fetch(`${BASE_URL}/api/prices`)
-    ).json();
-
-    if (pricesResponse.success && pricesResponse.data != null) {
-      prices = pricesResponse.data;
-    } else {
-      console.error(pricesResponse.message);
-      errorMessage = 'fetchPricesError';
-    }
-
-    const dollarRateResponse = await (
-      await fetch(`${BASE_URL}/api/prices/rate`)
-    ).json();
-    if (dollarRateResponse.success && dollarRateResponse.data != null) {
-      dollarRate = dollarRateResponse.data.rate;
-    }
-  } catch (error) {
-    console.error(error);
-    errorMessage = 'fetchPricesError';
-  }
-
+export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
-      prices,
-      dollarRate,
-      errorMessage,
       messages: (await import(`../../../i18n/${context.locale}.json`)).default,
     },
   };
-}) satisfies GetServerSideProps<{
-  prices: Prices[];
-  dollarRate: number;
-  errorMessage: string | null;
-}>;
+};
 
-export default function UpdatePrices({
-  prices,
-  dollarRate: initialDollarRate,
-  errorMessage,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { user } = useUserContext();
+export default function UpdatePrices() {
   const router = useRouter();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -103,10 +63,48 @@ export default function UpdatePrices({
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
-  const [dollarRate, setDollarRate] = useState(initialDollarRate);
-  const [snackbarOpen, setSnackbarOpen] = useState(errorMessage != null);
+  const [dollarRate, setDollarRate] = useState(0);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [searchKeyword, setSearchKeyword] = useState('');
+  const { user, accessToken } = useUserContext();
+
+  useEffect(() => {
+    if (accessToken) {
+      (async () => {
+        const pricesResponse: ResponseApi<Prices[]> = await fetchWithCreds(
+          accessToken,
+          '/api/prices',
+          'GET',
+        );
+
+        if (pricesResponse.success && pricesResponse.data != null) {
+          setTableData(processPrices(pricesResponse.data));
+        } else {
+          console.error(pricesResponse.message);
+          setSnackbarMessage({
+            message: 'fetchPricesError',
+            severity: 'error',
+          });
+        }
+
+        const dollarRateResponse = await fetchWithCreds<DollarRate>(
+          accessToken,
+          '/api/prices/rate',
+          'GET',
+        );
+        if (dollarRateResponse.success && dollarRateResponse.data != null) {
+          setDollarRate(dollarRateResponse.data.rate);
+        } else {
+          console.error(dollarRateResponse.message);
+          setSnackbarMessage({
+            message: 'fetchDollarRateError',
+            severity: 'error',
+          });
+        }
+      })();
+    }
+  }, [accessToken]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
@@ -181,29 +179,34 @@ export default function UpdatePrices({
     [dollarRate],
   );
 
-  useEffect(() => {
-    if (errorMessage != null) {
-      setSnackbarMessage({ message: errorMessage, severity: 'error' });
-    }
-  }, [errorMessage]);
-
-  useEffect(() => {
-    setTableData(processPrices(prices));
-  }, [prices]);
-
-  const handleSearch = async (keyword: string) => {
-    try {
-      const filteredPrices = await fetchPrices(keyword);
-      setTableData(processPrices(filteredPrices));
-    } catch (error) {
-      console.error(error);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'fetchPricesError',
-        severity: 'error',
-      });
-    }
-  };
+  const handleSearch = useCallback(
+    async (keyword: string) => {
+      try {
+        const { success, data, message } = await fetchWithCreds<Prices[]>(
+          accessToken,
+          `/api/prices?searchKeyword=${keyword}`,
+          'GET',
+        );
+        if (success) {
+          setTableData(processPrices(data));
+        } else {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message,
+            severity: 'error',
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'fetchPricesError',
+          severity: 'error',
+        });
+      }
+    },
+    [accessToken],
+  );
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -225,7 +228,7 @@ export default function UpdatePrices({
                   $1 =
                 </Typography>
                 <TextField
-                  defaultValue={dollarRate}
+                  value={dollarRate}
                   type="number"
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
@@ -239,15 +242,17 @@ export default function UpdatePrices({
                 <IconButton
                   onClick={async () => {
                     try {
-                      const data = await (
-                        await fetch(`${BASE_URL}/api/prices/rate`, {
-                          method: 'PUT',
-                          body: JSON.stringify({ rate: dollarRate }),
-                        })
-                      ).json();
+                      const { success, data } = await fetchWithCreds<Prices[]>(
+                        accessToken,
+                        `/api/prices/rate`,
+                        'PUT',
+                        {
+                          rate: dollarRate,
+                        },
+                      );
 
-                      if (data.success && data.data != null) {
-                        setTableData(processPrices(data.data as Prices[]));
+                      if (success) {
+                        setTableData(processPrices(data));
                         setSnackbarOpen(true);
                         setSnackbarMessage({
                           message: 'rateUpdated',
@@ -309,18 +314,18 @@ export default function UpdatePrices({
                     }}
                     onClick={async () => {
                       try {
-                        const data = await (
-                          await fetch(`${BASE_URL}/api/prices`, {
-                            method: 'PUT',
-                            body: JSON.stringify({
-                              pricePairs: Object.keys(updatedPrices).map(
-                                (key) => updatedPrices[parseInt(key, 10)],
-                              ),
-                            }),
-                          })
-                        ).json();
+                        const { success } = await fetchWithCreds<Prices[]>(
+                          accessToken,
+                          `/api/prices`,
+                          'PUT',
+                          {
+                            pricePairs: Object.keys(updatedPrices).map(
+                              (key) => updatedPrices[parseInt(key, 10)],
+                            ),
+                          },
+                        );
 
-                        if (data.success) {
+                        if (success) {
                           setSnackbarOpen(true);
                           setSnackbarMessage({
                             message: 'pricesUpdated',
@@ -466,20 +471,30 @@ export default function UpdatePrices({
               handleDelete={async () => {
                 if (selectedPrice == null) return;
                 try {
-                  await fetch(`${BASE_URL}/api/prices?id=${selectedPrice}`, {
-                    method: 'DELETE',
-                  });
-                  setTableData((prevData) => {
-                    const newData = prevData.filter(
-                      (row) => row[PRICE_ID_IDX] !== selectedPrice,
-                    );
-                    return newData;
-                  });
-                  setSnackbarOpen(true);
-                  setSnackbarMessage({
-                    message: 'priceDeleteSuccess',
-                    severity: 'success',
-                  });
+                  const { success } = await fetchWithCreds<Prices>(
+                    accessToken,
+                    `/api/prices?id=${selectedPrice}`,
+                    'DELETE',
+                  );
+                  if (success) {
+                    setTableData((prevData) => {
+                      const newData = prevData.filter(
+                        (row) => row[PRICE_ID_IDX] !== selectedPrice,
+                      );
+                      return newData;
+                    });
+                    setSnackbarOpen(true);
+                    setSnackbarMessage({
+                      message: 'priceDeleteSuccess',
+                      severity: 'success',
+                    });
+                  } else {
+                    setSnackbarOpen(true);
+                    setSnackbarMessage({
+                      message: 'priceDeleteFailed',
+                      severity: 'error',
+                    });
+                  }
                 } catch (error) {
                   console.error(error);
                   setSnackbarOpen(true);
@@ -528,21 +543,22 @@ export default function UpdatePrices({
                   return false;
                 }
                 try {
-                  const res: ResponseApi<Prices> = await (
-                    await fetch(`${BASE_URL}/api/prices`, {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        name,
-                        price: priceInDollars,
-                        priceInTmt: priceInManat,
-                      }),
-                    })
-                  ).json();
-                  if (res.success && res.data != null) {
+                  const { success, data } = await fetchWithCreds<Prices>(
+                    accessToken,
+                    `/api/prices`,
+                    'POST',
+                    {
+                      name,
+                      price: priceInDollars,
+                      priceInTmt: priceInManat,
+                    },
+                  );
+
+                  if (success) {
                     setTableData((prevData) => {
                       const newData = [
                         prevData[0],
-                        [name, priceInDollars, priceInManat, res.data!.id],
+                        [name, priceInDollars, priceInManat, data!.id],
                         ...prevData.slice(1),
                       ];
                       return newData;

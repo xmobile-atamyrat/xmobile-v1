@@ -97,5 +97,6 @@
   "continueShopping": "Continue shopping",
   "followUs": "Follow us",
   "mobilePhone": "Mobile phone",
-  "productVideo": "Video"
+  "productVideo": "Video",
+  "fetchPricesError": "Error fetching prices."
 }

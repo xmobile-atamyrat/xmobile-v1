@@ -3,6 +3,7 @@ import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -51,6 +52,7 @@ export default function ProductCard({
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
+  const { accessToken } = useUserContext();
 
   useEffect(() => {
     const abortController = createAbortController();
@@ -84,12 +86,12 @@ export default function ProductCard({
   }, [product?.imgUrls, network]);
 
   useEffect(() => {
-    if (initialProduct == null) return;
+    if (initialProduct == null || accessToken == null) return;
 
     (async () => {
-      setProduct(await computeProductPrice(initialProduct));
+      setProduct(await computeProductPrice(initialProduct, accessToken));
     })();
-  }, [initialProduct]);
+  }, [initialProduct, accessToken]);
 
   return (
     <Card

@@ -97,5 +97,6 @@
   "continueShopping": "Alışverişe devam et",
   "followUs": "Bizi takip edin",
   "mobilePhone": "Mobil Telefon",
-  "productVideo": "Ürün Videosu"
+  "productVideo": "Ürün Videosu",
+  "fetchPricesError": "Fiyatları alma hata."
 }
