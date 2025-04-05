@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import { debounce } from '@/pages/product/utils';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -22,7 +23,7 @@ export default function AddToCart({
   onDelete,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
@@ -37,20 +38,12 @@ export default function AddToCart({
         severity: 'warning',
       });
     } else {
-      const response = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        const data = await fetchWithCreds(accessToken, '/api/cart', 'POST', {
           userId,
           productId,
           quantity,
-        }),
-      });
-
-      try {
-        const data = await response.json();
+        });
 
         if (data.success) {
           setSnackbarOpen(true);

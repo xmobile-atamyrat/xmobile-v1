@@ -9,14 +9,13 @@ import { z } from 'zod';
 
 const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
-  userId: z.string().min(1, 'userNotFound'),
   cartItemId: z.string(),
   productId: z.string(),
   quantity: z.number(),
 });
 
 const CreateCartItem = FormSchema.omit({ cartItemId: true });
-const EditCartItem = FormSchema.omit({ userId: true, productId: true });
+const EditCartItem = FormSchema.omit({ productId: true });
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);

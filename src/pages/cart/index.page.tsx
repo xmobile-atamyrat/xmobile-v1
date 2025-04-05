@@ -3,22 +3,22 @@ import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
+import HomeIcon from '@mui/icons-material/Home';
 import {
   Box,
+  Breadcrumbs,
+  CircularProgress,
+  IconButton,
+  Link,
   Typography,
   useMediaQuery,
   useTheme,
-  Link,
-  IconButton,
-  Breadcrumbs,
-  CircularProgress,
 } from '@mui/material';
+import { CartItem, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect, useState } from 'react';
-import HomeIcon from '@mui/icons-material/Home';
-import { useTranslations } from 'next-intl';
-import { CartItem, Product } from '@prisma/client';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -44,14 +44,14 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    const fetchUserCartItems = async (userId: string | undefined) => {
+    (async () => {
       // TODO: fix this to redirect to login page
-      if (!userId) {
+      if (!user.id) {
         return;
       }
 
       try {
-        const response = await fetch(`${BASE_URL}/api/cart?userId=${userId}`);
+        const response = await fetch(`${BASE_URL}/api/cart?userId=${user.id}`);
         const data = await response.json();
 
         if (data.success) {
@@ -62,9 +62,8 @@ export default function CartPage() {
       } catch (error) {
         console.error('Error fetching cart data:', error);
       }
-    };
-    fetchUserCartItems(user?.id);
-  }, [user?.id]);
+    })();
+  }, [user]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
