@@ -35,7 +35,7 @@ const withAuth = (
     const authHeader = req.headers.authorization;
     const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if ((!authHeader || !authHeader.startsWith('Bearer ')) && !refreshToken) {
       return res
         .status(401)
         .json({ message: 'Unauthorized: Missing or invalid token format' });
@@ -62,7 +62,7 @@ const withAuth = (
 
           res.setHeader(
             'Set-Cookie',
-            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; Secure; SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
           );
           res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           const originalResponse = await handler(
