@@ -15,7 +15,6 @@ import {
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { Box } from '@mui/material';
 import { useTranslations } from 'next-intl';
@@ -41,7 +40,6 @@ export default function Layout({
   const { setCategories, setSelectedCategoryId, categories } =
     useCategoryContext();
   const { setProducts } = useProductContext();
-  const { user, setUser } = useUserContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
 
   useEffect(() => {
@@ -58,13 +56,6 @@ export default function Layout({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (user == null) {
-      const userString = localStorage.getItem('user');
-      if (userString != null) setUser(JSON.parse(userString));
-    }
-  }, [user, setUser]);
 
   return (
     <Box className="w-full h-full">

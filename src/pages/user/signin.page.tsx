@@ -30,7 +30,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signin() {
-  const { setUser } = useUserContext();
+  const { setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +60,11 @@ export default function Signin() {
           const { email, password } = Object.fromEntries(formData.entries());
 
           try {
-            const { success, data, message }: ResponseApi<User> = await (
+            const {
+              success,
+              data,
+              message,
+            }: ResponseApi<{ accessToken: string; user: User }> = await (
               await fetch('/api/user/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -70,12 +74,15 @@ export default function Signin() {
             if (message != null) {
               setErrorMessage(message);
             } else if (success && data != null) {
-              setUser(data);
-              localStorage.setItem('user', JSON.stringify(data));
+              setUser(data.user);
+              setAccessToken(data.accessToken);
               router.push('/');
             }
           } catch (error) {
-            setErrorMessage((error as Error).message);
+            if (error.name === 'JsonWebTokenError') {
+              console.error((error as Error).message);
+              setErrorMessage('authError');
+            } else setErrorMessage((error as Error).message);
           }
         }}
       >

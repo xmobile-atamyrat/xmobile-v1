@@ -1,4 +1,3 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
@@ -11,8 +10,9 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
-import CircularProgress from '@mui/material/CircularProgress';
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import { debounce } from '@/pages/product/utils';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
   productId,
@@ -22,7 +22,7 @@ export default function AddToCart({
   onDelete,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
@@ -37,20 +37,12 @@ export default function AddToCart({
         severity: 'warning',
       });
     } else {
-      const response = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        const data = await fetchWithCreds(accessToken, '/api/cart', 'POST', {
           userId,
           productId,
           quantity,
-        }),
-      });
-
-      try {
-        const data = await response.json();
+        });
 
         if (data.success) {
           setSnackbarOpen(true);
@@ -73,18 +65,11 @@ export default function AddToCart({
   };
 
   const deleteCartItems = async (cartId: string) => {
-    const response = await fetch(`${BASE_URL}/api/cart`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: cartId,
-      }),
-    });
-
     try {
-      const data = await response.json();
+      const data = await fetchWithCreds(accessToken, '/api/cart', 'DELETE', {
+        id: cartId,
+      });
+
       if (data.success) {
         setSnackbarOpen(true);
         setSnackbarMessage({
@@ -103,21 +88,14 @@ export default function AddToCart({
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const editCartItems = useCallback(
     debounce(async (itemQuantity: number) => {
-      const response = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        const data = await fetchWithCreds(accessToken, '/api/cart', 'PUT', {
           id: cartItemId,
           quantity: itemQuantity,
-        }),
-      });
-
-      try {
-        const data = await response.json();
+        });
 
         if (data.success) {
           setSnackbarOpen(true);
@@ -136,7 +114,9 @@ export default function AddToCart({
         console.error('Error: ', error);
       }
     }, 300),
-    [],
+    // todo: eslint says there should be dependency, not so sure about passing debounce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [debounce],
   );
 
   const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {

@@ -39,6 +39,7 @@
   "haveAccount": "Hasabyňyz barmy?",
   "phoneNumber": "Telefon belgiňiz",
   "shortPassword": "Parol iň azyndan 8 simwoldan durmaly",
+  "authError": "Awtentifikasiýa ýalňyşlygy. Täzeden synanyşyň ýa-da biz bilen habarlaşyň.",
   "add": "Goş",
   "edit": "Üýtget",
   "delete": "Öçür",
@@ -98,5 +99,6 @@
   "continueShopping": "Satyn almaga dowam et",
   "followUs": "Bize goşulyň",
   "mobilePhone": "Telefon",
-  "productVideo": "Önümiň wideosy"
+  "productVideo": "Önümiň wideosy",
+  "fetchPricesError": "Bahalary aldamakda säwlik."
 }

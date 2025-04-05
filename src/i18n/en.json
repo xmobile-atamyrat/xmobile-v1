@@ -37,6 +37,7 @@
   "haveAccount": "Have an account?",
   "phoneNumber": "Phone number",
   "shortPassword": "Password must be at least 8 characters",
+  "authError": "Authentication failed. Please, try again or contact us.",
   "add": "Add",
   "edit": "Edit",
   "delete": "Delete",
@@ -96,5 +97,6 @@
   "continueShopping": "Continue shopping",
   "followUs": "Follow us",
   "mobilePhone": "Mobile phone",
-  "productVideo": "Video"
+  "productVideo": "Video",
+  "fetchPricesError": "Error fetching prices."
 }

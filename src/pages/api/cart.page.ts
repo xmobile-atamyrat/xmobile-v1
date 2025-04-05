@@ -1,30 +1,31 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { ResponseApi } from '@/pages/lib/types';
-import { z } from 'zod';
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
+import { ResponseApi } from '@/pages/lib/types';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { z } from 'zod';
 
 const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
-  userId: z.string().min(1, 'userNotFound'),
   cartItemId: z.string(),
   productId: z.string(),
   quantity: z.number(),
 });
 
 const CreateCartItem = FormSchema.omit({ cartItemId: true });
-const EditCartItem = FormSchema.omit({ userId: true, productId: true });
+const EditCartItem = FormSchema.omit({ productId: true });
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseApi>,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
+  addCors(res);
   const data = req.body;
+  const { userId } = req as AuthenticatedRequest;
 
   if (req.method === 'POST') {
     try {
       // validate the data input
-      const { userId, productId, quantity } = CreateCartItem.parse({
-        userId: data.userId,
+      const { productId, quantity } = CreateCartItem.parse({
         productId: data.productId,
         quantity: data.quantity,
       });
@@ -53,12 +54,6 @@ export default async function handler(
     }
   } else if (req.method === 'GET') {
     try {
-      const { userId } = FormSchema.omit({
-        cartItemId: true,
-        productId: true,
-        quantity: true,
-      }).parse(req.query);
-
       const cartItems = await dbClient.cartItem.findMany({
         where: {
           userId,
@@ -81,7 +76,7 @@ export default async function handler(
   } else if (req.method === 'DELETE') {
     try {
       await dbClient.cartItem.delete({
-        where: { id: data.id },
+        where: { id: data.id, userId },
       });
       res.status(200).json({ success: true, data: [] });
     } catch (error) {
@@ -98,7 +93,7 @@ export default async function handler(
       });
 
       const cartItem = await dbClient.cartItem.update({
-        where: { id: cartItemId },
+        where: { id: cartItemId, userId },
         data: {
           quantity,
         },
@@ -119,3 +114,5 @@ export default async function handler(
     }
   }
 }
+
+export default withAuth(handler);

@@ -332,6 +332,15 @@ export const setCookie = (
   document.cookie = serializedCookie;
 };
 
+export const deleteCookie = (name: string) => {
+  if (typeof document !== 'undefined') {
+    const serializedCookie = cookie.serialize(name, '', {
+      maxAge: 0,
+    });
+    document.cookie = serializedCookie;
+  }
+};
+
 export const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
