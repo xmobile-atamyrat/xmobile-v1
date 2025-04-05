@@ -99,5 +99,8 @@
   "mobilePhone": "Mobile phone",
   "productVideo": "Video",
   "fetchPricesError": "Error fetching prices.",
-  "procurement": "Procurement"
+  "procurement": "Procurement",
+  "suppliers": "Suppliers",
+  "addSupplier": "Add Supplier",
+  "supplierName": "Supplier Name"
 }
