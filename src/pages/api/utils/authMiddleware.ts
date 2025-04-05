@@ -3,22 +3,25 @@ import {
   AUTH_REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_EXPIRY_COOKIE,
 } from '@/pages/lib/constants';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 
-export const verifyToken = (token: string, secret: string): Promise<string> => {
+export const verifyToken = (
+  token: string,
+  secret: string,
+): Promise<JwtPayload> => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, secret, (err, decoded) => {
       if (err) {
         reject(err);
         return;
       }
-      resolve(decoded as string);
+      resolve(decoded as JwtPayload);
     });
   });
 };
 
-interface AuthenticatedRequest extends NextApiRequest {
+export interface AuthenticatedRequest extends NextApiRequest {
   userId?: string;
 }
 
@@ -41,13 +44,13 @@ const withAuth = (
     const token = authHeader.split(' ')[1];
 
     try {
-      const userId = await verifyToken(token, ACCESS_SECRET);
+      const { userId } = await verifyToken(token, ACCESS_SECRET);
       (req as AuthenticatedRequest).userId = userId;
       return handler(req as AuthenticatedRequest, res);
     } catch (accessTokenError) {
       if (accessTokenError.name === 'TokenExpiredError') {
         try {
-          const userId = await verifyToken(
+          const { userId } = await verifyToken(
             refreshToken,
             process.env.REFRESH_TOKEN_SECRET,
           );
