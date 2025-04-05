@@ -4,8 +4,8 @@ import {
 } from '@/pages/lib/constants';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
-const ACCESS_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.REFRESH_SECRET;
+const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
+const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 export const generateTokens = (userId: string) => {
   const accessToken = jwt.sign({ id: userId }, ACCESS_SECRET, {
