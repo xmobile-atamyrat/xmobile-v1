@@ -98,5 +98,6 @@
   "followUs": "Follow us",
   "mobilePhone": "Mobile phone",
   "productVideo": "Video",
-  "fetchPricesError": "Error fetching prices."
+  "fetchPricesError": "Error fetching prices.",
+  "procurement": "Procurement"
 }

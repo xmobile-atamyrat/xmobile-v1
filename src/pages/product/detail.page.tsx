@@ -173,7 +173,7 @@ export default function Product() {
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
-              {user?.grade === 'ADMIN' && (
+              {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
                 <Box>
                   <IconButton
                     onClick={() => {

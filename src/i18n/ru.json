@@ -100,5 +100,6 @@
   "followUs": "Подписывайтесь на нас",
   "mobilePhone": "Телефон",
   "productVideo": "Обзор",
-  "fetchPricesError": "Ошибка получает цены."
+  "fetchPricesError": "Ошибка получает цены.",
+  "procurement": "Заказ"
 }

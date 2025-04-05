@@ -98,5 +98,6 @@
   "followUs": "Bizi takip edin",
   "mobilePhone": "Mobil Telefon",
   "productVideo": "Ürün Videosu",
-  "fetchPricesError": "Fiyatları alma hata."
+  "fetchPricesError": "Fiyatları alma hata.",
+  "procurement": "Tedarik"
 }
