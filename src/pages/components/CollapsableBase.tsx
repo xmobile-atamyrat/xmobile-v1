@@ -122,66 +122,75 @@ export default function CollapsableBase({
           sx={{ pr: 0 }}
         />
       </ListItemButton>
-      {user?.grade === 'ADMIN' && selectedCategoryId === id && (
-        <Box>
-          <IconButton
-            aria-label="more"
-            id="long-button"
-            aria-controls={openEditMenu ? 'long-menu' : undefined}
-            aria-expanded={openEditMenu ? 'true' : undefined}
-            aria-haspopup="true"
-            onClick={(event) => setAnchorEl(event.currentTarget)}
-            className="px-0"
-          >
-            <MoreVertIcon color="primary" fontSize="small" />
-          </IconButton>
-          <Menu
-            open={openEditMenu}
-            onClose={() => setAnchorEl(undefined)}
-            anchorEl={anchorEl}
-          >
-            <MenuItem
-              onClick={() =>
-                setEditCategoriesModal({
-                  open: true,
-                  dialogType: 'add',
-                  categoryId: id,
-                })
-              }
-              className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
+        selectedCategoryId === id && (
+          <Box>
+            <IconButton
+              aria-label="more"
+              id="long-button"
+              aria-controls={openEditMenu ? 'long-menu' : undefined}
+              aria-expanded={openEditMenu ? 'true' : undefined}
+              aria-haspopup="true"
+              onClick={(event) => setAnchorEl(event.currentTarget)}
+              className="px-0"
             >
-              <AddCircleIcon color="primary" fontSize="small" />
-              <Typography className="overflow-x-scroll">{t('add')}</Typography>
-            </MenuItem>
-            <MenuItem
-              onClick={() =>
-                setEditCategoriesModal({
-                  open: true,
-                  dialogType: 'edit',
-                  categoryId: id,
-                  categoryName: categoryTitle,
-                  imageUrl: imgUrl,
-                })
-              }
-              className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+              <MoreVertIcon color="primary" fontSize="small" />
+            </IconButton>
+            <Menu
+              open={openEditMenu}
+              onClose={() => setAnchorEl(undefined)}
+              anchorEl={anchorEl}
             >
-              <EditIcon color="primary" fontSize="small" />
-              <Typography className="overflow-x-scroll">{t('edit')}</Typography>
-            </MenuItem>
-            <MenuItem
-              onClick={() =>
-                setDeleteCategoriesModal({ categoryId: id, imgUrl, open: true })
-              }
-              className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
-            >
-              <DeleteIcon color="error" fontSize="small" />
-              <Typography className="overflow-x-scroll">
-                {t('delete')}
-              </Typography>
-            </MenuItem>
-          </Menu>
-        </Box>
-      )}
+              <MenuItem
+                onClick={() =>
+                  setEditCategoriesModal({
+                    open: true,
+                    dialogType: 'add',
+                    categoryId: id,
+                  })
+                }
+                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+              >
+                <AddCircleIcon color="primary" fontSize="small" />
+                <Typography className="overflow-x-scroll">
+                  {t('add')}
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={() =>
+                  setEditCategoriesModal({
+                    open: true,
+                    dialogType: 'edit',
+                    categoryId: id,
+                    categoryName: categoryTitle,
+                    imageUrl: imgUrl,
+                  })
+                }
+                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+              >
+                <EditIcon color="primary" fontSize="small" />
+                <Typography className="overflow-x-scroll">
+                  {t('edit')}
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={() =>
+                  setDeleteCategoriesModal({
+                    categoryId: id,
+                    imgUrl,
+                    open: true,
+                  })
+                }
+                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+              >
+                <DeleteIcon color="error" fontSize="small" />
+                <Typography className="overflow-x-scroll">
+                  {t('delete')}
+                </Typography>
+              </MenuItem>
+            </Menu>
+          </Box>
+        )}
     </Box>
   );
 }
