@@ -47,7 +47,7 @@
   "confirmDeleteProduct": "Are you sure you want to delete the selected product?",
   "dontHaveAccount": "Do not have an account?",
   "editProduct": "Edit Product",
-  "fetchCategoriesError": "There is server error. Please, contact the administrators.",
+  "serverError": "There is server error. Please, contact the administrators.",
   "deleteProductError": "Product could not be deleted!",
   "deleteProductSuccess": "Product successfully deleted!",
   "createProductError": "Could not create new product",
