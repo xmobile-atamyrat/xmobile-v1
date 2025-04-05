@@ -1,4 +1,3 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
@@ -66,18 +65,11 @@ export default function AddToCart({
   };
 
   const deleteCartItems = async (cartId: string) => {
-    const response = await fetch(`${BASE_URL}/api/cart`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: cartId,
-      }),
-    });
-
     try {
-      const data = await response.json();
+      const data = await fetchWithCreds(accessToken, '/api/cart', 'DELETE', {
+        id: cartId,
+      });
+
       if (data.success) {
         setSnackbarOpen(true);
         setSnackbarMessage({
@@ -99,19 +91,11 @@ export default function AddToCart({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const editCartItems = useCallback(
     debounce(async (itemQuantity: number) => {
-      const response = await fetch(`${BASE_URL}/api/cart`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      try {
+        const data = await fetchWithCreds(accessToken, '/api/cart', 'PUT', {
           id: cartItemId,
           quantity: itemQuantity,
-        }),
-      });
-
-      try {
-        const data = await response.json();
+        });
 
         if (data.success) {
           setSnackbarOpen(true);

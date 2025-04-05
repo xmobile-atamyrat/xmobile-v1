@@ -1,7 +1,7 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import HomeIcon from '@mui/icons-material/Home';
 import {
@@ -32,7 +32,7 @@ export const getStaticProps = (async (context) => {
 export default function CartPage() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
   >([]);
@@ -51,8 +51,11 @@ export default function CartPage() {
       }
 
       try {
-        const response = await fetch(`${BASE_URL}/api/cart?userId=${user.id}`);
-        const data = await response.json();
+        const data = await fetchWithCreds(
+          accessToken,
+          `/api/cart?userId=${user.id}`,
+          'GET',
+        );
 
         if (data.success) {
           setCartItems(data.data);
