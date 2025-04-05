@@ -101,5 +101,8 @@
   "mobilePhone": "Телефон",
   "productVideo": "Обзор",
   "fetchPricesError": "Ошибка получает цены.",
-  "procurement": "Заказ"
+  "procurement": "Заказ",
+  "suppliers": "Поставщики",
+  "addSupplier": "Добавить поставщика",
+  "supplierName": "Название поставщика"
 }

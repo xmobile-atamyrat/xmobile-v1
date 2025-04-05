@@ -101,5 +101,8 @@
   "mobilePhone": "Telefon",
   "productVideo": "Önümiň wideosy",
   "fetchPricesError": "Bahalary aldamakda säwlik.",
-  "procurement": "Satyn almalar"
+  "procurement": "Satyn almalar",
+  "suppliers": "Üpjün edijiler",
+  "addSupplier": "Üpjün edijini goşuň",
+  "supplierName": "Supplier Name"
 }
