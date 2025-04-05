@@ -59,6 +59,7 @@ export default function Suppliers() {
           handleClose={() => {
             setAddSupplierDialog(false);
           }}
+          setSuppliers={setSuppliers}
         />
       )}
     </Box>

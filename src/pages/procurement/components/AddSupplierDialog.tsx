@@ -1,3 +1,5 @@
+import { fetchWithCreds } from '@/pages/lib/fetch';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
@@ -9,18 +11,22 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 interface AddSupplierDialogProps {
   handleClose: () => void;
+  setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
 }
 
 export default function AddSupplierDialog({
   handleClose,
+  setSuppliers,
 }: AddSupplierDialogProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
+  const { accessToken } = useUserContext();
   return (
     <Dialog
       open
@@ -30,7 +36,29 @@ export default function AddSupplierDialog({
         event.preventDefault();
         setLoading(true);
 
-        // submit logic
+        try {
+          const formData = new FormData(
+            event.currentTarget as unknown as HTMLFormElement,
+          );
+          const formJson = Object.fromEntries(formData.entries());
+          const { supplierName } = formJson;
+          const { success, data, message } = await fetchWithCreds<Supplier>(
+            accessToken,
+            '/api/procurement/supplier',
+            'POST',
+            {
+              name: supplierName,
+            },
+          );
+          if (success) {
+            setSuppliers((currentSuppliers) => [...currentSuppliers, data]);
+          } else {
+            console.error(message);
+          }
+        } catch (error) {
+          setLoading(false);
+          console.error(error);
+        }
 
         setLoading(false);
         handleClose();
@@ -47,7 +75,7 @@ export default function AddSupplierDialog({
           </Typography>
           <TextField
             name="supplierName"
-            className="my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3"
+            className="my-1 min-w-[250px] w-full sm:w-[95%]"
           />
         </Box>
       </DialogContent>
