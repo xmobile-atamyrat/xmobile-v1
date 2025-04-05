@@ -71,6 +71,8 @@ scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/ta
 ```bash
 ssh xmobile
 ./scripts/backup-data.sh
+exit
+
 ./scripts/backup-production-data.sh
 
 # delete the current db container and volume and then:

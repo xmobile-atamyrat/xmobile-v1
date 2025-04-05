@@ -11,8 +11,8 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
-import CircularProgress from '@mui/material/CircularProgress';
 import { debounce } from '@/pages/product/utils';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
   productId,
@@ -103,6 +103,7 @@ export default function AddToCart({
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const editCartItems = useCallback(
     debounce(async (itemQuantity: number) => {
       const response = await fetch(`${BASE_URL}/api/cart`, {

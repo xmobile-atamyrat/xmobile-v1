@@ -1,7 +1,6 @@
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
-import { ProtectedUser, ResponseApi } from '@/pages/lib/types';
+import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { verifyToken } from '@/pages/lib/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -14,6 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { User } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -68,7 +68,11 @@ export default function Signup() {
           }
 
           try {
-            const { success, data, message }: ResponseApi<string> = await (
+            const {
+              success,
+              data,
+              message,
+            }: ResponseApi<{ user: User; accessToken: string }> = await (
               await fetch('/api/user/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -78,12 +82,8 @@ export default function Signup() {
             if (message != null) {
               setErrorMessage(message);
             } else if (success && data != null) {
-              const decodedUserToken = verifyToken(
-                data,
-                process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-              );
-              setUser(decodedUserToken as ProtectedUser);
-              setAccessToken(data);
+              setUser(data.user);
+              setAccessToken(data.accessToken);
 
               router.push('/');
             }

@@ -1,10 +1,8 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
-import { generateToken } from '@/pages/api/utils/tokenUtils';
+import { generateTokens } from '@/pages/api/utils/tokenUtils';
 import {
-  ACCESS_TOKEN_EXPIRY,
   AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY_COOKIE,
 } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
@@ -45,16 +43,7 @@ export default async function handler(
       });
       delete user.password;
 
-      const refreshToken = generateToken(
-        user,
-        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-        REFRESH_TOKEN_EXPIRY,
-      );
-      const accessToken = generateToken(
-        user,
-        process.env.NEXT_PUBLIC_JWT_AUTH_SECRET,
-        ACCESS_TOKEN_EXPIRY,
-      );
+      const { accessToken, refreshToken } = generateTokens(user.id);
 
       res.setHeader(
         'Set-Cookie',
