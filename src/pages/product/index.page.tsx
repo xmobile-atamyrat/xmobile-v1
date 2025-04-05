@@ -152,17 +152,18 @@ export default function Products() {
             //   mt: isMdUp ? `${appBarHeight}px` : undefined,
             // }}
           >
-            {user?.grade === 'ADMIN' && selectedCategoryId != null && (
-              <ProductCard
-                handleClickAddProduct={() =>
-                  setAddEditProductDialog({
-                    open: true,
-                    dialogType: 'add',
-                    imageUrls: [],
-                  })
-                }
-              />
-            )}
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
+              selectedCategoryId != null && (
+                <ProductCard
+                  handleClickAddProduct={() =>
+                    setAddEditProductDialog({
+                      open: true,
+                      dialogType: 'add',
+                      imageUrls: [],
+                    })
+                  }
+                />
+              )}
             {products.length > 0 &&
               products.map((product, idx) => (
                 <ProductCard
