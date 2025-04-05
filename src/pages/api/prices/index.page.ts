@@ -1,6 +1,9 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prices } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -28,12 +31,14 @@ export async function getPrice(priceId: string): Promise<Prices | null> {
   return null; // not to crash the website return null;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseApi>,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
-  const { method } = req;
+  const { method, userId } = req as AuthenticatedRequest;
+  const user = await dbClient.user.findUnique({ where: { id: userId } });
+  if (user == null || user.grade !== 'ADMIN') {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
   if (method === 'POST') {
     try {
       const body: Partial<Prices> = JSON.parse(req.body);
@@ -187,3 +192,5 @@ export default async function handler(
     .status(405)
     .json({ success: false, message: 'Method not allowed' });
 }
+
+export default withAuth(handler);
