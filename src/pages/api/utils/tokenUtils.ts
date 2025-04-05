@@ -2,10 +2,10 @@ import {
   ACCESS_TOKEN_EXPIRY,
   REFRESH_TOKEN_EXPIRY,
 } from '@/pages/lib/constants';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
-const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
+export const ACCESS_SECRET = process.env.ACCESS_TOKEN_SECRET;
+export const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 export const generateTokens = (userId: string) => {
   const accessToken = jwt.sign({ id: userId }, ACCESS_SECRET, {
@@ -16,22 +16,4 @@ export const generateTokens = (userId: string) => {
   });
 
   return { accessToken, refreshToken };
-};
-
-/**
- * Verifies a refresh token and returns the userId.
- * @param token - the refresh token to verify
- * @returns the userId if the token is valid, otherwise throws an exception
- */
-export const verifyRefreshToken = (token: string) => {
-  return (jwt.verify(token, REFRESH_SECRET) as JwtPayload).id;
-};
-
-/**
- * Verifies an access token and returns the userId.
- * @param token - the refresh token to verify
- * @returns the userId if the token is valid, otherwise throws an exception
- */
-export const verifyAccessToken = (token: string) => {
-  return (jwt.verify(token, ACCESS_SECRET) as JwtPayload).id;
 };
