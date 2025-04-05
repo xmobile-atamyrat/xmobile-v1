@@ -99,5 +99,8 @@
   "mobilePhone": "Mobil Telefon",
   "productVideo": "Ürün Videosu",
   "fetchPricesError": "Fiyatları alma hata.",
-  "procurement": "Tedarik"
+  "procurement": "Tedarik",
+  "suppliers": "Tedarikçiler",
+  "addSupplier": "Tedarikçi ekle",
+  "supplierName": "Supplier Name"
 }

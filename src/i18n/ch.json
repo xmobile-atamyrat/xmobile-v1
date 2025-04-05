@@ -101,5 +101,8 @@
   "mobilePhone": "Nomer",
   "productVideo": "Abzor",
   "fetchPricesError": "Bahalary aldamakda säwlik.",
-  "procurement": "Zakaz"
+  "procurement": "Zakaz",
+  "suppliers": "Üpjün edijiler",
+  "addSupplier": "Üpjün edijini goşuň",
+  "supplierName": "Üpjün edijiniň ady"
 }

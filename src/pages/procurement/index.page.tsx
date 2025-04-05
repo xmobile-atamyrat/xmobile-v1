@@ -1,6 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
+import Suppliers from '@/pages/procurement/components/Suppliers';
 import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -34,13 +35,14 @@ export default function Procurement() {
             mt: isMdUp
               ? `${appBarHeight * 1.25}px`
               : `${mobileAppBarHeight * 1.25}px`,
-            px: isMdUp ? 4 : 1,
+            p: isMdUp ? 8 : 2,
           }}
-          className="flex flex-col gap-8 w-full h-full"
+          className="flex flex-col gap-4 w-full h-full"
         >
           <Typography fontWeight={600} fontSize={20}>
             {t('procurement')}
           </Typography>
+          <Suppliers />
         </Box>
       )}
     </Layout>
