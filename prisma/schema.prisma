@@ -105,6 +105,14 @@ model DollarRate {
   updatedAt       DateTime    @updatedAt
 }
 
+model Supplier {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
 enum UserRole {
   FREE
   ADMIN
