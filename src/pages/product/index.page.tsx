@@ -146,12 +146,7 @@ export default function Products() {
       >
         <Box className="flex flex-col w-full h-full">
           <SimpleBreadcrumbs />
-          <Box
-            className="flex flex-wrap gap-4 w-full p-3"
-            // sx={{
-            //   mt: isMdUp ? `${appBarHeight}px` : undefined,
-            // }}
-          >
+          <Box className="flex flex-wrap gap-4 w-full p-3">
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
               selectedCategoryId != null && (
                 <ProductCard
