@@ -49,7 +49,7 @@
   "confirmDeleteProduct": "Saýlanan önümi pozmak isleýändigiňize ynanýarsyňyzmy?",
   "dontHaveAccount": "Hasabyňyz ýokmy?",
   "editProduct": "Önümi redaktirläň",
-  "fetchCategoriesError": "Serwer ýalňyşlygy bar. Dolandyryjylar bilen habarlaşmagyňyzy haýyş edýäris.",
+  "serverError": "Serwer ýalňyşlygy bar. Dolandyryjylar bilen habarlaşmagyňyzy haýyş edýäris.",
   "deleteProductError": "Önüm öçürilip bilinmedi!",
   "deleteProductSuccess": "Önüm üstünlikli öçürildi!",
   "createProductError": "Täze önüm döredip bolmady",
