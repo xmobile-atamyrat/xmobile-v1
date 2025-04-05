@@ -1,13 +1,22 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
+import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddSupplierDialog from '@/pages/procurement/components/AddSupplierDialog';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
-export default function Suppliers() {
+interface SuppliersProps {
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+}
+
+export default function Suppliers({
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: SuppliersProps) {
   const t = useTranslations();
   const [suppliers, setSuppliers] = useState([]);
   const { accessToken } = useUserContext();
@@ -24,8 +33,9 @@ export default function Suppliers() {
         if (success) {
           setSuppliers(data);
         } else {
-          // properly handle error message by showing the user alerts
           console.error(message);
+          setSnackbarOpen(true);
+          setSnackbarMessage({ message: 'serverError', severity: 'error' });
         }
       })();
     }
@@ -60,6 +70,8 @@ export default function Suppliers() {
             setAddSupplierDialog(false);
           }}
           setSuppliers={setSuppliers}
+          setSnackbarMessage={setSnackbarMessage}
+          setSnackbarOpen={setSnackbarOpen}
         />
       )}
     </Box>

@@ -1,4 +1,5 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
+import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -18,11 +19,15 @@ import { Dispatch, SetStateAction, useState } from 'react';
 interface AddSupplierDialogProps {
   handleClose: () => void;
   setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function AddSupplierDialog({
   handleClose,
   setSuppliers,
+  setSnackbarMessage,
+  setSnackbarOpen,
 }: AddSupplierDialogProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
@@ -54,6 +59,8 @@ export default function AddSupplierDialog({
             setSuppliers((currentSuppliers) => [...currentSuppliers, data]);
           } else {
             console.error(message);
+            setSnackbarOpen(true);
+            setSnackbarMessage({ message: 'serverError', severity: 'error' });
           }
         } catch (error) {
           setLoading(false);
