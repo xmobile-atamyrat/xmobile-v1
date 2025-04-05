@@ -3,6 +3,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   appBarHeight,
+  AUTH_REFRESH_COOKIE_NAME,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
   LOGO_COLOR,
@@ -10,7 +11,7 @@ import {
   MAIN_BG_COLOR,
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
-import { getCookie, setCookie } from '@/pages/lib/utils';
+import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
@@ -137,7 +138,7 @@ export default function CustomAppBar({
   handleBackButton,
 }: CustomAppBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { user } = useUserContext();
+  const { user, setUser, setAccessToken } = useUserContext();
   const router = useRouter();
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
@@ -397,12 +398,9 @@ export default function CustomAppBar({
               onClick={() => {
                 (async () => {
                   try {
-                    await fetch('api/auth', {
-                      method: 'PUT',
-                      credentials: 'include',
-                    });
-
-                    router.reload();
+                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+                    setUser(undefined);
+                    setAccessToken(undefined);
                   } catch (error) {
                     console.error(error);
                   }
