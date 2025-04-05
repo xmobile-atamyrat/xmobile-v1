@@ -20,7 +20,6 @@ export default function Procurement() {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const { user } = useUserContext();
-  console.info(user);
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
