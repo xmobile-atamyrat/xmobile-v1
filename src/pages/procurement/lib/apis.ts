@@ -11,3 +11,15 @@ export const fetchSuppliers = async (
     'GET',
   );
 };
+
+export const deleteSupplier = async (
+  accessToken: string,
+  id: string,
+): Promise<ResponseApi<Supplier>> => {
+  return fetchWithCreds<Supplier>(
+    accessToken,
+    '/api/procurement/supplier',
+    'DELETE',
+    { id },
+  );
+};
