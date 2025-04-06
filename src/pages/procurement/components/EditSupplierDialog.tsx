@@ -1,7 +1,9 @@
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { fetchSuppliers } from '@/pages/procurement/lib/apis';
+import { deleteSupplier, fetchSuppliers } from '@/pages/procurement/lib/apis';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
@@ -10,6 +12,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   TextField,
 } from '@mui/material';
 import { Supplier } from '@prisma/client';
@@ -36,6 +39,7 @@ export default function EditSupplierDialog({
     [key: string]: string;
   }>({});
   const [loading, setLoading] = useState(false);
+  const [deleteSupplierId, setDeleteSupplierId] = useState<string>();
   const { accessToken } = useUserContext();
   return (
     <Dialog
@@ -44,11 +48,16 @@ export default function EditSupplierDialog({
       component="form"
       onSubmit={async (event) => {
         event.preventDefault();
+        const keys = Object.keys(editedSuppliers);
+        if (keys.length === 0) {
+          handleClose();
+          return;
+        }
         setLoading(true);
 
         try {
           await Promise.all(
-            Object.keys(editedSuppliers).map((key) => {
+            keys.map((key) => {
               return fetchWithCreds(
                 accessToken,
                 '/api/procurement/supplier',
@@ -91,19 +100,28 @@ export default function EditSupplierDialog({
       <DialogContent>
         <Box className="flex flex-col w-[300px] sm:w-[600px] gap-4 p-2">
           {suppliers.map(({ name, id }) => (
-            <TextField
-              key={id}
-              defaultValue={name}
-              className="my-1 min-w-[250px] w-full sm:w-[95%]"
-              onChange={(event) => {
-                const newName = event.target.value;
-                setEditedSuppliers((currEditedSuppliers) => {
-                  const newEditedSuppliers = currEditedSuppliers;
-                  newEditedSuppliers[id] = newName;
-                  return newEditedSuppliers;
-                });
-              }}
-            />
+            <Box key={id} className="flex items-center flex-row gap-2">
+              <TextField
+                defaultValue={name}
+                className="my-1 min-w-[250px] w-full sm:w-[80%]"
+                onChange={(event) => {
+                  const newName = event.target.value;
+                  setEditedSuppliers((currEditedSuppliers) => {
+                    const newEditedSuppliers = currEditedSuppliers;
+                    newEditedSuppliers[id] = newName;
+                    return newEditedSuppliers;
+                  });
+                }}
+              />
+              <IconButton
+                className="flex items-center h-full"
+                onClick={() => {
+                  setDeleteSupplierId(id);
+                }}
+              >
+                <DeleteIcon color="error" />
+              </IconButton>
+            </Box>
           ))}
         </Box>
       </DialogContent>
@@ -115,6 +133,35 @@ export default function EditSupplierDialog({
           {t('submit')}
         </LoadingButton>
       </DialogActions>
+
+      {deleteSupplierId && (
+        <DeleteDialog
+          title={t('deleteSupplier')}
+          description={t('confirmDeleteSupplier')}
+          handleClose={() => {
+            setDeleteSupplierId(undefined);
+          }}
+          handleDelete={async () => {
+            const { success, data, message } = await deleteSupplier(
+              accessToken,
+              deleteSupplierId,
+            );
+            if (success) {
+              setSuppliers((prevSuppliers) =>
+                prevSuppliers.filter((supplier) => supplier.id !== data.id),
+              );
+            } else {
+              console.error(message);
+              setSnackbarOpen(true);
+              setSnackbarMessage({
+                message: 'serverError',
+                severity: 'error',
+              });
+            }
+            setDeleteSupplierId(undefined);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

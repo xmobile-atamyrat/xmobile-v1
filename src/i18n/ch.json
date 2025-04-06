@@ -105,5 +105,7 @@
   "suppliers": "Üpjün edijiler",
   "addSupplier": "Üpjün edijini goşuň",
   "supplierName": "Üpjün edijiniň ady",
-  "editSuppliers": "Üpjün edijileriň redaktirlemesini redaktirläň"
+  "editSuppliers": "Üpjün edijileriň redaktirlemesini redaktirläň",
+  "deleteSupplier": "Üpjün edijini pozuň",
+  "confirmDeleteSupplier": "Bu üpjün edijini pozmak isleýändigiňize ynanýarsyňyzmy?"
 }

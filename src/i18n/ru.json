@@ -105,5 +105,7 @@
   "suppliers": "Поставщики",
   "addSupplier": "Добавить поставщика",
   "supplierName": "Название поставщика",
-  "editSuppliers": "Редактировать поставщиков"
+  "editSuppliers": "Редактировать поставщиков",
+  "deleteSupplier": "Удалить поставщика",
+  "confirmDeleteSupplier": "Вы уверены, что хотите удалить этого поставщика?"
 }
