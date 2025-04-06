@@ -102,5 +102,6 @@
   "procurement": "Tedarik",
   "suppliers": "Tedarikçiler",
   "addSupplier": "Tedarikçi ekle",
-  "supplierName": "Supplier Name"
+  "supplierName": "Supplier Name",
+  "editSuppliers": "Tedarikçileri Düzenle"
 }
