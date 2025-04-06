@@ -65,6 +65,11 @@ export default function AddSupplierDialog({
         } catch (error) {
           setLoading(false);
           console.error(error);
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'serverError',
+            severity: 'error',
+          });
         }
 
         setLoading(false);

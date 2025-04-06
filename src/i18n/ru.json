@@ -104,5 +104,6 @@
   "procurement": "Заказ",
   "suppliers": "Поставщики",
   "addSupplier": "Добавить поставщика",
-  "supplierName": "Название поставщика"
+  "supplierName": "Название поставщика",
+  "editSuppliers": "Редактировать поставщиков"
 }

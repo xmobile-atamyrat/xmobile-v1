@@ -102,5 +102,6 @@
   "procurement": "Procurement",
   "suppliers": "Suppliers",
   "addSupplier": "Add Supplier",
-  "supplierName": "Supplier Name"
+  "supplierName": "Supplier Name",
+  "editSuppliers": "Edit Suppliers"
 }
