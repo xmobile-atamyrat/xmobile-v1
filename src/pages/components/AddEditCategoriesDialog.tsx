@@ -76,6 +76,7 @@ export default function AddEditCategoriesDialog({
   return (
     <Dialog
       open
+      fullScreen
       onClose={handleClose}
       component="form"
       onSubmit={async (event) => {
@@ -106,7 +107,7 @@ export default function AddEditCategoriesDialog({
         {dialogType === 'add' ? t('addNewCategory') : t('editCategory')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-4 p-2">
+        <Box className="flex flex-col gap-4 p-2">
           <Box className="flex flex-col gap-2">
             <Typography>
               {t('categoryName')}
