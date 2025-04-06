@@ -261,7 +261,7 @@ export default function AddToCart({
         >
           {snackbarMessage?.message && t(snackbarMessage.message)}
           {snackbarMessage?.message === 'userNotFound' && (
-            <Link href="user/signin">
+            <Link href="/user/signin">
               {`. ${t('signin')}`}
               <LoginIcon />
             </Link>
