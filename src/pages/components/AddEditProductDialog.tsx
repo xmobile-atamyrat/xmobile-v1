@@ -139,6 +139,7 @@ export default function AddEditProductDialog({
   return (
     <Dialog
       open
+      fullScreen
       onClose={handleClose}
       component="form"
       onSubmit={async (event) => {
@@ -191,7 +192,7 @@ export default function AddEditProductDialog({
         {dialogType === 'add' ? t('addNewProduct') : t('editProduct')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-2 p-2">
+        <Box className="flex flex-col gap-2 p-2">
           <Box className="w-full">
             <Typography>
               {t('productName')}
