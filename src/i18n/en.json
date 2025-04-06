@@ -103,5 +103,7 @@
   "suppliers": "Suppliers",
   "addSupplier": "Add Supplier",
   "supplierName": "Supplier Name",
-  "editSuppliers": "Edit Suppliers"
+  "editSuppliers": "Edit Suppliers",
+  "deleteSupplier": "Delete Supplier",
+  "confirmDeleteSupplier": "Are you sure you want to delete this supplier?"
 }
