@@ -1,10 +1,11 @@
-import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddSupplierDialog from '@/pages/procurement/components/AddSupplierDialog';
+import EditSupplierDialog from '@/pages/procurement/components/EditSupplierDialog';
+import { fetchSuppliers } from '@/pages/procurement/lib/apis';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Typography } from '@mui/material';
-import { Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
@@ -21,15 +22,12 @@ export default function Suppliers({
   const [suppliers, setSuppliers] = useState([]);
   const { accessToken } = useUserContext();
   const [addSupplierDialog, setAddSupplierDialog] = useState(false);
+  const [editSupplierDialog, setEditSupplierDialog] = useState(false);
 
   useEffect(() => {
     if (accessToken) {
       (async () => {
-        const { success, data, message } = await fetchWithCreds<Supplier[]>(
-          accessToken,
-          '/api/procurement/supplier',
-          'GET',
-        );
+        const { success, data, message } = await fetchSuppliers(accessToken);
         if (success) {
           setSuppliers(data);
         } else {
@@ -45,6 +43,7 @@ export default function Suppliers({
       <Box className="flex items-center">
         <Typography fontWeight={600}>{`${t('suppliers')}: `}</Typography>
       </Box>
+
       <Box className="flex flex-row px-2">
         {suppliers.map(({ id, name }, idx) => (
           <Box key={id} className="px-2 flex items-center">
@@ -56,12 +55,21 @@ export default function Suppliers({
           </Box>
         ))}
       </Box>
+
       <IconButton
         onClick={() => {
           setAddSupplierDialog(true);
         }}
       >
         <AddCircleIcon color="primary" />
+      </IconButton>
+
+      <IconButton
+        onClick={() => {
+          setEditSupplierDialog(true);
+        }}
+      >
+        <EditIcon color="primary" />
       </IconButton>
 
       {addSupplierDialog && (
@@ -72,6 +80,18 @@ export default function Suppliers({
           setSuppliers={setSuppliers}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}
+        />
+      )}
+
+      {editSupplierDialog && (
+        <EditSupplierDialog
+          suppliers={suppliers}
+          handleClose={() => {
+            setEditSupplierDialog(false);
+          }}
+          setSnackbarMessage={setSnackbarMessage}
+          setSnackbarOpen={setSnackbarOpen}
+          setSuppliers={setSuppliers}
         />
       )}
     </Box>
