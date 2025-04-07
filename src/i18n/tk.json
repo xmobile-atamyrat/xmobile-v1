@@ -107,5 +107,8 @@
   "supplierName": "Supplier Name",
   "editSuppliers": "Üpjün edijileriň redaktirlemesini redaktirläň",
   "deleteSupplier": "Üpjün edijini pozuň",
-  "confirmDeleteSupplier": "Bu üpjün edijini pozmak isleýändigiňize ynanýarsyňyzmy?"
+  "confirmDeleteSupplier": "Bu üpjün edijini pozmak isleýändigiňize ynanýarsyňyzmy?",
+  "nameRequired": "Goşmak üçin at bermegiňizi haýyş edýäris.",
+  "selectedProducts": "Saýlanan önümler",
+  "calculate": "Hasapla"
 }

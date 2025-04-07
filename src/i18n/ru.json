@@ -107,5 +107,8 @@
   "supplierName": "Название поставщика",
   "editSuppliers": "Редактировать поставщиков",
   "deleteSupplier": "Удалить поставщика",
-  "confirmDeleteSupplier": "Вы уверены, что хотите удалить этого поставщика?"
+  "confirmDeleteSupplier": "Вы уверены, что хотите удалить этого поставщика?",
+  "nameRequired": "Пожалуйста, укажите имя, чтобы добавить.",
+  "selectedProducts": "Выбранные продукты",
+  "calculate": "Рассчитать"
 }

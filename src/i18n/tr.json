@@ -105,5 +105,8 @@
   "supplierName": "Supplier Name",
   "editSuppliers": "Tedarikçileri Düzenle",
   "deleteSupplier": "Tedarikçiyi Sil",
-  "confirmDeleteSupplier": "Bu tedarikçiyi silmek istediğinizden emin misiniz?"
+  "confirmDeleteSupplier": "Bu tedarikçiyi silmek istediğinizden emin misiniz?",
+  "nameRequired": "Lütfen eklemek için ad verin.",
+  "selectedProducts": "Seçilen ürünler",
+  "calculate": "Hesaplamak"
 }

@@ -61,7 +61,10 @@ export default function Procurement() {
             setSnackbarOpen={setSnackbarOpen}
           />
 
-          <ProductTables />
+          <ProductTables
+            setSnackbarMessage={setSnackbarMessage}
+            setSnackbarOpen={setSnackbarOpen}
+          />
 
           <Snackbar
             open={snackbarOpen}
