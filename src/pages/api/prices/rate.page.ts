@@ -12,9 +12,12 @@ const index = 1;
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
   const { method, userId } = req as AuthenticatedRequest;
-  const user = await dbClient.user.findUnique({ where: { id: userId } });
-  if (user == null || user.grade !== 'ADMIN') {
-    return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  if (method !== 'GET') {
+    const user = await dbClient.user.findUnique({ where: { id: userId } });
+    if (user == null || user.grade !== 'ADMIN') {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
   }
 
   if (method === 'GET') {
