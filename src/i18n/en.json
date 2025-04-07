@@ -105,5 +105,8 @@
   "supplierName": "Supplier Name",
   "editSuppliers": "Edit Suppliers",
   "deleteSupplier": "Delete Supplier",
-  "confirmDeleteSupplier": "Are you sure you want to delete this supplier?"
+  "confirmDeleteSupplier": "Are you sure you want to delete this supplier?",
+  "nameRequired": "Please provide name to add.",
+  "selectedProducts": "Selected Products",
+  "calculate": "Calculate"
 }
