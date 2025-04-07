@@ -25,6 +25,9 @@ export interface AuthenticatedRequest extends NextApiRequest {
   userId?: string;
 }
 
+const BYPASS_AUTH_PATHS = ['/api/prices/rate', '/api/prices'];
+const BYPASS_AUTH_METHODS = ['GET'];
+
 const withAuth = (
   handler: (
     req: AuthenticatedRequest,
@@ -32,6 +35,13 @@ const withAuth = (
   ) => Promise<void> | void,
 ): NextApiHandler => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
+    if (
+      BYPASS_AUTH_PATHS.includes(req.url as string) &&
+      BYPASS_AUTH_METHODS.includes(req.method)
+    ) {
+      return handler(req, res);
+    }
+
     const authHeader = req.headers.authorization;
     const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
 

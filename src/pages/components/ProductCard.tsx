@@ -86,12 +86,12 @@ export default function ProductCard({
   }, [product?.imgUrls, network]);
 
   useEffect(() => {
-    if (initialProduct == null || accessToken == null) return;
+    if (initialProduct == null) return;
 
     (async () => {
       setProduct(await computeProductPrice(initialProduct, accessToken));
     })();
-  }, [initialProduct, accessToken]);
+  }, [initialProduct]);
 
   return (
     <Card
