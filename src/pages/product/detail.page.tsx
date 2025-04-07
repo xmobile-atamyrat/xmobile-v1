@@ -144,11 +144,11 @@ export default function Product() {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (initialProduct == null || accessToken == null) return;
+    if (initialProduct == null) return;
     (async () => {
       setProduct(await computeProductPriceTags(initialProduct, accessToken));
     })();
-  }, [initialProduct, accessToken]);
+  }, [initialProduct]);
 
   return (
     product && (
