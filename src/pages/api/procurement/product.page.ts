@@ -31,9 +31,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
         return res.status(200).json({ success: true, data: products });
       }
-      const products = await dbClient.procurementProduct.findMany({
-        take: 20, // TODO: implement proper pagination
-      });
+
+      // TODO: implement pagination
+      const products = await dbClient.procurementProduct.findMany();
       return res.status(200).json({ success: true, data: products });
     } catch (error) {
       console.error(error);
