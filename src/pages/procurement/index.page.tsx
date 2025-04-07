@@ -2,6 +2,7 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import ProductTables from '@/pages/procurement/components/ProductTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
 import {
   Alert,
@@ -11,18 +12,19 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+// getStaticProps because translations are static
+export const getStaticProps = (async (context) => {
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
     },
   };
-};
+}) satisfies GetStaticProps<object>;
 
 export default function Procurement() {
   const router = useRouter();
@@ -58,6 +60,8 @@ export default function Procurement() {
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
           />
+
+          <ProductTables />
 
           <Snackbar
             open={snackbarOpen}
