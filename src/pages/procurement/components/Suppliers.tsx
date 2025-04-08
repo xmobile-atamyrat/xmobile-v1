@@ -6,20 +6,24 @@ import { fetchSuppliers } from '@/pages/procurement/lib/apis';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Typography } from '@mui/material';
+import { Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface SuppliersProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  suppliers: Supplier[];
+  setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
 }
 
 export default function Suppliers({
   setSnackbarMessage,
   setSnackbarOpen,
+  setSuppliers,
+  suppliers,
 }: SuppliersProps) {
   const t = useTranslations();
-  const [suppliers, setSuppliers] = useState([]);
   const { accessToken } = useUserContext();
   const [addSupplierDialog, setAddSupplierDialog] = useState(false);
   const [editSupplierDialog, setEditSupplierDialog] = useState(false);

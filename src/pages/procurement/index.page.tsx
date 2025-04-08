@@ -12,6 +12,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { Supplier } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -34,6 +35,7 @@ export default function Procurement() {
   const { user } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
@@ -59,11 +61,14 @@ export default function Procurement() {
           <Suppliers
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
+            setSuppliers={setSuppliers}
+            suppliers={suppliers}
           />
 
           <ProductTables
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
+            suppliers={suppliers}
           />
 
           <Snackbar
