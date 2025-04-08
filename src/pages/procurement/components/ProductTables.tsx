@@ -2,6 +2,7 @@ import { SearchBar } from '@/pages/components/Appbar';
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import {
   Box,
   Button,
@@ -15,7 +16,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct } from '@prisma/client';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import {
   Dispatch,
@@ -28,11 +29,13 @@ import {
 interface ProductTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  suppliers: Supplier[];
 }
 
 export default function ProductTables({
   setSnackbarMessage,
   setSnackbarOpen,
+  suppliers,
 }: ProductTablesProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
   const { accessToken } = useUserContext();
@@ -41,6 +44,7 @@ export default function ProductTables({
     ProcurementProduct[]
   >([]);
   const t = useTranslations();
+  const [calculateDialog, setCalculateDialog] = useState(false);
 
   const handleSearch = useCallback(
     debounce(async (keyword: string) => {
@@ -174,9 +178,6 @@ export default function ProductTables({
                   >
                     {product.name}
                   </TableCell>
-                  {/* <IconButton className="flex items-center h-full">
-                    <DeleteIcon color="error" />
-                  </IconButton> */}
                 </TableRow>
               ))}
             </TableBody>
@@ -197,7 +198,13 @@ export default function ProductTables({
                     <Typography fontWeight={600} fontSize={16}>
                       {t('selectedProducts')}
                     </Typography>
-                    <Button>{t('calculate')}</Button>
+                    <Button
+                      onClick={() => {
+                        setCalculateDialog(true);
+                      }}
+                    >
+                      {t('calculate')}
+                    </Button>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -220,6 +227,14 @@ export default function ProductTables({
           </Table>
         </TableContainer>
       </Box>
+
+      {calculateDialog && (
+        <CalculateDialog
+          products={selectedProducts}
+          suppliers={suppliers}
+          handleClose={() => setCalculateDialog(false)}
+        />
+      )}
     </Box>
   );
 }
