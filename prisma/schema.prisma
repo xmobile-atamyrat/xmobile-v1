@@ -16,7 +16,8 @@ model User {
   grade           UserRole    @default(FREE)
   phoneNumber     String?
 
-  cartItems        CartItem[]
+  cartItems       CartItem[]
+  chatSession     ChatSession[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -144,4 +145,34 @@ enum UserRole {
   FREE
   ADMIN
   SUPERUSER
+}
+
+model ChatSession {
+  id              String        @id @default(uuid())
+  status          String        @default("open")
+
+  user            User          @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId          String
+
+  messages        ChatMessage[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+}
+
+model ChatMessage {
+  id              String        @id @default(cuid())
+  senderId        String
+  senderRole      UserRole
+  content         String
+  isRead          Boolean       @default(false)
+
+  session         ChatSession   @relation(references: [id], fields: [sessionId], onDelete: Cascade)
+  sessionId       String
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([sessionId, createdAt])
 }
