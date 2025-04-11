@@ -109,5 +109,7 @@
   "nameRequired": "Please provide name to add.",
   "selectedProducts": "Selected Products",
   "calculate": "Calculate",
-  "productAlreadySelected": "Product has already been selected."
+  "productAlreadySelected": "Product has already been selected.",
+  "remove": "Remove",
+  "confirmRemoveProduct": "Are you sure you want to remove this product?"
 }

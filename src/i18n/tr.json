@@ -109,5 +109,7 @@
   "nameRequired": "Lütfen eklemek için ad verin.",
   "selectedProducts": "Seçilen ürünler",
   "calculate": "Hesaplamak",
-  "productAlreadySelected": "Ürün zaten seçildi."
+  "productAlreadySelected": "Ürün zaten seçildi.",
+  "remove": "Kaldırmak",
+  "confirmRemoveProduct": "Bu ürünü kaldırmak istediğinizden emin misiniz?"
 }
