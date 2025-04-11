@@ -1,4 +1,5 @@
 import { SearchBar } from '@/pages/components/Appbar';
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -45,6 +46,7 @@ export default function ProductTables({
   >([]);
   const t = useTranslations();
   const [calculateDialog, setCalculateDialog] = useState(false);
+  const [removeSelectedProduct, setRemoveSelectedProduct] = useState<string>();
 
   const handleSearch = useCallback(
     debounce(async (keyword: string) => {
@@ -222,9 +224,7 @@ export default function ProductTables({
                 <TableRow key={id}>
                   <TableCell
                     onClick={() => {
-                      setSelectedProducts(
-                        selectedProducts.filter((product) => product.id !== id),
-                      );
+                      setRemoveSelectedProduct(id);
                     }}
                   >
                     {name}
@@ -241,6 +241,21 @@ export default function ProductTables({
           products={selectedProducts}
           suppliers={suppliers}
           handleClose={() => setCalculateDialog(false)}
+        />
+      )}
+
+      {removeSelectedProduct && (
+        <DeleteDialog
+          title={t('remove')}
+          description={t('confirmRemoveProduct')}
+          handleClose={() => setRemoveSelectedProduct(undefined)}
+          handleDelete={async () => {
+            setSelectedProducts(
+              selectedProducts.filter(
+                (product) => product.id !== removeSelectedProduct,
+              ),
+            );
+          }}
         />
       )}
     </Box>

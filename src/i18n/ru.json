@@ -111,5 +111,7 @@
   "nameRequired": "Пожалуйста, укажите имя, чтобы добавить.",
   "selectedProducts": "Выбранные продукты",
   "calculate": "Рассчитать",
-  "productAlreadySelected": "Продукт уже был выбран."
+  "productAlreadySelected": "Продукт уже был выбран.",
+  "remove": "Удалять",
+  "confirmRemoveProduct": "Вы уверены, что хотите удалить этот продукт?"
 }

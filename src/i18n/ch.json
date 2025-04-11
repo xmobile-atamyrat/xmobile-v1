@@ -111,5 +111,7 @@
   "nameRequired": "Goşmak üçin at bermegiňizi haýyş edýäris.",
   "selectedProducts": "Saýlanan önümler",
   "calculate": "Hasapla",
-  "productAlreadySelected": "Önüm eýýäm saýlandy."
+  "productAlreadySelected": "Önüm eýýäm saýlandy.",
+  "remove": "Aýyrmak",
+  "confirmRemoveProduct": "Bu önümi aýyrmak isleýändigiňize ynanýarsyňyzmy?"
 }
