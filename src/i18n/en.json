@@ -111,5 +111,8 @@
   "calculate": "Calculate",
   "productAlreadySelected": "Product has already been selected.",
   "remove": "Remove",
-  "confirmRemoveProduct": "Are you sure you want to remove this product?"
+  "confirmRemoveProduct": "Are you sure you want to remove this product?",
+  "clear": "Clear",
+  "download": "Download",
+  "quantity": "Quantity"
 }

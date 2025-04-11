@@ -113,5 +113,8 @@
   "calculate": "Рассчитать",
   "productAlreadySelected": "Продукт уже был выбран.",
   "remove": "Удалять",
-  "confirmRemoveProduct": "Вы уверены, что хотите удалить этот продукт?"
+  "confirmRemoveProduct": "Вы уверены, что хотите удалить этот продукт?",
+  "clear": "Oчистить",
+  "download": "Скачать",
+  "quantity": "Количество"
 }
