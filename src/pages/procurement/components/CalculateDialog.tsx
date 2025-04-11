@@ -150,9 +150,9 @@ export default function CalculateDialog({
             color="primary"
             onClick={async () => {
               const today = new Date();
-              const day = today.getDate(); // Returns the day of the month (1-31)
-              const month = today.getMonth() + 1; // Returns the month (0-11), so add 1
-              const year = today.getFullYear(); // Returns the full year (e.g., 2025)
+              const day = today.getDate();
+              const month = today.getMonth() + 1;
+              const year = today.getFullYear();
               const formattedDay = String(day).padStart(2, '0');
               const formattedMonth = String(month).padStart(2, '0');
               const formattedDate = `${formattedDay}-${formattedMonth}-${year}`;
@@ -177,7 +177,7 @@ export default function CalculateDialog({
 
                   return {
                     filename: `Rahmanov-${supplier.name}-${formattedDate}.csv`,
-                    data: fileData,
+                    data: [['', 'Quantity', 'Price'], ...fileData],
                   };
                 },
               );
