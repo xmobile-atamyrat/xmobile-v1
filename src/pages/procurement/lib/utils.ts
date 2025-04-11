@@ -5,7 +5,7 @@ export interface CsvFileData {
   filename: string;
 }
 
-function escapeCsvCellTs(cell: any): string {
+function escapeCsvCell(cell: any): string {
   if (cell == null) {
     return '';
   }
@@ -23,13 +23,13 @@ function escapeCsvCellTs(cell: any): string {
   return cellString;
 }
 
-function arrayToCsvTs(data: (string | number)[][]): string {
+function arrayToCsv(data: (string | number)[][]): string {
   if (!Array.isArray(data) || !data.every(Array.isArray)) {
     console.error('Input data must be a 2D array.');
     return '';
   }
   try {
-    return data.map((row) => row.map(escapeCsvCellTs).join(',')).join('\n');
+    return data.map((row) => row.map(escapeCsvCell).join(',')).join('\n');
   } catch (error) {
     console.error('Error converting array to CSV:', error);
     return '';
@@ -67,7 +67,7 @@ export async function downloadCsvAsZip(
       filename += '.csv';
     }
 
-    const csvString = arrayToCsvTs(fileInfo.data);
+    const csvString = arrayToCsv(fileInfo.data);
     if (csvString) {
       zip.file(filename, csvString);
     } else {
