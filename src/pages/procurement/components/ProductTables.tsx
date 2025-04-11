@@ -173,6 +173,14 @@ export default function ProductTables({
                 <TableRow key={product.id}>
                   <TableCell
                     onClick={() => {
+                      if (selectedProducts.some((p) => p.id === product.id)) {
+                        setSnackbarMessage({
+                          message: 'productAlreadySelected',
+                          severity: 'error',
+                        });
+                        setSnackbarOpen(true);
+                        return;
+                      }
                       setSelectedProducts([product, ...selectedProducts]);
                     }}
                   >

@@ -48,8 +48,8 @@ export default function DeleteDialog({
           onClick={async () => {
             setLoading(true);
             await handleDelete();
-            handleClose();
             setLoading(false);
+            handleClose();
           }}
           color="error"
           autoFocus
