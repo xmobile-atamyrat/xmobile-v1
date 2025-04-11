@@ -1,3 +1,4 @@
+import { CsvFileData, downloadCsvAsZip } from '@/pages/procurement/lib/utils';
 import {
   Box,
   Button,
@@ -40,9 +41,9 @@ export default function CalculateDialog({
   const [prices, setPrices] = useState<{ value: number; color: Color }[][]>(
     emptyPrices(products, suppliers),
   );
-  const [productQuantity, setProductQuantity] = useState<
-    { [id: string]: number }[]
-  >([]);
+  const [productQuantity, setProductQuantity] = useState<number[]>(
+    Array(products.length),
+  );
   const [calculationDone, setCalculationDone] = useState(false);
 
   const handleCalculate = useCallback(() => {
@@ -97,16 +98,14 @@ export default function CalculateDialog({
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={productQuantity[prdIdx]?.quantity}
+                      value={productQuantity[prdIdx]}
                       type="number"
                       onChange={(e) => {
                         const newProductQuantity = [...productQuantity];
-                        newProductQuantity[prdIdx] = {
-                          [product.id]:
-                            e.target.value === ''
-                              ? undefined
-                              : Number(e.target.value),
-                        };
+                        newProductQuantity[prdIdx] =
+                          e.target.value === ''
+                            ? undefined
+                            : Number(e.target.value);
                         setProductQuantity(newProductQuantity);
                       }}
                     />
@@ -149,8 +148,41 @@ export default function CalculateDialog({
           <Button
             variant="contained"
             color="primary"
-            onClick={() => {
-              //
+            onClick={async () => {
+              const today = new Date();
+              const day = today.getDate(); // Returns the day of the month (1-31)
+              const month = today.getMonth() + 1; // Returns the month (0-11), so add 1
+              const year = today.getFullYear(); // Returns the full year (e.g., 2025)
+              const formattedDay = String(day).padStart(2, '0');
+              const formattedMonth = String(month).padStart(2, '0');
+              const formattedDate = `${formattedDay}-${formattedMonth}-${year}`;
+
+              const csvFileData: CsvFileData[] = suppliers.map(
+                (supplier, splIdx) => {
+                  const fileData = prices
+                    .filter((row, prdIdx) => {
+                      return (
+                        row[splIdx]?.value &&
+                        productQuantity[prdIdx] &&
+                        row[splIdx]?.color === 'green'
+                      );
+                    })
+                    .map((row, prdIdx) => {
+                      return [
+                        products[prdIdx].name,
+                        productQuantity[prdIdx],
+                        row[splIdx].value,
+                      ];
+                    });
+
+                  return {
+                    filename: `Rahmanov-${supplier.name}-${formattedDate}.csv`,
+                    data: fileData,
+                  };
+                },
+              );
+
+              await downloadCsvAsZip(csvFileData, 'prices.zip');
             }}
             disabled={!calculationDone}
           >
