@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -16,7 +17,7 @@ import {
 } from '@mui/material';
 import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface CalculateDialogProps {
   suppliers: Supplier[];
@@ -26,6 +27,9 @@ interface CalculateDialogProps {
 
 type Color = 'red' | 'green' | 'orange';
 
+const emptyPrices = (products: ProcurementProduct[], suppliers: Supplier[]) =>
+  Array.from({ length: products.length }, () => Array(suppliers.length));
+
 export default function CalculateDialog({
   products,
   suppliers,
@@ -34,8 +38,12 @@ export default function CalculateDialog({
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<{ value: number; color: Color }[][]>(
-    Array.from({ length: products.length }, () => Array(suppliers.length)),
+    emptyPrices(products, suppliers),
   );
+  const [productQuantity, setProductQuantity] = useState<
+    { [id: string]: number }[]
+  >([]);
+  const [calculationDone, setCalculationDone] = useState(false);
 
   const handleCalculate = useCallback(() => {
     const newPrices = prices.map((row) => {
@@ -60,6 +68,11 @@ export default function CalculateDialog({
     setPrices(newPrices);
   }, [prices]);
 
+  useEffect(() => {
+    console.info(prices);
+    console.info(productQuantity);
+  }, [prices, productQuantity]);
+
   return (
     <Dialog open fullScreen>
       <DialogTitle>{t('calculate')}</DialogTitle>
@@ -69,6 +82,7 @@ export default function CalculateDialog({
             <TableHead>
               <TableRow>
                 <TableCell></TableCell>
+                <TableCell align="center">{t('quantity')}</TableCell>
                 {suppliers.map((supplier) => (
                   <TableCell key={supplier.id} align="center">
                     {supplier.name}
@@ -80,6 +94,23 @@ export default function CalculateDialog({
               {products.map((product, prdIdx) => (
                 <TableRow key={product.id}>
                   <TableCell align="left">{product.name}</TableCell>
+                  <TableCell align="center">
+                    <TextField
+                      size="small"
+                      value={productQuantity[prdIdx]?.quantity}
+                      type="number"
+                      onChange={(e) => {
+                        const newProductQuantity = [...productQuantity];
+                        newProductQuantity[prdIdx] = {
+                          [product.id]:
+                            e.target.value === ''
+                              ? undefined
+                              : Number(e.target.value),
+                        };
+                        setProductQuantity(newProductQuantity);
+                      }}
+                    />
+                  </TableCell>
                   {suppliers.map((supplier, splIdx) => (
                     <TableCell key={supplier.id} align="center">
                       <TextField
@@ -110,21 +141,48 @@ export default function CalculateDialog({
           </Table>
         </TableContainer>
       </DialogContent>
-      <DialogActions>
-        <Button variant="contained" color="error" onClick={handleClose}>
-          {t('cancel')}
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            setLoading(true);
-            handleCalculate();
-            setLoading(false);
-          }}
-        >
-          {t('calculate')}
-        </Button>
+      <DialogActions className="flex justify-between px-8">
+        <Box className="flex gap-4">
+          <Button variant="contained" color="error" onClick={handleClose}>
+            {t('cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              //
+            }}
+            disabled={!calculationDone}
+          >
+            {t('download')}
+          </Button>
+        </Box>
+
+        <Box className="flex gap-4">
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              // TODO: implement a confirmation dialog
+              // setPrices(emptyPrices(products, suppliers));
+              // setCalculationDone(false);
+            }}
+          >
+            {t('clear')}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              setLoading(true);
+              handleCalculate();
+              setCalculationDone(true);
+              setLoading(false);
+            }}
+          >
+            {t('calculate')}
+          </Button>
+        </Box>
       </DialogActions>
 
       {loading && <CircularProgress />}
