@@ -108,5 +108,6 @@
   "confirmDeleteSupplier": "Bu tedarikçiyi silmek istediğinizden emin misiniz?",
   "nameRequired": "Lütfen eklemek için ad verin.",
   "selectedProducts": "Seçilen ürünler",
-  "calculate": "Hesaplamak"
+  "calculate": "Hesaplamak",
+  "productAlreadySelected": "Ürün zaten seçildi."
 }

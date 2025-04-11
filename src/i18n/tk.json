@@ -110,5 +110,6 @@
   "confirmDeleteSupplier": "Bu üpjün edijini pozmak isleýändigiňize ynanýarsyňyzmy?",
   "nameRequired": "Goşmak üçin at bermegiňizi haýyş edýäris.",
   "selectedProducts": "Saýlanan önümler",
-  "calculate": "Hasapla"
+  "calculate": "Hasapla",
+  "productAlreadySelected": "Önüm eýýäm saýlandy."
 }
