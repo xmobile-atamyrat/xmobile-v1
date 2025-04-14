@@ -116,5 +116,6 @@
   "confirmRemoveProduct": "Вы уверены, что хотите удалить этот продукт?",
   "clear": "Oчистить",
   "download": "Скачать",
-  "quantity": "Количество"
+  "quantity": "Количество",
+  "calculationDone": "Успешно запустил расчеты!"
 }

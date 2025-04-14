@@ -114,5 +114,6 @@
   "confirmRemoveProduct": "Bu ürünü kaldırmak istediğinizden emin misiniz?",
   "clear": "Clear",
   "download": "Download",
-  "quantity": "Quantity"
+  "quantity": "Quantity",
+  "calculationDone": "Başarılı bir şekilde hesaplamalar yaptı!"
 }
