@@ -1,4 +1,8 @@
-import { CsvFileData, downloadCsvAsZip } from '@/pages/procurement/lib/utils';
+import { SnackbarProps } from '@/pages/lib/types';
+import {
+  ExcelFileData,
+  downloadXlsxAsZip,
+} from '@/pages/procurement/lib/utils';
 import {
   Box,
   Button,
@@ -18,12 +22,14 @@ import {
 } from '@mui/material';
 import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
   suppliers: Supplier[];
   products: ProcurementProduct[];
   handleClose: () => void;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 type Color = 'red' | 'green' | 'orange';
@@ -35,6 +41,8 @@ export default function CalculateDialog({
   products,
   suppliers,
   handleClose,
+  setSnackbarMessage,
+  setSnackbarOpen,
 }: CalculateDialogProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
@@ -69,10 +77,10 @@ export default function CalculateDialog({
     setPrices(newPrices);
   }, [prices]);
 
-  useEffect(() => {
-    console.info(prices);
-    console.info(productQuantity);
-  }, [prices, productQuantity]);
+  // useEffect(() => {
+  //   console.info(prices);
+  //   console.info(productQuantity);
+  // }, [prices, productQuantity]);
 
   return (
     <Dialog open fullScreen>
@@ -98,7 +106,7 @@ export default function CalculateDialog({
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={productQuantity[prdIdx]}
+                      value={productQuantity[prdIdx] ?? ''}
                       type="number"
                       onChange={(e) => {
                         const newProductQuantity = [...productQuantity];
@@ -157,8 +165,8 @@ export default function CalculateDialog({
               const formattedMonth = String(month).padStart(2, '0');
               const formattedDate = `${formattedDay}-${formattedMonth}-${year}`;
 
-              const csvFileData: CsvFileData[] = suppliers.map(
-                (supplier, splIdx) => {
+              const csvFileData: ExcelFileData[] = suppliers
+                .map((supplier, splIdx) => {
                   const fileData = prices
                     .filter((row, prdIdx) => {
                       return (
@@ -171,18 +179,18 @@ export default function CalculateDialog({
                       return [
                         products[prdIdx].name,
                         productQuantity[prdIdx],
-                        row[splIdx].value,
+                        `$${row[splIdx].value}`,
                       ];
                     });
 
                   return {
-                    filename: `Rahmanov-${supplier.name}-${formattedDate}.csv`,
+                    filename: `Rahmanov-${supplier.name}-${formattedDate}`,
                     data: [['', 'Quantity', 'Price'], ...fileData],
                   };
-                },
-              );
+                })
+                .filter((data) => data.data.length > 1);
 
-              await downloadCsvAsZip(csvFileData, 'prices.zip');
+              await downloadXlsxAsZip(csvFileData, 'prices.zip');
             }}
             disabled={!calculationDone}
           >
@@ -193,22 +201,16 @@ export default function CalculateDialog({
         <Box className="flex gap-4">
           <Button
             variant="contained"
-            color="error"
-            onClick={() => {
-              // TODO: implement a confirmation dialog
-              // setPrices(emptyPrices(products, suppliers));
-              // setCalculationDone(false);
-            }}
-          >
-            {t('clear')}
-          </Button>
-          <Button
-            variant="contained"
             color="primary"
             onClick={() => {
               setLoading(true);
               handleCalculate();
               setCalculationDone(true);
+              setSnackbarMessage({
+                message: t('calculationDone'),
+                severity: 'success',
+              });
+              setSnackbarOpen(true);
               setLoading(false);
             }}
           >

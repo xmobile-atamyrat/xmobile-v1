@@ -241,6 +241,8 @@ export default function ProductTables({
           products={selectedProducts}
           suppliers={suppliers}
           handleClose={() => setCalculateDialog(false)}
+          setSnackbarMessage={setSnackbarMessage}
+          setSnackbarOpen={setSnackbarOpen}
         />
       )}
 
