@@ -1,6 +1,6 @@
-import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { createSupplier } from '@/pages/procurement/lib/apis';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
@@ -47,13 +47,9 @@ export default function AddSupplierDialog({
           );
           const formJson = Object.fromEntries(formData.entries());
           const { supplierName } = formJson;
-          const { success, data, message } = await fetchWithCreds<Supplier>(
+          const { success, data, message } = await createSupplier(
             accessToken,
-            '/api/procurement/supplier',
-            'POST',
-            {
-              name: supplierName,
-            },
+            supplierName as string,
           );
           if (success) {
             setSuppliers((currentSuppliers) => [...currentSuppliers, data]);

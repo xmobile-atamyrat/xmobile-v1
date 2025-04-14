@@ -19,6 +19,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (method === 'GET') {
     try {
+      const { searchKeyword } = req.query;
+      if (searchKeyword) {
+        const suppliers = await dbClient.supplier.findMany({
+          where: {
+            name: {
+              contains: searchKeyword as string,
+              mode: 'insensitive',
+            },
+          },
+        });
+        return res.status(200).json({ success: true, data: suppliers });
+      }
       const suppliers = await dbClient.supplier.findMany();
       return res.status(200).json({ success: true, data: suppliers });
     } catch (error) {

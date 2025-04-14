@@ -13,16 +13,16 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct } from '@prisma/client';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface DualTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
-  products: ProcurementProduct[];
-  selectedProducts: ProcurementProduct[];
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  items: (ProcurementProduct | Supplier)[];
+  selectedItems: ProcurementProduct[];
+  setSelectedItems: Dispatch<SetStateAction<ProcurementProduct[]>>;
   handleSearch: (...args: any[]) => void;
   createProduct: (keyword: string) => Promise<void>;
 }
@@ -30,9 +30,9 @@ interface DualTablesProps {
 export default function DualTables({
   setSnackbarMessage,
   setSnackbarOpen,
-  products,
-  selectedProducts,
-  setSelectedProducts,
+  items,
+  selectedItems,
+  setSelectedItems,
   handleSearch,
   createProduct,
 }: DualTablesProps) {
@@ -42,9 +42,9 @@ export default function DualTables({
   const [removeSelected, setRemoveSelected] = useState<string>();
 
   return (
-    <Box className="flex flex-row h-full w-full min-h-[400px] gap-8 items-center">
+    <Box className="flex flex-row w-full gap-8 items-center">
       {/* Product list */}
-      <Box className="flex flex-col h-[600px] w-1/2 items-start">
+      <Box className="flex flex-col min-h-[400px] max-h-[600px] w-1/2 items-start">
         <TableContainer component={Paper}>
           <Table className="w-full h-full" stickyHeader>
             <TableHead>
@@ -70,11 +70,11 @@ export default function DualTables({
               </TableRow>
             </TableHead>
             <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id}>
+              {items.map((item) => (
+                <TableRow key={item.id}>
                   <TableCell
                     onClick={() => {
-                      if (selectedProducts.some((p) => p.id === product.id)) {
+                      if (selectedItems.some((p) => p.id === item.id)) {
                         setSnackbarMessage({
                           message: 'productAlreadySelected',
                           severity: 'error',
@@ -82,10 +82,10 @@ export default function DualTables({
                         setSnackbarOpen(true);
                         return;
                       }
-                      setSelectedProducts([product, ...selectedProducts]);
+                      setSelectedItems([item, ...selectedItems]);
                     }}
                   >
-                    {product.name}
+                    {item.name}
                   </TableCell>
                 </TableRow>
               ))}
@@ -97,7 +97,7 @@ export default function DualTables({
         {'>'}
       </Typography>
       {/* Selected products */}
-      <Box className="flex flex-col h-[600px] w-1/2 items-start">
+      <Box className="flex flex-col min-h-[400px] max-h-[600px] w-1/2 items-start">
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -105,14 +105,14 @@ export default function DualTables({
                 <TableCell colSpan={3}>
                   <Box className="flex flex-row gap-4 items-center w-full justify-between">
                     <Typography fontWeight={600} fontSize={16}>
-                      {t('selectedProducts')}
+                      {t('selectedItems')}
                     </Typography>
                   </Box>
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {selectedProducts.map(({ name, id }) => (
+              {selectedItems.map(({ name, id }) => (
                 <TableRow key={id}>
                   <TableCell
                     onClick={() => {
@@ -134,10 +134,8 @@ export default function DualTables({
           description={t('confirmRemoveProduct')}
           handleClose={() => setRemoveSelected(undefined)}
           handleDelete={async () => {
-            setSelectedProducts(
-              selectedProducts.filter(
-                (product) => product.id !== removeSelected,
-              ),
+            setSelectedItems(
+              selectedItems.filter((product) => product.id !== removeSelected),
             );
           }}
         />

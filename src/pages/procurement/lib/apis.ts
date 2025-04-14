@@ -35,6 +35,17 @@ export const getProcurementProducts = async (
   return fetchWithCreds<ProcurementProduct[]>(accessToken, url, 'GET');
 };
 
+export const getSuppliers = async (
+  accessToken: string,
+  searchKeyword?: string,
+): Promise<ResponseApi<Supplier[]>> => {
+  let url = '/api/procurement/supplier';
+  if (searchKeyword) {
+    url += `?searchKeyword=${searchKeyword}`;
+  }
+  return fetchWithCreds<Supplier[]>(accessToken, url, 'GET');
+};
+
 export const createProcurementProduct = async (
   accessToken: string,
   name: string,
@@ -42,6 +53,20 @@ export const createProcurementProduct = async (
   return fetchWithCreds<ProcurementProduct>(
     accessToken,
     '/api/procurement/product',
+    'POST',
+    {
+      name,
+    },
+  );
+};
+
+export const createSupplier = async (
+  accessToken: string,
+  name: string,
+): Promise<ResponseApi<Supplier>> => {
+  return fetchWithCreds<Supplier>(
+    accessToken,
+    '/api/procurement/supplier',
     'POST',
     {
       name,
