@@ -3,7 +3,6 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import {
   Box,
   Button,
@@ -17,7 +16,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import { ProcurementProduct } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import {
   Dispatch,
@@ -30,22 +29,24 @@ import {
 interface ProductTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
-  suppliers: Supplier[];
+  products: ProcurementProduct[];
+  selectedProducts: ProcurementProduct[];
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
 }
 
 export default function ProductTables({
   setSnackbarMessage,
   setSnackbarOpen,
-  suppliers,
+  products,
+  selectedProducts,
+  setProducts,
+  setSelectedProducts,
 }: ProductTablesProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
   const { accessToken } = useUserContext();
-  const [products, setProducts] = useState<ProcurementProduct[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<
-    ProcurementProduct[]
-  >([]);
+
   const t = useTranslations();
-  const [calculateDialog, setCalculateDialog] = useState(false);
   const [removeSelectedProduct, setRemoveSelectedProduct] = useState<string>();
 
   const handleSearch = useCallback(
@@ -208,13 +209,6 @@ export default function ProductTables({
                     <Typography fontWeight={600} fontSize={16}>
                       {t('selectedProducts')}
                     </Typography>
-                    <Button
-                      onClick={() => {
-                        setCalculateDialog(true);
-                      }}
-                    >
-                      {t('calculate')}
-                    </Button>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -235,16 +229,6 @@ export default function ProductTables({
           </Table>
         </TableContainer>
       </Box>
-
-      {calculateDialog && (
-        <CalculateDialog
-          products={selectedProducts}
-          suppliers={suppliers}
-          handleClose={() => setCalculateDialog(false)}
-          setSnackbarMessage={setSnackbarMessage}
-          setSnackbarOpen={setSnackbarOpen}
-        />
-      )}
 
       {removeSelectedProduct && (
         <DeleteDialog
