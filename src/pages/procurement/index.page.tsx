@@ -90,7 +90,7 @@ export default function Procurement() {
         setSnackbarMessage,
       );
     },
-    [accessToken, products],
+    [accessToken],
   );
 
   const createSupplier = useCallback(
@@ -103,7 +103,7 @@ export default function Procurement() {
         setSnackbarMessage,
       );
     },
-    [accessToken, products],
+    [accessToken],
   );
 
   useEffect(() => {
