@@ -1,11 +1,14 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import ProductTables from '@/pages/procurement/components/ProductTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
+import {
+  createProcurementProduct,
+  getProcurementProducts,
+} from '@/pages/procurement/lib/apis';
 import { debounce } from '@/pages/product/utils';
 import {
   Alert,
@@ -50,12 +53,9 @@ export default function Procurement() {
   const handleSearch = useCallback(
     debounce(async (keyword: string) => {
       try {
-        const { success, data, message } = await fetchWithCreds<
-          ProcurementProduct[]
-        >(
+        const { success, data, message } = await getProcurementProducts(
           accessToken,
-          `/api/procurement/product?searchKeyword=${keyword}`,
-          'GET',
+          keyword,
         );
         if (success) {
           setProducts(data);
@@ -91,15 +91,10 @@ export default function Procurement() {
       }
 
       try {
-        const { success, data, message } =
-          await fetchWithCreds<ProcurementProduct>(
-            accessToken,
-            '/api/procurement/product',
-            'POST',
-            {
-              name: keyword,
-            },
-          );
+        const { success, data, message } = await createProcurementProduct(
+          accessToken,
+          keyword,
+        );
         if (success) {
           setProducts([data]);
         } else {
@@ -126,9 +121,8 @@ export default function Procurement() {
     if (accessToken) {
       (async () => {
         try {
-          const { success, data, message } = await fetchWithCreds<
-            ProcurementProduct[]
-          >(accessToken, `/api/procurement/product`, 'GET');
+          const { success, data, message } =
+            await getProcurementProducts(accessToken);
           if (success) {
             setProducts(data);
           } else {
