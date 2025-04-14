@@ -2,17 +2,19 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import ProductTables from '@/pages/procurement/components/ProductTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
 import {
   Alert,
   Box,
+  Button,
   Snackbar,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Supplier } from '@prisma/client';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -35,7 +37,13 @@ export default function Procurement() {
   const { user } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [products, setProducts] = useState<ProcurementProduct[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<
+    ProcurementProduct[]
+  >([]);
+  const [calculateDialog, setCalculateDialog] = useState(false);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
@@ -52,9 +60,18 @@ export default function Procurement() {
           }}
           className="flex flex-col gap-4 w-full h-full"
         >
-          <Typography fontWeight={600} fontSize={20}>
-            {t('procurement')}
-          </Typography>
+          <Box className="flex flex-row justify-between">
+            <Typography fontWeight={600} fontSize={20}>
+              {t('procurement')}
+            </Typography>
+            <Button
+              onClick={() => {
+                setCalculateDialog(true);
+              }}
+            >
+              {t('calculate')}
+            </Button>
+          </Box>
 
           <Suppliers
             setSnackbarMessage={setSnackbarMessage}
@@ -66,8 +83,21 @@ export default function Procurement() {
           <ProductTables
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
-            suppliers={suppliers}
+            products={products}
+            selectedProducts={selectedProducts}
+            setProducts={setProducts}
+            setSelectedProducts={setSelectedProducts}
           />
+
+          {calculateDialog && (
+            <CalculateDialog
+              products={selectedProducts}
+              suppliers={suppliers}
+              handleClose={() => setCalculateDialog(false)}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+            />
+          )}
 
           <Snackbar
             open={snackbarOpen}
