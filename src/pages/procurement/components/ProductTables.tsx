@@ -1,12 +1,9 @@
 import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
 import {
   Box,
   Button,
-  debounce,
   Paper,
   Table,
   TableBody,
@@ -18,21 +15,16 @@ import {
 } from '@mui/material';
 import { ProcurementProduct } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 interface ProductTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   products: ProcurementProduct[];
   selectedProducts: ProcurementProduct[];
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
   setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  handleSearch: (...args: any[]) => void;
+  createProduct: (keyword: string) => Promise<void>;
 }
 
 export default function ProductTables({
@@ -40,114 +32,14 @@ export default function ProductTables({
   setSnackbarOpen,
   products,
   selectedProducts,
-  setProducts,
   setSelectedProducts,
+  handleSearch,
+  createProduct,
 }: ProductTablesProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
-  const { accessToken } = useUserContext();
 
   const t = useTranslations();
-  const [removeSelectedProduct, setRemoveSelectedProduct] = useState<string>();
-
-  const handleSearch = useCallback(
-    debounce(async (keyword: string) => {
-      try {
-        const { success, data, message } = await fetchWithCreds<
-          ProcurementProduct[]
-        >(
-          accessToken,
-          `/api/procurement/product?searchKeyword=${keyword}`,
-          'GET',
-        );
-        if (success) {
-          setProducts(data);
-        } else {
-          console.error(message);
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'serverError',
-            severity: 'error',
-          });
-        }
-      } catch (error) {
-        console.error(error);
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'fetchPricesError',
-          severity: 'error',
-        });
-      }
-    }, 300),
-    [debounce, accessToken],
-  );
-
-  const createProduct = useCallback(async () => {
-    if (searchKeyword == null || searchKeyword === '') {
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'nameRequired',
-        severity: 'error',
-      });
-      return;
-    }
-
-    try {
-      const { success, data, message } =
-        await fetchWithCreds<ProcurementProduct>(
-          accessToken,
-          '/api/procurement/product',
-          'POST',
-          {
-            name: searchKeyword,
-          },
-        );
-      if (success) {
-        setProducts([data]);
-      } else {
-        console.error(message);
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'serverError',
-          severity: 'error',
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  }, [accessToken, searchKeyword, products]);
-
-  useEffect(() => {
-    if (accessToken) {
-      (async () => {
-        try {
-          const { success, data, message } = await fetchWithCreds<
-            ProcurementProduct[]
-          >(accessToken, `/api/procurement/product`, 'GET');
-          if (success) {
-            setProducts(data);
-          } else {
-            setSnackbarOpen(true);
-            setSnackbarMessage({
-              message,
-              severity: 'error',
-            });
-          }
-        } catch (error) {
-          console.error(error);
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'fetchPricesError',
-            severity: 'error',
-          });
-        }
-      })();
-    }
-  }, [accessToken]);
+  const [removeSelected, setRemoveSelected] = useState<string>();
 
   return (
     <Box className="flex flex-row h-full w-full min-h-[400px] gap-8 items-center">
@@ -166,7 +58,13 @@ export default function ProductTables({
                       setSearchKeyword,
                       width: '100%',
                     })}
-                    <Button onClick={createProduct}>{t('add')}</Button>
+                    <Button
+                      onClick={async () => {
+                        await createProduct(searchKeyword);
+                      }}
+                    >
+                      {t('add')}
+                    </Button>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -218,7 +116,7 @@ export default function ProductTables({
                 <TableRow key={id}>
                   <TableCell
                     onClick={() => {
-                      setRemoveSelectedProduct(id);
+                      setRemoveSelected(id);
                     }}
                   >
                     {name}
@@ -230,15 +128,15 @@ export default function ProductTables({
         </TableContainer>
       </Box>
 
-      {removeSelectedProduct && (
+      {removeSelected && (
         <DeleteDialog
           title={t('remove')}
           description={t('confirmRemoveProduct')}
-          handleClose={() => setRemoveSelectedProduct(undefined)}
+          handleClose={() => setRemoveSelected(undefined)}
           handleDelete={async () => {
             setSelectedProducts(
               selectedProducts.filter(
-                (product) => product.id !== removeSelectedProduct,
+                (product) => product.id !== removeSelected,
               ),
             );
           }}
