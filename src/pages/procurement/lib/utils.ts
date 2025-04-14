@@ -1,9 +1,11 @@
 import { SnackbarProps } from '@/pages/lib/types';
 import {
   createProcurementProduct,
+  createSupplier,
   getProcurementProducts,
+  getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import { ProcurementProduct } from '@prisma/client';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { Dispatch, SetStateAction } from 'react';
@@ -173,6 +175,35 @@ export async function handleProductSearchUtil(
   }
 }
 
+export async function handleSupplierSearchUtil(
+  accessToken: string,
+  keyword: string,
+  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await getSuppliers(accessToken, keyword);
+    if (success) {
+      setSuppliers(data);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'fetchPricesError',
+      severity: 'error',
+    });
+  }
+}
+
 export async function createProductUtil(
   accessToken: string,
   keyword: string,
@@ -214,6 +245,47 @@ export async function createProductUtil(
   }
 }
 
+export async function createSupplierUtil(
+  accessToken: string,
+  keyword: string,
+  setSupplier: Dispatch<SetStateAction<Supplier[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  if (keyword == null || keyword === '') {
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'nameRequired',
+      severity: 'error',
+    });
+    return;
+  }
+
+  try {
+    const { success, data, message } = await createSupplier(
+      accessToken,
+      keyword,
+    );
+    if (success) {
+      setSupplier([data]);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
 export async function getProductsUtil(
   accessToken: string,
   setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
@@ -225,6 +297,33 @@ export async function getProductsUtil(
       await getProcurementProducts(accessToken);
     if (success) {
       setProducts(data);
+    } else {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message,
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'fetchPricesError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function getSuppliersUtil(
+  accessToken: string,
+  setSuppliers: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await getSuppliers(accessToken);
+    if (success) {
+      setSuppliers(data);
     } else {
       setSnackbarOpen(true);
       setSnackbarMessage({

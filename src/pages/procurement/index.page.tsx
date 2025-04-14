@@ -4,11 +4,13 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import DualTables from '@/pages/procurement/components/DualTables';
-import Suppliers from '@/pages/procurement/components/Suppliers';
 import {
   createProductUtil,
+  createSupplierUtil,
   getProductsUtil,
+  getSuppliersUtil,
   handleProductSearchUtil,
+  handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
 import { debounce } from '@/pages/product/utils';
 import {
@@ -45,6 +47,7 @@ export default function Procurement() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<ProcurementProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<
     ProcurementProduct[]
@@ -57,6 +60,19 @@ export default function Procurement() {
         accessToken,
         keyword,
         setProducts,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    }, 300),
+    [debounce, accessToken],
+  );
+
+  const handleSupplierSearch = useCallback(
+    debounce(async (keyword: string) => {
+      await handleSupplierSearchUtil(
+        accessToken,
+        keyword,
+        setSuppliers,
         setSnackbarOpen,
         setSnackbarMessage,
       );
@@ -77,9 +93,28 @@ export default function Procurement() {
     [accessToken, products],
   );
 
+  const createSupplier = useCallback(
+    async (keyword: string) => {
+      await createSupplierUtil(
+        accessToken,
+        keyword,
+        setSuppliers,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken, products],
+  );
+
   useEffect(() => {
-    if (accessToken) {
+    if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
+        await getSuppliersUtil(
+          accessToken,
+          setSuppliers,
+          setSnackbarOpen,
+          setSnackbarMessage,
+        );
         await getProductsUtil(
           accessToken,
           setProducts,
@@ -88,13 +123,14 @@ export default function Procurement() {
         );
       })();
     }
-  }, [accessToken]);
+  }, [accessToken, user]);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
       router.push('/');
     }
   }, [user]);
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
@@ -118,20 +154,23 @@ export default function Procurement() {
             </Button>
           </Box>
 
-          <Suppliers
+          {/* Supplier Tables */}
+          <DualTables
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
-            setSuppliers={setSuppliers}
-            suppliers={suppliers}
+            items={suppliers}
+            selectedItems={selectedSuppliers}
+            setSelectedItems={setSelectedSuppliers}
+            createProduct={createSupplier}
+            handleSearch={handleSupplierSearch}
           />
-
           {/* Product Tables */}
           <DualTables
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
-            products={products}
-            selectedProducts={selectedProducts}
-            setSelectedProducts={setSelectedProducts}
+            items={products}
+            selectedItems={selectedProducts}
+            setSelectedItems={setSelectedProducts}
             createProduct={createProduct}
             handleSearch={handleProductSearch}
           />
@@ -139,7 +178,7 @@ export default function Procurement() {
           {calculateDialog && (
             <CalculateDialog
               products={selectedProducts}
-              suppliers={suppliers}
+              suppliers={selectedSuppliers}
               handleClose={() => setCalculateDialog(false)}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
