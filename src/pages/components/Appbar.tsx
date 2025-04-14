@@ -61,7 +61,7 @@ export const SearchBar = ({
   mt,
   width,
 }: {
-  handleSearch?: (keyword: string) => Promise<void>;
+  handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
   searchKeyword: string;
   setSearchKeyword: Dispatch<SetStateAction<string>>;

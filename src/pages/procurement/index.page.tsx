@@ -1,10 +1,12 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { fetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import ProductTables from '@/pages/procurement/components/ProductTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
+import { debounce } from '@/pages/product/utils';
 import {
   Alert,
   Box,
@@ -18,7 +20,7 @@ import { ProcurementProduct, Supplier } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -34,7 +36,7 @@ export default function Procurement() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
@@ -44,6 +46,109 @@ export default function Procurement() {
     ProcurementProduct[]
   >([]);
   const [calculateDialog, setCalculateDialog] = useState(false);
+
+  const handleSearch = useCallback(
+    debounce(async (keyword: string) => {
+      try {
+        const { success, data, message } = await fetchWithCreds<
+          ProcurementProduct[]
+        >(
+          accessToken,
+          `/api/procurement/product?searchKeyword=${keyword}`,
+          'GET',
+        );
+        if (success) {
+          setProducts(data);
+        } else {
+          console.error(message);
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'serverError',
+            severity: 'error',
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'fetchPricesError',
+          severity: 'error',
+        });
+      }
+    }, 300),
+    [debounce, accessToken],
+  );
+
+  const createProduct = useCallback(
+    async (keyword: string) => {
+      if (keyword == null || keyword === '') {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'nameRequired',
+          severity: 'error',
+        });
+        return;
+      }
+
+      try {
+        const { success, data, message } =
+          await fetchWithCreds<ProcurementProduct>(
+            accessToken,
+            '/api/procurement/product',
+            'POST',
+            {
+              name: keyword,
+            },
+          );
+        if (success) {
+          setProducts([data]);
+        } else {
+          console.error(message);
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'serverError',
+            severity: 'error',
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'serverError',
+          severity: 'error',
+        });
+      }
+    },
+    [accessToken, products],
+  );
+
+  useEffect(() => {
+    if (accessToken) {
+      (async () => {
+        try {
+          const { success, data, message } = await fetchWithCreds<
+            ProcurementProduct[]
+          >(accessToken, `/api/procurement/product`, 'GET');
+          if (success) {
+            setProducts(data);
+          } else {
+            setSnackbarOpen(true);
+            setSnackbarMessage({
+              message,
+              severity: 'error',
+            });
+          }
+        } catch (error) {
+          console.error(error);
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'fetchPricesError',
+            severity: 'error',
+          });
+        }
+      })();
+    }
+  }, [accessToken]);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
@@ -85,8 +190,9 @@ export default function Procurement() {
             setSnackbarOpen={setSnackbarOpen}
             products={products}
             selectedProducts={selectedProducts}
-            setProducts={setProducts}
             setSelectedProducts={setSelectedProducts}
+            createProduct={createProduct}
+            handleSearch={handleSearch}
           />
 
           {calculateDialog && (

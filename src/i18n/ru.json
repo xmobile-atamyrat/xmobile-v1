@@ -109,7 +109,7 @@
   "deleteSupplier": "Удалить поставщика",
   "confirmDeleteSupplier": "Вы уверены, что хотите удалить этого поставщика?",
   "nameRequired": "Пожалуйста, укажите имя, чтобы добавить.",
-  "selectedProducts": "Выбранные продукты",
+  "selectedProducts": "Выбранные",
   "calculate": "Рассчитать",
   "productAlreadySelected": "Продукт уже был выбран.",
   "remove": "Удалять",
