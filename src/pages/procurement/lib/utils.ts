@@ -1,5 +1,12 @@
+import { SnackbarProps } from '@/pages/lib/types';
+import {
+  createProcurementProduct,
+  getProcurementProducts,
+} from '@/pages/procurement/lib/apis';
+import { ProcurementProduct } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
+import { Dispatch, SetStateAction } from 'react';
 
 export interface ExcelFileData {
   data: (string | number)[][];
@@ -131,5 +138,106 @@ export async function downloadXlsxAsZip(
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error generating or downloading the zip file:', error);
+  }
+}
+
+export async function handleProductSearchUtil(
+  accessToken: string,
+  keyword: string,
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await getProcurementProducts(
+      accessToken,
+      keyword,
+    );
+    if (success) {
+      setProducts(data);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'fetchPricesError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function createProductUtil(
+  accessToken: string,
+  keyword: string,
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  if (keyword == null || keyword === '') {
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'nameRequired',
+      severity: 'error',
+    });
+    return;
+  }
+
+  try {
+    const { success, data, message } = await createProcurementProduct(
+      accessToken,
+      keyword,
+    );
+    if (success) {
+      setProducts([data]);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function getProductsUtil(
+  accessToken: string,
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } =
+      await getProcurementProducts(accessToken);
+    if (success) {
+      setProducts(data);
+    } else {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message,
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'fetchPricesError',
+      severity: 'error',
+    });
   }
 }

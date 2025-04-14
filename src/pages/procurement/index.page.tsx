@@ -6,9 +6,10 @@ import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import ProductTables from '@/pages/procurement/components/ProductTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
 import {
-  createProcurementProduct,
-  getProcurementProducts,
-} from '@/pages/procurement/lib/apis';
+  createProductUtil,
+  getProductsUtil,
+  handleProductSearchUtil,
+} from '@/pages/procurement/lib/utils';
 import { debounce } from '@/pages/product/utils';
 import {
   Alert,
@@ -50,69 +51,28 @@ export default function Procurement() {
   >([]);
   const [calculateDialog, setCalculateDialog] = useState(false);
 
-  const handleSearch = useCallback(
+  const handleProductSearch = useCallback(
     debounce(async (keyword: string) => {
-      try {
-        const { success, data, message } = await getProcurementProducts(
-          accessToken,
-          keyword,
-        );
-        if (success) {
-          setProducts(data);
-        } else {
-          console.error(message);
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'serverError',
-            severity: 'error',
-          });
-        }
-      } catch (error) {
-        console.error(error);
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'fetchPricesError',
-          severity: 'error',
-        });
-      }
+      await handleProductSearchUtil(
+        accessToken,
+        keyword,
+        setProducts,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
     }, 300),
     [debounce, accessToken],
   );
 
   const createProduct = useCallback(
     async (keyword: string) => {
-      if (keyword == null || keyword === '') {
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'nameRequired',
-          severity: 'error',
-        });
-        return;
-      }
-
-      try {
-        const { success, data, message } = await createProcurementProduct(
-          accessToken,
-          keyword,
-        );
-        if (success) {
-          setProducts([data]);
-        } else {
-          console.error(message);
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'serverError',
-            severity: 'error',
-          });
-        }
-      } catch (error) {
-        console.error(error);
-        setSnackbarOpen(true);
-        setSnackbarMessage({
-          message: 'serverError',
-          severity: 'error',
-        });
-      }
+      await createProductUtil(
+        accessToken,
+        keyword,
+        setProducts,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
     },
     [accessToken, products],
   );
@@ -120,26 +80,12 @@ export default function Procurement() {
   useEffect(() => {
     if (accessToken) {
       (async () => {
-        try {
-          const { success, data, message } =
-            await getProcurementProducts(accessToken);
-          if (success) {
-            setProducts(data);
-          } else {
-            setSnackbarOpen(true);
-            setSnackbarMessage({
-              message,
-              severity: 'error',
-            });
-          }
-        } catch (error) {
-          console.error(error);
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'fetchPricesError',
-            severity: 'error',
-          });
-        }
+        await getProductsUtil(
+          accessToken,
+          setProducts,
+          setSnackbarOpen,
+          setSnackbarMessage,
+        );
       })();
     }
   }, [accessToken]);
@@ -186,7 +132,7 @@ export default function Procurement() {
             selectedProducts={selectedProducts}
             setSelectedProducts={setSelectedProducts}
             createProduct={createProduct}
-            handleSearch={handleSearch}
+            handleSearch={handleProductSearch}
           />
 
           {calculateDialog && (
