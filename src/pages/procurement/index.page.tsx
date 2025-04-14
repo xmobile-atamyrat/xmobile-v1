@@ -47,10 +47,8 @@ export default function Procurement() {
       {user?.grade === 'SUPERUSER' && (
         <Box
           sx={{
-            mt: isMdUp
-              ? `${appBarHeight * 1.25}px`
-              : `${mobileAppBarHeight * 1.25}px`,
-            p: isMdUp ? 4 : 2,
+            mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
+            p: isMdUp ? 2 : 1,
           }}
           className="flex flex-col gap-4 w-full h-full"
         >
