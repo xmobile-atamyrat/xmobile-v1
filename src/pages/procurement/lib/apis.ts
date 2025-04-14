@@ -1,6 +1,6 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { ResponseApi } from '@/pages/lib/types';
-import { Supplier } from '@prisma/client';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 
 export const fetchSuppliers = async (
   accessToken: string,
@@ -21,5 +21,30 @@ export const deleteSupplier = async (
     '/api/procurement/supplier',
     'DELETE',
     { id },
+  );
+};
+
+export const getProcurementProducts = async (
+  accessToken: string,
+  searchKeyword?: string,
+): Promise<ResponseApi<ProcurementProduct[]>> => {
+  let url = '/api/procurement/product';
+  if (searchKeyword) {
+    url += `?searchKeyword=${searchKeyword}`;
+  }
+  return fetchWithCreds<ProcurementProduct[]>(accessToken, url, 'GET');
+};
+
+export const createProcurementProduct = async (
+  accessToken: string,
+  name: string,
+): Promise<ResponseApi<ProcurementProduct>> => {
+  return fetchWithCreds<ProcurementProduct>(
+    accessToken,
+    '/api/procurement/product',
+    'POST',
+    {
+      name,
+    },
   );
 };
