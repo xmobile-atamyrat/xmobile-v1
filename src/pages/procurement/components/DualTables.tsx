@@ -17,7 +17,7 @@ import { ProcurementProduct } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
-interface ProductTablesProps {
+interface DualTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   products: ProcurementProduct[];
@@ -27,7 +27,7 @@ interface ProductTablesProps {
   createProduct: (keyword: string) => Promise<void>;
 }
 
-export default function ProductTables({
+export default function DualTables({
   setSnackbarMessage,
   setSnackbarOpen,
   products,
@@ -35,7 +35,7 @@ export default function ProductTables({
   setSelectedProducts,
   handleSearch,
   createProduct,
-}: ProductTablesProps) {
+}: DualTablesProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
 
   const t = useTranslations();

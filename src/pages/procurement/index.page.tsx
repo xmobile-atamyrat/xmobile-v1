@@ -3,7 +3,7 @@ import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
-import ProductTables from '@/pages/procurement/components/ProductTables';
+import DualTables from '@/pages/procurement/components/DualTables';
 import Suppliers from '@/pages/procurement/components/Suppliers';
 import {
   createProductUtil,
@@ -125,7 +125,8 @@ export default function Procurement() {
             suppliers={suppliers}
           />
 
-          <ProductTables
+          {/* Product Tables */}
+          <DualTables
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
             products={products}
