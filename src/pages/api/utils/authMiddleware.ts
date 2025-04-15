@@ -60,12 +60,12 @@ const withAuth = (
     } catch (accessTokenError) {
       if (accessTokenError.name === 'TokenExpiredError') {
         try {
-          const { userId } = await verifyToken(
+          const { userId, grade } = await verifyToken(
             refreshToken,
             process.env.REFRESH_TOKEN_SECRET,
           );
           const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-            generateTokens(userId);
+            generateTokens(userId, grade);
 
           req.headers.authorization = `Bearer ${newAccessToken}`;
           (req as AuthenticatedRequest).userId = userId;
