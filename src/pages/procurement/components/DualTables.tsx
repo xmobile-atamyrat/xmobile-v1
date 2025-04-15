@@ -44,7 +44,7 @@ export default function DualTables({
   return (
     <Box className="flex flex-row w-full gap-8 items-center">
       {/* Product list */}
-      <Box className="flex flex-col min-h-[400px] max-h-[600px] w-1/2 items-start">
+      <Box className="flex flex-col h-[500px] w-1/2 items-start">
         <TableContainer component={Paper}>
           <Table className="w-full h-full" stickyHeader>
             <TableHead>
@@ -97,7 +97,7 @@ export default function DualTables({
         {'>'}
       </Typography>
       {/* Selected products */}
-      <Box className="flex flex-col min-h-[400px] max-h-[600px] w-1/2 items-start">
+      <Box className="flex flex-col h-[500px] w-1/2 items-start">
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
