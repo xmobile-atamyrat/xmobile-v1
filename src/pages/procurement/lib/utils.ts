@@ -2,6 +2,8 @@ import { SnackbarProps } from '@/pages/lib/types';
 import {
   createProcurementProduct,
   createSupplier,
+  deleteProduct,
+  deleteSupplier,
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
@@ -298,9 +300,10 @@ export async function getProductsUtil(
     if (success) {
       setProducts(data);
     } else {
+      console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message,
+        message: 'serverError',
         severity: 'error',
       });
     }
@@ -325,9 +328,10 @@ export async function getSuppliersUtil(
     if (success) {
       setSuppliers(data);
     } else {
+      console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message,
+        message: 'serverError',
         severity: 'error',
       });
     }
@@ -336,6 +340,74 @@ export async function getSuppliersUtil(
     setSnackbarOpen(true);
     setSnackbarMessage({
       message: 'fetchPricesError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function deleteSupplierUtil(
+  accessToken: string,
+  id: string,
+  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, message } = await deleteSupplier(accessToken, id);
+    if (success) {
+      setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deleteItemSuccess',
+        severity: 'success',
+      });
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function deleteProductUtil(
+  accessToken: string,
+  id: string,
+  setProducts: Dispatch<SetStateAction<Supplier[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, message } = await deleteProduct(accessToken, id);
+    if (success) {
+      setProducts((prev) => prev.filter((product) => product.id !== id));
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deleteItemSuccess',
+        severity: 'success',
+      });
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
       severity: 'error',
     });
   }

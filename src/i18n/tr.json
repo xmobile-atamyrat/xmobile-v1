@@ -115,5 +115,6 @@
   "clear": "Clear",
   "download": "Download",
   "quantity": "Quantity",
-  "calculationDone": "Başarılı bir şekilde hesaplamalar yaptı!"
+  "calculationDone": "Başarılı bir şekilde hesaplamalar yaptı!",
+  "deleteItemSuccess": "Başarılı bir şekilde silindi!"
 }

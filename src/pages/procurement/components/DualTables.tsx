@@ -1,9 +1,11 @@
 import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
   Button,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -24,7 +26,8 @@ interface DualTablesProps {
   selectedItems: ProcurementProduct[];
   setSelectedItems: Dispatch<SetStateAction<ProcurementProduct[]>>;
   handleSearch: (...args: any[]) => void;
-  createProduct: (keyword: string) => Promise<void>;
+  createItem: (keyword: string) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
 }
 
 export default function DualTables({
@@ -34,7 +37,8 @@ export default function DualTables({
   selectedItems,
   setSelectedItems,
   handleSearch,
-  createProduct,
+  createItem,
+  deleteItem,
 }: DualTablesProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -60,7 +64,7 @@ export default function DualTables({
                     })}
                     <Button
                       onClick={async () => {
-                        await createProduct(searchKeyword);
+                        await createItem(searchKeyword);
                       }}
                     >
                       {t('add')}
@@ -82,10 +86,20 @@ export default function DualTables({
                         setSnackbarOpen(true);
                         return;
                       }
-                      setSelectedItems([item, ...selectedItems]);
+                      setSelectedItems([...selectedItems, item]);
                     }}
                   >
                     {item.name}
+                  </TableCell>
+                  <TableCell align="right" className="w-10">
+                    <IconButton
+                      className="p-0"
+                      onClick={async () => {
+                        await deleteItem(item.id);
+                      }}
+                    >
+                      <DeleteIcon color="error" />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}

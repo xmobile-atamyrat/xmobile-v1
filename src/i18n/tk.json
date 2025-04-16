@@ -117,5 +117,6 @@
   "clear": "Arassala",
   "download": "Skachat",
   "quantity": "Sany",
-  "calculationDone": "Üstünlikli hasaplandy!"
+  "calculationDone": "Üstünlikli hasaplandy!",
+  "deleteItemSuccess": "Üstünlikli öçürildi!"
 }
