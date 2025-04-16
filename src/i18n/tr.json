@@ -116,5 +116,8 @@
   "download": "Download",
   "quantity": "Quantity",
   "calculationDone": "Başarılı bir şekilde hesaplamalar yaptı!",
-  "deleteItemSuccess": "Başarılı bir şekilde silindi!"
+  "deleteItemSuccess": "Başarılı bir şekilde silindi!",
+  "confirmClose": "İptal etmek istediğinden emin misiniz? Değişiklikleriniz kaybolacak!",
+  "yes": "Evet",
+  "no": "HAYIR"
 }

@@ -1,3 +1,4 @@
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import {
   ExcelFileData,
@@ -53,6 +54,7 @@ export default function CalculateDialog({
     Array(products.length),
   );
   const [calculationDone, setCalculationDone] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState(false);
 
   const handleCalculate = useCallback(() => {
     const newPrices = prices.map((row) => {
@@ -76,11 +78,6 @@ export default function CalculateDialog({
     });
     setPrices(newPrices);
   }, [prices]);
-
-  // useEffect(() => {
-  //   console.info(prices);
-  //   console.info(productQuantity);
-  // }, [prices, productQuantity]);
 
   return (
     <Dialog open fullScreen>
@@ -150,7 +147,13 @@ export default function CalculateDialog({
       </DialogContent>
       <DialogActions className="flex justify-between px-8">
         <Box className="flex gap-4">
-          <Button variant="contained" color="error" onClick={handleClose}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              setCancelDialog(true);
+            }}
+          >
             {t('cancel')}
           </Button>
           <Button
@@ -220,6 +223,16 @@ export default function CalculateDialog({
       </DialogActions>
 
       {loading && <CircularProgress />}
+      {cancelDialog && (
+        <DeleteDialog
+          blueButtonText={t('no')}
+          redButtonText={t('yes')}
+          description={t('confirmClose')}
+          title={t('cancel')}
+          handleClose={() => setCancelDialog(false)}
+          handleDelete={handleClose}
+        />
+      )}
     </Dialog>
   );
 }
