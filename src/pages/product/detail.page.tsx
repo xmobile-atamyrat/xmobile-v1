@@ -381,6 +381,8 @@ export default function Product() {
           <DeleteDialog
             title={t('deleteProduct')}
             description={t('confirmDeleteProduct')}
+            blueButtonText={t('cancel')}
+            redButtonText={t('delete')}
             handleDelete={async () => {
               try {
                 const { success: deleteSuccess }: ResponseApi = await (
