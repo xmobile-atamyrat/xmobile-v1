@@ -24,6 +24,18 @@ export const deleteSupplier = async (
   );
 };
 
+export const deleteProduct = async (
+  accessToken: string,
+  id: string,
+): Promise<ResponseApi<ProcurementProduct>> => {
+  return fetchWithCreds<ProcurementProduct>(
+    accessToken,
+    '/api/procurement/product',
+    'DELETE',
+    { id },
+  );
+};
+
 export const getProcurementProducts = async (
   accessToken: string,
   searchKeyword?: string,

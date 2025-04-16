@@ -115,5 +115,6 @@
   "clear": "Clear",
   "download": "Download",
   "quantity": "Quantity",
-  "calculationDone": "Successfully ran calculations!"
+  "calculationDone": "Successfully ran calculations!",
+  "deleteItemSuccess": "Successfully deleted!"
 }
