@@ -465,6 +465,8 @@ export default function UpdatePrices() {
             <DeleteDialog
               title={t('deletePrice')}
               description={t('confirmDeletePrice')}
+              blueButtonText={t('cancel')}
+              redButtonText={t('delete')}
               handleClose={async () => {
                 setShowDeleteDialog(false);
               }}
