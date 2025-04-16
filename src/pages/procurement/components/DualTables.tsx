@@ -146,6 +146,8 @@ export default function DualTables({
         <DeleteDialog
           title={t('remove')}
           description={t('confirmRemoveProduct')}
+          blueButtonText={t('cancel')}
+          redButtonText={t('remove')}
           handleClose={() => setRemoveSelected(undefined)}
           handleDelete={async () => {
             setSelectedItems(

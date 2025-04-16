@@ -138,6 +138,8 @@ export default function EditSupplierDialog({
         <DeleteDialog
           title={t('deleteSupplier')}
           description={t('confirmDeleteSupplier')}
+          blueButtonText={t('cancel')}
+          redButtonText={t('delete')}
           handleClose={() => {
             setDeleteSupplierId(undefined);
           }}
