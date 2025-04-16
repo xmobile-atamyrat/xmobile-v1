@@ -116,5 +116,8 @@
   "download": "Download",
   "quantity": "Quantity",
   "calculationDone": "Successfully ran calculations!",
-  "deleteItemSuccess": "Successfully deleted!"
+  "deleteItemSuccess": "Successfully deleted!",
+  "confirmClose": "Are you sure you want to cancel? Your changes will be lost!",
+  "yes": "Yes",
+  "no": "No"
 }

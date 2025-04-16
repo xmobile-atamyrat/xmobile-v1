@@ -118,5 +118,8 @@
   "download": "Skachat",
   "quantity": "Neçitä",
   "calculationDone": "Uspeshno hasaplandy!",
-  "deleteItemSuccess": "Üstünlikli öçürildi!"
+  "deleteItemSuccess": "Üstünlikli öçürildi!",
+  "confirmClose": "Cancatyrmak isleýändigiňize ynanýarsyňyzmy? Üýtgeşmeleriňiz ýitiriler!",
+  "yes": "Hawa",
+  "no": "Ýok"
 }
