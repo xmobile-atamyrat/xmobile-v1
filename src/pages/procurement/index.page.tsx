@@ -7,6 +7,8 @@ import DualTables from '@/pages/procurement/components/DualTables';
 import {
   createProductUtil,
   createSupplierUtil,
+  deleteProductUtil,
+  deleteSupplierUtil,
   getProductsUtil,
   getSuppliersUtil,
   handleProductSearchUtil,
@@ -106,6 +108,32 @@ export default function Procurement() {
     [accessToken],
   );
 
+  const deleteSupplier = useCallback(
+    async (id: string) => {
+      await deleteSupplierUtil(
+        accessToken,
+        id,
+        setSuppliers,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken],
+  );
+
+  const deleteProduct = useCallback(
+    async (id: string) => {
+      await deleteProductUtil(
+        accessToken,
+        id,
+        setProducts,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken],
+  );
+
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
@@ -161,8 +189,9 @@ export default function Procurement() {
             items={suppliers}
             selectedItems={selectedSuppliers}
             setSelectedItems={setSelectedSuppliers}
-            createProduct={createSupplier}
+            createItem={createSupplier}
             handleSearch={handleSupplierSearch}
+            deleteItem={deleteSupplier}
           />
           {/* Product Tables */}
           <DualTables
@@ -171,8 +200,9 @@ export default function Procurement() {
             items={products}
             selectedItems={selectedProducts}
             setSelectedItems={setSelectedProducts}
-            createProduct={createProduct}
+            createItem={createProduct}
             handleSearch={handleProductSearch}
+            deleteItem={deleteProduct}
           />
 
           {calculateDialog && (
