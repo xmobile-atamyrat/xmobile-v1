@@ -118,5 +118,8 @@
   "download": "Скачать",
   "quantity": "Количество",
   "calculationDone": "Расчет успешен!",
-  "deleteItemSuccess": "Успешно удалил!"
+  "deleteItemSuccess": "Успешно удалил!",
+  "confirmClose": "Вы уверены, что хотите отменить? Ваши изменения будут потеряны!",
+  "yes": "Да",
+  "no": "Нет"
 }

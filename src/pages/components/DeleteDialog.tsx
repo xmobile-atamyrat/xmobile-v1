@@ -13,7 +13,7 @@ interface DeleteDialogProps {
   title: string;
   description: string;
   handleClose: () => void;
-  handleDelete: () => Promise<void>;
+  handleDelete: () => Promise<void> | void;
   blueButtonText: string;
   redButtonText: string;
 }
