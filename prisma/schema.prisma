@@ -88,8 +88,8 @@ model Prices {
 }
 
 model UserVisitRecord {
-  id  String  @id @default(uuid())
-  ip  String
+  id              String  @id @default(uuid())
+  ip              String
   dailyVisitCount Int @default(1)
 
   createdAt       DateTime    @default(now())
@@ -106,18 +106,56 @@ model DollarRate {
 }
 
 model Supplier {
-  id              String      @id @default(uuid())
-  name            String
-  description     String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+
+  calculationEntries    CalculationEntry[]
+  calculationHistories  CalculationHistory[]    @relation("CalculationHistorySuppliers")
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 }
 
 model ProcurementProduct {
-  id            String      @id @default(uuid())
-  name          String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                      String                  @id @default(uuid())
+  name                    String
+
+  calculationEntries      CalculationEntry[]
+  calculationHistories    CalculationHistory[]    @relation("CalculationHistoryProcurementProducts")
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+model CalculationHistory {
+  id                      String                  @id @default(uuid())
+  name                    String
+
+  calculationEntries      CalculationEntry[]
+  suppliers               Supplier[]              @relation("CalculationHistorySuppliers")
+  procurementProducts     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
+  
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+model CalculationEntry {
+  id                      String              @id @default(uuid())
+  price                   Float
+
+  calculationId           String
+  calculation             CalculationHistory  @relation(references: [id], fields: [calculationId], onDelete: Cascade)
+
+  supplierId              String
+  supplier                Supplier            @relation(references: [id], fields: [supplierId], onDelete: Cascade)
+
+  procurementProductId    String
+  procurementProduct      ProcurementProduct  @relation(references: [id], fields: [procurementProductId], onDelete: Cascade)
+
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 }
 
 enum UserRole {
