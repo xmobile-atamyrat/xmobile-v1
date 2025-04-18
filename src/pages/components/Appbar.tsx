@@ -271,7 +271,7 @@ export default function CustomAppBar({
               onChange={(event) => {
                 const newLocale = event.target.value;
                 setSelectedLocale(newLocale);
-                setCookie('NEXT_LOCALE', newLocale);
+                setCookie(LOCALE_COOKIE_NAME, newLocale);
                 router.push(router.pathname, router.asPath, {
                   locale: newLocale,
                 });
