@@ -18,8 +18,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 
-  console.info(`-----method: ${method === 'PUT'}-----`);
-
   try {
     if (method === 'GET') {
       const id = req.query.id as string;
