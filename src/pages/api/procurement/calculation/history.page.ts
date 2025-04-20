@@ -78,12 +78,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       if (quantities) updateData.quantities = quantities;
       if (prices) updateData.prices = prices;
 
-      await dbClient.calculationHistory.update({
+      const history = await dbClient.calculationHistory.update({
         where: { id },
         data: updateData,
       });
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, data: history });
     }
   } catch (error) {
     console.error(error);
