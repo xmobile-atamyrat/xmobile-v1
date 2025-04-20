@@ -25,7 +25,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const history = await dbClient.calculationHistory.findUnique({
           where: { id },
           include: {
-            calculationEntries: true,
             suppliers: true,
             procurementProducts: true,
           },

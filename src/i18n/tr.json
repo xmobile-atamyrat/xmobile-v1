@@ -123,5 +123,8 @@
   "history": "Tarih",
   "createHistory": "Hesaplama Oturumu Oluştur",
   "editHistory": "Hesaplama Oturumunu Düzenle",
-  "selectSupplierAndProduct": "Lütfen en az bir tedarikçi ve ürün seçin."
+  "selectSupplierAndProduct": "Lütfen en az bir tedarikçi ve ürün seçin.",
+  "createdDate": "Oluşturulan Tarih",
+  "modifiedDate": "Değiştirilmiş tarih",
+  "actions": "Eylem"
 }

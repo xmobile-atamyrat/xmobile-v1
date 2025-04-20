@@ -3,9 +3,9 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ExcelFileData,
+  dayMonthYearFromDate,
   downloadXlsxAsZip,
   emptyHistoryPrices,
-  parseInitialHistoryPrices,
 } from '@/pages/procurement/lib/utils';
 import {
   Box,
@@ -24,31 +24,27 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { CalculationEntry, ProcurementProduct, Supplier } from '@prisma/client';
-import { useTranslations } from 'next-intl';
 import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+  CalculationHistory,
+  ProcurementProduct,
+  Supplier,
+} from '@prisma/client';
+import { useTranslations } from 'next-intl';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
-  historyTitle: string;
+  history: CalculationHistory;
   suppliers: Supplier[];
   products: ProcurementProduct[];
-  initialPrices: CalculationEntry[];
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function CalculateDialog({
-  historyTitle,
+  history,
   products,
   suppliers,
-  initialPrices,
   handleClose,
   setSnackbarMessage,
   setSnackbarOpen,
@@ -87,14 +83,10 @@ export default function CalculateDialog({
     setPrices(newPrices);
   }, [prices]);
 
-  useEffect(() => {
-    parseInitialHistoryPrices(initialPrices, suppliers, products, setPrices);
-  }, [initialPrices]);
-
   return (
     <Dialog open fullScreen>
       <DialogTitle>
-        {t('calculate')} - {historyTitle}
+        {t('calculate')} - {history.name}
       </DialogTitle>
       <DialogContent>
         <TableContainer component={Paper}>
@@ -176,12 +168,7 @@ export default function CalculateDialog({
             color="primary"
             onClick={async () => {
               const today = new Date();
-              const day = today.getDate();
-              const month = today.getMonth() + 1;
-              const year = today.getFullYear();
-              const formattedDay = String(day).padStart(2, '0');
-              const formattedMonth = String(month).padStart(2, '0');
-              const formattedDate = `${formattedDay}-${formattedMonth}-${year}`;
+              const formattedDate = dayMonthYearFromDate(today);
 
               const csvFileData: ExcelFileData[] = suppliers
                 .map((supplier, splIdx) => {
