@@ -1,5 +1,6 @@
 import { SnackbarProps } from '@/pages/lib/types';
 import {
+  createHistory,
   createProcurementProduct,
   createSupplier,
   deleteProduct,
@@ -7,7 +8,11 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import {
+  CalculationHistory,
+  ProcurementProduct,
+  Supplier,
+} from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { Dispatch, SetStateAction } from 'react';
@@ -229,6 +234,44 @@ export async function createProductUtil(
     );
     if (success) {
       setProducts([data]);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function createHistoryUtil(
+  accessToken: string,
+  name: string,
+  suppliers: Supplier[],
+  products: ProcurementProduct[],
+  setHistory: Dispatch<SetStateAction<CalculationHistory[]>>,
+  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await createHistory(
+      accessToken,
+      name,
+      suppliers.map((supplier) => supplier.id),
+      products.map((product) => product.id),
+    );
+    if (success) {
+      setSelectedHistory(data);
+      setHistory((current) => [data, ...current]);
     } else {
       console.error(message);
       setSnackbarOpen(true);
