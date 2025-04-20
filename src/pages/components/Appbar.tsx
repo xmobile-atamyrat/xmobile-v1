@@ -12,6 +12,7 @@ import {
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
+import { Dvr } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
@@ -60,7 +61,7 @@ export const SearchBar = ({
   mt,
   width,
 }: {
-  handleSearch?: (keyword: string) => Promise<void>;
+  handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
   searchKeyword: string;
   setSearchKeyword: Dispatch<SetStateAction<string>>;
@@ -394,6 +395,33 @@ export default function CustomAppBar({
       >
         {user != null ? (
           <Box>
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <MenuItem
+                className="flex flex-row gap-2 items-center justify-start"
+                onClick={() => router.push('/product/update-prices')}
+              >
+                <DriveFolderUploadIcon />
+                <Typography>{t('updatePrices')}</Typography>
+              </MenuItem>
+            )}
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <MenuItem
+                className="flex flex-row gap-2 items-center justify-start"
+                onClick={() => router.push('/analytics')}
+              >
+                <AnalyticsIcon />
+                <Typography>{t('analytics')}</Typography>
+              </MenuItem>
+            )}
+            {user?.grade === 'SUPERUSER' && (
+              <MenuItem
+                className="flex flex-row gap-2 items-center justify-start"
+                onClick={() => router.push('/procurement')}
+              >
+                <Dvr />
+                <Typography>{t('procurement')}</Typography>
+              </MenuItem>
+            )}
             <MenuItem
               onClick={() => {
                 (async () => {
@@ -411,24 +439,6 @@ export default function CustomAppBar({
               <LogoutIcon />
               <Typography>{t('signout')}</Typography>
             </MenuItem>
-            {user?.grade === 'ADMIN' && (
-              <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
-                onClick={() => router.push('/product/update-prices')}
-              >
-                <DriveFolderUploadIcon />
-                <Typography>{t('updatePrices')}</Typography>
-              </MenuItem>
-            )}
-            {user?.grade === 'ADMIN' && (
-              <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
-                onClick={() => router.push('/analytics')}
-              >
-                <AnalyticsIcon />
-                <Typography>{t('analytics')}</Typography>
-              </MenuItem>
-            )}
           </Box>
         ) : (
           <Box>
