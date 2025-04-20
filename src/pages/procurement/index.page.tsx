@@ -30,7 +30,6 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  CalculationEntry,
   CalculationHistory,
   ProcurementProduct,
   Supplier,
@@ -66,8 +65,6 @@ export default function Procurement() {
   >([]);
   const [historyList, setHistoryList] = useState<CalculationHistory[]>([]);
   const [selectedHistory, setSelectedHistory] = useState<CalculationHistory>();
-  const [initialHistoryPrices, setInitialHistoryPrices] =
-    useState<CalculationEntry[]>();
   const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
@@ -282,13 +279,12 @@ export default function Procurement() {
 
           {calculateDialog && selectedHistory && (
             <CalculateDialog
-              historyTitle={selectedHistory.name}
+              history={selectedHistory}
               products={selectedProducts}
               suppliers={selectedSuppliers}
               handleClose={() => setCalculateDialog(false)}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
-              initialPrices={initialHistoryPrices}
             />
           )}
 
@@ -306,7 +302,6 @@ export default function Procurement() {
                   setSelectedHistory,
                   setSelectedSuppliers,
                   setSelectedProducts,
-                  setInitialHistoryPrices,
                   setSnackbarOpen,
                   setSnackbarMessage,
                 );

@@ -1,5 +1,4 @@
 import {
-  CalculationEntry,
   CalculationHistory,
   ProcurementProduct,
   Supplier,
@@ -8,7 +7,6 @@ import {
 export interface DetailedHistory extends CalculationHistory {
   suppliers: Supplier[];
   procurementProducts: ProcurementProduct[];
-  calculationEntries: CalculationEntry[];
 }
 
 export type HistoryColor = 'red' | 'green' | 'orange';
