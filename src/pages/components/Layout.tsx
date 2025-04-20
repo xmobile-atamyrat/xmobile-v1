@@ -134,6 +134,12 @@ export default function Layout({
               }
             } catch (error) {
               console.error(error);
+            } finally {
+              setDeleteCategoriesModal({
+                open: false,
+                categoryId: undefined,
+                imgUrl: undefined,
+              });
             }
           }}
         />

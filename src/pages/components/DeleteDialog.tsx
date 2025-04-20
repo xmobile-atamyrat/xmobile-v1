@@ -51,7 +51,6 @@ export default function DeleteDialog({
             setLoading(true);
             await handleDelete();
             setLoading(false);
-            handleClose();
           }}
           color="error"
           autoFocus

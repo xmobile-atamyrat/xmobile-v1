@@ -423,6 +423,8 @@ export default function Product() {
                   message: t('deleteProductError'),
                   severity: 'error',
                 });
+              } finally {
+                setShowDeleteProductDialog({ show: false, productId: '' });
               }
             }}
             handleClose={() =>

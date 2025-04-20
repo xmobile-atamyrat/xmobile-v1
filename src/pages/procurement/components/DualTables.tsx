@@ -153,6 +153,7 @@ export default function DualTables({
             setSelectedItems(
               selectedItems.filter((product) => product.id !== removeSelected),
             );
+            setRemoveSelected(undefined);
           }}
         />
       )}

@@ -504,6 +504,8 @@ export default function UpdatePrices() {
                     message: 'priceDeleteFailed',
                     severity: 'error',
                   });
+                } finally {
+                  setShowDeleteDialog(false);
                 }
               }}
             />

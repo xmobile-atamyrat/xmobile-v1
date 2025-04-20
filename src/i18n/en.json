@@ -117,7 +117,7 @@
   "quantity": "Quantity",
   "calculationDone": "Successfully ran calculations!",
   "deleteItemSuccess": "Successfully deleted!",
-  "confirmClose": "Are you sure you want to cancel? Your changes will be lost!",
+  "confirmClose": "Did you save your changes?",
   "yes": "Yes",
   "no": "No",
   "history": "History",
