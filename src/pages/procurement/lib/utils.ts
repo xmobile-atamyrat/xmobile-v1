@@ -5,16 +5,19 @@ import {
   createSupplier,
   deleteProduct,
   deleteSupplier,
+  editHistory,
   getHistory,
   getHistoryList,
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   CalculationHistory,
   ProcurementProduct,
   Supplier,
 } from '@prisma/client';
+import { JsonValue } from '@prisma/client/runtime/library';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { Dispatch, SetStateAction } from 'react';
@@ -292,6 +295,55 @@ export async function createHistoryUtil(
   }
 }
 
+export async function editHistoryUtil({
+  id,
+  accessToken,
+  name,
+  prices,
+  quantities,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  id: string;
+  accessToken: string;
+  name?: string;
+  prices?: (number | null)[][];
+  quantities?: (number | null)[];
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}) {
+  try {
+    const { success, message } = await editHistory({
+      accessToken,
+      id,
+      name,
+      prices,
+      quantities,
+    });
+    if (!success) {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    } else {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
 export async function createSupplierUtil(
   accessToken: string,
   keyword: string,
@@ -523,6 +575,21 @@ export const emptyHistoryPrices = (
   products: ProcurementProduct[],
   suppliers: Supplier[],
 ) => Array.from({ length: products.length }, () => Array(suppliers.length));
+
+export const parseInitialHistoryPrices = (
+  prices: JsonValue | null,
+  products: ProcurementProduct[],
+  suppliers: Supplier[],
+): HistoryPrice[][] => {
+  if (!prices) return emptyHistoryPrices(products, suppliers);
+  return (prices as number[][]).map((row) => {
+    return (row as number[]).map((price: number) => {
+      return {
+        value: price,
+      };
+    });
+  });
+};
 
 export const dayMonthYearFromDate = (date: Date) => {
   const day = date.getDate();

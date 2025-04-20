@@ -1,11 +1,13 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ExcelFileData,
   dayMonthYearFromDate,
   downloadXlsxAsZip,
-  emptyHistoryPrices,
+  editHistoryUtil,
+  parseInitialHistoryPrices,
 } from '@/pages/procurement/lib/utils';
 import {
   Box,
@@ -49,13 +51,14 @@ export default function CalculateDialog({
   setSnackbarMessage,
   setSnackbarOpen,
 }: CalculateDialogProps) {
+  const { accessToken } = useUserContext();
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<HistoryPrice[][]>(
-    emptyHistoryPrices(products, suppliers),
+    parseInitialHistoryPrices(history.prices, products, suppliers),
   );
   const [productQuantity, setProductQuantity] = useState<number[]>(
-    Array(products.length),
+    history.quantities ?? Array(products.length),
   );
   const [calculationDone, setCalculationDone] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
@@ -139,7 +142,6 @@ export default function CalculateDialog({
                                 ? undefined
                                 : Number(e.target.value),
                             color: newPrices[prdIdx][splIdx]?.color,
-                            id: newPrices[prdIdx][splIdx]?.id,
                           };
                           setPrices(newPrices);
                         }}
@@ -155,17 +157,75 @@ export default function CalculateDialog({
       <DialogActions className="flex justify-between px-8">
         <Box className="flex gap-4">
           <Button
-            variant="contained"
+            variant="outlined"
             color="error"
             onClick={() => {
               setCancelDialog(true);
             }}
+            sx={{
+              textTransform: 'none',
+            }}
           >
             {t('cancel')}
           </Button>
+        </Box>
+
+        <Box className="flex gap-4">
           <Button
-            variant="contained"
+            variant="outlined"
+            sx={{
+              textTransform: 'none',
+            }}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                await editHistoryUtil({
+                  id: history.id,
+                  accessToken,
+                  prices: prices.map((col) => col.map((row) => row.value)),
+                  quantities: productQuantity,
+                  setSnackbarMessage,
+                  setSnackbarOpen,
+                });
+              } catch (error) {
+                setSnackbarMessage({
+                  message: 'serverError',
+                  severity: 'error',
+                });
+                setSnackbarOpen(true);
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {t('save')}
+          </Button>
+          <Button
+            variant="outlined"
             color="primary"
+            sx={{
+              textTransform: 'none',
+            }}
+            onClick={() => {
+              setLoading(true);
+              handleCalculate();
+              setCalculationDone(true);
+              setSnackbarMessage({
+                message: t('calculationDone'),
+                severity: 'success',
+              });
+              setSnackbarOpen(true);
+              setLoading(false);
+            }}
+          >
+            {t('calculate')}
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            sx={{
+              textTransform: 'none',
+            }}
             onClick={async () => {
               const today = new Date();
               const formattedDate = dayMonthYearFromDate(today);
@@ -200,26 +260,6 @@ export default function CalculateDialog({
             disabled={!calculationDone}
           >
             {t('download')}
-          </Button>
-        </Box>
-
-        <Box className="flex gap-4">
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              setLoading(true);
-              handleCalculate();
-              setCalculationDone(true);
-              setSnackbarMessage({
-                message: t('calculationDone'),
-                severity: 'success',
-              });
-              setSnackbarOpen(true);
-              setLoading(false);
-            }}
-          >
-            {t('calculate')}
           </Button>
         </Box>
       </DialogActions>

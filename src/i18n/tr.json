@@ -126,5 +126,6 @@
   "selectSupplierAndProduct": "Lütfen en az bir tedarikçi ve ürün seçin.",
   "createdDate": "Oluşturulan Tarih",
   "modifiedDate": "Değiştirilmiş tarih",
-  "actions": "Eylem"
+  "actions": "Eylem",
+  "success": "Success!"
 }
