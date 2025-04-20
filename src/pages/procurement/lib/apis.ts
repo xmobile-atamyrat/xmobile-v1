@@ -1,5 +1,6 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { ResponseApi } from '@/pages/lib/types';
+import { DetailedHistory } from '@/pages/procurement/lib/types';
 import {
   CalculationHistory,
   ProcurementProduct,
@@ -67,6 +68,14 @@ export const getHistoryList = async (
 ): Promise<ResponseApi<CalculationHistory[]>> => {
   const url = '/api/procurement/calculation/history';
   return fetchWithCreds<CalculationHistory[]>(accessToken, url, 'GET');
+};
+
+export const getHistory = async (
+  accessToken: string,
+  id: string,
+): Promise<ResponseApi<DetailedHistory>> => {
+  const url = `/api/procurement/calculation/history?id=${id}`;
+  return fetchWithCreds<DetailedHistory>(accessToken, url, 'GET');
 };
 
 export const createProcurementProduct = async (
