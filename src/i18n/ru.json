@@ -128,5 +128,6 @@
   "selectSupplierAndProduct": "Пожалуйста, выберите хотя бы одного поставщика и продукта.",
   "createdDate": "Создана дата",
   "modifiedDate": "Модифицированная дата",
-  "actions": "Действия"
+  "actions": "Действия",
+  "success": "Success!"
 }

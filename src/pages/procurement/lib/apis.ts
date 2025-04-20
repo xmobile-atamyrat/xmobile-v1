@@ -78,6 +78,28 @@ export const getHistory = async (
   return fetchWithCreds<DetailedHistory>(accessToken, url, 'GET');
 };
 
+export const editHistory = async ({
+  accessToken,
+  id,
+  name,
+  prices,
+  quantities,
+}: {
+  accessToken: string;
+  id: string;
+  name?: string;
+  prices?: (number | null)[][];
+  quantities?: (number | null)[];
+}): Promise<ResponseApi<DetailedHistory>> => {
+  const url = `/api/procurement/calculation/history`;
+  return fetchWithCreds<DetailedHistory>(accessToken, url, 'PUT', {
+    id,
+    name,
+    prices,
+    quantities,
+  });
+};
+
 export const createProcurementProduct = async (
   accessToken: string,
   name: string,
