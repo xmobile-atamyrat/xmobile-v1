@@ -5,6 +5,7 @@ import {
   createSupplier,
   deleteProduct,
   deleteSupplier,
+  getHistory,
   getHistoryList,
   getProcurementProducts,
   getSuppliers,
@@ -371,6 +372,39 @@ export async function getHistoryListUtil(
     const { success, data, message } = await getHistoryList(accessToken);
     if (success) {
       setHistoryList(data);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function getHistoryUtil(
+  accessToken: string,
+  id: string,
+  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
+  setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>,
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await getHistory(accessToken, id);
+    if (success) {
+      setSelectedProducts(data.procurementProducts);
+      setSelectedSuppliers(data.suppliers);
+      setSelectedHistory(data);
     } else {
       console.error(message);
       setSnackbarOpen(true);

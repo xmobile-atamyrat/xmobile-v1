@@ -13,6 +13,7 @@ import {
   deleteProductUtil,
   deleteSupplierUtil,
   getHistoryListUtil,
+  getHistoryUtil,
   getProductsUtil,
   getSuppliersUtil,
   handleProductSearchUtil,
@@ -294,6 +295,18 @@ export default function Procurement() {
               setHistoryList={setHistoryList}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
+              handleSelectHistory={async (id: string) => {
+                await getHistoryUtil(
+                  accessToken,
+                  id,
+                  setSelectedHistory,
+                  setSelectedSuppliers,
+                  setSelectedProducts,
+                  setSnackbarOpen,
+                  setSnackbarMessage,
+                );
+                setCalculateDialog(true);
+              }}
             />
           )}
 
