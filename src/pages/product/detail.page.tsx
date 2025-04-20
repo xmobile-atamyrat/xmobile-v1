@@ -173,7 +173,7 @@ export default function Product() {
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
-              {user?.grade === 'ADMIN' && (
+              {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
                 <Box>
                   <IconButton
                     onClick={() => {
@@ -381,6 +381,8 @@ export default function Product() {
           <DeleteDialog
             title={t('deleteProduct')}
             description={t('confirmDeleteProduct')}
+            blueButtonText={t('cancel')}
+            redButtonText={t('delete')}
             handleDelete={async () => {
               try {
                 const { success: deleteSuccess }: ResponseApi = await (
@@ -421,6 +423,8 @@ export default function Product() {
                   message: t('deleteProductError'),
                   severity: 'error',
                 });
+              } finally {
+                setShowDeleteProductDialog({ show: false, productId: '' });
               }
             }}
             handleClose={() =>

@@ -91,6 +91,8 @@ export default function Layout({
         <DeleteDialog
           description={t('confirmDeleteCategory')}
           title={t('deleteCategories')}
+          blueButtonText={t('cancel')}
+          redButtonText={t('delete')}
           handleClose={() =>
             setDeleteCategoriesModal({
               open: false,
@@ -132,6 +134,12 @@ export default function Layout({
               }
             } catch (error) {
               console.error(error);
+            } finally {
+              setDeleteCategoriesModal({
+                open: false,
+                categoryId: undefined,
+                imgUrl: undefined,
+              });
             }
           }}
         />

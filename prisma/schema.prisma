@@ -88,8 +88,8 @@ model Prices {
 }
 
 model UserVisitRecord {
-  id  String  @id @default(uuid())
-  ip  String
+  id              String  @id @default(uuid())
+  ip              String
   dailyVisitCount Int @default(1)
 
   createdAt       DateTime    @default(now())
@@ -105,7 +105,43 @@ model DollarRate {
   updatedAt       DateTime    @updatedAt
 }
 
+model Supplier {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+
+  calculationHistories  CalculationHistory[]    @relation("CalculationHistorySuppliers")
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}
+
+model ProcurementProduct {
+  id                      String                  @id @default(uuid())
+  name                    String
+
+  calculationHistories    CalculationHistory[]    @relation("CalculationHistoryProcurementProducts")
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+model CalculationHistory {
+  id                      String                  @id @default(uuid())
+  name                    String
+  prices                  Json?
+  quantities              Json?
+
+  suppliers               Supplier[]              @relation("CalculationHistorySuppliers")
+  procurementProducts     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
+  
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
 enum UserRole {
   FREE
   ADMIN
+  SUPERUSER
 }
