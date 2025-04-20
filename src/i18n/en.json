@@ -126,5 +126,6 @@
   "selectSupplierAndProduct": "Please select at least one supplier and product.",
   "createdDate": "Created Date",
   "modifiedDate": "Modified Date",
-  "actions": "Actions"
+  "actions": "Actions",
+  "success": "Success!"
 }

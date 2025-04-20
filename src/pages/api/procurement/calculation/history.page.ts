@@ -18,6 +18,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 
+  console.info(`-----method: ${method === 'PUT'}-----`);
+
   try {
     if (method === 'GET') {
       const id = req.query.id as string;
@@ -63,11 +65,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         name,
         supplierId,
         productId,
-        entryId,
+        quantities,
+        prices,
       }: CalculationHistory & {
         supplierId?: string;
         productId?: string;
-        entryId?: string;
       } = req.body;
 
       const updateData: any = {};
@@ -75,12 +77,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       if (supplierId) updateData.suppliers = { connect: { id: supplierId } };
       if (productId)
         updateData.procurementProducts = { connect: { id: productId } };
-      if (entryId) updateData.calculationEntries = { connect: { id: entryId } };
+      if (quantities) updateData.quantities = quantities;
+      if (prices) updateData.prices = prices;
 
       await dbClient.calculationHistory.update({
         where: { id },
         data: updateData,
       });
+
+      return res.status(200).json({ success: true });
     }
   } catch (error) {
     console.error(error);
