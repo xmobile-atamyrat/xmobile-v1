@@ -10,7 +10,9 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
+  CalculationEntry,
   CalculationHistory,
   ProcurementProduct,
   Supplier,
@@ -396,6 +398,7 @@ export async function getHistoryUtil(
   setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
   setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>,
   setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setInitialHistoryPrices: Dispatch<SetStateAction<CalculationEntry[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -404,6 +407,7 @@ export async function getHistoryUtil(
     if (success) {
       setSelectedProducts(data.procurementProducts);
       setSelectedSuppliers(data.suppliers);
+      setInitialHistoryPrices(data.calculationEntries);
       setSelectedHistory(data);
     } else {
       console.error(message);
@@ -517,4 +521,34 @@ export async function deleteProductUtil(
       severity: 'error',
     });
   }
+}
+
+export const emptyHistoryPrices = (
+  products: ProcurementProduct[],
+  suppliers: Supplier[],
+) => Array.from({ length: products.length }, () => Array(suppliers.length));
+
+export function parseInitialHistoryPrices(
+  entries: CalculationEntry[],
+  suppliers: Supplier[],
+  products: ProcurementProduct[],
+  setPrices: Dispatch<SetStateAction<HistoryPrice[][]>>,
+) {
+  const supplierMap: { [id: string]: number } = {};
+  const productMap: { [id: string]: number } = {};
+
+  suppliers.forEach((supplier, idx) => {
+    supplierMap[supplier.id] = idx;
+  });
+  products.forEach((product, idx) => {
+    productMap[product.id] = idx;
+  });
+
+  const prices = emptyHistoryPrices(products, suppliers);
+  entries.forEach((entry) => {
+    const col = supplierMap[entry.supplierId];
+    const row = productMap[entry.procurementProductId];
+    prices[row][col] = entry.price;
+  });
+  setPrices(prices);
 }
