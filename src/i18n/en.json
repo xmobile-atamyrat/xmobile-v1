@@ -119,5 +119,9 @@
   "deleteItemSuccess": "Successfully deleted!",
   "confirmClose": "Are you sure you want to cancel? Your changes will be lost!",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "history": "History",
+  "createHistory": "Create calculation session",
+  "editHistory": "Edit calculation session",
+  "selectSupplierAndProduct": "Please select at least one supplier and product."
 }

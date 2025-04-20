@@ -2,9 +2,11 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import DualTables from '@/pages/procurement/components/DualTables';
 import {
+  createHistoryUtil,
   createProductUtil,
   createSupplierUtil,
   deleteProductUtil,
@@ -24,7 +26,11 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import {
+  CalculationHistory,
+  ProcurementProduct,
+  Supplier,
+} from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -54,7 +60,10 @@ export default function Procurement() {
   const [selectedProducts, setSelectedProducts] = useState<
     ProcurementProduct[]
   >([]);
+  const [, setHistoryList] = useState<CalculationHistory[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<CalculationHistory>();
   const [calculateDialog, setCalculateDialog] = useState(false);
+  const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
 
   const handleProductSearch = useCallback(
     debounce(async (keyword: string) => {
@@ -101,6 +110,23 @@ export default function Procurement() {
         accessToken,
         keyword,
         setSuppliers,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken],
+  );
+
+  const createHistory = useCallback(
+    async (name: string) => {
+      // TODO: also send a list of supplier & product ids
+      await createHistoryUtil(
+        accessToken,
+        name,
+        selectedSuppliers,
+        selectedProducts,
+        setHistoryList,
+        setSelectedHistory,
         setSnackbarOpen,
         setSnackbarMessage,
       );
@@ -173,13 +199,36 @@ export default function Procurement() {
             <Typography fontWeight={600} fontSize={20}>
               {t('procurement')}
             </Typography>
-            <Button
-              onClick={() => {
-                setCalculateDialog(true);
-              }}
-            >
-              {t('calculate')}
-            </Button>
+            <Box className="flex flex-row gap-2">
+              <Button
+                onClick={() => {
+                  if (
+                    selectedProducts.length === 0 ||
+                    selectedSuppliers.length === 0
+                  ) {
+                    setSnackbarMessage({
+                      message: 'selectSupplierAndProduct',
+                      severity: 'error',
+                    });
+                    setSnackbarOpen(true);
+                  }
+                  setCreateHistoryDialog(true);
+                }}
+                sx={{ textTransform: 'none' }}
+                variant="outlined"
+              >
+                {t('calculate')}
+              </Button>
+              <Button
+                onClick={() => {
+                  // TODO: implement
+                }}
+                sx={{ textTransform: 'none' }}
+                variant="outlined"
+              >
+                {t('history')}
+              </Button>
+            </Box>
           </Box>
 
           {/* Supplier Tables */}
@@ -193,6 +242,7 @@ export default function Procurement() {
             handleSearch={handleSupplierSearch}
             deleteItem={deleteSupplier}
           />
+
           {/* Product Tables */}
           <DualTables
             setSnackbarMessage={setSnackbarMessage}
@@ -205,8 +255,21 @@ export default function Procurement() {
             deleteItem={deleteProduct}
           />
 
-          {calculateDialog && (
+          {createHistoryDialog && (
+            <AddEditHistoryDialog
+              handleClose={() => setCreateHistoryDialog(false)}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+              handleSubmit={async (title: string) => {
+                await createHistory(title);
+                setCalculateDialog(true);
+              }}
+            />
+          )}
+
+          {calculateDialog && selectedHistory && (
             <CalculateDialog
+              historyTitle={selectedHistory.name}
               products={selectedProducts}
               suppliers={selectedSuppliers}
               handleClose={() => setCalculateDialog(false)}

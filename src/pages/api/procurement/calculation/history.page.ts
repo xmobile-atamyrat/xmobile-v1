@@ -36,9 +36,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, data: allHistory });
     }
     if (method === 'POST') {
-      const { name }: CalculationHistory = req.body;
+      // TODO: get a list of supplier and product ids & connect
+      const {
+        name,
+        productIds,
+        supplierIds,
+      }: CalculationHistory & { supplierIds: string[]; productIds: string[] } =
+        req.body;
       const history = await dbClient.calculationHistory.create({
-        data: { name },
+        data: {
+          name,
+          suppliers: { connect: supplierIds.map((id) => ({ id })) },
+          procurementProducts: { connect: productIds.map((id) => ({ id })) },
+        },
       });
       return res.status(200).json({ success: true, data: history });
     }

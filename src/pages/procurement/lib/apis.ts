@@ -1,6 +1,10 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { ResponseApi } from '@/pages/lib/types';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import {
+  CalculationHistory,
+  ProcurementProduct,
+  Supplier,
+} from '@prisma/client';
 
 export const fetchSuppliers = async (
   accessToken: string,
@@ -82,6 +86,24 @@ export const createSupplier = async (
     'POST',
     {
       name,
+    },
+  );
+};
+
+export const createHistory = async (
+  accessToken: string,
+  name: string,
+  supplierIds: string[],
+  productIds: string[],
+): Promise<ResponseApi<CalculationHistory>> => {
+  return fetchWithCreds<CalculationHistory>(
+    accessToken,
+    '/api/procurement/calculation/history',
+    'POST',
+    {
+      name,
+      supplierIds,
+      productIds,
     },
   );
 };
