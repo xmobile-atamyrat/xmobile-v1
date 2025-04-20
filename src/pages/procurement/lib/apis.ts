@@ -62,6 +62,13 @@ export const getSuppliers = async (
   return fetchWithCreds<Supplier[]>(accessToken, url, 'GET');
 };
 
+export const getHistoryList = async (
+  accessToken: string,
+): Promise<ResponseApi<CalculationHistory[]>> => {
+  const url = '/api/procurement/calculation/history';
+  return fetchWithCreds<CalculationHistory[]>(accessToken, url, 'GET');
+};
+
 export const createProcurementProduct = async (
   accessToken: string,
   name: string,

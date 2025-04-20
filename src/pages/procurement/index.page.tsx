@@ -5,12 +5,14 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import DualTables from '@/pages/procurement/components/DualTables';
+import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
   createHistoryUtil,
   createProductUtil,
   createSupplierUtil,
   deleteProductUtil,
   deleteSupplierUtil,
+  getHistoryListUtil,
   getProductsUtil,
   getSuppliersUtil,
   handleProductSearchUtil,
@@ -60,10 +62,11 @@ export default function Procurement() {
   const [selectedProducts, setSelectedProducts] = useState<
     ProcurementProduct[]
   >([]);
-  const [, setHistoryList] = useState<CalculationHistory[]>([]);
+  const [historyList, setHistoryList] = useState<CalculationHistory[]>([]);
   const [selectedHistory, setSelectedHistory] = useState<CalculationHistory>();
   const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
+  const [historyListDialog, setHistoryListDialog] = useState(false);
 
   const handleProductSearch = useCallback(
     debounce(async (keyword: string) => {
@@ -119,7 +122,6 @@ export default function Procurement() {
 
   const createHistory = useCallback(
     async (name: string) => {
-      // TODO: also send a list of supplier & product ids
       await createHistoryUtil(
         accessToken,
         name,
@@ -131,7 +133,7 @@ export default function Procurement() {
         setSnackbarMessage,
       );
     },
-    [accessToken],
+    [accessToken, selectedProducts, selectedSuppliers],
   );
 
   const deleteSupplier = useCallback(
@@ -175,6 +177,12 @@ export default function Procurement() {
           setSnackbarOpen,
           setSnackbarMessage,
         );
+        await getHistoryListUtil(
+          accessToken,
+          setHistoryList,
+          setSnackbarOpen,
+          setSnackbarMessage,
+        );
       })();
     }
   }, [accessToken, user]);
@@ -211,6 +219,7 @@ export default function Procurement() {
                       severity: 'error',
                     });
                     setSnackbarOpen(true);
+                    return;
                   }
                   setCreateHistoryDialog(true);
                 }}
@@ -221,7 +230,7 @@ export default function Procurement() {
               </Button>
               <Button
                 onClick={() => {
-                  // TODO: implement
+                  setHistoryListDialog(true);
                 }}
                 sx={{ textTransform: 'none' }}
                 variant="outlined"
@@ -273,6 +282,16 @@ export default function Procurement() {
               products={selectedProducts}
               suppliers={selectedSuppliers}
               handleClose={() => setCalculateDialog(false)}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+            />
+          )}
+
+          {historyListDialog && (
+            <HistoryListDialog
+              handleClose={() => setHistoryListDialog(false)}
+              historyList={historyList}
+              setHistoryList={setHistoryList}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
             />
