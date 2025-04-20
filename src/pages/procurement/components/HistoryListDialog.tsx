@@ -1,5 +1,10 @@
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
-import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
+import { useUserContext } from '@/pages/lib/UserContext';
+import {
+  dayMonthYearFromDate,
+  deleteHistoryUtil,
+} from '@/pages/procurement/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -36,9 +41,14 @@ export default function AddSupplierDialog({
   handleClose,
   historyList,
   handleSelectHistory,
+  setHistoryList,
+  setSnackbarMessage,
+  setSnackbarOpen,
 }: HistoryListDialogProps) {
+  const { accessToken } = useUserContext();
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
+  const [deleteDialogId, setDeleteDialogId] = useState<string>();
   return (
     <Dialog open onClose={handleClose} component="form" fullScreen>
       <DialogTitle className="w-full flex justify-center">
@@ -85,7 +95,9 @@ export default function AddSupplierDialog({
                         <IconButton>
                           <EditIcon color="primary" />
                         </IconButton>
-                        <IconButton>
+                        <IconButton
+                          onClick={() => setDeleteDialogId(history.id)}
+                        >
                           <DeleteIcon color="error" />
                         </IconButton>
                       </Box>
@@ -103,6 +115,25 @@ export default function AddSupplierDialog({
         </Button>
       </DialogActions>
       {loading && <CircularProgress />}
+      {deleteDialogId && (
+        <DeleteDialog
+          title={t('delete')}
+          description={t('confirmDelete')}
+          blueButtonText={t('cancel')}
+          redButtonText={t('delete')}
+          handleClose={() => setDeleteDialogId(undefined)}
+          handleDelete={async () => {
+            await deleteHistoryUtil(
+              accessToken,
+              deleteDialogId,
+              setHistoryList,
+              setSnackbarOpen,
+              setSnackbarMessage,
+            );
+            setDeleteDialogId(undefined);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

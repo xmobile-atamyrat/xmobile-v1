@@ -3,6 +3,7 @@ import {
   createHistory,
   createProcurementProduct,
   createSupplier,
+  deleteHistory,
   deleteProduct,
   deleteSupplier,
   editHistory,
@@ -514,6 +515,40 @@ export async function deleteSupplierUtil(
     const { success, message } = await deleteSupplier(accessToken, id);
     if (success) {
       setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deleteItemSuccess',
+        severity: 'success',
+      });
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function deleteHistoryUtil(
+  accessToken: string,
+  id: string,
+  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, message } = await deleteHistory(accessToken, id);
+    if (success) {
+      setHistoryList((prev) => prev.filter((history) => history.id !== id));
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'deleteItemSuccess',

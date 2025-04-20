@@ -51,7 +51,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, data: history });
     }
     if (method === 'DELETE') {
-      const id = req.query.id as string;
+      const id = req.body.id as string;
       const history = await dbClient.calculationHistory.delete({
         where: { id },
       });

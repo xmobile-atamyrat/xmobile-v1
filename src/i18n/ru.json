@@ -129,5 +129,6 @@
   "createdDate": "Создана дата",
   "modifiedDate": "Модифицированная дата",
   "actions": "Действия",
-  "success": "Success!"
+  "success": "Success!",
+  "confirmDelete": "Are you sure you want to delete?"
 }
