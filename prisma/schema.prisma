@@ -130,7 +130,7 @@ model CalculationHistory {
   id                      String                  @id @default(uuid())
   name                    String
   prices                  Json?
-  quantities              Int[]
+  quantities              Json?
 
   suppliers               Supplier[]              @relation("CalculationHistorySuppliers")
   procurementProducts     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")

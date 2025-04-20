@@ -127,5 +127,6 @@
   "createdDate": "Oluşturulan Tarih",
   "modifiedDate": "Değiştirilmiş tarih",
   "actions": "Eylem",
-  "success": "Success!"
+  "success": "Success!",
+  "confirmDelete": "Are you sure you want to delete?"
 }

@@ -129,5 +129,6 @@
   "createdDate": "Döredilen senesi",
   "modifiedDate": "Üýtgedilen senesi",
   "actions": "Hereketler",
-  "success": "Success!"
+  "success": "Success!",
+  "confirmDelete": "Are you sure you want to delete?"
 }

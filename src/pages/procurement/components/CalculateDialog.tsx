@@ -58,7 +58,9 @@ export default function CalculateDialog({
     parseInitialHistoryPrices(history.prices, products, suppliers),
   );
   const [productQuantity, setProductQuantity] = useState<number[]>(
-    history.quantities ?? Array(products.length),
+    history.quantities
+      ? (history.quantities as number[]).map((quantity) => quantity)
+      : Array(products.length),
   );
   const [calculationDone, setCalculationDone] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
