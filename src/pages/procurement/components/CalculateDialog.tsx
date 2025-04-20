@@ -267,12 +267,12 @@ export default function CalculateDialog({
       {loading && <CircularProgress />}
       {cancelDialog && (
         <DeleteDialog
-          blueButtonText={t('no')}
-          redButtonText={t('yes')}
+          blueButtonText={t('yes')}
+          redButtonText={t('no')}
           description={t('confirmClose')}
           title={t('cancel')}
-          handleClose={() => setCancelDialog(false)}
-          handleDelete={handleClose}
+          handleClose={handleClose}
+          handleDelete={() => setCancelDialog(false)}
         />
       )}
     </Dialog>
