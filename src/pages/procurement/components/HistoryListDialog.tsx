@@ -1,4 +1,7 @@
 import { SnackbarProps } from '@/pages/lib/types';
+import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import {
   Box,
   Button,
@@ -6,6 +9,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { CalculationHistory } from '@prisma/client';
@@ -29,29 +40,61 @@ export default function AddSupplierDialog({
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   return (
-    <Dialog open onClose={handleClose} component="form">
+    <Dialog open onClose={handleClose} component="form" fullScreen>
       <DialogTitle className="w-full flex justify-center">
         {t('history')}
       </DialogTitle>
       <DialogContent>
-        <Box className="flex flex-col w-[300px] sm:w-[600px] gap-4 p-2">
-          {historyList.map((history) => (
-            <Button
-              variant="outlined"
-              sx={{
-                textTransform: 'none',
-                width: 400,
-              }}
-              key={history.id}
-              onClick={async () => {
-                setLoading(true);
-                await handleSelectHistory(history.id);
-                setLoading(false);
-              }}
-            >
-              {history.name}
-            </Button>
-          ))}
+        <Box className="flex flex-col gap-4 p-2">
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableCell align="center">{t('name')}</TableCell>
+                <TableCell align="center">{t('createdDate')}</TableCell>
+                <TableCell align="center">{t('modifiedDate')}</TableCell>
+                <TableCell align="center">{t('actions')}</TableCell>
+              </TableHead>
+              <TableBody>
+                {historyList.map((history) => (
+                  <TableRow key={history.id}>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        sx={{
+                          textTransform: 'none',
+                          width: '100%',
+                        }}
+                        key={history.id}
+                        onClick={async () => {
+                          setLoading(true);
+                          await handleSelectHistory(history.id);
+                          setLoading(false);
+                        }}
+                      >
+                        {history.name}
+                      </Button>
+                    </TableCell>
+                    <TableCell align="center">
+                      {dayMonthYearFromDate(new Date(history.createdAt))}
+                    </TableCell>
+                    <TableCell align="center">
+                      {dayMonthYearFromDate(new Date(history.updatedAt))}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box>
+                        <IconButton>
+                          <EditIcon color="primary" />
+                        </IconButton>
+                        <IconButton>
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       </DialogContent>
       <DialogActions className="mb-4 mr-4">
