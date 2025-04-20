@@ -304,6 +304,7 @@ export async function editHistoryUtil({
   quantities,
   setSnackbarMessage,
   setSnackbarOpen,
+  setHistoryList,
 }: {
   id: string;
   accessToken: string;
@@ -312,9 +313,10 @@ export async function editHistoryUtil({
   quantities?: (number | null)[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setHistoryList?: Dispatch<SetStateAction<CalculationHistory[]>>;
 }) {
   try {
-    const { success, message } = await editHistory({
+    const { success, data, message } = await editHistory({
       accessToken,
       id,
       name,
@@ -334,6 +336,16 @@ export async function editHistoryUtil({
         message: 'success',
         severity: 'success',
       });
+      if (setHistoryList) {
+        setHistoryList((prev) =>
+          prev.map((history) => {
+            if (history.id === id) {
+              return data;
+            }
+            return history;
+          }),
+        );
+      }
     }
   } catch (error) {
     console.error(error);

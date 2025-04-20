@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface AddEditHistoryDialogProps {
+  id?: string;
   initialTitle?: string;
   handleClose: () => void;
   handleSubmit: (title: string) => Promise<void>;

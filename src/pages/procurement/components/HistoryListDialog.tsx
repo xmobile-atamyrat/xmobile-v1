@@ -1,9 +1,11 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import {
   dayMonthYearFromDate,
   deleteHistoryUtil,
+  editHistoryUtil,
 } from '@/pages/procurement/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -49,6 +51,10 @@ export default function AddSupplierDialog({
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [deleteDialogId, setDeleteDialogId] = useState<string>();
+  const [editDialogObj, setEditDialogObj] = useState<{
+    id: string;
+    name: string;
+  }>();
   return (
     <Dialog open onClose={handleClose} component="form" fullScreen>
       <DialogTitle className="w-full flex justify-center">
@@ -92,7 +98,14 @@ export default function AddSupplierDialog({
                     </TableCell>
                     <TableCell align="center">
                       <Box>
-                        <IconButton>
+                        <IconButton
+                          onClick={() => {
+                            setEditDialogObj({
+                              name: history.name,
+                              id: history.id,
+                            });
+                          }}
+                        >
                           <EditIcon color="primary" />
                         </IconButton>
                         <IconButton
@@ -132,6 +145,25 @@ export default function AddSupplierDialog({
             );
             setDeleteDialogId(undefined);
           }}
+        />
+      )}
+      {editDialogObj && (
+        <AddEditHistoryDialog
+          initialTitle={editDialogObj.name}
+          handleClose={() => setEditDialogObj(undefined)}
+          handleSubmit={async (newTitle: string) => {
+            await editHistoryUtil({
+              accessToken,
+              id: editDialogObj.id,
+              name: newTitle,
+              setHistoryList,
+              setSnackbarOpen,
+              setSnackbarMessage,
+            });
+            setEditDialogObj(undefined);
+          }}
+          setSnackbarMessage={setSnackbarMessage}
+          setSnackbarOpen={setSnackbarOpen}
         />
       )}
     </Dialog>
