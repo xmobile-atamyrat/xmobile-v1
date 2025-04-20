@@ -1,8 +1,11 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
+import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ExcelFileData,
   downloadXlsxAsZip,
+  emptyHistoryPrices,
+  parseInitialHistoryPrices,
 } from '@/pages/procurement/lib/utils';
 import {
   Box,
@@ -21,36 +24,39 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import { CalculationEntry, ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 interface CalculateDialogProps {
   historyTitle: string;
   suppliers: Supplier[];
   products: ProcurementProduct[];
+  initialPrices: CalculationEntry[];
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-type Color = 'red' | 'green' | 'orange';
-
-const emptyPrices = (products: ProcurementProduct[], suppliers: Supplier[]) =>
-  Array.from({ length: products.length }, () => Array(suppliers.length));
-
 export default function CalculateDialog({
   historyTitle,
   products,
   suppliers,
+  initialPrices,
   handleClose,
   setSnackbarMessage,
   setSnackbarOpen,
 }: CalculateDialogProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
-  const [prices, setPrices] = useState<{ value: number; color: Color }[][]>(
-    emptyPrices(products, suppliers),
+  const [prices, setPrices] = useState<HistoryPrice[][]>(
+    emptyHistoryPrices(products, suppliers),
   );
   const [productQuantity, setProductQuantity] = useState<number[]>(
     Array(products.length),
@@ -69,17 +75,21 @@ export default function CalculateDialog({
         if (price.value === undefined) return price;
         if (price.value === minPrice && !minFound) {
           minFound = true;
-          return { ...price, color: 'green' as Color };
+          return { ...price, color: 'green' as HistoryColor };
         }
         if (price.value === maxPrice && !maxFound) {
           maxFound = true;
-          return { ...price, color: 'red' as Color };
+          return { ...price, color: 'red' as HistoryColor };
         }
         return { ...price };
       });
     });
     setPrices(newPrices);
   }, [prices]);
+
+  useEffect(() => {
+    parseInitialHistoryPrices(initialPrices, suppliers, products, setPrices);
+  }, [initialPrices]);
 
   return (
     <Dialog open fullScreen>
@@ -137,6 +147,7 @@ export default function CalculateDialog({
                                 ? undefined
                                 : Number(e.target.value),
                             color: newPrices[prdIdx][splIdx]?.color,
+                            id: newPrices[prdIdx][splIdx]?.id,
                           };
                           setPrices(newPrices);
                         }}
