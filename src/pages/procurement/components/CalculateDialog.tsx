@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
+  historyTitle: string;
   suppliers: Supplier[];
   products: ProcurementProduct[];
   handleClose: () => void;
@@ -39,6 +40,7 @@ const emptyPrices = (products: ProcurementProduct[], suppliers: Supplier[]) =>
   Array.from({ length: products.length }, () => Array(suppliers.length));
 
 export default function CalculateDialog({
+  historyTitle,
   products,
   suppliers,
   handleClose,
@@ -81,7 +83,9 @@ export default function CalculateDialog({
 
   return (
     <Dialog open fullScreen>
-      <DialogTitle>{t('calculate')}</DialogTitle>
+      <DialogTitle>
+        {t('calculate')} - {historyTitle}
+      </DialogTitle>
       <DialogContent>
         <TableContainer component={Paper}>
           <Table>

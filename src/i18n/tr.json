@@ -119,5 +119,9 @@
   "deleteItemSuccess": "Başarılı bir şekilde silindi!",
   "confirmClose": "İptal etmek istediğinden emin misiniz? Değişiklikleriniz kaybolacak!",
   "yes": "Evet",
-  "no": "HAYIR"
+  "no": "HAYIR",
+  "history": "Tarih",
+  "createHistory": "Hesaplama Oturumu Oluştur",
+  "editHistory": "Hesaplama Oturumunu Düzenle",
+  "selectSupplierAndProduct": "Lütfen en az bir tedarikçi ve ürün seçin."
 }

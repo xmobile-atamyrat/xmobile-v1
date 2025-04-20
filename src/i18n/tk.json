@@ -121,5 +121,9 @@
   "deleteItemSuccess": "Üstünlikli öçürildi!",
   "confirmClose": "Cancatyrmak isleýändigiňize ynanýarsyňyzmy? Üýtgeşmeleriňiz ýitiriler!",
   "yes": "Hawa",
-  "no": "Ýok"
+  "no": "Ýok",
+  "history": "Taryh",
+  "createHistory": "Hasaplamak sessiýasyny dörediň",
+  "editHistory": "Hasaplamak sessiýasyny redaktirläň",
+  "selectSupplierAndProduct": "Iň azyndan bir üpjün ediji we önüm saýlaň."
 }
