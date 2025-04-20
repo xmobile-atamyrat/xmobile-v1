@@ -5,6 +5,7 @@ import {
   createSupplier,
   deleteProduct,
   deleteSupplier,
+  getHistoryList,
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
@@ -354,7 +355,35 @@ export async function getProductsUtil(
     console.error(error);
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'fetchPricesError',
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+}
+
+export async function getHistoryListUtil(
+  accessToken: string,
+  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
+) {
+  try {
+    const { success, data, message } = await getHistoryList(accessToken);
+    if (success) {
+      setHistoryList(data);
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
       severity: 'error',
     });
   }
@@ -382,7 +411,7 @@ export async function getSuppliersUtil(
     console.error(error);
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'fetchPricesError',
+      message: 'serverError',
       severity: 'error',
     });
   }

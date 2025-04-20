@@ -36,7 +36,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, data: allHistory });
     }
     if (method === 'POST') {
-      // TODO: get a list of supplier and product ids & connect
       const {
         name,
         productIds,
