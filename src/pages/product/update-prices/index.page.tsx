@@ -210,7 +210,7 @@ export default function UpdatePrices() {
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      {user?.grade === 'ADMIN' && (
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Box
           sx={{
             mt: isMdUp
@@ -465,6 +465,8 @@ export default function UpdatePrices() {
             <DeleteDialog
               title={t('deletePrice')}
               description={t('confirmDeletePrice')}
+              blueButtonText={t('cancel')}
+              redButtonText={t('delete')}
               handleClose={async () => {
                 setShowDeleteDialog(false);
               }}
@@ -502,6 +504,8 @@ export default function UpdatePrices() {
                     message: 'priceDeleteFailed',
                     severity: 'error',
                   });
+                } finally {
+                  setShowDeleteDialog(false);
                 }
               }}
             />

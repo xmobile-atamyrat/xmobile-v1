@@ -15,7 +15,7 @@ const filepath = 'src/pages/api/user/signin.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi<{ accessToken: string; user: User }>>,
+  res: NextApiResponse<ResponseApi>,
 ) {
   addCors(res);
   const { method } = req;
@@ -55,7 +55,7 @@ export default async function handler(
 
       return res.status(200).json({
         success: true,
-        data: { accessToken, user },
+        data: { user, accessToken, refreshToken },
       });
     } catch (error) {
       console.error(error);

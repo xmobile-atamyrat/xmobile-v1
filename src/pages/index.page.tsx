@@ -24,9 +24,8 @@ import { useCallback, useEffect, useState } from 'react';
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
-  let locale = cookie.parse(context.req.headers.cookie ?? '')[
-    LOCALE_COOKIE_NAME
-  ];
+  let locale =
+    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
   let ip =
     context.req.headers['x-real-ip'] ||
     context.req.headers['x-forwarded-for'] ||
