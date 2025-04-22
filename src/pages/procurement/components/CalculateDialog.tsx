@@ -77,7 +77,7 @@ export default function CalculateDialog({
 
   const handleCalculate = useCallback(() => {
     const newPrices = prices.map((row) => {
-      const definedPrices = row.filter((price) => price.value !== undefined);
+      const definedPrices = row.filter((price) => price.value != null);
       const minPrice = Math.min(...definedPrices.map((price) => price.value));
       const maxPrice = Math.max(...definedPrices.map((price) => price.value));
       let minFound = false;
