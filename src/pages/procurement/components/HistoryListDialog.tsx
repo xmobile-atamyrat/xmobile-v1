@@ -65,10 +65,12 @@ export default function AddSupplierDialog({
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableCell align="center">{t('name')}</TableCell>
-                <TableCell align="center">{t('createdDate')}</TableCell>
-                <TableCell align="center">{t('modifiedDate')}</TableCell>
-                <TableCell align="center">{t('actions')}</TableCell>
+                <TableRow>
+                  <TableCell align="center">{t('name')}</TableCell>
+                  <TableCell align="center">{t('createdDate')}</TableCell>
+                  <TableCell align="center">{t('modifiedDate')}</TableCell>
+                  <TableCell align="center">{t('actions')}</TableCell>
+                </TableRow>
               </TableHead>
               <TableBody>
                 {historyList.map((history) => (
