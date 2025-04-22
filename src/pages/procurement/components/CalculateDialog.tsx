@@ -91,7 +91,7 @@ export default function CalculateDialog({
           maxFound = true;
           return { ...price, color: 'red' as HistoryColor };
         }
-        return price;
+        return { ...price, color: undefined };
       });
     });
     setPrices(newPrices);
