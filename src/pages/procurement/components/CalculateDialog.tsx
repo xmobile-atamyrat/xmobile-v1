@@ -36,8 +36,11 @@ import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
   history: CalculationHistory;
-  suppliers: Supplier[];
-  products: ProcurementProduct[];
+  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>;
+  selectedSuppliers: Supplier[];
+  setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>;
+  selectedProducts: ProcurementProduct[];
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
@@ -45,8 +48,11 @@ interface CalculateDialogProps {
 
 export default function CalculateDialog({
   history,
-  products,
-  suppliers,
+  selectedSuppliers,
+  selectedProducts,
+  setSelectedHistory,
+  setSelectedProducts,
+  setSelectedSuppliers,
   handleClose,
   setSnackbarMessage,
   setSnackbarOpen,
@@ -55,12 +61,16 @@ export default function CalculateDialog({
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<HistoryPrice[][]>(
-    parseInitialHistoryPrices(history.prices, products, suppliers),
+    parseInitialHistoryPrices(
+      history.prices,
+      selectedProducts,
+      selectedSuppliers,
+    ),
   );
   const [productQuantity, setProductQuantity] = useState<number[]>(
     history.quantities
       ? (history.quantities as number[]).map((quantity) => quantity)
-      : Array(products.length),
+      : Array(selectedProducts.length),
   );
   const [calculationDone, setCalculationDone] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
@@ -73,7 +83,6 @@ export default function CalculateDialog({
       let minFound = false;
       let maxFound = false;
       return row.map((price) => {
-        if (price.value === undefined) return price;
         if (price.value === minPrice && !minFound) {
           minFound = true;
           return { ...price, color: 'green' as HistoryColor };
@@ -82,7 +91,7 @@ export default function CalculateDialog({
           maxFound = true;
           return { ...price, color: 'red' as HistoryColor };
         }
-        return { ...price };
+        return price;
       });
     });
     setPrices(newPrices);
@@ -100,7 +109,7 @@ export default function CalculateDialog({
               <TableRow>
                 <TableCell></TableCell>
                 <TableCell align="center">{t('quantity')}</TableCell>
-                {suppliers.map((supplier) => (
+                {selectedSuppliers.map((supplier) => (
                   <TableCell key={supplier.id} align="center">
                     {supplier.name}
                   </TableCell>
@@ -108,7 +117,7 @@ export default function CalculateDialog({
               </TableRow>
             </TableHead>
             <TableBody>
-              {products.map((product, prdIdx) => (
+              {selectedProducts.map((product, prdIdx) => (
                 <TableRow key={product.id}>
                   <TableCell align="left">{product.name}</TableCell>
                   <TableCell align="center">
@@ -126,7 +135,7 @@ export default function CalculateDialog({
                       }}
                     />
                   </TableCell>
-                  {suppliers.map((supplier, splIdx) => (
+                  {selectedSuppliers.map((supplier, splIdx) => (
                     <TableCell key={supplier.id} align="center">
                       <TextField
                         size="small"
@@ -232,7 +241,7 @@ export default function CalculateDialog({
               const today = new Date();
               const formattedDate = dayMonthYearFromDate(today);
 
-              const csvFileData: ExcelFileData[] = suppliers
+              const csvFileData: ExcelFileData[] = selectedSuppliers
                 .map((supplier, splIdx) => {
                   const fileData = prices
                     .filter((row, prdIdx) => {
@@ -244,7 +253,7 @@ export default function CalculateDialog({
                     })
                     .map((row, prdIdx) => {
                       return [
-                        products[prdIdx].name,
+                        selectedProducts[prdIdx].name,
                         productQuantity[prdIdx],
                         `$${row[splIdx].value}`,
                       ];
@@ -273,8 +282,15 @@ export default function CalculateDialog({
           redButtonText={t('no')}
           description={t('confirmClose')}
           title={t('cancel')}
-          handleClose={handleClose}
-          handleDelete={() => setCancelDialog(false)}
+          handleClose={() => {
+            setSelectedHistory(undefined);
+            setSelectedSuppliers([]);
+            setSelectedProducts([]);
+            handleClose();
+          }}
+          handleDelete={() => {
+            setCancelDialog(false);
+          }}
         />
       )}
     </Dialog>
