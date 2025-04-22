@@ -213,7 +213,7 @@ export default function CalculateDialog({
               handleCalculate();
               setCalculationDone(true);
               setSnackbarMessage({
-                message: t('calculationDone'),
+                message: 'calculationDone',
                 severity: 'success',
               });
               setSnackbarOpen(true);
