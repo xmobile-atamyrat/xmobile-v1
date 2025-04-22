@@ -280,11 +280,14 @@ export default function Procurement() {
           {calculateDialog && selectedHistory && (
             <CalculateDialog
               history={selectedHistory}
-              products={selectedProducts}
-              suppliers={selectedSuppliers}
+              selectedProducts={selectedProducts}
+              selectedSuppliers={selectedSuppliers}
               handleClose={() => setCalculateDialog(false)}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
+              setSelectedHistory={setSelectedHistory}
+              setSelectedProducts={setSelectedProducts}
+              setSelectedSuppliers={setSelectedSuppliers}
             />
           )}
 
