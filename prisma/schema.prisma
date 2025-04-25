@@ -141,15 +141,9 @@ model CalculationHistory {
   updatedAt               DateTime                @updatedAt
 }
 
-enum UserRole {
-  FREE
-  ADMIN
-  SUPERUSER
-}
-
 model ChatSession {
   id              String        @id @default(uuid())
-  status          String        @default("open")
+  status          ChatStatus        @default(OPEN)
 
   user            User          @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId          String
@@ -175,4 +169,15 @@ model ChatMessage {
   updatedAt       DateTime      @updatedAt
 
   @@index([sessionId, createdAt])
+}
+
+enum ChatStatus {
+  CLOSED
+  OPEN
+}
+
+enum UserRole {
+  FREE
+  ADMIN
+  SUPERUSER
 }
