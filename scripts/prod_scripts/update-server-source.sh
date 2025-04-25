@@ -46,6 +46,7 @@ mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.json .
 
 rm -rf .next
 yarn build
+yarn build:ws
 /home/ubuntu/scripts/restart-server.sh
 
 cd /home/ubuntu/tar-file
