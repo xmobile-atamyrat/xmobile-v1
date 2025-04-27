@@ -36,6 +36,7 @@ export default async function handler(
 
       const { accessToken, refreshToken: newRefreshToken } = generateTokens(
         user.id,
+        user.grade
       );
 
       res.setHeader(

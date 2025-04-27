@@ -43,7 +43,7 @@ export default async function handler(
       });
       delete user.password;
 
-      const { accessToken, refreshToken } = generateTokens(user.id);
+      const { accessToken, refreshToken } = generateTokens(user.id, user.grade);
 
       res.setHeader(
         'Set-Cookie',
