@@ -5,7 +5,7 @@ websocketserver=$(echo "$output" | grep ':4000')
 pid_ns=$(echo "$nextserver" | awk -F'/' '{print $1}' | awk '{print $NF}')
 pid_ws=$(echo "$websocketserver" | awk -F'/' '{print $1}' | awk '{print $NF}')
 
-# Check and kill process on port 3000
+# Check if we got a PID on next server
 if [[ -z "$pid_ns" ]]; then
     echo "No process found listening on port 3000."
 else
@@ -13,7 +13,7 @@ else
     sudo kill "$pid_ns"
 fi
 
-# Check and kill process on port 4000
+# Check if we got a PID on websocket-server
 if [[ -z "$pid_ws" ]]; then
     echo "No process found listening on port 4000."
 else
