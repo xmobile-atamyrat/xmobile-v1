@@ -32,6 +32,10 @@ echo "Copying the 'public'"
 rm -rf public
 mv /home/ubuntu/tar-file/app/xmobile-v1/public .
 
+echo "Copying the 'nginx'"
+rm -rf nginx
+mv /home/ubuntu/tar-file/app/xmobile-v1/nginx .
+
 echo "Copying 'package.json'"
 mv /home/ubuntu/tar-file/app/xmobile-v1/package.json .
 
