@@ -1,27 +1,14 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
     "module": "commonjs",
-    "outDir": "dist/",
-    "rootDir": "src",
-    "strict": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
+    "outDir": "dist",
+    "noEmit": false
   },
   "include": [
     "src/ws-server/**/*.ts",
     "src/lib/**/*.ts",
     "src/pages/api/utils/**/*.ts",
     "types.d.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "src/pages/**/*.tsx"
   ]
 }
