@@ -31,7 +31,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
         return res.status(200).json({ success: true, data: history });
       }
-      const allHistory = await dbClient.calculationHistory.findMany();
+      const allHistory = await dbClient.calculationHistory.findMany({
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
       return res.status(200).json({ success: true, data: allHistory });
     }
     if (method === 'POST') {
