@@ -42,8 +42,6 @@ export interface UserContextProps {
   setAccessToken: Dispatch<SetStateAction<string>>;
 }
 
-export type UserGrade = 'FREE' | 'ADMIN' | 'SUPERUSER';
-
 export interface DollarRateProps {
   rate: number;
   setRate: Dispatch<SetStateAction<number>>;
