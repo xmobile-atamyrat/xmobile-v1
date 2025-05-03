@@ -130,5 +130,9 @@
   "modifiedDate": "Модифицированная дата",
   "actions": "Действия",
   "success": "Success!",
-  "confirmDelete": "Are you sure you want to delete?"
+  "confirmDelete": "Are you sure you want to delete?",
+  "newOrder": "Новый заказ",
+  "downloadEmptyOrder": "Скачать заказ",
+  "addProducts": "Добавить продукты",
+  "addSuppliers": "Добавить поставщиков"
 }

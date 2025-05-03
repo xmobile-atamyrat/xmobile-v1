@@ -33,7 +33,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
       const allHistory = await dbClient.calculationHistory.findMany({
         orderBy: {
-          updatedAt: 'desc',
+          createdAt: 'desc',
         },
       });
       return res.status(200).json({ success: true, data: allHistory });
