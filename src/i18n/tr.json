@@ -128,5 +128,9 @@
   "modifiedDate": "Değiştirilmiş tarih",
   "actions": "Eylem",
   "success": "Success!",
-  "confirmDelete": "Are you sure you want to delete?"
+  "confirmDelete": "Are you sure you want to delete?",
+  "newOrder": "Yeni Sipariş",
+  "downloadEmptyOrder": "Boş sipariş indir",
+  "addProducts": "Ürün ekle",
+  "addSuppliers": "Tedarikçiler ekle"
 }
