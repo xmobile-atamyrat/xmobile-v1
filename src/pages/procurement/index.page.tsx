@@ -78,6 +78,7 @@ export default function Procurement() {
   const [historyListDialog, setHistoryListDialog] = useState(false);
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
     useState<ProductsSuppliersType>();
+  const [productQuantities, setProductQuantities] = useState<number[]>([]);
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -175,6 +176,17 @@ export default function Procurement() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (selectedHistory == null) return;
+    setProductQuantities(
+      selectedHistory.quantities
+        ? (selectedHistory.quantities as number[]).map((quantity) => quantity)
+        : Array(
+            selectedProducts.existing.length + selectedProducts.added.length,
+          ),
+    );
+  }, [selectedHistory]);
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
@@ -243,7 +255,8 @@ export default function Procurement() {
 
           {selectedHistory && (
             <EmptyOrder
-              productQuantities={selectedHistory.quantities}
+              productQuantities={productQuantities}
+              setProductQuantities={setProductQuantities}
               selectedProducts={selectedProducts}
               selectedSuppliers={selectedSuppliers}
               setSelectedProducts={setSelectedProducts}
