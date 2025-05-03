@@ -132,5 +132,6 @@
   "newOrder": "New Order",
   "downloadEmptyOrder": "Download Order",
   "addProducts": "Add Products",
-  "addSuppliers": "Add Suppliers"
+  "addSuppliers": "Add Suppliers",
+  "alreadyExists": "Exists in the current order!"
 }

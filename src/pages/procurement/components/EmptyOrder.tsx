@@ -81,34 +81,6 @@ export default function EmptyOrder({
           </TableBody>
         </Table>
       </TableContainer>
-
-      {/* <Menu
-        anchorEl={searchedProductsAnchor}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        open={Boolean(searchedProductsAnchor)}
-        onClose={() => {
-          setSearchedProductsAnchor(null);
-        }}
-      >
-        {searchedProducts.map((product) => (
-          <MenuItem
-            key={product.id}
-            onClick={() => {
-              // TODO: implement
-            }}
-          >
-            {product.name}
-          </MenuItem>
-        ))}
-      </Menu> */}
     </Box>
   );
 }
