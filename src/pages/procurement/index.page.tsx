@@ -4,7 +4,7 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
-import DualTables from '@/pages/procurement/components/DualTables';
+import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
   createHistoryUtil,
@@ -16,14 +16,14 @@ import {
   getHistoryUtil,
   getProductsUtil,
   getSuppliersUtil,
-  handleProductSearchUtil,
-  handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
-import { debounce } from '@/pages/product/utils';
 import {
   Alert,
   Box,
   Button,
+  IconButton,
+  Menu,
+  MenuItem,
   Snackbar,
   Typography,
   useMediaQuery,
@@ -56,6 +56,7 @@ export default function Procurement() {
   const { user, accessToken } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
@@ -68,32 +69,6 @@ export default function Procurement() {
   const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
-
-  const handleProductSearch = useCallback(
-    debounce(async (keyword: string) => {
-      await handleProductSearchUtil(
-        accessToken,
-        keyword,
-        setProducts,
-        setSnackbarOpen,
-        setSnackbarMessage,
-      );
-    }, 300),
-    [debounce, accessToken],
-  );
-
-  const handleSupplierSearch = useCallback(
-    debounce(async (keyword: string) => {
-      await handleSupplierSearchUtil(
-        accessToken,
-        keyword,
-        setSuppliers,
-        setSnackbarOpen,
-        setSnackbarMessage,
-      );
-    }, 300),
-    [debounce, accessToken],
-  );
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -178,12 +153,23 @@ export default function Procurement() {
           setSnackbarOpen,
           setSnackbarMessage,
         );
-        await getHistoryListUtil(
+        const latestHistory = await getHistoryListUtil(
           accessToken,
           setHistoryList,
           setSnackbarOpen,
           setSnackbarMessage,
         );
+        if (latestHistory) {
+          await getHistoryUtil(
+            accessToken,
+            latestHistory.id,
+            setSelectedHistory,
+            setSelectedSuppliers,
+            setSelectedProducts,
+            setSnackbarOpen,
+            setSnackbarMessage,
+          );
+        }
       })();
     }
   }, [accessToken, user]);
@@ -204,32 +190,23 @@ export default function Procurement() {
           }}
           className="flex flex-col gap-4 w-full h-full"
         >
-          <Box className="flex flex-row justify-between">
+          <Box className="flex flex-row justify-between items-center">
             <Typography fontWeight={600} fontSize={20}>
-              {t('procurement')}
+              {t('procurement')} - {selectedHistory?.name}
             </Typography>
-            <Box className="flex flex-row gap-2">
-              <Button
-                onClick={() => {
-                  if (
-                    selectedProducts.length === 0 ||
-                    selectedSuppliers.length === 0
-                  ) {
-                    setSnackbarMessage({
-                      message: 'selectSupplierAndProduct',
-                      severity: 'error',
-                    });
-                    setSnackbarOpen(true);
-                    return;
-                  }
-                  setCreateHistoryDialog(true);
+            <Box className="flex flex-row gap-2 items-center">
+              <IconButton
+                onClick={(event) => {
+                  setActionsAnchor(event.currentTarget);
                 }}
-                sx={{ textTransform: 'none' }}
-                variant="outlined"
+                color="inherit"
               >
-                {t('calculate')}
-              </Button>
+                <Button sx={{ textTransform: 'none' }} variant="outlined">
+                  {t('actions')}
+                </Button>
+              </IconButton>
               <Button
+                className="h-9"
                 onClick={() => {
                   setHistoryListDialog(true);
                 }}
@@ -241,29 +218,17 @@ export default function Procurement() {
             </Box>
           </Box>
 
-          {/* Supplier Tables */}
-          <DualTables
-            setSnackbarMessage={setSnackbarMessage}
-            setSnackbarOpen={setSnackbarOpen}
-            items={suppliers}
-            selectedItems={selectedSuppliers}
-            setSelectedItems={setSelectedSuppliers}
-            createItem={createSupplier}
-            handleSearch={handleSupplierSearch}
-            deleteItem={deleteSupplier}
-          />
-
-          {/* Product Tables */}
-          <DualTables
-            setSnackbarMessage={setSnackbarMessage}
-            setSnackbarOpen={setSnackbarOpen}
-            items={products}
-            selectedItems={selectedProducts}
-            setSelectedItems={setSelectedProducts}
-            createItem={createProduct}
-            handleSearch={handleProductSearch}
-            deleteItem={deleteProduct}
-          />
+          {selectedHistory && (
+            <EmptyOrder
+              productQuantities={selectedHistory.quantities}
+              selectedProducts={selectedProducts}
+              selectedSuppliers={selectedSuppliers}
+              setSelectedProducts={setSelectedProducts}
+              setSelectedSuppliers={setSelectedSuppliers}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+            />
+          )}
 
           {createHistoryDialog && (
             <AddEditHistoryDialog
@@ -308,7 +273,6 @@ export default function Procurement() {
                   setSnackbarOpen,
                   setSnackbarMessage,
                 );
-                setCalculateDialog(true);
               }}
             />
           )}
@@ -334,6 +298,72 @@ export default function Procurement() {
           </Snackbar>
         </Box>
       )}
+
+      <Menu
+        anchorEl={actionsAnchor}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(actionsAnchor)}
+        onClose={() => setActionsAnchor(null)}
+      >
+        <MenuItem>
+          <Button
+            className="w-full"
+            sx={{ textTransform: 'none' }}
+            variant="outlined"
+          >
+            {t('save')}
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <Button
+            className="w-full"
+            onClick={() => {
+              if (
+                selectedProducts.length === 0 ||
+                selectedSuppliers.length === 0
+              ) {
+                setSnackbarMessage({
+                  message: 'selectSupplierAndProduct',
+                  severity: 'error',
+                });
+                setSnackbarOpen(true);
+                return;
+              }
+              setCreateHistoryDialog(true);
+            }}
+            sx={{ textTransform: 'none' }}
+            variant="outlined"
+          >
+            {t('calculate')}
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <Button
+            className="w-full"
+            sx={{ textTransform: 'none' }}
+            variant="outlined"
+          >
+            {t('newOrder')}
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <Button
+            className="w-full"
+            sx={{ textTransform: 'none' }}
+            variant="outlined"
+          >
+            {t('downloadEmptyOrder')}
+          </Button>
+        </MenuItem>
+      </Menu>
     </Layout>
   );
 }

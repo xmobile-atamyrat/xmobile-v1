@@ -130,5 +130,9 @@
   "modifiedDate": "Üýtgedilen senesi",
   "actions": "Hereketler",
   "success": "Success!",
-  "confirmDelete": "Are you sure you want to delete?"
+  "confirmDelete": "Are you sure you want to delete?",
+  "newOrder": "Täze sargyt",
+  "downloadEmptyOrder": "Zakazlary Skaçat Et",
+  "addProducts": "Önüm goşuň",
+  "addSuppliers": "Üpjün edijiler goşuň"
 }

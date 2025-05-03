@@ -427,24 +427,25 @@ export async function getProductsUtil(
   }
 }
 
+// returns latest created history
 export async function getHistoryListUtil(
   accessToken: string,
   setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+): Promise<CalculationHistory | undefined> {
   try {
     const { success, data, message } = await getHistoryList(accessToken);
     if (success) {
       setHistoryList(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data[0];
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -453,6 +454,7 @@ export async function getHistoryListUtil(
       severity: 'error',
     });
   }
+  return undefined;
 }
 
 export async function getHistoryUtil(
