@@ -134,5 +134,6 @@
   "newOrder": "Täze sargyt",
   "downloadEmptyOrder": "Sargyty göçürip alyň",
   "addProducts": "Önüm goşuň",
-  "addSuppliers": "Üpjün edijiler goşuň"
+  "addSuppliers": "Üpjün edijiler goşuň",
+  "alreadyExists": "Exists in the current order!"
 }

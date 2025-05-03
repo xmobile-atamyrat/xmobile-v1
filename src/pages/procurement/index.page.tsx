@@ -10,6 +10,8 @@ import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog'
 import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import {
   createHistoryUtil,
+  createProductUtil,
+  createSupplierUtil,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -73,29 +75,31 @@ export default function Procurement() {
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
     useState<ProductsSuppliersType>();
 
-  // const createProduct = useCallback(
-  //   async (keyword: string) => {
-  //     await createProductUtil(
-  //       accessToken,
-  //       keyword,
-  //       setSnackbarOpen,
-  //       setSnackbarMessage,
-  //     );
-  //   },
-  //   [accessToken],
-  // );
+  const createProduct = useCallback(
+    async (keyword: string) => {
+      await createProductUtil(
+        accessToken,
+        keyword,
+        setSearchedProducts,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken],
+  );
 
-  // const createSupplier = useCallback(
-  //   async (keyword: string) => {
-  //     await createSupplierUtil(
-  //       accessToken,
-  //       keyword,
-  //       setSnackbarOpen,
-  //       setSnackbarMessage,
-  //     );
-  //   },
-  //   [accessToken],
-  // );
+  const createSupplier = useCallback(
+    async (keyword: string) => {
+      await createSupplierUtil(
+        accessToken,
+        keyword,
+        setSearchedSuppliers,
+        setSnackbarOpen,
+        setSnackbarMessage,
+      );
+    },
+    [accessToken],
+  );
 
   const createHistory = useCallback(
     async (name: string) => {
@@ -330,6 +334,8 @@ export default function Procurement() {
               itemType={addProductsSuppliersDialog}
               handleClose={() => {
                 setAddProductsSuppliersDialog(undefined);
+                setSearchedProducts([]);
+                setSearchedSuppliers([]);
               }}
               handleItemSearch={
                 addProductsSuppliersDialog === 'product'
@@ -346,6 +352,21 @@ export default function Procurement() {
                   ? selectedProducts
                   : selectedSuppliers
               }
+              handleAddItem={
+                addProductsSuppliersDialog === 'product'
+                  ? createProduct
+                  : createSupplier
+              }
+              handleAddSearchedItem={(item: ProcurementProduct | Supplier) => {
+                if (addProductsSuppliersDialog === 'product') {
+                  setSelectedProducts((prev) => [
+                    ...prev,
+                    item as ProcurementProduct,
+                  ]);
+                } else {
+                  setSelectedSuppliers((prev) => [...prev, item as Supplier]);
+                }
+              }}
             />
           )}
 

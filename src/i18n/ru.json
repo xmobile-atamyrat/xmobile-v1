@@ -134,5 +134,6 @@
   "newOrder": "Новый заказ",
   "downloadEmptyOrder": "Скачать заказ",
   "addProducts": "Добавить продукты",
-  "addSuppliers": "Добавить поставщиков"
+  "addSuppliers": "Добавить поставщиков",
+  "alreadyExists": "Уже существует в заказе!"
 }
