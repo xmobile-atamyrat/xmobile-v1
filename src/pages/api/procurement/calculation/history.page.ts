@@ -39,20 +39,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, data: allHistory });
     }
     if (method === 'POST') {
-      const {
-        name,
-        productIds,
-        supplierIds,
-      }: CalculationHistory & { supplierIds: string[]; productIds: string[] } =
-        req.body;
+      const { name }: CalculationHistory = req.body;
       const history = await dbClient.calculationHistory.create({
         data: {
           name,
-          suppliers: { connect: supplierIds.map((id) => ({ id })) },
-          procurementProducts: { connect: productIds.map((id) => ({ id })) },
+          // suppliers: { connect: supplierIds.map((id) => ({ id })) },
+          // procurementProducts: { connect: productIds.map((id) => ({ id })) },
         },
       });
       return res.status(200).json({ success: true, data: history });
+    }
+    if (method === 'PUT') {
+      // TODO: implement
     }
     if (method === 'DELETE') {
       const id = req.body.id as string;
