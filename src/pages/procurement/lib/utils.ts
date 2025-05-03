@@ -12,7 +12,11 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import { HistoryPrice } from '@/pages/procurement/lib/types';
+import {
+  ActionBasedProducts,
+  ActionBasedSuppliers,
+  HistoryPrice,
+} from '@/pages/procurement/lib/types';
 import {
   CalculationHistory,
   ProcurementProduct,
@@ -266,20 +270,13 @@ export async function createProductUtil(
 export async function createHistoryUtil(
   accessToken: string,
   name: string,
-  suppliers: Supplier[],
-  products: ProcurementProduct[],
   setHistory: Dispatch<SetStateAction<CalculationHistory[]>>,
   setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
   try {
-    const { success, data, message } = await createHistory(
-      accessToken,
-      name,
-      suppliers.map((supplier) => supplier.id),
-      products.map((product) => product.id),
-    );
+    const { success, data, message } = await createHistory(accessToken, name);
     if (success) {
       setSelectedHistory(data);
       setHistory((current) => [data, ...current]);
@@ -471,16 +468,24 @@ export async function getHistoryUtil(
   accessToken: string,
   id: string,
   setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
-  setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>,
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
+  setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>,
+  setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
   try {
     const { success, data, message } = await getHistory(accessToken, id);
     if (success) {
-      setSelectedProducts(data.procurementProducts);
-      setSelectedSuppliers(data.suppliers);
+      setSelectedProducts({
+        existing: data.procurementProducts,
+        added: [],
+        deleted: [],
+      });
+      setSelectedSuppliers({
+        existing: data.suppliers,
+        added: [],
+        deleted: [],
+      });
       setSelectedHistory(data);
     } else {
       console.error(message);

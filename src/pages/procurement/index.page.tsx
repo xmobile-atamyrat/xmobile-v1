@@ -7,7 +7,11 @@ import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProduc
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
-import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
+import {
+  ActionBasedProducts,
+  ActionBasedSuppliers,
+  ProductsSuppliersType,
+} from '@/pages/procurement/lib/types';
 import {
   createHistoryUtil,
   createProductUtil,
@@ -59,10 +63,10 @@ export default function Procurement() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
 
-  const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<
-    ProcurementProduct[]
-  >([]);
+  const [selectedSuppliers, setSelectedSuppliers] =
+    useState<ActionBasedSuppliers>();
+  const [selectedProducts, setSelectedProducts] =
+    useState<ActionBasedProducts>();
   const [searchedSuppliers, setSearchedSuppliers] = useState<Supplier[]>([]);
   const [searchedProducts, setSearchedProducts] = useState<
     ProcurementProduct[]
@@ -106,8 +110,6 @@ export default function Procurement() {
       await createHistoryUtil(
         accessToken,
         name,
-        selectedSuppliers,
-        selectedProducts,
         setHistoryList,
         setSelectedHistory,
         setSnackbarOpen,
@@ -116,32 +118,6 @@ export default function Procurement() {
     },
     [accessToken, selectedProducts, selectedSuppliers],
   );
-
-  // const deleteSupplier = useCallback(
-  //   async (id: string) => {
-  //     await deleteSupplierUtil(
-  //       accessToken,
-  //       id,
-  //       setSuppliers,
-  //       setSnackbarOpen,
-  //       setSnackbarMessage,
-  //     );
-  //   },
-  //   [accessToken],
-  // );
-
-  // const deleteProduct = useCallback(
-  //   async (id: string) => {
-  //     await deleteProductUtil(
-  //       accessToken,
-  //       id,
-  //       setProducts,
-  //       setSnackbarOpen,
-  //       setSnackbarMessage,
-  //     );
-  //   },
-  //   [accessToken],
-  // );
 
   const handleProductSearch = useCallback(
     debounce(async (keyword: string) => {
@@ -172,18 +148,6 @@ export default function Procurement() {
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
-        // await getSuppliersUtil(
-        //   accessToken,
-        //   setSuppliers,
-        //   setSnackbarOpen,
-        //   setSnackbarMessage,
-        // );
-        // await getProductsUtil(
-        //   accessToken,
-        //   setProducts,
-        //   setSnackbarOpen,
-        //   setSnackbarMessage,
-        // );
         const latestHistory = await getHistoryListUtil(
           accessToken,
           setHistoryList,
@@ -245,6 +209,13 @@ export default function Procurement() {
                 variant="outlined"
               >
                 {t('history')}
+              </Button>
+              <Button
+                sx={{ textTransform: 'none' }}
+                variant="outlined"
+                color="success"
+              >
+                {t('save')}
               </Button>
             </Box>
           </Box>
@@ -359,12 +330,21 @@ export default function Procurement() {
               }
               handleAddSearchedItem={(item: ProcurementProduct | Supplier) => {
                 if (addProductsSuppliersDialog === 'product') {
-                  setSelectedProducts((prev) => [
-                    ...prev,
-                    item as ProcurementProduct,
-                  ]);
+                  setSelectedProducts((prev) => {
+                    return {
+                      existing: prev.existing,
+                      added: [...prev.added, item as ProcurementProduct],
+                      deleted: prev.deleted,
+                    };
+                  });
                 } else {
-                  setSelectedSuppliers((prev) => [...prev, item as Supplier]);
+                  setSelectedSuppliers((prev) => {
+                    return {
+                      existing: prev.existing,
+                      added: [...prev.added, item as Supplier],
+                      deleted: prev.deleted,
+                    };
+                  });
                 }
               }}
             />
@@ -409,27 +389,7 @@ export default function Procurement() {
         <MenuItem>
           <Button
             className="w-full"
-            sx={{ textTransform: 'none' }}
-            variant="outlined"
-          >
-            {t('save')}
-          </Button>
-        </MenuItem>
-        <MenuItem>
-          <Button
-            className="w-full"
             onClick={() => {
-              if (
-                selectedProducts.length === 0 ||
-                selectedSuppliers.length === 0
-              ) {
-                setSnackbarMessage({
-                  message: 'selectSupplierAndProduct',
-                  severity: 'error',
-                });
-                setSnackbarOpen(true);
-                return;
-              }
               setCreateHistoryDialog(true);
             }}
             sx={{ textTransform: 'none' }}

@@ -1,5 +1,9 @@
 import { SearchBar } from '@/pages/components/Appbar';
-import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
+import {
+  ActionBasedProducts,
+  ActionBasedSuppliers,
+  ProductsSuppliersType,
+} from '@/pages/procurement/lib/types';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -20,7 +24,7 @@ interface AddProductsSuppliersDialogProps {
   itemType: ProductsSuppliersType;
   handleItemSearch: (keyword: string) => Promise<void>;
   searchedItems: (ProcurementProduct | Supplier)[];
-  selectedItems: (ProcurementProduct | Supplier)[];
+  selectedItems: ActionBasedProducts | ActionBasedSuppliers;
   handleAddItem: (keyword: string) => Promise<void>;
   handleAddSearchedItem: (item: ProcurementProduct | Supplier) => void;
 }
@@ -68,7 +72,9 @@ export default function AddProductsSuppliersDialog({
                 <Typography className="h-[40px] flex items-center">
                   {item.name}
                 </Typography>
-                {selectedItems.some((i) => i.id === item.id) ? (
+                {[...selectedItems.existing, ...selectedItems.added].some(
+                  (i) => i.id === item.id,
+                ) ? (
                   <Typography
                     color="green"
                     fontSize={12}
