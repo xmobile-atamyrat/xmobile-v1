@@ -220,7 +220,6 @@ export async function handleSupplierSearchUtil(
 export async function createProductUtil(
   accessToken: string,
   keyword: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -234,12 +233,16 @@ export async function createProductUtil(
   }
 
   try {
-    const { success, data, message } = await createProcurementProduct(
+    const { success, message } = await createProcurementProduct(
       accessToken,
       keyword,
     );
     if (success) {
-      setProducts([data]);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
     } else {
       console.error(message);
       setSnackbarOpen(true);
@@ -360,7 +363,6 @@ export async function editHistoryUtil({
 export async function createSupplierUtil(
   accessToken: string,
   keyword: string,
-  setSupplier: Dispatch<SetStateAction<Supplier[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -374,12 +376,13 @@ export async function createSupplierUtil(
   }
 
   try {
-    const { success, data, message } = await createSupplier(
-      accessToken,
-      keyword,
-    );
+    const { success, message } = await createSupplier(accessToken, keyword);
     if (success) {
-      setSupplier([data]);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
     } else {
       console.error(message);
       setSnackbarOpen(true);
