@@ -1,22 +1,15 @@
-import { createServer } from 'https';
-import { IncomingMessage } from 'http';
+import { createServer, IncomingMessage } from 'http';
+
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
-import { readFileSync } from 'fs';
 import { UserRole } from '@prisma/client';
 
 const filepath = 'src/ws-server/index.ts';
 
-const serverConfig = {
-  cert: readFileSync('certs/cert.pem'),
-  key: readFileSync('certs/key.pem'),
-};
-
-const server = createServer(serverConfig);
+const server = createServer();
 const wsServer = new WebSocketServer({ server });
-
 const port = process.env.WEBSOCKET_SERVER_PORT;
 
 const connections = new Map<string, WebSocket>();
