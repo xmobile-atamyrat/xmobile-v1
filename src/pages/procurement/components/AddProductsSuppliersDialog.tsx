@@ -1,7 +1,6 @@
 import { SearchBar } from '@/pages/components/Appbar';
 import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import {
   Box,
   Button,
@@ -10,6 +9,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Typography,
 } from '@mui/material';
 import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -21,6 +21,8 @@ interface AddProductsSuppliersDialogProps {
   handleItemSearch: (keyword: string) => Promise<void>;
   searchedItems: (ProcurementProduct | Supplier)[];
   selectedItems: (ProcurementProduct | Supplier)[];
+  handleAddItem: (keyword: string) => Promise<void>;
+  handleAddSearchedItem: (item: ProcurementProduct | Supplier) => void;
 }
 
 export default function AddProductsSuppliersDialog({
@@ -29,6 +31,8 @@ export default function AddProductsSuppliersDialog({
   handleItemSearch,
   searchedItems,
   selectedItems,
+  handleAddItem,
+  handleAddSearchedItem,
 }: AddProductsSuppliersDialogProps) {
   const t = useTranslations();
   const [searchItemKeyword, setSearchItemKeyword] = useState('');
@@ -47,24 +51,35 @@ export default function AddProductsSuppliersDialog({
               searchPlaceholder: t('search'),
               width: '100%',
             })}
-            <Button sx={{ textTransform: 'none' }} variant="outlined">
+            <Button
+              sx={{ textTransform: 'none' }}
+              variant="outlined"
+              onClick={async () => {
+                await handleAddItem(searchItemKeyword);
+              }}
+            >
               {t('add')}
             </Button>
           </Box>
 
-          <Box className="flex flex-col gap-2">
+          <Box className="flex flex-col gap-2 pl-4">
             {searchedItems.map((item) => (
-              <Box
-                key={item.id}
-                className="flex flex-row justify-between items-center"
-              >
-                <Box>{item.name}</Box>
-                {selectedItems.includes(item) ? (
-                  <IconButton>
+              <Box key={item.id} className="flex flex-row items-center gap-8">
+                <Typography className="h-[40px] flex items-center">
+                  {item.name}
+                </Typography>
+                {selectedItems.some((i) => i.id === item.id) ? (
+                  <Typography
+                    color="green"
+                    fontSize={12}
+                    className="h-[40px] flex items-center"
+                  >
+                    {t('alreadyExists')}
+                  </Typography>
+                ) : (
+                  <IconButton onClick={() => handleAddSearchedItem(item)}>
                     <AddCircleIcon color="primary" />
                   </IconButton>
-                ) : (
-                  <CheckCircleOutlineIcon color="success" />
                 )}
               </Box>
             ))}

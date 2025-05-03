@@ -132,5 +132,6 @@
   "newOrder": "Yeni Sipariş",
   "downloadEmptyOrder": "Boş sipariş indir",
   "addProducts": "Ürün ekle",
-  "addSuppliers": "Tedarikçiler ekle"
+  "addSuppliers": "Tedarikçiler ekle",
+  "alreadyExists": "Exists in the current order!"
 }
