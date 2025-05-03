@@ -17,3 +17,15 @@ export interface HistoryPrice {
 }
 
 export type ProductsSuppliersType = 'product' | 'supplier';
+
+export type ProductsSuppliersActionsType = 'existing' | 'added' | 'deleted';
+
+export type ActionBasedSuppliers = Record<
+  ProductsSuppliersActionsType,
+  Supplier[]
+>;
+
+export type ActionBasedProducts = Record<
+  ProductsSuppliersActionsType,
+  ProcurementProduct[]
+>;

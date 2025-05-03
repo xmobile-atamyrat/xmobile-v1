@@ -1,7 +1,12 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
+import {
+  ActionBasedProducts,
+  ActionBasedSuppliers,
+  HistoryColor,
+  HistoryPrice,
+} from '@/pages/procurement/lib/types';
 import {
   ExcelFileData,
   dayMonthYearFromDate,
@@ -26,21 +31,17 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import {
-  CalculationHistory,
-  ProcurementProduct,
-  Supplier,
-} from '@prisma/client';
+import { CalculationHistory } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
   history: CalculationHistory;
   setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>;
-  selectedSuppliers: Supplier[];
-  setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>;
-  selectedProducts: ProcurementProduct[];
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  selectedSuppliers: ActionBasedSuppliers;
+  setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>;
+  selectedProducts: ActionBasedProducts;
+  setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>;
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
@@ -63,14 +64,14 @@ export default function CalculateDialog({
   const [prices, setPrices] = useState<HistoryPrice[][]>(
     parseInitialHistoryPrices(
       history.prices,
-      selectedProducts,
-      selectedSuppliers,
+      [...selectedProducts.existing, ...selectedProducts.added],
+      [...selectedSuppliers.existing, ...selectedSuppliers.added],
     ),
   );
   const [productQuantity, setProductQuantity] = useState<number[]>(
     history.quantities
       ? (history.quantities as number[]).map((quantity) => quantity)
-      : Array(selectedProducts.length),
+      : Array(selectedProducts.existing.length + selectedProducts.added.length),
   );
   const [calculationDone, setCalculationDone] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
@@ -109,7 +110,10 @@ export default function CalculateDialog({
               <TableRow>
                 <TableCell></TableCell>
                 <TableCell align="center">{t('quantity')}</TableCell>
-                {selectedSuppliers.map((supplier) => (
+                {[
+                  ...selectedSuppliers.existing,
+                  ...selectedSuppliers.added,
+                ].map((supplier) => (
                   <TableCell key={supplier.id} align="center">
                     {supplier.name}
                   </TableCell>
@@ -117,50 +121,55 @@ export default function CalculateDialog({
               </TableRow>
             </TableHead>
             <TableBody>
-              {selectedProducts.map((product, prdIdx) => (
-                <TableRow key={product.id}>
-                  <TableCell align="left">{product.name}</TableCell>
-                  <TableCell align="center">
-                    <TextField
-                      size="small"
-                      value={productQuantity[prdIdx] ?? ''}
-                      type="number"
-                      onChange={(e) => {
-                        const newProductQuantity = [...productQuantity];
-                        newProductQuantity[prdIdx] =
-                          e.target.value === ''
-                            ? undefined
-                            : Number(e.target.value);
-                        setProductQuantity(newProductQuantity);
-                      }}
-                    />
-                  </TableCell>
-                  {selectedSuppliers.map((supplier, splIdx) => (
-                    <TableCell key={supplier.id} align="center">
+              {[...selectedProducts.existing, ...selectedProducts.added].map(
+                (product, prdIdx) => (
+                  <TableRow key={product.id}>
+                    <TableCell align="left">{product.name}</TableCell>
+                    <TableCell align="center">
                       <TextField
                         size="small"
-                        value={prices[prdIdx][splIdx]?.value}
+                        value={productQuantity[prdIdx] ?? ''}
                         type="number"
-                        sx={{
-                          backgroundColor:
-                            prices[prdIdx][splIdx]?.color || 'inherit',
-                        }}
                         onChange={(e) => {
-                          const newPrices = [...prices];
-                          newPrices[prdIdx][splIdx] = {
-                            value:
-                              e.target.value === ''
-                                ? undefined
-                                : Number(e.target.value),
-                            color: newPrices[prdIdx][splIdx]?.color,
-                          };
-                          setPrices(newPrices);
+                          const newProductQuantity = [...productQuantity];
+                          newProductQuantity[prdIdx] =
+                            e.target.value === ''
+                              ? undefined
+                              : Number(e.target.value);
+                          setProductQuantity(newProductQuantity);
                         }}
                       />
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))}
+                    {[
+                      ...selectedSuppliers.existing,
+                      ...selectedSuppliers.added,
+                    ].map((supplier, splIdx) => (
+                      <TableCell key={supplier.id} align="center">
+                        <TextField
+                          size="small"
+                          value={prices[prdIdx][splIdx]?.value}
+                          type="number"
+                          sx={{
+                            backgroundColor:
+                              prices[prdIdx][splIdx]?.color || 'inherit',
+                          }}
+                          onChange={(e) => {
+                            const newPrices = [...prices];
+                            newPrices[prdIdx][splIdx] = {
+                              value:
+                                e.target.value === ''
+                                  ? undefined
+                                  : Number(e.target.value),
+                              color: newPrices[prdIdx][splIdx]?.color,
+                            };
+                            setPrices(newPrices);
+                          }}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ),
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -241,7 +250,10 @@ export default function CalculateDialog({
               const today = new Date();
               const formattedDate = dayMonthYearFromDate(today);
 
-              const csvFileData: ExcelFileData[] = selectedSuppliers
+              const csvFileData: ExcelFileData[] = [
+                ...selectedSuppliers.existing,
+                ...selectedSuppliers.added,
+              ]
                 .map((supplier, splIdx) => {
                   const fileData = prices
                     .filter((row, prdIdx) => {
@@ -253,7 +265,10 @@ export default function CalculateDialog({
                     })
                     .map((row, prdIdx) => {
                       return [
-                        selectedProducts[prdIdx].name,
+                        [
+                          ...selectedProducts.existing,
+                          ...selectedProducts.added,
+                        ][prdIdx].name,
                         productQuantity[prdIdx],
                         `$${row[splIdx].value}`,
                       ];
@@ -284,8 +299,8 @@ export default function CalculateDialog({
           title={t('cancel')}
           handleClose={() => {
             setSelectedHistory(undefined);
-            setSelectedSuppliers([]);
-            setSelectedProducts([]);
+            setSelectedSuppliers(undefined);
+            setSelectedProducts(undefined);
             handleClose();
           }}
           handleDelete={() => {

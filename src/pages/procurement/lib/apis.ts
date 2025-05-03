@@ -143,8 +143,6 @@ export const createSupplier = async (
 export const createHistory = async (
   accessToken: string,
   name: string,
-  supplierIds: string[],
-  productIds: string[],
 ): Promise<ResponseApi<CalculationHistory>> => {
   return fetchWithCreds<CalculationHistory>(
     accessToken,
@@ -152,8 +150,6 @@ export const createHistory = async (
     'POST',
     {
       name,
-      supplierIds,
-      productIds,
     },
   );
 };
