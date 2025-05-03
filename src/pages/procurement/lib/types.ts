@@ -15,3 +15,5 @@ export interface HistoryPrice {
   value: number;
   color?: HistoryColor;
 }
+
+export type ProductsSuppliersType = 'product' | 'supplier';
