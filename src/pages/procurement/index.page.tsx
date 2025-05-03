@@ -3,24 +3,23 @@ import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
+import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
+import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import {
   createHistoryUtil,
-  createProductUtil,
-  createSupplierUtil,
-  deleteProductUtil,
-  deleteSupplierUtil,
   getHistoryListUtil,
   getHistoryUtil,
-  getProductsUtil,
-  getSuppliersUtil,
+  handleProductSearchUtil,
+  handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
 import {
   Alert,
   Box,
   Button,
+  debounce,
   IconButton,
   Menu,
   MenuItem,
@@ -58,10 +57,12 @@ export default function Procurement() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
 
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Supplier[]>([]);
-  const [products, setProducts] = useState<ProcurementProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<
+    ProcurementProduct[]
+  >([]);
+  const [searchedSuppliers, setSearchedSuppliers] = useState<Supplier[]>([]);
+  const [searchedProducts, setSearchedProducts] = useState<
     ProcurementProduct[]
   >([]);
   const [historyList, setHistoryList] = useState<CalculationHistory[]>([]);
@@ -69,32 +70,32 @@ export default function Procurement() {
   const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
+  const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
+    useState<ProductsSuppliersType>();
 
-  const createProduct = useCallback(
-    async (keyword: string) => {
-      await createProductUtil(
-        accessToken,
-        keyword,
-        setProducts,
-        setSnackbarOpen,
-        setSnackbarMessage,
-      );
-    },
-    [accessToken],
-  );
+  // const createProduct = useCallback(
+  //   async (keyword: string) => {
+  //     await createProductUtil(
+  //       accessToken,
+  //       keyword,
+  //       setSnackbarOpen,
+  //       setSnackbarMessage,
+  //     );
+  //   },
+  //   [accessToken],
+  // );
 
-  const createSupplier = useCallback(
-    async (keyword: string) => {
-      await createSupplierUtil(
-        accessToken,
-        keyword,
-        setSuppliers,
-        setSnackbarOpen,
-        setSnackbarMessage,
-      );
-    },
-    [accessToken],
-  );
+  // const createSupplier = useCallback(
+  //   async (keyword: string) => {
+  //     await createSupplierUtil(
+  //       accessToken,
+  //       keyword,
+  //       setSnackbarOpen,
+  //       setSnackbarMessage,
+  //     );
+  //   },
+  //   [accessToken],
+  // );
 
   const createHistory = useCallback(
     async (name: string) => {
@@ -112,47 +113,73 @@ export default function Procurement() {
     [accessToken, selectedProducts, selectedSuppliers],
   );
 
-  const deleteSupplier = useCallback(
-    async (id: string) => {
-      await deleteSupplierUtil(
+  // const deleteSupplier = useCallback(
+  //   async (id: string) => {
+  //     await deleteSupplierUtil(
+  //       accessToken,
+  //       id,
+  //       setSuppliers,
+  //       setSnackbarOpen,
+  //       setSnackbarMessage,
+  //     );
+  //   },
+  //   [accessToken],
+  // );
+
+  // const deleteProduct = useCallback(
+  //   async (id: string) => {
+  //     await deleteProductUtil(
+  //       accessToken,
+  //       id,
+  //       setProducts,
+  //       setSnackbarOpen,
+  //       setSnackbarMessage,
+  //     );
+  //   },
+  //   [accessToken],
+  // );
+
+  const handleProductSearch = useCallback(
+    debounce(async (keyword: string) => {
+      await handleProductSearchUtil(
         accessToken,
-        id,
-        setSuppliers,
+        keyword,
+        setSearchedProducts,
         setSnackbarOpen,
         setSnackbarMessage,
       );
-    },
-    [accessToken],
+    }, 300),
+    [debounce, accessToken],
   );
 
-  const deleteProduct = useCallback(
-    async (id: string) => {
-      await deleteProductUtil(
+  const handleSupplierSearch = useCallback(
+    debounce(async (keyword: string) => {
+      await handleSupplierSearchUtil(
         accessToken,
-        id,
-        setProducts,
+        keyword,
+        setSearchedSuppliers,
         setSnackbarOpen,
         setSnackbarMessage,
       );
-    },
-    [accessToken],
+    }, 300),
+    [debounce, accessToken],
   );
 
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
-        await getSuppliersUtil(
-          accessToken,
-          setSuppliers,
-          setSnackbarOpen,
-          setSnackbarMessage,
-        );
-        await getProductsUtil(
-          accessToken,
-          setProducts,
-          setSnackbarOpen,
-          setSnackbarMessage,
-        );
+        // await getSuppliersUtil(
+        //   accessToken,
+        //   setSuppliers,
+        //   setSnackbarOpen,
+        //   setSnackbarMessage,
+        // );
+        // await getProductsUtil(
+        //   accessToken,
+        //   setProducts,
+        //   setSnackbarOpen,
+        //   setSnackbarMessage,
+        // );
         const latestHistory = await getHistoryListUtil(
           accessToken,
           setHistoryList,
@@ -217,6 +244,27 @@ export default function Procurement() {
               </Button>
             </Box>
           </Box>
+          <Box className="flex flex-row justify-between items-center">
+            <Button
+              sx={{ textTransform: 'none' }}
+              variant="outlined"
+              onClick={() => {
+                setAddProductsSuppliersDialog('product');
+              }}
+            >
+              {t('addProducts')}
+            </Button>
+
+            <Button
+              sx={{ textTransform: 'none' }}
+              variant="outlined"
+              onClick={() => {
+                setAddProductsSuppliersDialog('supplier');
+              }}
+            >
+              {t('addSuppliers')}
+            </Button>
+          </Box>
 
           {selectedHistory && (
             <EmptyOrder
@@ -274,6 +322,30 @@ export default function Procurement() {
                   setSnackbarMessage,
                 );
               }}
+            />
+          )}
+
+          {addProductsSuppliersDialog && (
+            <AddProductsSuppliersDialog
+              itemType={addProductsSuppliersDialog}
+              handleClose={() => {
+                setAddProductsSuppliersDialog(undefined);
+              }}
+              handleItemSearch={
+                addProductsSuppliersDialog === 'product'
+                  ? handleProductSearch
+                  : handleSupplierSearch
+              }
+              searchedItems={
+                addProductsSuppliersDialog === 'product'
+                  ? searchedProducts
+                  : searchedSuppliers
+              }
+              selectedItems={
+                addProductsSuppliersDialog === 'product'
+                  ? selectedProducts
+                  : selectedSuppliers
+              }
             />
           )}
 
