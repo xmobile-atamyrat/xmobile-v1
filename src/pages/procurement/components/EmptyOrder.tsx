@@ -1,10 +1,14 @@
+import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import {
   ActionBasedProducts,
   ActionBasedSuppliers,
+  ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -13,13 +17,15 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Typography,
 } from '@mui/material';
-import { JsonValue } from '@prisma/client/runtime/library';
+import { ProcurementProduct, Supplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface EmptyOrderProps {
-  productQuantities: JsonValue;
+  productQuantities: number[];
+  setProductQuantities: Dispatch<SetStateAction<number[]>>;
   selectedSuppliers: ActionBasedSuppliers;
   setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>;
   selectedProducts: ActionBasedProducts;
@@ -32,13 +38,15 @@ export default function EmptyOrder({
   selectedProducts,
   selectedSuppliers,
   productQuantities,
+  setProductQuantities,
+  setSelectedProducts,
+  setSelectedSuppliers,
 }: EmptyOrderProps) {
   const t = useTranslations();
-  const [productQuantity, setProductQuantity] = useState<number[]>(
-    productQuantities
-      ? (productQuantities as number[]).map((quantity) => quantity)
-      : Array(selectedProducts.existing.length + selectedProducts.added.length),
-  );
+  const [confirmRemoveItemDialog, setConfirmRemoveItemDialog] = useState<{
+    itemType: ProductsSuppliersType;
+    item: Supplier | ProcurementProduct;
+  }>();
 
   return (
     <Box className="flex flex-col gap-2">
@@ -51,7 +59,19 @@ export default function EmptyOrder({
               {[...selectedSuppliers.existing, ...selectedSuppliers.added].map(
                 (supplier) => (
                   <TableCell key={supplier.id} align="center">
-                    {supplier.name}
+                    <Box className="flex w-full items-center gap-2 justify-center">
+                      <Typography>{supplier.name}</Typography>
+                      <IconButton
+                        onClick={() =>
+                          setConfirmRemoveItemDialog({
+                            itemType: 'supplier',
+                            item: supplier,
+                          })
+                        }
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 ),
               )}
@@ -61,19 +81,33 @@ export default function EmptyOrder({
             {[...selectedProducts.existing, ...selectedProducts.added].map(
               (product, prdIdx) => (
                 <TableRow key={product.id}>
-                  <TableCell align="left">{product.name}</TableCell>
+                  <TableCell align="left">
+                    <Box className="flex w-full items-center justify-between">
+                      <Typography>{product.name}</Typography>
+                      <IconButton
+                        onClick={() =>
+                          setConfirmRemoveItemDialog({
+                            itemType: 'product',
+                            item: product,
+                          })
+                        }
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={productQuantity[prdIdx] ?? ''}
+                      value={productQuantities[prdIdx] ?? ''}
                       type="number"
                       onChange={(e) => {
-                        const newProductQuantity = [...productQuantity];
+                        const newProductQuantity = [...productQuantities];
                         newProductQuantity[prdIdx] =
                           e.target.value === ''
                             ? undefined
                             : Number(e.target.value);
-                        setProductQuantity(newProductQuantity);
+                        setProductQuantities(newProductQuantity);
                       }}
                     />
                   </TableCell>
@@ -91,6 +125,48 @@ export default function EmptyOrder({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {confirmRemoveItemDialog && (
+        <DeleteDialog
+          blueButtonText={t('cancel')}
+          redButtonText={t('delete')}
+          title={t('delete')}
+          description={t('confirmDelete')}
+          handleClose={() => {
+            setConfirmRemoveItemDialog(undefined);
+          }}
+          handleDelete={() => {
+            if (confirmRemoveItemDialog?.itemType === 'supplier') {
+              setSelectedSuppliers((prev) => ({
+                existing: prev.existing.filter(
+                  (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
+                ),
+                added: prev.added.filter(
+                  (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
+                ),
+                deleted: [
+                  ...prev.deleted,
+                  confirmRemoveItemDialog.item as Supplier,
+                ],
+              }));
+            } else {
+              setSelectedProducts((prev) => ({
+                existing: prev.existing.filter(
+                  (product) => product.id !== confirmRemoveItemDialog.item.id,
+                ),
+                added: prev.added.filter(
+                  (product) => product.id !== confirmRemoveItemDialog.item.id,
+                ),
+                deleted: [
+                  ...prev.deleted,
+                  confirmRemoveItemDialog.item as ProcurementProduct,
+                ],
+              }));
+            }
+            setConfirmRemoveItemDialog(undefined);
+          }}
+        />
+      )}
     </Box>
   );
 }
