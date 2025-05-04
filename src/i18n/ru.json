@@ -135,5 +135,7 @@
   "downloadEmptyOrder": "Скачать заказ",
   "addProducts": "Добавить продукты",
   "addSuppliers": "Добавить поставщиков",
-  "alreadyExists": "Уже существует в заказе!"
+  "alreadyExists": "Уже существует в заказе!",
+  "noProductsOrSuppliers": "Никаких продуктов или поставщиков, выбранных для заказа!",
+  "allQuantitiesZero": "Все количество продуктов равна нулю!"
 }

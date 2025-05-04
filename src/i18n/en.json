@@ -133,5 +133,7 @@
   "downloadEmptyOrder": "Download Order",
   "addProducts": "Add Products",
   "addSuppliers": "Add Suppliers",
-  "alreadyExists": "Exists in the current order!"
+  "alreadyExists": "Exists in the current order!",
+  "noProductsOrSuppliers": "No products or suppliers selected for the order!",
+  "allQuantitiesZero": "All product quantities are zero!"
 }
