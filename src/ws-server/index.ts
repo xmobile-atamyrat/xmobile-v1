@@ -1,5 +1,4 @@
 import { createServer, IncomingMessage } from 'http';
-
 import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { JsonWebTokenError } from 'jsonwebtoken';
@@ -12,32 +11,21 @@ const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.WEBSOCKET_SERVER_PORT;
 
-const connections = new Map<string, WebSocket>();
+const connections = new Map<string, Set<WebSocket>>();
 const users: Record<UserRole, Set<string>> = {
   FREE: new Set(),
   ADMIN: new Set(),
   SUPERUSER: new Set(),
 };
 
-// todo: used for testing, remove once finished
-const getUsers = () => {
-  console.log('[USERS]: ', users); // eslint-disable-line no-console
-  return users;
-};
-const getConnections = () => {
-  console.log('[CONNECTIONS]: ', connections.keys()); // eslint-disable-line no-console
-  return connections;
-};
-
-const handleConnectionClose = (userId: string, grade: UserRole) => {
-  if (userId != null) {
-    connections.delete(userId);
-    users[grade]?.delete(userId);
-
-    console.log(`[Connection closed]: ${userId}`); // eslint-disable-line no-console
-  }
-  getUsers();
-  getConnections();
+const handleConnectionClose = (
+  userId: string,
+  grade: UserRole,
+  connection: WebSocket,
+) => {
+  connections.get(userId)?.delete(connection);
+  if (!connections.get(userId).size) connections.delete(userId);
+  users[grade]?.delete(userId);
 };
 
 const verifyConnection = async (
@@ -47,7 +35,6 @@ const verifyConnection = async (
   const authHeader = request.headers?.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // todo: translations, remove part from unauthorized and define translations
     console.error(
       filepath,
       `. Unauthorized: Missing or invalid header format: ${authHeader}`,
@@ -60,32 +47,18 @@ const verifyConnection = async (
 
   try {
     const { userId, grade } = await verifyToken(token, ACCESS_SECRET);
-
-    if (
-      connections.has(userId) &&
-      connections.get(userId) != null &&
-      connections.get(userId).readyState === WebSocket.OPEN
-    ) {
-      throw new Error('MultipleConnectionError');
+    if (!connections.has(userId)) {
+      connections.set(userId, new Set());
     }
-    connections.set(userId, connection);
+    connections.get(userId).add(connection);
     users[grade as UserRole]?.add(userId);
-
-    // todo: used for testing, remove once finished
-    getUsers();
-    getConnections();
 
     return { userId, grade };
   } catch (error) {
     console.error(filepath, error);
     if (error instanceof JsonWebTokenError) {
-      // todo: translations, remove unauthorized details and define translations
       console.error(filepath, `Invalid token: ${token};`);
       connection.close(1008, 'Unauthorized: Missing or invalid token format');
-    } else if (error.message === 'MultipleConnectionError') {
-      // todo: translations, remove error details and define translations
-      console.error(`${filepath}/ ${error.message}: Only one device allowed`);
-      connection.close(1008, `${error.message}: Only one device allowed`);
     }
     return { userId: null, grade: null };
   }
@@ -98,15 +71,15 @@ wsServer.on('connection', async (connection, request) => {
 
     connection.send('Hello from X-mobile 👋');
 
-    connection.on('message', (message) => console.log(userId, ': ', message)); // eslint-disable-line no-console
+    connection.on('message', () => {});
 
-    connection.on('close', () => handleConnectionClose(userId, grade));
+    connection.on('close', () =>
+      handleConnectionClose(userId, grade, connection),
+    );
   } catch (error) {
     console.error('Connection error:', error);
     connection.close(1008, 'Unauthorized: Connection failed');
   }
 });
 
-server.listen(port, () => {
-  console.log(`Server is listening on ${port}`); // eslint-disable-line no-console
-});
+server.listen(port);
