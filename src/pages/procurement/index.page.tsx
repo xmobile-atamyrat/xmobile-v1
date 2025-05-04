@@ -80,6 +80,7 @@ export default function Procurement() {
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
     useState<ProductsSuppliersType>();
   const [productQuantities, setProductQuantities] = useState<number[]>([]);
+  const [newOrderDialog, setNewOrderDialog] = useState(false);
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -388,6 +389,30 @@ export default function Procurement() {
             />
           )}
 
+          {newOrderDialog && (
+            <AddEditHistoryDialog
+              handleClose={() => {
+                setNewOrderDialog(false);
+              }}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+              handleSubmit={async (title: string) => {
+                await createHistoryUtil(
+                  accessToken,
+                  title,
+                  setHistoryList,
+                  setSelectedHistory,
+                  setSnackbarOpen,
+                  setSnackbarMessage,
+                );
+                setSelectedProducts(undefined);
+                setSelectedSuppliers(undefined);
+                setProductQuantities([]);
+                setNewOrderDialog(false);
+              }}
+            />
+          )}
+
           <Snackbar
             open={snackbarOpen}
             autoHideDuration={6000}
@@ -441,6 +466,9 @@ export default function Procurement() {
             className="w-full"
             sx={{ textTransform: 'none' }}
             variant="outlined"
+            onClick={() => {
+              setNewOrderDialog(true);
+            }}
           >
             {t('newOrder')}
           </Button>
