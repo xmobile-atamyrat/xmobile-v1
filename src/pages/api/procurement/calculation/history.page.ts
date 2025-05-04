@@ -49,9 +49,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       });
       return res.status(200).json({ success: true, data: history });
     }
-    if (method === 'PUT') {
-      // TODO: implement
-    }
     if (method === 'DELETE') {
       const id = req.body.id as string;
       const history = await dbClient.calculationHistory.delete({
@@ -63,22 +60,43 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const {
         id,
         name,
-        supplierId,
-        productId,
         quantities,
         prices,
+        addedProductIds,
+        addedSupplierIds,
+        removedProductIds,
+        removedSupplierIds,
       }: CalculationHistory & {
-        supplierId?: string;
-        productId?: string;
+        addedSupplierIds?: string[];
+        addedProductIds?: string[];
+        removedSupplierIds?: string[];
+        removedProductIds?: string[];
       } = req.body;
 
       const updateData: any = {};
       if (name) updateData.name = name;
-      if (supplierId) updateData.suppliers = { connect: { id: supplierId } };
-      if (productId)
-        updateData.procurementProducts = { connect: { id: productId } };
-      if (quantities) updateData.quantities = quantities;
-      if (prices) updateData.prices = prices;
+      updateData.suppliers = {
+        connect: addedSupplierIds?.map((addedSuppliedId) => ({
+          id: addedSuppliedId,
+        })),
+        disconnect: removedSupplierIds?.map((removedSuppliedId) => ({
+          id: removedSuppliedId,
+        })),
+      };
+      updateData.procurementProducts = {
+        connect: addedProductIds?.map((addedProductId) => ({
+          id: addedProductId,
+        })),
+        disconnect: removedProductIds?.map((removedProductId) => ({
+          id: removedProductId,
+        })),
+      };
+      if (quantities) {
+        updateData.quantities = quantities;
+      }
+      if (prices) {
+        updateData.prices = prices;
+      }
 
       const history = await dbClient.calculationHistory.update({
         where: { id },

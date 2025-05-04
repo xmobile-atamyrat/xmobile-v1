@@ -304,6 +304,10 @@ export async function editHistoryUtil({
   name,
   prices,
   quantities,
+  addedProductIds,
+  removedProductIds,
+  addedSupplierIds,
+  removedSupplierIds,
   setSnackbarMessage,
   setSnackbarOpen,
   setHistoryList,
@@ -313,6 +317,10 @@ export async function editHistoryUtil({
   name?: string;
   prices?: (number | null)[][];
   quantities?: (number | null)[];
+  addedProductIds?: string[];
+  removedProductIds?: string[];
+  addedSupplierIds?: string[];
+  removedSupplierIds?: string[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setHistoryList?: Dispatch<SetStateAction<CalculationHistory[]>>;
@@ -324,6 +332,10 @@ export async function editHistoryUtil({
       name,
       prices,
       quantities,
+      addedProductIds,
+      removedProductIds,
+      addedSupplierIds,
+      removedSupplierIds,
     });
     if (!success) {
       console.error(message);

@@ -16,6 +16,7 @@ import {
   createHistoryUtil,
   createProductUtil,
   createSupplierUtil,
+  editHistoryUtil,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -187,6 +188,10 @@ export default function Procurement() {
     );
   }, [selectedHistory]);
 
+  useEffect(() => {
+    console.info('productQuantities', productQuantities);
+  }, [productQuantities]);
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
@@ -226,6 +231,28 @@ export default function Procurement() {
                 sx={{ textTransform: 'none' }}
                 variant="outlined"
                 color="success"
+                onClick={async () => {
+                  if (selectedHistory == null) return;
+                  await editHistoryUtil({
+                    accessToken,
+                    id: selectedHistory.id,
+                    quantities: productQuantities,
+                    addedProductIds: selectedProducts.added.map(
+                      (product) => product.id,
+                    ),
+                    removedProductIds: selectedProducts.deleted.map(
+                      (product) => product.id,
+                    ),
+                    addedSupplierIds: selectedSuppliers.added.map(
+                      (supplier) => supplier.id,
+                    ),
+                    removedSupplierIds: selectedSuppliers.deleted.map(
+                      (supplier) => supplier.id,
+                    ),
+                    setSnackbarOpen,
+                    setSnackbarMessage,
+                  });
+                }}
               >
                 {t('save')}
               </Button>
