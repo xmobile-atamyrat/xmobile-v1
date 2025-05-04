@@ -25,7 +25,6 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
 import { CalculationHistory } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
@@ -49,7 +48,6 @@ export default function AddSupplierDialog({
 }: HistoryListDialogProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [loading, setLoading] = useState(false);
   const [deleteDialogId, setDeleteDialogId] = useState<string>();
   const [editDialogObj, setEditDialogObj] = useState<{
     id: string;
@@ -84,9 +82,7 @@ export default function AddSupplierDialog({
                         }}
                         key={history.id}
                         onClick={async () => {
-                          setLoading(true);
                           await handleSelectHistory(history.id);
-                          setLoading(false);
                         }}
                       >
                         {history.name}
@@ -99,7 +95,7 @@ export default function AddSupplierDialog({
                       {dayMonthYearFromDate(new Date(history.updatedAt))}
                     </TableCell>
                     <TableCell align="center">
-                      <Box>
+                      <Box className="flex flex-row items-center">
                         <IconButton
                           onClick={() => {
                             setEditDialogObj({
@@ -129,7 +125,6 @@ export default function AddSupplierDialog({
           {t('cancel')}
         </Button>
       </DialogActions>
-      {loading && <CircularProgress />}
       {deleteDialogId && (
         <DeleteDialog
           title={t('delete')}
