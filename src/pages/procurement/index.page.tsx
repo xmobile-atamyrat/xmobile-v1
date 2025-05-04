@@ -16,7 +16,10 @@ import {
   createHistoryUtil,
   createProductUtil,
   createSupplierUtil,
+  dayMonthYearFromDate,
+  downloadXlsxAsZip,
   editHistoryUtil,
+  ExcelFileData,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -478,6 +481,64 @@ export default function Procurement() {
             className="w-full"
             sx={{ textTransform: 'none' }}
             variant="outlined"
+            onClick={async () => {
+              if (
+                selectedProducts == null ||
+                selectedSuppliers == null ||
+                selectedHistory == null
+              ) {
+                return;
+              }
+
+              const products = [
+                ...selectedProducts.existing,
+                ...selectedProducts.added,
+              ].filter((_, idx) => productQuantities[idx] > 0);
+              if (products.length === 0) {
+                setSnackbarMessage({
+                  message: 'allQuantitiesZero',
+                  severity: 'error',
+                });
+                setSnackbarOpen(true);
+                return;
+              }
+
+              const today = new Date();
+              const formattedDate = dayMonthYearFromDate(today);
+              const suppliers = [
+                ...selectedSuppliers.existing,
+                ...selectedSuppliers.added,
+              ];
+              const quantities = productQuantities.filter(
+                (quantity) => quantity > 0,
+              );
+              const csvFileData: ExcelFileData[] = suppliers
+                .map((supplier) => {
+                  const fileData = products.map((product, idx) => {
+                    return [product.name, quantities[idx], ''];
+                  });
+                  return {
+                    filename: `Rahmanov-${supplier.name}-${formattedDate}`,
+                    data: [['', 'Quantity', 'Price'], ...fileData],
+                  };
+                })
+                .filter((data) => data.data.length > 1);
+
+              if (csvFileData.length === 0) {
+                setSnackbarMessage({
+                  message: 'noProductsOrSuppliers',
+                  severity: 'error',
+                });
+
+                setSnackbarOpen(true);
+                return;
+              }
+
+              await downloadXlsxAsZip(
+                csvFileData,
+                `${selectedHistory?.name}.zip`,
+              );
+            }}
           >
             {t('downloadEmptyOrder')}
           </Button>

@@ -133,5 +133,7 @@
   "downloadEmptyOrder": "Boş sipariş indir",
   "addProducts": "Ürün ekle",
   "addSuppliers": "Tedarikçiler ekle",
-  "alreadyExists": "Exists in the current order!"
+  "alreadyExists": "Exists in the current order!",
+  "noProductsOrSuppliers": "Sipariş için hiçbir ürün veya tedarikçi seçilmedi!",
+  "allQuantitiesZero": "Tüm ürün miktarları sıfır!"
 }

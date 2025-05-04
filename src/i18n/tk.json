@@ -135,5 +135,7 @@
   "downloadEmptyOrder": "Sargyty göçürip alyň",
   "addProducts": "Önüm goşuň",
   "addSuppliers": "Üpjün edijiler goşuň",
-  "alreadyExists": "Exists in the current order!"
+  "alreadyExists": "Exists in the current order!",
+  "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
+  "allQuantitiesZero": "HEMMESI INC HEMMESI INCES"
 }

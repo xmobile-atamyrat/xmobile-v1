@@ -135,5 +135,7 @@
   "downloadEmptyOrder": "Zakazlary Skaçat Et",
   "addProducts": "Önüm goşuň",
   "addSuppliers": "Üpjün edijiler goşuň",
-  "alreadyExists": "Zakaza uže koşylan"
+  "alreadyExists": "Zakaza uže koşylan",
+  "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
+  "allQuantitiesZero": "HEMMESI INC HEMMESI INCES"
 }
