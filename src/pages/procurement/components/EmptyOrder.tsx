@@ -46,6 +46,7 @@ export default function EmptyOrder({
   const [confirmRemoveItemDialog, setConfirmRemoveItemDialog] = useState<{
     itemType: ProductsSuppliersType;
     item: Supplier | ProcurementProduct;
+    itemIndex: number;
   }>();
 
   return (
@@ -57,7 +58,7 @@ export default function EmptyOrder({
               <TableCell></TableCell>
               <TableCell align="center">{t('quantity')}</TableCell>
               {[...selectedSuppliers.existing, ...selectedSuppliers.added].map(
-                (supplier) => (
+                (supplier, idx) => (
                   <TableCell key={supplier.id} align="center">
                     <Box className="flex w-full items-center gap-2 justify-center">
                       <Typography>{supplier.name}</Typography>
@@ -66,6 +67,7 @@ export default function EmptyOrder({
                           setConfirmRemoveItemDialog({
                             itemType: 'supplier',
                             item: supplier,
+                            itemIndex: idx,
                           })
                         }
                       >
@@ -89,6 +91,7 @@ export default function EmptyOrder({
                           setConfirmRemoveItemDialog({
                             itemType: 'product',
                             item: product,
+                            itemIndex: prdIdx,
                           })
                         }
                       >
@@ -162,6 +165,11 @@ export default function EmptyOrder({
                   confirmRemoveItemDialog.item as ProcurementProduct,
                 ],
               }));
+              setProductQuantities((prev) =>
+                prev.filter(
+                  (_, idx) => idx !== confirmRemoveItemDialog.itemIndex,
+                ),
+              );
             }
             setConfirmRemoveItemDialog(undefined);
           }}

@@ -350,6 +350,7 @@ export default function Procurement() {
                       deleted: prev.deleted,
                     };
                   });
+                  setProductQuantities((prev) => [...prev, 0]);
                 } else {
                   setSelectedSuppliers((prev) => {
                     return {
