@@ -455,9 +455,6 @@ export default function Procurement() {
         <MenuItem>
           <Button
             className="w-full"
-            onClick={() => {
-              setCreateHistoryDialog(true);
-            }}
             sx={{ textTransform: 'none' }}
             variant="outlined"
           >
