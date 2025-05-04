@@ -332,6 +332,7 @@ export default function Procurement() {
                   setSnackbarOpen,
                   setSnackbarMessage,
                 );
+                setHistoryListDialog(false);
               }}
             />
           )}
