@@ -96,12 +96,20 @@ export const editHistory = async ({
   name,
   prices,
   quantities,
+  addedProductIds,
+  removedProductIds,
+  addedSupplierIds,
+  removedSupplierIds,
 }: {
   accessToken: string;
   id: string;
   name?: string;
   prices?: (number | null)[][];
   quantities?: (number | null)[];
+  addedProductIds?: string[];
+  removedProductIds?: string[];
+  addedSupplierIds?: string[];
+  removedSupplierIds?: string[];
 }): Promise<ResponseApi<DetailedHistory>> => {
   const url = `/api/procurement/calculation/history`;
   return fetchWithCreds<DetailedHistory>(accessToken, url, 'PUT', {
@@ -109,6 +117,10 @@ export const editHistory = async ({
     name,
     prices,
     quantities,
+    addedProductIds,
+    removedProductIds,
+    addedSupplierIds,
+    removedSupplierIds,
   });
 };
 
