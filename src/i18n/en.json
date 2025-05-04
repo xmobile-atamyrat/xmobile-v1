@@ -121,7 +121,7 @@
   "yes": "Yes",
   "no": "No",
   "history": "History",
-  "createHistory": "Create calculation session",
+  "createHistory": "Create new order",
   "editHistory": "Edit calculation session",
   "selectSupplierAndProduct": "Please select at least one supplier and product.",
   "createdDate": "Created Date",
