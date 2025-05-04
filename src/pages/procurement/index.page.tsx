@@ -188,10 +188,6 @@ export default function Procurement() {
     );
   }, [selectedHistory]);
 
-  useEffect(() => {
-    console.info('productQuantities', productQuantities);
-  }, [productQuantities]);
-
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       {user?.grade === 'SUPERUSER' && (
