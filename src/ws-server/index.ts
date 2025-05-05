@@ -3,12 +3,13 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
+import { parse } from 'url';
 
 const filepath = 'src/ws-server/index.ts';
 
 const server = createServer();
 const wsServer = new WebSocketServer({ server });
-const port = process.env.WEBSOCKET_SERVER_PORT;
+const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 const connections = new Map<string, Set<WebSocket>>();
 
@@ -27,23 +28,22 @@ const verifyConnection = async (
   connection: WebSocket,
   request: IncomingMessage,
 ) => {
-  const authHeader = request.headers?.authorization;
+  const token = parse(request.url, true).query?.accessToken;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!token || typeof token !== 'string') {
     console.error(
       filepath,
-      `. Unauthorized: Missing or invalid header format: ${authHeader}`,
+      `. Unauthorized: Missing or invalid query format: ${request.url}`,
     );
     safeCloseConnection(
       1008,
-      'Unauthorized: Missing or invalid format',
+      'Unauthorized: Missing or invalid query format',
       null,
       connection,
     );
     return { userId: null };
   }
 
-  const token = authHeader.split(' ')[1];
   try {
     const { userId } = await verifyToken(token, ACCESS_SECRET);
 
