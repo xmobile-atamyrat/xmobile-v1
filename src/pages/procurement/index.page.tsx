@@ -213,9 +213,7 @@ export default function Procurement() {
                 }}
                 color="inherit"
               >
-                <Button sx={{ textTransform: 'none' }} variant="outlined">
-                  {t('actions')}
-                </Button>
+                <Typography>{t('actions')}</Typography>
               </IconButton>
               <Button
                 className="h-9"
