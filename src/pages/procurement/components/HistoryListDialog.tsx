@@ -25,15 +25,15 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { CalculationHistory } from '@prisma/client';
+import { ProcurementOrder } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface HistoryListDialogProps {
   handleClose: () => void;
-  historyList: CalculationHistory[];
+  historyList: ProcurementOrder[];
   handleSelectHistory: (id: string) => Promise<void>;
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>;
+  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }

@@ -19,7 +19,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import { ProcurementProduct, ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
@@ -45,7 +45,7 @@ export default function EmptyOrder({
   const t = useTranslations();
   const [confirmRemoveItemDialog, setConfirmRemoveItemDialog] = useState<{
     itemType: ProductsSuppliersType;
-    item: Supplier | ProcurementProduct;
+    item: ProcurementSupplier | ProcurementProduct;
     itemIndex: number;
   }>();
 
@@ -149,7 +149,7 @@ export default function EmptyOrder({
                 ),
                 deleted: [
                   ...prev.deleted,
-                  confirmRemoveItemDialog.item as Supplier,
+                  confirmRemoveItemDialog.item as ProcurementSupplier,
                 ],
               }));
             } else {

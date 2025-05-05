@@ -106,12 +106,12 @@ model DollarRate {
   updatedAt       DateTime    @updatedAt
 }
 
-model Supplier {
+model ProcurementSupplier {
   id                    String                  @id @default(uuid())
   name                  String
   description           String?
 
-  calculationHistories  CalculationHistory[]    @relation("CalculationHistorySuppliers")
+  order  ProcurementOrder[]    @relation("CalculationHistorySuppliers")
 
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
@@ -121,21 +121,20 @@ model ProcurementProduct {
   id                      String                  @id @default(uuid())
   name                    String
 
-  calculationHistories    CalculationHistory[]    @relation("CalculationHistoryProcurementProducts")
+  order    ProcurementOrder[]    @relation("CalculationHistoryProcurementProducts")
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 }
 
-model CalculationHistory {
+model ProcurementOrder {
   id                      String                  @id @default(uuid())
   name                    String
   prices                  Json?
   quantities              Json?
 
-  suppliers               Supplier[]              @relation("CalculationHistorySuppliers")
-  procurementProducts     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
-  
+  suppliers    ProcurementSupplier[]   @relation("CalculationHistorySuppliers")
+  products     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt

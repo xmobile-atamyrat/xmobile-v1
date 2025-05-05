@@ -15,7 +15,7 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import { ProcurementProduct, ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -23,10 +23,12 @@ interface AddProductsSuppliersDialogProps {
   handleClose: () => void;
   itemType: ProductsSuppliersType;
   handleItemSearch: (keyword: string) => Promise<void>;
-  searchedItems: (ProcurementProduct | Supplier)[];
+  searchedItems: (ProcurementProduct | ProcurementSupplier)[];
   selectedItems: ActionBasedProducts | ActionBasedSuppliers;
   handleAddItem: (keyword: string) => Promise<void>;
-  handleAddSearchedItem: (item: ProcurementProduct | Supplier) => void;
+  handleAddSearchedItem: (
+    item: ProcurementProduct | ProcurementSupplier,
+  ) => void;
 }
 
 export default function AddProductsSuppliersDialog({
