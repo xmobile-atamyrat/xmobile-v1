@@ -18,9 +18,9 @@ import {
   HistoryPrice,
 } from '@/pages/procurement/lib/types';
 import {
-  CalculationHistory,
+  ProcurementOrder,
   ProcurementProduct,
-  Supplier,
+  ProcurementSupplier,
 } from '@prisma/client';
 import { JsonValue } from '@prisma/client/runtime/library';
 import * as ExcelJS from 'exceljs';
@@ -195,7 +195,7 @@ export async function handleProductSearchUtil(
 export async function handleSupplierSearchUtil(
   accessToken: string,
   keyword: string,
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -270,8 +270,8 @@ export async function createProductUtil(
 export async function createHistoryUtil(
   accessToken: string,
   name: string,
-  setHistory: Dispatch<SetStateAction<CalculationHistory[]>>,
-  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
+  setHistory: Dispatch<SetStateAction<ProcurementOrder[]>>,
+  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -323,7 +323,7 @@ export async function editHistoryUtil({
   removedSupplierIds?: string[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
-  setHistoryList?: Dispatch<SetStateAction<CalculationHistory[]>>;
+  setHistoryList?: Dispatch<SetStateAction<ProcurementOrder[]>>;
 }) {
   try {
     const { success, data, message } = await editHistory({
@@ -374,7 +374,7 @@ export async function editHistoryUtil({
 export async function createSupplierUtil(
   accessToken: string,
   keyword: string,
-  setSupplier: Dispatch<SetStateAction<Supplier[]>>,
+  setSupplier: Dispatch<SetStateAction<ProcurementSupplier[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -449,10 +449,10 @@ export async function getProductsUtil(
 // returns latest created history
 export async function getHistoryListUtil(
   accessToken: string,
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
+  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-): Promise<CalculationHistory | undefined> {
+): Promise<ProcurementOrder | undefined> {
   try {
     const { success, data, message } = await getHistoryList(accessToken);
     if (success) {
@@ -479,7 +479,7 @@ export async function getHistoryListUtil(
 export async function getHistoryUtil(
   accessToken: string,
   id: string,
-  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
+  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>,
   setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>,
   setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
@@ -548,7 +548,7 @@ export async function getSuppliersUtil(
 export async function deleteSupplierUtil(
   accessToken: string,
   id: string,
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -582,7 +582,7 @@ export async function deleteSupplierUtil(
 export async function deleteHistoryUtil(
   accessToken: string,
   id: string,
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
+  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -616,7 +616,7 @@ export async function deleteHistoryUtil(
 export async function deleteProductUtil(
   accessToken: string,
   id: string,
-  setProducts: Dispatch<SetStateAction<Supplier[]>>,
+  setProducts: Dispatch<SetStateAction<ProcurementSupplier[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
@@ -649,13 +649,13 @@ export async function deleteProductUtil(
 
 export const emptyHistoryPrices = (
   products: ProcurementProduct[],
-  suppliers: Supplier[],
+  suppliers: ProcurementSupplier[],
 ) => Array.from({ length: products.length }, () => Array(suppliers.length));
 
 export const parseInitialHistoryPrices = (
   prices: JsonValue | null,
   products: ProcurementProduct[],
-  suppliers: Supplier[],
+  suppliers: ProcurementSupplier[],
 ): HistoryPrice[][] => {
   if (!prices) return emptyHistoryPrices(products, suppliers);
   return (prices as number[][]).map((row) => {

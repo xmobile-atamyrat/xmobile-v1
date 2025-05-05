@@ -31,13 +31,13 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { CalculationHistory } from '@prisma/client';
+import { ProcurementOrder } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
-  history: CalculationHistory;
-  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>;
+  history: ProcurementOrder;
+  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>;
   selectedSuppliers: ActionBasedSuppliers;
   setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>;
   selectedProducts: ActionBasedProducts;
