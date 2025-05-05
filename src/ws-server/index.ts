@@ -11,84 +11,76 @@ const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
-const connections = new Map<string, Set<WebSocket>>();
+interface AuthenticatedConnection extends WebSocket {
+  accessToken: string;
+  userId: string;
+}
+
+const connections = new Map<string, Set<AuthenticatedConnection>>();
 
 const safeCloseConnection = (
   code: number,
   reason: string,
-  userId: string,
-  connection: WebSocket,
+  connection: AuthenticatedConnection,
 ) => {
+  const userId = connection?.userId;
   connection.close(code, reason);
   connections.get(userId)?.delete(connection);
   if (!connections.get(userId)?.size) connections.delete(userId);
 };
 
-const verifyConnection = async (
-  connection: WebSocket,
+const authenticateConnection = async (
   request: IncomingMessage,
+  connection: AuthenticatedConnection,
 ) => {
   const token = parse(request.url, true).query?.accessToken;
 
   if (!token || typeof token !== 'string') {
     console.error(
-      filepath,
-      `. Unauthorized: Missing or invalid query format: ${request.url}`,
+      `${filepath}. Unauthenticated: Missing or invalid token: ${request.url}`,
     );
     safeCloseConnection(
       1008,
-      'Unauthorized: Missing or invalid query format',
-      null,
+      'Unauthenticated: Missing or invalid token',
       connection,
     );
-    return { userId: null };
+    return;
   }
 
   try {
     const { userId } = await verifyToken(token, ACCESS_SECRET);
 
-    if (!connections.has(userId)) {
-      connections.set(userId, new Set());
-    }
+    if (!connections.has(userId)) connections.set(userId, new Set());
     connections.get(userId)?.add(connection);
 
-    return { userId };
+    connection.userId = userId;
+    connection.accessToken = token;
   } catch (error) {
     console.error(filepath, error);
     if (error instanceof JsonWebTokenError) {
-      console.error(filepath, `InvalidToken: ${token};`);
-      safeCloseConnection(
-        1008,
-        'Unauthorized: Missing or format',
-        null,
-        connection,
-      );
+      console.error(filepath, `InvalidToken: ${token}`);
+
+      safeCloseConnection(1008, 'Unauthorized: Invalid token', connection);
     }
-    return { userId: null };
   }
 };
 
-wsServer.on('connection', async (connection, request) => {
-  try {
-    const { userId }: { userId: string } = await verifyConnection(
-      connection,
-      request,
-    );
+wsServer.on(
+  'connection',
+  async (connection: AuthenticatedConnection, request) => {
+    try {
+      await authenticateConnection(request, connection);
 
-    connection.on('message', () => {});
+      connection.on('message', () => {});
 
-    connection.on('close', () =>
-      safeCloseConnection(
-        1001,
-        'Offline: User Disconnected',
-        userId,
-        connection,
-      ),
-    );
-  } catch (error) {
-    console.error('Connection error:', error);
-    connection.close(1008, 'Unauthorized: Connection failed');
-  }
-});
+      connection.on('close', () =>
+        safeCloseConnection(1001, 'Offline: User Disconnected', connection),
+      );
+    } catch (error) {
+      console.error('Connection error:', error);
+      connection.close(1008, 'Unauthorized: Connection failed');
+    }
+  },
+);
 
 server.listen(port);

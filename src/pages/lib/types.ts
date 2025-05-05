@@ -1,4 +1,4 @@
-import { Category, Product, User } from '@prisma/client';
+import { Category, Product, User, UserRole } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
@@ -11,6 +11,17 @@ export interface ResponseApi<K = any> {
 export interface ExtendedCategory extends Category {
   products?: Product[];
   successorCategories?: ExtendedCategory[];
+}
+
+export type ChatMessageTypes = 'auth' | 'token_refresh' | 'message';
+export interface ChatMessageProps {
+  type: ChatMessageTypes;
+  sessionId: string;
+  senderId: string;
+  senderRole: UserRole;
+  content: string;
+  isRead: boolean;
+  accessToken?: string;
 }
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
