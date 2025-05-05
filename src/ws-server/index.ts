@@ -1,8 +1,12 @@
 import { createServer, IncomingMessage } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer, WebSocket, RawData } from 'ws';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
+import { ResponseApi } from '@/pages/lib/types';
+import { ChatMessage } from '@prisma/client';
+import { fetchWithCreds } from '@/pages/lib/fetch';
+import dbClient from '@/lib/dbClient';
 import { parse } from 'url';
 
 const filepath = 'src/ws-server/index.ts';
@@ -14,6 +18,11 @@ const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 interface AuthenticatedConnection extends WebSocket {
   accessToken: string;
   userId: string;
+}
+
+interface handleMessageProps {
+  message: RawData;
+  connection: AuthenticatedConnection;
 }
 
 const connections = new Map<string, Set<AuthenticatedConnection>>();
@@ -65,13 +74,55 @@ const authenticateConnection = async (
   }
 };
 
+const handleMessage = async ({ message, connection }: handleMessageProps) => {
+  try {
+    const parsedMessage = JSON.parse(message.toString());
+
+    const response: ResponseApi<ChatMessage> = await fetchWithCreds(
+      connection.accessToken,
+      '/api/chat/message',
+      'POST',
+      {
+        ...parsedMessage,
+      },
+    );
+
+    // todo: update accessToken if outdated
+    if (response.success) {
+      const { users: sessionUsers } = await dbClient.chatSession.findUnique({
+        where: {
+          id: response.data.sessionId,
+        },
+        select: { users: true },
+      });
+
+      sessionUsers?.forEach((sessionUser) => {
+        const outgoingMessage = JSON.stringify({
+          ...response.data,
+          senderName: sessionUser.name,
+        });
+
+        connections
+          .get(sessionUser.id)
+          ?.forEach((conn) => conn.send(outgoingMessage));
+      });
+    } else {
+      console.error(filepath, response.message);
+    }
+  } catch (error) {
+    console.error(filepath, error);
+  }
+};
+
 wsServer.on(
   'connection',
   async (connection: AuthenticatedConnection, request) => {
     try {
       await authenticateConnection(request, connection);
 
-      connection.on('message', () => {});
+      connection.on('message', (message) =>
+        handleMessage({ message, connection }),
+      );
 
       connection.on('close', () =>
         safeCloseConnection(1001, 'Offline: User Disconnected', connection),
