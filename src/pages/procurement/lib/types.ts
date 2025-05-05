@@ -1,11 +1,11 @@
 import {
-  CalculationHistory,
+  ProcurementOrder,
   ProcurementProduct,
-  Supplier,
+  ProcurementSupplier,
 } from '@prisma/client';
 
-export interface DetailedHistory extends CalculationHistory {
-  suppliers: Supplier[];
+export interface DetailedHistory extends ProcurementOrder {
+  suppliers: ProcurementSupplier[];
   procurementProducts: ProcurementProduct[];
 }
 
@@ -22,7 +22,7 @@ export type ProductsSuppliersActionsType = 'existing' | 'added' | 'deleted';
 
 export type ActionBasedSuppliers = Record<
   ProductsSuppliersActionsType,
-  Supplier[]
+  ProcurementSupplier[]
 >;
 
 export type ActionBasedProducts = Record<

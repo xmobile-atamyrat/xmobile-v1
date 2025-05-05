@@ -40,9 +40,9 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  CalculationHistory,
+  ProcurementOrder,
   ProcurementProduct,
-  Supplier,
+  ProcurementSupplier,
 } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -72,12 +72,14 @@ export default function Procurement() {
     useState<ActionBasedSuppliers>();
   const [selectedProducts, setSelectedProducts] =
     useState<ActionBasedProducts>();
-  const [searchedSuppliers, setSearchedSuppliers] = useState<Supplier[]>([]);
+  const [searchedSuppliers, setSearchedSuppliers] = useState<
+    ProcurementSupplier[]
+  >([]);
   const [searchedProducts, setSearchedProducts] = useState<
     ProcurementProduct[]
   >([]);
-  const [historyList, setHistoryList] = useState<CalculationHistory[]>([]);
-  const [selectedHistory, setSelectedHistory] = useState<CalculationHistory>();
+  const [historyList, setHistoryList] = useState<ProcurementOrder[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<ProcurementOrder>();
   const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
@@ -374,7 +376,9 @@ export default function Procurement() {
                   ? createProduct
                   : createSupplier
               }
-              handleAddSearchedItem={(item: ProcurementProduct | Supplier) => {
+              handleAddSearchedItem={(
+                item: ProcurementProduct | ProcurementSupplier,
+              ) => {
                 if (addProductsSuppliersDialog === 'product') {
                   setSelectedProducts((prev) => {
                     return {
@@ -388,7 +392,7 @@ export default function Procurement() {
                   setSelectedSuppliers((prev) => {
                     return {
                       existing: prev.existing,
-                      added: [...prev.added, item as Supplier],
+                      added: [...prev.added, item as ProcurementSupplier],
                       deleted: prev.deleted,
                     };
                   });
