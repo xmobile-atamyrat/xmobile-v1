@@ -417,8 +417,8 @@ export default function Procurement() {
                   setSnackbarOpen,
                   setSnackbarMessage,
                 );
-                setSelectedProducts(undefined);
-                setSelectedSuppliers(undefined);
+                setSelectedProducts({ added: [], deleted: [], existing: [] });
+                setSelectedSuppliers({ added: [], deleted: [], existing: [] });
                 setProductQuantities([]);
                 setNewOrderDialog(false);
               }}
