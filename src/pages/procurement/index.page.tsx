@@ -25,12 +25,13 @@ import {
   handleProductSearchUtil,
   handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
   Alert,
   Box,
   Button,
   debounce,
-  IconButton,
   Menu,
   MenuItem,
   Snackbar,
@@ -207,14 +208,20 @@ export default function Procurement() {
               {t('procurement')} - {selectedHistory?.name}
             </Typography>
             <Box className="flex flex-row gap-2 items-center">
-              <IconButton
+              <Button
                 onClick={(event) => {
                   setActionsAnchor(event.currentTarget);
                 }}
-                color="inherit"
+                sx={{ textTransform: 'none' }}
+                variant="outlined"
               >
-                <Typography>{t('actions')}</Typography>
-              </IconButton>
+                {t('actions')}
+                {actionsAnchor == null ? (
+                  <KeyboardArrowDownIcon />
+                ) : (
+                  <KeyboardArrowUpIcon />
+                )}
+              </Button>
               <Button
                 className="h-9"
                 onClick={() => {
