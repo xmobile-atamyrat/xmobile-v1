@@ -6,7 +6,7 @@ import {
 
 export interface DetailedHistory extends ProcurementOrder {
   suppliers: ProcurementSupplier[];
-  procurementProducts: ProcurementProduct[];
+  products: ProcurementProduct[];
 }
 
 export type HistoryColor = 'red' | 'green' | 'orange';

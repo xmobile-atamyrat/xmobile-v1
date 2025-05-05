@@ -489,12 +489,12 @@ export async function getHistoryUtil(
     const { success, data, message } = await getHistory(accessToken, id);
     if (success) {
       setSelectedProducts({
-        existing: data.procurementProducts,
+        existing: data.products ?? [],
         added: [],
         deleted: [],
       });
       setSelectedSuppliers({
-        existing: data.suppliers,
+        existing: data.suppliers ?? [],
         added: [],
         deleted: [],
       });
