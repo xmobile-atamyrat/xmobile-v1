@@ -6,7 +6,7 @@ import withAuth, {
 import { Prisma, ProcurementOrder } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const filepath = 'src/pages/api/procurement/calculation/history.page.ts';
+const filepath = 'src/pages/api/procurement/order/index.page.ts';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   addCors(res);
@@ -27,6 +27,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           include: {
             suppliers: true,
             products: true,
+            prices: true,
+            productQuantities: true,
           },
         });
         return res.status(200).json({ success: true, data: history });
@@ -58,8 +60,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const {
         id,
         name,
-        quantities,
-        prices,
         addedProductIds,
         addedSupplierIds,
         removedProductIds,
@@ -89,12 +89,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           id: removedProductId,
         })),
       };
-      if (quantities) {
-        updateData.quantities = quantities;
-      }
-      if (prices) {
-        updateData.prices = prices;
-      }
 
       const history = await dbClient.procurementOrder.update({
         where: { id },

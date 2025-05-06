@@ -137,5 +137,6 @@
   "addSuppliers": "Üpjün edijiler goşuň",
   "alreadyExists": "Zakaza uže koşylan",
   "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
-  "allQuantitiesZero": "HEMMESI INC HEMMESI INCES"
+  "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
+  "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi."
 }
