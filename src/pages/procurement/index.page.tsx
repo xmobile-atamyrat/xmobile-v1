@@ -4,6 +4,7 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
+import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
@@ -80,7 +81,7 @@ export default function Procurement() {
   >([]);
   const [historyList, setHistoryList] = useState<ProcurementOrder[]>([]);
   const [selectedHistory, setSelectedHistory] = useState<DetailedOrder>();
-  // const [calculateDialog, setCalculateDialog] = useState(false);
+  const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
@@ -274,12 +275,11 @@ export default function Procurement() {
               setSnackbarOpen={setSnackbarOpen}
               handleSubmit={async (title: string) => {
                 await createHistory(title);
-                // setCalculateDialog(true);
               }}
             />
           )}
 
-          {/* {calculateDialog && selectedHistory && (
+          {calculateDialog && selectedHistory && (
             <CalculateDialog
               history={selectedHistory}
               selectedProducts={selectedProducts}
@@ -291,7 +291,7 @@ export default function Procurement() {
               setSelectedProducts={setSelectedProducts}
               setSelectedSuppliers={setSelectedSuppliers}
             />
-          )} */}
+          )}
 
           {historyListDialog && historyList && (
             <HistoryListDialog
@@ -539,6 +539,17 @@ export default function Procurement() {
             className="w-full"
             sx={{ textTransform: 'none' }}
             variant="outlined"
+            onClick={() => {
+              if (selectedHistory == null) {
+                setSnackbarMessage({
+                  message: 'orderNotSelected',
+                  severity: 'error',
+                });
+                setSnackbarOpen(true);
+                return;
+              }
+              setCalculateDialog(true);
+            }}
           >
             {t('calculate')}
           </Button>
