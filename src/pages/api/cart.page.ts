@@ -112,12 +112,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       console.error(filepath, error);
       res.status(500).json({ success: false, message: error.message });
     }
+  } else {
+    console.error(`${filepath}: Method not allowed`);
+    res
+      .status(405)
+      .json({ success: false, message: 'Method not allowed' });
   }
 
-  console.error(`${filepath}: Method not allowed`);
-  return res
-    .status(405)
-    .json({ success: false, message: 'Method not allowed' });
 }
 
 export default withAuth(handler);
