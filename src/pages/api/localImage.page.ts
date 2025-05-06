@@ -25,7 +25,7 @@ export default async function handler(
       res.setHeader('Content-Type', 'image/jpeg');
 
       if ((network as string) !== 'slow' && (network as string) !== 'fast') {
-        console.error(
+        console.info(
           filepath,
           'Network speed not found. Returned original image',
           `imgUrl: ${imgUrl}`,
