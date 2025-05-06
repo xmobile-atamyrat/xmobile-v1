@@ -1,12 +1,7 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import {
-  ActionBasedProducts,
-  ActionBasedSuppliers,
-  HistoryColor,
-  HistoryPrice,
-} from '@/pages/procurement/lib/types';
+import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ExcelFileData,
   dayMonthYearFromDate,
@@ -31,17 +26,21 @@ import {
   TableRow,
   TextField,
 } from '@mui/material';
-import { ProcurementOrder } from '@prisma/client';
+import {
+  ProcurementOrder,
+  ProcurementProduct,
+  ProcurementSupplier,
+} from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface CalculateDialogProps {
   history: ProcurementOrder;
   setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>;
-  selectedSuppliers: ActionBasedSuppliers;
-  setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>;
-  selectedProducts: ActionBasedProducts;
-  setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>;
+  selectedSuppliers: ProcurementSupplier[];
+  setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  selectedProducts: ProcurementProduct[];
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
