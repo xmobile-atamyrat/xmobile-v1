@@ -10,7 +10,7 @@ export interface DetailedOrder extends ProcurementOrder {
   suppliers: ProcurementSupplier[];
   products: ProcurementProduct[];
   prices: ProcurementSupplierProductPrice[];
-  quantities: ProcurementOrderProductQuantity[];
+  productQuantities: ProcurementOrderProductQuantity[];
 }
 
 export type HistoryColor = 'red' | 'green' | 'orange';
