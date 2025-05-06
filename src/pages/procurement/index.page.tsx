@@ -293,13 +293,15 @@ export default function Procurement() {
             />
           )} */}
 
-          {historyListDialog && (
+          {historyListDialog && historyList && (
             <HistoryListDialog
               handleClose={() => setHistoryListDialog(false)}
               historyList={historyList}
               setHistoryList={setHistoryList}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
+              setSelectedHistory={setSelectedHistory}
+              selectedHistory={selectedHistory}
               handleSelectHistory={async (id: string) => {
                 await getHistoryUtil({
                   accessToken,

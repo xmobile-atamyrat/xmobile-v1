@@ -2,6 +2,7 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
+import { DetailedOrder } from '@/pages/procurement/lib/types';
 import {
   dayMonthYearFromDate,
   deleteHistoryUtil,
@@ -34,6 +35,8 @@ interface HistoryListDialogProps {
   historyList: ProcurementOrder[];
   handleSelectHistory: (id: string) => Promise<void>;
   setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>;
+  selectedHistory: DetailedOrder;
+  setSelectedHistory: Dispatch<SetStateAction<DetailedOrder>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -45,6 +48,8 @@ export default function AddSupplierDialog({
   setHistoryList,
   setSnackbarMessage,
   setSnackbarOpen,
+  setSelectedHistory,
+  selectedHistory,
 }: HistoryListDialogProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
@@ -53,6 +58,7 @@ export default function AddSupplierDialog({
     id: string;
     name: string;
   }>();
+
   return (
     <Dialog open onClose={handleClose} component="form" fullScreen>
       <DialogTitle className="w-full flex justify-center">
@@ -133,13 +139,25 @@ export default function AddSupplierDialog({
           redButtonText={t('delete')}
           handleClose={() => setDeleteDialogId(undefined)}
           handleDelete={async () => {
-            await deleteHistoryUtil(
+            const deletedHistory = await deleteHistoryUtil(
               accessToken,
               deleteDialogId,
-              setHistoryList,
               setSnackbarOpen,
               setSnackbarMessage,
             );
+            if (deletedHistory) {
+              const updatedHistoryList = historyList.filter(
+                (history) => history.id !== deletedHistory.id,
+              );
+              setHistoryList(updatedHistoryList);
+              if (selectedHistory.id === deletedHistory.id) {
+                if (updatedHistoryList.length > 0) {
+                  await handleSelectHistory(updatedHistoryList[0].id);
+                } else {
+                  setSelectedHistory(undefined);
+                }
+              }
+            }
             setDeleteDialogId(undefined);
           }}
         />
@@ -149,15 +167,29 @@ export default function AddSupplierDialog({
           initialTitle={editDialogObj.name}
           handleClose={() => setEditDialogObj(undefined)}
           handleSubmit={async (newTitle: string) => {
-            await editHistoryUtil({
+            const updatedHistory = await editHistoryUtil({
               accessToken,
               id: editDialogObj.id,
               name: newTitle,
-              setHistoryList,
               setSnackbarOpen,
               setSnackbarMessage,
             });
-            setEditDialogObj(undefined);
+            if (updatedHistory) {
+              setHistoryList((prev) =>
+                prev.map((history) =>
+                  history.id === updatedHistory.id ? updatedHistory : history,
+                ),
+              );
+              if (selectedHistory.id === updatedHistory.id) {
+                setSelectedHistory((curr) => {
+                  return {
+                    ...curr,
+                    name: updatedHistory.name,
+                  };
+                });
+              }
+              setEditDialogObj(undefined);
+            }
           }}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}

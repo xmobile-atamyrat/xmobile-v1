@@ -357,7 +357,6 @@ export async function editHistoryUtil({
   removedSupplierIds,
   setSnackbarMessage,
   setSnackbarOpen,
-  setHistoryList,
 }: {
   id: string;
   accessToken: string;
@@ -368,7 +367,6 @@ export async function editHistoryUtil({
   removedSupplierIds?: string[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
-  setHistoryList?: Dispatch<SetStateAction<ProcurementOrder[]>>;
 }): Promise<ProcurementOrder | undefined> {
   try {
     const { success, data, message } = await editHistory({
@@ -394,16 +392,6 @@ export async function editHistoryUtil({
         message: 'serverError',
         severity: 'error',
       });
-      if (setHistoryList) {
-        setHistoryList((prev) =>
-          prev.map((history) => {
-            if (history.id === id) {
-              return data;
-            }
-            return history;
-          }),
-        );
-      }
     }
   } catch (error) {
     console.error(error);
@@ -728,19 +716,18 @@ export async function deleteProductQuantityUtil({
 export async function deleteHistoryUtil(
   accessToken: string,
   id: string,
-  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+): Promise<ProcurementOrder | undefined> {
   try {
-    const { success, message } = await deleteHistory(accessToken, id);
+    const { success, data, message } = await deleteHistory(accessToken, id);
     if (success) {
-      setHistoryList((prev) => prev.filter((history) => history.id !== id));
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'deleteItemSuccess',
         severity: 'success',
       });
+      return data;
     } else {
       console.error(message);
       setSnackbarOpen(true);
@@ -757,6 +744,8 @@ export async function deleteHistoryUtil(
       severity: 'error',
     });
   }
+
+  return undefined;
 }
 
 export async function deleteProductUtil(
