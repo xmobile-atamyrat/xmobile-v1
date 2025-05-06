@@ -454,15 +454,6 @@ export default function Procurement() {
             className="w-full"
             sx={{ textTransform: 'none' }}
             variant="outlined"
-          >
-            {t('calculate')}
-          </Button>
-        </MenuItem>
-        <MenuItem>
-          <Button
-            className="w-full"
-            sx={{ textTransform: 'none' }}
-            variant="outlined"
             onClick={() => {
               setNewOrderDialog(true);
             }}
@@ -485,10 +476,20 @@ export default function Procurement() {
                 return;
               }
 
-              const products = [
-                ...selectedProducts.existing,
-                ...selectedProducts.added,
-              ].filter((_, idx) => productQuantities[idx] > 0);
+              const productQuantitiesMap: { [key: string]: number } = {};
+              productQuantities.forEach((productQuantity) => {
+                if (productQuantity.quantity > 0) {
+                  const product = selectedProducts.find(
+                    (product) => product.id === productQuantity.productId,
+                  );
+                  if (product) {
+                    productQuantitiesMap[product.name] =
+                      productQuantity.quantity;
+                  }
+                }
+              });
+              const products = Object.keys(productQuantitiesMap);
+              const quantities = Object.values(productQuantitiesMap);
               if (products.length === 0) {
                 setSnackbarMessage({
                   message: 'allQuantitiesZero',
@@ -500,17 +501,10 @@ export default function Procurement() {
 
               const today = new Date();
               const formattedDate = dayMonthYearFromDate(today);
-              const suppliers = [
-                ...selectedSuppliers.existing,
-                ...selectedSuppliers.added,
-              ];
-              const quantities = productQuantities.filter(
-                (quantity) => quantity > 0,
-              );
-              const csvFileData: ExcelFileData[] = suppliers
+              const csvFileData: ExcelFileData[] = selectedSuppliers
                 .map((supplier) => {
                   const fileData = products.map((product, idx) => {
-                    return [product.name, quantities[idx], ''];
+                    return [product, quantities[idx], ''];
                   });
                   return {
                     filename: `Rahmanov-${supplier.name}-${formattedDate}`,
@@ -536,6 +530,15 @@ export default function Procurement() {
             }}
           >
             {t('downloadEmptyOrder')}
+          </Button>
+        </MenuItem>
+        <MenuItem>
+          <Button
+            className="w-full"
+            sx={{ textTransform: 'none' }}
+            variant="outlined"
+          >
+            {t('calculate')}
           </Button>
         </MenuItem>
       </Menu>
