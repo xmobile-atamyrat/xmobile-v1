@@ -138,5 +138,6 @@
   "alreadyExists": "Exists in the current order!",
   "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
   "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
-  "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi."
+  "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi.",
+  "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!"
 }

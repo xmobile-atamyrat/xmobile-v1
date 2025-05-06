@@ -136,5 +136,6 @@
   "alreadyExists": "Exists in the current order!",
   "noProductsOrSuppliers": "Sipariş için hiçbir ürün veya tedarikçi seçilmedi!",
   "allQuantitiesZero": "Tüm ürün miktarları sıfır!",
-  "failedToUpdateQuantity": "Miktarı güncelleyemedi."
+  "failedToUpdateQuantity": "Miktarı güncelleyemedi.",
+  "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!"
 }
