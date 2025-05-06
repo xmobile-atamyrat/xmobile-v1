@@ -137,5 +137,6 @@
   "addSuppliers": "Добавить поставщиков",
   "alreadyExists": "Уже существует в заказе!",
   "noProductsOrSuppliers": "Никаких продуктов или поставщиков, выбранных для заказа!",
-  "allQuantitiesZero": "Все количество продуктов равна нулю!"
+  "allQuantitiesZero": "Все количество продуктов равна нулю!",
+  "failedToUpdateQuantity": "Не удалось обновить количество."
 }

@@ -135,5 +135,6 @@
   "addSuppliers": "Add Suppliers",
   "alreadyExists": "Exists in the current order!",
   "noProductsOrSuppliers": "No products or suppliers selected for the order!",
-  "allQuantitiesZero": "All product quantities are zero!"
+  "allQuantitiesZero": "All product quantities are zero!",
+  "failedToUpdateQuantity": "Failed to update quantity."
 }

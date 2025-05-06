@@ -4,22 +4,18 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
-import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
-  ActionBasedProducts,
-  ActionBasedSuppliers,
+  DetailedOrder,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import {
   createHistoryUtil,
+  createProductQuantityUtil,
   createProductUtil,
   createSupplierUtil,
-  dayMonthYearFromDate,
-  downloadXlsxAsZip,
   editHistoryUtil,
-  ExcelFileData,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -41,6 +37,7 @@ import {
 } from '@mui/material';
 import {
   ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
 } from '@prisma/client';
@@ -69,9 +66,9 @@ export default function Procurement() {
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
 
   const [selectedSuppliers, setSelectedSuppliers] =
-    useState<ActionBasedSuppliers>();
+    useState<ProcurementSupplier[]>();
   const [selectedProducts, setSelectedProducts] =
-    useState<ActionBasedProducts>();
+    useState<ProcurementProduct[]>();
   const [searchedSuppliers, setSearchedSuppliers] = useState<
     ProcurementSupplier[]
   >([]);
@@ -79,13 +76,15 @@ export default function Procurement() {
     ProcurementProduct[]
   >([]);
   const [historyList, setHistoryList] = useState<ProcurementOrder[]>([]);
-  const [selectedHistory, setSelectedHistory] = useState<ProcurementOrder>();
-  const [calculateDialog, setCalculateDialog] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState<DetailedOrder>();
+  // const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
     useState<ProductsSuppliersType>();
-  const [productQuantities, setProductQuantities] = useState<number[]>([]);
+  const [productQuantities, setProductQuantities] = useState<
+    ProcurementOrderProductQuantity[]
+  >([]);
   const [newOrderDialog, setNewOrderDialog] = useState(false);
 
   const createProduct = useCallback(
@@ -186,13 +185,7 @@ export default function Procurement() {
 
   useEffect(() => {
     if (selectedHistory == null) return;
-    setProductQuantities(
-      selectedHistory.quantities
-        ? (selectedHistory.quantities as number[]).map((quantity) => quantity)
-        : Array(
-            selectedProducts.existing.length + selectedProducts.added.length,
-          ),
-    );
+    setProductQuantities(selectedHistory.quantities ?? []);
   }, [selectedHistory]);
 
   return (
@@ -234,7 +227,7 @@ export default function Procurement() {
               >
                 {t('history')}
               </Button>
-              <Button
+              {/* <Button
                 sx={{ textTransform: 'none' }}
                 variant="outlined"
                 color="success"
@@ -243,7 +236,6 @@ export default function Procurement() {
                   await editHistoryUtil({
                     accessToken,
                     id: selectedHistory.id,
-                    quantities: productQuantities,
                     addedProductIds: selectedProducts.added.map(
                       (product) => product.id,
                     ),
@@ -262,7 +254,7 @@ export default function Procurement() {
                 }}
               >
                 {t('save')}
-              </Button>
+              </Button> */}
             </Box>
           </Box>
           <Box className="flex flex-row justify-between items-center">
@@ -297,6 +289,7 @@ export default function Procurement() {
               setSelectedSuppliers={setSelectedSuppliers}
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
+              selectedHistory={selectedHistory}
             />
           )}
 
@@ -307,12 +300,12 @@ export default function Procurement() {
               setSnackbarOpen={setSnackbarOpen}
               handleSubmit={async (title: string) => {
                 await createHistory(title);
-                setCalculateDialog(true);
+                // setCalculateDialog(true);
               }}
             />
           )}
 
-          {calculateDialog && selectedHistory && (
+          {/* {calculateDialog && selectedHistory && (
             <CalculateDialog
               history={selectedHistory}
               selectedProducts={selectedProducts}
@@ -324,7 +317,7 @@ export default function Procurement() {
               setSelectedProducts={setSelectedProducts}
               setSelectedSuppliers={setSelectedSuppliers}
             />
-          )}
+          )} */}
 
           {historyListDialog && (
             <HistoryListDialog
@@ -376,26 +369,46 @@ export default function Procurement() {
                   ? createProduct
                   : createSupplier
               }
-              handleAddSearchedItem={(
+              handleAddSearchedItem={async (
                 item: ProcurementProduct | ProcurementSupplier,
               ) => {
                 if (addProductsSuppliersDialog === 'product') {
-                  setSelectedProducts((prev) => {
-                    return {
-                      existing: prev.existing,
-                      added: [...prev.added, item as ProcurementProduct],
-                      deleted: prev.deleted,
-                    };
+                  const updatedHistory = await editHistoryUtil({
+                    id: selectedHistory.id,
+                    accessToken,
+                    addedProductIds: [item.id],
+                    setSnackbarMessage,
+                    setSnackbarOpen,
                   });
-                  setProductQuantities((prev) => [...prev, 0]);
+                  const productQuantity = await createProductQuantityUtil({
+                    accessToken,
+                    orderId: selectedHistory.id,
+                    productId: item.id,
+                    quantity: 0,
+                    setSnackbarMessage,
+                    setSnackbarOpen,
+                  });
+                  if (updatedHistory && productQuantity) {
+                    setSelectedProducts((prev) => [
+                      item as ProcurementProduct,
+                      ...prev,
+                    ]);
+                    setProductQuantities((prev) => [productQuantity, ...prev]);
+                  }
                 } else {
-                  setSelectedSuppliers((prev) => {
-                    return {
-                      existing: prev.existing,
-                      added: [...prev.added, item as ProcurementSupplier],
-                      deleted: prev.deleted,
-                    };
+                  const updatedHistory = await editHistoryUtil({
+                    id: selectedHistory.id,
+                    accessToken,
+                    addedSupplierIds: [item.id],
+                    setSnackbarMessage,
+                    setSnackbarOpen,
                   });
+                  if (updatedHistory) {
+                    setSelectedSuppliers((prev) => [
+                      item as ProcurementSupplier,
+                      ...prev,
+                    ]);
+                  }
                 }
               }}
             />
@@ -417,8 +430,8 @@ export default function Procurement() {
                   setSnackbarOpen,
                   setSnackbarMessage,
                 );
-                setSelectedProducts({ added: [], deleted: [], existing: [] });
-                setSelectedSuppliers({ added: [], deleted: [], existing: [] });
+                setSelectedProducts([]);
+                setSelectedSuppliers([]);
                 setProductQuantities([]);
                 setNewOrderDialog(false);
               }}
@@ -482,7 +495,7 @@ export default function Procurement() {
             {t('newOrder')}
           </Button>
         </MenuItem>
-        <MenuItem>
+        {/* <MenuItem>
           <Button
             className="w-full"
             sx={{ textTransform: 'none' }}
@@ -548,7 +561,7 @@ export default function Procurement() {
           >
             {t('downloadEmptyOrder')}
           </Button>
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
     </Layout>
   );
