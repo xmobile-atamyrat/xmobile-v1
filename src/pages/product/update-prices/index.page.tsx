@@ -35,7 +35,7 @@ import { useRouter } from 'next/router';
 
 import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import AddPrice from '@/pages/product/components/AddPrice';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -68,15 +68,16 @@ export default function UpdatePrices() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [searchKeyword, setSearchKeyword] = useState('');
   const { user, accessToken } = useUserContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   useEffect(() => {
     if (accessToken) {
       (async () => {
-        const pricesResponse = await fetchWithCreds<Prices[]>(
+        const pricesResponse = await fetchWithCreds<Prices[]>({
           accessToken,
-          '/api/prices',
-          'GET',
-        );
+          path: '/api/prices',
+          method: 'GET',
+        });
 
         if (pricesResponse.success && pricesResponse.data != null) {
           setTableData(processPrices(pricesResponse.data));
@@ -88,11 +89,11 @@ export default function UpdatePrices() {
           });
         }
 
-        const dollarRateResponse = await fetchWithCreds<DollarRate>(
+        const dollarRateResponse = await fetchWithCreds<DollarRate>({
           accessToken,
-          '/api/prices/rate',
-          'GET',
-        );
+          path: '/api/prices/rate',
+          method: 'GET',
+        });
         if (dollarRateResponse.success && dollarRateResponse.data != null) {
           setDollarRate(dollarRateResponse.data.rate);
         } else {
@@ -182,11 +183,11 @@ export default function UpdatePrices() {
   const handleSearch = useCallback(
     async (keyword: string) => {
       try {
-        const { success, data, message } = await fetchWithCreds<Prices[]>(
+        const { success, data, message } = await fetchWithCreds<Prices[]>({
           accessToken,
-          `/api/prices?searchKeyword=${keyword}`,
-          'GET',
-        );
+          path: `/api/prices?searchKeyword=${keyword}`,
+          method: 'GET',
+        });
         if (success) {
           setTableData(processPrices(data));
         } else {
@@ -242,14 +243,14 @@ export default function UpdatePrices() {
                 <IconButton
                   onClick={async () => {
                     try {
-                      const { success, data } = await fetchWithCreds<Prices[]>(
+                      const { success, data } = await fetchWithCreds<Prices[]>({
                         accessToken,
-                        `/api/prices/rate`,
-                        'PUT',
-                        {
+                        path: `/api/prices/rate`,
+                        method: 'PUT',
+                        body: {
                           rate: dollarRate,
                         },
-                      );
+                      });
 
                       if (success) {
                         setTableData(processPrices(data));
@@ -314,16 +315,16 @@ export default function UpdatePrices() {
                     }}
                     onClick={async () => {
                       try {
-                        const { success } = await fetchWithCreds<Prices[]>(
+                        const { success } = await fetchWithCreds<Prices[]>({
                           accessToken,
-                          `/api/prices`,
-                          'PUT',
-                          {
+                          path: `/api/prices`,
+                          method: 'PUT',
+                          body: {
                             pricePairs: Object.keys(updatedPrices).map(
                               (key) => updatedPrices[parseInt(key, 10)],
                             ),
                           },
-                        );
+                        });
 
                         if (success) {
                           setSnackbarOpen(true);
@@ -473,11 +474,11 @@ export default function UpdatePrices() {
               handleDelete={async () => {
                 if (selectedPrice == null) return;
                 try {
-                  const { success } = await fetchWithCreds<Prices>(
+                  const { success } = await fetchWithCreds<Prices>({
                     accessToken,
-                    `/api/prices?id=${selectedPrice}`,
-                    'DELETE',
-                  );
+                    path: `/api/prices?id=${selectedPrice}`,
+                    method: 'DELETE',
+                  });
                   if (success) {
                     setTableData((prevData) => {
                       const newData = prevData.filter(
@@ -547,16 +548,16 @@ export default function UpdatePrices() {
                   return false;
                 }
                 try {
-                  const { success, data } = await fetchWithCreds<Prices>(
+                  const { success, data } = await fetchWithCreds<Prices>({
                     accessToken,
-                    `/api/prices`,
-                    'POST',
-                    {
+                    path: `/api/prices`,
+                    method: 'POST',
+                    body: {
                       name,
                       price: priceInDollars,
                       priceInTmt: priceInManat,
                     },
-                  );
+                  });
 
                   if (success) {
                     setTableData((prevData) => {
