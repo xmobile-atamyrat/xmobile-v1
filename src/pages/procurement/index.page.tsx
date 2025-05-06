@@ -15,7 +15,10 @@ import {
   createProductQuantityUtil,
   createProductUtil,
   createSupplierUtil,
+  dayMonthYearFromDate,
+  downloadXlsxAsZip,
   editHistoryUtil,
+  ExcelFileData,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -223,34 +226,6 @@ export default function Procurement() {
               >
                 {t('history')}
               </Button>
-              {/* <Button
-                sx={{ textTransform: 'none' }}
-                variant="outlined"
-                color="success"
-                onClick={async () => {
-                  if (selectedHistory == null) return;
-                  await editHistoryUtil({
-                    accessToken,
-                    id: selectedHistory.id,
-                    addedProductIds: selectedProducts.added.map(
-                      (product) => product.id,
-                    ),
-                    removedProductIds: selectedProducts.deleted.map(
-                      (product) => product.id,
-                    ),
-                    addedSupplierIds: selectedSuppliers.added.map(
-                      (supplier) => supplier.id,
-                    ),
-                    removedSupplierIds: selectedSuppliers.deleted.map(
-                      (supplier) => supplier.id,
-                    ),
-                    setSnackbarOpen,
-                    setSnackbarMessage,
-                  });
-                }}
-              >
-                {t('save')}
-              </Button> */}
             </Box>
           </Box>
           <Box className="flex flex-row justify-between items-center">
@@ -495,7 +470,7 @@ export default function Procurement() {
             {t('newOrder')}
           </Button>
         </MenuItem>
-        {/* <MenuItem>
+        <MenuItem>
           <Button
             className="w-full"
             sx={{ textTransform: 'none' }}
@@ -504,6 +479,7 @@ export default function Procurement() {
               if (
                 selectedProducts == null ||
                 selectedSuppliers == null ||
+                productQuantities == null ||
                 selectedHistory == null
               ) {
                 return;
@@ -561,7 +537,7 @@ export default function Procurement() {
           >
             {t('downloadEmptyOrder')}
           </Button>
-        </MenuItem> */}
+        </MenuItem>
       </Menu>
     </Layout>
   );
