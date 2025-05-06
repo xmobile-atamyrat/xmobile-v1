@@ -26,10 +26,7 @@ apply_db() {
 EOF
     docker cp backup/db_backup.sql db:/db_backup.sql
     docker exec -it db bash -c "PGPASSWORD='password' pg_restore -U xmobile -d postgres /db_backup.sql"
-}
-
-
-apply_images() {
+    
     psql "$DATABASE_URL" <<EOF
         UPDATE "Category"
         SET "imgUrl" = '$CURRENT_DIR/backup' || "imgUrl";
@@ -41,6 +38,11 @@ apply_images() {
         );
 EOF
     echo "imgUrl column in Category table and imgUrls column in Product table have been updated."
+}
+
+
+apply_images() {
+    tar -xzvf backup/images.tar.gz -C backup
 }
 
 if [  "$arg" == "db" ]; then
