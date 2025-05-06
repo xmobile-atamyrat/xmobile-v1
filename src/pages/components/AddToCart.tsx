@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { debounce } from '@/pages/product/utils';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -26,6 +26,7 @@ export default function AddToCart({
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
+  const fetchWithCreds = useFetchWithCreds();
 
   const addCartItems = async () => {
     const userId = user?.id;
@@ -38,10 +39,15 @@ export default function AddToCart({
       });
     } else {
       try {
-        const data = await fetchWithCreds(accessToken, '/api/cart', 'POST', {
-          userId,
-          productId,
-          quantity,
+        const data = await fetchWithCreds({
+          accessToken,
+          path: '/api/cart',
+          method: 'POST',
+          body: {
+            userId,
+            productId,
+            quantity,
+          },
         });
 
         if (data.success) {
@@ -66,8 +72,13 @@ export default function AddToCart({
 
   const deleteCartItems = async (cartId: string) => {
     try {
-      const data = await fetchWithCreds(accessToken, '/api/cart', 'DELETE', {
-        id: cartId,
+      const data = await fetchWithCreds({
+        accessToken,
+        path: '/api/cart',
+        method: 'DELETE',
+        body: {
+          id: cartId,
+        },
       });
 
       if (data.success) {
@@ -92,9 +103,14 @@ export default function AddToCart({
   const editCartItems = useCallback(
     debounce(async (itemQuantity: number) => {
       try {
-        const data = await fetchWithCreds(accessToken, '/api/cart', 'PUT', {
-          id: cartItemId,
-          quantity: itemQuantity,
+        const data = await fetchWithCreds({
+          accessToken,
+          path: '/api/cart',
+          method: 'PUT',
+          body: {
+            id: cartItemId,
+            quantity: itemQuantity,
+          },
         });
 
         if (data.success) {
