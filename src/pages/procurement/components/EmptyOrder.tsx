@@ -1,10 +1,12 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
+import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import {
-  ActionBasedProducts,
-  ActionBasedSuppliers,
-  ProductsSuppliersType,
-} from '@/pages/procurement/lib/types';
+  deleteProductQuantityUtil,
+  editHistoryUtil,
+  editProductQuantityUtil,
+} from '@/pages/procurement/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
@@ -19,19 +21,27 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct, ProcurementSupplier } from '@prisma/client';
+import {
+  ProcurementOrder,
+  ProcurementOrderProductQuantity,
+  ProcurementProduct,
+  ProcurementSupplier,
+} from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface EmptyOrderProps {
-  productQuantities: number[];
-  setProductQuantities: Dispatch<SetStateAction<number[]>>;
-  selectedSuppliers: ActionBasedSuppliers;
-  setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>;
-  selectedProducts: ActionBasedProducts;
-  setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>;
+  productQuantities: ProcurementOrderProductQuantity[];
+  setProductQuantities: Dispatch<
+    SetStateAction<ProcurementOrderProductQuantity[]>
+  >;
+  selectedSuppliers: ProcurementSupplier[];
+  setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  selectedProducts: ProcurementProduct[];
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  selectedHistory: ProcurementOrder;
 }
 
 export default function EmptyOrder({
@@ -41,7 +51,11 @@ export default function EmptyOrder({
   setProductQuantities,
   setSelectedProducts,
   setSelectedSuppliers,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  selectedHistory,
 }: EmptyOrderProps) {
+  const { accessToken } = useUserContext();
   const t = useTranslations();
   const [confirmRemoveItemDialog, setConfirmRemoveItemDialog] = useState<{
     itemType: ProductsSuppliersType;
@@ -57,31 +71,32 @@ export default function EmptyOrder({
             <TableRow>
               <TableCell></TableCell>
               <TableCell align="center">{t('quantity')}</TableCell>
-              {[...selectedSuppliers.existing, ...selectedSuppliers.added].map(
-                (supplier, idx) => (
-                  <TableCell key={supplier.id} align="center">
-                    <Box className="flex w-full items-center gap-2 justify-center">
-                      <Typography>{supplier.name}</Typography>
-                      <IconButton
-                        onClick={() =>
-                          setConfirmRemoveItemDialog({
-                            itemType: 'supplier',
-                            item: supplier,
-                            itemIndex: idx,
-                          })
-                        }
-                      >
-                        <DeleteIcon color="error" />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                ),
-              )}
+              {selectedSuppliers.map((supplier, idx) => (
+                <TableCell key={supplier.id} align="center">
+                  <Box className="flex w-full items-center gap-2 justify-center">
+                    <Typography>{supplier.name}</Typography>
+                    <IconButton
+                      onClick={() =>
+                        setConfirmRemoveItemDialog({
+                          itemType: 'supplier',
+                          item: supplier,
+                          itemIndex: idx,
+                        })
+                      }
+                    >
+                      <DeleteIcon color="error" />
+                    </IconButton>
+                  </Box>
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {[...selectedProducts.existing, ...selectedProducts.added].map(
-              (product, prdIdx) => (
+            {selectedProducts.map((product, prdIdx) => {
+              const quantity = productQuantities.find(
+                (pq) => pq.productId === product.id,
+              );
+              return (
                 <TableRow key={product.id}>
                   <TableCell align="left">
                     <Box className="flex w-full items-center justify-between">
@@ -102,29 +117,39 @@ export default function EmptyOrder({
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={productQuantities[prdIdx] ?? ''}
+                      value={quantity?.quantity || ''}
                       type="number"
-                      onChange={(e) => {
-                        const newProductQuantity = [...productQuantities];
-                        newProductQuantity[prdIdx] =
-                          e.target.value === ''
-                            ? undefined
-                            : Number(e.target.value);
-                        setProductQuantities(newProductQuantity);
+                      onChange={async (e) => {
+                        const newQuantity = parseInt(e.target.value, 10);
+                        const updatedProductQuantity =
+                          await editProductQuantityUtil({
+                            accessToken,
+                            orderId: selectedHistory.id,
+                            productId: product.id,
+                            quantity: newQuantity,
+                            setSnackbarMessage,
+                            setSnackbarOpen,
+                          });
+                        if (updatedProductQuantity) {
+                          setProductQuantities((prev) =>
+                            prev.map((pq) =>
+                              pq.productId === product.id
+                                ? updatedProductQuantity
+                                : pq,
+                            ),
+                          );
+                        }
                       }}
                     />
                   </TableCell>
-                  {[
-                    ...selectedSuppliers.existing,
-                    ...selectedSuppliers.added,
-                  ].map((supplier) => (
+                  {selectedSuppliers.map((supplier) => (
                     <TableCell key={supplier.id} align="center">
                       <TextField size="small" type="number" disabled />
                     </TableCell>
                   ))}
                 </TableRow>
-              ),
-            )}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -138,38 +163,52 @@ export default function EmptyOrder({
           handleClose={() => {
             setConfirmRemoveItemDialog(undefined);
           }}
-          handleDelete={() => {
+          handleDelete={async () => {
             if (confirmRemoveItemDialog?.itemType === 'supplier') {
-              setSelectedSuppliers((prev) => ({
-                existing: prev.existing.filter(
-                  (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
-                ),
-                added: prev.added.filter(
-                  (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
-                ),
-                deleted: [
-                  ...prev.deleted,
-                  confirmRemoveItemDialog.item as ProcurementSupplier,
-                ],
-              }));
+              const updatedHistory = await editHistoryUtil({
+                id: selectedHistory.id,
+                accessToken,
+                removedSupplierIds: [confirmRemoveItemDialog.item.id],
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              if (updatedHistory) {
+                setSelectedSuppliers((prev) =>
+                  prev.filter(
+                    (supplier) =>
+                      supplier.id !== confirmRemoveItemDialog.item.id,
+                  ),
+                );
+              }
             } else {
-              setSelectedProducts((prev) => ({
-                existing: prev.existing.filter(
-                  (product) => product.id !== confirmRemoveItemDialog.item.id,
-                ),
-                added: prev.added.filter(
-                  (product) => product.id !== confirmRemoveItemDialog.item.id,
-                ),
-                deleted: [
-                  ...prev.deleted,
-                  confirmRemoveItemDialog.item as ProcurementProduct,
-                ],
-              }));
-              setProductQuantities((prev) =>
-                prev.filter(
-                  (_, idx) => idx !== confirmRemoveItemDialog.itemIndex,
-                ),
-              );
+              const updatedHistory = await editHistoryUtil({
+                id: selectedHistory.id,
+                accessToken,
+                removedProductIds: [confirmRemoveItemDialog.item.id],
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              const updatedProductQuantity = await deleteProductQuantityUtil({
+                accessToken,
+                orderId: selectedHistory.id,
+                productId: confirmRemoveItemDialog.item.id,
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              if (updatedHistory) {
+                setSelectedProducts((prev) =>
+                  prev.filter(
+                    (product) => product.id !== confirmRemoveItemDialog.item.id,
+                  ),
+                );
+              }
+              if (updatedProductQuantity) {
+                setProductQuantities((prev) =>
+                  prev.filter(
+                    (pq) => pq.productId !== confirmRemoveItemDialog.item.id,
+                  ),
+                );
+              }
             }
             setConfirmRemoveItemDialog(undefined);
           }}

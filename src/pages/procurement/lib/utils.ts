@@ -2,23 +2,23 @@ import { SnackbarProps } from '@/pages/lib/types';
 import {
   createHistory,
   createProcurementProduct,
+  createProductQuantity,
   createSupplier,
   deleteHistory,
   deleteProduct,
+  deleteProductQuantity,
   deleteSupplier,
   editHistory,
+  editProductQuantity,
   getHistory,
   getHistoryList,
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import {
-  ActionBasedProducts,
-  ActionBasedSuppliers,
-  HistoryPrice,
-} from '@/pages/procurement/lib/types';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
 } from '@prisma/client';
@@ -267,6 +267,55 @@ export async function createProductUtil(
   }
 }
 
+export async function createProductQuantityUtil({
+  accessToken,
+  orderId,
+  productId,
+  quantity,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}): Promise<ProcurementOrderProductQuantity | undefined> {
+  try {
+    const { success, data, message } = await createProductQuantity({
+      accessToken,
+      orderId,
+      productId,
+      quantity,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return data;
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return undefined;
+}
+
 export async function createHistoryUtil(
   accessToken: string,
   name: string,
@@ -302,8 +351,6 @@ export async function editHistoryUtil({
   id,
   accessToken,
   name,
-  prices,
-  quantities,
   addedProductIds,
   removedProductIds,
   addedSupplierIds,
@@ -315,8 +362,6 @@ export async function editHistoryUtil({
   id: string;
   accessToken: string;
   name?: string;
-  prices?: (number | null)[][];
-  quantities?: (number | null)[];
   addedProductIds?: string[];
   removedProductIds?: string[];
   addedSupplierIds?: string[];
@@ -324,31 +369,30 @@ export async function editHistoryUtil({
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setHistoryList?: Dispatch<SetStateAction<ProcurementOrder[]>>;
-}) {
+}): Promise<ProcurementOrder | undefined> {
   try {
     const { success, data, message } = await editHistory({
       accessToken,
       id,
       name,
-      prices,
-      quantities,
       addedProductIds,
       removedProductIds,
       addedSupplierIds,
       removedSupplierIds,
     });
-    if (!success) {
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return data;
+    } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'serverError',
         severity: 'error',
-      });
-    } else {
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'success',
-        severity: 'success',
       });
       if (setHistoryList) {
         setHistoryList((prev) =>
@@ -369,6 +413,57 @@ export async function editHistoryUtil({
       severity: 'error',
     });
   }
+
+  return undefined;
+}
+
+export async function editProductQuantityUtil({
+  accessToken,
+  orderId,
+  productId,
+  quantity,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}): Promise<ProcurementOrderProductQuantity | undefined> {
+  try {
+    const { success, data, message } = await editProductQuantity({
+      accessToken,
+      orderId,
+      productId,
+      quantity,
+    });
+    if (!success) {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'failedToUpdateQuantity',
+        severity: 'error',
+      });
+      return data;
+    } else {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return undefined;
 }
 
 export async function createSupplierUtil(
@@ -480,24 +575,16 @@ export async function getHistoryUtil(
   accessToken: string,
   id: string,
   setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>,
-  setSelectedSuppliers: Dispatch<SetStateAction<ActionBasedSuppliers>>,
-  setSelectedProducts: Dispatch<SetStateAction<ActionBasedProducts>>,
+  setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
 ) {
   try {
     const { success, data, message } = await getHistory(accessToken, id);
     if (success) {
-      setSelectedProducts({
-        existing: data.products ?? [],
-        added: [],
-        deleted: [],
-      });
-      setSelectedSuppliers({
-        existing: data.suppliers ?? [],
-        added: [],
-        deleted: [],
-      });
+      setSelectedProducts(data.products ?? []);
+      setSelectedSuppliers(data.suppliers ?? []);
       setSelectedHistory(data);
     } else {
       console.error(message);
@@ -577,6 +664,52 @@ export async function deleteSupplierUtil(
       severity: 'error',
     });
   }
+}
+
+export async function deleteProductQuantityUtil({
+  accessToken,
+  orderId,
+  productId,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}): Promise<ProcurementOrderProductQuantity | undefined> {
+  try {
+    const { success, data, message } = await deleteProductQuantity({
+      accessToken,
+      orderId,
+      productId,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deleteItemSuccess',
+        severity: 'success',
+      });
+      return data;
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return undefined;
 }
 
 export async function deleteHistoryUtil(

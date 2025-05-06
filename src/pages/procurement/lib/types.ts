@@ -1,12 +1,16 @@
 import {
   ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 
-export interface DetailedHistory extends ProcurementOrder {
+export interface DetailedOrder extends ProcurementOrder {
   suppliers: ProcurementSupplier[];
   products: ProcurementProduct[];
+  prices: ProcurementSupplierProductPrice[];
+  quantities: ProcurementOrderProductQuantity[];
 }
 
 export type HistoryColor = 'red' | 'green' | 'orange';

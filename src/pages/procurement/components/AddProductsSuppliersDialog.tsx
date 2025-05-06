@@ -1,9 +1,5 @@
 import { SearchBar } from '@/pages/components/Appbar';
-import {
-  ActionBasedProducts,
-  ActionBasedSuppliers,
-  ProductsSuppliersType,
-} from '@/pages/procurement/lib/types';
+import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -24,11 +20,11 @@ interface AddProductsSuppliersDialogProps {
   itemType: ProductsSuppliersType;
   handleItemSearch: (keyword: string) => Promise<void>;
   searchedItems: (ProcurementProduct | ProcurementSupplier)[];
-  selectedItems: ActionBasedProducts | ActionBasedSuppliers;
+  selectedItems: ProcurementProduct[] | ProcurementSupplier[];
   handleAddItem: (keyword: string) => Promise<void>;
   handleAddSearchedItem: (
     item: ProcurementProduct | ProcurementSupplier,
-  ) => void;
+  ) => Promise<void>;
 }
 
 export default function AddProductsSuppliersDialog({
@@ -74,9 +70,7 @@ export default function AddProductsSuppliersDialog({
                 <Typography className="h-[40px] flex items-center">
                   {item.name}
                 </Typography>
-                {[...selectedItems.existing, ...selectedItems.added].some(
-                  (i) => i.id === item.id,
-                ) ? (
+                {selectedItems.some((i) => i.id === item.id) ? (
                   <Typography
                     color="green"
                     fontSize={12}
@@ -85,7 +79,11 @@ export default function AddProductsSuppliersDialog({
                     {t('alreadyExists')}
                   </Typography>
                 ) : (
-                  <IconButton onClick={() => handleAddSearchedItem(item)}>
+                  <IconButton
+                    onClick={async () => {
+                      await handleAddSearchedItem(item);
+                    }}
+                  >
                     <AddCircleIcon color="primary" />
                   </IconButton>
                 )}
