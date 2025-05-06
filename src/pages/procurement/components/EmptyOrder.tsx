@@ -117,7 +117,7 @@ export default function EmptyOrder({
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={quantity?.quantity || ''}
+                      value={quantity?.quantity ?? ''}
                       type="number"
                       onChange={async (e) => {
                         const newQuantity = parseInt(e.target.value, 10);
@@ -195,14 +195,12 @@ export default function EmptyOrder({
                 setSnackbarMessage,
                 setSnackbarOpen,
               });
-              if (updatedHistory) {
+              if (updatedHistory && updatedProductQuantity) {
                 setSelectedProducts((prev) =>
                   prev.filter(
                     (product) => product.id !== confirmRemoveItemDialog.item.id,
                   ),
                 );
-              }
-              if (updatedProductQuantity) {
                 setProductQuantities((prev) =>
                   prev.filter(
                     (pq) => pq.productId !== confirmRemoveItemDialog.item.id,

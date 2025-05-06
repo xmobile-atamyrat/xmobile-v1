@@ -439,19 +439,19 @@ export async function editProductQuantityUtil({
       productId,
       quantity,
     });
-    if (!success) {
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return data;
+    } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'failedToUpdateQuantity',
         severity: 'error',
-      });
-      return data;
-    } else {
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'success',
-        severity: 'success',
       });
     }
   } catch (error) {
@@ -571,20 +571,33 @@ export async function getHistoryListUtil(
   return undefined;
 }
 
-export async function getHistoryUtil(
-  accessToken: string,
-  id: string,
-  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>,
-  setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function getHistoryUtil({
+  accessToken,
+  id,
+  setSelectedHistory,
+  setSelectedSuppliers,
+  setSelectedProducts,
+  setSnackbarOpen,
+  setSnackbarMessage,
+  setProductQuantities,
+}: {
+  accessToken: string;
+  id: string;
+  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>;
+  setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setProductQuantities: Dispatch<
+    SetStateAction<ProcurementOrderProductQuantity[]>
+  >;
+}) {
   try {
     const { success, data, message } = await getHistory(accessToken, id);
     if (success) {
       setSelectedProducts(data.products ?? []);
       setSelectedSuppliers(data.suppliers ?? []);
+      setProductQuantities(data.productQuantities ?? []);
       setSelectedHistory(data);
     } else {
       console.error(message);
