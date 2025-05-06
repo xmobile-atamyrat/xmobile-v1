@@ -163,15 +163,16 @@ export default function Procurement() {
           setSnackbarMessage,
         );
         if (latestHistory) {
-          await getHistoryUtil(
+          await getHistoryUtil({
             accessToken,
-            latestHistory.id,
+            id: latestHistory.id,
             setSelectedHistory,
             setSelectedSuppliers,
             setSelectedProducts,
             setSnackbarOpen,
             setSnackbarMessage,
-          );
+            setProductQuantities,
+          });
         }
       })();
     }
@@ -182,11 +183,6 @@ export default function Procurement() {
       router.push('/');
     }
   }, [user]);
-
-  useEffect(() => {
-    if (selectedHistory == null) return;
-    setProductQuantities(selectedHistory.quantities ?? []);
-  }, [selectedHistory]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -279,19 +275,22 @@ export default function Procurement() {
             </Button>
           </Box>
 
-          {selectedHistory && (
-            <EmptyOrder
-              productQuantities={productQuantities}
-              setProductQuantities={setProductQuantities}
-              selectedProducts={selectedProducts}
-              selectedSuppliers={selectedSuppliers}
-              setSelectedProducts={setSelectedProducts}
-              setSelectedSuppliers={setSelectedSuppliers}
-              setSnackbarMessage={setSnackbarMessage}
-              setSnackbarOpen={setSnackbarOpen}
-              selectedHistory={selectedHistory}
-            />
-          )}
+          {selectedHistory &&
+            productQuantities &&
+            selectedProducts &&
+            selectedSuppliers && (
+              <EmptyOrder
+                productQuantities={productQuantities}
+                setProductQuantities={setProductQuantities}
+                selectedProducts={selectedProducts}
+                selectedSuppliers={selectedSuppliers}
+                setSelectedProducts={setSelectedProducts}
+                setSelectedSuppliers={setSelectedSuppliers}
+                setSnackbarMessage={setSnackbarMessage}
+                setSnackbarOpen={setSnackbarOpen}
+                selectedHistory={selectedHistory}
+              />
+            )}
 
           {createHistoryDialog && (
             <AddEditHistoryDialog
@@ -327,7 +326,7 @@ export default function Procurement() {
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
               handleSelectHistory={async (id: string) => {
-                await getHistoryUtil(
+                await getHistoryUtil({
                   accessToken,
                   id,
                   setSelectedHistory,
@@ -335,7 +334,8 @@ export default function Procurement() {
                   setSelectedProducts,
                   setSnackbarOpen,
                   setSnackbarMessage,
-                );
+                  setProductQuantities,
+                });
                 setHistoryListDialog(false);
               }}
             />
