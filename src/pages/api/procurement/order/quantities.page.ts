@@ -41,7 +41,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         });
       return res.status(200).json({ success: true, data: allQuantities });
-    } else if (method === 'POST') {
+    }
+    if (method === 'POST') {
       const { orderId, productId, quantity }: ProcurementOrderProductQuantity =
         req.body;
       const existingQuantity =
@@ -69,7 +70,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         },
       );
       return res.status(200).json({ success: true, data: newQuantity });
-    } else if (method === 'PUT') {
+    }
+    if (method === 'PUT') {
       const { orderId, productId, quantity }: ProcurementOrderProductQuantity =
         req.body;
       const updatedQuantity =
@@ -85,7 +87,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         });
       return res.status(200).json({ success: true, data: updatedQuantity });
-    } else if (method === 'DELETE') {
+    }
+    if (method === 'DELETE') {
       const { orderId, productId }: ProcurementOrderProductQuantity = req.body;
       const deletedQuantity =
         await dbClient.procurementOrderProductQuantity.delete({
