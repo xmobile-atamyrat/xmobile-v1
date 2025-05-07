@@ -44,7 +44,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         },
       );
       return res.status(200).json({ success: true, data: allPrices });
-    } else if (method === 'POST') {
+    }
+    if (method === 'POST') {
       const { orderId, productId, supplierId, price } = req.body;
       const newPrice = await dbClient.procurementSupplierProductPrice.create({
         data: {
@@ -55,7 +56,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         },
       });
       return res.status(200).json({ success: true, data: newPrice });
-    } else if (method === 'PUT') {
+    }
+    if (method === 'PUT') {
       const { orderId, productId, supplierId, price } = req.body;
       const updatedPrice =
         await dbClient.procurementSupplierProductPrice.update({
@@ -71,7 +73,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         });
       return res.status(200).json({ success: true, data: updatedPrice });
-    } else if (method === 'DELETE') {
+    }
+    if (method === 'DELETE') {
       const { orderId, productId, supplierId } = req.body;
       const deletedPrice =
         await dbClient.procurementSupplierProductPrice.delete({
