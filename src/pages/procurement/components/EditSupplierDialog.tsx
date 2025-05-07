@@ -1,5 +1,5 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteSupplier, fetchSuppliers } from '@/pages/procurement/lib/apis';
@@ -41,6 +41,7 @@ export default function EditSupplierDialog({
   const [loading, setLoading] = useState(false);
   const [deleteSupplierId, setDeleteSupplierId] = useState<string>();
   const { accessToken } = useUserContext();
+  const fetchWithCreds = useFetchWithCreds();
   return (
     <Dialog
       open
@@ -58,15 +59,15 @@ export default function EditSupplierDialog({
         try {
           await Promise.all(
             keys.map((key) => {
-              return fetchWithCreds(
+              return fetchWithCreds({
                 accessToken,
-                '/api/procurement/supplier',
-                'PUT',
-                {
+                path: '/api/procurement/supplier',
+                method: 'PUT',
+                body: {
                   id: key,
                   name: editedSuppliers[key],
                 },
-              );
+              });
             }),
           );
 

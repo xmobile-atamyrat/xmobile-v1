@@ -1,7 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import HomeIcon from '@mui/icons-material/Home';
 import {
@@ -38,6 +38,7 @@ export default function CartPage() {
   >([]);
   const router = useRouter();
   const t = useTranslations();
+  const fetchWithCreds = useFetchWithCreds();
 
   const onDelete = (cartItemId: string) => {
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
@@ -53,7 +54,7 @@ export default function CartPage() {
       try {
         const { success, data, message } = await fetchWithCreds<
           (CartItem & { product: Product })[]
-        >(accessToken, `/api/cart?userId=${user.id}`, 'GET');
+        >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
 
         if (success) {
           setCartItems(data);
