@@ -279,7 +279,7 @@ export default function Procurement() {
             />
           )}
 
-          {calculateDialog && selectedHistory && (
+          {calculateDialog && selectedHistory && productQuantities && (
             <CalculateDialog
               history={selectedHistory}
               selectedProducts={selectedProducts}
@@ -290,6 +290,8 @@ export default function Procurement() {
               setSelectedHistory={setSelectedHistory}
               setSelectedProducts={setSelectedProducts}
               setSelectedSuppliers={setSelectedSuppliers}
+              productQuantities={productQuantities}
+              setProductQuantities={setProductQuantities}
             />
           )}
 
@@ -482,7 +484,7 @@ export default function Procurement() {
               productQuantities.forEach((productQuantity) => {
                 if (productQuantity.quantity > 0) {
                   const product = selectedProducts.find(
-                    (product) => product.id === productQuantity.productId,
+                    (prd) => prd.id === productQuantity.productId,
                   );
                   if (product) {
                     productQuantitiesMap[product.name] =
