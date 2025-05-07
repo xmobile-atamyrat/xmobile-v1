@@ -296,14 +296,13 @@ export async function createProductQuantityUtil({
         severity: 'success',
       });
       return data;
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -385,14 +384,13 @@ export async function editHistoryUtil({
         severity: 'success',
       });
       return data;
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -434,14 +432,13 @@ export async function editProductQuantityUtil({
         severity: 'success',
       });
       return data;
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'failedToUpdateQuantity',
-        severity: 'error',
-      });
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'failedToUpdateQuantity',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -693,14 +690,13 @@ export async function deleteProductQuantityUtil({
         severity: 'success',
       });
       return data;
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -728,14 +724,13 @@ export async function deleteHistoryUtil(
         severity: 'success',
       });
       return data;
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
