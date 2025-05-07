@@ -1,14 +1,5 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
-import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
-import {
-  ExcelFileData,
-  dayMonthYearFromDate,
-  downloadXlsxAsZip,
-  editHistoryUtil,
-  parseInitialHistoryPrices,
-} from '@/pages/procurement/lib/utils';
 import {
   Box,
   Button,
@@ -28,11 +19,12 @@ import {
 } from '@mui/material';
 import {
   ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 interface CalculateDialogProps {
   history: ProcurementOrder;
@@ -44,6 +36,10 @@ interface CalculateDialogProps {
   handleClose: () => void;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  productQuantities: ProcurementOrderProductQuantity[];
+  setProductQuantities: Dispatch<
+    SetStateAction<ProcurementOrderProductQuantity[]>
+  >;
 }
 
 export default function CalculateDialog({
@@ -56,46 +52,46 @@ export default function CalculateDialog({
   handleClose,
   setSnackbarMessage,
   setSnackbarOpen,
+  productQuantities,
 }: CalculateDialogProps) {
-  const { accessToken } = useUserContext();
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
-  const [prices, setPrices] = useState<HistoryPrice[][]>(
-    parseInitialHistoryPrices(
-      history.prices,
-      [...selectedProducts.existing, ...selectedProducts.added],
-      [...selectedSuppliers.existing, ...selectedSuppliers.added],
-    ),
-  );
-  const [productQuantity, setProductQuantity] = useState<number[]>(
-    history.quantities
-      ? (history.quantities as number[]).map((quantity) => quantity)
-      : Array(selectedProducts.existing.length + selectedProducts.added.length),
-  );
+  // const [prices, setPrices] = useState<HistoryPrice[][]>(
+  //   parseInitialHistoryPrices(
+  //     history.prices,
+  //     [...selectedProducts.existing, ...selectedProducts.added],
+  //     [...selectedSuppliers.existing, ...selectedSuppliers.added],
+  //   ),
+  // );
+  // const [productQuantity, setProductQuantity] = useState<number[]>(
+  //   history.quantities
+  //     ? (history.quantities as number[]).map((quantity) => quantity)
+  //     : Array(selectedProducts.existing.length + selectedProducts.added.length),
+  // );
   const [calculationDone, setCalculationDone] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
 
-  const handleCalculate = useCallback(() => {
-    const newPrices = prices.map((row) => {
-      const definedPrices = row.filter((price) => price.value != null);
-      const minPrice = Math.min(...definedPrices.map((price) => price.value));
-      const maxPrice = Math.max(...definedPrices.map((price) => price.value));
-      let minFound = false;
-      let maxFound = false;
-      return row.map((price) => {
-        if (price.value === minPrice && !minFound) {
-          minFound = true;
-          return { ...price, color: 'green' as HistoryColor };
-        }
-        if (price.value === maxPrice && !maxFound) {
-          maxFound = true;
-          return { ...price, color: 'red' as HistoryColor };
-        }
-        return { ...price, color: undefined };
-      });
-    });
-    setPrices(newPrices);
-  }, [prices]);
+  // const handleCalculate = useCallback(() => {
+  //   const newPrices = prices.map((row) => {
+  //     const definedPrices = row.filter((price) => price.value != null);
+  //     const minPrice = Math.min(...definedPrices.map((price) => price.value));
+  //     const maxPrice = Math.max(...definedPrices.map((price) => price.value));
+  //     let minFound = false;
+  //     let maxFound = false;
+  //     return row.map((price) => {
+  //       if (price.value === minPrice && !minFound) {
+  //         minFound = true;
+  //         return { ...price, color: 'green' as HistoryColor };
+  //       }
+  //       if (price.value === maxPrice && !maxFound) {
+  //         maxFound = true;
+  //         return { ...price, color: 'red' as HistoryColor };
+  //       }
+  //       return { ...price, color: undefined };
+  //     });
+  //   });
+  //   setPrices(newPrices);
+  // }, [prices]);
 
   return (
     <Dialog open fullScreen>
@@ -109,10 +105,7 @@ export default function CalculateDialog({
               <TableRow>
                 <TableCell></TableCell>
                 <TableCell align="center">{t('quantity')}</TableCell>
-                {[
-                  ...selectedSuppliers.existing,
-                  ...selectedSuppliers.added,
-                ].map((supplier) => (
+                {selectedSuppliers.map((supplier) => (
                   <TableCell key={supplier.id} align="center">
                     {supplier.name}
                   </TableCell>
@@ -120,55 +113,56 @@ export default function CalculateDialog({
               </TableRow>
             </TableHead>
             <TableBody>
-              {[...selectedProducts.existing, ...selectedProducts.added].map(
-                (product, prdIdx) => (
+              {selectedProducts.map((product) => {
+                const quantity = productQuantities.find(
+                  (pq) => pq.productId === product.id,
+                );
+                return (
                   <TableRow key={product.id}>
                     <TableCell align="left">{product.name}</TableCell>
                     <TableCell align="center">
                       <TextField
                         size="small"
-                        value={productQuantity[prdIdx] ?? ''}
+                        value={quantity?.quantity ?? ''}
                         type="number"
-                        onChange={(e) => {
-                          const newProductQuantity = [...productQuantity];
-                          newProductQuantity[prdIdx] =
-                            e.target.value === ''
-                              ? undefined
-                              : Number(e.target.value);
-                          setProductQuantity(newProductQuantity);
-                        }}
+                        disabled
+                        // onChange={(e) => {
+                        //   const newProductQuantity = [...productQuantity];
+                        //   newProductQuantity[prdIdx] =
+                        //     e.target.value === ''
+                        //       ? undefined
+                        //       : Number(e.target.value);
+                        //   setProductQuantity(newProductQuantity);
+                        // }}
                       />
                     </TableCell>
-                    {[
-                      ...selectedSuppliers.existing,
-                      ...selectedSuppliers.added,
-                    ].map((supplier, splIdx) => (
+                    {selectedSuppliers.map((supplier) => (
                       <TableCell key={supplier.id} align="center">
                         <TextField
                           size="small"
-                          value={prices[prdIdx][splIdx]?.value}
+                          // value={prices[prdIdx][splIdx]?.value}
                           type="number"
-                          sx={{
-                            backgroundColor:
-                              prices[prdIdx][splIdx]?.color || 'inherit',
-                          }}
-                          onChange={(e) => {
-                            const newPrices = [...prices];
-                            newPrices[prdIdx][splIdx] = {
-                              value:
-                                e.target.value === ''
-                                  ? undefined
-                                  : Number(e.target.value),
-                              color: newPrices[prdIdx][splIdx]?.color,
-                            };
-                            setPrices(newPrices);
-                          }}
+                          // sx={{
+                          //   backgroundColor:
+                          //     prices[prdIdx][splIdx]?.color || 'inherit',
+                          // }}
+                          // onChange={(e) => {
+                          //   const newPrices = [...prices];
+                          //   newPrices[prdIdx][splIdx] = {
+                          //     value:
+                          //       e.target.value === ''
+                          //         ? undefined
+                          //         : Number(e.target.value),
+                          //     color: newPrices[prdIdx][splIdx]?.color,
+                          //   };
+                          //   setPrices(newPrices);
+                          // }}
                         />
                       </TableCell>
                     ))}
                   </TableRow>
-                ),
-              )}
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -190,7 +184,7 @@ export default function CalculateDialog({
         </Box>
 
         <Box className="flex gap-4">
-          <Button
+          {/* <Button
             variant="outlined"
             sx={{
               textTransform: 'none',
@@ -218,7 +212,7 @@ export default function CalculateDialog({
             }}
           >
             {t('save')}
-          </Button>
+          </Button> */}
           <Button
             variant="outlined"
             color="primary"
@@ -227,7 +221,7 @@ export default function CalculateDialog({
             }}
             onClick={() => {
               setLoading(true);
-              handleCalculate();
+              // handleCalculate();
               setCalculationDone(true);
               setSnackbarMessage({
                 message: 'calculationDone',
@@ -246,41 +240,35 @@ export default function CalculateDialog({
               textTransform: 'none',
             }}
             onClick={async () => {
-              const today = new Date();
-              const formattedDate = dayMonthYearFromDate(today);
-
-              const csvFileData: ExcelFileData[] = [
-                ...selectedSuppliers.existing,
-                ...selectedSuppliers.added,
-              ]
-                .map((supplier, splIdx) => {
-                  const fileData = prices
-                    .filter((row, prdIdx) => {
-                      return (
-                        row[splIdx]?.value &&
-                        productQuantity[prdIdx] &&
-                        row[splIdx]?.color === 'green'
-                      );
-                    })
-                    .map((row, prdIdx) => {
-                      return [
-                        [
-                          ...selectedProducts.existing,
-                          ...selectedProducts.added,
-                        ][prdIdx].name,
-                        productQuantity[prdIdx],
-                        `$${row[splIdx].value}`,
-                      ];
-                    });
-
-                  return {
-                    filename: `Rahmanov-${supplier.name}-${formattedDate}`,
-                    data: [['', 'Quantity', 'Price'], ...fileData],
-                  };
-                })
-                .filter((data) => data.data.length > 1);
-
-              await downloadXlsxAsZip(csvFileData, 'prices.zip');
+              // const today = new Date();
+              // const formattedDate = dayMonthYearFromDate(today);
+              // const csvFileData: ExcelFileData[] = selectedSuppliers
+              //   .map((supplier, splIdx) => {
+              //     const fileData = prices
+              //       .filter((row, prdIdx) => {
+              //         return (
+              //           row[splIdx]?.value &&
+              //           productQuantity[prdIdx] &&
+              //           row[splIdx]?.color === 'green'
+              //         );
+              //       })
+              //       .map((row, prdIdx) => {
+              //         return [
+              //           [
+              //             ...selectedProducts.existing,
+              //             ...selectedProducts.added,
+              //           ][prdIdx].name,
+              //           productQuantity[prdIdx],
+              //           `$${row[splIdx].value}`,
+              //         ];
+              //       });
+              //     return {
+              //       filename: `Rahmanov-${supplier.name}-${formattedDate}`,
+              //       data: [['', 'Quantity', 'Price'], ...fileData],
+              //     };
+              //   })
+              //   .filter((data) => data.data.length > 1);
+              // await downloadXlsxAsZip(csvFileData, 'prices.zip');
             }}
             disabled={!calculationDone}
           >
