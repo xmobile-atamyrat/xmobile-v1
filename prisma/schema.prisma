@@ -9,18 +9,18 @@ datasource db {
 }
 
 model User {
-  id              String      @id @default(uuid())
+  id              String          @id @default(uuid())
   name            String
-  email           String      @unique
+  email           String          @unique
   password        String
-  grade           UserRole    @default(FREE)
+  grade           UserRole        @default(FREE)
   phoneNumber     String?
 
   cartItems       CartItem[]
-  chatSession     ChatSession[]
+  chatSessions    ChatSession[]
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 
@@ -143,10 +143,9 @@ model CalculationHistory {
 
 model ChatSession {
   id              String        @id @default(uuid())
-  status          ChatStatus        @default(OPEN)
+  status          ChatStatus    @default(PENDING)
 
-  user            User          @relation(references: [id], fields: [userId], onDelete: Cascade)
-  userId          String
+  users           User[]
 
   messages        ChatMessage[]
 
@@ -173,7 +172,8 @@ model ChatMessage {
 
 enum ChatStatus {
   CLOSED
-  OPEN
+  ACTIVE
+  PENDING
 }
 
 enum UserRole {
