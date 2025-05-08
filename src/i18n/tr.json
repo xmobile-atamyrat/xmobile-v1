@@ -137,5 +137,6 @@
   "noProductsOrSuppliers": "Sipariş için hiçbir ürün veya tedarikçi seçilmedi!",
   "allQuantitiesZero": "Tüm ürün miktarları sıfır!",
   "failedToUpdateQuantity": "Miktarı güncelleyemedi.",
-  "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!"
+  "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!",
+  "upload": "Yüklemek"
 }

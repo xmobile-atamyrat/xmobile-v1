@@ -139,5 +139,6 @@
   "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
   "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
   "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi.",
-  "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!"
+  "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!",
+  "upload": "Ýüklemek"
 }
