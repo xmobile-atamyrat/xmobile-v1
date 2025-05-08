@@ -3,11 +3,10 @@ import { WebSocketServer, WebSocket, RawData } from 'ws';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
-import { ResponseApi } from '@/pages/lib/types';
-import { ChatMessage } from '@prisma/client';
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { UserRole } from '@prisma/client';
 import dbClient from '@/lib/dbClient';
 import { parse } from 'url';
+import { z, ZodError } from 'zod';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -15,14 +14,19 @@ const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
+const MessageSchema = z
+  .object({
+    sessionId: z.string(),
+    senderId: z.string(),
+    senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
+    content: z.string(),
+    isRead: z.boolean(),
+  })
+  .strict();
+
 interface AuthenticatedConnection extends WebSocket {
   accessToken: string;
   userId: string;
-}
-
-interface handleMessageProps {
-  message: RawData;
-  connection: AuthenticatedConnection;
 }
 
 const connections = new Map<string, Set<AuthenticatedConnection>>();
@@ -30,108 +34,116 @@ const connections = new Map<string, Set<AuthenticatedConnection>>();
 const safeCloseConnection = (
   code: number,
   reason: string,
-  connection: AuthenticatedConnection,
+  connection: WebSocket | AuthenticatedConnection,
 ) => {
-  const userId = connection?.userId;
   connection.close(code, reason);
-  connections.get(userId)?.delete(connection);
-  if (!connections.get(userId)?.size) connections.delete(userId);
+
+  if ('userId' in connection) {
+    const userId = connection.userId;
+    connections.get(userId)?.delete(connection);
+    if (!connections.get(userId)?.size) connections.delete(userId);
+  }
 };
 
 const authenticateConnection = async (
   request: IncomingMessage,
-  connection: AuthenticatedConnection,
+  connection: WebSocket,
 ) => {
-  const token = parse(request.url, true).query?.accessToken;
-
-  if (!token || typeof token !== 'string') {
-    console.error(
-      `${filepath}. Unauthenticated: Missing or invalid token: ${request.url}`,
-    );
-    safeCloseConnection(
-      1008,
-      'Unauthenticated: Missing or invalid token',
-      connection,
-    );
-    return;
-  }
-
   try {
+    const token = parse(request.url, true).query?.accessToken;
+
+    if (!token || typeof token !== 'string') {
+      console.error(
+        `${filepath}. Unauthenticated: Missing or invalid token: ${request.url}`,
+      );
+      safeCloseConnection(
+        1008,
+        'Unauthenticated: Missing or invalid token',
+        connection,
+      );
+      return null;
+    }
+
+    // todo: update accessToken if outdated
     const { userId } = await verifyToken(token, ACCESS_SECRET);
 
-    if (!connections.has(userId)) connections.set(userId, new Set());
-    connections.get(userId)?.add(connection);
+    const safeConnection = connection as AuthenticatedConnection;
+    safeConnection.userId = userId;
+    safeConnection.accessToken = token;
 
-    connection.userId = userId;
-    connection.accessToken = token;
+    return safeConnection;
   } catch (error) {
     console.error(filepath, error);
     if (error instanceof JsonWebTokenError) {
-      console.error(filepath, `InvalidToken: ${token}`);
-
-      safeCloseConnection(1008, 'Unauthorized: Invalid token', connection);
+      console.error(filepath, `InvalidToken: ${request.url}`);
     }
+    safeCloseConnection(1008, 'Unauthorized: Invalid token', connection);
+    return null;
   }
 };
 
-const handleMessage = async ({ message, connection }: handleMessageProps) => {
+const handleMessage = async (message: RawData) => {
   try {
     const parsedMessage = JSON.parse(message.toString());
 
-    const response: ResponseApi<ChatMessage> = await fetchWithCreds(
-      connection.accessToken,
-      '/api/chat/message',
-      'POST',
-      {
-        ...parsedMessage,
+    const { senderId, senderRole, isRead, content, sessionId } =
+      MessageSchema.parse(parsedMessage);
+    const messageData = await dbClient.chatMessage.create({
+      data: {
+        senderId,
+        isRead,
+        content,
+        senderRole,
+        sessionId,
       },
-    );
+    });
 
-    // todo: update accessToken if outdated
-    if (response.success) {
-      const { users: sessionUsers } = await dbClient.chatSession.findUnique({
-        where: {
-          id: response.data.sessionId,
-        },
-        select: { users: true },
+    const { users: sessionUsers } = await dbClient.chatSession.findUnique({
+      where: {
+        id: messageData.sessionId,
+      },
+      select: { users: true },
+    });
+
+    sessionUsers?.forEach((sessionUser) => {
+      const outgoingMessage = JSON.stringify({
+        ...messageData,
+        senderName: sessionUser.name,
       });
 
-      sessionUsers?.forEach((sessionUser) => {
-        const outgoingMessage = JSON.stringify({
-          ...response.data,
-          senderName: sessionUser.name,
-        });
-
-        connections
-          .get(sessionUser.id)
-          ?.forEach((conn) => conn.send(outgoingMessage));
-      });
-    } else {
-      console.error(filepath, response.message);
-    }
+      connections
+        .get(sessionUser.id)
+        ?.forEach((conn) => conn.send(outgoingMessage));
+    });
   } catch (error) {
-    console.error(filepath, error);
+    if (error instanceof ZodError)
+      console.error(
+        filepath,
+        `InvalidMessageType: Invalid message props or types. Message: ${message}`,
+      );
+    else console.error(filepath, error);
   }
 };
 
-wsServer.on(
-  'connection',
-  async (connection: AuthenticatedConnection, request) => {
-    try {
-      await authenticateConnection(request, connection);
+wsServer.on('connection', async (connection, request) => {
+  try {
+    const safeConnection = await authenticateConnection(request, connection);
 
-      connection.on('message', (message) =>
-        handleMessage({ message, connection }),
-      );
-
-      connection.on('close', () =>
-        safeCloseConnection(1001, 'Offline: User Disconnected', connection),
-      );
-    } catch (error) {
-      console.error('Connection error:', error);
-      connection.close(1008, 'Unauthorized: Connection failed');
+    if (safeConnection != null) {
+      if (!connections.has(safeConnection.userId))
+        connections.set(safeConnection.userId, new Set());
+      connections.get(safeConnection.userId)?.add(safeConnection);
     }
-  },
-);
+
+    connection.on('message', (message) => handleMessage(message));
+
+    connection.on('close', () =>
+      safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
+    );
+  } catch (error) {
+    console.error('Connection error:', error);
+    safeCloseConnection(1008, 'Unauthorized: Connection failed', connection);
+  }
+});
 
 server.listen(port);
