@@ -1,12 +1,17 @@
-import { createServer, IncomingMessage } from 'http';
-import { WebSocketServer, WebSocket, RawData } from 'ws';
-import { verifyToken } from '@/pages/api/utils/authMiddleware';
-import { JsonWebTokenError } from 'jsonwebtoken';
-import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
-import { UserRole } from '@prisma/client';
 import dbClient from '@/lib/dbClient';
+import { verifyToken } from '@/pages/api/utils/authMiddleware';
+import {
+  ACCESS_SECRET,
+  generateTokens,
+  REFRESH_SECRET,
+} from '@/pages/api/utils/tokenUtils';
+import { UserRole } from '@prisma/client';
+import { createServer, IncomingMessage } from 'http';
 import { parse } from 'url';
+import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { z, ZodError } from 'zod';
+import cookie from 'cookie';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -36,12 +41,14 @@ const safeCloseConnection = (
   reason: string,
   connection: WebSocket | AuthenticatedConnection,
 ) => {
-  connection.close(code, reason);
+  if (connection != null) {
+    connection.close(code, reason);
 
-  if ('userId' in connection) {
-    const userId = connection.userId;
-    connections.get(userId)?.delete(connection);
-    if (!connections.get(userId)?.size) connections.delete(userId);
+    if ('userId' in connection) {
+      const userId = connection.userId;
+      connections.get(userId)?.delete(connection);
+      if (!connections.get(userId)?.size) connections.delete(userId);
+    }
   }
 };
 
@@ -49,10 +56,11 @@ const authenticateConnection = async (
   request: IncomingMessage,
   connection: WebSocket,
 ) => {
+  const safeConnection = connection as AuthenticatedConnection;
   try {
-    const token = parse(request.url, true).query?.accessToken;
+    const accessToken = parse(request.url, true).query?.accessToken;
 
-    if (!token || typeof token !== 'string') {
+    if (!accessToken || typeof accessToken !== 'string') {
       console.error(
         `${filepath}. Unauthenticated: Missing or invalid token: ${request.url}`,
       );
@@ -64,20 +72,53 @@ const authenticateConnection = async (
       return null;
     }
 
-    // todo: update accessToken if outdated
-    const { userId } = await verifyToken(token, ACCESS_SECRET);
+    const { userId } = await verifyToken(accessToken, ACCESS_SECRET);
 
-    const safeConnection = connection as AuthenticatedConnection;
     safeConnection.userId = userId;
-    safeConnection.accessToken = token;
+    safeConnection.accessToken = accessToken;
 
     return safeConnection;
-  } catch (error) {
-    console.error(filepath, error);
-    if (error instanceof JsonWebTokenError) {
-      console.error(filepath, `InvalidToken: ${request.url}`);
+  } catch (accessTokenError) {
+    if (accessTokenError.name === 'TokenExpiredError') {
+      try {
+        const cookies = cookie.parse(request.headers?.cookie);
+        const refreshToken = cookies[AUTH_REFRESH_COOKIE_NAME];
+
+        const { userId, grade } = await verifyToken(
+          refreshToken,
+          REFRESH_SECRET,
+        );
+        const { accessToken: newAccessToken } = await generateTokens(
+          userId,
+          grade,
+        );
+
+        safeConnection.userId = userId;
+        safeConnection.accessToken = newAccessToken;
+
+        return safeConnection;
+      } catch (refreshTokenError) {
+        console.error(
+          filepath,
+          'Unauthorized: Invalid or expired refresh token',
+        );
+        safeCloseConnection(
+          1008,
+          'Unauthorized: Invalid or expired refresh token',
+          safeConnection,
+        );
+        return null;
+      }
     }
-    safeCloseConnection(1008, 'Unauthorized: Invalid token', connection);
+    console.error(
+      filepath,
+      `Unauthorized: Invalid or expired access token: ${request.url}`,
+    );
+    safeCloseConnection(
+      1008,
+      'Unauthorized: Invalid or expired access token',
+      safeConnection,
+    );
     return null;
   }
 };
@@ -129,7 +170,7 @@ wsServer.on('connection', async (connection, request) => {
   try {
     const safeConnection = await authenticateConnection(request, connection);
 
-    if (safeConnection != null) {
+    if (safeConnection?.userId != null) {
       if (!connections.has(safeConnection.userId))
         connections.set(safeConnection.userId, new Set());
       connections.get(safeConnection.userId)?.add(safeConnection);
