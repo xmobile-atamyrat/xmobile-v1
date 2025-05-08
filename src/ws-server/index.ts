@@ -30,7 +30,6 @@ const MessageSchema = z
   .strict();
 
 interface AuthenticatedConnection extends WebSocket {
-  accessToken: string;
   userId: string;
 }
 
@@ -42,7 +41,9 @@ const safeCloseConnection = (
   connection: WebSocket | AuthenticatedConnection,
 ) => {
   if (connection != null) {
-    connection.close(code, reason);
+    if (connection.readyState === WebSocket.OPEN) {
+      connection.close(code, reason);
+    }
 
     if ('userId' in connection) {
       const userId = connection.userId;
@@ -69,15 +70,13 @@ const authenticateConnection = async (
         'Unauthenticated: Missing or invalid token',
         connection,
       );
-      return null;
+      return { safeConnection: null };
     }
 
     const { userId } = await verifyToken(accessToken, ACCESS_SECRET);
-
     safeConnection.userId = userId;
-    safeConnection.accessToken = accessToken;
 
-    return safeConnection;
+    return { safeConnection };
   } catch (accessTokenError) {
     if (accessTokenError.name === 'TokenExpiredError') {
       try {
@@ -88,15 +87,16 @@ const authenticateConnection = async (
           refreshToken,
           REFRESH_SECRET,
         );
-        const { accessToken: newAccessToken } = await generateTokens(
-          userId,
-          grade,
-        );
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+          await generateTokens(userId, grade);
 
         safeConnection.userId = userId;
-        safeConnection.accessToken = newAccessToken;
 
-        return safeConnection;
+        return {
+          safeConnection,
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        };
       } catch (refreshTokenError) {
         console.error(
           filepath,
@@ -107,29 +107,29 @@ const authenticateConnection = async (
           'Unauthorized: Invalid or expired refresh token',
           safeConnection,
         );
-        return null;
+        return { safeConnection: null };
       }
     }
     console.error(
       filepath,
-      `Unauthorized: Invalid or expired access token: ${request.url}`,
+      `Unauthorized: Invalid access token: ${request.url}`,
     );
     safeCloseConnection(
       1008,
-      'Unauthorized: Invalid or expired access token',
+      'Unauthorized: Invalid access token',
       safeConnection,
     );
-    return null;
+    return { safeConnection: null };
   }
 };
 
-const handleMessage = async (message: RawData) => {
+const handleMessage = async (incomingMessage: RawData) => {
   try {
-    const parsedMessage = JSON.parse(message.toString());
+    const parsedMessage = JSON.parse(incomingMessage.toString());
 
     const { senderId, senderRole, isRead, content, sessionId } =
       MessageSchema.parse(parsedMessage);
-    const messageData = await dbClient.chatMessage.create({
+    const outgoingMessage = await dbClient.chatMessage.create({
       data: {
         senderId,
         isRead,
@@ -141,46 +141,54 @@ const handleMessage = async (message: RawData) => {
 
     const { users: sessionUsers } = await dbClient.chatSession.findUnique({
       where: {
-        id: messageData.sessionId,
+        id: outgoingMessage.sessionId,
       },
       select: { users: true },
     });
 
     sessionUsers?.forEach((sessionUser) => {
-      const outgoingMessage = JSON.stringify({
-        ...messageData,
-        senderName: sessionUser.name,
-      });
-
       connections
         .get(sessionUser.id)
-        ?.forEach((conn) => conn.send(outgoingMessage));
+        ?.forEach((conn) => conn.send(JSON.stringify(outgoingMessage)));
     });
   } catch (error) {
-    if (error instanceof ZodError)
+    if (error instanceof ZodError) {
       console.error(
         filepath,
-        `InvalidMessageType: Invalid message props or types. Message: ${message}`,
+        `InvalidMessageType: Invalid message props or types. Message: ${incomingMessage.toString()}`,
       );
-    else console.error(filepath, error);
+    } else {
+      console.error(filepath, error);
+    }
   }
 };
 
 wsServer.on('connection', async (connection, request) => {
   try {
-    const safeConnection = await authenticateConnection(request, connection);
+    const { safeConnection, accessToken, refreshToken } =
+      await authenticateConnection(request, connection);
 
     if (safeConnection?.userId != null) {
-      if (!connections.has(safeConnection.userId))
+      if (!connections.has(safeConnection.userId)) {
         connections.set(safeConnection.userId, new Set());
+      }
       connections.get(safeConnection.userId)?.add(safeConnection);
+
+      if (accessToken != null) {
+        connection.send(
+          JSON.stringify({
+            accessToken,
+            refreshToken,
+          }),
+        );
+      }
+
+      safeConnection.on('message', (message) => handleMessage(message));
+
+      safeConnection.on('close', () =>
+        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
+      );
     }
-
-    connection.on('message', (message) => handleMessage(message));
-
-    connection.on('close', () =>
-      safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
-    );
   } catch (error) {
     console.error('Connection error:', error);
     safeCloseConnection(1008, 'Unauthorized: Connection failed', connection);
