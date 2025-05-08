@@ -1,4 +1,3 @@
-import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import {
   Box,
@@ -24,7 +23,7 @@ import {
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useRef, useState } from 'react';
 
 interface CalculateDialogProps {
   history: ProcurementOrder;
@@ -46,9 +45,6 @@ export default function CalculateDialog({
   history,
   selectedSuppliers,
   selectedProducts,
-  setSelectedHistory,
-  setSelectedProducts,
-  setSelectedSuppliers,
   handleClose,
   setSnackbarMessage,
   setSnackbarOpen,
@@ -69,7 +65,8 @@ export default function CalculateDialog({
   //     : Array(selectedProducts.existing.length + selectedProducts.added.length),
   // );
   const [calculationDone, setCalculationDone] = useState(false);
-  const [cancelDialog, setCancelDialog] = useState(false);
+  // const [cancelDialog, setCancelDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // const handleCalculate = useCallback(() => {
   //   const newPrices = prices.map((row) => {
@@ -92,6 +89,13 @@ export default function CalculateDialog({
   //   });
   //   setPrices(newPrices);
   // }, [prices]);
+
+  const handleFilesSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = event.target.files;
+    console.info(files);
+  };
 
   return (
     <Dialog open fullScreen>
@@ -173,7 +177,7 @@ export default function CalculateDialog({
             variant="outlined"
             color="error"
             onClick={() => {
-              setCancelDialog(true);
+              handleClose();
             }}
             sx={{
               textTransform: 'none',
@@ -220,6 +224,26 @@ export default function CalculateDialog({
               textTransform: 'none',
             }}
             onClick={() => {
+              fileInputRef.current?.click();
+            }}
+          >
+            {t('upload')}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            multiple
+            style={{ display: 'none' }}
+            onChange={handleFilesSelected}
+          />
+          <Button
+            variant="outlined"
+            color="primary"
+            sx={{
+              textTransform: 'none',
+            }}
+            onClick={() => {
               setLoading(true);
               // handleCalculate();
               setCalculationDone(true);
@@ -233,6 +257,7 @@ export default function CalculateDialog({
           >
             {t('calculate')}
           </Button>
+
           <Button
             variant="outlined"
             color="primary"
@@ -278,7 +303,7 @@ export default function CalculateDialog({
       </DialogActions>
 
       {loading && <CircularProgress />}
-      {cancelDialog && (
+      {/* {cancelDialog && (
         <DeleteDialog
           blueButtonText={t('yes')}
           redButtonText={t('no')}
@@ -294,7 +319,7 @@ export default function CalculateDialog({
             setCancelDialog(false);
           }}
         />
-      )}
+      )} */}
     </Dialog>
   );
 }
