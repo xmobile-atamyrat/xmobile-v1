@@ -1,4 +1,5 @@
 import { SnackbarProps } from '@/pages/lib/types';
+import { DetailedOrder, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   Box,
   Button,
@@ -17,17 +18,16 @@ import {
   TextField,
 } from '@mui/material';
 import {
-  ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface CalculateDialogProps {
-  history: ProcurementOrder;
-  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>;
+  history: DetailedOrder;
+  setSelectedHistory: Dispatch<SetStateAction<DetailedOrder>>;
   selectedSuppliers: ProcurementSupplier[];
   setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
   selectedProducts: ProcurementProduct[];
@@ -52,13 +52,7 @@ export default function CalculateDialog({
 }: CalculateDialogProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
-  // const [prices, setPrices] = useState<HistoryPrice[][]>(
-  //   parseInitialHistoryPrices(
-  //     history.prices,
-  //     [...selectedProducts.existing, ...selectedProducts.added],
-  //     [...selectedSuppliers.existing, ...selectedSuppliers.added],
-  //   ),
-  // );
+  const [prices, setPrices] = useState<HistoryPrice>();
   // const [productQuantity, setProductQuantity] = useState<number[]>(
   //   history.quantities
   //     ? (history.quantities as number[]).map((quantity) => quantity)
@@ -96,6 +90,23 @@ export default function CalculateDialog({
     const files = event.target.files;
     console.info(files);
   };
+
+  useEffect(() => {
+    if (history == null || history.prices == null) return;
+    const newPrices: HistoryPrice = {};
+    history.prices.forEach(({ orderId, productId, supplierId, price }) => {
+      const key = JSON.stringify({
+        orderId,
+        productId,
+        supplierId,
+      });
+      newPrices[key] = {
+        value: price,
+        color: undefined,
+      };
+    });
+    setPrices(newPrices);
+  }, [history]);
 
   return (
     <Dialog open fullScreen>
@@ -140,30 +151,40 @@ export default function CalculateDialog({
                         // }}
                       />
                     </TableCell>
-                    {selectedSuppliers.map((supplier) => (
-                      <TableCell key={supplier.id} align="center">
-                        <TextField
-                          size="small"
-                          // value={prices[prdIdx][splIdx]?.value}
-                          type="number"
-                          // sx={{
-                          //   backgroundColor:
-                          //     prices[prdIdx][splIdx]?.color || 'inherit',
-                          // }}
-                          // onChange={(e) => {
-                          //   const newPrices = [...prices];
-                          //   newPrices[prdIdx][splIdx] = {
-                          //     value:
-                          //       e.target.value === ''
-                          //         ? undefined
-                          //         : Number(e.target.value),
-                          //     color: newPrices[prdIdx][splIdx]?.color,
-                          //   };
-                          //   setPrices(newPrices);
-                          // }}
-                        />
-                      </TableCell>
-                    ))}
+                    {selectedSuppliers.map((supplier) => {
+                      const priceColorPair =
+                        prices[
+                          JSON.stringify({
+                            orderId: history.id,
+                            productId: product.id,
+                            supplierId: supplier.id,
+                          })
+                        ];
+                      return (
+                        <TableCell key={supplier.id} align="center">
+                          <TextField
+                            size="small"
+                            value={priceColorPair?.value ?? ''}
+                            type="number"
+                            sx={{
+                              backgroundColor:
+                                priceColorPair?.color || 'inherit',
+                            }}
+                            // onChange={(e) => {
+                            //   const newPrices = [...prices];
+                            //   newPrices[prdIdx][splIdx] = {
+                            //     value:
+                            //       e.target.value === ''
+                            //         ? undefined
+                            //         : Number(e.target.value),
+                            //     color: newPrices[prdIdx][splIdx]?.color,
+                            //   };
+                            //   setPrices(newPrices);
+                            // }}
+                          />
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 );
               })}

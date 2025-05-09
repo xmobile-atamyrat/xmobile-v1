@@ -15,14 +15,12 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
 } from '@prisma/client';
-import { JsonValue } from '@prisma/client/runtime/library';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { Dispatch, SetStateAction } from 'react';
@@ -781,21 +779,6 @@ export const emptyHistoryPrices = (
   products: ProcurementProduct[],
   suppliers: ProcurementSupplier[],
 ) => Array.from({ length: products.length }, () => Array(suppliers.length));
-
-export const parseInitialHistoryPrices = (
-  prices: JsonValue | null,
-  products: ProcurementProduct[],
-  suppliers: ProcurementSupplier[],
-): HistoryPrice[][] => {
-  if (!prices) return emptyHistoryPrices(products, suppliers);
-  return (prices as number[][]).map((row) => {
-    return (row as number[]).map((price: number) => {
-      return {
-        value: price,
-      };
-    });
-  });
-};
 
 export const dayMonthYearFromDate = (date: Date) => {
   const day = date.getDate();
