@@ -9,6 +9,7 @@ import {
   deleteProductQuantity,
   deleteSupplier,
   editHistory,
+  editProductPrices,
   editProductQuantity,
   getHistory,
   getHistoryList,
@@ -21,6 +22,7 @@ import {
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import JSZip from 'jszip';
@@ -470,6 +472,45 @@ export async function editProductQuantityUtil({
   }
 
   return undefined;
+}
+
+export async function editProductPricesUtil({
+  accessToken,
+  updatedPrices,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  updatedPrices: Partial<ProcurementSupplierProductPrice>[];
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}) {
+  try {
+    const { success, message } = await editProductPrices({
+      accessToken,
+      updatedPrices,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'failedToUpdateQuantity',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
 }
 
 export async function createSupplierUtil(
