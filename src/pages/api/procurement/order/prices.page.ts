@@ -3,6 +3,7 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import { ProcurementSupplierProductPrice } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/procurement/order/quantities.page.ts';
@@ -58,21 +59,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, data: newPrice });
     }
     if (method === 'PUT') {
-      const { orderId, productId, supplierId, price } = req.body;
-      const updatedPrice =
-        await dbClient.procurementSupplierProductPrice.update({
-          where: {
-            supplierId_productId_orderId: {
-              supplierId,
-              productId,
-              orderId,
-            },
-          },
-          data: {
-            price,
-          },
-        });
-      return res.status(200).json({ success: true, data: updatedPrice });
+      const updatedPrices: Partial<ProcurementSupplierProductPrice>[] =
+        req.body;
+      await Promise.all(
+        updatedPrices.map(async ({ orderId, price, productId, supplierId }) => {
+          if (price != null) {
+            await dbClient.procurementSupplierProductPrice.upsert({
+              where: {
+                supplierId_productId_orderId: {
+                  supplierId,
+                  productId,
+                  orderId,
+                },
+              },
+              update: {
+                price,
+              },
+              create: {
+                orderId,
+                productId,
+                supplierId,
+                price,
+              },
+            });
+          }
+        }),
+      );
+      return res.status(200).json({ success: true });
     }
     if (method === 'DELETE') {
       const { orderId, productId, supplierId } = req.body;

@@ -1,11 +1,14 @@
 import { SnackbarProps } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { DetailedOrder, HistoryPrice } from '@/pages/procurement/lib/types';
-import { handleFilesSelected } from '@/pages/procurement/lib/utils';
+import {
+  editProductPricesUtil,
+  handleFilesSelected,
+} from '@/pages/procurement/lib/utils';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -52,8 +55,8 @@ export default function CalculateDialog({
   setSnackbarOpen,
   productQuantities,
 }: CalculateDialogProps) {
+  const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<HistoryPrice>();
   // const [productQuantity, setProductQuantity] = useState<number[]>(
   //   history.quantities
@@ -187,19 +190,24 @@ export default function CalculateDialog({
         </Box>
 
         <Box className="flex gap-4">
-          {/* <Button
+          <Button
             variant="outlined"
             sx={{
               textTransform: 'none',
             }}
             onClick={async () => {
-              setLoading(true);
               try {
-                await editHistoryUtil({
-                  id: history.id,
+                await editProductPricesUtil({
                   accessToken,
-                  prices: prices.map((col) => col.map((row) => row.value)),
-                  quantities: productQuantity,
+                  updatedPrices: Object.entries(prices).map(([key, value]) => {
+                    const { orderId, productId, supplierId } = JSON.parse(key);
+                    return {
+                      orderId,
+                      productId,
+                      supplierId,
+                      price: value.value,
+                    };
+                  }),
                   setSnackbarMessage,
                   setSnackbarOpen,
                 });
@@ -209,13 +217,11 @@ export default function CalculateDialog({
                   severity: 'error',
                 });
                 setSnackbarOpen(true);
-              } finally {
-                setLoading(false);
               }
             }}
           >
             {t('save')}
-          </Button> */}
+          </Button>
           <LoadingButton
             loading={uploadLoading}
             variant="outlined"
@@ -258,7 +264,6 @@ export default function CalculateDialog({
               textTransform: 'none',
             }}
             onClick={() => {
-              setLoading(true);
               // handleCalculate();
               setCalculationDone(true);
               setSnackbarMessage({
@@ -266,7 +271,6 @@ export default function CalculateDialog({
                 severity: 'success',
               });
               setSnackbarOpen(true);
-              setLoading(false);
             }}
           >
             {t('calculate')}
@@ -315,8 +319,6 @@ export default function CalculateDialog({
           </Button>
         </Box>
       </DialogActions>
-
-      {loading && <CircularProgress />}
       {/* {cancelDialog && (
         <DeleteDialog
           blueButtonText={t('yes')}
