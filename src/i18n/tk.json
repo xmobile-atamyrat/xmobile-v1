@@ -140,5 +140,7 @@
   "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
   "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi.",
   "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!",
-  "upload": "Ýüklemek"
+  "upload": "Ýüklemek",
+  "downloadCalculatedOrder": "Hasaplanan buýrugy göçürip alyň",
+  "uploadPrices": "Bahalary ýükläň"
 }

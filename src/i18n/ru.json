@@ -132,7 +132,7 @@
   "success": "Success!",
   "confirmDelete": "Вы уверены, что хотите удалить?",
   "newOrder": "Новый заказ",
-  "downloadEmptyOrder": "Скачать заказ",
+  "downloadEmptyOrder": "Скачать пустой заказ",
   "addProducts": "Добавить продукты",
   "addSuppliers": "Добавить поставщиков",
   "alreadyExists": "Уже существует в заказе!",
@@ -140,5 +140,7 @@
   "allQuantitiesZero": "Все количество продуктов равна нулю!",
   "failedToUpdateQuantity": "Не удалось обновить количество.",
   "orderNotSelected": "Пожалуйста, выберите заказ для расчета!",
-  "upload": "Загрузить"
+  "upload": "Загрузить",
+  "downloadCalculatedOrder": "Скачать рассчитанное заказ",
+  "uploadPrices": "Загрузить цены"
 }

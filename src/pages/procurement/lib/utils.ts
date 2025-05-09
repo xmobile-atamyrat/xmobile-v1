@@ -16,7 +16,7 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
-import { HistoryPrice } from '@/pages/procurement/lib/types';
+import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ProcurementOrder,
   ProcurementOrderProductQuantity,
@@ -908,4 +908,79 @@ export const handleFilesSelected = async (
     }),
   );
   return historyPrice;
+};
+
+export const assignColorToPrices = ({
+  orderId,
+  prices,
+  productIds,
+  supplierIds,
+}: {
+  productIds: string[];
+  supplierIds: string[];
+  orderId: string;
+  prices: HistoryPrice;
+}): HistoryPrice => {
+  const partitionedPrices: HistoryPrice[][] = [];
+  productIds.forEach((productId) => {
+    const row: HistoryPrice[] = [];
+    supplierIds.forEach((supplierId) => {
+      const key = JSON.stringify({
+        orderId,
+        productId,
+        supplierId,
+      });
+      row.push({ [key]: prices[key] });
+    });
+    partitionedPrices.push(row);
+  });
+  const coloredPartitionedPrices = partitionedPrices.map((row) => {
+    const definedPrices = row.filter(
+      (price) => Object.values(price)[0].value != null,
+    );
+    const minPrice = Math.min(
+      ...definedPrices.map((price) => Object.values(price)[0].value),
+    );
+    const maxPrice = Math.max(
+      ...definedPrices.map((price) => Object.values(price)[0].value),
+    );
+    let minFound = false;
+    let maxFound = false;
+    return row.map((price) => {
+      const [hash, priceColorPair] = Object.entries(price)[0];
+      if (priceColorPair.value === minPrice && !minFound) {
+        minFound = true;
+        return {
+          [hash]: {
+            value: priceColorPair.value,
+            color: 'green' as HistoryColor,
+          },
+        };
+      }
+      if (priceColorPair.value === maxPrice && !maxFound) {
+        maxFound = true;
+        return {
+          [hash]: {
+            value: priceColorPair.value,
+            color: 'red' as HistoryColor,
+          },
+        };
+      }
+      return {
+        [hash]: {
+          value: priceColorPair.value,
+          color: undefined,
+        },
+      };
+    });
+  });
+
+  const updatedPrices: HistoryPrice = {};
+  coloredPartitionedPrices.forEach((row) => {
+    row.forEach((price) => {
+      const [hash, priceColorPair] = Object.entries(price)[0];
+      updatedPrices[hash] = priceColorPair;
+    });
+  });
+  return updatedPrices;
 };

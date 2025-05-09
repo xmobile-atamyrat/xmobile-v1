@@ -9,9 +9,11 @@ import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
   DetailedOrder,
+  HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import {
+  assignColorToPrices,
   createHistoryUtil,
   createProductQuantityUtil,
   createProductUtil,
@@ -19,9 +21,11 @@ import {
   dayMonthYearFromDate,
   downloadXlsxAsZip,
   editHistoryUtil,
+  editProductPricesUtil,
   ExcelFileData,
   getHistoryListUtil,
   getHistoryUtil,
+  handleFilesSelected,
   handleProductSearchUtil,
   handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
@@ -31,6 +35,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   debounce,
   Menu,
   MenuItem,
@@ -48,7 +53,7 @@ import {
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -89,7 +94,10 @@ export default function Procurement() {
   const [productQuantities, setProductQuantities] = useState<
     ProcurementOrderProductQuantity[]
   >([]);
+  const [prices, setPrices] = useState<HistoryPrice>();
   const [newOrderDialog, setNewOrderDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -157,6 +165,17 @@ export default function Procurement() {
     [debounce, accessToken],
   );
 
+  const handleCalculate = useCallback(() => {
+    setPrices(
+      assignColorToPrices({
+        orderId: selectedHistory.id,
+        productIds: selectedProducts.map((product) => product.id),
+        supplierIds: selectedSuppliers.map((supplier) => supplier.id),
+        prices,
+      }),
+    );
+  }, [prices, selectedHistory, selectedProducts, selectedSuppliers]);
+
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
@@ -181,6 +200,25 @@ export default function Procurement() {
       })();
     }
   }, [accessToken, user]);
+
+  useEffect(() => {
+    if (selectedHistory == null || selectedHistory.prices == null) return;
+    const newPrices: HistoryPrice = {};
+    selectedHistory.prices.forEach(
+      ({ orderId, productId, supplierId, price }) => {
+        const key = JSON.stringify({
+          orderId,
+          productId,
+          supplierId,
+        });
+        newPrices[key] = {
+          value: price,
+          color: undefined,
+        };
+      },
+    );
+    setPrices(newPrices);
+  }, [selectedHistory]);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
@@ -254,7 +292,8 @@ export default function Procurement() {
           {selectedHistory &&
             productQuantities &&
             selectedProducts &&
-            selectedSuppliers && (
+            selectedSuppliers &&
+            prices && (
               <EmptyOrder
                 productQuantities={productQuantities}
                 setProductQuantities={setProductQuantities}
@@ -265,6 +304,8 @@ export default function Procurement() {
                 setSnackbarMessage={setSnackbarMessage}
                 setSnackbarOpen={setSnackbarOpen}
                 selectedHistory={selectedHistory}
+                prices={prices}
+                setPrices={setPrices}
               />
             )}
 
@@ -544,24 +585,69 @@ export default function Procurement() {
         <MenuItem>
           <Button
             className="w-full"
+            variant="outlined"
+            color="primary"
+            sx={{
+              textTransform: 'none',
+            }}
+            onClick={() => {
+              fileInputRef.current?.click();
+            }}
+          >
+            {t('uploadPrices')}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            multiple
+            style={{ display: 'none' }}
+            onChange={async (event) => {
+              setLoading(true);
+              const uploadedPrices = await handleFilesSelected(
+                selectedHistory.id,
+                event,
+              );
+              await editProductPricesUtil({
+                accessToken,
+                updatedPrices: Object.entries(uploadedPrices).map(
+                  ([key, value]) => {
+                    const { orderId, productId, supplierId } = JSON.parse(key);
+                    return {
+                      orderId,
+                      productId,
+                      supplierId,
+                      price: value.value,
+                    };
+                  },
+                ),
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              setPrices((curr) => {
+                const newPrices = { ...curr };
+                Object.entries(uploadedPrices).forEach(([key, value]) => {
+                  newPrices[key] = value;
+                });
+                return newPrices;
+              });
+              setLoading(false);
+            }}
+          />
+        </MenuItem>
+        <MenuItem>
+          <Button
+            className="w-full"
             sx={{ textTransform: 'none' }}
             variant="outlined"
-            onClick={() => {
-              if (selectedHistory == null) {
-                setSnackbarMessage({
-                  message: 'orderNotSelected',
-                  severity: 'error',
-                });
-                setSnackbarOpen(true);
-                return;
-              }
-              setCalculateDialog(true);
-            }}
+            onClick={handleCalculate}
           >
             {t('calculate')}
           </Button>
         </MenuItem>
       </Menu>
+
+      {loading && <CircularProgress />}
     </Layout>
   );
 }
