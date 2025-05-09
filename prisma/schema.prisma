@@ -151,6 +151,8 @@ model ProcurementSupplier {
 
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
+
+  @@unique([name])
 }
 
 model ProcurementProduct {
@@ -163,6 +165,8 @@ model ProcurementProduct {
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
+
+  @@unique([name])
 }
 
 model ProcurementOrder {
