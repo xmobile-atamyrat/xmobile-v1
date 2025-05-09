@@ -136,15 +136,7 @@ export default function CalculateDialog({
                         size="small"
                         value={quantity?.quantity ?? ''}
                         type="number"
-                        disabled
-                        // onChange={(e) => {
-                        //   const newProductQuantity = [...productQuantity];
-                        //   newProductQuantity[prdIdx] =
-                        //     e.target.value === ''
-                        //       ? undefined
-                        //       : Number(e.target.value);
-                        //   setProductQuantity(newProductQuantity);
-                        // }}
+                        onChange={() => {}}
                       />
                     </TableCell>
                     {selectedSuppliers.map((supplier) => {
@@ -166,17 +158,7 @@ export default function CalculateDialog({
                               backgroundColor:
                                 priceColorPair?.color || 'inherit',
                             }}
-                            // onChange={(e) => {
-                            //   const newPrices = [...prices];
-                            //   newPrices[prdIdx][splIdx] = {
-                            //     value:
-                            //       e.target.value === ''
-                            //         ? undefined
-                            //         : Number(e.target.value),
-                            //     color: newPrices[prdIdx][splIdx]?.color,
-                            //   };
-                            //   setPrices(newPrices);
-                            // }}
+                            onChange={() => {}}
                           />
                         </TableCell>
                       );
