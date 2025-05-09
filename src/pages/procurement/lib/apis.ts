@@ -6,6 +6,7 @@ import {
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 
 export const fetchSuppliers = async (
@@ -221,5 +222,20 @@ export const editProductQuantity = async ({
       productId,
       quantity,
     },
+  );
+};
+
+export const editProductPrices = async ({
+  accessToken,
+  updatedPrices,
+}: {
+  accessToken: string;
+  updatedPrices: Partial<ProcurementSupplierProductPrice>[];
+}): Promise<ResponseApi> => {
+  return fetchWithCreds<ProcurementSupplierProductPrice[]>(
+    accessToken,
+    '/api/procurement/order/prices',
+    'PUT',
+    updatedPrices,
   );
 };
