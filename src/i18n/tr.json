@@ -138,5 +138,7 @@
   "allQuantitiesZero": "Tüm ürün miktarları sıfır!",
   "failedToUpdateQuantity": "Miktarı güncelleyemedi.",
   "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!",
-  "upload": "Yüklemek"
+  "upload": "Yüklemek",
+  "downloadCalculatedOrder": "Hesaplanan Siparişi İndir",
+  "uploadPrices": "Fiyatları Yükle"
 }
