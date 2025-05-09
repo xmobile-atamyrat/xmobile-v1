@@ -260,7 +260,13 @@ export default function CalculateDialog({
                 event,
               );
               setUploadLoading(false);
-              setPrices(uploadedPrices);
+              setPrices((curr) => {
+                const newPrices = { ...curr };
+                Object.entries(uploadedPrices).forEach(([key, value]) => {
+                  newPrices[key] = value;
+                });
+                return newPrices;
+              });
             }}
           />
           <Button
