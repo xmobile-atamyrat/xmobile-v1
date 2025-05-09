@@ -1,5 +1,7 @@
 import { SnackbarProps } from '@/pages/lib/types';
 import { DetailedOrder, HistoryPrice } from '@/pages/procurement/lib/types';
+import { handleFilesSelected } from '@/pages/procurement/lib/utils';
+import { LoadingButton } from '@mui/lab';
 import {
   Box,
   Button,
@@ -61,6 +63,7 @@ export default function CalculateDialog({
   const [calculationDone, setCalculationDone] = useState(false);
   // const [cancelDialog, setCancelDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   // const handleCalculate = useCallback(() => {
   //   const newPrices = prices.map((row) => {
@@ -83,13 +86,6 @@ export default function CalculateDialog({
   //   });
   //   setPrices(newPrices);
   // }, [prices]);
-
-  const handleFilesSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = event.target.files;
-    console.info(files);
-  };
 
   useEffect(() => {
     if (history == null || history.prices == null) return;
@@ -153,7 +149,7 @@ export default function CalculateDialog({
                     </TableCell>
                     {selectedSuppliers.map((supplier) => {
                       const priceColorPair =
-                        prices[
+                        prices?.[
                           JSON.stringify({
                             orderId: history.id,
                             productId: product.id,
@@ -238,25 +234,34 @@ export default function CalculateDialog({
           >
             {t('save')}
           </Button> */}
-          <Button
+          <LoadingButton
+            loading={uploadLoading}
             variant="outlined"
             color="primary"
             sx={{
               textTransform: 'none',
             }}
             onClick={() => {
+              setUploadLoading(true);
               fileInputRef.current?.click();
             }}
           >
             {t('upload')}
-          </Button>
+          </LoadingButton>
           <input
             ref={fileInputRef}
             type="file"
             accept=".xlsx"
             multiple
             style={{ display: 'none' }}
-            onChange={handleFilesSelected}
+            onChange={async (event) => {
+              const uploadedPrices = await handleFilesSelected(
+                history.id,
+                event,
+              );
+              setUploadLoading(false);
+              setPrices(uploadedPrices);
+            }}
           />
           <Button
             variant="outlined"
