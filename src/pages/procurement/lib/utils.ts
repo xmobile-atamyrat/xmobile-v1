@@ -15,6 +15,7 @@ import {
   getProcurementProducts,
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   ProcurementOrder,
   ProcurementOrderProductQuantity,
@@ -29,11 +30,17 @@ export interface ExcelFileData {
   data: (string | number)[][];
   filename: string;
   sheetName?: string;
+  supplierId: string;
+  productIds: string[];
 }
+
+export const IDS_SHEET_NAME = 'IDs';
+export const ORDER_SHEET_NAME = 'Order';
 
 async function arrayToXlsxBlob(
   data: any[][],
-  sheetName: string = 'Sheet 1',
+  supplierId: string,
+  productIds: string[],
 ): Promise<Blob | null> {
   if (!Array.isArray(data)) {
     console.error('Input data for Excel generation must be an array.');
@@ -46,8 +53,9 @@ async function arrayToXlsxBlob(
     workbook.lastModifiedBy = 'WebClient';
     workbook.created = new Date();
     workbook.modified = new Date();
+    workbook.model.keywords = supplierId;
 
-    const worksheet = workbook.addWorksheet(sheetName);
+    const worksheet = workbook.addWorksheet(ORDER_SHEET_NAME);
     worksheet.addRows(data);
 
     worksheet.columns.forEach((column) => {
@@ -65,6 +73,17 @@ async function arrayToXlsxBlob(
       headerRow.font = { bold: true };
     }
 
+    const idsWorksheet = workbook.addWorksheet(IDS_SHEET_NAME);
+    idsWorksheet.state = 'veryHidden';
+    idsWorksheet.addRow(['supplierId', 'productId']);
+    productIds.forEach((productId, idx) => {
+      if (idx === 0) {
+        idsWorksheet.addRow([supplierId, productId]);
+      } else {
+        idsWorksheet.addRow(['', productId]);
+      }
+    });
+
     const buffer = await workbook.xlsx.writeBuffer();
 
     return new Blob([buffer], {
@@ -72,7 +91,7 @@ async function arrayToXlsxBlob(
     });
   } catch (error) {
     console.error(
-      `Error generating Excel Blob for sheet "${sheetName}":`,
+      `Error generating Excel Blob for sheet "${ORDER_SHEET_NAME}":`,
       error,
     );
     return null;
@@ -113,7 +132,11 @@ export async function downloadXlsxAsZip(
       xlsxFilename += '.xlsx';
     }
 
-    const xlsxBlob = await arrayToXlsxBlob(fileInfo.data, fileInfo.sheetName);
+    const xlsxBlob = await arrayToXlsxBlob(
+      fileInfo.data,
+      fileInfo.supplierId,
+      fileInfo.productIds,
+    );
 
     if (xlsxBlob) {
       zip.file(xlsxFilename, xlsxBlob, { binary: true });
@@ -787,4 +810,61 @@ export const dayMonthYearFromDate = (date: Date) => {
   const formattedDay = String(day).padStart(2, '0');
   const formattedMonth = String(month).padStart(2, '0');
   return `${formattedDay}-${formattedMonth}-${year}`;
+};
+
+export const handleFilesSelected = async (
+  orderId: string,
+  event: React.ChangeEvent<HTMLInputElement>,
+): Promise<HistoryPrice> => {
+  const files = event.target.files;
+  const historyPrice: HistoryPrice = {};
+  await Promise.all(
+    Array.from(files).map(async (file) => {
+      const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      let supplierId: string = '';
+      const productIds: string[] = [];
+      const idsSheet = workbook.getWorksheet(IDS_SHEET_NAME);
+      if (idsSheet) {
+        idsSheet.eachRow((row: ExcelJS.Row, rowNumber) => {
+          if (rowNumber === 1) {
+            return;
+          }
+          const values = row.values as ExcelJS.CellValue[];
+          if (rowNumber === 2) {
+            supplierId = values[1] as string;
+          }
+          productIds.push(values[2] as string);
+        });
+      }
+
+      const orderSheet = workbook.getWorksheet(ORDER_SHEET_NAME);
+      if (orderSheet) {
+        orderSheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) {
+            return;
+          }
+          const values = row.values as ExcelJS.CellValue[];
+          let price: number | undefined;
+          try {
+            price = parseInt(values[3].toString(), 10);
+          } catch (error) {
+            console.error('Error parsing price:', error);
+          }
+          const key = JSON.stringify({
+            orderId,
+            productId: productIds[rowNumber - 2],
+            supplierId,
+          });
+          historyPrice[key] = {
+            value: Number.isNaN(price) ? undefined : price,
+            color: undefined,
+          };
+        });
+      }
+    }),
+  );
+  return historyPrice;
 };

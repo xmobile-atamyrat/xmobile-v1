@@ -481,6 +481,7 @@ export default function Procurement() {
               }
 
               const productQuantitiesMap: { [key: string]: number } = {};
+              const productIds: string[] = [];
               productQuantities.forEach((productQuantity) => {
                 if (productQuantity.quantity > 0) {
                   const product = selectedProducts.find(
@@ -489,6 +490,7 @@ export default function Procurement() {
                   if (product) {
                     productQuantitiesMap[product.name] =
                       productQuantity.quantity;
+                    productIds.push(product.id);
                   }
                 }
               });
@@ -510,10 +512,13 @@ export default function Procurement() {
                   const fileData = products.map((product, idx) => {
                     return [product, quantities[idx], ''];
                   });
-                  return {
+                  const file: ExcelFileData = {
                     filename: `Rahmanov-${supplier.name}-${formattedDate}`,
                     data: [['', 'Quantity', 'Price'], ...fileData],
+                    supplierId: supplier.id,
+                    productIds,
                   };
+                  return file;
                 })
                 .filter((data) => data.data.length > 1);
 
