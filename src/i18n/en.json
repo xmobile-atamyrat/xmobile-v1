@@ -130,7 +130,7 @@
   "success": "Success!",
   "confirmDelete": "Are you sure you want to delete?",
   "newOrder": "New Order",
-  "downloadEmptyOrder": "Download Order",
+  "downloadEmptyOrder": "Download Empty Order",
   "addProducts": "Add Products",
   "addSuppliers": "Add Suppliers",
   "alreadyExists": "Exists in the current order!",
@@ -138,5 +138,7 @@
   "allQuantitiesZero": "All product quantities are zero!",
   "failedToUpdateQuantity": "Failed to update quantity.",
   "orderNotSelected": "Please select an order to calculate!",
-  "upload": "Upload"
+  "upload": "Upload",
+  "downloadCalculatedOrder": "Download calculated order",
+  "uploadPrices": "Upload prices"
 }

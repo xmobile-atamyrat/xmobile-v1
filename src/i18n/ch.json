@@ -132,7 +132,7 @@
   "success": "Success!",
   "confirmDelete": "Tochno ochurjakmy?",
   "newOrder": "Täze sargyt",
-  "downloadEmptyOrder": "Zakazlary Skaçat Et",
+  "downloadEmptyOrder": "Boş zakaz skaçat et",
   "addProducts": "Önüm goşuň",
   "addSuppliers": "Üpjün edijiler goşuň",
   "alreadyExists": "Zakaza uže koşylan",
@@ -140,5 +140,7 @@
   "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
   "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi.",
   "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!",
-  "upload": "Ýüklemek"
+  "upload": "Ýüklemek",
+  "downloadCalculatedOrder": "Hasaplanan buýrugy göçürip alyň",
+  "uploadPrices": "Bahalary ýükläň"
 }

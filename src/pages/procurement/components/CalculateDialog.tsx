@@ -1,11 +1,5 @@
 import { SnackbarProps } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
-import { DetailedOrder, HistoryPrice } from '@/pages/procurement/lib/types';
-import {
-  editProductPricesUtil,
-  handleFilesSelected,
-} from '@/pages/procurement/lib/utils';
-import { LoadingButton } from '@mui/lab';
+import { DetailedOrder } from '@/pages/procurement/lib/types';
 import {
   Box,
   Button,
@@ -28,7 +22,7 @@ import {
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 interface CalculateDialogProps {
   history: DetailedOrder;
@@ -55,9 +49,7 @@ export default function CalculateDialog({
   setSnackbarOpen,
   productQuantities,
 }: CalculateDialogProps) {
-  const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [prices, setPrices] = useState<HistoryPrice>();
   // const [productQuantity, setProductQuantity] = useState<number[]>(
   //   history.quantities
   //     ? (history.quantities as number[]).map((quantity) => quantity)
@@ -65,47 +57,6 @@ export default function CalculateDialog({
   // );
   const [calculationDone, setCalculationDone] = useState(false);
   // const [cancelDialog, setCancelDialog] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
-
-  // const handleCalculate = useCallback(() => {
-  //   const newPrices = prices.map((row) => {
-  //     const definedPrices = row.filter((price) => price.value != null);
-  //     const minPrice = Math.min(...definedPrices.map((price) => price.value));
-  //     const maxPrice = Math.max(...definedPrices.map((price) => price.value));
-  //     let minFound = false;
-  //     let maxFound = false;
-  //     return row.map((price) => {
-  //       if (price.value === minPrice && !minFound) {
-  //         minFound = true;
-  //         return { ...price, color: 'green' as HistoryColor };
-  //       }
-  //       if (price.value === maxPrice && !maxFound) {
-  //         maxFound = true;
-  //         return { ...price, color: 'red' as HistoryColor };
-  //       }
-  //       return { ...price, color: undefined };
-  //     });
-  //   });
-  //   setPrices(newPrices);
-  // }, [prices]);
-
-  useEffect(() => {
-    if (history == null || history.prices == null) return;
-    const newPrices: HistoryPrice = {};
-    history.prices.forEach(({ orderId, productId, supplierId, price }) => {
-      const key = JSON.stringify({
-        orderId,
-        productId,
-        supplierId,
-      });
-      newPrices[key] = {
-        value: price,
-        color: undefined,
-      };
-    });
-    setPrices(newPrices);
-  }, [history]);
 
   return (
     <Dialog open fullScreen>
@@ -143,27 +94,8 @@ export default function CalculateDialog({
                       />
                     </TableCell>
                     {selectedSuppliers.map((supplier) => {
-                      const priceColorPair =
-                        prices?.[
-                          JSON.stringify({
-                            orderId: history.id,
-                            productId: product.id,
-                            supplierId: supplier.id,
-                          })
-                        ];
                       return (
-                        <TableCell key={supplier.id} align="center">
-                          <TextField
-                            size="small"
-                            value={priceColorPair?.value ?? ''}
-                            type="number"
-                            sx={{
-                              backgroundColor:
-                                priceColorPair?.color || 'inherit',
-                            }}
-                            onChange={() => {}}
-                          />
-                        </TableCell>
+                        <TableCell key={supplier.id} align="center"></TableCell>
                       );
                     })}
                   </TableRow>
@@ -190,73 +122,6 @@ export default function CalculateDialog({
         </Box>
 
         <Box className="flex gap-4">
-          <Button
-            variant="outlined"
-            sx={{
-              textTransform: 'none',
-            }}
-            onClick={async () => {
-              try {
-                await editProductPricesUtil({
-                  accessToken,
-                  updatedPrices: Object.entries(prices).map(([key, value]) => {
-                    const { orderId, productId, supplierId } = JSON.parse(key);
-                    return {
-                      orderId,
-                      productId,
-                      supplierId,
-                      price: value.value,
-                    };
-                  }),
-                  setSnackbarMessage,
-                  setSnackbarOpen,
-                });
-              } catch (error) {
-                setSnackbarMessage({
-                  message: 'serverError',
-                  severity: 'error',
-                });
-                setSnackbarOpen(true);
-              }
-            }}
-          >
-            {t('save')}
-          </Button>
-          <LoadingButton
-            loading={uploadLoading}
-            variant="outlined"
-            color="primary"
-            sx={{
-              textTransform: 'none',
-            }}
-            onClick={() => {
-              setUploadLoading(true);
-              fileInputRef.current?.click();
-            }}
-          >
-            {t('upload')}
-          </LoadingButton>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            multiple
-            style={{ display: 'none' }}
-            onChange={async (event) => {
-              const uploadedPrices = await handleFilesSelected(
-                history.id,
-                event,
-              );
-              setUploadLoading(false);
-              setPrices((curr) => {
-                const newPrices = { ...curr };
-                Object.entries(uploadedPrices).forEach(([key, value]) => {
-                  newPrices[key] = value;
-                });
-                return newPrices;
-              });
-            }}
-          />
           <Button
             variant="outlined"
             color="primary"

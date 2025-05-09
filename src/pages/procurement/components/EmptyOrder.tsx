@@ -1,7 +1,10 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
+import {
+  HistoryPrice,
+  ProductsSuppliersType,
+} from '@/pages/procurement/lib/types';
 import {
   deleteProductQuantityUtil,
   editHistoryUtil,
@@ -42,6 +45,8 @@ interface EmptyOrderProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   selectedHistory: ProcurementOrder;
+  prices: HistoryPrice;
+  setPrices: Dispatch<SetStateAction<HistoryPrice>>;
 }
 
 export default function EmptyOrder({
@@ -54,6 +59,7 @@ export default function EmptyOrder({
   setSnackbarMessage,
   setSnackbarOpen,
   selectedHistory,
+  prices,
 }: EmptyOrderProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
@@ -142,11 +148,29 @@ export default function EmptyOrder({
                       }}
                     />
                   </TableCell>
-                  {selectedSuppliers.map((supplier) => (
-                    <TableCell key={supplier.id} align="center">
-                      <TextField size="small" type="number" disabled />
-                    </TableCell>
-                  ))}
+                  {selectedSuppliers.map((supplier) => {
+                    const priceColorPair =
+                      prices?.[
+                        JSON.stringify({
+                          orderId: selectedHistory.id,
+                          productId: product.id,
+                          supplierId: supplier.id,
+                        })
+                      ];
+                    return (
+                      <TableCell key={supplier.id} align="center">
+                        <TextField
+                          size="small"
+                          value={priceColorPair?.value ?? ''}
+                          type="number"
+                          sx={{
+                            backgroundColor: priceColorPair?.color || 'inherit',
+                          }}
+                          onChange={() => {}}
+                        />
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
             })}
