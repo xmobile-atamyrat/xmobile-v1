@@ -15,10 +15,10 @@ export interface DetailedOrder extends ProcurementOrder {
 
 export type HistoryColor = 'red' | 'green' | 'orange';
 
-export interface HistoryPrice {
-  value: number;
-  color?: HistoryColor;
-}
+export type HistoryPrice = Record<
+  string,
+  { value: number; color?: HistoryColor }
+>;
 
 export type ProductsSuppliersType = 'product' | 'supplier';
 
