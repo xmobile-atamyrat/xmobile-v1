@@ -215,6 +215,10 @@ export default function ActionsMenu({
               return newPrices;
             });
             setLoading(false);
+
+            // By default input doesn't trigger onchange if same file
+            // is re-uploaded. Reset the value to empty to allow reuploading the same file/s
+            event.target.value = '';
           }}
         />
       </MenuItem>
