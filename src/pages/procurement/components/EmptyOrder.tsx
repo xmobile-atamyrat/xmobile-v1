@@ -2,14 +2,14 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  HistoryPrice,
-  ProductsSuppliersType,
-} from '@/pages/procurement/lib/types';
-import {
   deleteProductQuantityUtil,
   editHistoryUtil,
   editProductQuantityUtil,
-} from '@/pages/procurement/lib/utils';
+} from '@/pages/procurement/lib/apiUtils';
+import {
+  HistoryPrice,
+  ProductsSuppliersType,
+} from '@/pages/procurement/lib/types';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,

@@ -2,12 +2,12 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
-import { DetailedOrder } from '@/pages/procurement/lib/types';
 import {
-  dayMonthYearFromDate,
   deleteHistoryUtil,
   editHistoryUtil,
-} from '@/pages/procurement/lib/utils';
+} from '@/pages/procurement/lib/apiUtils';
+import { DetailedOrder } from '@/pages/procurement/lib/types';
+import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {

@@ -8,26 +8,28 @@ import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import {
+  createHistoryUtil,
+  createProductQuantityUtil,
+  createProductUtil,
+  createSupplierUtil,
+  editHistoryUtil,
+  editProductPricesUtil,
+  getHistoryListUtil,
+  getHistoryUtil,
+  handleProductSearchUtil,
+  handleSupplierSearchUtil,
+} from '@/pages/procurement/lib/apiUtils';
+import {
   DetailedOrder,
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import {
   assignColorToPrices,
-  createHistoryUtil,
-  createProductQuantityUtil,
-  createProductUtil,
-  createSupplierUtil,
   dayMonthYearFromDate,
   downloadXlsxAsZip,
-  editHistoryUtil,
-  editProductPricesUtil,
   ExcelFileData,
-  getHistoryListUtil,
-  getHistoryUtil,
   handleFilesSelected,
-  handleProductSearchUtil,
-  handleSupplierSearchUtil,
 } from '@/pages/procurement/lib/utils';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
