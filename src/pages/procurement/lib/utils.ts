@@ -242,6 +242,12 @@ export const assignColorToPrices = ({
   orderId: string;
   prices: HistoryPrice;
 }): HistoryPrice => {
+  // reset prev colors
+  const resetPrices = { ...prices };
+  Object.keys(resetPrices).forEach((key) => {
+    resetPrices[key].color = undefined;
+  });
+
   // partition prices into a 2D table
   const partitionedPrices: HistoryPrice[][] = [];
   productIds.forEach((productId) => {
@@ -252,7 +258,7 @@ export const assignColorToPrices = ({
         productId,
         supplierId,
       });
-      if (prices[key] != null) {
+      if (prices[key]?.value != null) {
         row.push({ [key]: prices[key] });
       }
     });
@@ -262,9 +268,6 @@ export const assignColorToPrices = ({
   // find the cheapest and expensive prices for all products across all suppliers
   const coloredPartitionedPrices = partitionedPrices.map((row) => {
     const definedPrices = row;
-    // .filter(
-    //   (price) => Object.values(price)[0].value != null,
-    // );
     const minPrice = Math.min(
       ...definedPrices.map((price) => Object.values(price)[0].value),
     );
