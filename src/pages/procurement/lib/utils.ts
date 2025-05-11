@@ -252,16 +252,19 @@ export const assignColorToPrices = ({
         productId,
         supplierId,
       });
-      row.push({ [key]: prices[key] });
+      if (prices[key] != null) {
+        row.push({ [key]: prices[key] });
+      }
     });
     partitionedPrices.push(row);
   });
 
   // find the cheapest and expensive prices for all products across all suppliers
   const coloredPartitionedPrices = partitionedPrices.map((row) => {
-    const definedPrices = row.filter(
-      (price) => Object.values(price)[0].value != null,
-    );
+    const definedPrices = row;
+    // .filter(
+    //   (price) => Object.values(price)[0].value != null,
+    // );
     const minPrice = Math.min(
       ...definedPrices.map((price) => Object.values(price)[0].value),
     );
