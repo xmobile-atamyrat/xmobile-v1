@@ -63,26 +63,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         req.body;
       await Promise.all(
         updatedPrices.map(async ({ orderId, price, productId, supplierId }) => {
-          if (price != null) {
-            await dbClient.procurementSupplierProductPrice.upsert({
-              where: {
-                supplierId_productId_orderId: {
-                  supplierId,
-                  productId,
-                  orderId,
-                },
-              },
-              update: {
-                price,
-              },
-              create: {
-                orderId,
-                productId,
+          await dbClient.procurementSupplierProductPrice.upsert({
+            where: {
+              supplierId_productId_orderId: {
                 supplierId,
-                price,
+                productId,
+                orderId,
               },
-            });
-          }
+            },
+            update: {
+              price,
+            },
+            create: {
+              orderId,
+              productId,
+              supplierId,
+              price,
+            },
+          });
         }),
       );
       return res.status(200).json({ success: true });

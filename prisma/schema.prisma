@@ -185,7 +185,7 @@ model ProcurementOrderProductQuantity {
   id                      String                  @id @default(uuid())
   orderId                 String
   productId               String
-  quantity                Int
+  quantity                Int?
 
   order                   ProcurementOrder      @relation("ProcurementOrderProductQuantity", fields: [orderId], references: [id], onDelete: Cascade)
   product                 ProcurementProduct    @relation("ProcurementProductQuantity", fields: [productId], references: [id], onDelete: Cascade)
@@ -201,7 +201,7 @@ model ProcurementSupplierProductPrice {
   supplierId              String
   productId               String
   orderId                 String
-  price                   Float
+  price                   Float?
 
   supplier                ProcurementSupplier   @relation("ProcurementSupplierValue", fields: [supplierId], references: [id], onDelete: Cascade)
   product                 ProcurementProduct    @relation("ProcurementProductValue", fields: [productId], references: [id], onDelete: Cascade)
