@@ -292,7 +292,7 @@ export const assignColorToPrices = ({
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'red' as HistoryColor,
+            color: 'orange' as HistoryColor,
           },
         };
       }
