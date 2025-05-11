@@ -130,5 +130,17 @@
   "modifiedDate": "Üýtgedilen senesi",
   "actions": "Hereketler",
   "success": "Success!",
-  "confirmDelete": "Are you sure you want to delete?"
+  "confirmDelete": "Are you sure you want to delete?",
+  "newOrder": "Täze sargyt",
+  "downloadEmptyOrder": "Sargyty göçürip alyň",
+  "addProducts": "Önüm goşuň",
+  "addSuppliers": "Üpjün edijiler goşuň",
+  "alreadyExists": "Exists in the current order!",
+  "noProductsOrSuppliers": "Sargyt üçin saýlanan önüm ýa-da üpjün edijiler ýok!",
+  "allQuantitiesZero": "HEMMESI INC HEMMESI INCES",
+  "failedToUpdateQuantity": "Mukdaryny täzeläp bilmedi.",
+  "orderNotSelected": "Hasaplamak üçin sargyt saýlaň!",
+  "upload": "Ýüklemek",
+  "downloadCalculatedOrder": "Hasaplanan buýrugy göçürip alyň",
+  "uploadPrices": "Bahalary ýükläň"
 }

@@ -106,41 +106,6 @@ model DollarRate {
   updatedAt       DateTime    @updatedAt
 }
 
-model Supplier {
-  id                    String                  @id @default(uuid())
-  name                  String
-  description           String?
-
-  calculationHistories  CalculationHistory[]    @relation("CalculationHistorySuppliers")
-
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-}
-
-model ProcurementProduct {
-  id                      String                  @id @default(uuid())
-  name                    String
-
-  calculationHistories    CalculationHistory[]    @relation("CalculationHistoryProcurementProducts")
-
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
-}
-
-model CalculationHistory {
-  id                      String                  @id @default(uuid())
-  name                    String
-  prices                  Json?
-  quantities              Json?
-
-  suppliers               Supplier[]              @relation("CalculationHistorySuppliers")
-  procurementProducts     ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
-  
-
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
-}
-
 model ChatSession {
   id              String        @id @default(uuid())
   status          ChatStatus        @default(OPEN)
@@ -174,6 +139,78 @@ model ChatMessage {
 enum ChatStatus {
   CLOSED
   OPEN
+}
+
+model ProcurementSupplier {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+
+  order                 ProcurementOrder[]                   @relation("CalculationHistorySuppliers")
+  values                ProcurementSupplierProductPrice[]  @relation("ProcurementSupplierValue")
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@unique([name])
+}
+
+model ProcurementProduct {
+  id                      String                  @id @default(uuid())
+  name                    String
+
+  order                   ProcurementOrder[]                 @relation("CalculationHistoryProcurementProducts")
+  values                  ProcurementSupplierProductPrice[]  @relation("ProcurementProductValue")
+  quantities              ProcurementOrderProductQuantity[]  @relation("ProcurementProductQuantity")
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  @@unique([name])
+}
+
+model ProcurementOrder {
+  id                      String                  @id @default(uuid())
+  name                    String
+
+  suppliers               ProcurementSupplier[]   @relation("CalculationHistorySuppliers")
+  products                ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
+  prices                  ProcurementSupplierProductPrice[]  @relation("ProcurementOrderValue")
+  productQuantities       ProcurementOrderProductQuantity[]  @relation("ProcurementOrderProductQuantity")
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+model ProcurementOrderProductQuantity {
+  id                      String                  @id @default(uuid())
+  orderId                 String
+  productId               String
+  quantity                Int?
+
+  order                   ProcurementOrder      @relation("ProcurementOrderProductQuantity", fields: [orderId], references: [id], onDelete: Cascade)
+  product                 ProcurementProduct    @relation("ProcurementProductQuantity", fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  @@unique([orderId, productId])
+}
+
+model ProcurementSupplierProductPrice {
+  id                      String                  @id @default(uuid())
+  supplierId              String
+  productId               String
+  orderId                 String
+  price                   Float?
+
+  supplier                ProcurementSupplier   @relation("ProcurementSupplierValue", fields: [supplierId], references: [id], onDelete: Cascade)
+  product                 ProcurementProduct    @relation("ProcurementProductValue", fields: [productId], references: [id], onDelete: Cascade)
+  order                   ProcurementOrder      @relation("ProcurementOrderValue", fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  @@unique([supplierId, productId, orderId])
 }
 
 enum UserRole {

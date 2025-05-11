@@ -21,7 +21,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     try {
       const { searchKeyword } = req.query;
       if (searchKeyword) {
-        const suppliers = await dbClient.supplier.findMany({
+        const suppliers = await dbClient.procurementSupplier.findMany({
           where: {
             name: {
               contains: searchKeyword as string,
@@ -31,7 +31,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
         return res.status(200).json({ success: true, data: suppliers });
       }
-      const suppliers = await dbClient.supplier.findMany();
+      const suppliers = await dbClient.procurementSupplier.findMany();
       return res.status(200).json({ success: true, data: suppliers });
     } catch (error) {
       console.error(error);
@@ -43,7 +43,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   } else if (method === 'POST') {
     try {
       const { name, description } = req.body;
-      const supplier = await dbClient.supplier.create({
+      const supplier = await dbClient.procurementSupplier.create({
         data: {
           name,
           description,
@@ -60,7 +60,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   } else if (method === 'PUT') {
     try {
       const { id, name, description } = req.body;
-      const supplier = await dbClient.supplier.update({
+      const supplier = await dbClient.procurementSupplier.update({
         where: { id },
         data: {
           name,
@@ -78,7 +78,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   } else if (method === 'DELETE') {
     try {
       const { id } = req.body;
-      const supplier = await dbClient.supplier.delete({
+      const supplier = await dbClient.procurementSupplier.delete({
         where: { id },
       });
       return res.status(200).json({ success: true, data: supplier });

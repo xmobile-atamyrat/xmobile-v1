@@ -128,5 +128,17 @@
   "modifiedDate": "Değiştirilmiş tarih",
   "actions": "Eylem",
   "success": "Success!",
-  "confirmDelete": "Are you sure you want to delete?"
+  "confirmDelete": "Are you sure you want to delete?",
+  "newOrder": "Yeni Sipariş",
+  "downloadEmptyOrder": "Boş sipariş indir",
+  "addProducts": "Ürün ekle",
+  "addSuppliers": "Tedarikçiler ekle",
+  "alreadyExists": "Exists in the current order!",
+  "noProductsOrSuppliers": "Sipariş için hiçbir ürün veya tedarikçi seçilmedi!",
+  "allQuantitiesZero": "Tüm ürün miktarları sıfır!",
+  "failedToUpdateQuantity": "Miktarı güncelleyemedi.",
+  "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!",
+  "upload": "Yüklemek",
+  "downloadCalculatedOrder": "Hesaplanan Siparişi İndir",
+  "uploadPrices": "Fiyatları Yükle"
 }

@@ -12,13 +12,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Supplier } from '@prisma/client';
+import { ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface AddSupplierDialogProps {
   handleClose: () => void;
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }

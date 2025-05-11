@@ -1,16 +1,18 @@
 import { fetchWithCreds } from '@/pages/lib/fetch';
 import { ResponseApi } from '@/pages/lib/types';
-import { DetailedHistory } from '@/pages/procurement/lib/types';
+import { DetailedOrder } from '@/pages/procurement/lib/types';
 import {
-  CalculationHistory,
+  ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
-  Supplier,
+  ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 
 export const fetchSuppliers = async (
   accessToken: string,
-): Promise<ResponseApi<Supplier[]>> => {
-  return fetchWithCreds<Supplier[]>(
+): Promise<ResponseApi<ProcurementSupplier[]>> => {
+  return fetchWithCreds<ProcurementSupplier[]>(
     accessToken,
     '/api/procurement/supplier',
     'GET',
@@ -20,8 +22,8 @@ export const fetchSuppliers = async (
 export const deleteSupplier = async (
   accessToken: string,
   id: string,
-): Promise<ResponseApi<Supplier>> => {
-  return fetchWithCreds<Supplier>(
+): Promise<ResponseApi<ProcurementSupplier>> => {
+  return fetchWithCreds<ProcurementSupplier>(
     accessToken,
     '/api/procurement/supplier',
     'DELETE',
@@ -29,13 +31,44 @@ export const deleteSupplier = async (
   );
 };
 
+export const deletePrices = async (
+  accessToken: string,
+  ids: Partial<ProcurementSupplierProductPrice>[],
+): Promise<ResponseApi> => {
+  return fetchWithCreds(
+    accessToken,
+    '/api/procurement/order/prices',
+    'DELETE',
+    {
+      ids,
+    },
+  );
+};
+
+export const deleteQuantity = async ({
+  accessToken,
+  orderId,
+  productId,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+}): Promise<ResponseApi<ProcurementOrderProductQuantity>> => {
+  return fetchWithCreds<ProcurementOrderProductQuantity>(
+    accessToken,
+    '/api/procurement/order/quantities',
+    'DELETE',
+    { orderId, productId },
+  );
+};
+
 export const deleteHistory = async (
   accessToken: string,
   id: string,
-): Promise<ResponseApi<Supplier>> => {
-  return fetchWithCreds<Supplier>(
+): Promise<ResponseApi<ProcurementSupplier>> => {
+  return fetchWithCreds<ProcurementSupplier>(
     accessToken,
-    '/api/procurement/calculation/history',
+    '/api/procurement/order',
     'DELETE',
     { id },
   );
@@ -67,48 +100,54 @@ export const getProcurementProducts = async (
 export const getSuppliers = async (
   accessToken: string,
   searchKeyword?: string,
-): Promise<ResponseApi<Supplier[]>> => {
+): Promise<ResponseApi<ProcurementSupplier[]>> => {
   let url = '/api/procurement/supplier';
   if (searchKeyword) {
     url += `?searchKeyword=${searchKeyword}`;
   }
-  return fetchWithCreds<Supplier[]>(accessToken, url, 'GET');
+  return fetchWithCreds<ProcurementSupplier[]>(accessToken, url, 'GET');
 };
 
 export const getHistoryList = async (
   accessToken: string,
-): Promise<ResponseApi<CalculationHistory[]>> => {
-  const url = '/api/procurement/calculation/history';
-  return fetchWithCreds<CalculationHistory[]>(accessToken, url, 'GET');
+): Promise<ResponseApi<ProcurementOrder[]>> => {
+  const url = '/api/procurement/order';
+  return fetchWithCreds<ProcurementOrder[]>(accessToken, url, 'GET');
 };
 
 export const getHistory = async (
   accessToken: string,
   id: string,
-): Promise<ResponseApi<DetailedHistory>> => {
-  const url = `/api/procurement/calculation/history?id=${id}`;
-  return fetchWithCreds<DetailedHistory>(accessToken, url, 'GET');
+): Promise<ResponseApi<DetailedOrder>> => {
+  const url = `/api/procurement/order?id=${id}`;
+  return fetchWithCreds<DetailedOrder>(accessToken, url, 'GET');
 };
 
 export const editHistory = async ({
   accessToken,
   id,
   name,
-  prices,
-  quantities,
+  addedProductIds,
+  removedProductIds,
+  addedSupplierIds,
+  removedSupplierIds,
 }: {
   accessToken: string;
   id: string;
   name?: string;
-  prices?: (number | null)[][];
-  quantities?: (number | null)[];
-}): Promise<ResponseApi<DetailedHistory>> => {
-  const url = `/api/procurement/calculation/history`;
-  return fetchWithCreds<DetailedHistory>(accessToken, url, 'PUT', {
+  addedProductIds?: string[];
+  removedProductIds?: string[];
+  addedSupplierIds?: string[];
+  removedSupplierIds?: string[];
+}): Promise<ResponseApi<DetailedOrder>> => {
+  const url = `/api/procurement/order`;
+  return fetchWithCreds<DetailedOrder>(accessToken, url, 'PUT', {
     id,
     name,
-    prices,
-    quantities,
+    addedProductIds,
+    removedProductIds,
+    addedSupplierIds,
+    removedSupplierIds,
   });
 };
 
@@ -129,8 +168,8 @@ export const createProcurementProduct = async (
 export const createSupplier = async (
   accessToken: string,
   name: string,
-): Promise<ResponseApi<Supplier>> => {
-  return fetchWithCreds<Supplier>(
+): Promise<ResponseApi<ProcurementSupplier>> => {
+  return fetchWithCreds<ProcurementSupplier>(
     accessToken,
     '/api/procurement/supplier',
     'POST',
@@ -143,17 +182,74 @@ export const createSupplier = async (
 export const createHistory = async (
   accessToken: string,
   name: string,
-  supplierIds: string[],
-  productIds: string[],
-): Promise<ResponseApi<CalculationHistory>> => {
-  return fetchWithCreds<CalculationHistory>(
+): Promise<ResponseApi<ProcurementOrder>> => {
+  return fetchWithCreds<ProcurementOrder>(
     accessToken,
-    '/api/procurement/calculation/history',
+    '/api/procurement/order',
     'POST',
     {
       name,
-      supplierIds,
-      productIds,
     },
+  );
+};
+
+export const createProductQuantity = async ({
+  accessToken,
+  orderId,
+  productId,
+  quantity,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+}): Promise<ResponseApi<ProcurementOrderProductQuantity>> => {
+  return fetchWithCreds<ProcurementOrderProductQuantity>(
+    accessToken,
+    '/api/procurement/order/quantities',
+    'POST',
+    {
+      orderId,
+      productId,
+      quantity,
+    },
+  );
+};
+
+export const editProductQuantity = async ({
+  accessToken,
+  orderId,
+  productId,
+  quantity,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+}): Promise<ResponseApi<ProcurementOrderProductQuantity>> => {
+  return fetchWithCreds<ProcurementOrderProductQuantity>(
+    accessToken,
+    '/api/procurement/order/quantities',
+    'PUT',
+    {
+      orderId,
+      productId,
+      quantity,
+    },
+  );
+};
+
+export const editProductPrices = async ({
+  accessToken,
+  updatedPrices,
+}: {
+  accessToken: string;
+  updatedPrices: Partial<ProcurementSupplierProductPrice>[];
+}): Promise<ResponseApi> => {
+  return fetchWithCreds<ProcurementSupplierProductPrice[]>(
+    accessToken,
+    '/api/procurement/order/prices',
+    'PUT',
+    updatedPrices,
   );
 };

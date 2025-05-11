@@ -1,37 +1,37 @@
-import { SnackbarProps } from '@/pages/lib/types';
-import {
-  createHistory,
-  createProcurementProduct,
-  createSupplier,
-  deleteHistory,
-  deleteProduct,
-  deleteSupplier,
-  editHistory,
-  getHistory,
-  getHistoryList,
-  getProcurementProducts,
-  getSuppliers,
-} from '@/pages/procurement/lib/apis';
-import { HistoryPrice } from '@/pages/procurement/lib/types';
-import {
-  CalculationHistory,
-  ProcurementProduct,
-  Supplier,
-} from '@prisma/client';
-import { JsonValue } from '@prisma/client/runtime/library';
+import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import * as ExcelJS from 'exceljs';
-import JSZip from 'jszip';
-import { Dispatch, SetStateAction } from 'react';
 
 export interface ExcelFileData {
   data: (string | number)[][];
   filename: string;
   sheetName?: string;
+  supplierId: string;
+  productIds: string[];
 }
+
+export const IDS_SHEET_NAME = 'IDs';
+export const ORDER_SHEET_NAME = 'Order';
+
+export const priceHash = ({
+  orderId,
+  productId,
+  supplierId,
+}: {
+  orderId: string;
+  productId: string;
+  supplierId: string;
+}): string => {
+  return JSON.stringify({
+    orderId,
+    productId,
+    supplierId,
+  });
+};
 
 async function arrayToXlsxBlob(
   data: any[][],
-  sheetName: string = 'Sheet 1',
+  supplierId: string,
+  productIds: string[],
 ): Promise<Blob | null> {
   if (!Array.isArray(data)) {
     console.error('Input data for Excel generation must be an array.');
@@ -44,8 +44,9 @@ async function arrayToXlsxBlob(
     workbook.lastModifiedBy = 'WebClient';
     workbook.created = new Date();
     workbook.modified = new Date();
+    workbook.model.keywords = supplierId;
 
-    const worksheet = workbook.addWorksheet(sheetName);
+    const worksheet = workbook.addWorksheet(ORDER_SHEET_NAME);
     worksheet.addRows(data);
 
     worksheet.columns.forEach((column) => {
@@ -63,6 +64,17 @@ async function arrayToXlsxBlob(
       headerRow.font = { bold: true };
     }
 
+    const idsWorksheet = workbook.addWorksheet(IDS_SHEET_NAME);
+    idsWorksheet.state = 'veryHidden';
+    idsWorksheet.addRow(['supplierId', 'productId']);
+    productIds.forEach((productId, idx) => {
+      if (idx === 0) {
+        idsWorksheet.addRow([supplierId, productId]);
+      } else {
+        idsWorksheet.addRow(['', productId]);
+      }
+    });
+
     const buffer = await workbook.xlsx.writeBuffer();
 
     return new Blob([buffer], {
@@ -70,40 +82,29 @@ async function arrayToXlsxBlob(
     });
   } catch (error) {
     console.error(
-      `Error generating Excel Blob for sheet "${sheetName}":`,
+      `Error generating Excel Blob for sheet "${ORDER_SHEET_NAME}":`,
       error,
     );
     return null;
   }
 }
 
-export async function downloadXlsxAsZip(
-  files: ExcelFileData[],
-  zipFilename: string = 'excel_files.zip',
-): Promise<void> {
+export async function downloadXlsxAsZip(files: ExcelFileData[]): Promise<void> {
   if (!files || files.length === 0) {
     console.error('No files data provided to zip.');
     return;
   }
 
-  if (!zipFilename.toLowerCase().endsWith('.zip')) {
-    zipFilename += '.zip';
-  }
-
-  const zip = new JSZip();
-  let filesAddedCount = 0;
-
   // eslint-disable-next-line no-restricted-syntax
-  for (const fileInfo of files) {
+  files.forEach(async (fileInfo) => {
     if (
       !fileInfo ||
       typeof fileInfo !== 'object' ||
       !fileInfo.filename ||
       !Array.isArray(fileInfo.data)
     ) {
-      console.warn('Skipping invalid file data structure:', fileInfo);
-      // eslint-disable-next-line no-continue
-      continue;
+      console.error('Skipping invalid file data structure:', fileInfo);
+      return;
     }
 
     let xlsxFilename = fileInfo.filename;
@@ -111,532 +112,30 @@ export async function downloadXlsxAsZip(
       xlsxFilename += '.xlsx';
     }
 
-    const xlsxBlob = await arrayToXlsxBlob(fileInfo.data, fileInfo.sheetName);
+    const xlsxBlob = await arrayToXlsxBlob(
+      fileInfo.data,
+      fileInfo.supplierId,
+      fileInfo.productIds,
+    );
 
     if (xlsxBlob) {
-      zip.file(xlsxFilename, xlsxBlob, { binary: true });
-      // eslint-disable-next-line no-plusplus
-      filesAddedCount++;
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(xlsxBlob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', xlsxFilename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } else {
-      console.warn(
+      console.error(
         `Failed to generate Excel file for ${fileInfo.filename}. Skipping this file.`,
       );
     }
-  }
-
-  if (filesAddedCount === 0) {
-    console.error(
-      'No valid Excel files could be generated or added to the zip archive.',
-    );
-    return;
-  }
-
-  try {
-    const zipBlob = await zip.generateAsync({
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: {
-        level: 6,
-      },
-      mimeType: 'application/zip',
-    });
-
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(zipBlob);
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', zipFilename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error generating or downloading the zip file:', error);
-  }
-}
-
-export async function handleProductSearchUtil(
-  accessToken: string,
-  keyword: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await getProcurementProducts(
-      accessToken,
-      keyword,
-    );
-    if (success) {
-      setProducts(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'fetchPricesError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function handleSupplierSearchUtil(
-  accessToken: string,
-  keyword: string,
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await getSuppliers(accessToken, keyword);
-    if (success) {
-      setSuppliers(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'fetchPricesError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function createProductUtil(
-  accessToken: string,
-  keyword: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  if (keyword == null || keyword === '') {
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'nameRequired',
-      severity: 'error',
-    });
-    return;
-  }
-
-  try {
-    const { success, data, message } = await createProcurementProduct(
-      accessToken,
-      keyword,
-    );
-    if (success) {
-      setProducts([data]);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function createHistoryUtil(
-  accessToken: string,
-  name: string,
-  suppliers: Supplier[],
-  products: ProcurementProduct[],
-  setHistory: Dispatch<SetStateAction<CalculationHistory[]>>,
-  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await createHistory(
-      accessToken,
-      name,
-      suppliers.map((supplier) => supplier.id),
-      products.map((product) => product.id),
-    );
-    if (success) {
-      setSelectedHistory(data);
-      setHistory((current) => [data, ...current]);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function editHistoryUtil({
-  id,
-  accessToken,
-  name,
-  prices,
-  quantities,
-  setSnackbarMessage,
-  setSnackbarOpen,
-  setHistoryList,
-}: {
-  id: string;
-  accessToken: string;
-  name?: string;
-  prices?: (number | null)[][];
-  quantities?: (number | null)[];
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
-  setHistoryList?: Dispatch<SetStateAction<CalculationHistory[]>>;
-}) {
-  try {
-    const { success, data, message } = await editHistory({
-      accessToken,
-      id,
-      name,
-      prices,
-      quantities,
-    });
-    if (!success) {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    } else {
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'success',
-        severity: 'success',
-      });
-      if (setHistoryList) {
-        setHistoryList((prev) =>
-          prev.map((history) => {
-            if (history.id === id) {
-              return data;
-            }
-            return history;
-          }),
-        );
-      }
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function createSupplierUtil(
-  accessToken: string,
-  keyword: string,
-  setSupplier: Dispatch<SetStateAction<Supplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  if (keyword == null || keyword === '') {
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'nameRequired',
-      severity: 'error',
-    });
-    return;
-  }
-
-  try {
-    const { success, data, message } = await createSupplier(
-      accessToken,
-      keyword,
-    );
-    if (success) {
-      setSupplier([data]);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function getProductsUtil(
-  accessToken: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } =
-      await getProcurementProducts(accessToken);
-    if (success) {
-      setProducts(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function getHistoryListUtil(
-  accessToken: string,
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await getHistoryList(accessToken);
-    if (success) {
-      setHistoryList(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function getHistoryUtil(
-  accessToken: string,
-  id: string,
-  setSelectedHistory: Dispatch<SetStateAction<CalculationHistory>>,
-  setSelectedSuppliers: Dispatch<SetStateAction<Supplier[]>>,
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await getHistory(accessToken, id);
-    if (success) {
-      setSelectedProducts(data.procurementProducts);
-      setSelectedSuppliers(data.suppliers);
-      setSelectedHistory(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function getSuppliersUtil(
-  accessToken: string,
-  setSuppliers: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, data, message } = await getSuppliers(accessToken);
-    if (success) {
-      setSuppliers(data);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function deleteSupplierUtil(
-  accessToken: string,
-  id: string,
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, message } = await deleteSupplier(accessToken, id);
-    if (success) {
-      setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'deleteItemSuccess',
-        severity: 'success',
-      });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function deleteHistoryUtil(
-  accessToken: string,
-  id: string,
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, message } = await deleteHistory(accessToken, id);
-    if (success) {
-      setHistoryList((prev) => prev.filter((history) => history.id !== id));
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'deleteItemSuccess',
-        severity: 'success',
-      });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export async function deleteProductUtil(
-  accessToken: string,
-  id: string,
-  setProducts: Dispatch<SetStateAction<Supplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
-  try {
-    const { success, message } = await deleteProduct(accessToken, id);
-    if (success) {
-      setProducts((prev) => prev.filter((product) => product.id !== id));
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'deleteItemSuccess',
-        severity: 'success',
-      });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
-    }
-  } catch (error) {
-    console.error(error);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'serverError',
-      severity: 'error',
-    });
-  }
-}
-
-export const emptyHistoryPrices = (
-  products: ProcurementProduct[],
-  suppliers: Supplier[],
-) => Array.from({ length: products.length }, () => Array(suppliers.length));
-
-export const parseInitialHistoryPrices = (
-  prices: JsonValue | null,
-  products: ProcurementProduct[],
-  suppliers: Supplier[],
-): HistoryPrice[][] => {
-  if (!prices) return emptyHistoryPrices(products, suppliers);
-  return (prices as number[][]).map((row) => {
-    return (row as number[]).map((price: number) => {
-      return {
-        value: price,
-      };
-    });
   });
-};
+}
 
 export const dayMonthYearFromDate = (date: Date) => {
   const day = date.getDate();
@@ -645,4 +144,154 @@ export const dayMonthYearFromDate = (date: Date) => {
   const formattedDay = String(day).padStart(2, '0');
   const formattedMonth = String(month).padStart(2, '0');
   return `${formattedDay}-${formattedMonth}-${year}`;
+};
+
+export const handleFilesSelected = async (
+  orderId: string,
+  event: React.ChangeEvent<HTMLInputElement>,
+): Promise<HistoryPrice> => {
+  const files = event.target.files;
+  const historyPrice: HistoryPrice = {};
+  await Promise.all(
+    Array.from(files).map(async (file) => {
+      const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      // There are two sheets in the uploaded excel files:
+      // - 'Order' sheet contains: ['Product Name', 'Quantity', 'Price'] columns
+      // - 'IDs' sheet contains: ['Supplier ID', 'Product IDs'] columns
+      // 'IDs' sheet is superhidden meaning it can be accessed only programmatically
+      let supplierId: string = '';
+      const productIds: string[] = [];
+      const idsSheet = workbook.getWorksheet(IDS_SHEET_NAME);
+      if (idsSheet) {
+        idsSheet.eachRow((row: ExcelJS.Row, rowNumber) => {
+          // ExcelJS Row numbering starts from 1
+          // rowNumber 1 is header
+          if (rowNumber === 1) {
+            return;
+          }
+          const values = row.values as ExcelJS.CellValue[];
+          // rowNumber 2 contains the supplier ID
+          // each excel file is from a single supplier
+          if (rowNumber === 2) {
+            supplierId = values[1] as string;
+          }
+          productIds.push(values[2] as string);
+        });
+      }
+
+      const orderSheet = workbook.getWorksheet(ORDER_SHEET_NAME);
+      if (orderSheet) {
+        orderSheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) {
+            return;
+          }
+          const values = row.values as ExcelJS.CellValue[];
+          let price: number | undefined;
+          try {
+            price = parseInt(values[3].toString(), 10);
+          } catch (error) {
+            console.error('Error parsing price:', error);
+          }
+          const key = priceHash({
+            orderId,
+            productId: productIds[rowNumber - 2],
+            supplierId,
+          });
+          historyPrice[key] = {
+            value: Number.isNaN(price) ? undefined : price,
+            color: undefined,
+          };
+        });
+      }
+    }),
+  );
+  return historyPrice;
+};
+
+export const assignColorToPrices = ({
+  orderId,
+  prices,
+  productIds,
+  supplierIds,
+}: {
+  productIds: string[];
+  supplierIds: string[];
+  orderId: string;
+  prices: HistoryPrice;
+}): HistoryPrice => {
+  // reset prev colors
+  const resetPrices = { ...prices };
+  Object.keys(resetPrices).forEach((key) => {
+    resetPrices[key].color = undefined;
+  });
+
+  // partition prices into a 2D table
+  const partitionedPrices: HistoryPrice[][] = [];
+  productIds.forEach((productId) => {
+    const row: HistoryPrice[] = [];
+    supplierIds.forEach((supplierId) => {
+      const key = priceHash({
+        orderId,
+        productId,
+        supplierId,
+      });
+      if (prices[key]?.value != null) {
+        row.push({ [key]: prices[key] });
+      }
+    });
+    partitionedPrices.push(row);
+  });
+
+  // find the cheapest and expensive prices for all products across all suppliers
+  const coloredPartitionedPrices = partitionedPrices.map((row) => {
+    const definedPrices = row;
+    const minPrice = Math.min(
+      ...definedPrices.map((price) => Object.values(price)[0].value),
+    );
+    const maxPrice = Math.max(
+      ...definedPrices.map((price) => Object.values(price)[0].value),
+    );
+    let minFound = false;
+    let maxFound = false;
+    return row.map((price) => {
+      const [hash, priceColorPair] = Object.entries(price)[0];
+      if (priceColorPair.value === minPrice && !minFound) {
+        minFound = true;
+        return {
+          [hash]: {
+            value: priceColorPair.value,
+            color: 'green' as HistoryColor,
+          },
+        };
+      }
+      if (priceColorPair.value === maxPrice && !maxFound) {
+        maxFound = true;
+        return {
+          [hash]: {
+            value: priceColorPair.value,
+            color: 'orange' as HistoryColor,
+          },
+        };
+      }
+      return {
+        [hash]: {
+          value: priceColorPair.value,
+          color: undefined,
+        },
+      };
+    });
+  });
+
+  // create a new hash map from colored prices
+  const updatedPrices: HistoryPrice = {};
+  coloredPartitionedPrices.forEach((row) => {
+    row.forEach((price) => {
+      const [hash, priceColorPair] = Object.entries(price)[0];
+      updatedPrices[hash] = priceColorPair;
+    });
+  });
+  return updatedPrices;
 };
