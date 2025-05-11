@@ -11,7 +11,7 @@ import {
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
-import { createTheme, styled } from '@mui/material';
+import { createTheme, InputProps, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
@@ -348,4 +348,24 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+};
+
+export const hideTextfieldSpinButtons: InputProps = {
+  inputProps: {
+    style: { MozAppearance: 'textfield' }, // For Firefox
+    min: 0,
+    onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(), // Prevent wheel change
+  },
+  sx: {
+    // Hide spin buttons for Chrome, Safari, Edge, Opera
+    '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button':
+      {
+        WebkitAppearance: 'none',
+        margin: 0,
+      },
+    // Hide spin buttons for Firefox
+    '& input[type=number]': {
+      MozAppearance: 'textfield',
+    },
+  },
 };

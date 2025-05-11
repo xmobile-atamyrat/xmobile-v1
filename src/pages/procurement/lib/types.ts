@@ -1,17 +1,36 @@
 import {
-  CalculationHistory,
+  ProcurementOrder,
+  ProcurementOrderProductQuantity,
   ProcurementProduct,
-  Supplier,
+  ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 
-export interface DetailedHistory extends CalculationHistory {
-  suppliers: Supplier[];
-  procurementProducts: ProcurementProduct[];
+export interface DetailedOrder extends ProcurementOrder {
+  suppliers: ProcurementSupplier[];
+  products: ProcurementProduct[];
+  prices: ProcurementSupplierProductPrice[];
+  productQuantities: ProcurementOrderProductQuantity[];
 }
 
-export type HistoryColor = 'red' | 'green' | 'orange';
+export type HistoryColor = 'red' | 'green' | 'orange' | 'white';
+export const HISTORY_COLORS: HistoryColor[] = ['green', 'orange', 'white'];
 
-export interface HistoryPrice {
-  value: number;
-  color?: HistoryColor;
-}
+export type HistoryPrice = Record<
+  string,
+  { value: number; color?: HistoryColor }
+>;
+
+export type ProductsSuppliersType = 'product' | 'supplier';
+
+export type ProductsSuppliersActionsType = 'existing' | 'added' | 'deleted';
+
+export type ActionBasedSuppliers = Record<
+  ProductsSuppliersActionsType,
+  ProcurementSupplier[]
+>;
+
+export type ActionBasedProducts = Record<
+  ProductsSuppliersActionsType,
+  ProcurementProduct[]
+>;

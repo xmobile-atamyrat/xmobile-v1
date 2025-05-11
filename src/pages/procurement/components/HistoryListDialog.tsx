@@ -3,10 +3,11 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import {
-  dayMonthYearFromDate,
   deleteHistoryUtil,
   editHistoryUtil,
-} from '@/pages/procurement/lib/utils';
+} from '@/pages/procurement/lib/apiUtils';
+import { DetailedOrder } from '@/pages/procurement/lib/types';
+import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -25,16 +26,17 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
-import { CalculationHistory } from '@prisma/client';
+import { ProcurementOrder } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface HistoryListDialogProps {
   handleClose: () => void;
-  historyList: CalculationHistory[];
+  historyList: ProcurementOrder[];
   handleSelectHistory: (id: string) => Promise<void>;
-  setHistoryList: Dispatch<SetStateAction<CalculationHistory[]>>;
+  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>;
+  selectedHistory: DetailedOrder;
+  setSelectedHistory: Dispatch<SetStateAction<DetailedOrder>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -46,15 +48,17 @@ export default function AddSupplierDialog({
   setHistoryList,
   setSnackbarMessage,
   setSnackbarOpen,
+  setSelectedHistory,
+  selectedHistory,
 }: HistoryListDialogProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [loading, setLoading] = useState(false);
   const [deleteDialogId, setDeleteDialogId] = useState<string>();
   const [editDialogObj, setEditDialogObj] = useState<{
     id: string;
     name: string;
   }>();
+
   return (
     <Dialog open onClose={handleClose} component="form" fullScreen>
       <DialogTitle className="w-full flex justify-center">
@@ -65,10 +69,12 @@ export default function AddSupplierDialog({
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableCell align="center">{t('name')}</TableCell>
-                <TableCell align="center">{t('createdDate')}</TableCell>
-                <TableCell align="center">{t('modifiedDate')}</TableCell>
-                <TableCell align="center">{t('actions')}</TableCell>
+                <TableRow>
+                  <TableCell align="center">{t('name')}</TableCell>
+                  <TableCell align="center">{t('createdDate')}</TableCell>
+                  <TableCell align="center">{t('modifiedDate')}</TableCell>
+                  <TableCell align="center">{t('actions')}</TableCell>
+                </TableRow>
               </TableHead>
               <TableBody>
                 {historyList.map((history) => (
@@ -82,9 +88,7 @@ export default function AddSupplierDialog({
                         }}
                         key={history.id}
                         onClick={async () => {
-                          setLoading(true);
                           await handleSelectHistory(history.id);
-                          setLoading(false);
                         }}
                       >
                         {history.name}
@@ -97,7 +101,7 @@ export default function AddSupplierDialog({
                       {dayMonthYearFromDate(new Date(history.updatedAt))}
                     </TableCell>
                     <TableCell align="center">
-                      <Box>
+                      <Box className="flex flex-row items-center">
                         <IconButton
                           onClick={() => {
                             setEditDialogObj({
@@ -127,7 +131,6 @@ export default function AddSupplierDialog({
           {t('cancel')}
         </Button>
       </DialogActions>
-      {loading && <CircularProgress />}
       {deleteDialogId && (
         <DeleteDialog
           title={t('delete')}
@@ -136,13 +139,25 @@ export default function AddSupplierDialog({
           redButtonText={t('delete')}
           handleClose={() => setDeleteDialogId(undefined)}
           handleDelete={async () => {
-            await deleteHistoryUtil(
+            const deletedHistory = await deleteHistoryUtil(
               accessToken,
               deleteDialogId,
-              setHistoryList,
               setSnackbarOpen,
               setSnackbarMessage,
             );
+            if (deletedHistory) {
+              const updatedHistoryList = historyList.filter(
+                (history) => history.id !== deletedHistory.id,
+              );
+              setHistoryList(updatedHistoryList);
+              if (selectedHistory.id === deletedHistory.id) {
+                if (updatedHistoryList.length > 0) {
+                  await handleSelectHistory(updatedHistoryList[0].id);
+                } else {
+                  setSelectedHistory(undefined);
+                }
+              }
+            }
             setDeleteDialogId(undefined);
           }}
         />
@@ -152,15 +167,29 @@ export default function AddSupplierDialog({
           initialTitle={editDialogObj.name}
           handleClose={() => setEditDialogObj(undefined)}
           handleSubmit={async (newTitle: string) => {
-            await editHistoryUtil({
+            const updatedHistory = await editHistoryUtil({
               accessToken,
               id: editDialogObj.id,
               name: newTitle,
-              setHistoryList,
               setSnackbarOpen,
               setSnackbarMessage,
             });
-            setEditDialogObj(undefined);
+            if (updatedHistory) {
+              setHistoryList((prev) =>
+                prev.map((history) =>
+                  history.id === updatedHistory.id ? updatedHistory : history,
+                ),
+              );
+              if (selectedHistory.id === updatedHistory.id) {
+                setSelectedHistory((curr) => {
+                  return {
+                    ...curr,
+                    name: updatedHistory.name,
+                  };
+                });
+              }
+              setEditDialogObj(undefined);
+            }
           }}
           setSnackbarMessage={setSnackbarMessage}
           setSnackbarOpen={setSnackbarOpen}

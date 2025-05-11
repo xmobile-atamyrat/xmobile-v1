@@ -6,15 +6,15 @@ import { fetchSuppliers } from '@/pages/procurement/lib/apis';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Typography } from '@mui/material';
-import { Supplier } from '@prisma/client';
+import { ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface SuppliersProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
-  suppliers: Supplier[];
-  setSuppliers: Dispatch<SetStateAction<Supplier[]>>;
+  suppliers: ProcurementSupplier[];
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
 }
 
 export default function Suppliers({
