@@ -6,8 +6,8 @@ import ActionsMenu from '@/pages/procurement/components/ActionsMenu';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
-import EmptyOrder from '@/pages/procurement/components/EmptyOrder';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
+import EmptyOrder from '@/pages/procurement/components/OrderTable';
 import {
   createHistoryUtil,
   createProductQuantityUtil,

@@ -1,10 +1,12 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { hideTextfieldSpinButtons } from '@/pages/lib/utils';
 import {
   deletePricesUtil,
   deleteQuantityUtil,
   editHistoryUtil,
+  editProductPricesUtil,
   editProductQuantityUtil,
 } from '@/pages/procurement/lib/apiUtils';
 import {
@@ -124,6 +126,7 @@ export default function EmptyOrder({
                       size="small"
                       value={quantity?.quantity ?? ''}
                       type="number"
+                      InputProps={hideTextfieldSpinButtons}
                       onChange={async (e) => {
                         const newQuantity = parseInt(e.target.value, 10);
                         const updatedProductQuantity =
@@ -165,7 +168,39 @@ export default function EmptyOrder({
                           sx={{
                             backgroundColor: priceColorPair?.color || 'inherit',
                           }}
-                          onChange={() => {}}
+                          InputProps={hideTextfieldSpinButtons}
+                          onChange={async (e) => {
+                            const newPrice = parseInt(e.target.value, 10);
+                            const updatedPrice = await editProductPricesUtil({
+                              accessToken,
+                              updatedPrices: [
+                                {
+                                  orderId: selectedHistory.id,
+                                  productId: product.id,
+                                  supplierId: supplier.id,
+                                  price: newPrice,
+                                },
+                              ],
+                              setSnackbarMessage,
+                              setSnackbarOpen,
+                            });
+                            if (updatedPrice) {
+                              setPrices((currPrices) => {
+                                const newPrices = { ...currPrices };
+                                newPrices[
+                                  JSON.stringify({
+                                    orderId: selectedHistory.id,
+                                    productId: product.id,
+                                    supplierId: supplier.id,
+                                  })
+                                ] = {
+                                  value: newPrice,
+                                  color: undefined,
+                                };
+                                return newPrices;
+                              });
+                            }
+                          }}
                         />
                       </TableCell>
                     );
