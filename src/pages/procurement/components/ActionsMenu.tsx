@@ -78,7 +78,7 @@ export default function ActionsMenu({
       open={Boolean(actionsAnchor)}
       onClose={() => setActionsAnchor(null)}
     >
-      <MenuItem>
+      <MenuItem onClick={() => setActionsAnchor(null)}>
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
@@ -90,7 +90,7 @@ export default function ActionsMenu({
           {t('newOrder')}
         </Button>
       </MenuItem>
-      <MenuItem>
+      <MenuItem onClick={() => setActionsAnchor(null)}>
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
@@ -156,16 +156,13 @@ export default function ActionsMenu({
               return;
             }
 
-            await downloadXlsxAsZip(
-              csvFileData,
-              `${selectedHistory?.name}.zip`,
-            );
+            await downloadXlsxAsZip(csvFileData);
           }}
         >
           {t('downloadEmptyOrder')}
         </Button>
       </MenuItem>
-      <MenuItem>
+      <MenuItem onClick={() => setActionsAnchor(null)}>
         <Button
           className="w-full"
           variant="outlined"
@@ -223,7 +220,7 @@ export default function ActionsMenu({
           }}
         />
       </MenuItem>
-      <MenuItem>
+      <MenuItem onClick={() => setActionsAnchor(null)}>
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
