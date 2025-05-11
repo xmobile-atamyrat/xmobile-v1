@@ -157,6 +157,43 @@ export default function Procurement() {
     [debounce, accessToken],
   );
 
+  const handleAddSearchedItem = async (
+    item: ProcurementProduct | ProcurementSupplier,
+  ) => {
+    if (addProductsSuppliersDialog === 'product') {
+      const updatedHistory = await editHistoryUtil({
+        id: selectedHistory.id,
+        accessToken,
+        addedProductIds: [item.id],
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      const productQuantity = await createProductQuantityUtil({
+        accessToken,
+        orderId: selectedHistory.id,
+        productId: item.id,
+        quantity: 0,
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      if (updatedHistory && productQuantity) {
+        setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
+        setProductQuantities((prev) => [productQuantity, ...prev]);
+      }
+    } else {
+      const updatedHistory = await editHistoryUtil({
+        id: selectedHistory.id,
+        accessToken,
+        addedSupplierIds: [item.id],
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      if (updatedHistory) {
+        setSelectedSuppliers((prev) => [item as ProcurementSupplier, ...prev]);
+      }
+    }
+  };
+
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
@@ -370,48 +407,7 @@ export default function Procurement() {
                   ? createProduct
                   : createSupplier
               }
-              handleAddSearchedItem={async (
-                item: ProcurementProduct | ProcurementSupplier,
-              ) => {
-                if (addProductsSuppliersDialog === 'product') {
-                  const updatedHistory = await editHistoryUtil({
-                    id: selectedHistory.id,
-                    accessToken,
-                    addedProductIds: [item.id],
-                    setSnackbarMessage,
-                    setSnackbarOpen,
-                  });
-                  const productQuantity = await createProductQuantityUtil({
-                    accessToken,
-                    orderId: selectedHistory.id,
-                    productId: item.id,
-                    quantity: 0,
-                    setSnackbarMessage,
-                    setSnackbarOpen,
-                  });
-                  if (updatedHistory && productQuantity) {
-                    setSelectedProducts((prev) => [
-                      item as ProcurementProduct,
-                      ...prev,
-                    ]);
-                    setProductQuantities((prev) => [productQuantity, ...prev]);
-                  }
-                } else {
-                  const updatedHistory = await editHistoryUtil({
-                    id: selectedHistory.id,
-                    accessToken,
-                    addedSupplierIds: [item.id],
-                    setSnackbarMessage,
-                    setSnackbarOpen,
-                  });
-                  if (updatedHistory) {
-                    setSelectedSuppliers((prev) => [
-                      item as ProcurementSupplier,
-                      ...prev,
-                    ]);
-                  }
-                }
-              }}
+              handleAddSearchedItem={handleAddSearchedItem}
             />
           )}
 
