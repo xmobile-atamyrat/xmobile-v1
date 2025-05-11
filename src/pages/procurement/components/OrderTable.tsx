@@ -281,7 +281,9 @@ export default function EmptyOrder({
                       type="number"
                       InputProps={hideTextfieldSpinButtons}
                       onChange={(e) => {
-                        const newQuantity = parseInt(e.target.value, 10);
+                        const rawValue = e.target.value;
+                        const newQuantity =
+                          rawValue === '' ? null : parseInt(rawValue, 10);
                         setHashedQuantities((curr) => {
                           const newHashedQuantities = { ...curr };
                           newHashedQuantities[product.id] = newQuantity;
@@ -311,7 +313,9 @@ export default function EmptyOrder({
                           }}
                           InputProps={hideTextfieldSpinButtons}
                           onChange={async (e) => {
-                            const newPrice = parseInt(e.target.value, 10);
+                            const rawValue = e.target.value;
+                            const newPrice =
+                              rawValue === '' ? null : parseInt(rawValue, 10);
                             setPrices((currPrices) => {
                               const newPrices = { ...currPrices };
                               newPrices[
