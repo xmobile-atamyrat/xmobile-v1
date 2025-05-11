@@ -1,6 +1,5 @@
 import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
 import * as ExcelJS from 'exceljs';
-import JSZip from 'jszip';
 
 export interface ExcelFileData {
   data: (string | number)[][];
@@ -74,33 +73,22 @@ async function arrayToXlsxBlob(
   }
 }
 
-export async function downloadXlsxAsZip(
-  files: ExcelFileData[],
-  zipFilename: string = 'excel_files.zip',
-): Promise<void> {
+export async function downloadXlsxAsZip(files: ExcelFileData[]): Promise<void> {
   if (!files || files.length === 0) {
     console.error('No files data provided to zip.');
     return;
   }
 
-  if (!zipFilename.toLowerCase().endsWith('.zip')) {
-    zipFilename += '.zip';
-  }
-
-  const zip = new JSZip();
-  let filesAddedCount = 0;
-
   // eslint-disable-next-line no-restricted-syntax
-  for (const fileInfo of files) {
+  files.forEach(async (fileInfo) => {
     if (
       !fileInfo ||
       typeof fileInfo !== 'object' ||
       !fileInfo.filename ||
       !Array.isArray(fileInfo.data)
     ) {
-      console.warn('Skipping invalid file data structure:', fileInfo);
-      // eslint-disable-next-line no-continue
-      continue;
+      console.error('Skipping invalid file data structure:', fileInfo);
+      return;
     }
 
     let xlsxFilename = fileInfo.filename;
@@ -115,46 +103,22 @@ export async function downloadXlsxAsZip(
     );
 
     if (xlsxBlob) {
-      zip.file(xlsxFilename, xlsxBlob, { binary: true });
-      // eslint-disable-next-line no-plusplus
-      filesAddedCount++;
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(xlsxBlob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', xlsxFilename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } else {
-      console.warn(
+      console.error(
         `Failed to generate Excel file for ${fileInfo.filename}. Skipping this file.`,
       );
     }
-  }
-
-  if (filesAddedCount === 0) {
-    console.error(
-      'No valid Excel files could be generated or added to the zip archive.',
-    );
-    return;
-  }
-
-  try {
-    const zipBlob = await zip.generateAsync({
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: {
-        level: 6,
-      },
-      mimeType: 'application/zip',
-    });
-
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(zipBlob);
-
-    link.setAttribute('href', url);
-    link.setAttribute('download', zipFilename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error generating or downloading the zip file:', error);
-  }
+  });
 }
 
 export const dayMonthYearFromDate = (date: Date) => {
