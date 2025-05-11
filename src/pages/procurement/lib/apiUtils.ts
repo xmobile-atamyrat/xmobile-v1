@@ -327,7 +327,7 @@ export async function editProductPricesUtil({
   updatedPrices: Partial<ProcurementSupplierProductPrice>[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
-}) {
+}): Promise<boolean> {
   try {
     const { success, message } = await editProductPrices({
       accessToken,
@@ -347,6 +347,7 @@ export async function editProductPricesUtil({
         severity: 'error',
       });
     }
+    return success;
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -355,6 +356,7 @@ export async function editProductPricesUtil({
       severity: 'error',
     });
   }
+  return false;
 }
 
 export async function createSupplierUtil(
