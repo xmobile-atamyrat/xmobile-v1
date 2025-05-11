@@ -13,7 +13,8 @@ export interface DetailedOrder extends ProcurementOrder {
   productQuantities: ProcurementOrderProductQuantity[];
 }
 
-export type HistoryColor = 'red' | 'green' | 'orange';
+export type HistoryColor = 'red' | 'green' | 'orange' | 'white';
+export const HISTORY_COLORS: HistoryColor[] = ['green', 'orange', 'white'];
 
 export type HistoryPrice = Record<
   string,

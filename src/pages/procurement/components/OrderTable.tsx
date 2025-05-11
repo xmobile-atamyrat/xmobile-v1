@@ -10,14 +10,19 @@ import {
   editProductQuantityUtil,
 } from '@/pages/procurement/lib/apiUtils';
 import {
+  HISTORY_COLORS,
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import { debounce } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
   IconButton,
+  InputAdornment,
+  Menu,
+  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -81,6 +86,10 @@ export default function EmptyOrder({
   const [hashedQuantities, setHashedQuantities] = useState<
     Record<string, number>
   >({});
+  const [colorPrice, setColorPrice] = useState<{
+    anchor: HTMLElement | null;
+    priceHash: string;
+  }>();
 
   const handleDelete = async () => {
     if (confirmRemoveItemDialog?.itemType === 'supplier') {
@@ -295,14 +304,12 @@ export default function EmptyOrder({
                     />
                   </TableCell>
                   {selectedSuppliers.map((supplier) => {
-                    const priceColorPair =
-                      prices?.[
-                        JSON.stringify({
-                          orderId: selectedHistory.id,
-                          productId: product.id,
-                          supplierId: supplier.id,
-                        })
-                      ];
+                    const priceHash = JSON.stringify({
+                      orderId: selectedHistory.id,
+                      productId: product.id,
+                      supplierId: supplier.id,
+                    });
+                    const priceColorPair = prices?.[priceHash];
                     return (
                       <TableCell key={supplier.id} align="center">
                         {/* Prices */}
@@ -313,7 +320,24 @@ export default function EmptyOrder({
                           sx={{
                             backgroundColor: priceColorPair?.color || 'inherit',
                           }}
-                          InputProps={hideTextfieldSpinButtons}
+                          InputProps={{
+                            ...hideTextfieldSpinButtons,
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    setColorPrice({
+                                      anchor: e.currentTarget,
+                                      priceHash,
+                                    });
+                                  }}
+                                >
+                                  <KeyboardArrowDownIcon />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
                           onChange={async (e) => {
                             const rawValue = e.target.value;
                             const newPrice =
@@ -361,6 +385,48 @@ export default function EmptyOrder({
           handleDelete={handleDelete}
         />
       )}
+
+      <Menu
+        open={Boolean(colorPrice?.anchor)}
+        anchorEl={colorPrice?.anchor}
+        onClose={() => {
+          setColorPrice(undefined);
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        {HISTORY_COLORS.map((color) => (
+          <MenuItem
+            key={color}
+            className="bg-gray-300"
+            onClick={() => {
+              setPrices((curr) => {
+                const newPrices = { ...curr };
+                newPrices[colorPrice.priceHash] = {
+                  ...newPrices[colorPrice.priceHash],
+                  color,
+                };
+                return newPrices;
+              });
+              setColorPrice(undefined);
+            }}
+          >
+            <Box
+              sx={{
+                padding: 2,
+                backgroundColor: color,
+              }}
+            ></Box>
+          </MenuItem>
+        ))}
+      </Menu>
     </Box>
   );
 }
