@@ -13,6 +13,7 @@ import {
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
+import { debounce } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
@@ -34,7 +35,13 @@ import {
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { Dispatch, SetStateAction, useState } from 'react';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 interface EmptyOrderProps {
   productQuantities: ProcurementOrderProductQuantity[];
@@ -71,6 +78,155 @@ export default function EmptyOrder({
     itemType: ProductsSuppliersType;
     item: ProcurementSupplier | ProcurementProduct;
   }>();
+  const [hashedQuantities, setHashedQuantities] = useState<
+    Record<string, number>
+  >({});
+
+  const handleDelete = async () => {
+    if (confirmRemoveItemDialog?.itemType === 'supplier') {
+      const updatedHistory = await editHistoryUtil({
+        id: selectedHistory.id,
+        accessToken,
+        removedSupplierIds: [confirmRemoveItemDialog.item.id],
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      const updatedPrices = await deletePricesUtil({
+        accessToken,
+        ids: selectedProducts
+          .map(({ id }) => {
+            return {
+              orderId: selectedHistory.id,
+              productId: id,
+              supplierId: confirmRemoveItemDialog.item.id,
+            };
+          })
+          .filter((toHash) => prices[JSON.stringify(toHash)] != null),
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      if (updatedHistory && updatedPrices) {
+        setSelectedSuppliers((prev) =>
+          prev.filter(
+            (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
+          ),
+        );
+        setPrices((currPrices) => {
+          const newPrices = currPrices;
+          selectedProducts.forEach(({ id }) => {
+            delete newPrices[
+              JSON.stringify({
+                orderId: selectedHistory.id,
+                productId: id,
+                supplierId: confirmRemoveItemDialog.item.id,
+              })
+            ];
+          });
+          return newPrices;
+        });
+      }
+    } else {
+      const updatedHistory = await editHistoryUtil({
+        id: selectedHistory.id,
+        accessToken,
+        removedProductIds: [confirmRemoveItemDialog.item.id],
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      const deletedQuantity = await deleteQuantityUtil({
+        accessToken,
+        orderId: selectedHistory.id,
+        productId: confirmRemoveItemDialog.item.id,
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      const deletedPrice = await deletePricesUtil({
+        accessToken,
+        ids: selectedSuppliers
+          .map(({ id }) => {
+            return {
+              orderId: selectedHistory.id,
+              productId: confirmRemoveItemDialog.item.id,
+              supplierId: id,
+            };
+          })
+          .filter((toHash) => prices[JSON.stringify(toHash)] != null),
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+      if (updatedHistory && deletedQuantity && deletedPrice) {
+        setSelectedProducts((prev) =>
+          prev.filter(
+            (product) => product.id !== confirmRemoveItemDialog.item.id,
+          ),
+        );
+        setProductQuantities((prev) =>
+          prev.filter((pq) => pq.productId !== confirmRemoveItemDialog.item.id),
+        );
+        setPrices((currPrices) => {
+          const newPrices = currPrices;
+          selectedSuppliers.forEach(({ id }) => {
+            delete newPrices[
+              JSON.stringify({
+                orderId: selectedHistory.id,
+                productId: confirmRemoveItemDialog.item.id,
+                supplierId: id,
+              })
+            ];
+          });
+          return newPrices;
+        });
+      }
+    }
+    setConfirmRemoveItemDialog(undefined);
+  };
+
+  const handleQuantityUpdate = useCallback(
+    debounce(async (updatedQuantity: number, productId: string) => {
+      await editProductQuantityUtil({
+        accessToken,
+        orderId: selectedHistory.id,
+        productId,
+        quantity: updatedQuantity,
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+    }, 300),
+    [debounce, accessToken, selectedHistory],
+  );
+
+  const handlePriceUpdate = useCallback(
+    debounce(
+      async (updatedPrice: number, productId: string, supplierId: string) => {
+        await editProductPricesUtil({
+          accessToken,
+          updatedPrices: [
+            {
+              orderId: selectedHistory.id,
+              productId,
+              supplierId,
+              price: updatedPrice,
+            },
+          ],
+          setSnackbarMessage,
+          setSnackbarOpen,
+        });
+      },
+      300,
+    ),
+    [debounce, accessToken, selectedHistory],
+  );
+
+  useEffect(() => {
+    if (productQuantities == null) return;
+    setHashedQuantities((currQuantities) => {
+      const newHashedQuantities = { ...currQuantities };
+      productQuantities.forEach(({ productId, quantity }) => {
+        newHashedQuantities[productId] = quantity;
+      });
+      return newHashedQuantities;
+    });
+  }, [productQuantities]);
 
   return (
     <Box className="flex flex-col gap-2">
@@ -101,9 +257,6 @@ export default function EmptyOrder({
           </TableHead>
           <TableBody>
             {selectedProducts.map((product) => {
-              const quantity = productQuantities.find(
-                (pq) => pq.productId === product.id,
-              );
               return (
                 <TableRow key={product.id}>
                   <TableCell align="left">
@@ -124,29 +277,17 @@ export default function EmptyOrder({
                   <TableCell align="center">
                     <TextField
                       size="small"
-                      value={quantity?.quantity ?? ''}
+                      value={hashedQuantities[product.id] ?? ''}
                       type="number"
                       InputProps={hideTextfieldSpinButtons}
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const newQuantity = parseInt(e.target.value, 10);
-                        const updatedProductQuantity =
-                          await editProductQuantityUtil({
-                            accessToken,
-                            orderId: selectedHistory.id,
-                            productId: product.id,
-                            quantity: newQuantity,
-                            setSnackbarMessage,
-                            setSnackbarOpen,
-                          });
-                        if (updatedProductQuantity) {
-                          setProductQuantities((prev) =>
-                            prev.map((pq) =>
-                              pq.productId === product.id
-                                ? updatedProductQuantity
-                                : pq,
-                            ),
-                          );
-                        }
+                        setHashedQuantities((curr) => {
+                          const newHashedQuantities = { ...curr };
+                          newHashedQuantities[product.id] = newQuantity;
+                          return newHashedQuantities;
+                        });
+                        handleQuantityUpdate(newQuantity, product.id);
                       }}
                     />
                   </TableCell>
@@ -171,35 +312,25 @@ export default function EmptyOrder({
                           InputProps={hideTextfieldSpinButtons}
                           onChange={async (e) => {
                             const newPrice = parseInt(e.target.value, 10);
-                            const updatedPrice = await editProductPricesUtil({
-                              accessToken,
-                              updatedPrices: [
-                                {
+                            setPrices((currPrices) => {
+                              const newPrices = { ...currPrices };
+                              newPrices[
+                                JSON.stringify({
                                   orderId: selectedHistory.id,
                                   productId: product.id,
                                   supplierId: supplier.id,
-                                  price: newPrice,
-                                },
-                              ],
-                              setSnackbarMessage,
-                              setSnackbarOpen,
+                                })
+                              ] = {
+                                value: newPrice,
+                                color: undefined,
+                              };
+                              return newPrices;
                             });
-                            if (updatedPrice) {
-                              setPrices((currPrices) => {
-                                const newPrices = { ...currPrices };
-                                newPrices[
-                                  JSON.stringify({
-                                    orderId: selectedHistory.id,
-                                    productId: product.id,
-                                    supplierId: supplier.id,
-                                  })
-                                ] = {
-                                  value: newPrice,
-                                  color: undefined,
-                                };
-                                return newPrices;
-                              });
-                            }
+                            handlePriceUpdate(
+                              newPrice,
+                              product.id,
+                              supplier.id,
+                            );
                           }}
                         />
                       </TableCell>
@@ -221,107 +352,7 @@ export default function EmptyOrder({
           handleClose={() => {
             setConfirmRemoveItemDialog(undefined);
           }}
-          handleDelete={async () => {
-            if (confirmRemoveItemDialog?.itemType === 'supplier') {
-              const updatedHistory = await editHistoryUtil({
-                id: selectedHistory.id,
-                accessToken,
-                removedSupplierIds: [confirmRemoveItemDialog.item.id],
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              const updatedPrices = await deletePricesUtil({
-                accessToken,
-                ids: selectedProducts
-                  .map(({ id }) => {
-                    return {
-                      orderId: selectedHistory.id,
-                      productId: id,
-                      supplierId: confirmRemoveItemDialog.item.id,
-                    };
-                  })
-                  .filter((toHash) => prices[JSON.stringify(toHash)] != null),
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              if (updatedHistory && updatedPrices) {
-                setSelectedSuppliers((prev) =>
-                  prev.filter(
-                    (supplier) =>
-                      supplier.id !== confirmRemoveItemDialog.item.id,
-                  ),
-                );
-                setPrices((currPrices) => {
-                  const newPrices = currPrices;
-                  selectedProducts.forEach(({ id }) => {
-                    delete newPrices[
-                      JSON.stringify({
-                        orderId: selectedHistory.id,
-                        productId: id,
-                        supplierId: confirmRemoveItemDialog.item.id,
-                      })
-                    ];
-                  });
-                  return newPrices;
-                });
-              }
-            } else {
-              const updatedHistory = await editHistoryUtil({
-                id: selectedHistory.id,
-                accessToken,
-                removedProductIds: [confirmRemoveItemDialog.item.id],
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              const deletedQuantity = await deleteQuantityUtil({
-                accessToken,
-                orderId: selectedHistory.id,
-                productId: confirmRemoveItemDialog.item.id,
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              const deletedPrice = await deletePricesUtil({
-                accessToken,
-                ids: selectedSuppliers
-                  .map(({ id }) => {
-                    return {
-                      orderId: selectedHistory.id,
-                      productId: confirmRemoveItemDialog.item.id,
-                      supplierId: id,
-                    };
-                  })
-                  .filter((toHash) => prices[JSON.stringify(toHash)] != null),
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              if (updatedHistory && deletedQuantity && deletedPrice) {
-                setSelectedProducts((prev) =>
-                  prev.filter(
-                    (product) => product.id !== confirmRemoveItemDialog.item.id,
-                  ),
-                );
-                setProductQuantities((prev) =>
-                  prev.filter(
-                    (pq) => pq.productId !== confirmRemoveItemDialog.item.id,
-                  ),
-                );
-                setPrices((currPrices) => {
-                  const newPrices = currPrices;
-                  selectedSuppliers.forEach(({ id }) => {
-                    delete newPrices[
-                      JSON.stringify({
-                        orderId: selectedHistory.id,
-                        productId: confirmRemoveItemDialog.item.id,
-                        supplierId: id,
-                      })
-                    ];
-                  });
-                  return newPrices;
-                });
-              }
-            }
-            setConfirmRemoveItemDialog(undefined);
-          }}
+          handleDelete={handleDelete}
         />
       )}
     </Box>
