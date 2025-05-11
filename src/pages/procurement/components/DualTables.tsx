@@ -15,14 +15,14 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ProcurementProduct, Supplier } from '@prisma/client';
+import { ProcurementProduct, ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 interface DualTablesProps {
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
-  items: (ProcurementProduct | Supplier)[];
+  items: (ProcurementProduct | ProcurementSupplier)[];
   selectedItems: ProcurementProduct[];
   setSelectedItems: Dispatch<SetStateAction<ProcurementProduct[]>>;
   handleSearch: (...args: any[]) => void;

@@ -3,10 +3,10 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
-import { CalculationHistory } from '@prisma/client';
+import { Prisma, ProcurementOrder } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const filepath = 'src/pages/api/procurement/calculation/history.page.ts';
+const filepath = 'src/pages/api/procurement/order/index.page.ts';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   addCors(res);
@@ -22,37 +22,36 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (method === 'GET') {
       const id = req.query.id as string;
       if (id) {
-        const history = await dbClient.calculationHistory.findUnique({
+        const history = await dbClient.procurementOrder.findUnique({
           where: { id },
           include: {
             suppliers: true,
-            procurementProducts: true,
+            products: true,
+            prices: true,
+            productQuantities: true,
           },
         });
         return res.status(200).json({ success: true, data: history });
       }
-      const allHistory = await dbClient.calculationHistory.findMany();
+      const allHistory = await dbClient.procurementOrder.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
       return res.status(200).json({ success: true, data: allHistory });
     }
     if (method === 'POST') {
-      const {
-        name,
-        productIds,
-        supplierIds,
-      }: CalculationHistory & { supplierIds: string[]; productIds: string[] } =
-        req.body;
-      const history = await dbClient.calculationHistory.create({
+      const { name }: ProcurementOrder = req.body;
+      const history = await dbClient.procurementOrder.create({
         data: {
           name,
-          suppliers: { connect: supplierIds.map((id) => ({ id })) },
-          procurementProducts: { connect: productIds.map((id) => ({ id })) },
         },
       });
       return res.status(200).json({ success: true, data: history });
     }
     if (method === 'DELETE') {
       const id = req.body.id as string;
-      const history = await dbClient.calculationHistory.delete({
+      const history = await dbClient.procurementOrder.delete({
         where: { id },
       });
       return res.status(200).json({ success: true, data: history });
@@ -61,24 +60,37 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const {
         id,
         name,
-        supplierId,
-        productId,
-        quantities,
-        prices,
-      }: CalculationHistory & {
-        supplierId?: string;
-        productId?: string;
+        addedProductIds,
+        addedSupplierIds,
+        removedProductIds,
+        removedSupplierIds,
+      }: ProcurementOrder & {
+        addedSupplierIds?: string[];
+        addedProductIds?: string[];
+        removedSupplierIds?: string[];
+        removedProductIds?: string[];
       } = req.body;
 
-      const updateData: any = {};
+      const updateData: Partial<Prisma.ProcurementOrderUpdateInput> = {};
       if (name) updateData.name = name;
-      if (supplierId) updateData.suppliers = { connect: { id: supplierId } };
-      if (productId)
-        updateData.procurementProducts = { connect: { id: productId } };
-      if (quantities) updateData.quantities = quantities;
-      if (prices) updateData.prices = prices;
+      updateData.suppliers = {
+        connect: addedSupplierIds?.map((addedSuppliedId) => ({
+          id: addedSuppliedId,
+        })),
+        disconnect: removedSupplierIds?.map((removedSuppliedId) => ({
+          id: removedSuppliedId,
+        })),
+      };
+      updateData.products = {
+        connect: addedProductIds?.map((addedProductId) => ({
+          id: addedProductId,
+        })),
+        disconnect: removedProductIds?.map((removedProductId) => ({
+          id: removedProductId,
+        })),
+      };
 
-      const history = await dbClient.calculationHistory.update({
+      const history = await dbClient.procurementOrder.update({
         where: { id },
         data: updateData,
       });

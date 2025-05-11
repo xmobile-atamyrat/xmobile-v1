@@ -29,9 +29,16 @@ export default async function handler(
   if (method === 'GET') {
     try {
       const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
+      console.info(`userId: ${userId}`);
       const user = await dbClient.user.findUnique({
         where: { id: userId },
       });
+      if (!user) {
+        console.error(`${filepath}: User not found`);
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized: User not found' });
+      }
       delete user.password;
 
       const { accessToken, refreshToken: newRefreshToken } = generateTokens(
