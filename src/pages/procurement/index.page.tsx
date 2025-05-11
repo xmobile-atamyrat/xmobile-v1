@@ -2,6 +2,7 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import ActionsMenu from '@/pages/procurement/components/ActionsMenu';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
 import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
@@ -13,7 +14,6 @@ import {
   createProductUtil,
   createSupplierUtil,
   editHistoryUtil,
-  editProductPricesUtil,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -24,13 +24,6 @@ import {
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
-import {
-  assignColorToPrices,
-  dayMonthYearFromDate,
-  downloadXlsxAsZip,
-  ExcelFileData,
-  handleFilesSelected,
-} from '@/pages/procurement/lib/utils';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
@@ -39,8 +32,6 @@ import {
   Button,
   CircularProgress,
   debounce,
-  Menu,
-  MenuItem,
   Snackbar,
   Typography,
   useMediaQuery,
@@ -55,7 +46,7 @@ import {
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -98,7 +89,6 @@ export default function Procurement() {
   >([]);
   const [prices, setPrices] = useState<HistoryPrice>();
   const [newOrderDialog, setNewOrderDialog] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
   const createProduct = useCallback(
@@ -166,17 +156,6 @@ export default function Procurement() {
     }, 300),
     [debounce, accessToken],
   );
-
-  const handleCalculate = useCallback(() => {
-    setPrices(
-      assignColorToPrices({
-        orderId: selectedHistory.id,
-        productIds: selectedProducts.map((product) => product.id),
-        supplierIds: selectedSuppliers.map((supplier) => supplier.id),
-        prices,
-      }),
-    );
-  }, [prices, selectedHistory, selectedProducts, selectedSuppliers]);
 
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
@@ -482,172 +461,20 @@ export default function Procurement() {
         </Box>
       )}
 
-      <Menu
-        anchorEl={actionsAnchor}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(actionsAnchor)}
-        onClose={() => setActionsAnchor(null)}
-      >
-        <MenuItem>
-          <Button
-            className="w-full"
-            sx={{ textTransform: 'none' }}
-            variant="outlined"
-            onClick={() => {
-              setNewOrderDialog(true);
-            }}
-          >
-            {t('newOrder')}
-          </Button>
-        </MenuItem>
-        <MenuItem>
-          <Button
-            className="w-full"
-            sx={{ textTransform: 'none' }}
-            variant="outlined"
-            onClick={async () => {
-              if (
-                selectedProducts == null ||
-                selectedSuppliers == null ||
-                productQuantities == null ||
-                selectedHistory == null
-              ) {
-                return;
-              }
-
-              const productQuantitiesMap: { [key: string]: number } = {};
-              const productIds: string[] = [];
-              productQuantities.forEach((productQuantity) => {
-                if (productQuantity.quantity > 0) {
-                  const product = selectedProducts.find(
-                    (prd) => prd.id === productQuantity.productId,
-                  );
-                  if (product) {
-                    productQuantitiesMap[product.name] =
-                      productQuantity.quantity;
-                    productIds.push(product.id);
-                  }
-                }
-              });
-              const products = Object.keys(productQuantitiesMap);
-              const quantities = Object.values(productQuantitiesMap);
-              if (products.length === 0) {
-                setSnackbarMessage({
-                  message: 'allQuantitiesZero',
-                  severity: 'error',
-                });
-                setSnackbarOpen(true);
-                return;
-              }
-
-              const today = new Date();
-              const formattedDate = dayMonthYearFromDate(today);
-              const csvFileData: ExcelFileData[] = selectedSuppliers
-                .map((supplier) => {
-                  const fileData = products.map((product, idx) => {
-                    return [product, quantities[idx], ''];
-                  });
-                  const file: ExcelFileData = {
-                    filename: `Rahmanov-${supplier.name}-${formattedDate}`,
-                    data: [['', 'Quantity', 'Price'], ...fileData],
-                    supplierId: supplier.id,
-                    productIds,
-                  };
-                  return file;
-                })
-                .filter((data) => data.data.length > 1);
-
-              if (csvFileData.length === 0) {
-                setSnackbarMessage({
-                  message: 'noProductsOrSuppliers',
-                  severity: 'error',
-                });
-
-                setSnackbarOpen(true);
-                return;
-              }
-
-              await downloadXlsxAsZip(
-                csvFileData,
-                `${selectedHistory?.name}.zip`,
-              );
-            }}
-          >
-            {t('downloadEmptyOrder')}
-          </Button>
-        </MenuItem>
-        <MenuItem>
-          <Button
-            className="w-full"
-            variant="outlined"
-            color="primary"
-            sx={{
-              textTransform: 'none',
-            }}
-            onClick={() => {
-              fileInputRef.current?.click();
-            }}
-          >
-            {t('uploadPrices')}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            multiple
-            style={{ display: 'none' }}
-            onChange={async (event) => {
-              setLoading(true);
-              const uploadedPrices = await handleFilesSelected(
-                selectedHistory.id,
-                event,
-              );
-              await editProductPricesUtil({
-                accessToken,
-                updatedPrices: Object.entries(uploadedPrices).map(
-                  ([key, value]) => {
-                    const { orderId, productId, supplierId } = JSON.parse(key);
-                    return {
-                      orderId,
-                      productId,
-                      supplierId,
-                      price: value.value,
-                    };
-                  },
-                ),
-                setSnackbarMessage,
-                setSnackbarOpen,
-              });
-              setPrices((curr) => {
-                const newPrices = { ...curr };
-                Object.entries(uploadedPrices).forEach(([key, value]) => {
-                  newPrices[key] = value;
-                });
-                return newPrices;
-              });
-              setLoading(false);
-            }}
-          />
-        </MenuItem>
-        <MenuItem>
-          <Button
-            className="w-full"
-            sx={{ textTransform: 'none' }}
-            variant="outlined"
-            onClick={handleCalculate}
-          >
-            {t('calculate')}
-          </Button>
-        </MenuItem>
-      </Menu>
+      <ActionsMenu
+        actionsAnchor={actionsAnchor}
+        prices={prices}
+        productQuantities={productQuantities}
+        selectedHistory={selectedHistory}
+        selectedProducts={selectedProducts}
+        selectedSuppliers={selectedSuppliers}
+        setActionsAnchor={setActionsAnchor}
+        setLoading={setLoading}
+        setNewOrderDialog={setNewOrderDialog}
+        setPrices={setPrices}
+        setSnackbarMessage={setSnackbarMessage}
+        setSnackbarOpen={setSnackbarOpen}
+      />
 
       {loading && <CircularProgress />}
     </Layout>
