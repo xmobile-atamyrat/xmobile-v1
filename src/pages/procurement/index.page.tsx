@@ -24,6 +24,7 @@ import {
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
+import { priceHash } from '@/pages/procurement/lib/utils';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
@@ -90,6 +91,9 @@ export default function Procurement() {
   const [prices, setPrices] = useState<HistoryPrice>();
   const [newOrderDialog, setNewOrderDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hashedQuantities, setHashedQuantities] = useState<
+    Record<string, number>
+  >({});
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -224,7 +228,7 @@ export default function Procurement() {
     const newPrices: HistoryPrice = {};
     selectedHistory.prices.forEach(
       ({ orderId, productId, supplierId, price }) => {
-        const key = JSON.stringify({
+        const key = priceHash({
           orderId,
           productId,
           supplierId,
@@ -237,6 +241,17 @@ export default function Procurement() {
     );
     setPrices(newPrices);
   }, [selectedHistory]);
+
+  useEffect(() => {
+    if (productQuantities == null) return;
+    setHashedQuantities((currQuantities) => {
+      const newHashedQuantities = { ...currQuantities };
+      productQuantities.forEach(({ productId, quantity }) => {
+        newHashedQuantities[productId] = quantity;
+      });
+      return newHashedQuantities;
+    });
+  }, [productQuantities]);
 
   useEffect(() => {
     if (user?.grade !== 'SUPERUSER') {
@@ -313,7 +328,6 @@ export default function Procurement() {
             selectedSuppliers &&
             prices && (
               <EmptyOrder
-                productQuantities={productQuantities}
                 setProductQuantities={setProductQuantities}
                 selectedProducts={selectedProducts}
                 selectedSuppliers={selectedSuppliers}
@@ -324,6 +338,8 @@ export default function Procurement() {
                 selectedHistory={selectedHistory}
                 prices={prices}
                 setPrices={setPrices}
+                hashedQuantities={hashedQuantities}
+                setHashedQuantities={setHashedQuantities}
               />
             )}
 
@@ -448,6 +464,7 @@ export default function Procurement() {
             setPrices={setPrices}
             setSnackbarMessage={setSnackbarMessage}
             setSnackbarOpen={setSnackbarOpen}
+            hashedQuantities={hashedQuantities}
           />
 
           <Snackbar

@@ -8,6 +8,7 @@ import {
   downloadXlsxAsZip,
   ExcelFileData,
   handleFilesSelected,
+  priceHash,
 } from '@/pages/procurement/lib/utils';
 import { Button, Menu, MenuItem } from '@mui/material';
 import {
@@ -32,6 +33,7 @@ interface ActionsMenuProps {
   setActionsAnchor: Dispatch<SetStateAction<HTMLElement>>;
   setNewOrderDialog: Dispatch<SetStateAction<boolean>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
+  hashedQuantities: Record<string, number>;
 }
 
 export default function ActionsMenu({
@@ -47,6 +49,7 @@ export default function ActionsMenu({
   setSnackbarMessage,
   setSnackbarOpen,
   setLoading,
+  hashedQuantities,
 }: ActionsMenuProps) {
   const t = useTranslations();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,9 +79,15 @@ export default function ActionsMenu({
         horizontal: 'right',
       }}
       open={Boolean(actionsAnchor)}
-      onClose={() => setActionsAnchor(null)}
+      onClose={() => {
+        setActionsAnchor(null);
+      }}
     >
-      <MenuItem onClick={() => setActionsAnchor(null)}>
+      <MenuItem
+        onClick={() => {
+          setActionsAnchor(null);
+        }}
+      >
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
@@ -90,7 +99,11 @@ export default function ActionsMenu({
           {t('newOrder')}
         </Button>
       </MenuItem>
-      <MenuItem onClick={() => setActionsAnchor(null)}>
+      <MenuItem
+        onClick={() => {
+          setActionsAnchor(null);
+        }}
+      >
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
@@ -162,7 +175,11 @@ export default function ActionsMenu({
           {t('downloadEmptyOrder')}
         </Button>
       </MenuItem>
-      <MenuItem onClick={() => setActionsAnchor(null)}>
+      <MenuItem
+        onClick={() => {
+          setActionsAnchor(null);
+        }}
+      >
         <Button
           className="w-full"
           variant="outlined"
@@ -220,7 +237,11 @@ export default function ActionsMenu({
           }}
         />
       </MenuItem>
-      <MenuItem onClick={() => setActionsAnchor(null)}>
+      <MenuItem
+        onClick={() => {
+          setActionsAnchor(null);
+        }}
+      >
         <Button
           className="w-full"
           sx={{ textTransform: 'none' }}
@@ -228,6 +249,61 @@ export default function ActionsMenu({
           onClick={handleCalculate}
         >
           {t('calculate')}
+        </Button>
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          setActionsAnchor(null);
+        }}
+      >
+        <Button
+          className="w-full"
+          sx={{ textTransform: 'none' }}
+          variant="outlined"
+          onClick={async () => {
+            const today = new Date();
+            const formattedDate = dayMonthYearFromDate(today);
+            const csvFileData: ExcelFileData[] = selectedSuppliers
+              .map((supplier) => {
+                const productIds: string[] = [];
+                const fileData: (number | string)[][] = [];
+                selectedProducts.forEach((product) => {
+                  const priceColorPair =
+                    prices[
+                      priceHash({
+                        orderId: selectedHistory.id,
+                        productId: product.id,
+                        supplierId: supplier.id,
+                      })
+                    ];
+                  if (
+                    priceColorPair?.value != null &&
+                    priceColorPair?.value > 0 &&
+                    hashedQuantities[product.id] != null &&
+                    hashedQuantities[product.id] > 0 &&
+                    priceColorPair?.color === 'green'
+                  ) {
+                    fileData.push([
+                      product.name,
+                      hashedQuantities[product.id],
+                      priceColorPair.value,
+                    ]);
+                    productIds.push(product.id);
+                  }
+                });
+                const excelFileData: ExcelFileData = {
+                  filename: `Rahmanov-${supplier.name}-${formattedDate}`,
+                  data: [['', 'Quantity', 'Price'], ...fileData],
+                  supplierId: supplier.id,
+                  productIds,
+                };
+                return excelFileData;
+              })
+              .filter((data) => data.data.length > 1);
+            await downloadXlsxAsZip(csvFileData);
+          }}
+        >
+          {t('downloadCalculatedOrder')}
         </Button>
       </MenuItem>
     </Menu>

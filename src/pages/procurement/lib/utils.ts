@@ -12,6 +12,22 @@ export interface ExcelFileData {
 export const IDS_SHEET_NAME = 'IDs';
 export const ORDER_SHEET_NAME = 'Order';
 
+export const priceHash = ({
+  orderId,
+  productId,
+  supplierId,
+}: {
+  orderId: string;
+  productId: string;
+  supplierId: string;
+}): string => {
+  return JSON.stringify({
+    orderId,
+    productId,
+    supplierId,
+  });
+};
+
 async function arrayToXlsxBlob(
   data: any[][],
   supplierId: string,
@@ -179,7 +195,7 @@ export const handleFilesSelected = async (
           } catch (error) {
             console.error('Error parsing price:', error);
           }
-          const key = JSON.stringify({
+          const key = priceHash({
             orderId,
             productId: productIds[rowNumber - 2],
             supplierId,
@@ -217,7 +233,7 @@ export const assignColorToPrices = ({
   productIds.forEach((productId) => {
     const row: HistoryPrice[] = [];
     supplierIds.forEach((supplierId) => {
-      const key = JSON.stringify({
+      const key = priceHash({
         orderId,
         productId,
         supplierId,

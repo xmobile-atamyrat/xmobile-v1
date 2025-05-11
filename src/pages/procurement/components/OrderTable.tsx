@@ -14,6 +14,7 @@ import {
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
+import { priceHash } from '@/pages/procurement/lib/utils';
 import { debounce } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -40,16 +41,9 @@ import {
   ProcurementSupplier,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 interface EmptyOrderProps {
-  productQuantities: ProcurementOrderProductQuantity[];
   setProductQuantities: Dispatch<
     SetStateAction<ProcurementOrderProductQuantity[]>
   >;
@@ -62,12 +56,13 @@ interface EmptyOrderProps {
   selectedHistory: ProcurementOrder;
   prices: HistoryPrice;
   setPrices: Dispatch<SetStateAction<HistoryPrice>>;
+  hashedQuantities: Record<string, number>;
+  setHashedQuantities: Dispatch<SetStateAction<Record<string, number>>>;
 }
 
 export default function EmptyOrder({
   selectedProducts,
   selectedSuppliers,
-  productQuantities,
   setProductQuantities,
   setSelectedProducts,
   setSelectedSuppliers,
@@ -76,6 +71,8 @@ export default function EmptyOrder({
   selectedHistory,
   prices,
   setPrices,
+  hashedQuantities,
+  setHashedQuantities,
 }: EmptyOrderProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
@@ -83,9 +80,7 @@ export default function EmptyOrder({
     itemType: ProductsSuppliersType;
     item: ProcurementSupplier | ProcurementProduct;
   }>();
-  const [hashedQuantities, setHashedQuantities] = useState<
-    Record<string, number>
-  >({});
+
   const [colorPrice, setColorPrice] = useState<{
     anchor: HTMLElement | null;
     priceHash: string;
@@ -110,7 +105,7 @@ export default function EmptyOrder({
               supplierId: confirmRemoveItemDialog.item.id,
             };
           })
-          .filter((toHash) => prices[JSON.stringify(toHash)] != null),
+          .filter((toHash) => prices[priceHash(toHash)] != null),
         setSnackbarMessage,
         setSnackbarOpen,
       });
@@ -124,7 +119,7 @@ export default function EmptyOrder({
           const newPrices = currPrices;
           selectedProducts.forEach(({ id }) => {
             delete newPrices[
-              JSON.stringify({
+              priceHash({
                 orderId: selectedHistory.id,
                 productId: id,
                 supplierId: confirmRemoveItemDialog.item.id,
@@ -226,17 +221,6 @@ export default function EmptyOrder({
     [debounce, accessToken, selectedHistory],
   );
 
-  useEffect(() => {
-    if (productQuantities == null) return;
-    setHashedQuantities((currQuantities) => {
-      const newHashedQuantities = { ...currQuantities };
-      productQuantities.forEach(({ productId, quantity }) => {
-        newHashedQuantities[productId] = quantity;
-      });
-      return newHashedQuantities;
-    });
-  }, [productQuantities]);
-
   return (
     <Box className="flex flex-col gap-2">
       <TableContainer component={Paper}>
@@ -304,12 +288,12 @@ export default function EmptyOrder({
                     />
                   </TableCell>
                   {selectedSuppliers.map((supplier) => {
-                    const priceHash = JSON.stringify({
+                    const hash = priceHash({
                       orderId: selectedHistory.id,
                       productId: product.id,
                       supplierId: supplier.id,
                     });
-                    const priceColorPair = prices?.[priceHash];
+                    const priceColorPair = prices?.[hash];
                     return (
                       <TableCell key={supplier.id} align="center">
                         {/* Prices */}
@@ -329,7 +313,7 @@ export default function EmptyOrder({
                                   onClick={(e) => {
                                     setColorPrice({
                                       anchor: e.currentTarget,
-                                      priceHash,
+                                      priceHash: hash,
                                     });
                                   }}
                                 >
