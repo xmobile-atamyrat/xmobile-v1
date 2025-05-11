@@ -275,6 +275,7 @@ export default function EmptyOrder({
                     </Box>
                   </TableCell>
                   <TableCell align="center">
+                    {/* Quantities */}
                     <TextField
                       size="small"
                       value={hashedQuantities[product.id] ?? ''}
@@ -304,6 +305,7 @@ export default function EmptyOrder({
                       ];
                     return (
                       <TableCell key={supplier.id} align="center">
+                        {/* Prices */}
                         <TextField
                           size="small"
                           value={priceColorPair?.value ?? ''}
