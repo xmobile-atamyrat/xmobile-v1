@@ -147,37 +147,6 @@ export default function CalculateDialog({
             sx={{
               textTransform: 'none',
             }}
-            onClick={async () => {
-              // const today = new Date();
-              // const formattedDate = dayMonthYearFromDate(today);
-              // const csvFileData: ExcelFileData[] = selectedSuppliers
-              //   .map((supplier, splIdx) => {
-              //     const fileData = prices
-              //       .filter((row, prdIdx) => {
-              //         return (
-              //           row[splIdx]?.value &&
-              //           productQuantity[prdIdx] &&
-              //           row[splIdx]?.color === 'green'
-              //         );
-              //       })
-              //       .map((row, prdIdx) => {
-              //         return [
-              //           [
-              //             ...selectedProducts.existing,
-              //             ...selectedProducts.added,
-              //           ][prdIdx].name,
-              //           productQuantity[prdIdx],
-              //           `$${row[splIdx].value}`,
-              //         ];
-              //       });
-              //     return {
-              //       filename: `Rahmanov-${supplier.name}-${formattedDate}`,
-              //       data: [['', 'Quantity', 'Price'], ...fileData],
-              //     };
-              //   })
-              //   .filter((data) => data.data.length > 1);
-              // await downloadXlsxAsZip(csvFileData, 'prices.zip');
-            }}
             disabled={!calculationDone}
           >
             {t('download')}
