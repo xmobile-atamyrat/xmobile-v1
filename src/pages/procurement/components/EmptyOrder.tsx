@@ -2,7 +2,8 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  deleteProductQuantityUtil,
+  deletePricesUtil,
+  deleteQuantityUtil,
   editHistoryUtil,
   editProductQuantityUtil,
 } from '@/pages/procurement/lib/apiUtils';
@@ -60,13 +61,13 @@ export default function EmptyOrder({
   setSnackbarOpen,
   selectedHistory,
   prices,
+  setPrices,
 }: EmptyOrderProps) {
   const { accessToken } = useUserContext();
   const t = useTranslations();
   const [confirmRemoveItemDialog, setConfirmRemoveItemDialog] = useState<{
     itemType: ProductsSuppliersType;
     item: ProcurementSupplier | ProcurementProduct;
-    itemIndex: number;
   }>();
 
   return (
@@ -77,7 +78,7 @@ export default function EmptyOrder({
             <TableRow>
               <TableCell></TableCell>
               <TableCell align="center">{t('quantity')}</TableCell>
-              {selectedSuppliers.map((supplier, idx) => (
+              {selectedSuppliers.map((supplier) => (
                 <TableCell key={supplier.id} align="center">
                   <Box className="flex w-full items-center gap-2 justify-center">
                     <Typography>{supplier.name}</Typography>
@@ -86,7 +87,6 @@ export default function EmptyOrder({
                         setConfirmRemoveItemDialog({
                           itemType: 'supplier',
                           item: supplier,
-                          itemIndex: idx,
                         })
                       }
                     >
@@ -98,7 +98,7 @@ export default function EmptyOrder({
             </TableRow>
           </TableHead>
           <TableBody>
-            {selectedProducts.map((product, prdIdx) => {
+            {selectedProducts.map((product) => {
               const quantity = productQuantities.find(
                 (pq) => pq.productId === product.id,
               );
@@ -112,7 +112,6 @@ export default function EmptyOrder({
                           setConfirmRemoveItemDialog({
                             itemType: 'product',
                             item: product,
-                            itemIndex: prdIdx,
                           })
                         }
                       >
@@ -196,13 +195,40 @@ export default function EmptyOrder({
                 setSnackbarMessage,
                 setSnackbarOpen,
               });
-              if (updatedHistory) {
+              const updatedPrices = await deletePricesUtil({
+                accessToken,
+                ids: selectedProducts
+                  .map(({ id }) => {
+                    return {
+                      orderId: selectedHistory.id,
+                      productId: id,
+                      supplierId: confirmRemoveItemDialog.item.id,
+                    };
+                  })
+                  .filter((toHash) => prices[JSON.stringify(toHash)] != null),
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              if (updatedHistory && updatedPrices) {
                 setSelectedSuppliers((prev) =>
                   prev.filter(
                     (supplier) =>
                       supplier.id !== confirmRemoveItemDialog.item.id,
                   ),
                 );
+                setPrices((currPrices) => {
+                  const newPrices = currPrices;
+                  selectedProducts.forEach(({ id }) => {
+                    delete newPrices[
+                      JSON.stringify({
+                        orderId: selectedHistory.id,
+                        productId: id,
+                        supplierId: confirmRemoveItemDialog.item.id,
+                      })
+                    ];
+                  });
+                  return newPrices;
+                });
               }
             } else {
               const updatedHistory = await editHistoryUtil({
@@ -212,14 +238,28 @@ export default function EmptyOrder({
                 setSnackbarMessage,
                 setSnackbarOpen,
               });
-              const updatedProductQuantity = await deleteProductQuantityUtil({
+              const deletedQuantity = await deleteQuantityUtil({
                 accessToken,
                 orderId: selectedHistory.id,
                 productId: confirmRemoveItemDialog.item.id,
                 setSnackbarMessage,
                 setSnackbarOpen,
               });
-              if (updatedHistory && updatedProductQuantity) {
+              const deletedPrice = await deletePricesUtil({
+                accessToken,
+                ids: selectedSuppliers
+                  .map(({ id }) => {
+                    return {
+                      orderId: selectedHistory.id,
+                      productId: confirmRemoveItemDialog.item.id,
+                      supplierId: id,
+                    };
+                  })
+                  .filter((toHash) => prices[JSON.stringify(toHash)] != null),
+                setSnackbarMessage,
+                setSnackbarOpen,
+              });
+              if (updatedHistory && deletedQuantity && deletedPrice) {
                 setSelectedProducts((prev) =>
                   prev.filter(
                     (product) => product.id !== confirmRemoveItemDialog.item.id,
@@ -230,6 +270,19 @@ export default function EmptyOrder({
                     (pq) => pq.productId !== confirmRemoveItemDialog.item.id,
                   ),
                 );
+                setPrices((currPrices) => {
+                  const newPrices = currPrices;
+                  selectedSuppliers.forEach(({ id }) => {
+                    delete newPrices[
+                      JSON.stringify({
+                        orderId: selectedHistory.id,
+                        productId: confirmRemoveItemDialog.item.id,
+                        supplierId: id,
+                      })
+                    ];
+                  });
+                  return newPrices;
+                });
               }
             }
             setConfirmRemoveItemDialog(undefined);

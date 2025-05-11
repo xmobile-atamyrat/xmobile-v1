@@ -88,18 +88,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true });
     }
     if (method === 'DELETE') {
-      const { orderId, productId, supplierId } = req.body;
-      const deletedPrice =
-        await dbClient.procurementSupplierProductPrice.delete({
-          where: {
-            supplierId_productId_orderId: {
-              supplierId,
-              productId,
-              orderId,
+      const { ids }: { ids: Partial<ProcurementSupplierProductPrice>[] } =
+        req.body;
+      await Promise.all(
+        ids.map(async ({ supplierId, productId, orderId }) => {
+          await dbClient.procurementSupplierProductPrice.delete({
+            where: {
+              supplierId_productId_orderId: {
+                supplierId,
+                productId,
+                orderId,
+              },
             },
-          },
-        });
-      return res.status(200).json({ success: true, data: deletedPrice });
+          });
+        }),
+      );
+      return res.status(200).json({ success: true });
     }
   } catch (error) {
     console.error(error);

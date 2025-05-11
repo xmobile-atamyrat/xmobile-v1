@@ -5,8 +5,9 @@ import {
   createProductQuantity,
   createSupplier,
   deleteHistory,
+  deletePrices,
   deleteProduct,
-  deleteProductQuantity,
+  deleteQuantity,
   deleteSupplier,
   editHistory,
   editProductPrices,
@@ -338,13 +339,14 @@ export async function editProductPricesUtil({
         message: 'success',
         severity: 'success',
       });
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'failedToUpdateQuantity',
+        severity: 'error',
+      });
     }
-    console.error(message);
-    setSnackbarOpen(true);
-    setSnackbarMessage({
-      message: 'failedToUpdateQuantity',
-      severity: 'error',
-    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -567,7 +569,7 @@ export async function deleteSupplierUtil(
   }
 }
 
-export async function deleteProductQuantityUtil({
+export async function deleteQuantityUtil({
   accessToken,
   orderId,
   productId,
@@ -581,7 +583,7 @@ export async function deleteProductQuantityUtil({
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
 }): Promise<ProcurementOrderProductQuantity | undefined> {
   try {
-    const { success, data, message } = await deleteProductQuantity({
+    const { success, data, message } = await deleteQuantity({
       accessToken,
       orderId,
       productId,
@@ -678,4 +680,44 @@ export async function deleteProductUtil(
       severity: 'error',
     });
   }
+}
+
+export async function deletePricesUtil({
+  accessToken,
+  ids,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  ids: Partial<ProcurementSupplierProductPrice>[];
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}): Promise<boolean> {
+  try {
+    const { success, message } = await deletePrices(accessToken, ids);
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deleteItemSuccess',
+        severity: 'success',
+      });
+    } else {
+      console.error(message);
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'serverError',
+        severity: 'error',
+      });
+    }
+    return success;
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return false;
 }

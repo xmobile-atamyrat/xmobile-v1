@@ -435,6 +435,21 @@ export default function Procurement() {
             />
           )}
 
+          <ActionsMenu
+            actionsAnchor={actionsAnchor}
+            prices={prices}
+            productQuantities={productQuantities}
+            selectedHistory={selectedHistory}
+            selectedProducts={selectedProducts}
+            selectedSuppliers={selectedSuppliers}
+            setActionsAnchor={setActionsAnchor}
+            setLoading={setLoading}
+            setNewOrderDialog={setNewOrderDialog}
+            setPrices={setPrices}
+            setSnackbarMessage={setSnackbarMessage}
+            setSnackbarOpen={setSnackbarOpen}
+          />
+
           <Snackbar
             open={snackbarOpen}
             autoHideDuration={6000}
@@ -454,25 +469,10 @@ export default function Procurement() {
               {snackbarMessage?.message && t(snackbarMessage.message)}
             </Alert>
           </Snackbar>
+
+          {loading && <CircularProgress />}
         </Box>
       )}
-
-      <ActionsMenu
-        actionsAnchor={actionsAnchor}
-        prices={prices}
-        productQuantities={productQuantities}
-        selectedHistory={selectedHistory}
-        selectedProducts={selectedProducts}
-        selectedSuppliers={selectedSuppliers}
-        setActionsAnchor={setActionsAnchor}
-        setLoading={setLoading}
-        setNewOrderDialog={setNewOrderDialog}
-        setPrices={setPrices}
-        setSnackbarMessage={setSnackbarMessage}
-        setSnackbarOpen={setSnackbarOpen}
-      />
-
-      {loading && <CircularProgress />}
     </Layout>
   );
 }
