@@ -5,7 +5,6 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import ActionsMenu from '@/pages/procurement/components/ActionsMenu';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
 import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
-import CalculateDialog from '@/pages/procurement/components/CalculateDialog';
 import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
 import EmptyOrder from '@/pages/procurement/components/OrderTable';
 import {
@@ -80,7 +79,6 @@ export default function Procurement() {
   >([]);
   const [historyList, setHistoryList] = useState<ProcurementOrder[]>([]);
   const [selectedHistory, setSelectedHistory] = useState<DetailedOrder>();
-  const [calculateDialog, setCalculateDialog] = useState(false);
   const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
   const [historyListDialog, setHistoryListDialog] = useState(false);
   const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
@@ -88,7 +86,7 @@ export default function Procurement() {
   const [productQuantities, setProductQuantities] = useState<
     ProcurementOrderProductQuantity[]
   >([]);
-  const [prices, setPrices] = useState<HistoryPrice>();
+  const [prices, setPrices] = useState<HistoryPrice>({});
   const [newOrderDialog, setNewOrderDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hashedQuantities, setHashedQuantities] = useState<
@@ -224,7 +222,10 @@ export default function Procurement() {
   }, [accessToken, user]);
 
   useEffect(() => {
-    if (selectedHistory == null || selectedHistory.prices == null) return;
+    if (selectedHistory == null || selectedHistory.prices == null) {
+      setPrices({});
+      return;
+    }
     const newPrices: HistoryPrice = {};
     selectedHistory.prices.forEach(
       ({ orderId, productId, supplierId, price }) => {
@@ -351,22 +352,6 @@ export default function Procurement() {
               handleSubmit={async (title: string) => {
                 await createHistory(title);
               }}
-            />
-          )}
-
-          {calculateDialog && selectedHistory && productQuantities && (
-            <CalculateDialog
-              history={selectedHistory}
-              selectedProducts={selectedProducts}
-              selectedSuppliers={selectedSuppliers}
-              handleClose={() => setCalculateDialog(false)}
-              setSnackbarMessage={setSnackbarMessage}
-              setSnackbarOpen={setSnackbarOpen}
-              setSelectedHistory={setSelectedHistory}
-              setSelectedProducts={setSelectedProducts}
-              setSelectedSuppliers={setSelectedSuppliers}
-              productQuantities={productQuantities}
-              setProductQuantities={setProductQuantities}
             />
           )}
 
