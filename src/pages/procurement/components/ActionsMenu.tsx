@@ -145,7 +145,7 @@ export default function ActionsMenu({
                   return [productName, quantities[idx], ''];
                 });
                 const file: ExcelFileData = {
-                  filename: `Rahmanov-${supplier.name}-${formattedDate}`,
+                  filename: `Rahmanov-${supplier.name}-${formattedDate}-TBF`,
                   data: [['', 'Quantity', 'Price'], ...fileData],
                   supplierId: supplier.id,
                   productIds,
