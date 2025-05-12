@@ -29,7 +29,7 @@ export default async function handler(
   if (method === 'GET') {
     try {
       const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
-      console.info(`userId: ${userId}`);
+
       const user = await dbClient.user.findUnique({
         where: { id: userId },
       });

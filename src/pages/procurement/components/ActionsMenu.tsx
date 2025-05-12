@@ -118,22 +118,32 @@ export default function ActionsMenu({
               return;
             }
 
-            const productQuantitiesMap: { [key: string]: number } = {};
             const productIds: string[] = [];
-            productQuantities.forEach((productQuantity) => {
-              if (productQuantity.quantity > 0) {
-                const product = selectedProducts.find(
-                  (prd) => prd.id === productQuantity.productId,
-                );
-                if (product) {
-                  productQuantitiesMap[product.name] = productQuantity.quantity;
-                  productIds.push(product.id);
+            const productNames: string[] = [];
+            const quantities: number[] = [];
+            const sortedProducts = [...selectedProducts];
+
+            sortedProducts
+              .sort((a, b) => {
+                const aName = a.name;
+                const bName = b.name;
+
+                if (aName < bName) {
+                  return -1; // a comes before b
                 }
-              }
-            });
-            const products = Object.keys(productQuantitiesMap);
-            const quantities = Object.values(productQuantitiesMap);
-            if (products.length === 0) {
+                if (aName > bName) {
+                  return 1; // a comes after b
+                }
+                return 0; // a is equal to b
+              })
+              .forEach(({ id, name }) => {
+                if (hashedQuantities[id] > 0) {
+                  productIds.push(id);
+                  productNames.push(name);
+                  quantities.push(hashedQuantities[id]);
+                }
+              });
+            if (productNames.length === 0) {
               setSnackbarMessage({
                 message: 'allQuantitiesZero',
                 severity: 'error',
@@ -146,11 +156,11 @@ export default function ActionsMenu({
             const formattedDate = dayMonthYearFromDate(today);
             const csvFileData: ExcelFileData[] = selectedSuppliers
               .map((supplier) => {
-                const fileData = products.map((product, idx) => {
-                  return [product, quantities[idx], ''];
+                const fileData = productNames.map((productName, idx) => {
+                  return [productName, quantities[idx], ''];
                 });
                 const file: ExcelFileData = {
-                  filename: `Rahmanov-${supplier.name}-${formattedDate}`,
+                  filename: `Rahmanov-${supplier.name}-${formattedDate}-TBF`,
                   data: [['', 'Quantity', 'Price'], ...fileData],
                   supplierId: supplier.id,
                   productIds,
@@ -263,11 +273,26 @@ export default function ActionsMenu({
           onClick={async () => {
             const today = new Date();
             const formattedDate = dayMonthYearFromDate(today);
+
+            const sortedProducts = [...selectedProducts];
+            sortedProducts.sort((a, b) => {
+              const aName = a.name;
+              const bName = b.name;
+
+              if (aName < bName) {
+                return -1; // a comes before b
+              }
+              if (aName > bName) {
+                return 1; // a comes after b
+              }
+              return 0; // a is equal to b
+            });
+
             const csvFileData: ExcelFileData[] = selectedSuppliers
               .map((supplier) => {
                 const productIds: string[] = [];
                 const fileData: (number | string)[][] = [];
-                selectedProducts.forEach((product) => {
+                sortedProducts.forEach((product) => {
                   const priceColorPair =
                     prices[
                       priceHash({
