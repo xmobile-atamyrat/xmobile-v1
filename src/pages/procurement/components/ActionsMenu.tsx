@@ -118,22 +118,17 @@ export default function ActionsMenu({
               return;
             }
 
-            const productQuantitiesMap: { [key: string]: number } = {};
             const productIds: string[] = [];
-            productQuantities.forEach((productQuantity) => {
-              if (productQuantity.quantity > 0) {
-                const product = selectedProducts.find(
-                  (prd) => prd.id === productQuantity.productId,
-                );
-                if (product) {
-                  productQuantitiesMap[product.name] = productQuantity.quantity;
-                  productIds.push(product.id);
-                }
+            const productNames: string[] = [];
+            const quantities: number[] = [];
+            selectedProducts.forEach(({ id, name }) => {
+              if (hashedQuantities[id] > 0) {
+                productIds.push(id);
+                productNames.push(name);
+                quantities.push(hashedQuantities[id]);
               }
             });
-            const products = Object.keys(productQuantitiesMap);
-            const quantities = Object.values(productQuantitiesMap);
-            if (products.length === 0) {
+            if (productNames.length === 0) {
               setSnackbarMessage({
                 message: 'allQuantitiesZero',
                 severity: 'error',
@@ -146,8 +141,8 @@ export default function ActionsMenu({
             const formattedDate = dayMonthYearFromDate(today);
             const csvFileData: ExcelFileData[] = selectedSuppliers
               .map((supplier) => {
-                const fileData = products.map((product, idx) => {
-                  return [product, quantities[idx], ''];
+                const fileData = productNames.map((productName, idx) => {
+                  return [productName, quantities[idx], ''];
                 });
                 const file: ExcelFileData = {
                   filename: `Rahmanov-${supplier.name}-${formattedDate}`,
