@@ -41,7 +41,7 @@ interface HistoryListDialogProps {
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function AddSupplierDialog({
+export default function HistoryListDialog({
   handleClose,
   historyList,
   handleSelectHistory,
