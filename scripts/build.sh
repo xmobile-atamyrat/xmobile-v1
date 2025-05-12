@@ -16,7 +16,7 @@ main() {
             git clone git@github.com:xmobile-atamyrat/xmobile-v1.git /app/xmobile-v1 && \
             cd /app/xmobile-v1 && \
             rm -rf .env.local && \
-            yarn cache clean && yarn install --force && \
+            yarn cache clean && yarn install --force --network-timeout 600000 && \
             tar -czvf /app/xmobile-v1.tar.gz /app/xmobile-v1
         '
         docker cp build_env:/app/xmobile-v1.tar.gz .
