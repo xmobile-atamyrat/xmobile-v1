@@ -1,6 +1,7 @@
 import { Category, Product, User } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
+import { WebSocket } from 'ws';
 
 export interface ResponseApi<K = any> {
   success: boolean;
@@ -12,6 +13,43 @@ export interface ExtendedCategory extends Category {
   products?: Product[];
   successorCategories?: ExtendedCategory[];
 }
+
+export interface AuthenticatedConnection extends WebSocket {
+  userId: string;
+}
+
+export type ChatMessageProps =
+  | {
+      type: 'message';
+      sessionId: string;
+      senderId: string;
+      senderRole: string;
+      content: string;
+
+      isRead?: boolean;
+      messageId?: string;
+      date?: Date;
+      timestamp?: string;
+      status?: 'sending' | 'sent' | 'error';
+    }
+  | {
+      type: 'ack';
+      timestamp: string;
+      success: boolean;
+
+      date?: Date;
+      messageId?: string;
+    }
+  | {
+      type: 'error';
+      errorMessage: string;
+      errorCode?: number;
+    }
+  | {
+      type: 'auth_refresh';
+      accessToken: string;
+      refreshToken: string;
+    };
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
