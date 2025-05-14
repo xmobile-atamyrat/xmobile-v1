@@ -12,6 +12,8 @@ import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { z, ZodError } from 'zod';
 import cookie from 'cookie';
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { AuthenticatedConnection, ChatMessageProps } from '@/pages/lib/types';
+import { sendMessage } from '@/ws-server/utils';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -19,19 +21,13 @@ const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
-const MessageSchema = z
-  .object({
-    sessionId: z.string(),
-    senderId: z.string(),
-    senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
-    content: z.string(),
-    isRead: z.boolean(),
-  })
-  .strict();
-
-interface AuthenticatedConnection extends WebSocket {
-  userId: string;
-}
+const MessageSchema = z.object({
+  sessionId: z.string(),
+  senderId: z.string(),
+  senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
+  content: z.string(),
+  timestamp: z.string(),
+});
 
 const connections = new Map<string, Set<AuthenticatedConnection>>();
 
@@ -123,42 +119,81 @@ const authenticateConnection = async (
   }
 };
 
-const handleMessage = async (incomingMessage: RawData) => {
+const handleMessage = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  let timestamp: string | undefined;
   try {
     const parsedMessage = JSON.parse(incomingMessage.toString());
 
-    const { senderId, senderRole, isRead, content, sessionId } =
-      MessageSchema.parse(parsedMessage);
-    const outgoingMessage = await dbClient.chatMessage.create({
+    const {
+      senderId,
+      senderRole,
+      content,
+      sessionId,
+      timestamp: ts,
+    } = MessageSchema.parse(parsedMessage);
+    timestamp = ts;
+
+    const message = await dbClient.chatMessage.create({
       data: {
         senderId,
-        isRead,
         content,
         senderRole,
         sessionId,
       },
     });
 
+    sendMessage(safeConnection, {
+      type: 'ack',
+      messageId: message.id,
+      timestamp,
+      date: message.updatedAt,
+      success: true,
+    });
+
     const { users: sessionUsers } = await dbClient.chatSession.findUnique({
       where: {
-        id: outgoingMessage.sessionId,
+        id: message.sessionId,
       },
       select: { users: true },
     });
-
-    sessionUsers?.forEach((sessionUser) => {
+    const outgoingMessage: ChatMessageProps = {
+      type: 'message',
+      messageId: message.id,
+      sessionId,
+      senderId,
+      senderRole,
+      content,
+      isRead: message.isRead,
+      date: message.updatedAt,
+    };
+    sessionUsers.forEach((sessionUser) => {
       connections
         .get(sessionUser.id)
-        ?.forEach((conn) => conn.send(JSON.stringify(outgoingMessage)));
+        ?.forEach(
+          (conn) =>
+            safeConnection !== conn && sendMessage(conn, outgoingMessage),
+        );
     });
   } catch (error) {
     if (error instanceof ZodError) {
       console.error(
         filepath,
-        `InvalidMessageType: Invalid message props or types. Message: ${incomingMessage.toString()}`,
+        `InvalidMessage: Invalid message props or types. Message: ${incomingMessage.toString()}`,
       );
-    } else {
-      console.error(filepath, error);
+    }
+    console.error(filepath, error.message);
+
+    try {
+      sendMessage(safeConnection, {
+        type: 'ack',
+        timestamp,
+        success: false,
+      });
+    } catch (err) {
+      console.error(filepath, err);
     }
   }
 };
@@ -175,15 +210,20 @@ wsServer.on('connection', async (connection, request) => {
       connections.get(safeConnection.userId)?.add(safeConnection);
 
       if (accessToken != null) {
-        connection.send(
-          JSON.stringify({
+        try {
+          sendMessage(safeConnection, {
+            type: 'auth_refresh',
             accessToken,
             refreshToken,
-          }),
-        );
+          });
+        } catch (error) {
+          console.error(filepath, error);
+        }
       }
 
-      safeConnection.on('message', (message) => handleMessage(message));
+      safeConnection.on('message', (message: RawData) =>
+        handleMessage(message, safeConnection),
+      );
 
       safeConnection.on('close', () =>
         safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
