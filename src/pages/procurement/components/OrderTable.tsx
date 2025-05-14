@@ -1,4 +1,5 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { hideTextfieldSpinButtons } from '@/pages/lib/utils';
@@ -80,11 +81,11 @@ export default function EmptyOrder({
     itemType: ProductsSuppliersType;
     item: ProcurementSupplier | ProcurementProduct;
   }>();
-
   const [colorPrice, setColorPrice] = useState<{
     anchor: HTMLElement | null;
     priceHash: string;
   }>();
+  const fetchWithCreds = useFetchWithCreds();
 
   const handleDelete = async () => {
     if (confirmRemoveItemDialog?.itemType === 'supplier') {
@@ -94,6 +95,7 @@ export default function EmptyOrder({
         removedSupplierIds: [confirmRemoveItemDialog.item.id],
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       const updatedPrices = await deletePricesUtil({
         accessToken,
@@ -108,6 +110,7 @@ export default function EmptyOrder({
           .filter((toHash) => prices[priceHash(toHash)] != null),
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       if (updatedHistory && updatedPrices) {
         setSelectedSuppliers((prev) =>
@@ -136,6 +139,7 @@ export default function EmptyOrder({
         removedProductIds: [confirmRemoveItemDialog.item.id],
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       const deletedQuantity = await deleteQuantityUtil({
         accessToken,
@@ -143,6 +147,7 @@ export default function EmptyOrder({
         productId: confirmRemoveItemDialog.item.id,
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       const deletedPrice = await deletePricesUtil({
         accessToken,
@@ -157,6 +162,7 @@ export default function EmptyOrder({
           .filter((toHash) => prices[JSON.stringify(toHash)] != null),
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       if (updatedHistory && deletedQuantity && deletedPrice) {
         setSelectedProducts((prev) =>
@@ -194,6 +200,7 @@ export default function EmptyOrder({
         quantity: updatedQuantity,
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
     }, 300),
     [debounce, accessToken, selectedHistory],
@@ -214,6 +221,7 @@ export default function EmptyOrder({
           ],
           setSnackbarMessage,
           setSnackbarOpen,
+          fetchWithCreds,
         });
       },
       300,

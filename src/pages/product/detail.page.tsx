@@ -12,6 +12,7 @@ import {
   PRODUCT_IMAGE_WIDTH_RESP,
   squareBracketRegex,
 } from '@/pages/lib/constants';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -87,6 +88,7 @@ export default function Product() {
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   useEffect(() => {
     if (product == null) {
@@ -146,7 +148,13 @@ export default function Product() {
   useEffect(() => {
     if (initialProduct == null) return;
     (async () => {
-      setProduct(await computeProductPriceTags(initialProduct, accessToken));
+      setProduct(
+        await computeProductPriceTags({
+          fetchWithCreds,
+          product: initialProduct,
+          accessToken,
+        }),
+      );
     })();
   }, [initialProduct]);
 

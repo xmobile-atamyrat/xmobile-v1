@@ -186,3 +186,15 @@ export interface CarouselSettings {
   prevArrow?: ReactElement<CarouselArrowProps>; // Custom previous arrow
   nextArrow?: ReactElement<CarouselArrowProps>; // Custom previous arrow
 }
+
+export type FetchWithCredsType = <K>({
+  accessToken,
+  path,
+  method,
+  body,
+}: {
+  accessToken: string;
+  path: string;
+  method: string;
+  body?: object;
+}) => Promise<ResponseApi<K>>;

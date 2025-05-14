@@ -19,26 +19,6 @@ export const fetchWithoutCreds = async <K>(
   return data;
 };
 
-export const fetchWithCreds = async <K>(
-  accessToken: string,
-  path: string,
-  method: string,
-  body?: object,
-): Promise<ResponseApi<K>> => {
-  const data = await (
-    await fetch(`${BASE_URL}${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: method === 'GET' ? null : JSON.stringify(body),
-      credentials: 'include',
-    })
-  ).json();
-  return data;
-};
-
 export function useFetchWithCreds() {
   const { setAccessToken } = useUserContext();
   return async <K>({
