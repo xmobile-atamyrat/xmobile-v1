@@ -83,7 +83,7 @@ const authenticateConnection = async (
           REFRESH_SECRET,
         );
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-          await generateTokens(userId, grade);
+          generateTokens(userId, grade);
 
         safeConnection.userId = userId;
 
@@ -122,18 +122,13 @@ const handleMessage = async (
   incomingMessage: RawData,
   safeConnection: AuthenticatedConnection,
 ) => {
-  let timestamp: string | undefined;
+  let parsedTimestamp: string | undefined;
   try {
     const parsedMessage = JSON.parse(incomingMessage.toString());
 
-    const {
-      senderId,
-      senderRole,
-      content,
-      sessionId,
-      timestamp: ts,
-    } = MessageSchema.parse(parsedMessage);
-    timestamp = ts;
+    const { senderId, senderRole, content, sessionId, timestamp } =
+      MessageSchema.parse(parsedMessage);
+    parsedTimestamp = timestamp;
 
     const message = await dbClient.chatMessage.create({
       data: {
@@ -169,12 +164,11 @@ const handleMessage = async (
       date: message.updatedAt,
     };
     sessionUsers.forEach((sessionUser) => {
-      connections
-        .get(sessionUser.id)
-        ?.forEach(
-          (conn) =>
-            safeConnection !== conn && sendMessage(conn, outgoingMessage),
-        );
+      connections.get(sessionUser.id)?.forEach((conn) => {
+        if (safeConnection !== conn) {
+          sendMessage(conn, outgoingMessage);
+        }
+      });
     });
   } catch (error) {
     if (error instanceof ZodError) {
@@ -188,7 +182,7 @@ const handleMessage = async (
     try {
       sendMessage(safeConnection, {
         type: 'ack',
-        timestamp,
+        timestamp: parsedTimestamp,
         success: false,
       });
     } catch (err) {
