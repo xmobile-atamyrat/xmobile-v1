@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:ws": "dotenv -e .env.local -- ts-node -r tsconfig-paths/register --project tsconfig.ws.json src/ws-server/index.ts",
+    "dev:ws": "dotenv -e .env.local -- ts-node --ignore-diagnostics 6133 -r tsconfig-paths/register --project tsconfig.ws.json src/ws-server/index.ts",
     "dev": "next dev -p 3003 -H 0.0.0.0",
     "build:ws": "tsc --project tsconfig.ws.json && tsc-alias --project tsconfig.ws.json",
     "build": "next build",
