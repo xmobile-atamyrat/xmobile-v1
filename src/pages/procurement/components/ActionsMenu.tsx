@@ -1,3 +1,4 @@
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { editProductPricesUtil } from '@/pages/procurement/lib/apiUtils';
@@ -54,6 +55,7 @@ export default function ActionsMenu({
   const t = useTranslations();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { accessToken } = useUserContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   const handleCalculate = useCallback(() => {
     setPrices(
@@ -230,6 +232,7 @@ export default function ActionsMenu({
               ),
               setSnackbarMessage,
               setSnackbarOpen,
+              fetchWithCreds,
             });
             setPrices((curr) => {
               const newPrices = { ...curr };
