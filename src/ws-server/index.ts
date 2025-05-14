@@ -12,8 +12,9 @@ import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { z, ZodError } from 'zod';
 import cookie from 'cookie';
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
-import { AuthenticatedConnection, ChatMessageProps } from '@/pages/lib/types';
-import { sendMessage } from '@/ws-server/utils';
+import { ChatMessageProps } from '@/pages/lib/types';
+import { sendMessage } from '@/ws-server/lib/utils';
+import { AuthenticatedConnection } from '@/ws-server/lib/types';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -36,16 +37,14 @@ const safeCloseConnection = (
   reason: string,
   connection: WebSocket | AuthenticatedConnection,
 ) => {
-  if (connection != null) {
-    if (connection.readyState === WebSocket.OPEN) {
-      connection.close(code, reason);
-    }
+  if (connection == null) return;
 
-    if ('userId' in connection) {
-      const userId = connection.userId;
-      connections.get(userId)?.delete(connection);
-      if (!connections.get(userId)?.size) connections.delete(userId);
-    }
+  if (connection.readyState === WebSocket.OPEN) connection.close(code, reason);
+
+  if ('userId' in connection) {
+    const userId = connection?.userId;
+    connections.get(userId)?.delete(connection);
+    if (!connections.get(userId)?.size) connections.delete(userId);
   }
 };
 

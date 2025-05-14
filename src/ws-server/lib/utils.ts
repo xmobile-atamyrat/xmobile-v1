@@ -1,4 +1,5 @@
-import { AuthenticatedConnection, ChatMessageProps } from '@/pages/lib/types';
+import { ChatMessageProps } from '@/pages/lib/types';
+import { AuthenticatedConnection } from '@/ws-server/lib/types';
 
 export function sendMessage(
   safeConnection: AuthenticatedConnection,

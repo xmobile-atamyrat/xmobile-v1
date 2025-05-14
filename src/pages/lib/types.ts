@@ -1,7 +1,6 @@
 import { Category, Product, User } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
-import { WebSocket } from 'ws';
 
 export interface ResponseApi<K = any> {
   success: boolean;
@@ -12,10 +11,6 @@ export interface ResponseApi<K = any> {
 export interface ExtendedCategory extends Category {
   products?: Product[];
   successorCategories?: ExtendedCategory[];
-}
-
-export interface AuthenticatedConnection extends WebSocket {
-  userId: string;
 }
 
 export type ChatMessageProps =
