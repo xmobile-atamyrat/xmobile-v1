@@ -13,6 +13,39 @@ export interface ExtendedCategory extends Category {
   successorCategories?: ExtendedCategory[];
 }
 
+export type ChatMessageProps =
+  | {
+      type: 'message';
+      sessionId: string;
+      senderId: string;
+      senderRole: string;
+      content: string;
+
+      isRead?: boolean;
+      messageId?: string;
+      date?: Date;
+      timestamp?: string;
+      status?: 'sending' | 'sent' | 'error';
+    }
+  | {
+      type: 'ack';
+      timestamp: string;
+      success: boolean;
+
+      date?: Date;
+      messageId?: string;
+    }
+  | {
+      type: 'error';
+      errorMessage: string;
+      errorCode?: number;
+    }
+  | {
+      type: 'auth_refresh';
+      accessToken: string;
+      refreshToken: string;
+    };
+
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
 export type CategoryStack = [ExtendedCategory, string][]; // [category, name][]
