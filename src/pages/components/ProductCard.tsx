@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
@@ -53,6 +54,7 @@ export default function ProductCard({
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
   const { accessToken } = useUserContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   useEffect(() => {
     const abortController = createAbortController();
@@ -89,7 +91,13 @@ export default function ProductCard({
     if (initialProduct == null) return;
 
     (async () => {
-      setProduct(await computeProductPrice(initialProduct, accessToken));
+      setProduct(
+        await computeProductPrice({
+          product: initialProduct,
+          accessToken,
+          fetchWithCreds,
+        }),
+      );
     })();
   }, [initialProduct]);
 

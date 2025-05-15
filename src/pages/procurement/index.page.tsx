@@ -1,5 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import ActionsMenu from '@/pages/procurement/components/ActionsMenu';
@@ -92,69 +93,75 @@ export default function Procurement() {
   const [hashedQuantities, setHashedQuantities] = useState<
     Record<string, number>
   >({});
+  const fetchWithCreds = useFetchWithCreds();
 
   const createProduct = useCallback(
     async (keyword: string) => {
-      await createProductUtil(
+      await createProductUtil({
         accessToken,
         keyword,
-        setSearchedProducts,
+        setProducts: setSearchedProducts,
         setSnackbarOpen,
         setSnackbarMessage,
-      );
+        fetchWithCreds,
+      });
     },
     [accessToken],
   );
 
   const createSupplier = useCallback(
     async (keyword: string) => {
-      await createSupplierUtil(
+      await createSupplierUtil({
         accessToken,
         keyword,
-        setSearchedSuppliers,
+        setSupplier: setSearchedSuppliers,
         setSnackbarOpen,
         setSnackbarMessage,
-      );
+        fetchWithCreds,
+      });
     },
     [accessToken],
   );
 
   const createHistory = useCallback(
     async (name: string) => {
-      await createHistoryUtil(
+      await createHistoryUtil({
         accessToken,
         name,
-        setHistoryList,
+        setHistory: setHistoryList,
         setSelectedHistory,
         setSnackbarOpen,
         setSnackbarMessage,
-      );
+        fetchWithCreds,
+      });
     },
     [accessToken, selectedProducts, selectedSuppliers],
   );
 
   const handleProductSearch = useCallback(
     debounce(async (keyword: string) => {
-      await handleProductSearchUtil(
+      await handleProductSearchUtil({
         accessToken,
         keyword,
-        setSearchedProducts,
+        setProducts: setSearchedProducts,
         setSnackbarOpen,
         setSnackbarMessage,
-      );
+        fetchWithCreds,
+      });
     }, 300),
     [debounce, accessToken],
   );
 
   const handleSupplierSearch = useCallback(
     debounce(async (keyword: string) => {
-      await handleSupplierSearchUtil(
+      await handleSupplierSearchUtil({
         accessToken,
         keyword,
-        setSearchedSuppliers,
+        setSuppliers: setSearchedSuppliers,
         setSnackbarOpen,
         setSnackbarMessage,
-      );
+        fetchWithCreds,
+      });
     }, 300),
     [debounce, accessToken],
   );
@@ -169,6 +176,7 @@ export default function Procurement() {
         addedProductIds: [item.id],
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       const productQuantity = await createProductQuantityUtil({
         accessToken,
@@ -177,6 +185,7 @@ export default function Procurement() {
         quantity: 0,
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       if (updatedHistory && productQuantity) {
         setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
@@ -189,6 +198,7 @@ export default function Procurement() {
         addedSupplierIds: [item.id],
         setSnackbarMessage,
         setSnackbarOpen,
+        fetchWithCreds,
       });
       if (updatedHistory) {
         setSelectedSuppliers((prev) => [item as ProcurementSupplier, ...prev]);
@@ -199,12 +209,13 @@ export default function Procurement() {
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
       (async () => {
-        const latestHistory = await getHistoryListUtil(
+        const latestHistory = await getHistoryListUtil({
           accessToken,
           setHistoryList,
           setSnackbarOpen,
           setSnackbarMessage,
-        );
+          fetchWithCreds,
+        });
         if (latestHistory) {
           await getHistoryUtil({
             accessToken,
@@ -215,6 +226,7 @@ export default function Procurement() {
             setSnackbarOpen,
             setSnackbarMessage,
             setProductQuantities,
+            fetchWithCreds,
           });
         }
       })();
@@ -374,6 +386,7 @@ export default function Procurement() {
                   setSnackbarOpen,
                   setSnackbarMessage,
                   setProductQuantities,
+                  fetchWithCreds,
                 });
                 setHistoryListDialog(false);
               }}
@@ -420,14 +433,15 @@ export default function Procurement() {
               setSnackbarMessage={setSnackbarMessage}
               setSnackbarOpen={setSnackbarOpen}
               handleSubmit={async (title: string) => {
-                await createHistoryUtil(
+                await createHistoryUtil({
                   accessToken,
-                  title,
-                  setHistoryList,
+                  name: title,
+                  setHistory: setHistoryList,
                   setSelectedHistory,
                   setSnackbarOpen,
                   setSnackbarMessage,
-                );
+                  fetchWithCreds,
+                });
                 setSelectedProducts([]);
                 setSelectedSuppliers([]);
                 setProductQuantities([]);
