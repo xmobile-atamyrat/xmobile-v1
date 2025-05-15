@@ -1,5 +1,5 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
-import { fetchWithCreds } from '@/pages/lib/fetch';
+import { FetchWithCredsType } from '@/pages/lib/types';
 import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
@@ -80,20 +80,25 @@ export const isPriceValid = (price: string): boolean => {
 };
 
 // returns product.price from session or fetches from db
-export const computePrice = async (
-  priceId: string,
-  accessToken: string,
-): Promise<string> => {
+export const computePrice = async ({
+  accessToken,
+  fetchWithCreds,
+  priceId,
+}: {
+  priceId: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<string> => {
   const cachePrice = sessionStorage.getItem(priceId);
   if (cachePrice != null) {
     return cachePrice;
   }
 
-  const { success, data } = await fetchWithCreds<Prices>(
+  const { success, data } = await fetchWithCreds<Prices>({
     accessToken,
-    `/api/prices?id=${priceId}`,
-    'GET',
-  );
+    path: `/api/prices?id=${priceId}`,
+    method: 'GET',
+  });
 
   if (success) {
     sessionStorage.setItem(priceId, data.priceInTmt);
@@ -104,10 +109,15 @@ export const computePrice = async (
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
 // If {value} doesn't exist, computePrice function is used for safety
-export const computeProductPrice = async (
-  product: Product,
-  accessToken: string,
-) => {
+export const computeProductPrice = async ({
+  accessToken,
+  fetchWithCreds,
+  product,
+}: {
+  product: Product;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}) => {
   const priceMatchId = product.price?.match(squareBracketRegex);
   const priceMatchValue = product.price?.match(curlyBracketRegex);
   const processedProduct = { ...product };
@@ -116,18 +126,31 @@ export const computeProductPrice = async (
     processedProduct.price = priceMatchValue[1];
     sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
   } else if (priceMatchId != null) {
-    processedProduct.price = await computePrice(priceMatchId[1], accessToken);
+    processedProduct.price = await computePrice({
+      priceId: priceMatchId[1],
+      accessToken,
+      fetchWithCreds,
+    });
   }
 
   return processedProduct;
 };
 
 // ProductPriceTags have only [id], value is fetched in computePrice function.
-export const computeProductPriceTags = async (
-  product: Product,
-  accessToken: string,
-): Promise<Product> => {
-  const priceComputedTags = await computeProductPrice(product, accessToken);
+export const computeProductPriceTags = async ({
+  accessToken,
+  fetchWithCreds,
+  product,
+}: {
+  product: Product;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<Product> => {
+  const priceComputedTags = await computeProductPrice({
+    product,
+    accessToken,
+    fetchWithCreds,
+  });
   const priceTagsComputedProduct = {
     ...priceComputedTags,
     tags: await Promise.all(
@@ -135,7 +158,11 @@ export const computeProductPriceTags = async (
         const tagMatch = tag.match(squareBracketRegex);
         if (tagMatch != null) {
           const idTag = tagMatch[1];
-          const price = await computePrice(idTag, accessToken);
+          const price = await computePrice({
+            priceId: idTag,
+            accessToken,
+            fetchWithCreds,
+          });
 
           return tag.replace(`[${idTag}]`, price);
         }
