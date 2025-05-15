@@ -1,4 +1,4 @@
-import { SnackbarProps } from '@/pages/lib/types';
+import { FetchWithCredsType, SnackbarProps } from '@/pages/lib/types';
 import {
   createHistory,
   createProcurementProduct,
@@ -26,18 +26,27 @@ import {
 } from '@prisma/client';
 import { Dispatch, SetStateAction } from 'react';
 
-export async function handleProductSearchUtil(
-  accessToken: string,
-  keyword: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function handleProductSearchUtil({
+  accessToken,
+  keyword,
+  setProducts,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  keyword: string;
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, data, message } = await getProcurementProducts(
+    const { success, data, message } = await getProcurementProducts({
       accessToken,
-      keyword,
-    );
+      searchKeyword: keyword,
+      fetchWithCreds,
+    });
     if (success) {
       setProducts(data);
     } else {
@@ -58,15 +67,27 @@ export async function handleProductSearchUtil(
   }
 }
 
-export async function handleSupplierSearchUtil(
-  accessToken: string,
-  keyword: string,
-  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function handleSupplierSearchUtil({
+  accessToken,
+  fetchWithCreds,
+  keyword,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  setSuppliers,
+}: {
+  accessToken: string;
+  keyword: string;
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, data, message } = await getSuppliers(accessToken, keyword);
+    const { success, data, message } = await getSuppliers({
+      accessToken,
+      searchKeyword: keyword,
+      fetchWithCreds,
+    });
     if (success) {
       setSuppliers(data);
     } else {
@@ -87,13 +108,21 @@ export async function handleSupplierSearchUtil(
   }
 }
 
-export async function createProductUtil(
-  accessToken: string,
-  keyword: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function createProductUtil({
+  accessToken,
+  keyword,
+  setProducts,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  keyword: string;
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
@@ -104,10 +133,11 @@ export async function createProductUtil(
   }
 
   try {
-    const { success, data, message } = await createProcurementProduct(
+    const { success, data, message } = await createProcurementProduct({
       accessToken,
-      keyword,
-    );
+      name: keyword,
+      fetchWithCreds,
+    });
     if (success) {
       setProducts([data]);
       setSnackbarOpen(true);
@@ -140,6 +170,7 @@ export async function createProductQuantityUtil({
   quantity,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   accessToken: string;
   orderId: string;
@@ -147,6 +178,7 @@ export async function createProductQuantityUtil({
   quantity: number;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<ProcurementOrderProductQuantity | undefined> {
   try {
     const { success, data, message } = await createProductQuantity({
@@ -154,6 +186,7 @@ export async function createProductQuantityUtil({
       orderId,
       productId,
       quantity,
+      fetchWithCreds,
     });
     if (success) {
       setSnackbarOpen(true);
@@ -181,16 +214,29 @@ export async function createProductQuantityUtil({
   return undefined;
 }
 
-export async function createHistoryUtil(
-  accessToken: string,
-  name: string,
-  setHistory: Dispatch<SetStateAction<ProcurementOrder[]>>,
-  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function createHistoryUtil({
+  accessToken,
+  fetchWithCreds,
+  name,
+  setHistory,
+  setSelectedHistory,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  name: string;
+  setHistory: Dispatch<SetStateAction<ProcurementOrder[]>>;
+  setSelectedHistory: Dispatch<SetStateAction<ProcurementOrder>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, data, message } = await createHistory(accessToken, name);
+    const { success, data, message } = await createHistory({
+      accessToken,
+      fetchWithCreds,
+      name,
+    });
     if (success) {
       setSelectedHistory(data);
       setHistory((current) => [data, ...current]);
@@ -222,6 +268,7 @@ export async function editHistoryUtil({
   removedSupplierIds,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   id: string;
   accessToken: string;
@@ -232,6 +279,7 @@ export async function editHistoryUtil({
   removedSupplierIds?: string[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<ProcurementOrder | undefined> {
   try {
     const { success, data, message } = await editHistory({
@@ -242,6 +290,7 @@ export async function editHistoryUtil({
       removedProductIds,
       addedSupplierIds,
       removedSupplierIds,
+      fetchWithCreds,
     });
     if (success) {
       setSnackbarOpen(true);
@@ -276,6 +325,7 @@ export async function editProductQuantityUtil({
   quantity,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   accessToken: string;
   orderId: string;
@@ -283,6 +333,7 @@ export async function editProductQuantityUtil({
   quantity: number;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<ProcurementOrderProductQuantity | undefined> {
   try {
     const { success, data, message } = await editProductQuantity({
@@ -290,6 +341,7 @@ export async function editProductQuantityUtil({
       orderId,
       productId,
       quantity,
+      fetchWithCreds,
     });
     if (success) {
       setSnackbarOpen(true);
@@ -322,16 +374,19 @@ export async function editProductPricesUtil({
   updatedPrices,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   accessToken: string;
   updatedPrices: Partial<ProcurementSupplierProductPrice>[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<boolean> {
   try {
     const { success, message } = await editProductPrices({
       accessToken,
       updatedPrices,
+      fetchWithCreds,
     });
     if (success) {
       setSnackbarOpen(true);
@@ -359,13 +414,21 @@ export async function editProductPricesUtil({
   return false;
 }
 
-export async function createSupplierUtil(
-  accessToken: string,
-  keyword: string,
-  setSupplier: Dispatch<SetStateAction<ProcurementSupplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function createSupplierUtil({
+  accessToken,
+  fetchWithCreds,
+  keyword,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  setSupplier,
+}: {
+  accessToken: string;
+  keyword: string;
+  setSupplier: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
@@ -376,10 +439,11 @@ export async function createSupplierUtil(
   }
 
   try {
-    const { success, data, message } = await createSupplier(
+    const { success, data, message } = await createSupplier({
       accessToken,
-      keyword,
-    );
+      name: keyword,
+      fetchWithCreds,
+    });
     if (success) {
       setSupplier([data]);
       setSnackbarOpen(true);
@@ -405,15 +469,24 @@ export async function createSupplierUtil(
   }
 }
 
-export async function getProductsUtil(
-  accessToken: string,
-  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function getProductsUtil({
+  accessToken,
+  fetchWithCreds,
+  setProducts,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  setProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, data, message } =
-      await getProcurementProducts(accessToken);
+    const { success, data, message } = await getProcurementProducts({
+      accessToken,
+      fetchWithCreds,
+    });
     if (success) {
       setProducts(data);
     } else {
@@ -434,14 +507,24 @@ export async function getProductsUtil(
   }
 }
 
-export async function getHistoryListUtil(
-  accessToken: string,
-  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-): Promise<ProcurementOrder | undefined> {
+export async function getHistoryListUtil({
+  accessToken,
+  fetchWithCreds,
+  setHistoryList,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  setHistoryList: Dispatch<SetStateAction<ProcurementOrder[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ProcurementOrder | undefined> {
   try {
-    const { success, data, message } = await getHistoryList(accessToken);
+    const { success, data, message } = await getHistoryList({
+      accessToken,
+      fetchWithCreds,
+    });
     if (success) {
       setHistoryList(data);
       return data[0];
@@ -472,6 +555,7 @@ export async function getHistoryUtil({
   setSnackbarOpen,
   setSnackbarMessage,
   setProductQuantities,
+  fetchWithCreds,
 }: {
   accessToken: string;
   id: string;
@@ -483,9 +567,14 @@ export async function getHistoryUtil({
   setProductQuantities: Dispatch<
     SetStateAction<ProcurementOrderProductQuantity[]>
   >;
+  fetchWithCreds: FetchWithCredsType;
 }) {
   try {
-    const { success, data, message } = await getHistory(accessToken, id);
+    const { success, data, message } = await getHistory({
+      accessToken,
+      id,
+      fetchWithCreds,
+    });
     if (success) {
       setSelectedProducts(data.products ?? []);
       setSelectedSuppliers(data.suppliers ?? []);
@@ -509,14 +598,24 @@ export async function getHistoryUtil({
   }
 }
 
-export async function getSuppliersUtil(
-  accessToken: string,
-  setSuppliers: Dispatch<SetStateAction<ProcurementProduct[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function getSuppliersUtil({
+  accessToken,
+  fetchWithCreds,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  setSuppliers,
+}: {
+  accessToken: string;
+  setSuppliers: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, data, message } = await getSuppliers(accessToken);
+    const { success, data, message } = await getSuppliers({
+      accessToken,
+      fetchWithCreds,
+    });
     if (success) {
       setSuppliers(data);
     } else {
@@ -537,15 +636,27 @@ export async function getSuppliersUtil(
   }
 }
 
-export async function deleteSupplierUtil(
-  accessToken: string,
-  id: string,
-  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function deleteSupplierUtil({
+  accessToken,
+  fetchWithCreds,
+  id,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  setSuppliers,
+}: {
+  accessToken: string;
+  id: string;
+  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, message } = await deleteSupplier(accessToken, id);
+    const { success, message } = await deleteSupplier({
+      accessToken,
+      id,
+      fetchWithCreds,
+    });
     if (success) {
       setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
       setSnackbarOpen(true);
@@ -577,18 +688,21 @@ export async function deleteQuantityUtil({
   productId,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   accessToken: string;
   orderId: string;
   productId: string;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<ProcurementOrderProductQuantity | undefined> {
   try {
     const { success, data, message } = await deleteQuantity({
       accessToken,
       orderId,
       productId,
+      fetchWithCreds,
     });
     if (success) {
       setSnackbarOpen(true);
@@ -616,14 +730,25 @@ export async function deleteQuantityUtil({
   return undefined;
 }
 
-export async function deleteHistoryUtil(
-  accessToken: string,
-  id: string,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-): Promise<ProcurementOrder | undefined> {
+export async function deleteHistoryUtil({
+  accessToken,
+  fetchWithCreds,
+  id,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  id: string;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ProcurementOrder | undefined> {
   try {
-    const { success, data, message } = await deleteHistory(accessToken, id);
+    const { success, data, message } = await deleteHistory({
+      accessToken,
+      id,
+      fetchWithCreds,
+    });
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
@@ -650,15 +775,27 @@ export async function deleteHistoryUtil(
   return undefined;
 }
 
-export async function deleteProductUtil(
-  accessToken: string,
-  id: string,
-  setProducts: Dispatch<SetStateAction<ProcurementSupplier[]>>,
-  setSnackbarOpen: Dispatch<SetStateAction<boolean>>,
-  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>,
-) {
+export async function deleteProductUtil({
+  accessToken,
+  fetchWithCreds,
+  id,
+  setProducts,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  id: string;
+  setProducts: Dispatch<SetStateAction<ProcurementSupplier[]>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}) {
   try {
-    const { success, message } = await deleteProduct(accessToken, id);
+    const { success, message } = await deleteProduct({
+      accessToken,
+      id,
+      fetchWithCreds,
+    });
     if (success) {
       setProducts((prev) => prev.filter((product) => product.id !== id));
       setSnackbarOpen(true);
@@ -689,14 +826,20 @@ export async function deletePricesUtil({
   ids,
   setSnackbarMessage,
   setSnackbarOpen,
+  fetchWithCreds,
 }: {
   accessToken: string;
   ids: Partial<ProcurementSupplierProductPrice>[];
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
 }): Promise<boolean> {
   try {
-    const { success, message } = await deletePrices(accessToken, ids);
+    const { success, message } = await deletePrices({
+      accessToken,
+      ids,
+      fetchWithCreds,
+    });
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({

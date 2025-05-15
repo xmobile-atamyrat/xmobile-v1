@@ -1,4 +1,5 @@
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
@@ -58,6 +59,7 @@ export default function HistoryListDialog({
     id: string;
     name: string;
   }>();
+  const fetchWithCreds = useFetchWithCreds();
 
   return (
     <Dialog open onClose={handleClose} component="form" fullScreen>
@@ -139,12 +141,13 @@ export default function HistoryListDialog({
           redButtonText={t('delete')}
           handleClose={() => setDeleteDialogId(undefined)}
           handleDelete={async () => {
-            const deletedHistory = await deleteHistoryUtil(
+            const deletedHistory = await deleteHistoryUtil({
               accessToken,
-              deleteDialogId,
+              id: deleteDialogId,
               setSnackbarOpen,
               setSnackbarMessage,
-            );
+              fetchWithCreds,
+            });
             if (deletedHistory) {
               const updatedHistoryList = historyList.filter(
                 (history) => history.id !== deletedHistory.id,
@@ -173,6 +176,7 @@ export default function HistoryListDialog({
               name: newTitle,
               setSnackbarOpen,
               setSnackbarMessage,
+              fetchWithCreds,
             });
             if (updatedHistory) {
               setHistoryList((prev) =>
