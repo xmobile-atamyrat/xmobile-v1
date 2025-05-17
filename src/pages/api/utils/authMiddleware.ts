@@ -3,6 +3,7 @@ import {
   AUTH_REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_EXPIRY_COOKIE,
 } from '@/pages/lib/constants';
+import { UserRole } from '@prisma/client';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 
@@ -23,6 +24,7 @@ export const verifyToken = (
 
 export interface AuthenticatedRequest extends NextApiRequest {
   userId?: string;
+  grade?: UserRole;
 }
 
 const BYPASS_AUTH_PATHS = ['/api/prices/rate', '/api/prices'];
@@ -54,8 +56,9 @@ const withAuth = (
     const token = authHeader.split(' ')[1];
 
     try {
-      const { userId } = await verifyToken(token, ACCESS_SECRET);
+      const { userId, grade } = await verifyToken(token, ACCESS_SECRET);
       (req as AuthenticatedRequest).userId = userId;
+      (req as AuthenticatedRequest).grade = grade;
       return handler(req as AuthenticatedRequest, res);
     } catch (accessTokenError) {
       if (accessTokenError.name === 'TokenExpiredError') {
@@ -69,6 +72,7 @@ const withAuth = (
 
           req.headers.authorization = `Bearer ${newAccessToken}`;
           (req as AuthenticatedRequest).userId = userId;
+          (req as AuthenticatedRequest).grade = grade;
 
           res.setHeader(
             'Set-Cookie',
