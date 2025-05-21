@@ -285,7 +285,7 @@ export const createProductQuantity = async ({
   accessToken: string;
   orderId: string;
   productId: string;
-  quantity: number;
+  quantity?: number;
   fetchWithCreds: FetchWithCredsType;
 }): Promise<ResponseApi<ProcurementOrderProductQuantity>> => {
   return fetchWithCreds<ProcurementOrderProductQuantity>({
