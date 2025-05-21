@@ -89,7 +89,7 @@ async function arrayToXlsxBlob(
   }
 }
 
-export async function downloadXlsxAsZip(files: ExcelFileData[]): Promise<void> {
+export async function downloadXlsxFiles(files: ExcelFileData[]): Promise<void> {
   if (!files || files.length === 0) {
     console.error('No files data provided to zip.');
     return;
