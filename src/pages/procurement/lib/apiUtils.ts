@@ -175,7 +175,7 @@ export async function createProductQuantityUtil({
   accessToken: string;
   orderId: string;
   productId: string;
-  quantity: number;
+  quantity?: number;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;

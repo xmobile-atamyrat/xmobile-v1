@@ -182,7 +182,6 @@ export default function Procurement() {
         accessToken,
         orderId: selectedHistory.id,
         productId: item.id,
-        quantity: 0,
         setSnackbarMessage,
         setSnackbarOpen,
         fetchWithCreds,
