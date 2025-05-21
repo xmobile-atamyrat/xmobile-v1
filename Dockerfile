@@ -1,17 +1,45 @@
-FROM ubuntu:latest
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install necessary packages
-RUN apt-get update && \
-    apt-get install -y curl git openssh-client && \
-    curl -sL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g yarn
+# Install OS dependencies for Prisma (needed for binary builds)
+RUN apk add --no-cache openssl
 
-# Copy the SSH private key and set permissions
-COPY ssh_keys/xmobile /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa
+# Copy package files and install all dependencies
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
-# Add GitHub to known hosts to prevent verification prompt
-RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+# Copy the rest of the app
+COPY . .
+
+# Generate Prisma client
+RUN yarn prisma generate
+
+# Build Next.js app and WebSocket server
+RUN yarn build && yarn build:ws
+
+# Remove devDependencies to shrink size
+RUN yarn install --production --ignore-scripts --prefer-offline
+
+
+# -------- Step 2: Runtime Stage --------
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy only required files from builder
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/.env ./.env
+
+# Expose both Next.js (3000) and WebSocket (4000) ports
+EXPOSE 3000 4000
+
+ENV NODE_ENV=production
+
+# Run both servers in parallel
+CMD ["sh", "-c", "yarn start & yarn start:ws && wait"]
