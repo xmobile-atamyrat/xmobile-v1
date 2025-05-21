@@ -90,51 +90,56 @@ async function arrayToXlsxBlob(
 }
 
 export async function downloadXlsxFiles(files: ExcelFileData[]): Promise<void> {
-  if (!files || files.length === 0) {
+  if (!Array.isArray(files) || files.length === 0) {
     console.error('No files data provided to zip.');
     return;
   }
 
-  // eslint-disable-next-line no-restricted-syntax
-  files.forEach(async (fileInfo) => {
-    if (
-      !fileInfo ||
-      typeof fileInfo !== 'object' ||
-      !fileInfo.filename ||
-      !Array.isArray(fileInfo.data)
-    ) {
-      console.error('Skipping invalid file data structure:', fileInfo);
-      return;
-    }
+  await files.reduce((promiseChain, fileInfo) => {
+    return promiseChain.then(async () => {
+      if (
+        !fileInfo ||
+        typeof fileInfo !== 'object' ||
+        !fileInfo.filename ||
+        !Array.isArray(fileInfo.data)
+      ) {
+        console.error('Skipping invalid file data structure:', fileInfo);
+        return;
+      }
 
-    let xlsxFilename = fileInfo.filename;
-    if (!xlsxFilename.toLowerCase().endsWith('.xlsx')) {
-      xlsxFilename += '.xlsx';
-    }
+      let xlsxFilename = fileInfo.filename;
+      if (!xlsxFilename.toLowerCase().endsWith('.xlsx')) {
+        xlsxFilename += '.xlsx';
+      }
 
-    const xlsxBlob = await arrayToXlsxBlob(
-      fileInfo.data,
-      fileInfo.supplierId,
-      fileInfo.productIds,
-    );
-
-    if (xlsxBlob) {
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(xlsxBlob);
-
-      link.setAttribute('href', url);
-      link.setAttribute('download', xlsxFilename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } else {
-      console.error(
-        `Failed to generate Excel file for ${fileInfo.filename}. Skipping this file.`,
+      const xlsxBlob = await arrayToXlsxBlob(
+        fileInfo.data,
+        fileInfo.supplierId,
+        fileInfo.productIds,
       );
-    }
-  });
+
+      if (xlsxBlob) {
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(xlsxBlob);
+        link.href = url;
+        link.download = xlsxFilename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Small delay for Safari to complete the download
+        await new Promise((res) => {
+          setTimeout(res, 300); // No return value from the executor
+        });
+      } else {
+        console.error(
+          `Failed to generate Excel file for ${fileInfo.filename}.`,
+        );
+      }
+    });
+  }, Promise.resolve());
 }
 
 export const dayMonthYearFromDate = (date: Date) => {
