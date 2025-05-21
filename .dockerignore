@@ -4,3 +4,8 @@ dist
 .git
 *.log
 Dockerfile
+.env.local
+*.ts
+*.tsx
+*.md
+.vscode

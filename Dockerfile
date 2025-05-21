@@ -1,45 +1,35 @@
-FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+# syntax=docker/dockerfile:1.4
+
+FROM --platform=$BUILDPLATFORM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install OS dependencies for Prisma (needed for binary builds)
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y openssl bash && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install all dependencies
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-# Copy the rest of the app
 COPY . .
 
-# Generate Prisma client
 RUN yarn prisma generate
-
-# Build Next.js app and WebSocket server
 RUN yarn build && yarn build:ws
+RUN yarn install --frozen-lockfile --production
 
-# Remove devDependencies to shrink size
-RUN yarn install --production --ignore-scripts --prefer-offline
-
-
-# -------- Step 2: Runtime Stage --------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Copy only required files from builder
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/.env ./.env
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-# Expose both Next.js (3000) and WebSocket (4000) ports
+COPY --from=builder /app/.next .next
+COPY --from=builder /app/public public
+COPY --from=builder /app/dist dist
+COPY --from=builder /app/node_modules node_modules
+COPY --from=builder /app/package.json package.json
+COPY --from=builder /app/prisma prisma
+COPY --from=builder /app/.env .env
+
 EXPOSE 3000 4000
-
 ENV NODE_ENV=production
 
-# Run both servers in parallel
 CMD ["sh", "-c", "yarn start & yarn start:ws && wait"]
