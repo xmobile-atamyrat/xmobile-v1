@@ -45,8 +45,9 @@ mv /home/ubuntu/tar-file/app/xmobile-v1/yarn.lock .
 echo "Copying 'next.config.mjs'"
 mv /home/ubuntu/tar-file/app/xmobile-v1/next.config.mjs .
 
-echo "Copying 'tsconfig.json'"
+echo "Copying 'tsconfig.json' & 'tsconfig.ws.json'"
 mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.json .
+mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.ws.json .
 
 rm -rf .next
 yarn build
