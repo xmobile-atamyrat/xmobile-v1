@@ -140,5 +140,8 @@
   "orderNotSelected": "Lütfen hesaplamak için bir sipariş seçin!",
   "upload": "Yüklemek",
   "downloadCalculatedOrder": "Hesaplanan Siparişi İndir",
-  "uploadPrices": "Fiyatları Yükle"
+  "uploadPrices": "Fiyatları Yükle",
+  "addToBase": "Tabana ekle",
+  "alreadyExistsConcat": "Var!",
+  "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!"
 }

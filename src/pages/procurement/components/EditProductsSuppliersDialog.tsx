@@ -6,29 +6,29 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  TextField,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-interface DeleteDialogProps {
+interface EditDialogProps {
   title: string;
   description?: string;
+  currentName: string;
   handleClose: () => void;
-  handleDelete: () => Promise<void> | void;
-  blueButtonText?: string;
-  redButtonText?: string;
+  handleEdit: (name: string) => Promise<void> | void;
 }
 
-export default function DeleteDialog({
+export default function EditDialog({
   description,
   title,
   handleClose,
-  handleDelete,
-  blueButtonText,
-  redButtonText,
-}: DeleteDialogProps) {
+  handleEdit,
+  currentName,
+}: EditDialogProps) {
   const [loading, setLoading] = useState(false);
   const t = useTranslations();
+  const [newName, setNewName] = useState<string>(currentName);
 
   return (
     <Dialog open onClose={handleClose}>
@@ -39,29 +39,38 @@ export default function DeleteDialog({
             {description}
           </DialogContentText>
         )}
+        <TextField
+          className="w-[400px]"
+          value={newName}
+          onChange={(e) => {
+            setNewName(e.currentTarget.value);
+          }}
+        />
       </DialogContent>
       <DialogActions>
         <Button
           onClick={handleClose}
-          color="primary"
+          color="error"
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {blueButtonText ?? t('cancel')}
+          {t('cancel')}
         </Button>
         <LoadingButton
           loading={loading}
           onClick={async () => {
             setLoading(true);
-            await handleDelete();
+            await handleEdit(newName);
             setLoading(false);
+
+            handleClose();
           }}
-          color="error"
+          color="primary"
           autoFocus
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {redButtonText ?? t('delete')}
+          {t('submit')}
         </LoadingButton>
       </DialogActions>
     </Dialog>

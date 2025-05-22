@@ -142,5 +142,8 @@
   "orderNotSelected": "Пожалуйста, выберите заказ для расчета!",
   "upload": "Загрузить",
   "downloadCalculatedOrder": "Скачать рассчитанное заказ",
-  "uploadPrices": "Загрузить цены"
+  "uploadPrices": "Загрузить цены",
+  "addToBase": "Добавить в базу",
+  "alreadyExistsConcat": "Существует!",
+  "confirmProductSupplierDelete": "Вы уверены, что хотите удалить? Предмет также будет удален из всех предыдущих заказов!"
 }

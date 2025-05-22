@@ -1,6 +1,11 @@
 import { SearchBar } from '@/pages/components/Appbar';
+import DeleteDialog from '@/pages/components/DeleteDialog';
+import { theme } from '@/pages/lib/utils';
+import EditDialog from '@/pages/procurement/components/EditProductsSuppliersDialog';
 import { ProductsSuppliersType } from '@/pages/procurement/lib/types';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import {
   Box,
   Button,
@@ -10,6 +15,7 @@ import {
   DialogTitle,
   IconButton,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { ProcurementProduct, ProcurementSupplier } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -18,13 +24,23 @@ import { useState } from 'react';
 interface AddProductsSuppliersDialogProps {
   handleClose: () => void;
   itemType: ProductsSuppliersType;
-  handleItemSearch: (keyword: string) => Promise<void>;
+  handleItemSearch: (...args: any[]) => void;
   searchedItems: (ProcurementProduct | ProcurementSupplier)[];
   selectedItems: ProcurementProduct[] | ProcurementSupplier[];
   handleAddItem: (keyword: string) => Promise<void>;
   handleAddSearchedItem: (
     item: ProcurementProduct | ProcurementSupplier,
   ) => Promise<void>;
+  handleEditItem: ({
+    id,
+    name,
+    description,
+  }: {
+    id: string;
+    name: string;
+    description?: string;
+  }) => Promise<void>;
+  handleDeleteItem: (id: string) => Promise<void>;
 }
 
 export default function AddProductsSuppliersDialog({
@@ -35,9 +51,19 @@ export default function AddProductsSuppliersDialog({
   selectedItems,
   handleAddItem,
   handleAddSearchedItem,
+  handleDeleteItem,
+  handleEditItem,
 }: AddProductsSuppliersDialogProps) {
   const t = useTranslations();
   const [searchItemKeyword, setSearchItemKeyword] = useState('');
+  const [editDialog, setEditDialog] = useState<
+    ProcurementProduct | ProcurementSupplier
+  >();
+  const [deleteDialog, setDeleteDialog] = useState<
+    ProcurementProduct | ProcurementSupplier
+  >();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+
   return (
     <Dialog open onClose={handleClose} fullScreen>
       <DialogTitle>
@@ -45,7 +71,7 @@ export default function AddProductsSuppliersDialog({
       </DialogTitle>
       <DialogContent>
         <Box className="flex flex-col gap-4">
-          <Box className="flex flex-row gap-2">
+          <Box className={`flex flex-${isMdUp ? 'row' : 'col'} gap-2`}>
             {SearchBar({
               handleSearch: handleItemSearch,
               searchKeyword: searchItemKeyword,
@@ -54,39 +80,58 @@ export default function AddProductsSuppliersDialog({
               width: '100%',
             })}
             <Button
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none', minWidth: 150 }}
               variant="outlined"
               onClick={async () => {
                 await handleAddItem(searchItemKeyword);
               }}
             >
-              {t('add')}
+              {t('addToBase')}
             </Button>
           </Box>
 
-          <Box className="flex flex-col gap-2 pl-4">
+          <Box className="flex flex-col gap-4 pl-2">
             {searchedItems.map((item) => (
-              <Box key={item.id} className="flex flex-row items-center gap-8">
+              <Box
+                key={item.id}
+                className={`flex flex-row items-center justify-${isMdUp ? 'start' : 'between'} gap-${isMdUp ? 8 : 0}`}
+              >
                 <Typography className="h-[40px] flex items-center">
                   {item.name}
                 </Typography>
-                {selectedItems.some((i) => i.id === item.id) ? (
-                  <Typography
-                    color="green"
-                    fontSize={12}
-                    className="h-[40px] flex items-center"
-                  >
-                    {t('alreadyExists')}
-                  </Typography>
-                ) : (
+                <Box className={`flex flex-row gap-${isMdUp ? 4 : 0}`}>
+                  {selectedItems.some((i) => i.id === item.id) ? (
+                    <Typography
+                      color="green"
+                      fontSize={12}
+                      className="h-[40px] flex items-center"
+                    >
+                      {isMdUp ? t('alreadyExists') : t('alreadyExistsConcat')}
+                    </Typography>
+                  ) : (
+                    <IconButton
+                      onClick={async () => {
+                        await handleAddSearchedItem(item);
+                      }}
+                    >
+                      <AddCircleIcon color="primary" />
+                    </IconButton>
+                  )}
                   <IconButton
-                    onClick={async () => {
-                      await handleAddSearchedItem(item);
+                    onClick={() => {
+                      setEditDialog(item);
                     }}
                   >
-                    <AddCircleIcon color="primary" />
+                    <EditIcon color="primary" />
                   </IconButton>
-                )}
+                  <IconButton
+                    onClick={() => {
+                      setDeleteDialog(item);
+                    }}
+                  >
+                    <DeleteIcon color="error" />
+                  </IconButton>
+                </Box>
               </Box>
             ))}
           </Box>
@@ -102,6 +147,33 @@ export default function AddProductsSuppliersDialog({
           {t('cancel')}
         </Button>
       </DialogActions>
+
+      {editDialog && (
+        <EditDialog
+          currentName={editDialog.name}
+          title={t('edit')}
+          handleClose={() => {
+            setEditDialog(undefined);
+          }}
+          handleEdit={async (newName: string) => {
+            await handleEditItem({ id: editDialog.id, name: newName });
+          }}
+        />
+      )}
+
+      {deleteDialog && (
+        <DeleteDialog
+          title={t('delete')}
+          description={t('confirmProductSupplierDelete')}
+          handleClose={() => {
+            setDeleteDialog(undefined);
+          }}
+          handleDelete={async () => {
+            await handleDeleteItem(deleteDialog.id);
+            setDeleteDialog(undefined);
+          }}
+        />
+      )}
     </Dialog>
   );
 }
