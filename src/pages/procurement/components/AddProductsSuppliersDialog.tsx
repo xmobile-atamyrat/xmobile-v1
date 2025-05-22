@@ -164,11 +164,13 @@ export default function AddProductsSuppliersDialog({
       {deleteDialog && (
         <DeleteDialog
           title={t('delete')}
+          description={t('confirmProductSupplierDelete')}
           handleClose={() => {
             setDeleteDialog(undefined);
           }}
           handleDelete={async () => {
             await handleDeleteItem(deleteDialog.id);
+            setDeleteDialog(undefined);
           }}
         />
       )}

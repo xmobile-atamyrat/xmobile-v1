@@ -47,7 +47,7 @@ export default function DeleteDialog({
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {blueButtonText ?? t('close')}
+          {blueButtonText ?? t('cancel')}
         </Button>
         <LoadingButton
           loading={loading}
