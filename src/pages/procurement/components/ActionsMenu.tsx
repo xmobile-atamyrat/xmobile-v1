@@ -6,7 +6,7 @@ import { HistoryPrice } from '@/pages/procurement/lib/types';
 import {
   assignColorToPrices,
   dayMonthYearFromDate,
-  downloadXlsxAsZip,
+  downloadXlsxFiles,
   ExcelFileData,
   handleFilesSelected,
   priceHash,
@@ -139,7 +139,7 @@ export default function ActionsMenu({
                 return 0; // a is equal to b
               })
               .forEach(({ id, name }) => {
-                if (hashedQuantities[id] > 0) {
+                if (hashedQuantities[id] != null && hashedQuantities[id] > 0) {
                   productIds.push(id);
                   productNames.push(name);
                   quantities.push(hashedQuantities[id]);
@@ -181,7 +181,7 @@ export default function ActionsMenu({
               return;
             }
 
-            await downloadXlsxAsZip(csvFileData);
+            await downloadXlsxFiles(csvFileData);
           }}
         >
           {t('downloadEmptyOrder')}
@@ -328,7 +328,7 @@ export default function ActionsMenu({
                 return excelFileData;
               })
               .filter((data) => data.data.length > 1);
-            await downloadXlsxAsZip(csvFileData);
+            await downloadXlsxFiles(csvFileData);
           }}
         >
           {t('downloadCalculatedOrder')}

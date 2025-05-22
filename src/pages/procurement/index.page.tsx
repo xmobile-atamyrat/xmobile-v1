@@ -13,7 +13,11 @@ import {
   createProductQuantityUtil,
   createProductUtil,
   createSupplierUtil,
+  deleteProductUtil,
+  deleteSupplierUtil,
   editHistoryUtil,
+  editProductUtil,
+  editSupplierUtil,
   getHistoryListUtil,
   getHistoryUtil,
   handleProductSearchUtil,
@@ -25,6 +29,7 @@ import {
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import { priceHash } from '@/pages/procurement/lib/utils';
+import { debounce } from '@/pages/product/utils';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import {
@@ -32,7 +37,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  debounce,
   Snackbar,
   Typography,
   useMediaQuery,
@@ -106,7 +110,13 @@ export default function Procurement() {
         fetchWithCreds,
       });
     },
-    [accessToken],
+    [
+      accessToken,
+      setSearchedProducts,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    ],
   );
 
   const createSupplier = useCallback(
@@ -120,7 +130,13 @@ export default function Procurement() {
         fetchWithCreds,
       });
     },
-    [accessToken],
+    [
+      accessToken,
+      setSearchedSuppliers,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    ],
   );
 
   const createHistory = useCallback(
@@ -135,7 +151,13 @@ export default function Procurement() {
         fetchWithCreds,
       });
     },
-    [accessToken, selectedProducts, selectedSuppliers],
+    [
+      accessToken,
+      setHistoryList,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    ],
   );
 
   const handleProductSearch = useCallback(
@@ -149,7 +171,14 @@ export default function Procurement() {
         fetchWithCreds,
       });
     }, 300),
-    [debounce, accessToken],
+    [
+      debounce,
+      accessToken,
+      setSearchedProducts,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    ],
   );
 
   const handleSupplierSearch = useCallback(
@@ -166,45 +195,165 @@ export default function Procurement() {
     [debounce, accessToken],
   );
 
-  const handleAddSearchedItem = async (
-    item: ProcurementProduct | ProcurementSupplier,
-  ) => {
-    if (addProductsSuppliersDialog === 'product') {
-      const updatedHistory = await editHistoryUtil({
-        id: selectedHistory.id,
-        accessToken,
-        addedProductIds: [item.id],
-        setSnackbarMessage,
-        setSnackbarOpen,
-        fetchWithCreds,
-      });
-      const productQuantity = await createProductQuantityUtil({
-        accessToken,
-        orderId: selectedHistory.id,
-        productId: item.id,
-        quantity: 0,
-        setSnackbarMessage,
-        setSnackbarOpen,
-        fetchWithCreds,
-      });
-      if (updatedHistory && productQuantity) {
-        setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
-        setProductQuantities((prev) => [productQuantity, ...prev]);
-      }
-    } else {
-      const updatedHistory = await editHistoryUtil({
-        id: selectedHistory.id,
-        accessToken,
-        addedSupplierIds: [item.id],
-        setSnackbarMessage,
-        setSnackbarOpen,
-        fetchWithCreds,
-      });
-      if (updatedHistory) {
+  const handleAddSearchedItem = useCallback(
+    async (item: ProcurementProduct | ProcurementSupplier) => {
+      if (addProductsSuppliersDialog === 'product') {
+        await editHistoryUtil({
+          id: selectedHistory.id,
+          accessToken,
+          addedProductIds: [item.id],
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
+        const productQuantity = await createProductQuantityUtil({
+          accessToken,
+          orderId: selectedHistory.id,
+          productId: item.id,
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
+        if (productQuantity) {
+          setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
+          setProductQuantities((prev) => [productQuantity, ...prev]);
+        }
+      } else if (addProductsSuppliersDialog === 'supplier') {
+        await editHistoryUtil({
+          id: selectedHistory.id,
+          accessToken,
+          addedSupplierIds: [item.id],
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
         setSelectedSuppliers((prev) => [item as ProcurementSupplier, ...prev]);
       }
-    }
-  };
+    },
+    [
+      addProductsSuppliersDialog,
+      accessToken,
+      selectedHistory?.id,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+      setSelectedProducts,
+      setProductQuantities,
+      setSelectedSuppliers,
+    ],
+  );
+
+  const handleEditItem = useCallback(
+    async ({
+      id,
+      name,
+      description,
+    }: {
+      id: string;
+      name: string;
+      description?: string;
+    }) => {
+      if (addProductsSuppliersDialog === 'product') {
+        const editedProduct = await editProductUtil({
+          accessToken,
+          id,
+          name,
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
+        if (editedProduct) {
+          setSearchedProducts((products) =>
+            products.map((product) =>
+              product.id === editedProduct.id ? editedProduct : product,
+            ),
+          );
+          setSelectedProducts((products) =>
+            products.map((product) =>
+              product.id === editedProduct.id ? editedProduct : product,
+            ),
+          );
+        }
+      } else if (addProductsSuppliersDialog === 'supplier') {
+        const editedSupplier = await editSupplierUtil({
+          accessToken,
+          id,
+          name,
+          description,
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
+        if (editedSupplier) {
+          setSearchedSuppliers((suppliers) =>
+            suppliers.map((supplier) =>
+              supplier.id === editedSupplier.id ? editedSupplier : supplier,
+            ),
+          );
+          setSelectedSuppliers((suppliers) =>
+            suppliers.map((supplier) =>
+              supplier.id === editedSupplier.id ? editedSupplier : supplier,
+            ),
+          );
+        }
+      }
+    },
+    [
+      addProductsSuppliersDialog,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+      setSearchedProducts,
+      setSearchedSuppliers,
+      setSelectedProducts,
+      setSelectedSuppliers,
+    ],
+  );
+
+  const handleDeleteItem = useCallback(
+    async (id: string) => {
+      if (addProductsSuppliersDialog === 'product') {
+        const deletedProduct = await deleteProductUtil({
+          accessToken,
+          id,
+          setSnackbarMessage,
+          setSnackbarOpen,
+          fetchWithCreds,
+        });
+        if (deletedProduct) {
+          setSearchedProducts((products) =>
+            products.filter((product) => product.id !== deletedProduct.id),
+          );
+          setSelectedProducts((products) =>
+            products.filter((product) => product.id !== deletedProduct.id),
+          );
+        }
+      } else if (addProductsSuppliersDialog === 'supplier') {
+        const deletedSupplier = await deleteSupplierUtil({
+          accessToken,
+          id,
+          fetchWithCreds,
+          setSnackbarMessage,
+          setSnackbarOpen,
+        });
+        if (deletedSupplier) {
+          setSearchedSuppliers((suppliers) =>
+            suppliers.filter((supplier) => supplier.id !== deletedSupplier.id),
+          );
+          setSelectedSuppliers((suppliers) =>
+            suppliers.filter((supplier) => supplier.id !== deletedSupplier.id),
+          );
+        }
+      }
+    },
+    [
+      accessToken,
+      addProductsSuppliersDialog,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    ],
+  );
 
   useEffect(() => {
     if (user?.grade === 'SUPERUSER' && accessToken) {
@@ -267,7 +416,8 @@ export default function Procurement() {
   }, [productQuantities]);
 
   useEffect(() => {
-    if (user?.grade !== 'SUPERUSER') {
+    if (user == null) return;
+    if (user.grade !== 'SUPERUSER') {
       router.push('/');
     }
   }, [user]);
@@ -422,6 +572,8 @@ export default function Procurement() {
                   : createSupplier
               }
               handleAddSearchedItem={handleAddSearchedItem}
+              handleEditItem={handleEditItem}
+              handleDeleteItem={handleDeleteItem}
             />
           )}
 

@@ -7,15 +7,16 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 interface DeleteDialogProps {
   title: string;
-  description: string;
+  description?: string;
   handleClose: () => void;
   handleDelete: () => Promise<void> | void;
-  blueButtonText: string;
-  redButtonText: string;
+  blueButtonText?: string;
+  redButtonText?: string;
 }
 
 export default function DeleteDialog({
@@ -27,14 +28,17 @@ export default function DeleteDialog({
   redButtonText,
 }: DeleteDialogProps) {
   const [loading, setLoading] = useState(false);
+  const t = useTranslations();
 
   return (
     <Dialog open onClose={handleClose}>
       <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          {description}
-        </DialogContentText>
+        {description && (
+          <DialogContentText id="alert-dialog-description">
+            {description}
+          </DialogContentText>
+        )}
       </DialogContent>
       <DialogActions>
         <Button
@@ -43,7 +47,7 @@ export default function DeleteDialog({
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {blueButtonText}
+          {blueButtonText ?? t('cancel')}
         </Button>
         <LoadingButton
           loading={loading}
@@ -57,7 +61,7 @@ export default function DeleteDialog({
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {redButtonText}
+          {redButtonText ?? t('delete')}
         </LoadingButton>
       </DialogActions>
     </Dialog>
