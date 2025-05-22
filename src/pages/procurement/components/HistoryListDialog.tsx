@@ -92,6 +92,11 @@ export default function HistoryListDialog({
                         onClick={async () => {
                           await handleSelectHistory(history.id);
                         }}
+                        color={
+                          selectedHistory.id === history.id
+                            ? 'success'
+                            : 'primary'
+                        }
                       >
                         {history.name}
                       </Button>

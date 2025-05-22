@@ -144,5 +144,6 @@
   "downloadCalculatedOrder": "Hasaplanan buýrugy göçürip alyň",
   "uploadPrices": "Bahalary ýükläň",
   "addToBase": "BASG goşuň",
-  "alreadyExistsConcat": "Barha!"
+  "alreadyExistsConcat": "Barha!",
+  "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!"
 }
