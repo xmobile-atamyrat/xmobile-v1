@@ -89,7 +89,7 @@ export default function EmptyOrder({
 
   const handleDelete = async () => {
     if (confirmRemoveItemDialog?.itemType === 'supplier') {
-      const updatedHistory = await editHistoryUtil({
+      await editHistoryUtil({
         id: selectedHistory.id,
         accessToken,
         removedSupplierIds: [confirmRemoveItemDialog.item.id],
@@ -112,7 +112,7 @@ export default function EmptyOrder({
         setSnackbarOpen,
         fetchWithCreds,
       });
-      if (updatedHistory && updatedPrices) {
+      if (updatedPrices) {
         setSelectedSuppliers((prev) =>
           prev.filter(
             (supplier) => supplier.id !== confirmRemoveItemDialog.item.id,
@@ -132,8 +132,8 @@ export default function EmptyOrder({
           return newPrices;
         });
       }
-    } else {
-      const updatedHistory = await editHistoryUtil({
+    } else if (confirmRemoveItemDialog?.itemType === 'product') {
+      await editHistoryUtil({
         id: selectedHistory.id,
         accessToken,
         removedProductIds: [confirmRemoveItemDialog.item.id],
@@ -164,7 +164,7 @@ export default function EmptyOrder({
         setSnackbarOpen,
         fetchWithCreds,
       });
-      if (updatedHistory && deletedQuantity && deletedPrice) {
+      if (deletedQuantity && deletedPrice) {
         setSelectedProducts((prev) =>
           prev.filter(
             (product) => product.id !== confirmRemoveItemDialog.item.id,

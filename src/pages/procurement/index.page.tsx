@@ -198,7 +198,7 @@ export default function Procurement() {
   const handleAddSearchedItem = useCallback(
     async (item: ProcurementProduct | ProcurementSupplier) => {
       if (addProductsSuppliersDialog === 'product') {
-        const updatedHistory = await editHistoryUtil({
+        await editHistoryUtil({
           id: selectedHistory.id,
           accessToken,
           addedProductIds: [item.id],
@@ -214,12 +214,12 @@ export default function Procurement() {
           setSnackbarOpen,
           fetchWithCreds,
         });
-        if (updatedHistory && productQuantity) {
+        if (productQuantity) {
           setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
           setProductQuantities((prev) => [productQuantity, ...prev]);
         }
-      } else {
-        const updatedHistory = await editHistoryUtil({
+      } else if (addProductsSuppliersDialog === 'supplier') {
+        await editHistoryUtil({
           id: selectedHistory.id,
           accessToken,
           addedSupplierIds: [item.id],
@@ -227,12 +227,7 @@ export default function Procurement() {
           setSnackbarOpen,
           fetchWithCreds,
         });
-        if (updatedHistory) {
-          setSelectedSuppliers((prev) => [
-            item as ProcurementSupplier,
-            ...prev,
-          ]);
-        }
+        setSelectedSuppliers((prev) => [item as ProcurementSupplier, ...prev]);
       }
     },
     [

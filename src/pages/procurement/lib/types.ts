@@ -1,14 +1,26 @@
 import {
   ProcurementOrder,
+  ProcurementOrderProduct,
   ProcurementOrderProductQuantity,
+  ProcurementOrderSupplier,
   ProcurementProduct,
   ProcurementSupplier,
   ProcurementSupplierProductPrice,
 } from '@prisma/client';
 
+export interface DetailedOrderProduct extends ProcurementOrderProduct {
+  product: ProcurementProduct;
+  order: ProcurementOrder;
+}
+
+export interface DetailedOrderSupplier extends ProcurementOrderSupplier {
+  supplier: ProcurementSupplier;
+  order: ProcurementOrder;
+}
+
 export interface DetailedOrder extends ProcurementOrder {
-  suppliers: ProcurementSupplier[];
-  products: ProcurementProduct[];
+  suppliers: DetailedOrderSupplier[];
+  products: DetailedOrderProduct[];
   prices: ProcurementSupplierProductPrice[];
   productQuantities: ProcurementOrderProductQuantity[];
 }
