@@ -25,8 +25,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         const history = await dbClient.procurementOrder.findUnique({
           where: { id },
           include: {
-            suppliers: true,
-            products: true,
+            suppliers: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+              include: {
+                supplier: true,
+              },
+            },
+            products: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+              include: {
+                product: true,
+              },
+            },
             prices: true,
             productQuantities: true,
           },
@@ -72,30 +86,75 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       } = req.body;
 
       const updateData: Partial<Prisma.ProcurementOrderUpdateInput> = {};
-      if (name) updateData.name = name;
-      updateData.suppliers = {
-        connect: addedSupplierIds?.map((addedSuppliedId) => ({
-          id: addedSuppliedId,
-        })),
-        disconnect: removedSupplierIds?.map((removedSuppliedId) => ({
-          id: removedSuppliedId,
-        })),
-      };
-      updateData.products = {
-        connect: addedProductIds?.map((addedProductId) => ({
-          id: addedProductId,
-        })),
-        disconnect: removedProductIds?.map((removedProductId) => ({
-          id: removedProductId,
-        })),
-      };
+      let order: ProcurementOrder | null = null;
+      if (name) {
+        order = await dbClient.procurementOrder.update({
+          where: { id },
+          data: updateData,
+        });
+      }
 
-      const history = await dbClient.procurementOrder.update({
-        where: { id },
-        data: updateData,
-      });
+      // connect products to order
+      if (addedProductIds) {
+        await Promise.all(
+          addedProductIds?.map((addedProductId) => {
+            return dbClient.procurementOrderProduct.create({
+              data: {
+                orderId: id,
+                productId: addedProductId,
+              },
+            });
+          }),
+        );
+      }
 
-      return res.status(200).json({ success: true, data: history });
+      // connect suppliers to order
+      if (addedSupplierIds) {
+        await Promise.all(
+          addedSupplierIds?.map((addedSupplierId) => {
+            return dbClient.procurementOrderSupplier.create({
+              data: {
+                orderId: id,
+                supplierId: addedSupplierId,
+              },
+            });
+          }),
+        );
+      }
+
+      // disconnect products from order
+      if (removedProductIds) {
+        await Promise.all(
+          removedProductIds?.map((removedProductId) => {
+            return dbClient.procurementOrderProduct.delete({
+              where: {
+                orderId_productId: {
+                  orderId: id,
+                  productId: removedProductId,
+                },
+              },
+            });
+          }),
+        );
+      }
+
+      // disconnect suppliers from order
+      if (removedSupplierIds) {
+        await Promise.all(
+          removedSupplierIds?.map((removedSupplierId) => {
+            return dbClient.procurementOrderSupplier.delete({
+              where: {
+                orderId_supplierId: {
+                  orderId: id,
+                  supplierId: removedSupplierId,
+                },
+              },
+            });
+          }),
+        );
+      }
+
+      return res.status(200).json({ success: true, data: order });
     }
   } catch (error) {
     console.error(error);

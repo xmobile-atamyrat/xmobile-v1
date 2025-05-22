@@ -685,8 +685,10 @@ export async function getHistoryUtil({
       fetchWithCreds,
     });
     if (success) {
-      setSelectedProducts(data.products ?? []);
-      setSelectedSuppliers(data.suppliers ?? []);
+      setSelectedProducts(data.products.map(({ product }) => product) ?? []);
+      setSelectedSuppliers(
+        data.suppliers.map(({ supplier }) => supplier) ?? [],
+      );
       setProductQuantities(data.productQuantities ?? []);
       setSelectedHistory(data);
     } else {

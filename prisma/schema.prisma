@@ -146,7 +146,7 @@ model ProcurementSupplier {
   name                  String
   description           String?
 
-  order                 ProcurementOrder[]                   @relation("CalculationHistorySuppliers")
+  order                 ProcurementOrderSupplier[]
   values                ProcurementSupplierProductPrice[]  @relation("ProcurementSupplierValue")
 
   createdAt             DateTime                @default(now())
@@ -159,7 +159,7 @@ model ProcurementProduct {
   id                      String                  @id @default(uuid())
   name                    String
 
-  order                   ProcurementOrder[]                 @relation("CalculationHistoryProcurementProducts")
+  order                   ProcurementOrderProduct[]
   values                  ProcurementSupplierProductPrice[]  @relation("ProcurementProductValue")
   quantities              ProcurementOrderProductQuantity[]  @relation("ProcurementProductQuantity")
 
@@ -173,14 +173,43 @@ model ProcurementOrder {
   id                      String                  @id @default(uuid())
   name                    String
 
-  suppliers               ProcurementSupplier[]   @relation("CalculationHistorySuppliers")
-  products                ProcurementProduct[]    @relation("CalculationHistoryProcurementProducts")
+  suppliers               ProcurementOrderSupplier[]
+  products                ProcurementOrderProduct[]
   prices                  ProcurementSupplierProductPrice[]  @relation("ProcurementOrderValue")
   productQuantities       ProcurementOrderProductQuantity[]  @relation("ProcurementOrderProductQuantity")
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 }
+
+model ProcurementOrderSupplier {
+  id          String              @id @default(uuid())
+
+  order       ProcurementOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+
+  supplier    ProcurementSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplierId  String
+  
+  createdAt   DateTime            @default(now())
+
+  @@unique([orderId, supplierId])
+}
+
+model ProcurementOrderProduct {
+  id          String              @id @default(uuid())
+
+  order       ProcurementOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+
+  product     ProcurementProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  
+  createdAt   DateTime            @default(now())
+
+  @@unique([orderId, productId])
+}
+
 model ProcurementOrderProductQuantity {
   id                      String                  @id @default(uuid())
   orderId                 String
