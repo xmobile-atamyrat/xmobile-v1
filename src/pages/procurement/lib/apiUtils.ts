@@ -10,8 +10,10 @@ import {
   deleteQuantity,
   deleteSupplier,
   editHistory,
+  editProduct,
   editProductPrices,
   editProductQuantity,
+  editSupplier,
   getHistory,
   getHistoryList,
   getProcurementProducts,
@@ -369,6 +371,113 @@ export async function editProductQuantityUtil({
   return undefined;
 }
 
+export async function editProductUtil({
+  accessToken,
+  id,
+  name,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  id: string;
+  name: string;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ProcurementProduct | undefined> {
+  try {
+    const {
+      success,
+      data: editedProduct,
+      message,
+    } = await editProduct({
+      accessToken,
+      id,
+      name,
+      fetchWithCreds,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return editedProduct;
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'failedToUpdateQuantity',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return undefined;
+}
+
+export async function editSupplierUtil({
+  accessToken,
+  id,
+  name,
+  setSnackbarMessage,
+  setSnackbarOpen,
+  fetchWithCreds,
+  description,
+}: {
+  accessToken: string;
+  id: string;
+  name: string;
+  description?: string;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ProcurementSupplier | undefined> {
+  try {
+    const {
+      success,
+      data: editedSupplier,
+      message,
+    } = await editSupplier({
+      accessToken,
+      id,
+      name,
+      description,
+      fetchWithCreds,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return editedSupplier;
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'failedToUpdateQuantity',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+
+  return undefined;
+}
+
 export async function editProductPricesUtil({
   accessToken,
   updatedPrices,
@@ -642,36 +751,33 @@ export async function deleteSupplierUtil({
   id,
   setSnackbarMessage,
   setSnackbarOpen,
-  setSuppliers,
 }: {
   accessToken: string;
   id: string;
-  setSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;
-}) {
+}): Promise<ProcurementSupplier | undefined> {
   try {
-    const { success, message } = await deleteSupplier({
+    const { success, data, message } = await deleteSupplier({
       accessToken,
       id,
       fetchWithCreds,
     });
     if (success) {
-      setSuppliers((prev) => prev.filter((supplier) => supplier.id !== id));
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'deleteItemSuccess',
         severity: 'success',
       });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data;
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -680,6 +786,8 @@ export async function deleteSupplierUtil({
       severity: 'error',
     });
   }
+
+  return undefined;
 }
 
 export async function deleteQuantityUtil({
@@ -779,38 +887,35 @@ export async function deleteProductUtil({
   accessToken,
   fetchWithCreds,
   id,
-  setProducts,
   setSnackbarMessage,
   setSnackbarOpen,
 }: {
   accessToken: string;
   id: string;
-  setProducts: Dispatch<SetStateAction<ProcurementSupplier[]>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;
-}) {
+}): Promise<ProcurementProduct | undefined> {
   try {
-    const { success, message } = await deleteProduct({
+    const { success, data, message } = await deleteProduct({
       accessToken,
       id,
       fetchWithCreds,
     });
     if (success) {
-      setProducts((prev) => prev.filter((product) => product.id !== id));
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'deleteItemSuccess',
         severity: 'success',
       });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data;
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -819,6 +924,8 @@ export async function deleteProductUtil({
       severity: 'error',
     });
   }
+
+  return undefined;
 }
 
 export async function deletePricesUtil({

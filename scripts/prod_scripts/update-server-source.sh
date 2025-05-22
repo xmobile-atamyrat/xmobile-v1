@@ -49,6 +49,9 @@ echo "Copying 'tsconfig.json' & 'tsconfig.ws.json'"
 mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.json .
 mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.ws.json .
 
+echo "Copying eslintrc"
+mv /home/ubuntu/tar-file/app/xmobile-v1/.eslintrc.json .
+
 rm -rf .next
 yarn build
 yarn build:ws
