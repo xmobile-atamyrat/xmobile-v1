@@ -142,5 +142,6 @@
   "downloadCalculatedOrder": "Hesaplanan Siparişi İndir",
   "uploadPrices": "Fiyatları Yükle",
   "addToBase": "Tabana ekle",
-  "alreadyExistsConcat": "Var!"
+  "alreadyExistsConcat": "Var!",
+  "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!"
 }

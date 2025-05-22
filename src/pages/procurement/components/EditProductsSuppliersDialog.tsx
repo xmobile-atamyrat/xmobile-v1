@@ -50,7 +50,7 @@ export default function EditDialog({
       <DialogActions>
         <Button
           onClick={handleClose}
-          color="primary"
+          color="error"
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
@@ -62,13 +62,15 @@ export default function EditDialog({
             setLoading(true);
             await handleEdit(newName);
             setLoading(false);
+
+            handleClose();
           }}
-          color="error"
+          color="primary"
           autoFocus
           variant="contained"
           sx={{ textTransform: 'none' }}
         >
-          {t('delete')}
+          {t('submit')}
         </LoadingButton>
       </DialogActions>
     </Dialog>
