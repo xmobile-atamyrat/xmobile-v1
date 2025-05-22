@@ -140,5 +140,7 @@
   "orderNotSelected": "Please select an order to calculate!",
   "upload": "Upload",
   "downloadCalculatedOrder": "Download calculated order",
-  "uploadPrices": "Upload prices"
+  "uploadPrices": "Upload prices",
+  "addToBase": "Add to base",
+  "alreadyExistsConcat": "Exists!"
 }

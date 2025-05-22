@@ -142,5 +142,7 @@
   "orderNotSelected": "Пожалуйста, выберите заказ для расчета!",
   "upload": "Загрузить",
   "downloadCalculatedOrder": "Скачать рассчитанное заказ",
-  "uploadPrices": "Загрузить цены"
+  "uploadPrices": "Загрузить цены",
+  "addToBase": "Добавить в базу",
+  "alreadyExistsConcat": "Существует!"
 }

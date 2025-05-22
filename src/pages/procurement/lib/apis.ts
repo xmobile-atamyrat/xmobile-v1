@@ -325,6 +325,53 @@ export const editProductQuantity = async ({
   });
 };
 
+export const editProduct = async ({
+  accessToken,
+  id,
+  name,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  id: string;
+  name: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<ProcurementProduct>> => {
+  return fetchWithCreds<ProcurementProduct>({
+    accessToken,
+    path: '/api/procurement/product',
+    method: 'PUT',
+    body: {
+      id,
+      name,
+    },
+  });
+};
+
+export const editSupplier = async ({
+  accessToken,
+  id,
+  name,
+  description,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  id: string;
+  name: string;
+  description?: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<ProcurementSupplier>> => {
+  return fetchWithCreds<ProcurementSupplier>({
+    accessToken,
+    path: '/api/procurement/supplier',
+    method: 'PUT',
+    body: {
+      id,
+      name,
+      description,
+    },
+  });
+};
+
 export const editProductPrices = async ({
   accessToken,
   updatedPrices,

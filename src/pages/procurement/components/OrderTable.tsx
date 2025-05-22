@@ -311,6 +311,7 @@ export default function EmptyOrder({
                           type="number"
                           sx={{
                             backgroundColor: priceColorPair?.color || 'inherit',
+                            minWidth: 120,
                           }}
                           InputProps={{
                             ...hideTextfieldSpinButtons,
