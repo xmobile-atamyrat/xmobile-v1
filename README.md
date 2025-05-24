@@ -19,6 +19,12 @@ yarn db:migrate
 yarn dev
 ```
 
+### Websocket-Server Setup
+Run websocket server to enable user-admin chat feature. Websocket-server runs on seperate http server with port 4000.
+```bash
+yarn dev:ws
+```
+
 ### Docker Setup
 
 ```bash
@@ -46,10 +52,11 @@ chmod +x scripts/build.sh
 
 3. ssh into the VM, unpack the `tar` file, and copy (overwrite) ONLY the `src` dir to `xmobile-v1`
 
-4. Build and restart the app
+4. Build the app, websocket-server and restart the app
 
 ```bash
 yarn build
+yarn build:ws
 ./restart-server.sh
 ```
 
