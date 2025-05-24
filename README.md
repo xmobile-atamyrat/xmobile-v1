@@ -20,7 +20,7 @@ yarn dev
 ```
 
 ### Websocket-Server Setup
-Run websocket server to enable user-admin chat feature. Websocket-server runs on seperate http server with port 4000.
+Run websocket server to enable user-admin chat feature. Websocket-server runs on seperate http server with port 4000. More information at [link](/src/ws-server/README.md).
 ```bash
 yarn dev:ws
 ```
