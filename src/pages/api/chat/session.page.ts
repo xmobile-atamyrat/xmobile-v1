@@ -19,66 +19,43 @@ async function handler(
   const { userId, grade, method } = req;
   if (method === 'GET') {
     try {
-      const { chatSessions } = await dbClient.user.findUnique({
+      const sessions = await dbClient.chatSession.findMany({
         where: {
-          id: userId,
+          users: {
+            some: {
+              id: userId,
+            },
+          },
         },
-        select: { chatSessions: true },
       });
-      if (!chatSessions) {
-        console.error(
-          filepath,
-          `User doesn't exist or not found, userId: ${userId}`,
-        );
-        res.status(404).json({ success: false, message: 'User was not found' });
-        return;
-      }
 
       if (grade === 'SUPERUSER') {
-        res.status(200).json({ success: true, data: [chatSessions] });
+        res.status(200).json({ success: true, data: sessions });
       } else if (grade === 'ADMIN') {
-        const adminSessions = chatSessions.filter(
-          (chatSession) => chatSession.status !== 'CLOSED',
+        const adminSessions = sessions.filter(
+          (session) => session.status !== 'CLOSED',
         );
-        res.status(200).json({ success: true, data: [adminSessions] });
+
+        res.status(200).json({ success: true, data: adminSessions });
       } else {
-        const userSession = chatSessions.filter(
-          (chatSession) =>
-            chatSession.status === 'ACTIVE' || chatSession.status === 'PENDING',
-        );
+        const userSession = sessions.filter((session) => {
+          return session.status === 'ACTIVE' || session.status === 'PENDING';
+        });
 
-        if (!userSession.length) {
-          const newSession = await dbClient.chatSession.create({
-            data: {
-              users: {
-                connect: {
-                  id: userId,
-                },
-              },
-            },
-          });
-
-          res.status(200).json({ success: true, data: [newSession] });
-          return;
-        }
-        res.status(200).json({ success: true, data: [userSession] });
+        res.status(200).json({ success: true, data: userSession });
       }
     } catch (error) {
-      console.error(filepath, error);
+      console.error(
+        filepath,
+        `Couldn't find session with userId: ${userId}. Error: ${error}`,
+      );
       res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'POST') {
-    // add user to session
     try {
-      const { sessionId, status }: { sessionId: string; status: ChatStatus } =
-        req.body;
-
-      await dbClient.chatSession.update({
-        where: {
-          id: sessionId,
-        },
+      const newSession = await dbClient.chatSession.create({
         data: {
-          status,
+          status: 'PENDING',
           users: {
             connect: {
               id: userId,
@@ -87,41 +64,55 @@ async function handler(
         },
       });
 
-      res.status(200).json({ success: true });
+      res.status(201).json({ success: true, data: newSession });
     } catch (error) {
       console.error(
         filepath,
-        'Failed to add user to session.',
-        `userId: ${userId}, sessionId: ${req.body?.sessionId}.`,
+        `Couldn't create a session for a userId: ${userId}. Error: ${error}`,
+      );
+      res.status(400).json({ success: false, message: error.message });
+    }
+  } else if (method === 'PATCH') {
+    try {
+      const {
+        chatStatus,
+        sessionId,
+      }: { chatStatus: ChatStatus; sessionId: string } = req.body;
+      const session = await dbClient.chatSession.update({
+        where: {
+          id: sessionId,
+        },
+        data: {
+          status: chatStatus,
+        },
+      });
+
+      res.status(200).json({ success: true, data: session });
+    } catch (error) {
+      console.error(
+        filepath,
+        `Couldn't update status of session`,
+        `status: ${req.body?.chatStatus}, sessionId: ${req.body?.sessionId},`,
         `Error: ${error}`,
       );
       res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'DELETE') {
-    // remove user from session
     try {
-      const { sessionId, status }: { sessionId: string; status: ChatStatus } =
-        req.body;
-      await dbClient.chatSession.update({
+      // todo: only super-user should be allowed for this endpoint
+      if (grade !== 'SUPERUSER') {
+        return;
+      }
+      const sessionId = req.body.sessionId;
+      await dbClient.chatSession.delete({
         where: {
           id: sessionId,
         },
-        data: {
-          status,
-          users: {
-            disconnect: {
-              id: userId,
-            },
-          },
-        },
       });
-      res.status(200).json({ success: true });
     } catch (error) {
       console.error(
         filepath,
-        'Failed to delete user from session.',
-        `userId: ${userId}, sessionId: ${req.body?.sessionId}.`,
-        `Error: ${error}`,
+        `Couldn't delete session. sessionId: ${req.body?.sessionId}. Error: ${error}`,
       );
       res.status(400).json({ success: false, message: error.message });
     }
