@@ -50,3 +50,4 @@ categories.yaml
 db_backup.sql
 backup/
 backup-data.sh
+ssl_keys
