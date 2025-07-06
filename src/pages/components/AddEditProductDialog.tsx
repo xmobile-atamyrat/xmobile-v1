@@ -11,10 +11,11 @@ import {
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { AddEditProductProps } from '@/pages/lib/types';
+import { AddEditProductProps, ExtendedCategory } from '@/pages/lib/types';
 import {
   addEditProduct,
   isNumeric,
+  parseName,
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
 import { DeleteOutlined, Instagram, YouTube } from '@mui/icons-material';
@@ -30,10 +31,13 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
+  Select,
   TextField,
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 interface AddEditProductDialogProps {
@@ -58,8 +62,12 @@ export default function AddEditProductDialog({
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setProducts, setSelectedProduct } = useProductContext();
-  const { selectedCategoryId } = useCategoryContext();
+  const { categories, selectedCategoryId } = useCategoryContext();
+  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
+  const { network } = useNetworkContext();
+
   const t = useTranslations();
+  const router = useRouter();
 
   // for existing product imageUrls the key is imageUrl
   // for new product imageUrls the key is number
@@ -81,10 +89,16 @@ export default function AddEditProductDialog({
   const [tags, setTags] = useState<string[]>([]);
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
-  const { setPrevCategory, setPrevProducts } = usePrevProductContext();
-  const { network } = useNetworkContext();
-
   const [videoUrls, setVideoUrls] = useState<string[]>(initVideoUrls);
+  const [categoryId, setCategoryId] = useState('');
+  const [flattenedCats, setFlattenedCats] = useState<
+    { id: string; name: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (selectedCategoryId == null) return;
+    setCategoryId(selectedCategoryId);
+  }, [selectedCategoryId]);
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
@@ -136,6 +150,26 @@ export default function AddEditProductDialog({
     }
   }, [initVideoUrls]);
 
+  useEffect(() => {
+    if (categories == null || categories.length === 0) return;
+    const queue: ExtendedCategory[] = [];
+    const flatCats: { id: string; name: string }[] = [];
+    categories.forEach((category) => {
+      queue.push(category);
+      while (queue.length > 0) {
+        const currCat = queue.pop();
+        flatCats.push({
+          id: currCat.id,
+          name: parseName(currCat.name, router.locale),
+        });
+        currCat.successorCategories?.forEach((succCat) => {
+          queue.push(succCat);
+        });
+      }
+    });
+    setFlattenedCats(flatCats);
+  }, [categories]);
+
   return (
     <Dialog
       open
@@ -144,7 +178,7 @@ export default function AddEditProductDialog({
       component="form"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (selectedCategoryId == null) return;
+        if (categoryId == null) return;
 
         setLoading(true);
 
@@ -156,7 +190,7 @@ export default function AddEditProductDialog({
           const updatedProduct = await addEditProduct({
             formJson: Object.fromEntries(formData.entries()),
             productNameRequiredError: t('productNameRequired'),
-            selectedCategoryId,
+            categoryId,
             setProducts,
             setPrevProducts,
             setPrevCategory,
@@ -192,7 +226,24 @@ export default function AddEditProductDialog({
         {dialogType === 'add' ? t('addNewProduct') : t('editProduct')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className="flex flex-col gap-2 p-2">
+        <Box className="flex flex-col gap-4 p-2">
+          {categoryId && (
+            <Box className="flex flex-col gap-2">
+              <Typography>{t('category')}</Typography>
+              <Select
+                value={categoryId}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                }}
+              >
+                {flattenedCats.map((cat) => (
+                  <MenuItem value={cat.id} key={cat.id}>
+                    {parseName(cat.name, router.locale)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+          )}
           <Box className="w-full">
             <Typography>
               {t('productName')}
