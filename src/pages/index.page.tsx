@@ -217,14 +217,14 @@ export default function Home({
               name=""
               initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
               onClick={() => {
+                if (parentCategory == null) return;
                 setProducts([]);
-                if (parentCategory != null) {
-                  setStack((currStack) => [
-                    ...currStack,
-                    [parentCategory, parentCategory.name],
-                  ]);
-                  setSelectedCategoryId(parentCategory.id);
-                }
+                setStack((currStack) => [
+                  ...currStack,
+                  [parentCategory, parentCategory.name],
+                ]);
+                setSelectedCategoryId(parentCategory.id);
+                setParentCategory(undefined);
                 router.push('/product');
               }}
             />
