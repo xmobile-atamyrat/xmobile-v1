@@ -73,17 +73,12 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
             </Typography>
           </Link>
         ))}
-        {stack.length > 0 ? (
-          stack[stack.length - 1][0].id !== parentCategory?.id && (
-            <Typography fontSize={15}>
-              {parseName(parentCategory?.name, router.locale ?? 'ru')}
-            </Typography>
-          )
-        ) : (
-          <Typography fontSize={15}>
-            {parseName(parentCategory?.name, router.locale ?? 'ru')}
-          </Typography>
-        )}
+
+        <Typography fontSize={15}>
+          {parentCategory == null
+            ? t('allProducts')
+            : parseName(parentCategory?.name, router.locale ?? 'ru')}
+        </Typography>
       </Breadcrumbs>
     </Box>
   );
