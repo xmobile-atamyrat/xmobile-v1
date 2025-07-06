@@ -98,6 +98,7 @@ export interface AddEditProductProps {
   price?: string | null;
   tags?: string[];
   videoUrls?: string[];
+  categoryId?: string;
 }
 
 export interface DeleteCategoriesProps {

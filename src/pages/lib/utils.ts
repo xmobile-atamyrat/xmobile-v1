@@ -85,6 +85,9 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
 
 export const parseName = (name: string, locale: string): string => {
   try {
+    if (!name || !locale) {
+      return '';
+    }
     const parsedName = JSON.parse(name);
     let categoryName = parsedName[locale];
     if (categoryName == null || categoryName === '') {
@@ -181,7 +184,7 @@ export async function addEditProduct({
   type,
   formJson,
   productNameRequiredError,
-  selectedCategoryId,
+  categoryId,
   setProducts,
   setPrevProducts,
   setPrevCategory,
@@ -195,7 +198,7 @@ export async function addEditProduct({
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   productNameRequiredError: string;
-  selectedCategoryId: string;
+  categoryId: string;
   productImageUrls: string[];
   productImageFiles: File[];
   deleteImageUrls: string[];
@@ -251,7 +254,7 @@ export async function addEditProduct({
   const newFormData = new FormData();
 
   newFormData.append('name', JSON.stringify(productNames));
-  newFormData.append('categoryId', selectedCategoryId);
+  newFormData.append('categoryId', categoryId);
 
   if (Object.keys(productDescriptions).length > 0)
     newFormData.append('description', JSON.stringify(productDescriptions));
@@ -302,11 +305,11 @@ export async function addEditProduct({
   }
 
   const prods = await fetchProducts({
-    categoryId: selectedCategoryId,
+    categoryId,
   });
   setProducts(prods as Product[]);
   setPrevProducts(prods as Product[]);
-  setPrevCategory(selectedCategoryId);
+  setPrevCategory(categoryId);
 
   return product;
 }

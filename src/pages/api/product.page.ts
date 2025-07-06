@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { getCategory } from '@/pages/api/category.page';
+import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
@@ -10,10 +11,9 @@ import { ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
-import { getPrice } from '@/pages/api/prices/index.page';
 import { NextApiRequest, NextApiResponse } from 'next';
-import sharp from 'sharp';
 import path from 'path';
+import sharp from 'sharp';
 
 export const config = {
   api: {
@@ -271,6 +271,7 @@ async function handleEditProduct(
       }
 
       const data: Partial<Product> = { imgUrls: [] };
+      if (fields.categoryId?.length > 0) data.categoryId = fields.categoryId[0];
       if (fields.name?.length > 0) data.name = fields.name[0];
       if (fields.description?.length > 0)
         data.description = fields.description[0];
