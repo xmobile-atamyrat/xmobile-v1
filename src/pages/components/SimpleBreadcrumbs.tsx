@@ -41,7 +41,7 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
             : undefined,
       }}
     >
-      <Breadcrumbs separator="›" maxItems={3}>
+      <Breadcrumbs separator="›" maxItems={isMdUp ? 10 : 4}>
         <Link
           onClick={() => {
             setParentCategory(undefined);

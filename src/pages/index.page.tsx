@@ -211,7 +211,7 @@ export default function Home({
         <Box
           className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
         >
-          {stack.length > 0 && (
+          {parentCategory != null && (
             <CategoryCard
               id=""
               name=""
@@ -223,6 +223,7 @@ export default function Home({
                     ...currStack,
                     [parentCategory, parentCategory.name],
                   ]);
+                  setSelectedCategoryId(parentCategory.id);
                 }
                 router.push('/product');
               }}
