@@ -85,8 +85,8 @@ export const deleteHistory = async ({
   accessToken: string;
   id: string;
   fetchWithCreds: FetchWithCredsType;
-}): Promise<ResponseApi<ProcurementSupplier>> => {
-  return fetchWithCreds<ProcurementSupplier>({
+}): Promise<ResponseApi<ProcurementOrder>> => {
+  return fetchWithCreds<ProcurementOrder>({
     accessToken,
     path: '/api/procurement/order',
     method: 'DELETE',
