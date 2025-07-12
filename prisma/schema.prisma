@@ -102,7 +102,7 @@ model UserVisitRecord {
 model DollarRate {
   id                  Int         @id @default(autoincrement())
   rate                Float
-  currency            String      @default("TMT")   
+  currency            CURRENCY      @default(TMT)   
 
   procurementOrders   ProcurementOrder[]
 
@@ -184,7 +184,7 @@ model ProcurementOrder {
   prices                  ProcurementSupplierProductPrice[]  @relation("ProcurementOrderValue")
   productQuantities       ProcurementOrderProductQuantity[]  @relation("ProcurementOrderProductQuantity")
   
-  currency                  String                 @default("TMT")                  
+  currency                  CURRENCY                 @default(TMT)                  
   dollarRate                DollarRate             @relation(fields: [currency], references: [currency], onDelete: Cascade)
 
   createdAt               DateTime                @default(now())
@@ -255,4 +255,11 @@ enum UserRole {
   FREE
   ADMIN
   SUPERUSER
+}
+
+enum CURRENCY {
+  USD
+  TMT
+  AED // Dubai Dirham
+  CNY // Chinese Yuan
 }

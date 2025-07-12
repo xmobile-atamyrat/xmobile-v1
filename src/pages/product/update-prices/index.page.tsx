@@ -91,7 +91,7 @@ export default function UpdatePrices() {
 
         const dollarRateResponse = await fetchWithCreds<DollarRate>({
           accessToken,
-          path: '/api/prices/rate',
+          path: `/api/prices/rate?currency=TMT`,
           method: 'GET',
         });
         if (dollarRateResponse.success && dollarRateResponse.data != null) {
@@ -243,17 +243,20 @@ export default function UpdatePrices() {
                 <IconButton
                   onClick={async () => {
                     try {
-                      const { success, data } = await fetchWithCreds<Prices[]>({
+                      const { success, data } = await fetchWithCreds<{
+                        updatedPrices: Prices[];
+                      }>({
                         accessToken,
                         path: `/api/prices/rate`,
                         method: 'PUT',
                         body: {
                           rate: dollarRate,
+                          currency: 'TMT',
                         },
                       });
 
                       if (success) {
-                        setTableData(processPrices(data));
+                        setTableData(processPrices(data.updatedPrices));
                         setSnackbarOpen(true);
                         setSnackbarMessage({
                           message: 'rateUpdated',
