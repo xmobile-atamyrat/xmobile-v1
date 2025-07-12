@@ -100,10 +100,16 @@ model UserVisitRecord {
 }
 
 model DollarRate {
-  id              Int         @id @default(autoincrement())
-  rate            Float       
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                  Int         @id @default(autoincrement())
+  rate                Float
+  currency            String      @default("TMT")   
+
+  procurementOrders   ProcurementOrder[]
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([currency])
 }
 
 model ChatSession {
@@ -177,6 +183,9 @@ model ProcurementOrder {
   products                ProcurementOrderProduct[]
   prices                  ProcurementSupplierProductPrice[]  @relation("ProcurementOrderValue")
   productQuantities       ProcurementOrderProductQuantity[]  @relation("ProcurementOrderProductQuantity")
+  
+  currency                  String                 @default("TMT")                  
+  dollarRate                DollarRate             @relation(fields: [currency], references: [currency], onDelete: Cascade)
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
