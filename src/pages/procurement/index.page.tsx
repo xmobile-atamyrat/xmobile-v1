@@ -48,6 +48,7 @@ import {
 } from '@mui/material';
 import {
   CURRENCY,
+  DollarRate,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -75,6 +76,7 @@ export default function Procurement() {
 
   const { user, accessToken } = useUserContext();
   const { rates } = useDollarRateContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -104,7 +106,7 @@ export default function Procurement() {
   const [hashedQuantities, setHashedQuantities] = useState<
     Record<string, number>
   >({});
-  const fetchWithCreds = useFetchWithCreds();
+  const [orderCurrencyRate, setOrderCurrencyRate] = useState<DollarRate>();
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -409,6 +411,9 @@ export default function Procurement() {
       },
     );
     setPrices(newPrices);
+    setOrderCurrencyRate(
+      rates.find((rate) => rate.currency === selectedHistory.currency),
+    );
   }, [selectedHistory]);
 
   useEffect(() => {
@@ -446,22 +451,58 @@ export default function Procurement() {
             <Box className="flex flex-row gap-2 items-center">
               <Box className="flex flex-row gap-2 items-center mr-8">
                 <Typography>1 USD = </Typography>
-                <TextField size="small" className="w-[120px]" />
+                <TextField
+                  size="small"
+                  className="w-[120px]"
+                  value={orderCurrencyRate?.rate ?? ''}
+                  onChange={(e) => {
+                    setOrderCurrencyRate((curr) => {
+                      return {
+                        ...curr,
+                        rate: parseInt(e.target.value, 10),
+                      };
+                    });
+                  }}
+                />
                 <Select
                   value={selectedHistory?.currency ?? ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    if (selectedHistory == null || orderCurrencyRate == null)
+                      return;
+                    const oldCurrency = orderCurrencyRate;
+                    const newCurrency = e.target.value as CURRENCY;
                     setSelectedHistory((curr) => {
                       return {
                         ...curr,
-                        currency: e.target.value as CURRENCY,
+                        currency: newCurrency,
                       };
                     });
+                    setOrderCurrencyRate(
+                      rates.find((rate) => rate.currency === newCurrency),
+                    );
+                    const updatedHistory = await editHistoryUtil({
+                      accessToken,
+                      id: selectedHistory.id,
+                      currency: newCurrency,
+                      setSnackbarMessage,
+                      setSnackbarOpen,
+                      fetchWithCreds,
+                    });
+                    if (updatedHistory == null) {
+                      setSelectedHistory((curr) => {
+                        return {
+                          ...curr,
+                          currency: oldCurrency.currency,
+                        };
+                      });
+                      setOrderCurrencyRate(oldCurrency);
+                    }
                   }}
                   size="small"
                 >
                   {rates.map((rate) => (
                     <MenuItem value={rate.currency} key={rate.currency}>
-                      {rate.currency}
+                      {rate.name}
                     </MenuItem>
                   ))}
                 </Select>
