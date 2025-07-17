@@ -1,5 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -37,12 +38,16 @@ import {
   Box,
   Button,
   CircularProgress,
+  MenuItem,
+  Select,
   Snackbar,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import {
+  CURRENCY,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -67,11 +72,13 @@ export default function Procurement() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
+
   const { user, accessToken } = useUserContext();
+  const { rates } = useDollarRateContext();
+
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
-
   const [selectedSuppliers, setSelectedSuppliers] =
     useState<ProcurementSupplier[]>();
   const [selectedProducts, setSelectedProducts] =
@@ -437,6 +444,28 @@ export default function Procurement() {
               {t('procurement')} - {selectedHistory?.name}
             </Typography>
             <Box className="flex flex-row gap-2 items-center">
+              <Box className="flex flex-row gap-2 items-center mr-8">
+                <Typography>1 USD = </Typography>
+                <TextField size="small" className="w-[120px]" />
+                <Select
+                  value={selectedHistory?.currency ?? ''}
+                  onChange={(e) => {
+                    setSelectedHistory((curr) => {
+                      return {
+                        ...curr,
+                        currency: e.target.value as CURRENCY,
+                      };
+                    });
+                  }}
+                  size="small"
+                >
+                  {rates.map((rate) => (
+                    <MenuItem value={rate.currency} key={rate.currency}>
+                      {rate.currency}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
               <Button
                 onClick={(event) => {
                   setActionsAnchor(event.currentTarget);
