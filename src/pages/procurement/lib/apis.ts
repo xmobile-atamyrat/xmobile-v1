@@ -1,6 +1,8 @@
 import { FetchWithCredsType, ResponseApi } from '@/pages/lib/types';
 import { DetailedOrder } from '@/pages/procurement/lib/types';
 import {
+  CURRENCY,
+  DollarRate,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -186,6 +188,7 @@ export const getHistory = async ({
 export const editHistory = async ({
   accessToken,
   id,
+  currency,
   name,
   addedProductIds,
   removedProductIds,
@@ -195,6 +198,7 @@ export const editHistory = async ({
 }: {
   accessToken: string;
   id: string;
+  currency?: CURRENCY;
   name?: string;
   addedProductIds?: string[];
   removedProductIds?: string[];
@@ -210,6 +214,7 @@ export const editHistory = async ({
     body: {
       id,
       name,
+      currency,
       addedProductIds,
       removedProductIds,
       addedSupplierIds,
@@ -386,5 +391,27 @@ export const editProductPrices = async ({
     path: '/api/procurement/order/prices',
     method: 'PUT',
     body: updatedPrices,
+  });
+};
+
+export const editDollarRate = async ({
+  accessToken,
+  currency,
+  fetchWithCreds,
+  updatedRate,
+}: {
+  accessToken: string;
+  updatedRate: number;
+  currency: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<DollarRate>> => {
+  return fetchWithCreds<DollarRate>({
+    accessToken,
+    path: '/api/prices/rate',
+    method: 'PUT',
+    body: {
+      rate: updatedRate,
+      currency,
+    },
   });
 };

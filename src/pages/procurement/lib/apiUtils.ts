@@ -20,6 +20,7 @@ import {
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
 import {
+  CURRENCY,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -264,6 +265,7 @@ export async function editHistoryUtil({
   id,
   accessToken,
   name,
+  currency,
   addedProductIds,
   removedProductIds,
   addedSupplierIds,
@@ -275,6 +277,7 @@ export async function editHistoryUtil({
   id: string;
   accessToken: string;
   name?: string;
+  currency?: CURRENCY;
   addedProductIds?: string[];
   removedProductIds?: string[];
   addedSupplierIds?: string[];
@@ -288,6 +291,7 @@ export async function editHistoryUtil({
       accessToken,
       id,
       name,
+      currency,
       addedProductIds,
       removedProductIds,
       addedSupplierIds,
