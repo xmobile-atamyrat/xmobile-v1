@@ -3,7 +3,7 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
-import { Prisma, ProcurementOrder } from '@prisma/client';
+import { ProcurementOrder } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/procurement/order/index.page.ts';
@@ -74,6 +74,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const {
         id,
         name,
+        currency,
         addedProductIds,
         addedSupplierIds,
         removedProductIds,
@@ -85,14 +86,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         removedProductIds?: string[];
       } = req.body;
 
-      const updateData: Partial<Prisma.ProcurementOrderUpdateInput> = {};
-      let order: ProcurementOrder | null = null;
-      if (name) {
-        order = await dbClient.procurementOrder.update({
-          where: { id },
-          data: updateData,
-        });
-      }
+      const order = await dbClient.procurementOrder.update({
+        where: { id },
+        data: {
+          name,
+          currency,
+        },
+      });
 
       // connect products to order
       if (addedProductIds) {
