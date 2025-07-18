@@ -1,5 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -15,6 +16,7 @@ import {
   createSupplierUtil,
   deleteProductUtil,
   deleteSupplierUtil,
+  editDollarRateUtil,
   editHistoryUtil,
   editProductUtil,
   editSupplierUtil,
@@ -37,12 +39,17 @@ import {
   Box,
   Button,
   CircularProgress,
+  MenuItem,
+  Select,
   Snackbar,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import {
+  CURRENCY,
+  DollarRate,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -67,11 +74,14 @@ export default function Procurement() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
+
   const { user, accessToken } = useUserContext();
+  const { rates, setRates } = useDollarRateContext();
+  const fetchWithCreds = useFetchWithCreds();
+
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
-
   const [selectedSuppliers, setSelectedSuppliers] =
     useState<ProcurementSupplier[]>();
   const [selectedProducts, setSelectedProducts] =
@@ -97,7 +107,7 @@ export default function Procurement() {
   const [hashedQuantities, setHashedQuantities] = useState<
     Record<string, number>
   >({});
-  const fetchWithCreds = useFetchWithCreds();
+  const [orderCurrencyRate, setOrderCurrencyRate] = useState<DollarRate>();
 
   const createProduct = useCallback(
     async (keyword: string) => {
@@ -402,6 +412,9 @@ export default function Procurement() {
       },
     );
     setPrices(newPrices);
+    setOrderCurrencyRate(
+      rates.find((rate) => rate.currency === selectedHistory.currency),
+    );
   }, [selectedHistory]);
 
   useEffect(() => {
@@ -437,6 +450,103 @@ export default function Procurement() {
               {t('procurement')} - {selectedHistory?.name}
             </Typography>
             <Box className="flex flex-row gap-2 items-center">
+              <Box className="flex flex-row gap-2 items-center mr-8">
+                <Typography>1 USD = </Typography>
+                <TextField
+                  size="small"
+                  className="w-[120px]"
+                  value={orderCurrencyRate?.rate ?? ''}
+                  onChange={async (e) => {
+                    const target = e.target.value;
+                    const newRate =
+                      target === '' ? undefined : parseInt(e.target.value, 10);
+                    const currRate = orderCurrencyRate.rate;
+                    setOrderCurrencyRate((curr) => {
+                      return {
+                        ...curr,
+                        rate: newRate,
+                      };
+                    });
+                    if (newRate == null) return;
+
+                    setRates((curr) =>
+                      curr.map((rate) => {
+                        if (rate.currency === orderCurrencyRate.currency) {
+                          return { ...rate, rate: newRate };
+                        }
+                        return rate;
+                      }),
+                    );
+
+                    const updatedRate = await editDollarRateUtil({
+                      accessToken,
+                      currency: orderCurrencyRate.currency,
+                      rate: newRate,
+                      fetchWithCreds,
+                      setSnackbarMessage,
+                      setSnackbarOpen,
+                    });
+                    if (updatedRate == null) {
+                      setOrderCurrencyRate((curr) => {
+                        return {
+                          ...curr,
+                          rate: currRate,
+                        };
+                      });
+                      setRates((curr) =>
+                        curr.map((rate) => {
+                          if (rate.currency === orderCurrencyRate.currency) {
+                            return { ...rate, rate: currRate };
+                          }
+                          return rate;
+                        }),
+                      );
+                    }
+                  }}
+                />
+                <Select
+                  value={selectedHistory?.currency ?? ''}
+                  onChange={async (e) => {
+                    if (selectedHistory == null || orderCurrencyRate == null)
+                      return;
+                    const oldCurrency = orderCurrencyRate;
+                    const newCurrency = e.target.value as CURRENCY;
+                    setSelectedHistory((curr) => {
+                      return {
+                        ...curr,
+                        currency: newCurrency,
+                      };
+                    });
+                    setOrderCurrencyRate(
+                      rates.find((rate) => rate.currency === newCurrency),
+                    );
+                    const updatedHistory = await editHistoryUtil({
+                      accessToken,
+                      id: selectedHistory.id,
+                      currency: newCurrency,
+                      setSnackbarMessage,
+                      setSnackbarOpen,
+                      fetchWithCreds,
+                    });
+                    if (updatedHistory == null) {
+                      setSelectedHistory((curr) => {
+                        return {
+                          ...curr,
+                          currency: oldCurrency.currency,
+                        };
+                      });
+                      setOrderCurrencyRate(oldCurrency);
+                    }
+                  }}
+                  size="small"
+                >
+                  {rates.map((rate) => (
+                    <MenuItem value={rate.currency} key={rate.currency}>
+                      {rate.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
               <Button
                 onClick={(event) => {
                   setActionsAnchor(event.currentTarget);
