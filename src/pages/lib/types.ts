@@ -235,4 +235,5 @@ export type FetchWithCredsType = <K>({
 
 export interface DollarRateContextProps {
   rates: DollarRate[];
+  setRates: Dispatch<SetStateAction<DollarRate[]>>;
 }
