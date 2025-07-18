@@ -1,4 +1,4 @@
-import { Category, Product, User } from '@prisma/client';
+import { Category, DollarRate, Product, User } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
@@ -232,3 +232,8 @@ export type FetchWithCredsType = <K>({
   method: string;
   body?: object;
 }) => Promise<ResponseApi<K>>;
+
+export interface DollarRateContextProps {
+  rates: DollarRate[];
+  setRates: Dispatch<SetStateAction<DollarRate[]>>;
+}

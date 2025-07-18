@@ -9,6 +9,7 @@ import {
   deleteProduct,
   deleteQuantity,
   deleteSupplier,
+  editDollarRate,
   editHistory,
   editProduct,
   editProductPrices,
@@ -20,6 +21,8 @@ import {
   getSuppliers,
 } from '@/pages/procurement/lib/apis';
 import {
+  CURRENCY,
+  DollarRate,
   ProcurementOrder,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
@@ -264,6 +267,7 @@ export async function editHistoryUtil({
   id,
   accessToken,
   name,
+  currency,
   addedProductIds,
   removedProductIds,
   addedSupplierIds,
@@ -275,6 +279,7 @@ export async function editHistoryUtil({
   id: string;
   accessToken: string;
   name?: string;
+  currency?: CURRENCY;
   addedProductIds?: string[];
   removedProductIds?: string[];
   addedSupplierIds?: string[];
@@ -288,6 +293,7 @@ export async function editHistoryUtil({
       accessToken,
       id,
       name,
+      currency,
       addedProductIds,
       removedProductIds,
       addedSupplierIds,
@@ -974,4 +980,52 @@ export async function deletePricesUtil({
   }
 
   return false;
+}
+
+export async function editDollarRateUtil({
+  accessToken,
+
+  rate,
+  currency,
+  fetchWithCreds,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  rate: number;
+  currency: CURRENCY;
+  fetchWithCreds: FetchWithCredsType;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+}): Promise<DollarRate | undefined> {
+  try {
+    const { success, data, message } = await editDollarRate({
+      accessToken,
+      currency,
+      updatedRate: rate,
+      fetchWithCreds,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'success',
+        severity: 'success',
+      });
+      return data;
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
+  }
+  return undefined;
 }

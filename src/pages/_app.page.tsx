@@ -1,5 +1,6 @@
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
+import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
@@ -14,18 +15,6 @@ import { useRouter } from 'next/router';
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
-  // useEffect(() => {
-  //   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-  //     event.preventDefault();
-  //   };
-
-  //   window.addEventListener('beforeunload', handleBeforeUnload);
-
-  //   return () => {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   };
-  // }, []);
-
   return (
     <ThemeProvider theme={theme}>
       <NetworkContextProvider>
@@ -34,13 +23,15 @@ export default function App({ Component, pageProps }: AppProps) {
             <CategoryContextProvider>
               <ProductContextProvider>
                 <PrevProductContextProvider>
-                  <NextIntlClientProvider
-                    locale={router.locale}
-                    timeZone="Asia/Ashgabat"
-                    messages={pageProps.messages}
-                  >
-                    <Component {...pageProps} />
-                  </NextIntlClientProvider>
+                  <DollarRateContextProvider>
+                    <NextIntlClientProvider
+                      locale={router.locale}
+                      timeZone="Asia/Ashgabat"
+                      messages={pageProps.messages}
+                    >
+                      <Component {...pageProps} />
+                    </NextIntlClientProvider>
+                  </DollarRateContextProvider>
                 </PrevProductContextProvider>
               </ProductContextProvider>
             </CategoryContextProvider>
