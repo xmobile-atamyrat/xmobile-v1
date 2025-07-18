@@ -16,6 +16,7 @@ import {
   createSupplierUtil,
   deleteProductUtil,
   deleteSupplierUtil,
+  editDollarRateUtil,
   editHistoryUtil,
   editProductUtil,
   editSupplierUtil,
@@ -75,7 +76,7 @@ export default function Procurement() {
   const t = useTranslations();
 
   const { user, accessToken } = useUserContext();
-  const { rates } = useDollarRateContext();
+  const { rates, setRates } = useDollarRateContext();
   const fetchWithCreds = useFetchWithCreds();
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -455,13 +456,52 @@ export default function Procurement() {
                   size="small"
                   className="w-[120px]"
                   value={orderCurrencyRate?.rate ?? ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    const target = e.target.value;
+                    const newRate =
+                      target === '' ? undefined : parseInt(e.target.value, 10);
+                    const currRate = orderCurrencyRate.rate;
                     setOrderCurrencyRate((curr) => {
                       return {
                         ...curr,
-                        rate: parseInt(e.target.value, 10),
+                        rate: newRate,
                       };
                     });
+                    if (newRate == null) return;
+
+                    setRates((curr) =>
+                      curr.map((rate) => {
+                        if (rate.currency === orderCurrencyRate.currency) {
+                          return { ...rate, rate: newRate };
+                        }
+                        return rate;
+                      }),
+                    );
+
+                    const updatedRate = await editDollarRateUtil({
+                      accessToken,
+                      currency: orderCurrencyRate.currency,
+                      rate: newRate,
+                      fetchWithCreds,
+                      setSnackbarMessage,
+                      setSnackbarOpen,
+                    });
+                    if (updatedRate == null) {
+                      setOrderCurrencyRate((curr) => {
+                        return {
+                          ...curr,
+                          rate: currRate,
+                        };
+                      });
+                      setRates((curr) =>
+                        curr.map((rate) => {
+                          if (rate.currency === orderCurrencyRate.currency) {
+                            return { ...rate, rate: currRate };
+                          }
+                          return rate;
+                        }),
+                      );
+                    }
                   }}
                 />
                 <Select

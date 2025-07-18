@@ -13,6 +13,7 @@ import {
 
 const DollarRateContext = createContext<DollarRateContextProps>({
   rates: [],
+  setRates: () => undefined,
 });
 
 export const useDollarRateContext = () => useContext(DollarRateContext);
