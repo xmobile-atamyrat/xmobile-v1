@@ -100,7 +100,7 @@ export default function AddProductsSuppliersDialog({
                   {item.name}
                 </Typography>
                 <Box className={`flex flex-row gap-${isMdUp ? 4 : 0}`}>
-                  {selectedItems.some((i) => i.id === item.id) ? (
+                  {selectedItems?.some((i) => i.id === item.id) ? (
                     <Typography
                       color="green"
                       fontSize={12}
