@@ -264,21 +264,21 @@ export const assignColorToPrices = ({
     let maxFound = false;
     return row.map((price) => {
       const [hash, priceColorPair] = Object.entries(price)[0];
-      if (priceColorPair.value === minPrice && !minFound) {
+      if (!minFound && priceColorPair.value === minPrice) {
         minFound = true;
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'green',
+            color: OrderPriceColor.green,
           },
         };
       }
-      if (priceColorPair.value === maxPrice && !maxFound) {
+      if (!maxFound && priceColorPair.value === maxPrice) {
         maxFound = true;
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'orange',
+            color: OrderPriceColor.orange,
           },
         };
       }
