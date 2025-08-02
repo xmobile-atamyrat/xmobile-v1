@@ -1,4 +1,5 @@
 import {
+  OrderPriceColor,
   ProcurementOrder,
   ProcurementOrderProduct,
   ProcurementOrderProductQuantity,
@@ -25,12 +26,13 @@ export interface DetailedOrder extends ProcurementOrder {
   productQuantities: ProcurementOrderProductQuantity[];
 }
 
-export type HistoryColor = 'red' | 'green' | 'orange' | 'white';
-export const HISTORY_COLORS: HistoryColor[] = ['green', 'orange', 'white'];
+export const HISTORY_COLORS: OrderPriceColor[] = Object.keys(
+  OrderPriceColor,
+) as OrderPriceColor[];
 
 export type HistoryPrice = Record<
   string,
-  { value: number; color?: HistoryColor }
+  { value: number; color?: OrderPriceColor }
 >;
 
 export type ProductsSuppliersType = 'product' | 'supplier';

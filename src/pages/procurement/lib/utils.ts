@@ -1,4 +1,5 @@
-import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
+import { OrderPriceColor } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 
 export interface ExcelFileData {
@@ -227,12 +228,6 @@ export const assignColorToPrices = ({
   orderId: string;
   prices: HistoryPrice;
 }): HistoryPrice => {
-  // reset prev colors
-  const resetPrices = { ...prices };
-  Object.keys(resetPrices).forEach((key) => {
-    resetPrices[key].color = undefined;
-  });
-
   // partition prices into a 2D table
   const partitionedPrices: HistoryPrice[][] = [];
   productIds.forEach((productId) => {
@@ -263,28 +258,28 @@ export const assignColorToPrices = ({
     let maxFound = false;
     return row.map((price) => {
       const [hash, priceColorPair] = Object.entries(price)[0];
-      if (priceColorPair.value === minPrice && !minFound) {
+      if (!minFound && priceColorPair.value === minPrice) {
         minFound = true;
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'green' as HistoryColor,
+            color: OrderPriceColor.green,
           },
         };
       }
-      if (priceColorPair.value === maxPrice && !maxFound) {
+      if (!maxFound && priceColorPair.value === maxPrice) {
         maxFound = true;
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'orange' as HistoryColor,
+            color: OrderPriceColor.orange,
           },
         };
       }
       return {
         [hash]: {
           value: priceColorPair.value,
-          color: undefined,
+          color: OrderPriceColor.white,
         },
       };
     });
@@ -295,7 +290,10 @@ export const assignColorToPrices = ({
   coloredPartitionedPrices.forEach((row) => {
     row.forEach((price) => {
       const [hash, priceColorPair] = Object.entries(price)[0];
-      updatedPrices[hash] = priceColorPair;
+      updatedPrices[hash] = {
+        ...priceColorPair,
+        color: priceColorPair.color as OrderPriceColor,
+      };
     });
   });
   return updatedPrices;

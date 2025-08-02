@@ -62,26 +62,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const updatedPrices: Partial<ProcurementSupplierProductPrice>[] =
         req.body;
       await Promise.all(
-        updatedPrices.map(async ({ orderId, price, productId, supplierId }) => {
-          await dbClient.procurementSupplierProductPrice.upsert({
-            where: {
-              supplierId_productId_orderId: {
-                supplierId,
-                productId,
-                orderId,
+        updatedPrices.map(
+          async ({ orderId, price, productId, supplierId, color }) => {
+            await dbClient.procurementSupplierProductPrice.upsert({
+              where: {
+                supplierId_productId_orderId: {
+                  supplierId,
+                  productId,
+                  orderId,
+                },
               },
-            },
-            update: {
-              price,
-            },
-            create: {
-              orderId,
-              productId,
-              supplierId,
-              price,
-            },
-          });
-        }),
+              update: {
+                price,
+                color,
+              },
+              create: {
+                orderId,
+                productId,
+                supplierId,
+                price,
+                color,
+              },
+            });
+          },
+        ),
       );
       return res.status(200).json({ success: true });
     }

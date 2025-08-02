@@ -241,6 +241,7 @@ model ProcurementSupplierProductPrice {
   productId               String
   orderId                 String
   price                   Float?
+  color                   OrderPriceColor?      @default(white)
 
   supplier                ProcurementSupplier   @relation("ProcurementSupplierValue", fields: [supplierId], references: [id], onDelete: Cascade)
   product                 ProcurementProduct    @relation("ProcurementProductValue", fields: [productId], references: [id], onDelete: Cascade)
@@ -263,4 +264,11 @@ enum CURRENCY {
   TMT
   AED // Dubai Dirham
   CNY // Chinese Yuan
+}
+
+// Note: colors need to be lowercase to be directly used in css
+enum OrderPriceColor {
+  white
+  orange
+  green
 }
