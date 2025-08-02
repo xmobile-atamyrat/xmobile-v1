@@ -228,12 +228,6 @@ export const assignColorToPrices = ({
   orderId: string;
   prices: HistoryPrice;
 }): HistoryPrice => {
-  // reset prev colors
-  const resetPrices = { ...prices };
-  Object.keys(resetPrices).forEach((key) => {
-    resetPrices[key].color = undefined;
-  });
-
   // partition prices into a 2D table
   const partitionedPrices: HistoryPrice[][] = [];
   productIds.forEach((productId) => {
@@ -285,7 +279,7 @@ export const assignColorToPrices = ({
       return {
         [hash]: {
           value: priceColorPair.value,
-          color: undefined,
+          color: OrderPriceColor.white,
         },
       };
     });
