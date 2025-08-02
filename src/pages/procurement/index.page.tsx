@@ -393,13 +393,22 @@ export default function Procurement() {
   }, [accessToken, user]);
 
   useEffect(() => {
-    if (selectedHistory == null || selectedHistory.prices == null) {
+    if (selectedHistory == null) {
+      return;
+    }
+
+    setOrderCurrencyRate(
+      rates.find((rate) => rate.currency === selectedHistory.currency),
+    );
+
+    if (selectedHistory.prices == null) {
       setPrices({});
       return;
     }
+
     const newPrices: HistoryPrice = {};
     selectedHistory.prices.forEach(
-      ({ orderId, productId, supplierId, price }) => {
+      ({ orderId, productId, supplierId, price, color }) => {
         const key = priceHash({
           orderId,
           productId,
@@ -407,14 +416,11 @@ export default function Procurement() {
         });
         newPrices[key] = {
           value: price,
-          color: undefined,
+          color,
         };
       },
     );
     setPrices(newPrices);
-    setOrderCurrencyRate(
-      rates.find((rate) => rate.currency === selectedHistory.currency),
-    );
   }, [selectedHistory]);
 
   useEffect(() => {
@@ -505,7 +511,7 @@ export default function Procurement() {
                   }}
                 />
                 <Select
-                  value={selectedHistory?.currency ?? ''}
+                  value={orderCurrencyRate?.currency ?? ''}
                   onChange={async (e) => {
                     if (selectedHistory == null || orderCurrencyRate == null)
                       return;

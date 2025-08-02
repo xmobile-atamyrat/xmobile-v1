@@ -17,6 +17,7 @@ import {
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
+  ProcurementSupplierProductPrice,
 } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { Dispatch, SetStateAction, useCallback, useRef } from 'react';
@@ -57,16 +58,51 @@ export default function ActionsMenu({
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  const handleCalculate = useCallback(() => {
-    setPrices(
-      assignColorToPrices({
-        orderId: selectedHistory.id,
-        productIds: selectedProducts.map((product) => product.id),
-        supplierIds: selectedSuppliers.map((supplier) => supplier.id),
-        prices,
-      }),
-    );
-  }, [prices, selectedHistory, selectedProducts, selectedSuppliers]);
+  const handleCalculate = useCallback(async () => {
+    const coloredPrices = assignColorToPrices({
+      orderId: selectedHistory.id,
+      productIds: selectedProducts.map((product) => product.id),
+      supplierIds: selectedSuppliers.map((supplier) => supplier.id),
+      prices,
+    });
+    const updatedPriceColors: Partial<ProcurementSupplierProductPrice>[] = [];
+    selectedProducts.forEach((product) => {
+      selectedSuppliers.forEach((supplier) => {
+        const key = priceHash({
+          orderId: selectedHistory.id,
+          productId: product.id,
+          supplierId: supplier.id,
+        });
+        if (coloredPrices[key]?.color != null) {
+          updatedPriceColors.push({
+            orderId: selectedHistory.id,
+            productId: product.id,
+            supplierId: supplier.id,
+            color: coloredPrices[key].color,
+          });
+        }
+      });
+    });
+    const success = await editProductPricesUtil({
+      accessToken,
+      updatedPrices: updatedPriceColors,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      fetchWithCreds,
+    });
+    if (success) {
+      setPrices(coloredPrices);
+    }
+  }, [
+    accessToken,
+    prices,
+    selectedHistory,
+    selectedProducts,
+    selectedSuppliers,
+    setSnackbarMessage,
+    setSnackbarOpen,
+    fetchWithCreds,
+  ]);
 
   return (
     <Menu
@@ -259,7 +295,11 @@ export default function ActionsMenu({
           className="w-full"
           sx={{ textTransform: 'none' }}
           variant="outlined"
-          onClick={handleCalculate}
+          onClick={async () => {
+            setLoading(true);
+            await handleCalculate();
+            setLoading(false);
+          }}
         >
           {t('calculate')}
         </Button>
