@@ -1,4 +1,5 @@
-import { HistoryColor, HistoryPrice } from '@/pages/procurement/lib/types';
+import { HistoryPrice } from '@/pages/procurement/lib/types';
+import { OrderPriceColor } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 
 export interface ExcelFileData {
@@ -268,7 +269,7 @@ export const assignColorToPrices = ({
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'green' as HistoryColor,
+            color: 'green',
           },
         };
       }
@@ -277,7 +278,7 @@ export const assignColorToPrices = ({
         return {
           [hash]: {
             value: priceColorPair.value,
-            color: 'orange' as HistoryColor,
+            color: 'orange',
           },
         };
       }
@@ -295,7 +296,10 @@ export const assignColorToPrices = ({
   coloredPartitionedPrices.forEach((row) => {
     row.forEach((price) => {
       const [hash, priceColorPair] = Object.entries(price)[0];
-      updatedPrices[hash] = priceColorPair;
+      updatedPrices[hash] = {
+        ...priceColorPair,
+        color: priceColorPair.color as OrderPriceColor,
+      };
     });
   });
   return updatedPrices;
