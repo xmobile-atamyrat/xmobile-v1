@@ -81,6 +81,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
                 productId,
                 supplierId,
                 price,
+                color,
               },
             });
           },

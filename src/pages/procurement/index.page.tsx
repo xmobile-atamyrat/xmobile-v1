@@ -408,7 +408,7 @@ export default function Procurement() {
 
     const newPrices: HistoryPrice = {};
     selectedHistory.prices.forEach(
-      ({ orderId, productId, supplierId, price }) => {
+      ({ orderId, productId, supplierId, price, color }) => {
         const key = priceHash({
           orderId,
           productId,
@@ -416,7 +416,7 @@ export default function Procurement() {
         });
         newPrices[key] = {
           value: price,
-          color: undefined,
+          color,
         };
       },
     );
