@@ -84,6 +84,8 @@ export default function EmptyOrder({
   const [colorPrice, setColorPrice] = useState<{
     anchor: HTMLElement | null;
     priceHash: string;
+    productId: string;
+    supplierId: string;
   }>();
   const fetchWithCreds = useFetchWithCreds();
 
@@ -323,6 +325,8 @@ export default function EmptyOrder({
                                     setColorPrice({
                                       anchor: e.currentTarget,
                                       priceHash: hash,
+                                      productId: product.id,
+                                      supplierId: supplier.id,
                                     });
                                   }}
                                 >
@@ -399,7 +403,8 @@ export default function EmptyOrder({
           <MenuItem
             key={color}
             className="bg-gray-300"
-            onClick={() => {
+            onClick={async () => {
+              const oldColor = prices[colorPrice.priceHash];
               setPrices((curr) => {
                 const newPrices = { ...curr };
                 newPrices[colorPrice.priceHash] = {
@@ -409,6 +414,32 @@ export default function EmptyOrder({
                 return newPrices;
               });
               setColorPrice(undefined);
+
+              const success = await editProductPricesUtil({
+                accessToken,
+                updatedPrices: [
+                  {
+                    orderId: selectedHistory.id,
+                    productId: colorPrice.productId,
+                    supplierId: colorPrice.supplierId,
+                    color,
+                  },
+                ],
+                setSnackbarMessage,
+                setSnackbarOpen,
+                fetchWithCreds,
+              });
+
+              if (!success) {
+                setPrices((curr) => {
+                  const newPrices = { ...curr };
+                  newPrices[colorPrice.priceHash] = {
+                    ...newPrices[colorPrice.priceHash],
+                    color: oldColor.color,
+                  };
+                  return newPrices;
+                });
+              }
             }}
           >
             <Box
