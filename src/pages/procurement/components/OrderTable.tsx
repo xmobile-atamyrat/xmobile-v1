@@ -238,7 +238,9 @@ export default function EmptyOrder({
           <TableHead>
             <TableRow>
               <TableCell></TableCell>
-              <TableCell align="center">{t('quantity')}</TableCell>
+              <TableCell align="center" size="small">
+                {t('quantity')}
+              </TableCell>
               {selectedSuppliers.map((supplier) => (
                 <TableCell key={supplier.id} align="center">
                   <Box className="flex w-full items-center gap-2 justify-center">
@@ -277,10 +279,11 @@ export default function EmptyOrder({
                       </IconButton>
                     </Box>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" size="small">
                     {/* Quantities */}
                     <TextField
                       size="small"
+                      className="w-20"
                       value={hashedQuantities[product.id] ?? ''}
                       type="number"
                       InputProps={hideTextfieldSpinButtons}
