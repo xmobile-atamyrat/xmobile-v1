@@ -214,6 +214,8 @@ model ProcurementOrderProduct {
 
   product     ProcurementProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId   String
+
+  ordered     Boolean?            @default(false)
   
   createdAt   DateTime            @default(now())
 
