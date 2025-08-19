@@ -241,6 +241,9 @@ export default function EmptyOrder({
               <TableCell align="center" size="small">
                 {t('quantity')}
               </TableCell>
+              <TableCell align="center" size="small">
+                {t('ordered')}
+              </TableCell>
               {selectedSuppliers.map((supplier) => (
                 <TableCell key={supplier.id} align="center">
                   <Box className="flex w-full items-center gap-2 justify-center">
@@ -300,6 +303,7 @@ export default function EmptyOrder({
                       }}
                     />
                   </TableCell>
+                  <TableCell align="center" size="small"></TableCell>
                   {selectedSuppliers.map((supplier) => {
                     const hash = priceHash({
                       orderId: selectedHistory.id,
