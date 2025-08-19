@@ -27,8 +27,5 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
 
 export const usePlatform = (): Platform => {
   const context = useContext(PlatformContext);
-  if (!context) {
-    throw new Error('usePlatform must be used within a PlatformProvider');
-  }
   return context.platform;
 };
