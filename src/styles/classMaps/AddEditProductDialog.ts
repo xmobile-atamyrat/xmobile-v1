@@ -1,4 +1,4 @@
-export const AddEditProductDialogClasses = {
+export const addEditProductDialogClasses = {
   box: {
     flex: {
       gapP: 'flex flex-col gap-4 p-2',

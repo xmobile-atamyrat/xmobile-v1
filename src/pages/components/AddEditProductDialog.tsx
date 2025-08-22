@@ -13,14 +13,13 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, ExtendedCategory } from '@/pages/lib/types';
-import { usePlatform } from '@/pages/lib/usePlatform';
 import {
   addEditProduct,
   isNumeric,
   parseName,
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
-import { AddEditProductDialogClasses } from '@/styles/classMaps/AddEditProductDialog';
+import { addEditProductDialogClasses } from '@/styles/classMaps/addEditProductDialog';
 import { DeleteOutlined, Instagram, YouTube } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -230,9 +229,9 @@ export default function AddEditProductDialog({
         {dialogType === 'add' ? t('addNewProduct') : t('editProduct')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className={AddEditProductDialogClasses.box.flex.gapP}>
+        <Box className={addEditProductDialogClasses.box.flex.gapP}>
           {categoryId && (
-            <Box className={AddEditProductDialogClasses.box.flex.gap}>
+            <Box className={addEditProductDialogClasses.box.flex.gap}>
               <Typography>{t('category')}</Typography>
               <Select
                 value={categoryId}
@@ -256,31 +255,31 @@ export default function AddEditProductDialog({
             <TextField
               label={t('inRussian')}
               name="productNameInRussian"
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductName.ru ?? ''}
             />
             <TextField
               label={t('inTurkmen')}
               name="productNameInTurkmen"
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductName.tk ?? ''}
             />
             <TextField
               label={t('inTurkish')}
               name="productNameInTurkish"
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductName.tr ?? ''}
             />
             <TextField
               label={t('inCharjov')}
               name="productNameInCharjov"
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductName.ch ?? ''}
             />
             <TextField
               label={t('inEnglish')}
               name="productNameInEnglish"
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductName.en ?? ''}
             />
           </Box>
@@ -291,7 +290,7 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInRussian"
               multiline
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
             />
             <TextField
@@ -299,7 +298,7 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInTurkmen"
               multiline
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
             />
             <TextField
@@ -307,7 +306,7 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInTurkish"
               multiline
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductDescription.tr ?? defaultProductDescTr}
             />
             <TextField
@@ -315,7 +314,7 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInCharjov"
               multiline
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
             />
             <TextField
@@ -323,7 +322,7 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInEnglish"
               multiline
-              className={AddEditProductDialogClasses.textField.usual[platform]}
+              className={addEditProductDialogClasses.textField.usual[platform]}
               defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
             />
           </Box>
@@ -331,17 +330,17 @@ export default function AddEditProductDialog({
             label={t('price')}
             type="text"
             name="price"
-            className={AddEditProductDialogClasses.textField.price[platform]}
+            className={addEditProductDialogClasses.textField.price[platform]}
             defaultValue={price ?? ''}
           />
         </Box>
 
-        <Box className={AddEditProductDialogClasses.box.flex.rowGap}>
+        <Box className={addEditProductDialogClasses.box.flex.rowGap}>
           <Typography>{t('productVideo')}:</Typography>
           {/* TODO: consider adding videoUrls dynamically (not fixed amount) */}
           {videoUrls?.map((videoUrl, index) => (
             <Box className="flex" key={`video-${index}`}>
-              <Box className={AddEditProductDialogClasses.box.flex.inline}>
+              <Box className={addEditProductDialogClasses.box.flex.inline}>
                 {(() => {
                   if (index === 0) return <TikTokIcon />;
                   if (index === 1) return <Instagram className="text-black" />;
@@ -363,18 +362,18 @@ export default function AddEditProductDialog({
           ))}
         </Box>
 
-        <Box className={AddEditProductDialogClasses.box.flex.colGapP[platform]}>
+        <Box className={addEditProductDialogClasses.box.flex.colGapP[platform]}>
           <Typography>{t('tags')}:</Typography>
           {tags.map((tag, index) => (
             <Box
-              className={AddEditProductDialogClasses.box.flex.rowGap}
+              className={addEditProductDialogClasses.box.flex.rowGap}
               key={index}
             >
               <TextField
                 type="text"
                 name={`tag${index}`}
                 className={
-                  AddEditProductDialogClasses.textField.usual[platform]
+                  addEditProductDialogClasses.textField.usual[platform]
                 }
                 value={tag}
                 onChange={(event) => {
@@ -390,14 +389,14 @@ export default function AddEditProductDialog({
               </IconButton>
             </Box>
           ))}
-          <Box className={AddEditProductDialogClasses.box.flex.rowEnd}>
+          <Box className={addEditProductDialogClasses.box.flex.rowEnd}>
             <Button variant="outlined" onClick={() => setTags([...tags, ''])}>
               {t('add')}
             </Button>
           </Box>
         </Box>
-        <Box className={AddEditProductDialogClasses.box.flex.pad}>
-          <Box className={AddEditProductDialogClasses.box.flex.col}>
+        <Box className={addEditProductDialogClasses.box.flex.pad}>
+          <Box className={addEditProductDialogClasses.box.flex.col}>
             <TextField
               margin="dense"
               id="imgUrl"
@@ -405,7 +404,7 @@ export default function AddEditProductDialog({
               type="url"
               name="imgUrl"
               className={
-                AddEditProductDialogClasses.textField.imageButton[platform]
+                addEditProductDialogClasses.textField.imageButton[platform]
               }
               onChange={(event) => {
                 try {
@@ -431,7 +430,7 @@ export default function AddEditProductDialog({
               startIcon={<CloudUploadIcon />}
               sx={{ textTransform: 'none' }}
               className={
-                AddEditProductDialogClasses.textField.imageButton[platform]
+                addEditProductDialogClasses.textField.imageButton[platform]
               }
             >
               {t('uploadProductImage')}
@@ -462,12 +461,12 @@ export default function AddEditProductDialog({
             const url = obj[key];
             return (
               <Box
-                className={AddEditProductDialogClasses.box.fullRel}
+                className={addEditProductDialogClasses.box.fullRel}
                 key={key}
               >
                 <CardMedia component="img" alt="asdf" src={url} width={200} />
                 <IconButton
-                  className={AddEditProductDialogClasses.box.absZero}
+                  className={addEditProductDialogClasses.box.absZero}
                   onClick={() => {
                     productImageUrls.forEach((objUrls) => {
                       const [idx] = Object.keys(objUrls);
@@ -497,7 +496,7 @@ export default function AddEditProductDialog({
                 <TextField
                   disabled
                   size="small"
-                  className={AddEditProductDialogClasses.textField.absZeroLeft}
+                  className={addEditProductDialogClasses.textField.absZeroLeft}
                   style={{ backgroundColor: 'white' }}
                   type="number"
                   defaultValue={index + 1}
@@ -527,12 +526,12 @@ export default function AddEditProductDialog({
           })}
           {productImageFileUrls.map((url, index) => (
             <Box
-              className={AddEditProductDialogClasses.box.fullRel}
+              className={addEditProductDialogClasses.box.fullRel}
               key={index}
             >
               <CardMedia component="img" alt="asdf" src={url} width={200} />
               <IconButton
-                className={AddEditProductDialogClasses.box.absZero}
+                className={addEditProductDialogClasses.box.absZero}
                 onClick={() => {
                   const fileIndex = productImageFileUrls.indexOf(url);
                   setProductImageFileUrls(
