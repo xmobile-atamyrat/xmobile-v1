@@ -9,10 +9,10 @@ import {
   defaultProductDescTr,
 } from '@/pages/lib/constants';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, ExtendedCategory } from '@/pages/lib/types';
-import { usePlatform } from '@/pages/lib/usePlatform';
 import {
   addEditProduct,
   isNumeric,
