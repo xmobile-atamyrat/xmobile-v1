@@ -3,7 +3,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { EditCategoriesProps } from '@/pages/lib/types';
 import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
-import { AddEditCategoriesDialogClasses } from '@/styles/classMaps/AddEditCategoriesDialog';
+import { addEditCategoriesDialogClasses } from '@/styles/classMaps/AddEditCategoriesDialog';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
@@ -106,12 +106,12 @@ export default function AddEditCategoriesDialog({
         handleClose();
       }}
     >
-      <DialogTitle className={AddEditCategoriesDialogClasses.dialog.title}>
+      <DialogTitle className={addEditCategoriesDialogClasses.dialog.title}>
         {dialogType === 'add' ? t('addNewCategory') : t('editCategory')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className={AddEditCategoriesDialogClasses.box.flex.gapP}>
-          <Box className={AddEditCategoriesDialogClasses.box.flex.gap}>
+        <Box className={addEditCategoriesDialogClasses.box.flex.gapP}>
+          <Box className={addEditCategoriesDialogClasses.box.flex.gap}>
             <Typography>
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
@@ -119,25 +119,25 @@ export default function AddEditCategoriesDialog({
             <TextField
               label={t('inTurkmen')}
               name="categoryNameInTurkmen"
-              className={AddEditCategoriesDialogClasses.textField[platform]}
+              className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.tk ?? ''}
             />
             <TextField
               label={t('inCharjov')}
               name="categoryNameInCharjov"
-              className={AddEditCategoriesDialogClasses.textField[platform]}
+              className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.ch ?? ''}
             />
             <TextField
               label={t('inRussian')}
               name="categoryNameInRussian"
-              className={AddEditCategoriesDialogClasses.textField[platform]}
+              className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.ru ?? ''}
             />
             <TextField
               label={t('inEnglish')}
               name="categoryNameInEnglish"
-              className={AddEditCategoriesDialogClasses.textField[platform]}
+              className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
             {errorMessage && (
@@ -146,7 +146,7 @@ export default function AddEditCategoriesDialog({
               </Typography>
             )}
           </Box>
-          <Box className={AddEditCategoriesDialogClasses.box.flex.gapFull}>
+          <Box className={addEditCategoriesDialogClasses.box.flex.gapFull}>
             <Typography>
               {`${t('categoryLogo')} `}
               <span
@@ -154,9 +154,9 @@ export default function AddEditCategoriesDialog({
               >{`(${t('notRequired')})`}</span>
             </Typography>
             <Box
-              className={AddEditCategoriesDialogClasses.box.flex.list[platform]}
+              className={addEditCategoriesDialogClasses.box.flex.list[platform]}
             >
-              <Box className={AddEditCategoriesDialogClasses.box.flex.gapFull}>
+              <Box className={addEditCategoriesDialogClasses.box.flex.gapFull}>
                 <Button
                   component="label"
                   role={undefined}
@@ -164,7 +164,7 @@ export default function AddEditCategoriesDialog({
                   tabIndex={-1}
                   startIcon={<CloudUploadIcon />}
                   sx={{ textTransform: 'none' }}
-                  className={AddEditCategoriesDialogClasses.button[platform]}
+                  className={addEditCategoriesDialogClasses.button[platform]}
                 >
                   {t('uploadCategoryImage')}
                   <VisuallyHiddenInput
@@ -189,7 +189,7 @@ export default function AddEditCategoriesDialog({
                   <TextField
                     label={t('categoryImageURL')}
                     className={
-                      AddEditCategoriesDialogClasses.imgTxtField[platform]
+                      addEditCategoriesDialogClasses.imgTxtField[platform]
                     }
                     value={categoryImageUrl ?? ''}
                     onChange={(event) => {
@@ -205,7 +205,7 @@ export default function AddEditCategoriesDialog({
                 </Box>
               </Box>
               {(categoryLogoUrl != null || categoryImageUrl != null) && (
-                <Box className={AddEditCategoriesDialogClasses.box.item}>
+                <Box className={addEditCategoriesDialogClasses.box.item}>
                   <img
                     alt="asdf"
                     src={categoryImageUrl ?? categoryLogoUrl}
@@ -223,7 +223,7 @@ export default function AddEditCategoriesDialog({
                     }}
                   />
                   <IconButton
-                    className={AddEditCategoriesDialogClasses.icon}
+                    className={addEditCategoriesDialogClasses.icon}
                     onClick={() => {
                       setCategoryLogoUrl(undefined);
                       setCategoryImageUrl(undefined);
@@ -238,7 +238,7 @@ export default function AddEditCategoriesDialog({
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions className={AddEditCategoriesDialogClasses.dialog.actions}>
+      <DialogActions className={addEditCategoriesDialogClasses.dialog.actions}>
         <Button variant="contained" color="error" onClick={handleClose}>
           {t('cancel')}
         </Button>
