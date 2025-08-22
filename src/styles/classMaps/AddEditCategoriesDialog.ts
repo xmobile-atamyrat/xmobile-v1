@@ -1,4 +1,4 @@
-export const AddEditCategoriesDialogClasses = {
+export const addEditCategoriesDialogClasses = {
   dialog: {
     title: 'w-full flex justify-center',
     actions: 'mb-4 mr-4',
