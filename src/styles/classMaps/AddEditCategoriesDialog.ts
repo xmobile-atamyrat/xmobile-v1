@@ -7,11 +7,23 @@ export const AddEditCategoriesDialogClasses = {
     in: 'flex flex-col gap-2',
     out: 'flex flex-col gap-4 p-2',
     full: 'flex flex-col gap-2 w-full',
-    list: 'flex flex-col sm:flex-row justify-between items-start w-full',
+    list: {
+      mobile: 'flex flex-row justify-between items-start w-full',
+      web: 'flex flex-col justify-between items-start w-full',
+    },
     item: 'h-full w-full p-2 relative',
   },
-  textField: 'my-1 sm:mr-2 min-w-[250px] w-full sm:w-1/3',
-  button: 'my-1 sm:mr-2 min-w-[250px] text-[16px] h-[56px] w-full sm:w-1/3',
-  imgTxtField: 'w-full sm:w-[250px]',
+  textField: {
+    mobile: 'my-1 mr-2 min-w-[250px] w-1/3',
+    web: 'my-1 min-w-[250px] w-full',
+  },
+  button: {
+    mobile: 'my-1 mr-2 min-w-[250px] text-[16px] h-[56px] w-1/3',
+    web: 'my-1 min-w-[250px] text-[16px] h-[56px] w-full',
+  },
+  imgTxtField: {
+    mobile: 'w-[250px]',
+    web: 'w-full',
+  },
   icon: 'absolute right-0 top-0',
 };
