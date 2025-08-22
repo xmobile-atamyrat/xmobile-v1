@@ -110,8 +110,8 @@ export default function AddEditCategoriesDialog({
         {dialogType === 'add' ? t('addNewCategory') : t('editCategory')}
       </DialogTitle>
       <DialogContent sx={{ padding: 0 }}>
-        <Box className={AddEditCategoriesDialogClasses.box.out}>
-          <Box className={AddEditCategoriesDialogClasses.box.in}>
+        <Box className={AddEditCategoriesDialogClasses.box.flex.gapP}>
+          <Box className={AddEditCategoriesDialogClasses.box.flex.gap}>
             <Typography>
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
@@ -146,15 +146,17 @@ export default function AddEditCategoriesDialog({
               </Typography>
             )}
           </Box>
-          <Box className={AddEditCategoriesDialogClasses.box.full}>
+          <Box className={AddEditCategoriesDialogClasses.box.flex.gapFull}>
             <Typography>
               {`${t('categoryLogo')} `}
               <span
                 style={{ fontSize: '12px' }}
               >{`(${t('notRequired')})`}</span>
             </Typography>
-            <Box className={AddEditCategoriesDialogClasses.box.list[platform]}>
-              <Box className={AddEditCategoriesDialogClasses.box.full}>
+            <Box
+              className={AddEditCategoriesDialogClasses.box.flex.list[platform]}
+            >
+              <Box className={AddEditCategoriesDialogClasses.box.flex.gapFull}>
                 <Button
                   component="label"
                   role={undefined}
