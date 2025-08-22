@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { EditCategoriesProps } from '@/pages/lib/types';
-import { usePlatform } from '@/pages/lib/usePlatform';
 import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
 import { AddEditCategoriesDialogClasses } from '@/styles/classMaps/AddEditCategoriesDialog';
 import { DeleteOutlined } from '@mui/icons-material';
