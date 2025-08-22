@@ -13,6 +13,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, ExtendedCategory } from '@/pages/lib/types';
+import { usePlatform } from '@/pages/lib/usePlatform';
 import {
   addEditProduct,
   isNumeric,
