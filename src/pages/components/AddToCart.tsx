@@ -12,6 +12,7 @@ import { Suspense, useCallback, useState } from 'react';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { debounce } from '@/pages/product/utils';
+import { addToCartClasses } from '@/styles/classMaps/addToCart';
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
@@ -154,13 +155,13 @@ export default function AddToCart({
         {cartAction === 'add' && (
           <Box
             sx={{ background: 'rgb(25, 118, 210)' }}
-            className="rounded-full hover:bg-darkblue shadow"
+            className={addToCartClasses.cartIcon.box}
           >
             <IconButton
               sx={{ pr: 1, color: 'white' }}
               type="submit"
               onClick={addCartItems}
-              className="rounded-full bg-blue hover:bg-darkblue shadow"
+              className={addToCartClasses.cartIcon.iButton}
             >
               <ShoppingCart
                 sx={{
@@ -175,7 +176,7 @@ export default function AddToCart({
         )}
 
         {cartAction === 'delete' && (
-          <Box className="flex column-reverse items-center">
+          <Box className={addToCartClasses.remButton}>
             {/* removeButton */}
             <IconButton
               sx={{ padding: 0.3 }}
