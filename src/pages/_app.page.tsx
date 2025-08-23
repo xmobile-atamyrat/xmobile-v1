@@ -2,6 +2,7 @@ import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
+import { PlatformProvider } from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
@@ -17,27 +18,29 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider theme={theme}>
-      <NetworkContextProvider>
-        <AbortControllerContextProvider>
-          <UserContextProvider>
-            <CategoryContextProvider>
-              <ProductContextProvider>
-                <PrevProductContextProvider>
-                  <DollarRateContextProvider>
-                    <NextIntlClientProvider
-                      locale={router.locale}
-                      timeZone="Asia/Ashgabat"
-                      messages={pageProps.messages}
-                    >
-                      <Component {...pageProps} />
-                    </NextIntlClientProvider>
-                  </DollarRateContextProvider>
-                </PrevProductContextProvider>
-              </ProductContextProvider>
-            </CategoryContextProvider>
-          </UserContextProvider>
-        </AbortControllerContextProvider>
-      </NetworkContextProvider>
+      <PlatformProvider>
+        <NetworkContextProvider>
+          <AbortControllerContextProvider>
+            <UserContextProvider>
+              <CategoryContextProvider>
+                <ProductContextProvider>
+                  <PrevProductContextProvider>
+                    <DollarRateContextProvider>
+                      <NextIntlClientProvider
+                        locale={router.locale}
+                        timeZone="Asia/Ashgabat"
+                        messages={pageProps.messages}
+                      >
+                        <Component {...pageProps} />
+                      </NextIntlClientProvider>
+                    </DollarRateContextProvider>
+                  </PrevProductContextProvider>
+                </ProductContextProvider>
+              </CategoryContextProvider>
+            </UserContextProvider>
+          </AbortControllerContextProvider>
+        </NetworkContextProvider>
+      </PlatformProvider>
     </ThemeProvider>
   );
 }
