@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/addToCart';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -28,6 +29,7 @@ export default function AddToCart({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
+  const platform = usePlatform();
 
   const addCartItems = async () => {
     const userId = user?.id;
@@ -153,44 +155,28 @@ export default function AddToCart({
       <Suspense fallback={<CircularProgress />}>
         {/* cartIcon */}
         {cartAction === 'add' && (
-          <Box
-            sx={{ background: 'rgb(25, 118, 210)' }}
-            className={addToCartClasses.cartIcon.box}
-          >
+          <Box className={addToCartClasses.cartIcon.box}>
             <IconButton
-              sx={{ pr: 1, color: 'white' }}
               type="submit"
               onClick={addCartItems}
               className={addToCartClasses.cartIcon.iButton}
             >
               <ShoppingCart
-                sx={{
-                  fontSize: {
-                    xs: '1rem',
-                    sm: '1.5rem',
-                  },
-                }}
+                className={addToCartClasses.cartIcon.fSize[platform]}
               />
             </IconButton>
           </Box>
         )}
 
         {cartAction === 'delete' && (
-          <Box className={addToCartClasses.remButton}>
+          <Box className={addToCartClasses.circIcon.box}>
             {/* removeButton */}
             <IconButton
-              sx={{ padding: 0.3 }}
+              className="p-0.3"
               onClick={handleProductQuantity('remove')}
             >
               <RemoveCircleIcon
-                sx={{
-                  fontSize: {
-                    xs: '1.3rem',
-                    sm: '1.5rem',
-                    md: '1.7rem',
-                    lg: '1.7rem',
-                  },
-                }}
+                className={addToCartClasses.circIcon.fSize[platform]}
                 color="primary"
               />
             </IconButton>
@@ -200,13 +186,7 @@ export default function AddToCart({
               type="number"
               name="quantity"
               inputProps={{ min: 1 }}
-              sx={{
-                width: 'fit-content',
-                maxWidth: 50,
-                input: {
-                  textAlign: 'center',
-                },
-              }}
+              className={addToCartClasses.input}
               value={quantity}
               disableUnderline
               onChange={(e) => {
@@ -218,17 +198,10 @@ export default function AddToCart({
             {/* addButton */}
             <IconButton
               onClick={handleProductQuantity('add')}
-              sx={{ padding: 0.3 }}
+              className="p-0.3"
             >
               <AddCircleIcon
-                sx={{
-                  fontSize: {
-                    xs: '1.3rem',
-                    sm: '1.5rem',
-                    md: '1.7rem',
-                    lg: '1.7rem',
-                  },
-                }}
+                className={addToCartClasses.circIcon.fSize[platform]}
                 color="primary"
               />
             </IconButton>
@@ -236,7 +209,7 @@ export default function AddToCart({
             {/* delete button */}
             <IconButton
               color="primary"
-              sx={{ pr: 1 }}
+              className="pr-1"
               type="submit"
               onClick={() => {
                 onDelete(cartItemId);
@@ -245,14 +218,7 @@ export default function AddToCart({
             >
               <DeleteIcon
                 color="error"
-                sx={{
-                  fontSize: {
-                    xs: '1.3rem',
-                    sm: '1.5rem',
-                    md: '1.7rem',
-                    lg: '1.7rem',
-                  },
-                }}
+                className={addToCartClasses.circIcon.fSize[platform]}
               />
             </IconButton>
           </Box>
@@ -274,7 +240,7 @@ export default function AddToCart({
           onClose={() => setSnackbarOpen(false)}
           severity={snackbarMessage?.severity}
           variant="filled"
-          sx={{ width: '100%' }}
+          className="w-100%"
         >
           {snackbarMessage?.message && t(snackbarMessage.message)}
           {snackbarMessage?.message === 'userNotFound' && (
