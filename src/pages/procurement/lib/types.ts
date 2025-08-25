@@ -26,6 +26,10 @@ export interface DetailedOrder extends ProcurementOrder {
   productQuantities: ProcurementOrderProductQuantity[];
 }
 
+export interface ProcurementProductWithOrderStatus extends ProcurementProduct {
+  ordered?: boolean;
+}
+
 export const HISTORY_COLORS: OrderPriceColor[] = Object.keys(
   OrderPriceColor,
 ) as OrderPriceColor[];

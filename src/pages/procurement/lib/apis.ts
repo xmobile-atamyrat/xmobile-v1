@@ -4,6 +4,7 @@ import {
   CURRENCY,
   DollarRate,
   ProcurementOrder,
+  ProcurementOrderProduct,
   ProcurementOrderProductQuantity,
   ProcurementProduct,
   ProcurementSupplier,
@@ -412,6 +413,31 @@ export const editDollarRate = async ({
     body: {
       rate: updatedRate,
       currency,
+    },
+  });
+};
+
+export const updateProductOrderedStatus = async ({
+  accessToken,
+  orderId,
+  productId,
+  ordered,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  ordered: boolean;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<ProcurementOrderProduct>> => {
+  return fetchWithCreds<ProcurementOrderProduct>({
+    accessToken,
+    path: '/api/procurement/order/product',
+    method: 'PUT',
+    body: {
+      orderId,
+      productId,
+      ordered,
     },
   });
 };

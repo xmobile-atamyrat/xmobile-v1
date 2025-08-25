@@ -9,10 +9,12 @@ import {
   editHistoryUtil,
   editProductPricesUtil,
   editProductQuantityUtil,
+  updateProductOrderedStatusUtil,
 } from '@/pages/procurement/lib/apiUtils';
 import {
   HISTORY_COLORS,
   HistoryPrice,
+  ProcurementProductWithOrderStatus,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import {
@@ -25,6 +27,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
+  Checkbox,
   IconButton,
   InputAdornment,
   Menu,
@@ -54,8 +57,10 @@ interface EmptyOrderProps {
   >;
   selectedSuppliers: ProcurementSupplier[];
   setSelectedSuppliers: Dispatch<SetStateAction<ProcurementSupplier[]>>;
-  selectedProducts: ProcurementProduct[];
-  setSelectedProducts: Dispatch<SetStateAction<ProcurementProduct[]>>;
+  selectedProducts: ProcurementProductWithOrderStatus[];
+  setSelectedProducts: Dispatch<
+    SetStateAction<ProcurementProductWithOrderStatus[]>
+  >;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   selectedHistory: ProcurementOrder;
@@ -235,6 +240,46 @@ export default function EmptyOrder({
     [debounce, accessToken, selectedHistory],
   );
 
+  const handleOrderedToggle = useCallback(
+    async (productId: string, ordered: boolean) => {
+      // Optimistic update
+      setSelectedProducts((prev) =>
+        prev.map((product) =>
+          product.id === productId ? { ...product, ordered } : product,
+        ),
+      );
+
+      const success = await updateProductOrderedStatusUtil({
+        accessToken,
+        orderId: selectedHistory.id,
+        productId,
+        ordered,
+        fetchWithCreds,
+        setSnackbarMessage,
+        setSnackbarOpen,
+      });
+
+      // Rollback on failure
+      if (!success) {
+        setSelectedProducts((prev) =>
+          prev.map((product) =>
+            product.id === productId
+              ? { ...product, ordered: !ordered }
+              : product,
+          ),
+        );
+      }
+    },
+    [
+      accessToken,
+      selectedHistory.id,
+      fetchWithCreds,
+      setSnackbarMessage,
+      setSnackbarOpen,
+      setSelectedProducts,
+    ],
+  );
+
   return (
     <Box className="flex flex-col gap-2">
       <TableContainer component={Paper}>
@@ -321,7 +366,16 @@ export default function EmptyOrder({
                       }}
                     />
                   </TableCell>
-                  <TableCell align="center" size="small"></TableCell>
+                  <TableCell align="center" size="small">
+                    <Checkbox
+                      checked={product.ordered ?? false}
+                      onChange={(e) =>
+                        handleOrderedToggle(product.id, e.target.checked)
+                      }
+                      color="primary"
+                      size="small"
+                    />
+                  </TableCell>
                   {selectedSuppliers.map((supplier) => {
                     const hash = priceHash({
                       orderId: selectedHistory.id,
