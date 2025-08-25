@@ -28,6 +28,7 @@ import {
 import {
   DetailedOrder,
   HistoryPrice,
+  ProcurementProductWithOrderStatus,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
 import { priceHash } from '@/pages/procurement/lib/utils';
@@ -85,7 +86,7 @@ export default function Procurement() {
   const [selectedSuppliers, setSelectedSuppliers] =
     useState<ProcurementSupplier[]>();
   const [selectedProducts, setSelectedProducts] =
-    useState<ProcurementProduct[]>();
+    useState<ProcurementProductWithOrderStatus[]>();
   const [searchedSuppliers, setSearchedSuppliers] = useState<
     ProcurementSupplier[]
   >([]);
@@ -225,7 +226,10 @@ export default function Procurement() {
           fetchWithCreds,
         });
         if (productQuantity) {
-          setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
+          setSelectedProducts((prev) => [
+            { ...(item as ProcurementProduct), ordered: false },
+            ...prev,
+          ]);
           setProductQuantities((prev) => [productQuantity, ...prev]);
         }
       } else if (addProductsSuppliersDialog === 'supplier') {
@@ -280,7 +284,9 @@ export default function Procurement() {
           );
           setSelectedProducts((products) =>
             products.map((product) =>
-              product.id === editedProduct.id ? editedProduct : product,
+              product.id === editedProduct.id
+                ? { ...editedProduct, ordered: product.ordered }
+                : product,
             ),
           );
         }

@@ -19,6 +19,7 @@ import {
   getHistoryList,
   getProcurementProducts,
   getSuppliers,
+  updateProductOrderedStatus,
 } from '@/pages/procurement/lib/apis';
 import {
   CURRENCY,
@@ -691,7 +692,12 @@ export async function getHistoryUtil({
       fetchWithCreds,
     });
     if (success) {
-      setSelectedProducts(data.products.map(({ product }) => product) ?? []);
+      setSelectedProducts(
+        data.products.map(({ product, ordered }) => ({
+          ...product,
+          ordered,
+        })) ?? [],
+      );
       setSelectedSuppliers(
         data.suppliers.map(({ supplier }) => supplier) ?? [],
       );
@@ -1028,4 +1034,53 @@ export async function editDollarRateUtil({
     });
   }
   return undefined;
+}
+export async function updateProductOrderedStatusUtil({
+  accessToken,
+  orderId,
+  productId,
+  ordered,
+  fetchWithCreds,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  ordered: boolean;
+  fetchWithCreds: FetchWithCredsType;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+}): Promise<boolean> {
+  try {
+    const { success, message } = await updateProductOrderedStatus({
+      accessToken,
+      orderId,
+      productId,
+      ordered,
+      fetchWithCreds,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'Статус заказа обновлен',
+        severity: 'success',
+      });
+      return true;
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'Ошибка сервера',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'Ошибка сервера',
+      severity: 'error',
+    });
+  }
+  return false;
 }
