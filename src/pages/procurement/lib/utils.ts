@@ -566,3 +566,179 @@ export const assignColorToPrices = ({
   });
   return updatedPrices;
 };
+
+// Currency rounding utilities
+export const roundTMT = (value: number): number => Math.round(value);
+
+export const roundUSD = (value: number): number =>
+  Math.round(value * 100) / 100;
+
+export const roundByCurrency = (value: number, currency: string): number => {
+  if (currency === 'TMT') {
+    return roundTMT(value);
+  }
+  return roundUSD(value);
+};
+
+// Currency conversion utilities
+export const convertCurrency = (
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  fromCurrencyToUsdRate: number, // Rate from fromCurrency to USD
+  usdToTmtRate: number = 3.5, // Default TMT rate, should come from context
+): number => {
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+
+  // First convert to USD if not already
+  let usdAmount = amount;
+  if (fromCurrency !== 'USD') {
+    // Convert from source currency to USD
+    usdAmount = amount / fromCurrencyToUsdRate;
+  }
+
+  // Then convert to target currency if not USD
+  if (toCurrency === 'USD') {
+    return roundByCurrency(usdAmount, toCurrency);
+  }
+
+  if (toCurrency === 'TMT') {
+    const tmtAmount = usdAmount * usdToTmtRate;
+    return roundByCurrency(tmtAmount, toCurrency);
+  }
+
+  // For other currencies, would need more exchange rates
+  return roundByCurrency(usdAmount, toCurrency);
+};
+
+// Helper function for formatting prices in Excel
+const formatExcelPrice = (
+  price: number | null | undefined,
+  currency: 'USD' | 'TMT',
+): string => {
+  if (!price) return '';
+  return currency === 'TMT' ? Math.round(price).toString() : price.toFixed(2);
+};
+
+// Excel download utilities
+export const downloadExcelFile = async (
+  data: any[],
+  selectedColumns: string[],
+  filename: string,
+  currency: 'USD' | 'TMT',
+) => {
+  try {
+    // Dynamically import ExcelJS to avoid SSR issues
+    const ExcelJSModule = await import('exceljs');
+
+    const workbook = new ExcelJSModule.Workbook();
+    const worksheet = workbook.addWorksheet('Данные');
+
+    // Column mapping
+    const columnMap: Record<string, string> = {
+      productName: 'Название товара',
+      quantity: 'Количество',
+      originalPrice: `Исходная цена`,
+      singlePrice: `Розничная цена (${currency})`,
+      bulkPrice: `Оптовая цена (${currency})`,
+      originalCurrency: 'Исходная валюта',
+      lastUpdated: 'Последнее обновление',
+      singleProductPrice: `Цена поставщика (${currency})`,
+      singleProductPercent: 'Надбавка розница (%)',
+      bulkProductPrice: `Оптовая цена поставщика (${currency})`,
+      bulkProductPercent: 'Надбавка опт (%)',
+      finalSinglePrice: `Итоговая розница (${currency})`,
+      finalBulkPrice: `Итоговый опт (${currency})`,
+      comment: 'Комментарий',
+      orderReceived: 'Получено',
+    };
+
+    // Add headers
+    const headers = selectedColumns.map((col) => columnMap[col] || col);
+    worksheet.addRow(headers);
+
+    // Style headers
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    // Add data rows
+    data.forEach((item) => {
+      const row = selectedColumns.map((col) => {
+        switch (col) {
+          case 'productName':
+            return item.product?.name || item.name || '';
+          case 'quantity':
+            return item.quantity || '';
+          case 'originalPrice':
+            return formatExcelPrice(item.originalPrice, currency);
+          case 'singlePrice':
+            return formatExcelPrice(item.singlePrice, currency);
+          case 'bulkPrice':
+            return formatExcelPrice(item.bulkPrice, currency);
+          case 'originalCurrency':
+            return item.originalCurrency || '';
+          case 'lastUpdated':
+            return item.updatedAt
+              ? new Date(item.updatedAt).toLocaleDateString('ru-RU')
+              : '';
+          case 'singleProductPrice':
+            return formatExcelPrice(item.singleProductPrice, currency);
+          case 'singleProductPercent':
+            return item.singleProductPercent || '';
+          case 'bulkProductPrice':
+            return formatExcelPrice(item.bulkProductPrice, currency);
+          case 'bulkProductPercent':
+            return item.bulkProductPercent || '';
+          case 'finalSinglePrice':
+            return formatExcelPrice(item.finalSinglePrice, currency);
+          case 'finalBulkPrice':
+            return formatExcelPrice(item.finalBulkPrice, currency);
+          case 'comment':
+            return item.comment || '';
+          case 'orderReceived':
+            return item.orderReceived ? 'Да' : 'Нет';
+          default:
+            return item[col] || '';
+        }
+      });
+      worksheet.addRow(row);
+    });
+
+    // Auto-width columns
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = Math.min(maxLength + 2, 50);
+    });
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+
+    return true;
+  } catch (error) {
+    console.error('Excel download error:', error);
+    return false;
+  }
+};

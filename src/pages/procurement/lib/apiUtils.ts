@@ -20,6 +20,7 @@ import {
   getProcurementProducts,
   getSuppliers,
   updateProductOrderedStatus,
+  updateProductPricing,
 } from '@/pages/procurement/lib/apis';
 import {
   CURRENCY,
@@ -1064,6 +1065,77 @@ export async function updateProductOrderedStatusUtil({
       setSnackbarOpen(true);
       setSnackbarMessage({
         message: 'Статус заказа обновлен',
+        severity: 'success',
+      });
+      return true;
+    }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'Ошибка сервера',
+      severity: 'error',
+    });
+  } catch (error) {
+    console.error(error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'Ошибка сервера',
+      severity: 'error',
+    });
+  }
+  return false;
+}
+
+export async function updateProductPricingUtil({
+  accessToken,
+  orderId,
+  productId,
+  singleProductPrice,
+  singleProductPercent,
+  bulkProductPrice,
+  bulkProductPercent,
+  finalSinglePrice,
+  finalBulkPrice,
+  comment,
+  orderReceived,
+  fetchWithCreds,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  singleProductPrice?: number;
+  singleProductPercent?: number;
+  bulkProductPrice?: number;
+  bulkProductPercent?: number;
+  finalSinglePrice?: number;
+  finalBulkPrice?: number;
+  comment?: string;
+  orderReceived?: boolean;
+  fetchWithCreds: FetchWithCredsType;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+}): Promise<boolean> {
+  try {
+    const { success, message } = await updateProductPricing({
+      accessToken,
+      orderId,
+      productId,
+      singleProductPrice,
+      singleProductPercent,
+      bulkProductPrice,
+      bulkProductPercent,
+      finalSinglePrice,
+      finalBulkPrice,
+      comment,
+      orderReceived,
+      fetchWithCreds,
+    });
+    if (success) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'Цены обновлены',
         severity: 'success',
       });
       return true;

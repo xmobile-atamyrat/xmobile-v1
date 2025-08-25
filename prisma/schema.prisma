@@ -169,6 +169,7 @@ model ProcurementProduct {
   order                   ProcurementOrderProduct[]
   values                  ProcurementSupplierProductPrice[]  @relation("ProcurementProductValue")
   quantities              ProcurementOrderProductQuantity[]  @relation("ProcurementProductQuantity")
+  productPrice            ProductPrice?
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -217,6 +218,16 @@ model ProcurementOrderProduct {
 
   ordered     Boolean?            @default(false)
   
+  // Pricing fields
+  singleProductPrice      Float?                // Price from supplier
+  singleProductPercent    Float?                // Profit % for single
+  bulkProductPrice        Float?                // Bulk price from user
+  bulkProductPercent      Float?                // Profit % for bulk
+  finalSinglePrice        Float?                // Calculated final single price
+  finalBulkPrice          Float?                // Calculated final bulk price
+  comment                 String?               // User comment
+  orderReceived           Boolean               @default(false)
+  
   createdAt   DateTime            @default(now())
 
   @@unique([orderId, productId])
@@ -253,6 +264,24 @@ model ProcurementSupplierProductPrice {
   updatedAt               DateTime                @updatedAt
 
   @@unique([supplierId, productId, orderId])
+}
+
+model ProductPrice {
+  id                      String                @id @default(uuid())
+  
+  productId               String                @unique
+  product                 ProcurementProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  originalPrice           Float?                // Nullable initially
+  originalCurrency        CURRENCY?             // Nullable initially
+  bulkPrice               Float?                // After applying percent
+  singlePrice             Float?                // After applying percent
+  
+  lastUpdatedFromOrderId  String?               // Track which order last updated this
+  lastUpdatedFromProductId String?              // Track which product updated this
+  
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
 }
 
 enum UserRole {
