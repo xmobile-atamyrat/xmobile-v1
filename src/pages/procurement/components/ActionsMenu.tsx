@@ -183,7 +183,7 @@ export default function ActionsMenu({
               });
             if (productNames.length === 0) {
               setSnackbarMessage({
-                message: 'allQuantitiesZero',
+                message: 'Все количества равны нулю',
                 severity: 'error',
               });
               setSnackbarOpen(true);
@@ -209,7 +209,7 @@ export default function ActionsMenu({
 
             if (csvFileData.length === 0) {
               setSnackbarMessage({
-                message: 'noProductsOrSuppliers',
+                message: 'Нет продуктов или поставщиков',
                 severity: 'error',
               });
 
@@ -249,14 +249,38 @@ export default function ActionsMenu({
           style={{ display: 'none' }}
           onChange={async (event) => {
             setLoading(true);
-            const uploadedPrices = await handleFilesSelected(
-              selectedHistory.id,
-              event,
-            );
-            await editProductPricesUtil({
-              accessToken,
-              updatedPrices: Object.entries(uploadedPrices).map(
-                ([key, value]) => {
+
+            try {
+              const result = await handleFilesSelected(
+                selectedHistory.id,
+                event,
+              );
+
+              // Show errors if any
+              if (result.errors.length > 0) {
+                setSnackbarMessage({
+                  message: `Ошибки загрузки: ${result.errors.join('; ')}`,
+                  severity: 'error',
+                });
+                setSnackbarOpen(true);
+                setLoading(false);
+                event.target.value = '';
+                return;
+              }
+
+              // Show warnings if any
+              if (result.warnings.length > 0) {
+                setSnackbarMessage({
+                  message: `Предупреждения загрузки: ${result.warnings.join('; ')}`,
+                  severity: 'warning',
+                });
+                setSnackbarOpen(true);
+              }
+
+              // Process the uploaded prices
+              const priceUpdates = Object.entries(result.historyPrice)
+                .filter(([, value]) => value.value !== null) // Only process valid prices
+                .map(([key, value]) => {
                   const { orderId, productId, supplierId } = JSON.parse(key);
                   return {
                     orderId,
@@ -264,19 +288,59 @@ export default function ActionsMenu({
                     supplierId,
                     price: value.value,
                   };
-                },
-              ),
-              setSnackbarMessage,
-              setSnackbarOpen,
-              fetchWithCreds,
-            });
-            setPrices((curr) => {
-              const newPrices = { ...curr };
-              Object.entries(uploadedPrices).forEach(([key, value]) => {
-                newPrices[key] = value;
+                });
+
+              if (priceUpdates.length === 0) {
+                setSnackbarMessage({
+                  message: 'В загруженных файлах не найдено корректных цен',
+                  severity: 'warning',
+                });
+                setSnackbarOpen(true);
+                setLoading(false);
+                event.target.value = '';
+                return;
+              }
+
+              await editProductPricesUtil({
+                accessToken,
+                updatedPrices: priceUpdates,
+                setSnackbarMessage,
+                setSnackbarOpen,
+                fetchWithCreds,
               });
-              return newPrices;
-            });
+
+              setPrices((curr) => {
+                const newPrices = { ...curr };
+                Object.entries(result.historyPrice).forEach(([key, value]) => {
+                  newPrices[key] = value;
+                });
+                return newPrices;
+              });
+
+              // Show success message with count
+              if (result.warnings.length === 0) {
+                let priceWord = 'цен';
+                if (priceUpdates.length === 1) {
+                  priceWord = 'цена';
+                } else if (priceUpdates.length < 5) {
+                  priceWord = 'цены';
+                }
+
+                setSnackbarMessage({
+                  message: `Успешно обработано ${priceUpdates.length} ${priceWord}`,
+                  severity: 'success',
+                });
+                setSnackbarOpen(true);
+              }
+            } catch (error) {
+              console.error('Error processing uploaded files:', error);
+              setSnackbarMessage({
+                message: `Ошибка загрузки: ${error.message}`,
+                severity: 'error',
+              });
+              setSnackbarOpen(true);
+            }
+
             setLoading(false);
 
             // By default input doesn't trigger onchange if the same files

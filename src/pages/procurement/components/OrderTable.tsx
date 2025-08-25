@@ -15,7 +15,11 @@ import {
   HistoryPrice,
   ProductsSuppliersType,
 } from '@/pages/procurement/lib/types';
-import { priceHash } from '@/pages/procurement/lib/utils';
+import {
+  priceHash,
+  validatePrice,
+  validateQuantity,
+} from '@/pages/procurement/lib/utils';
 import { debounce } from '@/pages/product/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -292,14 +296,28 @@ export default function EmptyOrder({
                       InputProps={hideTextfieldSpinButtons}
                       onChange={(e) => {
                         const rawValue = e.target.value;
-                        const newQuantity =
-                          rawValue === '' ? null : parseInt(rawValue, 10);
+                        const validation = validateQuantity(rawValue);
+
+                        if (validation.error && rawValue !== '') {
+                          // Show error feedback to user
+                          setSnackbarMessage({
+                            message: validation.error,
+                            severity: 'error',
+                          });
+                          setSnackbarOpen(true);
+                          return;
+                        }
+
+                        const newQuantity = validation.quantity;
                         setHashedQuantities((curr) => {
                           const newHashedQuantities = { ...curr };
                           newHashedQuantities[product.id] = newQuantity;
                           return newHashedQuantities;
                         });
-                        handleQuantityUpdate(newQuantity, product.id);
+
+                        if (newQuantity !== null) {
+                          handleQuantityUpdate(newQuantity, product.id);
+                        }
                       }}
                     />
                   </TableCell>
@@ -344,8 +362,19 @@ export default function EmptyOrder({
                           }}
                           onChange={async (e) => {
                             const rawValue = e.target.value;
-                            const newPrice =
-                              rawValue === '' ? null : parseInt(rawValue, 10);
+                            const validation = validatePrice(rawValue);
+
+                            if (validation.error && rawValue !== '') {
+                              // Show error feedback to user
+                              setSnackbarMessage({
+                                message: validation.error,
+                                severity: 'error',
+                              });
+                              setSnackbarOpen(true);
+                              return;
+                            }
+
+                            const newPrice = validation.price;
                             setPrices((currPrices) => {
                               const newPrices = { ...currPrices };
                               newPrices[
@@ -360,11 +389,14 @@ export default function EmptyOrder({
                               };
                               return newPrices;
                             });
-                            handlePriceUpdate(
-                              newPrice,
-                              product.id,
-                              supplier.id,
-                            );
+
+                            if (newPrice !== null) {
+                              handlePriceUpdate(
+                                newPrice,
+                                product.id,
+                                supplier.id,
+                              );
+                            }
                           }}
                         />
                       </TableCell>

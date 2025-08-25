@@ -58,7 +58,7 @@ export async function handleProductSearchUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -66,7 +66,7 @@ export async function handleProductSearchUtil({
     console.error(error);
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'fetchPricesError',
+      message: 'Ошибка получения цен',
       severity: 'error',
     });
   }
@@ -99,7 +99,7 @@ export async function handleSupplierSearchUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -107,7 +107,7 @@ export async function handleSupplierSearchUtil({
     console.error(error);
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'fetchPricesError',
+      message: 'Ошибка получения цен',
       severity: 'error',
     });
   }
@@ -131,7 +131,7 @@ export async function createProductUtil({
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'nameRequired',
+      message: 'Название обязательно',
       severity: 'error',
     });
     return;
@@ -147,14 +147,14 @@ export async function createProductUtil({
       setProducts([data]);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
     } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -196,7 +196,7 @@ export async function createProductQuantityUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return data;
@@ -249,7 +249,7 @@ export async function createHistoryUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -303,7 +303,7 @@ export async function editHistoryUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return data;
@@ -354,7 +354,7 @@ export async function editProductQuantityUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return data;
@@ -406,7 +406,7 @@ export async function editProductUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return editedProduct;
@@ -461,7 +461,7 @@ export async function editSupplierUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return editedSupplier;
@@ -506,14 +506,14 @@ export async function editProductPricesUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
     } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'failedToUpdateQuantity',
+        message: 'Не удалось обновить количество',
         severity: 'error',
       });
     }
@@ -547,7 +547,7 @@ export async function createSupplierUtil({
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
-      message: 'nameRequired',
+      message: 'Название обязательно',
       severity: 'error',
     });
     return;
@@ -563,14 +563,14 @@ export async function createSupplierUtil({
       setSupplier([data]);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
     } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -608,7 +608,7 @@ export async function getProductsUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -701,7 +701,7 @@ export async function getHistoryUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -739,7 +739,7 @@ export async function getSuppliersUtil({
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -775,7 +775,7 @@ export async function deleteSupplierUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'deleteItemSuccess',
+        message: 'Элемент успешно удален',
         severity: 'success',
       });
       return data;
@@ -823,7 +823,7 @@ export async function deleteQuantityUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'deleteItemSuccess',
+        message: 'Элемент успешно удален',
         severity: 'success',
       });
       return data;
@@ -868,7 +868,7 @@ export async function deleteHistoryUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'deleteItemSuccess',
+        message: 'Элемент успешно удален',
         severity: 'success',
       });
       return data;
@@ -913,7 +913,7 @@ export async function deleteProductUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'deleteItemSuccess',
+        message: 'Элемент успешно удален',
         severity: 'success',
       });
       return data;
@@ -958,14 +958,14 @@ export async function deletePricesUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'deleteItemSuccess',
+        message: 'Элемент успешно удален',
         severity: 'success',
       });
     } else {
       console.error(message);
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'serverError',
+        message: 'Ошибка сервера',
         severity: 'error',
       });
     }
@@ -1008,7 +1008,7 @@ export async function editDollarRateUtil({
     if (success) {
       setSnackbarOpen(true);
       setSnackbarMessage({
-        message: 'success',
+        message: 'Успешно',
         severity: 'success',
       });
       return data;

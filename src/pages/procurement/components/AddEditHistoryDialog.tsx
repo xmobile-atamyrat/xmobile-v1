@@ -56,7 +56,7 @@ export default function AddEditHistoryDialog({
           onClick={async () => {
             if (title == null || title === '') {
               setSnackbarMessage({
-                message: 'emptyField',
+                message: 'Поле не может быть пустым',
                 severity: 'error',
               });
               setSnackbarOpen(true);
