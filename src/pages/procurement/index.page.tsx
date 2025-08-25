@@ -750,7 +750,7 @@ export default function Procurement() {
               variant="filled"
               sx={{ width: '100%' }}
             >
-              {snackbarMessage?.message && t(snackbarMessage.message)}
+              {snackbarMessage?.message && snackbarMessage.message}
             </Alert>
           </Snackbar>
 
