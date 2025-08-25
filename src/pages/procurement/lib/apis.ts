@@ -441,3 +441,132 @@ export const updateProductOrderedStatus = async ({
     },
   });
 };
+
+// Pricing APIs
+export const updateProductPricing = async ({
+  accessToken,
+  orderId,
+  productId,
+  singleProductPrice,
+  singleProductPercent,
+  bulkProductPrice,
+  bulkProductPercent,
+  finalSinglePrice,
+  finalBulkPrice,
+  comment,
+  orderReceived,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  orderId: string;
+  productId: string;
+  singleProductPrice?: number;
+  singleProductPercent?: number;
+  bulkProductPrice?: number;
+  bulkProductPercent?: number;
+  finalSinglePrice?: number;
+  finalBulkPrice?: number;
+  comment?: string;
+  orderReceived?: boolean;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<any>> => {
+  return fetchWithCreds<any>({
+    accessToken,
+    path: '/api/procurement/pricing/product',
+    method: 'PUT',
+    body: {
+      orderId,
+      productId,
+      singleProductPrice,
+      singleProductPercent,
+      bulkProductPrice,
+      bulkProductPercent,
+      finalSinglePrice,
+      finalBulkPrice,
+      comment,
+      orderReceived,
+    },
+  });
+};
+
+export const getAllProductPrices = async ({
+  accessToken,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<any[]>> => {
+  return fetchWithCreds<any[]>({
+    accessToken,
+    path: '/api/procurement/pricing/all-prices',
+    method: 'GET',
+  });
+};
+
+export const createOrUpdateProductPrice = async ({
+  accessToken,
+  productId,
+  originalPrice,
+  originalCurrency,
+  bulkPrice,
+  singlePrice,
+  lastUpdatedFromOrderId,
+  lastUpdatedFromProductId,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  productId: string;
+  originalPrice?: number;
+  originalCurrency?: string;
+  bulkPrice?: number;
+  singlePrice?: number;
+  lastUpdatedFromOrderId?: string;
+  lastUpdatedFromProductId?: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<any>> => {
+  return fetchWithCreds<any>({
+    accessToken,
+    path: '/api/procurement/pricing/all-prices',
+    method: 'POST',
+    body: {
+      productId,
+      originalPrice,
+      originalCurrency,
+      bulkPrice,
+      singlePrice,
+      lastUpdatedFromOrderId,
+      lastUpdatedFromProductId,
+    },
+  });
+};
+
+export const updateProductPriceInCatalog = async ({
+  accessToken,
+  id,
+  originalPrice,
+  originalCurrency,
+  bulkPrice,
+  singlePrice,
+  fetchWithCreds,
+}: {
+  accessToken: string;
+  id: string;
+  originalPrice?: number;
+  originalCurrency?: string;
+  bulkPrice?: number;
+  singlePrice?: number;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi<any>> => {
+  return fetchWithCreds<any>({
+    accessToken,
+    path: '/api/procurement/pricing/all-prices',
+    method: 'PUT',
+    body: {
+      id,
+      originalPrice,
+      originalCurrency,
+      bulkPrice,
+      singlePrice,
+    },
+  });
+};

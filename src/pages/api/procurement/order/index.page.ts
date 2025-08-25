@@ -43,6 +43,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             },
             prices: true,
             productQuantities: true,
+            dollarRate: true,
           },
         });
         return res.status(200).json({ success: true, data: history });
