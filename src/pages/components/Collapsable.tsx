@@ -6,7 +6,7 @@ import {
   EditCategoriesProps,
   ExtendedCategory,
 } from '@/pages/lib/types';
-import { collapsableClasses } from '@/styles/classMaps/collapsable';
+import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Box, Collapse, IconButton } from '@mui/material';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';

@@ -13,7 +13,7 @@ import { Suspense, useCallback, useState } from 'react';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
-import { addToCartClasses } from '@/styles/classMaps/addToCart';
+import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({

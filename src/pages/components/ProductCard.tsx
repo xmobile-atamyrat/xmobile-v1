@@ -8,7 +8,7 @@ import { AddToCartProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
-import { productCardClasses } from '@/styles/classMaps/productCard';
+import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
