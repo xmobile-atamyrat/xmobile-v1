@@ -1,6 +1,6 @@
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { footerClasses } from '@/styles/classMaps/footer';
+import { footerClasses } from '@/styles/classMaps/components/footer';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { Box, IconButton, Typography } from '@mui/material';

@@ -13,7 +13,7 @@ import {
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
-import { appbarClasses } from '@/styles/classMaps/appbar';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { Dvr } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
