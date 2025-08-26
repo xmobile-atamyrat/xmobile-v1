@@ -2,7 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
-import { categoryCardClasses } from '@/styles/classMaps/categoryCard';
+import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';

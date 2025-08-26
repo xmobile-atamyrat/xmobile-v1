@@ -3,7 +3,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { EditCategoriesProps } from '@/pages/lib/types';
 import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
-import { addEditCategoriesDialogClasses } from '@/styles/classMaps/addEditCategoriesDialog';
+import { addEditCategoriesDialogClasses } from '@/styles/classMaps/components/addEditCategoriesDialog';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';

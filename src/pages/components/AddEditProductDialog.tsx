@@ -19,7 +19,7 @@ import {
   parseName,
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
-import { addEditProductDialogClasses } from '@/styles/classMaps/addEditProductDialog';
+import { addEditProductDialogClasses } from '@/styles/classMaps/components/addEditProductDialog';
 import { DeleteOutlined, Instagram, YouTube } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';

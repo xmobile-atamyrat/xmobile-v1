@@ -1,7 +1,7 @@
 import { PRODUCT_IMAGE_WIDTH_RESP } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { CarouselSettings } from '@/pages/lib/types';
-import { carouselClasses } from '@/styles/classMaps/carousel';
+import { carouselClasses } from '@/styles/classMaps/components/carousel';
 import { Box } from '@mui/material';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick-theme.css';

@@ -2,7 +2,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
-import { simpleBreadcrumbsClasses } from '@/styles/classMaps/simpleBreadcrumbs';
+import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
 import HomeIcon from '@mui/icons-material/Home';
 import {
   Box,

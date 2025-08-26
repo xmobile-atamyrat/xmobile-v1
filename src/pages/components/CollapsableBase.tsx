@@ -8,7 +8,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
-import { collapsableClasses } from '@/styles/classMaps/collapsable';
+import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
