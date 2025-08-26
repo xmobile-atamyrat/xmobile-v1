@@ -6,6 +6,7 @@ import {
   EditCategoriesProps,
   ExtendedCategory,
 } from '@/pages/lib/types';
+import { collapsableClasses } from '@/styles/classMaps/collapsable';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Box, Collapse, IconButton } from '@mui/material';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
@@ -44,8 +45,11 @@ export default function Collapsable({
   return collapsable ? (
     <Box className="w-full">
       <Box
-        sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
-        className={`h-full w-full ${selectedCategoryId === id && 'bg-slate-200'}`}
+        // sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
+        className={
+          collapsableClasses.box &&
+          `${selectedCategoryId === id && 'bg-slate-200'}`
+        }
         style={{ paddingLeft: `${pl * 2}rem` }}
       >
         <Box className="w-[90%]">
@@ -60,7 +64,10 @@ export default function Collapsable({
             parentCategory={parentCategory}
           />
         </Box>
-        <IconButton className="h-full px-0" onClick={() => setOpen(!open)}>
+        <IconButton
+          className={collapsableClasses.iconButton}
+          onClick={() => setOpen(!open)}
+        >
           {open ? <ExpandLess /> : <ExpandMore />}
         </IconButton>
       </Box>
