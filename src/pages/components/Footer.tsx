@@ -1,18 +1,12 @@
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import {
-  Box,
-  Typography,
-  useMediaQuery,
-  useTheme,
-  IconButton,
-} from '@mui/material';
+import TikTokIcon from '@/pages/components/TikTokIcon';
+import { usePlatform } from '@/pages/lib/PlatformContext';
+import { footerClasses } from '@/styles/classMaps/footer';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { Box, IconButton, Typography } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import TikTokIcon from '@/pages/components/TikTokIcon';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -26,30 +20,15 @@ const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
 
 export default function Footer() {
   const t = useTranslations();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const [maxHeight, setMaxHeight] = useState(684);
-
-  useEffect(() => {
-    setMaxHeight(
-      isMdUp
-        ? window.innerHeight - appBarHeight
-        : window.innerHeight - mobileAppBarHeight,
-    );
-  }, [isMdUp]);
+  const platform = usePlatform();
 
   return (
-    <Box
-      className={`p-10 bg-gray-100`}
-      sx={{
-        height: { xs: `${maxHeight}px`, md: '50%' },
-      }}
-    >
-      <Box className="flex justify-center w-auto h-full">
+    <Box className={footerClasses.boxes.main[platform]}>
+      <Box className={footerClasses.boxes.main2}>
         {/* Footer Stack */}
-        <Box className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+        <Box className={footerClasses.boxes.footerStack[platform]}>
           {/* Xmobile logo, address */}
-          <Box className="flex flex-col pb-6">
+          <Box className={footerClasses.boxes.menu}>
             {/* logo */}
             <Typography
               className="pl-6"
@@ -62,7 +41,7 @@ export default function Footer() {
             {/* Address-icon */}
             <Box className="flex">
               <LocationOnIcon />
-              <Typography fontWeight={400} fontSize={isMdUp ? 16 : 14}>
+              <Typography className={footerClasses.typography[platform]}>
                 <Link
                   href={'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76'}
                   target="_blank"
@@ -74,8 +53,8 @@ export default function Footer() {
           </Box>
 
           {/* contacts */}
-          <Box className="flex flex-col pb-6">
-            <Typography fontSize={isMdUp ? 20 : 18} fontWeight={600}>
+          <Box className={footerClasses.boxes.menu}>
+            <Typography className={footerClasses.typoContact[platform]}>
               {t('contact')}
             </Typography>
             <Box className="">
@@ -83,7 +62,7 @@ export default function Footer() {
                 <Typography
                   margin={2}
                   key={phoneNumbers[number]}
-                  fontSize={isMdUp ? 16 : 14}
+                  className={footerClasses.typography[platform]}
                 >
                   <b>
                     {t('mobilePhone')} {number + 1}:{' '}
@@ -96,15 +75,18 @@ export default function Footer() {
                   </a>
                 </Typography>
               ))}
-              <Typography margin={2} fontSize={isMdUp ? 16 : 14}>
+              <Typography
+                margin={2}
+                className={footerClasses.typography[platform]}
+              >
                 <b>E-mail:</b> <a href="mailto: ">xmobiletm@gmail.com</a>
               </Typography>
             </Box>
           </Box>
 
           {/* social media */}
-          <Box className="flex flex-col pb-6">
-            <Typography fontSize={isMdUp ? 20 : 18} fontWeight={600}>
+          <Box className={footerClasses.boxes.menu}>
+            <Typography className={footerClasses.typoContact[platform]}>
               {t('followUs')}
             </Typography>
 
