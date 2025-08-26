@@ -8,6 +8,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
+import { collapsableClasses } from '@/styles/classMaps/collapsable';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -88,7 +89,10 @@ export default function CollapsableBase({
 
   return (
     <Box
-      className={`w-full flex flex-row items-center ${selectedCategoryId === id && 'bg-slate-200'}`}
+      className={
+        collapsableClasses.baseBox &&
+        `${selectedCategoryId === id && 'bg-slate-200'}`
+      }
     >
       <ListItemButton
         onClick={() => {
@@ -101,13 +105,14 @@ export default function CollapsableBase({
 
           router.push('/product');
         }}
-        className="py-2 pr-2"
+        className={collapsableClasses.listItemButton}
       >
         {imgUrl != null && (
           <ListItemIcon>
             <img
               src={imgUrl}
-              style={{ width: '30px', height: '30px' }}
+              className={collapsableClasses.listItemIcon}
+              // style={{ width: '30px', height: '30px' }}
               alt={categoryTitle}
             />
           </ListItemIcon>
@@ -149,7 +154,7 @@ export default function CollapsableBase({
                     categoryId: id,
                   })
                 }
-                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+                className={collapsableClasses.menuItem}
               >
                 <AddCircleIcon color="primary" fontSize="small" />
                 <Typography className="overflow-x-scroll">
@@ -166,7 +171,7 @@ export default function CollapsableBase({
                     imageUrl: imgUrl,
                   })
                 }
-                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+                className={collapsableClasses.menuItem}
               >
                 <EditIcon color="primary" fontSize="small" />
                 <Typography className="overflow-x-scroll">
@@ -181,7 +186,7 @@ export default function CollapsableBase({
                     open: true,
                   })
                 }
-                className="flex flex-row justify-start gap-2 items-center px-2 w-[120px]"
+                className={collapsableClasses.menuItem}
               >
                 <DeleteIcon color="error" fontSize="small" />
                 <Typography className="overflow-x-scroll">
