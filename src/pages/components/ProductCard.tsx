@@ -102,11 +102,6 @@ export default function ProductCard({
 
   return (
     <Card
-      // sx={{
-      //   width: { xs: '47%', sm: 200 },
-      //   height: { xs: 260, sm: 300 },
-      //   ':hover': { boxShadow: 10 },
-      // }}
       className={
         productCardClasses.card[platform] &&
         classNames('border-[1px] px-2 py-2 relative', cardClassName)
@@ -213,12 +208,6 @@ export default function ProductCard({
             <Typography
               gutterBottom
               className={productCardClasses.typo3[platform]}
-              // className="flex justify-center"
-              // fontSize={isMdUp ? 20 : 18}
-              // fontWeight={500}
-              // style={{
-              //   textAlign: 'center',
-              // }}
             >
               {t('addNewProduct')}
             </Typography>
