@@ -36,7 +36,7 @@ export const appbarClasses = {
     mobile: 'w-[30px] h-[30px]',
   },
   avatar: {
-    web: 'w-[36px] h-[30px]',
+    web: 'w-[36px] h-[36px]',
     mobile: 'w-[30px] h-[30px]',
   },
   accCircle: {
