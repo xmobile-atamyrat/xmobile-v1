@@ -8,12 +8,12 @@ import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
-  appBarHeight,
   PRODUCT_IMAGE_WIDTH_RESP,
   squareBracketRegex,
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -24,6 +24,7 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
+import { detailPageClasses } from '@/styles/classMaps/product/detail.page';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -89,6 +90,7 @@ export default function Product() {
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
   const fetchWithCreds = useFetchWithCreds();
+  const platform = usePlatform();
 
   useEffect(() => {
     if (product == null) {
@@ -166,18 +168,10 @@ export default function Product() {
           router.push('/product');
         }}
       >
-        <Box
-          className={`w-full h-full flex flex-${isMdUp ? 'row' : 'col'} px-4 gap-4 pb-10`}
-          pt={{ xs: `${appBarHeight}px`, md: `${appBarHeight * 1.25}px` }}
-        >
+        <Box className={detailPageClasses.boxes.main[platform]}>
           {/* title, images */}
-          <Box
-            className={`flex flex-col gap-2`}
-            style={{
-              width: isMdUp ? '50%' : '100%',
-            }}
-          >
-            <Box className="w-full flex flex-row justify-between items-center pb-4">
+          <Box className={detailPageClasses.boxes.title[platform]}>
+            <Box className={detailPageClasses.boxes.typo}>
               <Typography variant="h5" className="text-center">
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
@@ -222,7 +216,7 @@ export default function Product() {
               )}
             </Box>
             {imgUrls.length === 1 && (
-              <Box className="flex w-full justify-center flex-row">
+              <Box className={detailPageClasses.boxes.img}>
                 <CardMedia
                   component="img"
                   image={imgUrls[0]}
@@ -238,9 +232,7 @@ export default function Product() {
                     component="img"
                     image={imgUrl}
                     alt={product?.name}
-                    sx={{
-                      width: '100%',
-                    }}
+                    className="w-full"
                     key={index}
                   />
                 ))}
@@ -249,21 +241,15 @@ export default function Product() {
           </Box>
 
           {/* price, description */}
-          <Box
-            className="flex flex-col"
-            style={{
-              width: isMdUp ? '50%' : '100%',
-            }}
-          >
+          <Box className={detailPageClasses.boxes.price[platform]}>
             <Box className="w-full my-4 flex">
               {product.price?.includes('[') ? (
-                <CircularProgress size={isMdUp ? 30 : 24} />
+                <CircularProgress
+                  className={detailPageClasses.circProgress[platform]}
+                />
               ) : (
                 <Typography
-                  fontWeight={600}
-                  fontSize={isMdUp ? 22 : 18}
-                  alignItems="center"
-                  display="flex"
+                  className={detailPageClasses.typographs.price[platform]}
                 >{`${product.price} ${t('manat')}`}</Typography>
               )}
 
@@ -272,7 +258,9 @@ export default function Product() {
               </Box>
             </Box>
             {product.tags.length > 0 && product.tags[0].includes('[') ? (
-              <CircularProgress size={isMdUp ? 30 : 24} />
+              <CircularProgress
+                className={detailPageClasses.circProgress[platform]}
+              />
             ) : (
               <List className="p-0 pb-10">
                 {product.tags.map((tag, index) => {
@@ -280,24 +268,27 @@ export default function Product() {
                   const beginning = words.slice(0, -2).join(' ');
                   const end = words.slice(-2).join(' ');
                   return (
-                    <ListItem key={index} sx={{ p: 0 }}>
+                    <ListItem key={index} className="p-0">
                       <FiberManualRecordIcon
-                        sx={{
-                          width: 16,
-                          height: 16,
-                        }}
+                        className="w-[16px] h-[16px]"
                         color="disabled"
                       />
                       <ListItemText
                         sx={{ pl: 1 }}
                         primary={
                           <Box className="flex flex-row gap-4">
-                            <Typography fontSize={isMdUp ? 20 : 16}>
+                            <Typography
+                              className={
+                                detailPageClasses.typographs.font[platform]
+                              }
+                            >
                               {beginning}
                             </Typography>
                             <Typography
-                              fontSize={isMdUp ? 20 : 16}
-                              fontWeight={600}
+                              className={
+                                (detailPageClasses.typographs.font[platform],
+                                'font-semibold')
+                              }
                             >
                               {end}
                             </Typography>
@@ -313,13 +304,11 @@ export default function Product() {
             <Box>
               {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
                 <Typography
-                  fontWeight={600}
-                  fontSize={isMdUp ? 18 : 15}
-                  sx={{ wordBreak: 'break-word' }}
+                  className={detailPageClasses.typographs.prodVideo[platform]}
                 >{`${t('productVideo')}:`}</Typography>
               )}
 
-              <Box className="flex sm:w-1/2 p-2">
+              <Box className={detailPageClasses.boxes.video[platform]}>
                 {product.videoUrls.map(
                   (videoUrl, index) =>
                     videoUrl.length !== 0 && (
@@ -327,7 +316,7 @@ export default function Product() {
                         key={index}
                         target="_blank"
                         href={videoUrl}
-                        className="px-3 pb-3 flex items-center flex-col md:flex-row"
+                        className={detailPageClasses.link[platform]}
                       >
                         <IconButton>
                           {(() => {
@@ -361,16 +350,21 @@ export default function Product() {
                       <Box className="w-full flex flex-row gap-2 justify-between">
                         <Box className="w-[30%]">
                           <Typography
-                            fontWeight={600}
-                            fontSize={isMdUp ? 18 : 15}
-                            sx={{ wordBreak: 'break-word' }}
+                            className={
+                              detailPageClasses.typographs.prodVideo[platform]
+                            }
                           >
                             {key}
                           </Typography>
                         </Box>
                         <Box className="flex flex-col w-[70%]">
                           {description[key].map((descLine, index) => (
-                            <Typography key={index} fontSize={isMdUp ? 18 : 15}>
+                            <Typography
+                              key={index}
+                              className={
+                                detailPageClasses.typographs.font2[platform]
+                              }
+                            >
                               {descLine}
                             </Typography>
                           ))}
@@ -454,7 +448,7 @@ export default function Product() {
             onClose={() => setSnackbarOpen(false)}
             severity={snackbarMessage?.severity}
             variant="filled"
-            sx={{ width: '100%' }}
+            className="w-full"
           >
             {snackbarMessage?.message && t(snackbarMessage.message)}
           </Alert>
