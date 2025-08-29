@@ -1,6 +1,8 @@
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { signinClasses } from '@/styles/classMaps/user/signin.page';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -35,22 +37,14 @@ export default function Signup() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
+  const platform = usePlatform();
 
   return (
-    <Box
-      className={`h-[100vh] flex justify-center items-center bg-[${MAIN_BG_COLOR}]`}
-    >
+    <Box className={`${signinClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
       <Paper
-        className="flex flex-col"
+        className={signinClasses.paperSignup[platform]}
         elevation={3}
         square={false}
-        sx={{
-          width: { xs: '90%', sm: '400px' },
-          height: { xs: '450px', sm: '500px' },
-          borderRadius: '16px',
-          p: 2,
-          gap: { xs: 1, sm: 2 },
-        }}
         component="form"
         onSubmit={async (event) => {
           event.preventDefault();
@@ -98,8 +92,8 @@ export default function Signup() {
           }
         }}
       >
-        <Box className="flex flex-col gap-1">
-          <Box className="flex flex-row justify-between">
+        <Box className={signinClasses.boxes.categories}>
+          <Box className={signinClasses.boxes.text}>
             <Typography variant="h5">{t('signUp')}</Typography>
             <Link href="/">
               <CancelIcon />
@@ -132,23 +126,19 @@ export default function Signup() {
           }}
         />
         <TextField fullWidth label={t('phoneNumber')} name="phoneNumber" />
-        <Box className="flex flex-col gap-2">
-          <Box className="flex flex-col gap-2 relative min-h-[70px]">
+        <Box className={signinClasses.boxes.categories}>
+          <Box className={signinClasses.boxes.button}>
             <Button
               fullWidth
               variant="contained"
-              sx={{ textTransform: 'none' }}
+              className="normal-case"
               size="large"
               type="submit"
             >
               {t('signUp')}
             </Button>
             {errorMessage != null && (
-              <Typography
-                color="error"
-                fontSize={14}
-                className="absolute bottom-0"
-              >
+              <Typography color="error" className={signinClasses.typo}>
                 {errorMessage}
               </Typography>
             )}
@@ -156,8 +146,8 @@ export default function Signup() {
 
           <Divider />
 
-          <Box className="flex flex-row justify-between items-center">
-            <Typography sx={{ textTransform: 'none' }} fontSize={14}>
+          <Box className={signinClasses.boxes.text}>
+            <Typography className="normal-case font-[14px]">
               {t('haveAccount')}
             </Typography>
             <Button
