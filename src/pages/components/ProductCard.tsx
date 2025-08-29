@@ -102,10 +102,12 @@ export default function ProductCard({
 
   return (
     <Card
-      className={
-        productCardClasses.card[platform] &&
-        classNames('border-[1px] px-2 py-2 relative', cardClassName)
-      }
+      // className={productCardClasses.card[platform]}
+      className={classNames(
+        productCardClasses.card[platform],
+        'border-[1px] px-2 py-2 relative',
+        cardClassName,
+      )}
     >
       {product != null ? (
         <Box
@@ -122,11 +124,7 @@ export default function ProductCard({
                   component="img"
                   image={imgUrl}
                   alt={product?.name}
-                  sx={{
-                    height: { xs: 100 },
-                    width: 'auto',
-                    p: 0,
-                  }}
+                  className={productCardClasses.cardMedia}
                 />
               </Box>
             )}
@@ -145,10 +143,10 @@ export default function ProductCard({
             {/* hide description on cart page */}
             {cartProps.cartAction === 'add' && (
               <Box
-                className={
-                  productCardClasses.boxes.addCard &&
-                  `${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`
-                }
+                className={`
+                  ${productCardClasses.boxes.addCard} 
+                  ${product.imgUrls[0] ? 'h-1/4' : 'h-3/5'}
+                `}
               >
                 {parseName(product.description ?? '{}', router.locale ?? 'tk')
                   ?.split('\n')

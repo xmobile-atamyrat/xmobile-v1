@@ -89,10 +89,9 @@ export default function CollapsableBase({
 
   return (
     <Box
-      className={
-        collapsableClasses.baseBox &&
-        `${selectedCategoryId === id && 'bg-slate-200'}`
-      }
+      className={`
+        ${selectedCategoryId === id ? 'bg-slate-200' : ''}
+        ${collapsableClasses.baseBox}`}
     >
       <ListItemButton
         onClick={() => {
@@ -112,7 +111,6 @@ export default function CollapsableBase({
             <img
               src={imgUrl}
               className={collapsableClasses.listItemIcon}
-              // style={{ width: '30px', height: '30px' }}
               alt={categoryTitle}
             />
           </ListItemIcon>

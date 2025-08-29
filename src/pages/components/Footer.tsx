@@ -23,19 +23,14 @@ export default function Footer() {
   const platform = usePlatform();
 
   return (
-    <Box className={footerClasses.boxes.main[platform]}>
+    <Box className={footerClasses.boxes.main}>
       <Box className={footerClasses.boxes.main2}>
         {/* Footer Stack */}
         <Box className={footerClasses.boxes.footerStack[platform]}>
           {/* Xmobile logo, address */}
           <Box className={footerClasses.boxes.menu}>
             {/* logo */}
-            <Typography
-              className="pl-6"
-              variant="h4"
-              style={{ fontWeight: 'bold' }}
-              paddingBottom={5}
-            >
+            <Typography className="pl-6 font-bold pb-5" variant="h4">
               <Link href="/">X-Mobile</Link>
             </Typography>
             {/* Address-icon */}
@@ -60,7 +55,6 @@ export default function Footer() {
             <Box className="">
               {[0, 1, 2].map((number) => (
                 <Typography
-                  margin={2}
                   key={phoneNumbers[number]}
                   className={footerClasses.typography[platform]}
                 >
@@ -75,10 +69,7 @@ export default function Footer() {
                   </a>
                 </Typography>
               ))}
-              <Typography
-                margin={2}
-                className={footerClasses.typography[platform]}
-              >
+              <Typography className={footerClasses.typography[platform]}>
                 <b>E-mail:</b> <a href="mailto: ">xmobiletm@gmail.com</a>
               </Typography>
             </Box>
@@ -112,11 +103,7 @@ export default function Footer() {
       </Box>
 
       <Box>
-        <Typography
-          className="bold flex justify-center"
-          fontWeight={'bold'}
-          fontSize={14}
-        >
+        <Typography className={footerClasses.boxes.copyright}>
           &copy; 2025 X-Mobile
         </Typography>
       </Box>

@@ -24,4 +24,5 @@ export const productCardClasses = {
     mobile: 'w-[24px] h-[24px]',
   },
   cardActions: 'w-full flex justify-center items-end',
+  cardMedia: 'h-[100px] w-auto p-0',
 };
