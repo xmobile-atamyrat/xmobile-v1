@@ -2,6 +2,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
+import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
 import HomeIcon from '@mui/icons-material/Home';
 import {
   Box,
@@ -49,7 +50,7 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
             setStack([]);
             router.push('/');
           }}
-          className="flex fle-row justify-center items-center gap-1 py-2"
+          className={simpleBreadcrumbsClasses.link}
         >
           <HomeIcon sx={{ fontSize: 18 }} />
           <Typography fontSize={15}>{t('home')}</Typography>

@@ -5,16 +5,16 @@ import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   ALL_PRODUCTS_CATEGORY_CARD,
-  appBarHeight,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
-  mobileAppBarHeight,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
-import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { homePageClasses } from '@/styles/classMaps/index.page';
+import { Box } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
@@ -111,9 +111,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 export default function Home({
   locale,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
+  const platform = usePlatform();
   const {
     setSelectedCategoryId,
     selectedCategoryId,
@@ -194,12 +193,7 @@ export default function Home({
           : handleHeaderBackButton
       }
     >
-      <Box
-        className="w-full h-full flex flex-col"
-        sx={{
-          mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
-        }}
-      >
+      <Box className={homePageClasses.main[platform]}>
         {(stack.length > 0 || parentCategory != null) && (
           <SimpleBreadcrumbs
             onClick={(combo: [ExtendedCategory, string]) => {
@@ -208,9 +202,7 @@ export default function Home({
             }}
           />
         )}
-        <Box
-          className={`flex flex-wrap gap-4 w-full p-3 ${isMdUp ? 'justify-start' : 'justify-center'}`}
-        >
+        <Box className={homePageClasses.card[platform]}>
           {parentCategory != null && (
             <CategoryCard
               id=""

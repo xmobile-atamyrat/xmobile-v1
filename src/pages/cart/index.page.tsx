@@ -1,8 +1,9 @@
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { cartIndexClasses } from '@/styles/classMaps/cart/index.page';
 import HomeIcon from '@mui/icons-material/Home';
 import {
   Box,
@@ -11,8 +12,6 @@ import {
   IconButton,
   Link,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { CartItem, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
@@ -30,8 +29,6 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function CartPage() {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { user, accessToken } = useUserContext();
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
@@ -39,6 +36,7 @@ export default function CartPage() {
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
+  const platform = usePlatform();
 
   const onDelete = (cartItemId: string) => {
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
@@ -69,18 +67,10 @@ export default function CartPage() {
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      <Box
-        className="w-full h-full flex flex-col"
-        sx={{
-          mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
-        }}
-      >
+      <Box className={cartIndexClasses.box[platform]}>
         <Breadcrumbs separator="›" maxItems={2} className="ml-3">
-          <Link
-            href="/"
-            className="flex fle-row justify-center items-center gap-1 py-2"
-          >
-            <HomeIcon sx={{ fontSize: 18 }} />
+          <Link href="/" className={cartIndexClasses.link}>
+            <HomeIcon className="text-lg" />
             <Typography fontSize={15}>{t('home')}</Typography>
           </Link>
           <Link href="/cart">
@@ -88,7 +78,7 @@ export default function CartPage() {
           </Link>
         </Breadcrumbs>
 
-        <Box className="flex flex-wrap gap-4 w-full p-3">
+        <Box className={cartIndexClasses.prodCart}>
           {cartItems != null && cartItems.length > 0 ? (
             <Suspense fallback={<CircularProgress />}>
               {cartItems.map((cartItem, idx) => (
@@ -107,7 +97,7 @@ export default function CartPage() {
           ) : (
             <Box className="text-center w-full">
               <Link href="/">
-                <IconButton className="mt-2 px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">
+                <IconButton className={cartIndexClasses.iconButton}>
                   {t('continueShopping')}
                 </IconButton>
               </Link>

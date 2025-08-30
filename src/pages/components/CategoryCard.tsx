@@ -1,7 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
-import { useMediaQuery, useTheme } from '@mui/material';
+import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
@@ -25,9 +26,8 @@ export default function CategoryCard({
 }: CategoryCardProps) {
   const [imgUrl, setImgUrl] = useState<string>();
   const router = useRouter();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
+  const platform = usePlatform();
 
   useEffect(() => {
     if (initialImgUrl != null && initialImgUrl !== ALL_PRODUCTS_CATEGORY_CARD) {
@@ -57,35 +57,21 @@ export default function CategoryCard({
   }, [initialImgUrl, id]);
 
   return (
-    <Card
-      sx={{
-        width: { xs: 350, sm: 400 },
-        height: { xs: 125, sm: 150 },
-        ':hover': { boxShadow: 10 },
-      }}
-      className={`border-[1px] ${isMdUp ? 'px-6' : 'px-4'}`}
-      onClick={onClick}
-    >
+    <Card className={categoryCardClasses.card[platform]} onClick={onClick}>
       {initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD ? (
-        <Box className="w-full h-full flex justify-center items-center">
-          <Typography fontWeight={600} fontSize={isMdUp ? 20 : 18}>
+        <Box className={categoryCardClasses.boxes.allP}>
+          <Typography className={categoryCardClasses.typography[platform]}>
             {t('allProducts')}
           </Typography>
         </Box>
       ) : (
-        <Box
-          className={`flex flex-row justify-between items-center ${isMdUp ? 'gap-4' : 'gap-2'} w-full h-full`}
-        >
-          <Typography
-            fontWeight={600}
-            fontSize={isMdUp ? 20 : 18}
-            className="flex justify-center items-center"
-          >
+        <Box className={categoryCardClasses.boxes.cardMedia[platform]}>
+          <Typography className={categoryCardClasses.typography2[platform]}>
             {parseName(name, router.locale ?? 'tk')}
           </Typography>
           <CardMedia
             component="img"
-            sx={{ width: { xs: 125, sm: 150 } }}
+            className={categoryCardClasses.cardMedia[platform]}
             image={imgUrl}
             alt="Xmobile"
           />

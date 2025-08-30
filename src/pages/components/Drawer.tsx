@@ -1,12 +1,10 @@
 import Collapsable from '@/pages/components/Collapsable';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
-  appBarHeight,
-  drawerPaddingTopOffset,
   HIGHEST_LEVEL_CATEGORY_ID,
   MAIN_BG_COLOR,
-  mobileAppBarHeight,
 } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import {
   CategoryStack,
   DeleteCategoriesProps,
@@ -14,15 +12,9 @@ import {
   ExtendedCategory,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { drawerClasses } from '@/styles/classMaps/components/drawer';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import {
-  IconButton,
-  List,
-  Paper,
-  Tooltip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { IconButton, List, Paper, Tooltip } from '@mui/material';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import * as React from 'react';
@@ -48,7 +40,7 @@ function ConstructDrawerList(
   categoryStackList: CategoryStack,
 ): React.ReactNode {
   return (
-    <List component="div" disablePadding className="flex flex-col">
+    <List component="div" disablePadding className={drawerClasses.list}>
       {categories.map((category) => {
         const { id, name, imgUrl, successorCategories } = category;
         return (
@@ -94,8 +86,7 @@ export default function CustomDrawer({
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
   const { user } = useUserContext();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const platform = usePlatform();
 
   return (
     <Drawer
@@ -110,15 +101,7 @@ export default function CustomDrawer({
     >
       {categories?.length > 0 && (
         <Box
-          sx={{
-            overflow: 'auto',
-            pt: {
-              xs: `${mobileAppBarHeight + drawerPaddingTopOffset}px`,
-              sm: `${appBarHeight + drawerPaddingTopOffset}px`,
-            },
-            height: '100vh',
-          }}
-          className={`bg-[${MAIN_BG_COLOR}]`}
+          className={`${drawerClasses.box[platform]}  bg-[${MAIN_BG_COLOR}]`}
         >
           {ConstructDrawerList(
             categories,
@@ -133,7 +116,7 @@ export default function CustomDrawer({
         </Box>
       )}
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-        <Paper className="h-12 w-full bg-slate-100 flex justify-center">
+        <Paper className={drawerClasses.paper}>
           <Tooltip title="Edit categories">
             <IconButton
               onClick={() => {
@@ -142,7 +125,7 @@ export default function CustomDrawer({
               }}
             >
               <AddCircleIcon
-                fontSize={isMdUp ? 'large' : 'small'}
+                className={drawerClasses.addCircleIcon[platform]}
                 color="primary"
               />
             </IconButton>
