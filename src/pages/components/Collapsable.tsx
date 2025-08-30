@@ -45,11 +45,10 @@ export default function Collapsable({
   return collapsable ? (
     <Box className="w-full">
       <Box
-        // sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}
         className={`
           ${selectedCategoryId === id ? 'bg-slate-200' : ''}
           ${collapsableClasses.box}
-        `}
+          `}
         style={{ paddingLeft: `${pl * 2}rem` }}
       >
         <Box className="w-[90%]">

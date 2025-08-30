@@ -14,14 +14,7 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { drawerClasses } from '@/styles/classMaps/components/drawer';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import {
-  IconButton,
-  List,
-  Paper,
-  Tooltip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { IconButton, List, Paper, Tooltip } from '@mui/material';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import * as React from 'react';
@@ -93,8 +86,6 @@ export default function CustomDrawer({
   const { categories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
   const { user } = useUserContext();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const platform = usePlatform();
 
   return (
@@ -109,7 +100,9 @@ export default function CustomDrawer({
       onClose={closeDrawer}
     >
       {categories?.length > 0 && (
-        <Box className={drawerClasses.box[platform] && `bg-[${MAIN_BG_COLOR}]`}>
+        <Box
+          className={`${drawerClasses.box[platform]}  bg-[${MAIN_BG_COLOR}]`}
+        >
           {ConstructDrawerList(
             categories,
             selectedCategoryId,
@@ -132,7 +125,7 @@ export default function CustomDrawer({
               }}
             >
               <AddCircleIcon
-                fontSize={isMdUp ? 'large' : 'small'}
+                className={drawerClasses.addCircleIcon[platform]}
                 color="primary"
               />
             </IconButton>

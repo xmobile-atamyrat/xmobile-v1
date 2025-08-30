@@ -91,7 +91,8 @@ export default function CollapsableBase({
     <Box
       className={`
         ${selectedCategoryId === id ? 'bg-slate-200' : ''}
-        ${collapsableClasses.baseBox}`}
+        ${collapsableClasses.baseBox}   
+        `}
     >
       <ListItemButton
         onClick={() => {
