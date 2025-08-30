@@ -5,4 +5,8 @@ export const drawerClasses = {
   },
   list: 'flex flex-col',
   paper: 'h-12 w-full bg-slate-100 flex justify-center',
+  addCircleIcon: {
+    web: 'text-lg',
+    mobile: 'text-sm',
+  },
 };
