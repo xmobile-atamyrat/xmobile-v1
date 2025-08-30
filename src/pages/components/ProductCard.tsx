@@ -2,11 +2,13 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
+import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -17,8 +19,6 @@ import {
   Divider,
   IconButton,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
@@ -48,13 +48,12 @@ export default function ProductCard({
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
   const [product, setProduct] = useState(initialProduct);
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
+  const platform = usePlatform();
 
   useEffect(() => {
     const abortController = createAbortController();
@@ -103,16 +102,16 @@ export default function ProductCard({
 
   return (
     <Card
-      sx={{
-        width: { xs: '47%', sm: 200 },
-        height: { xs: 260, sm: 300 },
-        ':hover': { boxShadow: 10 },
-      }}
-      className={classNames('border-[1px] px-2 py-2 relative', cardClassName)}
+      // className={productCardClasses.card[platform]}
+      className={classNames(
+        productCardClasses.card[platform],
+        'border-[1px] px-2 py-2 relative',
+        cardClassName,
+      )}
     >
       {product != null ? (
         <Box
-          className="relative h-full w-full flex flex-col justify-between p-1"
+          className={productCardClasses.boxes.main}
           onClick={() => {
             setSelectedProduct(initialProduct);
             router.push(`/product/detail`);
@@ -125,18 +124,14 @@ export default function ProductCard({
                   component="img"
                   image={imgUrl}
                   alt={product?.name}
-                  sx={{
-                    height: { xs: 100 },
-                    width: 'auto',
-                    p: 0,
-                  }}
+                  className={productCardClasses.cardMedia}
                 />
               </Box>
             )}
             <Box>
               <Typography
                 gutterBottom
-                sx={{ fontSize: { xs: 14, sm: 18 }, mt: 1 }}
+                className={productCardClasses.typo[platform]}
                 component="div"
               >
                 {parseName(product.name, router.locale ?? 'tk').substring(
@@ -148,7 +143,10 @@ export default function ProductCard({
             {/* hide description on cart page */}
             {cartProps.cartAction === 'add' && (
               <Box
-                className={`w-full overflow-y-scroll overflow-x-hidden ${product.imgUrls[0] != null ? 'h-1/4' : 'h-3/5'}`}
+                className={`
+                  ${productCardClasses.boxes.addCard} 
+                  ${product.imgUrls[0] ? 'h-1/4' : 'h-3/5'}
+                `}
               >
                 {parseName(product.description ?? '{}', router.locale ?? 'tk')
                   ?.split('\n')
@@ -170,12 +168,11 @@ export default function ProductCard({
           </Box>
           <Box className="flex items-end justify-between">
             {product?.price?.includes('[') ? (
-              <CircularProgress size={isMdUp ? 30 : 24} />
+              <CircularProgress
+                className={productCardClasses.circProgress[platform]}
+              />
             ) : (
-              <Typography
-                sx={{ fontSize: { xs: 14, sm: 16 } }}
-                fontWeight={600}
-              >
+              <Typography className={productCardClasses.typo2[platform]}>
                 {product?.price} {t('manat')}
               </Typography>
             )}
@@ -205,22 +202,17 @@ export default function ProductCard({
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
-          <CardContent sx={{ p: 1 }}>
+          <CardContent className="p-1">
             <Typography
               gutterBottom
-              className="flex justify-center"
-              fontSize={isMdUp ? 20 : 18}
-              fontWeight={500}
-              style={{
-                textAlign: 'center',
-              }}
+              className={productCardClasses.typo3[platform]}
             >
               {t('addNewProduct')}
             </Typography>
           </CardContent>
           <Box>
             <Divider />
-            <CardActions className="w-full flex justify-center items-end">
+            <CardActions className={productCardClasses.cardActions}>
               <IconButton
                 onClick={() => {
                   if (handleClickAddProduct) handleClickAddProduct();
