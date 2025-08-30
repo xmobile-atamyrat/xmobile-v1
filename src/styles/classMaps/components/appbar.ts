@@ -2,7 +2,7 @@ export const appbarClasses = {
   boxes: {
     form: `flex items-center justify-center w-full bg-[#F8F9FA]`,
     logo: {
-      web: 'flex items-center justify-center w-[140px] h-100%',
+      web: 'flex items-center justify-center w-[120px] h-100%',
       mobile: 'flex items-center justify-center w-[100px] h-100%',
     },
     search: 'flex w-fit h-full items-center justify-center',
