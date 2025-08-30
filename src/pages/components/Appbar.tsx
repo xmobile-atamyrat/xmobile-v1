@@ -1,4 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
@@ -12,6 +13,7 @@ import {
   mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { Dvr } from '@mui/icons-material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
@@ -69,35 +71,23 @@ export const SearchBar = ({
   width?: string;
 }) => {
   return (
-    <Box
-      className={`flex items-center justify-center w-full bg-[${MAIN_BG_COLOR}]`}
-    >
+    <Box className={appbarClasses.boxes.form}>
       <Paper
         component="form"
         sx={{
-          p: '2px 4px',
-          display: 'flex',
-          alignItems: 'center',
           mt,
           width,
         }}
-        className={`rounded-2xl`}
+        className={appbarClasses.paper}
         style={{
           backgroundColor: LOGO_COLOR_LIGHT,
         }}
       >
-        <IconButton type="button" sx={{ p: '10px' }}>
-          <SearchIcon sx={{ color: 'white' }} />
+        <IconButton type="button" className="p-[10px]">
+          <SearchIcon className="text-white" />
         </IconButton>
         <InputBase
-          sx={{
-            ml: 1,
-            flex: 1,
-            color: 'white', // Set text color to white
-            '& .MuiInputBase-input': {
-              color: 'white', // Ensure the input text is white
-            },
-          }}
+          className={appbarClasses.inputBase}
           placeholder={`${searchPlaceholder}...`}
           onChange={(e) => {
             const keyword = e.target.value;
@@ -116,7 +106,7 @@ export const SearchBar = ({
         {searchKeyword !== '' && (
           <IconButton
             type="button"
-            sx={{ p: '10px' }}
+            className="p-[10px]"
             onClick={() => {
               setSearchKeyword('');
               if (handleSearch) {
@@ -124,7 +114,7 @@ export const SearchBar = ({
               }
             }}
           >
-            <CloseIcon sx={{ color: 'white' }} />
+            <CloseIcon className="text-white" />
           </IconButton>
         )}
       </Paper>
@@ -150,6 +140,7 @@ export default function CustomAppBar({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru');
+  const platform = usePlatform();
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -178,21 +169,20 @@ export default function CustomAppBar({
           backgroundColor: MAIN_BG_COLOR,
         }}
       >
-        <Toolbar className="flex items-center justify-between">
-          <Box className="flex w-fit h-full items-center justify-start">
+        <Toolbar className={appbarClasses.toolBar}>
+          <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
                 size="large"
                 edge="start"
                 color="inherit"
+                className="p-4"
                 aria-label="open drawer"
-                sx={{ p: 1 }}
                 onClick={handleBackButton}
               >
                 <ArrowBackIosIcon
+                  className={appbarClasses.arrowBackIos[platform]}
                   sx={{
-                    width: { xs: 24, md: 28 },
-                    height: { xs: 24, md: 28 },
                     color: LOGO_COLOR,
                   }}
                 />
@@ -204,22 +194,17 @@ export default function CustomAppBar({
               color="inherit"
               aria-label="open drawer"
               onClick={() => setOpenDrawer(!openDrawer)}
-              sx={{ p: 1, pl: '4px' }}
+              className="p-4 pl-[4px]"
             >
               <MenuIcon
+                className={appbarClasses.menuIcon[platform]}
                 sx={{
-                  width: { xs: 30, md: 34 },
-                  height: { xs: 30, md: 34 },
                   color: LOGO_COLOR,
                 }}
               />
             </IconButton>
             <Box
-              sx={{
-                width: { xs: 100, sm: 120 },
-                height: '100%',
-              }}
-              className="flex items-center justify-center"
+              className={appbarClasses.boxes.logo[platform]}
               onClick={() => {
                 setParentCategory(undefined);
                 setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
@@ -232,7 +217,7 @@ export default function CustomAppBar({
             </Box>
           </Box>
 
-          <Box className="flex w-fit h-full items-center justify-center">
+          <Box className={appbarClasses.boxes.search}>
             {isMdUp && showSearch && (
               <Box
                 sx={{
@@ -253,9 +238,8 @@ export default function CustomAppBar({
               value={selectedLocale}
               color="info"
               size="small"
+              className={appbarClasses.select[platform]}
               sx={{
-                width: { xs: 80, sm: 110 },
-                height: { xs: 36, sm: 40 },
                 '& .MuiInputBase-input': {
                   padding: { xs: '8px', sm: '20px' },
                 },
@@ -278,42 +262,42 @@ export default function CustomAppBar({
                 });
               }}
             >
-              <MenuItem value="ru" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+              <MenuItem value="ru" className={appbarClasses.menuItem[platform]}>
+                <Box className={appbarClasses.boxes.lang[platform]}>
                   <Flag country="RU" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  <Typography className={appbarClasses.typography[platform]}>
                     rus
                   </Typography>
                 </Box>
               </MenuItem>
-              <MenuItem value="tk" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+              <MenuItem value="tk" className={appbarClasses.menuItem[platform]}>
+                <Box className={appbarClasses.boxes.lang[platform]}>
                   <Flag country="TM" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  <Typography className={appbarClasses.typography[platform]}>
                     tkm
                   </Typography>
                 </Box>
               </MenuItem>
-              <MenuItem value="tr" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+              <MenuItem value="tr" className={appbarClasses.menuItem[platform]}>
+                <Box className={appbarClasses.boxes.lang[platform]}>
                   <Flag country="TR" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  <Typography className={appbarClasses.typography[platform]}>
                     tür
                   </Typography>
                 </Box>
               </MenuItem>
-              <MenuItem value="ch" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+              <MenuItem value="ch" className={appbarClasses.menuItem[platform]}>
+                <Box className={appbarClasses.boxes.lang[platform]}>
                   <Flag country="TM" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  <Typography className={appbarClasses.typography[platform]}>
                     çär
                   </Typography>
                 </Box>
               </MenuItem>
-              <MenuItem value="en" sx={{ py: { xs: 0, sm: 1 }, px: 2 }}>
-                <Box className="flex flex-row justify-start gap-1 sm:gap-2 w-full items-center">
+              <MenuItem value="en" className={appbarClasses.menuItem[platform]}>
+                <Box className={appbarClasses.boxes.lang[platform]}>
                   <Flag country="US" size={18} />
-                  <Typography sx={{ fontSize: { xs: 14, sm: 18 } }}>
+                  <Typography className={appbarClasses.typography[platform]}>
                     eng
                   </Typography>
                 </Box>
@@ -321,16 +305,12 @@ export default function CustomAppBar({
             </Select>
             <Box>
               <IconButton
-                sx={{
-                  pl: 1,
-                  pr: 0,
-                }}
+                className="pl-1 pr-0"
                 onClick={() => router.push('/cart')}
               >
                 <ShoppingCartCheckoutIcon
+                  className={appbarClasses.shoppingCCI[platform]}
                   sx={{
-                    width: { xs: 30, sm: 36 },
-                    height: { xs: 30, sm: 36 },
                     color: LOGO_COLOR,
                   }}
                 />
@@ -346,10 +326,7 @@ export default function CustomAppBar({
               >
                 {user != null ? (
                   <Avatar
-                    sx={{
-                      width: { xs: 30, sm: 36 },
-                      height: { xs: 30, sm: 36 },
-                    }}
+                    className={appbarClasses.avatar[platform]}
                     style={{
                       backgroundColor: LOGO_COLOR,
                     }}
@@ -358,9 +335,8 @@ export default function CustomAppBar({
                   </Avatar>
                 ) : (
                   <AccountCircle
+                    className={appbarClasses.accCircle[platform]}
                     sx={{
-                      width: { xs: 36, md: 42 },
-                      height: { xs: 36, md: 42 },
                       color: LOGO_COLOR,
                     }}
                   />
@@ -397,7 +373,7 @@ export default function CustomAppBar({
           <Box>
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
+                className={appbarClasses.menuItemAcc}
                 onClick={() => router.push('/product/update-prices')}
               >
                 <DriveFolderUploadIcon />
@@ -406,7 +382,7 @@ export default function CustomAppBar({
             )}
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
+                className={appbarClasses.menuItemAcc}
                 onClick={() => router.push('/analytics')}
               >
                 <AnalyticsIcon />
@@ -415,7 +391,7 @@ export default function CustomAppBar({
             )}
             {user?.grade === 'SUPERUSER' && (
               <MenuItem
-                className="flex flex-row gap-2 items-center justify-start"
+                className={appbarClasses.menuItemAcc}
                 onClick={() => router.push('/procurement')}
               >
                 <Dvr />
@@ -434,7 +410,7 @@ export default function CustomAppBar({
                   }
                 })();
               }}
-              className="flex flex-row gap-2 items-center justify-start"
+              className={appbarClasses.menuItemAcc}
             >
               <LogoutIcon />
               <Typography>{t('signout')}</Typography>
@@ -444,14 +420,14 @@ export default function CustomAppBar({
           <Box>
             <MenuItem
               onClick={() => router.push('/user/signin')}
-              className="flex flex-row gap-2 items-center justify-start"
+              className={appbarClasses.menuItemAcc}
             >
               <LoginIcon />
               <Typography>{t('signin')}</Typography>
             </MenuItem>
             <MenuItem
               onClick={() => router.push('/user/signup')}
-              className="flex flex-row gap-2 items-center justify-start"
+              className={appbarClasses.menuItemAcc}
             >
               <AppRegistrationIcon />
               <Typography>{t('signup')}</Typography>
