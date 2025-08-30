@@ -12,7 +12,11 @@ const PlatformContext = createContext<PlatformContextType | undefined>(
   undefined,
 );
 
-export const PlatformProvider = ({ children }: { children: ReactNode }) => {
+export default function PlatformContextProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const theme = useTheme();
 
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -23,7 +27,7 @@ export const PlatformProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </PlatformContext.Provider>
   );
-};
+}
 
 export const usePlatform = (): Platform => {
   const context = useContext(PlatformContext);

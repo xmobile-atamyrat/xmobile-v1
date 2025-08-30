@@ -2,7 +2,7 @@ import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
-import { PlatformProvider } from '@/pages/lib/PlatformContext';
+import PlatformContextProvider from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
@@ -18,14 +18,14 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider theme={theme}>
-      <PlatformProvider>
-        <NetworkContextProvider>
-          <AbortControllerContextProvider>
-            <UserContextProvider>
-              <CategoryContextProvider>
-                <ProductContextProvider>
-                  <PrevProductContextProvider>
-                    <DollarRateContextProvider>
+      <NetworkContextProvider>
+        <AbortControllerContextProvider>
+          <UserContextProvider>
+            <CategoryContextProvider>
+              <ProductContextProvider>
+                <PrevProductContextProvider>
+                  <DollarRateContextProvider>
+                    <PlatformContextProvider>
                       <NextIntlClientProvider
                         locale={router.locale}
                         timeZone="Asia/Ashgabat"
@@ -33,14 +33,14 @@ export default function App({ Component, pageProps }: AppProps) {
                       >
                         <Component {...pageProps} />
                       </NextIntlClientProvider>
-                    </DollarRateContextProvider>
-                  </PrevProductContextProvider>
-                </ProductContextProvider>
-              </CategoryContextProvider>
-            </UserContextProvider>
-          </AbortControllerContextProvider>
-        </NetworkContextProvider>
-      </PlatformProvider>
+                    </PlatformContextProvider>
+                  </DollarRateContextProvider>
+                </PrevProductContextProvider>
+              </ProductContextProvider>
+            </CategoryContextProvider>
+          </UserContextProvider>
+        </AbortControllerContextProvider>
+      </NetworkContextProvider>
     </ThemeProvider>
   );
 }
