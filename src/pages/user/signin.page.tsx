@@ -1,16 +1,15 @@
-import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { signinClasses } from '@/styles/classMaps/user/signin.page';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Divider,
+  CardMedia,
   IconButton,
   InputAdornment,
+  Link,
   Paper,
   TextField,
   Typography,
@@ -18,7 +17,6 @@ import {
 import { User } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
@@ -38,11 +36,23 @@ export default function Signin() {
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
   const platform = usePlatform();
+
   return (
-    <Box className={`${signinClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
+    <Box className={signinClasses.boxes.main}>
+      <Link href="/">
+        <ArrowBackIos className={signinClasses.link[platform]}></ArrowBackIos>
+      </Link>
+      <Box className={signinClasses.boxes.logo[platform]}>
+        <CardMedia component="img" src="/xmobile_new_logo.png" />
+      </Box>
+      <Box className={signinClasses.boxes.text}>
+        <Typography variant="h3" className={signinClasses.h3[platform]}>
+          {t('signIn')}
+        </Typography>
+      </Box>
       <Paper
         className={signinClasses.paper[platform]}
-        elevation={3}
+        elevation={0}
         square={false}
         component="form"
         onSubmit={async (event) => {
@@ -80,26 +90,44 @@ export default function Signin() {
           }
         }}
       >
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.text}>
-            <Typography variant="h5">{t('signIn')}</Typography>
-            <Link href="/">
-              <CancelIcon />
-            </Link>
-          </Box>
-          <Divider />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {'Email '}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
         </Box>
         <TextField
           fullWidth
           required
-          label={t('email')}
+          placeholder="Email / Phone Number"
           type="email"
           name="email"
+          InputProps={{
+            classes: {
+              root: `
+                ${signinClasses.textField[platform]}
+              `,
+            },
+          }}
         />
+        <Box
+          component="label"
+          className={`${signinClasses.label[platform]} mt-2`}
+        >
+          <Typography component="span" className="font-bold" color="black">
+            {'Password '}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
         <TextField
           fullWidth
           required
-          label={t('password')}
+          // label={t('password')}
+          placeholder="Enter your password"
           type={showPassword ? 'text' : 'password'}
           name="password"
           InputProps={{
@@ -110,35 +138,41 @@ export default function Signin() {
                 </IconButton>
               </InputAdornment>
             ),
+            classes: {
+              root: `
+                ${signinClasses.textField[platform]}
+              `,
+            },
           }}
         />
+        {errorMessage != null && (
+          <Typography color="error" className={signinClasses.typo[platform]}>
+            {t(errorMessage)}
+          </Typography>
+        )}
         <Box className={signinClasses.boxes.categories}>
           <Box className={signinClasses.boxes.button}>
             <Button
               fullWidth
               variant="contained"
-              className="normal-case"
+              className={signinClasses.buttonSubmit[platform]}
               size="large"
               type="submit"
             >
               {t('signIn')}
+              {/* Create Account */}
             </Button>
-            {errorMessage != null && (
-              <Typography color="error" className={signinClasses.typo}>
-                {t(errorMessage)}
-              </Typography>
-            )}
           </Box>
-          <Divider />
           <Box className={signinClasses.boxes.text}>
-            <Typography className="normal-case font-[14px]">
+            <Typography className="normal-case text-[14px] justify-center">
               {t('dontHaveAccount')}
             </Typography>
             <Button
-              className={signinClasses.button[platform]}
+              className={signinClasses.buttonRedirect[platform]}
               onClick={() => router.push('/user/signup')}
             >
-              {t('signUp')}
+              {/* {t('signUp')} */}
+              Register
             </Button>
           </Box>
         </Box>
