@@ -138,7 +138,10 @@ export default function Signup() {
               {t('signUp')}
             </Button>
             {errorMessage != null && (
-              <Typography color="error" className={signinClasses.typo}>
+              <Typography
+                color="error"
+                className={signinClasses.typo[platform]}
+              >
                 {errorMessage}
               </Typography>
             )}
