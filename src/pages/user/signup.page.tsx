@@ -52,12 +52,15 @@ export default function Signup() {
           if (errorMessage) setErrorMessage(undefined);
 
           const formData = new FormData(event.currentTarget);
-          const { name, email, password, phoneNumber } = Object.fromEntries(
-            formData.entries(),
-          );
+          const { name, email, password, passwordConfirm, phoneNumber } =
+            Object.fromEntries(formData.entries());
 
           if ((password as string).length < 8) {
             setErrorMessage(t('shortPassword'));
+            return;
+          }
+          if (password !== passwordConfirm) {
+            setErrorMessage(t('passwordConfirmError'));
             return;
           }
 
@@ -99,22 +102,30 @@ export default function Signup() {
               <CancelIcon />
             </Link>
           </Box>
-          <Divider />
         </Box>
-        <TextField fullWidth required label={t('name')} name="name" />
         <TextField
           fullWidth
           required
-          label={t('email')}
+          placeholder={t('emailPlaceholder')}
           type="email"
           name="email"
+          className={signinClasses.textField[platform]}
         />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('password')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
         <TextField
           fullWidth
           required
-          label={t('password')}
+          placeholder={t('passwordPlaceholder')}
           type={showPassword ? 'text' : 'password'}
           name="password"
+          className={signinClasses.textField[platform]}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">

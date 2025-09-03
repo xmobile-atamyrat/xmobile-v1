@@ -42,6 +42,7 @@
   "passwordConfirmPlaceholder": "Parolyňyzy täzeden ýazyň",
   "namePlaceholder": "Adyňyzy ýazyň",
   "phoneNumberPlaceholder": "Telefon belgiňizi ýazyň",
+  "passwordConfirmError": "Ýazan parollaryňyz deň däl",
   "password": "Parol",
   "userAlreadyExists": "Akkaunt eýýäm bar",
   "search": "Gözle...",
