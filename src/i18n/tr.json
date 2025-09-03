@@ -43,6 +43,7 @@
   "passwordConfirmPlaceholder": "Şifrenizi tekrar yazın",
   "namePlaceholder": "Adınızı yazın",
   "phoneNumberPlaceholder": "Telefon numaranızı yazın",
+  "passwordConfirmError": "Yazdığınız şifreler eşit değil",
   "name": "Ad",
   "haveAccount": "Hesabınız var mı?",
   "phoneNumber": "Telefon numarası",

@@ -43,6 +43,7 @@
   "passwordConfirmPlaceholder": "Parolyňyzy kaýtadan ýazyň",
   "namePlaceholder": "Adyňyzy ýazyň",
   "phoneNumberPlaceholder": "Telefon nomeriňizi ýazyň",
+  "passwordConfirmError": "Ýazan parollaryňyz deň emez",
   "userAlreadyExists": "Munaka akkaunt uzhe bar",
   "search": "Ahtar...",
   "name": "Adyňyz",
