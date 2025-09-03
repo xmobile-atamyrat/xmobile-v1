@@ -92,7 +92,7 @@ export default function Signin() {
       >
         <Box component="label" className={signinClasses.label[platform]}>
           <Typography component="span" className="font-bold" color="black">
-            {'Email '}
+            {`${t('email')} `}
           </Typography>
           <Typography component="span" fontWeight="bold" color="#ff624c">
             *
@@ -101,7 +101,7 @@ export default function Signin() {
         <TextField
           fullWidth
           required
-          placeholder="Email / Phone Number"
+          placeholder={t('emailPlaceholder')}
           type="email"
           name="email"
           InputProps={{
@@ -117,7 +117,7 @@ export default function Signin() {
           className={`${signinClasses.label[platform]} mt-2`}
         >
           <Typography component="span" className="font-bold" color="black">
-            {'Password '}
+            {`${t('password')} `}
           </Typography>
           <Typography component="span" fontWeight="bold" color="#ff624c">
             *
@@ -126,8 +126,7 @@ export default function Signin() {
         <TextField
           fullWidth
           required
-          // label={t('password')}
-          placeholder="Enter your password"
+          placeholder={t('passwordPlaceholder')}
           type={showPassword ? 'text' : 'password'}
           name="password"
           InputProps={{
@@ -150,31 +149,27 @@ export default function Signin() {
             {t(errorMessage)}
           </Typography>
         )}
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.button}>
-            <Button
-              fullWidth
-              variant="contained"
-              className={signinClasses.buttonSubmit[platform]}
-              size="large"
-              type="submit"
-            >
-              {t('signIn')}
-              {/* Create Account */}
-            </Button>
-          </Box>
-          <Box className={signinClasses.boxes.text}>
-            <Typography className="normal-case text-[14px] justify-center">
-              {t('dontHaveAccount')}
-            </Typography>
-            <Button
-              className={signinClasses.buttonRedirect[platform]}
-              onClick={() => router.push('/user/signup')}
-            >
-              {/* {t('signUp')} */}
-              Register
-            </Button>
-          </Box>
+        <Box className={signinClasses.boxes.button}>
+          <Button
+            fullWidth
+            variant="contained"
+            className={signinClasses.buttonSubmit[platform]}
+            size="large"
+            type="submit"
+          >
+            {t('signIn')}
+          </Button>
+        </Box>
+        <Box className={signinClasses.boxes.text}>
+          <Typography className="normal-case text-[14px] justify-center">
+            {t('dontHaveAccount')}
+          </Typography>
+          <Button
+            className={signinClasses.buttonRedirect}
+            onClick={() => router.push('/user/signup')}
+          >
+            {t('signUp')}
+          </Button>
         </Box>
       </Paper>
     </Box>
