@@ -161,7 +161,7 @@ export default function Signin() {
           </Button>
         </Box>
         <Box className={signinClasses.boxes.text}>
-          <Typography className="normal-case text-[14px] justify-center">
+          <Typography className={signinClasses.haveAccount}>
             {t('dontHaveAccount')}
           </Typography>
           <Button

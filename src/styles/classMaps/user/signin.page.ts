@@ -43,4 +43,5 @@ export const signinClasses = {
     mobile:
       'absolute left-4 top-4 font-base text-[#222] font-light text-[25px] no-underline',
   },
+  haveAccount: 'normal-case text-[14px] justify-center',
 };

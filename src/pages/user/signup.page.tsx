@@ -1,14 +1,12 @@
-import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { signinClasses } from '@/styles/classMaps/user/signin.page';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Divider,
+  CardMedia,
   IconButton,
   InputAdornment,
   Paper,
@@ -36,14 +34,26 @@ export default function Signup() {
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const t = useTranslations();
   const platform = usePlatform();
 
   return (
-    <Box className={`${signinClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
+    <Box className={`${signinClasses.boxes.main} mt-[100px]`}>
+      <Link href="/">
+        <ArrowBackIos className={signinClasses.link[platform]}></ArrowBackIos>
+      </Link>
+      <Box className={signinClasses.boxes.logo[platform]}>
+        <CardMedia component="img" src="/xmobile_new_logo.png" />
+      </Box>
+      <Box className={signinClasses.boxes.text}>
+        <Typography variant="h3" className={signinClasses.h3[platform]}>
+          {t('signUp')}
+        </Typography>
+      </Box>
       <Paper
         className={signinClasses.paperSignup[platform]}
-        elevation={3}
+        elevation={0}
         square={false}
         component="form"
         onSubmit={async (event) => {
@@ -52,12 +62,15 @@ export default function Signup() {
           if (errorMessage) setErrorMessage(undefined);
 
           const formData = new FormData(event.currentTarget);
-          const { name, email, password, phoneNumber } = Object.fromEntries(
-            formData.entries(),
-          );
+          const { name, email, password, passwordConfirm, phoneNumber } =
+            Object.fromEntries(formData.entries());
 
           if ((password as string).length < 8) {
             setErrorMessage(t('shortPassword'));
+            return;
+          }
+          if (password !== passwordConfirm) {
+            setErrorMessage(t('passwordConfirmError'));
             return;
           }
 
@@ -92,29 +105,37 @@ export default function Signup() {
           }
         }}
       >
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.text}>
-            <Typography variant="h5">{t('signUp')}</Typography>
-            <Link href="/">
-              <CancelIcon />
-            </Link>
-          </Box>
-          <Divider />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('email')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
         </Box>
-        <TextField fullWidth required label={t('name')} name="name" />
         <TextField
           fullWidth
           required
-          label={t('email')}
+          placeholder={t('emailPlaceholder')}
           type="email"
           name="email"
+          className={signinClasses.textField[platform]}
         />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('password')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
         <TextField
           fullWidth
           required
-          label={t('password')}
+          placeholder={t('passwordPlaceholder')}
           type={showPassword ? 'text' : 'password'}
           name="password"
+          className={signinClasses.textField[platform]}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -125,41 +146,89 @@ export default function Signup() {
             ),
           }}
         />
-        <TextField fullWidth label={t('phoneNumber')} name="phoneNumber" />
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.button}>
-            <Button
-              fullWidth
-              variant="contained"
-              className="normal-case"
-              size="large"
-              type="submit"
-            >
-              {t('signUp')}
-            </Button>
-            {errorMessage != null && (
-              <Typography
-                color="error"
-                className={signinClasses.typo[platform]}
-              >
-                {errorMessage}
-              </Typography>
-            )}
-          </Box>
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('confirmPassword')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
+        <TextField
+          fullWidth
+          required
+          placeholder={t('passwordConfirmPlaceholder')}
+          type={showPasswordConfirm ? 'text' : 'password'}
+          name="passwordConfirm"
+          className={signinClasses.textField[platform]}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                >
+                  {showPasswordConfirm ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('name')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
+        <TextField
+          fullWidth
+          required
+          placeholder={t('namePlaceholder')}
+          name="name"
+          className={signinClasses.textField[platform]}
+        />
+        <Box component="label" className={signinClasses.label[platform]}>
+          <Typography component="span" className="font-bold" color="black">
+            {`${t('phoneNumber')} `}
+          </Typography>
+          <Typography component="span" fontWeight="bold" color="#ff624c">
+            *
+          </Typography>
+        </Box>
+        <TextField
+          fullWidth
+          placeholder={t('phoneNumberPlaceholder')}
+          name="phoneNumber"
+          className={signinClasses.textField[platform]}
+        />
+        {errorMessage != null && (
+          <Typography color="error" className={signinClasses.typo[platform]}>
+            {errorMessage}
+          </Typography>
+        )}
+        <Box className={signinClasses.boxes.button}>
+          <Button
+            fullWidth
+            variant="contained"
+            className={signinClasses.buttonSubmit[platform]}
+            size="large"
+            type="submit"
+          >
+            {t('signUp')}
+          </Button>
+        </Box>
 
-          <Divider />
-
-          <Box className={signinClasses.boxes.text}>
-            <Typography className="normal-case font-[14px]">
-              {t('haveAccount')}
-            </Typography>
-            <Button
-              sx={{ textTransform: 'none' }}
-              onClick={() => router.push('/user/signin')}
-            >
-              {t('signIn')}
-            </Button>
-          </Box>
+        <Box className={signinClasses.boxes.text}>
+          <Typography className={signinClasses.haveAccount}>
+            {t('haveAccount')}
+          </Typography>
+          <Button
+            className={signinClasses.buttonRedirect}
+            onClick={() => router.push('/user/signin')}
+          >
+            {t('signIn')}
+          </Button>
         </Box>
       </Paper>
     </Box>

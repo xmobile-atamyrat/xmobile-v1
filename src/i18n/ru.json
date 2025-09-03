@@ -40,6 +40,7 @@
   "passwordConfirmPlaceholder": "Введите пароль еще раз",
   "namePlaceholder": "Введите свое имя",
   "phoneNumberPlaceholder": "Введите свой номер телефона",
+  "passwordConfirmError": "Пароли не совпадают",
   "userAlreadyExists": "Aккаунт уже существует",
   "search": "Поиск...",
   "name": "Имя",
