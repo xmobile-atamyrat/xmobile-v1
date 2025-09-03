@@ -43,6 +43,7 @@
   "passwordConfirmPlaceholder": "Text your password again",
   "namePlaceholder": "Text your fullname",
   "phoneNumberPlaceholder": "Text your phone number",
+  "passwordConfirmError": "Passwords do not match",
   "name": "Name",
   "haveAccount": "Have an account?",
   "phoneNumber": "Phone number",
