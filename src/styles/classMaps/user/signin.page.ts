@@ -1,46 +1,73 @@
 export const signinClasses = {
   boxes: {
-    main: 'h-[100vh] flex flex-col mt-[150px] items-center',
-    text: 'flex flex-row justify-center items-center mb-10',
-    button: 'flex flex-col gap-2 relative min-h-[70px] mt-4',
+    page: {
+      web: 'w-full h-full flex flex-col items-center p-0',
+      mobile: 'w-full h-full flex flex-col justify-center',
+    },
+    main: {
+      web: 'w-[594px] h-[691px] flex flex-col mt-[300px] mb-[221px] items-center p-0 align-center justify-center',
+      mobile: 'w-full h-[80%] flex flex-col items-center justify-center',
+    },
+    text: {
+      web: 'w-[350px] flex flex-row justify-center items-center',
+      mobile: 'hidden',
+    },
+    button: {
+      web: 'flex min-h-[78px] w-[522px] rounded-[10px] gap-[10px] py-[24px]  items-center',
+      mobile: 'flex justify-center',
+    },
     logo: {
       web: 'w-0',
-      mobile: 'w-[200px] mb-[60px]',
+      mobile: 'w-[230px] h-[47px] mb-[58px]',
+    },
+    label: {
+      web: 'flex mb-[80px]',
+      mobile: 'flex mb-[18px]',
+    },
+    input: {
+      web: 'w-full h-[122px]',
+      mobile: 'w-[88%] h-[75px]',
+    },
+    links: {
+      web: 'w-full flex flex-col items-center mt-[10px]',
+      mobile: 'w-full flex flex-col mt-[40px]',
     },
   },
   paper: {
-    web: 'flex flex-col w-[425px] h-[400px] rounded-[16px] p-[30px] gap-1 bg-[#f4f4f4]',
-    mobile: 'flex flex-col w-[90%] h-[400px] rounded-[16px] p-[0px] gap-2',
+    web: 'flex flex-col w-full h-[543px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
+    mobile: 'flex flex-col w-full h-[250px] justify-center items-center',
   },
   paperSignup: {
     web: 'flex flex-col w-[425px] h-[700px] rounded-[16px] p-[30px] gap-2 bg-[#f4f4f4]',
     mobile: 'flex flex-col w-[90%] h-[450px] rounded-[16px] p-[0px] gap-1',
   },
   buttonSubmit: {
-    web: 'normal-case bg-[#ff624c] font-bold h-[60px] rounded-md hover:bg-[#ec4d38] text-base',
-    mobile: 'normal-case bg-[#000] font-bold h-[50px] rounded-lg text-base',
+    web: 'normal-case bg-[#ff624c] font-bold w-full min-h-[78px] text-[18px] leading-[30px]',
+    mobile:
+      'normal-case bg-[#1b1b1b] font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]',
   },
-  buttonRedirect: 'normal-case px-2 text-[#000] font-bold',
-  typo: {
-    web: 'flex justify-end text-[14px] text-[#666] mb-[3px] mt-[0px]',
-    mobile: 'flex justify-center mt-4 text-[#888]',
+  buttonRedirect:
+    'normal-case px-2 text-[#000] font-bold text-[16px] w-[200px]',
+  error: {
+    web: 'flex justify-end text-[16px] text-[#303030] mt-[10px] mr-[5px]',
+    mobile:
+      'flex mt-[19px] ml-[10%] mb-[-10px] justify-center text-[#838383] text-[14px]',
   },
   h3: {
-    web: 'font-bold text-[50px]',
-    mobile: 'font-bold text-[30px]',
+    web: 'font-bold text-[56px] text-[#303030] leading-[68px] tracking-[0]',
+    mobile: 'font-bold text-[24px] text-[#000] leading-[100%] tracking-[0]',
   },
   label: {
-    web: 'mb-1 mt-1',
-    mobile: 'ml-[2px] mt-[10px]',
+    web: 'mb-[22px]  text-[20px]',
+    mobile: '',
   },
   textField: {
-    web: 'bg-white rounded-lg h-[60px] [&_.MuiOutlinedInput-notchedOutline]:border-[#fff] hover:[&_.MuiOutlinedInput-notchedOutline]:border-[#ff624c] focus-within:[&_.MuiOutlinedInput-notchedOutline]:border-[#ff624c]',
-    mobile:
-      'bg-white rounded-lg h-[50px] [&_.MuiOutlinedInput-notchedOutline]:border-[#ddd] hover:[&_.MuiOutlinedInput-notchedOutline]:border-[#ff624c] focus-within:[&_.MuiOutlinedInput-notchedOutline]:border-[#ff624c]',
+    web: 'w-[522px] h-[380px]',
+    mobile: '',
   },
   link: {
     web: 'w-0',
     mobile:
-      'absolute left-4 top-4 font-base text-[#222] font-light text-[25px] no-underline',
+      'absolute left-4 top-4 font-base text-[#222] font-light text-[24px] no-underline',
   },
 };
