@@ -40,7 +40,9 @@ export default function Signup() {
   const platform = usePlatform();
 
   return (
-    <Box className={`${signinClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
+    <Box
+      className={`${signinClasses.boxes.main[platform]} bg-[${MAIN_BG_COLOR}]`}
+    >
       <Paper
         className={signinClasses.paperSignup[platform]}
         elevation={3}
@@ -92,15 +94,15 @@ export default function Signup() {
           }
         }}
       >
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.text}>
-            <Typography variant="h5">{t('signUp')}</Typography>
-            <Link href="/">
-              <CancelIcon />
-            </Link>
-          </Box>
-          <Divider />
+        {/* <Box className={signinClasses.boxes.categories}> */}
+        <Box className={signinClasses.boxes.text[platform]}>
+          <Typography variant="h5">{t('signUp')}</Typography>
+          <Link href="/">
+            <CancelIcon />
+          </Link>
         </Box>
+        {/* <Divider /> */}
+        {/* </Box> */}
         <TextField fullWidth required label={t('name')} name="name" />
         <TextField
           fullWidth
@@ -126,41 +128,38 @@ export default function Signup() {
           }}
         />
         <TextField fullWidth label={t('phoneNumber')} name="phoneNumber" />
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.button}>
-            <Button
-              fullWidth
-              variant="contained"
-              className="normal-case"
-              size="large"
-              type="submit"
-            >
-              {t('signUp')}
-            </Button>
-            {errorMessage != null && (
-              <Typography
-                color="error"
-                className={signinClasses.typo[platform]}
-              >
-                {errorMessage}
-              </Typography>
-            )}
-          </Box>
-
-          <Divider />
-
-          <Box className={signinClasses.boxes.text}>
-            <Typography className="normal-case font-[14px]">
-              {t('haveAccount')}
+        {/* <Box className={signinClasses.boxes.categories}> */}
+        <Box className={signinClasses.boxes.button[platform]}>
+          <Button
+            fullWidth
+            variant="contained"
+            className="normal-case"
+            size="large"
+            type="submit"
+          >
+            {t('signUp')}
+          </Button>
+          {errorMessage != null && (
+            <Typography color="error" className={signinClasses.error[platform]}>
+              {errorMessage}
             </Typography>
-            <Button
-              sx={{ textTransform: 'none' }}
-              onClick={() => router.push('/user/signin')}
-            >
-              {t('signIn')}
-            </Button>
-          </Box>
+          )}
         </Box>
+
+        <Divider />
+
+        <Box className={signinClasses.boxes.text[platform]}>
+          <Typography className="normal-case font-[14px]">
+            {t('haveAccount')}
+          </Typography>
+          <Button
+            sx={{ textTransform: 'none' }}
+            onClick={() => router.push('/user/signin')}
+          >
+            {t('signIn')}
+          </Button>
+        </Box>
+        {/* </Box> */}
       </Paper>
     </Box>
   );
