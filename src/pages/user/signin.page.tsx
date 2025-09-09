@@ -1,9 +1,8 @@
-import CustomAppBar from '@/pages/components/Appbar';
-import Footer from '@/pages/components/Footer';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { signinClasses } from '@/styles/classMaps/user/signin.page';
+import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
   Box,
@@ -19,7 +18,6 @@ import {
 import { User } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
-import { Inter } from 'next/font/google';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 // getStaticProps because translations are static
@@ -30,43 +28,17 @@ export const getStaticProps = (async (context) => {
     },
   };
 }) satisfies GetStaticProps<object>;
-const inter = Inter({ subsets: ['latin'], weight: ['400', '600', '700'] });
 
-interface SigninProps {
-  handleHeaderBackButton?: () => void;
-  showSearch?: boolean;
-}
-
-export default function Signin({
-  handleHeaderBackButton,
-  showSearch = false,
-}: SigninProps) {
+export default function Signin() {
   const { setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
-
-  // in order to get which error we are facing to implement the ui correctly but couldn't do that so till I figure it out commenting
-  // const [emailError, setEmailError] = useState<string | undefined>(undefined);
-  // const [passwordError, setPasswordError] = useState<string | undefined>(
-  //   undefined,
-  // );
-
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
   const platform = usePlatform();
-  const [openDrawer, setOpenDrawer] = useState(false);
-  const isWeb = platform === 'web';
 
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      {isWeb && (
-        <CustomAppBar
-          openDrawer={openDrawer}
-          setOpenDrawer={setOpenDrawer}
-          handleBackButton={handleHeaderBackButton}
-          showSearch={showSearch}
-        />
-      )}
       <Link href="/">
         <ArrowBackIos className={signinClasses.link[platform]}></ArrowBackIos>
       </Link>
@@ -79,7 +51,7 @@ export default function Signin({
         <Box className={signinClasses.boxes.label[platform]}>
           <Typography
             variant="h3"
-            className={`${signinClasses.h3[platform]} ${inter.className}`}
+            className={`${signinClasses.h3[platform]} ${interClassname.className}`}
           >
             {t('signIn')}
           </Typography>
@@ -128,16 +100,16 @@ export default function Signin({
             <Box component="label" className={signinClasses.label[platform]}>
               <Typography
                 component="span"
-                className={`font-bold ${inter.className}`}
-                color="#1b1b1b"
+                className={`font-bold ${interClassname.className}`}
+                color={colors.text}
               >
                 {`${t('email')} `}
               </Typography>
               <Typography
                 component="span"
                 fontWeight="bold"
-                color="#ff624c"
-                className={inter.className}
+                color={colors.main}
+                className={interClassname.className}
               >
                 *
               </Typography>
@@ -148,33 +120,32 @@ export default function Signin({
               placeholder={t('emailPlaceholder')}
               type="email"
               name="email"
-              className={`${inter.className} ${signinClasses.textField[platform]}`}
+              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
               sx={{
-                marginTop: '12px',
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
                   borderRadius: '10px',
-                  height: isWeb ? '80px' : '48px',
-                  fontSize: isWeb ? '18px' : '14px',
+                  height: units.inputHeight[platform],
+                  fontSize: units.inputFontSize[platform],
                   paddingX: '13px',
                   paddingY: '16px',
                   '& fieldset': {
-                    borderColor: isWeb ? '#fff' : '#E6E6E6',
+                    borderColor: colors.border[platform],
                   },
                   '&:hover fieldset': {
-                    borderColor: '#ff624c',
+                    borderColor: colors.main,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#ff624c',
+                    borderColor: colors.main,
                   },
                 },
                 '& .MuiInputBase-input': {
                   paddingX: '13px',
                   paddingY: '16px',
-                  fontSize: isWeb ? '18px' : '14px',
+                  fontSize: units.inputFontSize[platform],
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: '#838383',
+                  color: colors.placeholder,
                   opacity: 1,
                 },
               }}
@@ -184,16 +155,16 @@ export default function Signin({
             <Box component="label" className={signinClasses.label[platform]}>
               <Typography
                 component="span"
-                className={`font-bold ${inter.className}`}
-                color="#1b1b1b"
+                className={`font-bold ${interClassname.className}`}
+                color={colors.text}
               >
                 {`${t('password')} `}
               </Typography>
               <Typography
                 component="span"
                 fontWeight="bold"
-                color="#ff624c"
-                className={inter.className}
+                color={colors.main}
+                className={interClassname.className}
               >
                 *
               </Typography>
@@ -213,33 +184,32 @@ export default function Signin({
                   </InputAdornment>
                 ),
               }}
-              className={`${inter.className} ${signinClasses.textField[platform]}`}
+              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
               sx={{
-                marginTop: '12px',
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
                   borderRadius: '10px',
-                  height: isWeb ? '80px' : '48px',
-                  fontSize: isWeb ? '18px' : '14px',
+                  height: units.inputHeight[platform],
+                  fontSize: units.inputFontSize[platform],
                   paddingX: '13px',
                   paddingY: '16px',
                   '& fieldset': {
-                    borderColor: isWeb ? '#fff' : '#E6E6E6',
+                    borderColor: colors.border[platform],
                   },
                   '&:hover fieldset': {
-                    borderColor: '#ff624c',
+                    borderColor: colors.main,
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#ff624c',
+                    borderColor: colors.main,
                   },
                 },
                 '& .MuiInputBase-input': {
                   paddingX: '13px',
                   paddingY: '16px',
-                  fontSize: isWeb ? '18px' : '14px',
+                  fontSize: units.inputFontSize[platform],
                 },
                 '& .MuiInputBase-input::placeholder': {
-                  color: '#838383',
+                  color: colors.placeholder,
                   opacity: 1,
                 },
               }}
@@ -247,7 +217,7 @@ export default function Signin({
           </Box>
           {errorMessage != null && (
             <Typography
-              className={`${signinClasses.error[platform]} ${inter.className}`}
+              className={`${signinClasses.error[platform]} ${interClassname.className}`}
             >
               {t(errorMessage)}
             </Typography>
@@ -257,15 +227,15 @@ export default function Signin({
               <Button
                 fullWidth
                 variant="contained"
-                className={`${signinClasses.buttonSubmit[platform]} ${inter.className}`}
                 size="large"
                 type="submit"
+                className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
                   '&:hover': {
-                    backgroundColor: isWeb ? '#ec4d38' : '#1b1b1b',
+                    backgroundColor: colors.buttonBackground[platform],
                   },
                   '&:focus': {
-                    backgroundColor: isWeb ? '#ec4d38' : '#1b1b1b',
+                    backgroundColor: colors.buttonBackground[platform],
                   },
                 }}
               >
@@ -274,12 +244,12 @@ export default function Signin({
             </Box>
             <Box className={signinClasses.boxes.text[platform]}>
               <Typography
-                className={`normal-case text-[16px] mr-[19px] justify-center w-[300px] ${inter.className}`}
+                className={`${signinClasses.typography} ${interClassname.className}`}
               >
                 {t('dontHaveAccount')}
               </Typography>
               <Button
-                className={`${inter.className} ${signinClasses.buttonRedirect}`}
+                className={`${interClassname.className} ${signinClasses.buttonRedirect}`}
                 onClick={() => router.push('/user/signup')}
               >
                 {t('signUp')}
@@ -288,7 +258,6 @@ export default function Signin({
           </Box>
         </Paper>
       </Box>
-      {isWeb && <Footer />}
     </Box>
   );
 }
