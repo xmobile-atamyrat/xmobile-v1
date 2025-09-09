@@ -5,7 +5,7 @@ export const signinClasses = {
       mobile: 'w-full h-full flex flex-col justify-center',
     },
     main: {
-      web: 'w-[594px] h-[691px] flex flex-col mt-[300px] mb-[221px] items-center p-0 align-center justify-center',
+      web: 'w-[594px] h-[691px] flex flex-col mt-[60px] mb-[221px] items-center p-0 justify-center',
       mobile: 'w-full h-[80%] flex flex-col items-center justify-center',
     },
     text: {
@@ -42,9 +42,8 @@ export const signinClasses = {
     mobile: 'flex flex-col w-[90%] h-[450px] rounded-[16px] p-[0px] gap-1',
   },
   buttonSubmit: {
-    web: 'normal-case bg-[#ff624c] font-bold w-full min-h-[78px] text-[18px] leading-[30px]',
-    mobile:
-      'normal-case bg-[#1b1b1b] font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]',
+    web: `normal-case bg-[#ff624c] font-bold w-full min-h-[78px] text-[18px] leading-[30px]`,
+    mobile: `normal-case bg-[#1b1b1b] font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
   },
   buttonRedirect:
     'normal-case px-2 text-[#000] font-bold text-[16px] w-[200px]',
@@ -62,12 +61,13 @@ export const signinClasses = {
     mobile: '',
   },
   textField: {
-    web: 'w-[522px] h-[380px]',
-    mobile: '',
+    web: 'w-[522px] h-[380px] mt-[12px]',
+    mobile: 'mt-[12px]',
   },
   link: {
     web: 'w-0',
     mobile:
       'absolute left-4 top-4 font-base text-[#222] font-light text-[24px] no-underline',
   },
+  typography: 'normal-case text-[16px] mr-[19px] justify-center w-[300px]',
 };
