@@ -61,6 +61,7 @@ export default function Signin() {
           elevation={0}
           square={false}
           component="form"
+          noValidate
           onSubmit={async (event) => {
             event.preventDefault();
 
@@ -69,30 +70,41 @@ export default function Signin() {
             const formData = new FormData(event.currentTarget);
             const { email, password } = Object.fromEntries(formData.entries());
 
-            try {
-              const {
-                success,
-                data,
-                message,
-              }: ResponseApi<{ accessToken: string; user: User }> = await (
-                await fetch('/api/user/signin', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email, password }),
-                })
-              ).json();
-              if (message != null) {
-                setErrorMessage(message);
-              } else if (success && data != null) {
-                setUser(data.user);
-                setAccessToken(data.accessToken);
-                router.push('/');
+            if (email === '') {
+              setErrorMessage(t('errorEmailInput'));
+            } else if (
+              !String(email).includes('@') ||
+              !String(email).includes('.')
+            ) {
+              setErrorMessage(t('errorInvalidEmail'));
+            } else if (password === '') {
+              setErrorMessage(t('errorPasswordInput'));
+            } else {
+              try {
+                const {
+                  success,
+                  data,
+                  message,
+                }: ResponseApi<{ accessToken: string; user: User }> = await (
+                  await fetch('/api/user/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                  })
+                ).json();
+                if (message != null) {
+                  setErrorMessage(message);
+                } else if (success && data != null) {
+                  setUser(data.user);
+                  setAccessToken(data.accessToken);
+                  router.push('/');
+                }
+              } catch (error) {
+                if (error.name === 'JsonWebTokenError') {
+                  console.error((error as Error).message);
+                  setErrorMessage('authError');
+                } else setErrorMessage((error as Error).message);
               }
-            } catch (error) {
-              if (error.name === 'JsonWebTokenError') {
-                console.error((error as Error).message);
-                setErrorMessage('authError');
-              } else setErrorMessage((error as Error).message);
             }
           }}
         >
