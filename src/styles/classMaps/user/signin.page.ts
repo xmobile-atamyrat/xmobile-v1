@@ -65,7 +65,7 @@ export const signinClasses = {
     mobile: 'mt-[12px]',
   },
   link: {
-    web: 'w-0',
+    web: 'absolute left-4 top-4 font-base text-[#222] font-light text-[36px] no-underline',
     mobile:
       'absolute left-4 top-4 font-base text-[#222] font-light text-[24px] no-underline',
   },
