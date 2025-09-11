@@ -71,14 +71,14 @@ export default function Signin() {
             const { email, password } = Object.fromEntries(formData.entries());
 
             if (email === '') {
-              setErrorMessage(t('errorEmailInput'));
+              setErrorMessage('errorEmailInput');
             } else if (
               !String(email).includes('@') ||
               !String(email).includes('.')
             ) {
-              setErrorMessage(t('errorInvalidEmail'));
+              setErrorMessage('errorInvalidEmail');
             } else if (password === '') {
-              setErrorMessage(t('errorPasswordInput'));
+              setErrorMessage('errorPasswordInput');
             } else {
               try {
                 const {
