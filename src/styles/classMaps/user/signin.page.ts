@@ -37,10 +37,6 @@ export const signinClasses = {
     web: 'flex flex-col w-full h-[543px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
     mobile: 'flex flex-col w-full h-[250px] justify-center items-center',
   },
-  paperSignup: {
-    web: 'flex flex-col w-[425px] h-[700px] rounded-[16px] p-[30px] gap-2 bg-[#f4f4f4]',
-    mobile: 'flex flex-col w-[90%] h-[450px] rounded-[16px] p-[0px] gap-1',
-  },
   buttonSubmit: {
     web: `normal-case bg-[#ff624c] font-bold w-full min-h-[78px] text-[18px] leading-[30px]`,
     mobile: `normal-case bg-[#1b1b1b] font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
