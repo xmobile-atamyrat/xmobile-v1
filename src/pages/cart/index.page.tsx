@@ -45,8 +45,8 @@ export default function CartPage() {
   useEffect(() => {
     (async () => {
       // TODO: fix this to redirect to login page
-      if (!user.id) {
-        return;
+      if (!user) {
+        router.push('/');
       }
 
       try {
