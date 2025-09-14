@@ -114,7 +114,7 @@ export default function ProductCard({
           className={productCardClasses.boxes.main}
           onClick={() => {
             setSelectedProduct(initialProduct);
-            router.push(`/product/detail`);
+            router.push(`/product/${product.id}`);
           }}
         >
           <Box className="h-5/6">
