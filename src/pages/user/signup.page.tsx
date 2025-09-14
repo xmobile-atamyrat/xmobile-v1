@@ -2,7 +2,7 @@ import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { signinClasses } from '@/styles/classMaps/user/signin.page';
+import { signupClasses } from '@/styles/classMaps/user/signup.page';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -40,9 +40,9 @@ export default function Signup() {
   const platform = usePlatform();
 
   return (
-    <Box className={`${signinClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
+    <Box className={`${signupClasses.boxes.main} bg-[${MAIN_BG_COLOR}]`}>
       <Paper
-        className={signinClasses.paperSignup[platform]}
+        className={signupClasses.paper[platform]}
         elevation={3}
         square={false}
         component="form"
@@ -92,8 +92,8 @@ export default function Signup() {
           }
         }}
       >
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.text}>
+        <Box className={signupClasses.boxes.categories}>
+          <Box className={signupClasses.boxes.text}>
             <Typography variant="h5">{t('signUp')}</Typography>
             <Link href="/">
               <CancelIcon />
@@ -126,8 +126,8 @@ export default function Signup() {
           }}
         />
         <TextField fullWidth label={t('phoneNumber')} name="phoneNumber" />
-        <Box className={signinClasses.boxes.categories}>
-          <Box className={signinClasses.boxes.button}>
+        <Box className={signupClasses.boxes.categories}>
+          <Box className={signupClasses.boxes.button}>
             <Button
               fullWidth
               variant="contained"
@@ -138,7 +138,7 @@ export default function Signup() {
               {t('signUp')}
             </Button>
             {errorMessage != null && (
-              <Typography color="error" className={signinClasses.typo}>
+              <Typography color="error" className={signupClasses.typo}>
                 {errorMessage}
               </Typography>
             )}
@@ -146,7 +146,7 @@ export default function Signup() {
 
           <Divider />
 
-          <Box className={signinClasses.boxes.text}>
+          <Box className={signupClasses.boxes.text}>
             <Typography className="normal-case font-[14px]">
               {t('haveAccount')}
             </Typography>
