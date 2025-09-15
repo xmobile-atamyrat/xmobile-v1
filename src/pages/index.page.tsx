@@ -13,7 +13,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
-import { homePageClasses } from '@/styles/classMaps/index.page';
+import { homePageClasses } from '@/styles/classMaps';
 import { Box } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
