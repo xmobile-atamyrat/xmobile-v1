@@ -2,7 +2,11 @@ import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+<<<<<<< HEAD
 import { signupClasses } from '@/styles/classMaps/user/signup';
+=======
+import { signupClasses } from '@/styles/classMaps/user/signup.page';
+>>>>>>> 71b45af (removed all the changes made before, and rebased to main)
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
@@ -52,15 +56,12 @@ export default function Signup() {
           if (errorMessage) setErrorMessage(undefined);
 
           const formData = new FormData(event.currentTarget);
-          const { name, email, password, passwordConfirm, phoneNumber } =
-            Object.fromEntries(formData.entries());
+          const { name, email, password, phoneNumber } = Object.fromEntries(
+            formData.entries(),
+          );
 
           if ((password as string).length < 8) {
             setErrorMessage(t('shortPassword'));
-            return;
-          }
-          if (password !== passwordConfirm) {
-            setErrorMessage(t('passwordConfirmError'));
             return;
           }
 
@@ -102,30 +103,22 @@ export default function Signup() {
               <CancelIcon />
             </Link>
           </Box>
+          <Divider />
         </Box>
+        <TextField fullWidth required label={t('name')} name="name" />
         <TextField
           fullWidth
           required
-          placeholder={t('emailPlaceholder')}
+          label={t('email')}
           type="email"
           name="email"
-          className={signinClasses.textField[platform]}
         />
-        <Box component="label" className={signinClasses.label[platform]}>
-          <Typography component="span" className="font-bold" color="black">
-            {`${t('password')} `}
-          </Typography>
-          <Typography component="span" fontWeight="bold" color="#ff624c">
-            *
-          </Typography>
-        </Box>
         <TextField
           fullWidth
           required
-          placeholder={t('passwordPlaceholder')}
+          label={t('password')}
           type={showPassword ? 'text' : 'password'}
           name="password"
-          className={signinClasses.textField[platform]}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
