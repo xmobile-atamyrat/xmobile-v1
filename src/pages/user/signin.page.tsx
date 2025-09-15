@@ -1,7 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { signinClasses } from '@/styles/classMaps/user/signin.page';
+import { signinClasses } from '@/styles/classMaps/user/signin';
 import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
