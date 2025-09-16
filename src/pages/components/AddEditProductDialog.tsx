@@ -38,6 +38,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import type { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -46,6 +47,7 @@ interface AddEditProductDialogProps {
   handleClose: () => void;
   args: AddEditProductProps;
   snackbarErrorHandler?: (message: string) => void;
+  setProduct?: (product: Product) => void;
 }
 
 export default function AddEditProductDialog({
@@ -61,6 +63,7 @@ export default function AddEditProductDialog({
     videoUrls: initVideoUrls,
   },
   snackbarErrorHandler,
+  setProduct,
 }: AddEditProductDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setProducts, setSelectedProduct } = useProductContext();
@@ -211,6 +214,9 @@ export default function AddEditProductDialog({
             selectedProductId: id,
           });
           setSelectedProduct(updatedProduct);
+          if (setProduct) {
+            setProduct(updatedProduct);
+          }
         } catch (error) {
           setLoading(false);
           if (snackbarErrorHandler) {
