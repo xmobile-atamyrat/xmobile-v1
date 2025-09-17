@@ -6,7 +6,7 @@ main() {
     if [[ -z "$SSH_PASSPHRASE" ]]; then
         echo "Skipping docker operations. Provide SSH_PASSPHRASE as the first argument to run docker operations"
     else
-        docker-compose up -d build_env
+        docker-compose up -d --build build_env
         docker exec build_env sh -c '[ -d /app/xmobile-v1 ] && rm -rf /app/xmobile-v1 && [ -f /app/xmobile-v1.tar.gz ] && rm -f /app/xmobile-v1.tar.gz'
         docker exec -e SSH_PASSPHRASE="$SSH_PASSPHRASE" build_env sh -c '
             eval $(ssh-agent -s) && \

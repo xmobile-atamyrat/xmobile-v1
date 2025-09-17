@@ -80,7 +80,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     errorMessage = (error as Error).message;
   }
 
-  if (telekomPassword != null && telekomPassword != null) {
+  if (telekomUsername != null && telekomPassword != null) {
     try {
       const loginResponse = await fetch(
         'https://os.telecom.tm:5000/api/v1/auth/login',
