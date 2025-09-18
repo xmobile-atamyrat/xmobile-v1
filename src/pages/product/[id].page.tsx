@@ -24,7 +24,7 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
-import { detailPageClasses } from '@/styles/classMaps/product/detail.page';
+import { detailPageClasses } from '@/styles/classMaps/product/detail';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
