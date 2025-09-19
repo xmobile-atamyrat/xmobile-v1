@@ -47,7 +47,7 @@ export default function Signup() {
       <Box className={signupClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/xmobile_new_logo.png"
+          src="/black_logo.png"
           className={signupClasses.boxes.logo[platform]}
         />
         <Box className={signupClasses.boxes.label[platform]}>
@@ -72,6 +72,16 @@ export default function Signup() {
             const formData = new FormData(event.currentTarget);
             const { name, email, password, passwordConfirm, phoneNumber } =
               Object.fromEntries(formData.entries());
+            const passw: string = password as string;
+            const hasNumber = /\d/.test(passw);
+            const hasUppercase = /[A-Z]/.test(passw);
+            const hasSpecial = /[^a-zA-Z0-9]/.test(passw);
+            const shortPassword = passw.length >= 8;
+            const hasConsecutiveLetters = /[a-zA-Z]{5,}/.test(passw);
+            const hasConsecutiveDigits = /\d{5,}/.test(passw);
+
+            const hasConsecutiveAlphaNumeric =
+              !hasConsecutiveLetters && !hasConsecutiveDigits;
 
             if (email === '') {
               setErrorMessage('errorEmailInput');
@@ -81,12 +91,36 @@ export default function Signup() {
               setErrorMessage('errorInvalidEmail');
               return;
             }
-            if ((password as string).length < 8) {
+            if (!shortPassword) {
               setErrorMessage('shortPassword');
               return;
             }
+            if (!hasConsecutiveAlphaNumeric) {
+              setErrorMessage('hasConsecutiveAlphaNumeric');
+              return;
+            }
+            if (!hasUppercase) {
+              setErrorMessage('hasUpperCase');
+              return;
+            }
+            if (!hasNumber) {
+              setErrorMessage('hasNumber');
+              return;
+            }
+            if (!hasSpecial) {
+              setErrorMessage('hasSpecial');
+              return;
+            }
             if (passwordConfirm !== password) {
-              setErrorMessage('passwordValidationError');
+              setErrorMessage('errorPasswordConfirm');
+              return;
+            }
+            if (name === '') {
+              setErrorMessage('errorNameInput');
+              return;
+            }
+            if (!phoneNumber) {
+              setErrorMessage('errorPhoneNumberInput');
               return;
             }
 
@@ -198,7 +232,7 @@ export default function Signup() {
               <TextField
                 fullWidth
                 required
-                placeholder={t('password')}
+                placeholder={t('passwordPlaceholder')}
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 InputProps={{
@@ -250,7 +284,7 @@ export default function Signup() {
                   className={`font-bold ${interClassname.className}`}
                   color={colors.text}
                 >
-                  {`${t('passwordConfirm')} `}
+                  {`${t('confirmPassword')} `}
                 </Typography>
                 <Typography
                   component="span"
@@ -264,7 +298,7 @@ export default function Signup() {
               <TextField
                 fullWidth
                 required
-                placeholder={t('passwordConfirm')}
+                placeholder={t('passwordConfirmPlaceholder')}
                 type={showPasswordConfirm ? 'text' : 'password'}
                 name="passwordConfirm"
                 InputProps={{
@@ -336,7 +370,7 @@ export default function Signup() {
               <TextField
                 fullWidth
                 required
-                placeholder={t('name')}
+                placeholder={t('namePlaceholder')}
                 name="name"
                 sx={{
                   marginTop: '12px',
@@ -389,7 +423,7 @@ export default function Signup() {
               </Box>
               <TextField
                 fullWidth
-                placeholder={t('phoneNumber')}
+                placeholder={t('phoneNumberPlaceholder')}
                 name="phoneNumber"
                 inputMode="numeric"
                 type="tel"
