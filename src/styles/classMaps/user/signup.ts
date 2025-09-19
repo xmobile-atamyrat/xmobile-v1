@@ -2,15 +2,15 @@ export const signupClasses = {
   boxes: {
     page: {
       web: 'w-full h-full flex flex-col items-center p-0',
-      mobile: 'w-full h-full flex flex-col justify-center',
+      mobile: 'w-full h-full flex flex-col justify-start',
     },
     logo: {
       web: 'w-0',
-      mobile: 'w-[230px] h-[47px] mb-[68px]',
+      mobile: 'w-[250px]',
     },
     main: {
       web: 'w-[594px] h-[1138px] flex flex-col mt-[100px] items-center justify-center',
-      mobile: 'w-full flex flex-col items-center justify-center mt-[-100px]',
+      mobile: 'w-full flex flex-col items-center',
     },
     label: {
       web: 'flex mb-[80px]',
