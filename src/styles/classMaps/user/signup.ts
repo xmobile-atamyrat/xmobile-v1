@@ -63,4 +63,8 @@ export const signupClasses = {
     mobile:
       'flex  mb-[10px] mt-[-25px] justify-center text-[#838383] text-[14px]',
   },
+  tooltip: {
+    web: 'w-[330px] text-[13px]',
+    mobile: 'text-[11px]',
+  },
 };
