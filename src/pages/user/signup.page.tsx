@@ -1,9 +1,11 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { EmailCheck, PasswordCheck } from '@/pages/user/utils';
 import { signupClasses } from '@/styles/classMaps/user/signup';
 import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
   Button,
@@ -12,6 +14,7 @@ import {
   InputAdornment,
   Paper,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { User } from '@prisma/client';
@@ -38,6 +41,13 @@ export default function Signup() {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const t = useTranslations();
   const platform = usePlatform();
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const handleToggle = () => {
+    setTooltipOpen((prev) => !prev);
+  };
+  const handleClose = () => {
+    setTooltipOpen(false);
+  };
 
   return (
     <Box className={signupClasses.boxes.page[platform]}>
@@ -72,50 +82,20 @@ export default function Signup() {
             const formData = new FormData(event.currentTarget);
             const { name, email, password, passwordConfirm, phoneNumber } =
               Object.fromEntries(formData.entries());
-            const passw: string = password as string;
-            const hasNumber = /\d/.test(passw);
-            const hasUppercase = /[A-Z]/.test(passw);
-            const hasSpecial = /[^a-zA-Z0-9]/.test(passw);
-            const shortPassword = passw.length >= 8;
-            const hasConsecutiveLetters = /[a-zA-Z]{5,}/.test(passw);
-            const hasConsecutiveDigits = /\d{5,}/.test(passw);
 
-            const hasConsecutiveAlphaNumeric =
-              !hasConsecutiveLetters && !hasConsecutiveDigits;
-
-            if (email === '') {
-              setErrorMessage('errorEmailInput');
+            if (EmailCheck(String(email)) !== 'true') {
+              setErrorMessage(EmailCheck(String(email)));
               return;
             }
-            if (!String(email).includes('@') || !String(email).includes('.')) {
-              setErrorMessage('errorInvalidEmail');
-              return;
-            }
-            if (!shortPassword) {
-              setErrorMessage('shortPassword');
-              return;
-            }
-            if (!hasConsecutiveAlphaNumeric) {
-              setErrorMessage('hasConsecutiveAlphaNumeric');
-              return;
-            }
-            if (!hasUppercase) {
-              setErrorMessage('hasUpperCase');
-              return;
-            }
-            if (!hasNumber) {
-              setErrorMessage('hasNumber');
-              return;
-            }
-            if (!hasSpecial) {
-              setErrorMessage('hasSpecial');
+            if (PasswordCheck(String(password)) !== 'true') {
+              setErrorMessage(PasswordCheck(String(password)));
               return;
             }
             if (passwordConfirm !== password) {
               setErrorMessage('errorPasswordConfirm');
               return;
             }
-            if (name === '') {
+            if (!name) {
               setErrorMessage('errorNameInput');
               return;
             }
@@ -123,7 +103,6 @@ export default function Signup() {
               setErrorMessage('errorPhoneNumberInput');
               return;
             }
-
             try {
               const {
                 success,
@@ -133,7 +112,12 @@ export default function Signup() {
                 await fetch('/api/user/signup', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email, password, name, phoneNumber }),
+                  body: JSON.stringify({
+                    email,
+                    password,
+                    name,
+                    phoneNumber,
+                  }),
                 })
               ).json();
               if (message != null) {
@@ -238,6 +222,27 @@ export default function Signup() {
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
+                      <Tooltip
+                        title={
+                          <Box className={signupClasses.tooltip[platform]}>
+                            <Box>{t('passwordTooltip1')}</Box>
+                            <Box>{t('passwordTooltip2')}</Box>
+                            <Box>{t('passwordTooltip3')}</Box>
+                            <Box>{t('passwordTooltip4')}</Box>
+                            <Box>{t('passwordTooltip5')}</Box>
+                          </Box>
+                        }
+                        open={tooltipOpen}
+                        onClose={handleClose}
+                        disableFocusListener
+                        disableHoverListener
+                        disableTouchListener
+                        arrow
+                      >
+                        <IconButton onClick={handleToggle}>
+                          <InfoOutlinedIcon />
+                        </IconButton>
+                      </Tooltip>
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                       >
@@ -284,7 +289,7 @@ export default function Signup() {
                   className={`font-bold ${interClassname.className}`}
                   color={colors.text}
                 >
-                  {`${t('confirmPassword')} `}
+                  {t('confirmPassword')}
                 </Typography>
                 <Typography
                   component="span"
@@ -356,7 +361,7 @@ export default function Signup() {
                   className={`font-bold ${interClassname.className}`}
                   color={colors.text}
                 >
-                  {`${t('name')} `}
+                  {t('name')}
                 </Typography>
                 <Typography
                   component="span"
