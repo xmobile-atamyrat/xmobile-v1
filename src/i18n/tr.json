@@ -55,7 +55,7 @@
   "haveAccount": "Hesabınız var mı?",
   "phoneNumber": "Telefon numarası",
   "shortPassword": "Şifre en az 8 karakter olmalıdır",
-  "hasConsecutiveAlphaNumeric": "Şifrede art-arda gelen sayılar ya da harfler en fazla 4 tane olabilir.",
+  "hasConsecutiveAlphaNumeric": "Şifrede art-arda gelen sayılar ya da harfler en fazla 3 tane olabilir.",
   "hasUpperCase": "Şifreniz büyük harf içermelidir.",
   "hasdigit": "Şifreniz sayı içermelidir.",
   "hasSpecial": "Şifreniz özel karakter içermelidir.",

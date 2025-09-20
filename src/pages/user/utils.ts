@@ -1,4 +1,4 @@
-export function PasswordCheck(password: string) {
+export function passwordCheck(password: string) {
   const hasNumber = /\d/.test(password);
   const hasUppercase = /[A-Z]/.test(password);
   const hasSpecial = /[^a-zA-Z0-9]/.test(password);
@@ -24,11 +24,10 @@ export function PasswordCheck(password: string) {
   if (!hasSpecial) {
     return 'hasSpecial';
   }
-
-  return 'true';
+  return '';
 }
 
-export function EmailCheck(email: string): string {
+export function emailCheck(email: string): string {
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (email === '') {
     return 'errorEmailInput';
@@ -36,6 +35,5 @@ export function EmailCheck(email: string): string {
   if (!valid) {
     return 'errorInvalidEmail';
   }
-
-  return 'true';
+  return '';
 }

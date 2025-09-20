@@ -57,7 +57,7 @@
   "haveAccount": "Hasabyňyz barmy?",
   "phoneNumber": "Telefon belgiňiz",
   "shortPassword": "Parol iň azyndan 8 simwoldan durmaly",
-  "hasConsecutiveAlphaNumeric": "Parolyňyzda yzly-yzyna gelýän sanlaryň ýa-da harplaryň mukdary 4'den geçmeli däl.",
+  "hasConsecutiveAlphaNumeric": "Parolyňyzda yzly-yzyna gelýän sanlaryň ýa-da harplaryň mukdary 3'den geçmeli däl.",
   "hasUpperCase": "Parolyňyzda baş harp bolmalydyr.",
   "hasdigit": "Parolyňyzda san bolmalydyr.",
   "hasSpecial": "Parolyňyzda symwol bolmalydyr.",
