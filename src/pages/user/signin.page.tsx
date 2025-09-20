@@ -1,7 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { EmailCheck } from '@/pages/user/utils';
+import { emailCheck } from '@/pages/user/utils';
 import { signinClasses } from '@/styles/classMaps/user/signin';
 import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -71,8 +71,9 @@ export default function Signin() {
             const formData = new FormData(event.currentTarget);
             const { email, password } = Object.fromEntries(formData.entries());
 
-            if (EmailCheck(String(email))) {
-              setErrorMessage(EmailCheck(String(email)));
+            const emailMessage = emailCheck(String(email));
+            if (emailMessage) {
+              setErrorMessage(emailMessage);
               return;
             }
             if (!password) {

@@ -55,7 +55,7 @@
   "haveAccount": "Have an account?",
   "phoneNumber": "Phone number",
   "shortPassword": "Password must be at least 8 characters",
-  "hasConsecutiveAlphaNumeric": "Length of consecutive numbers or letters in password shouldn't be more than 4.",
+  "hasConsecutiveAlphaNumeric": "Length of consecutive numbers or letters in password shouldn't be more than 3.",
   "hasUpperCase": "Password should contain uppercase.",
   "hasNumber": "Password should contain number.",
   "hasSpecial": "Password should contain special character.",
