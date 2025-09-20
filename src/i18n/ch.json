@@ -57,7 +57,7 @@
   "haveAccount": "Akkaundyňyz barmy?",
   "phoneNumber": "Telefon nomeriňiz",
   "shortPassword": "Parolyňyzda iň azyndan 8-tä simwol bolmaly",
-  "hasConsecutiveAlphaNumeric": "Parolyňyzda yzly-yzyna geledron sanlaryň ýa-da harplaryň möçberi 4'den geçmeli emez.",
+  "hasConsecutiveAlphaNumeric": "Parolyňyzda yzly-yzyna geledron sanlaryň ýa-da harplaryň möçberi 3'den geçmeli emez.",
   "hasUpperCase": "Parolyňyzda kette harp koýuň.",
   "hasdigit": "Parolyňzyda san koýuň.",
   "hasSpecial": "Parolyňyzda simwol koýuň.",
