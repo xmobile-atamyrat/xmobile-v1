@@ -1,39 +1,34 @@
-export function passwordCheck(password: string) {
+export function passwordCheck(password: string): string {
   const hasNumber = /\d/.test(password);
   const hasUppercase = /[A-Z]/.test(password);
   const hasSpecial = /[^a-zA-Z0-9]/.test(password);
   const shortPassword = password.length >= 8;
-  const hasConsecutiveLetters = /[a-zA-Z]{4,}/.test(password);
-  const hasConsecutiveDigits = /\d{4,}/.test(password);
 
-  const hasConsecutiveAlphaNumeric =
-    !hasConsecutiveLetters && !hasConsecutiveDigits;
-
-  if (!shortPassword) {
-    return 'shortPassword';
-  }
-  if (!hasConsecutiveAlphaNumeric) {
-    return 'hasConsecutiveAlphaNumeric';
-  }
-  if (!hasUppercase) {
-    return 'hasUpperCase';
+  let error;
+  if (!hasSpecial) {
+    error = 'hasSpecial';
   }
   if (!hasNumber) {
-    return 'hasNumber';
+    error = 'hasdigit';
   }
-  if (!hasSpecial) {
-    return 'hasSpecial';
+  if (!hasUppercase) {
+    error = 'hasUpperCase';
   }
-  return '';
+  if (!shortPassword) {
+    error = 'shortPassword';
+  }
+
+  return error;
 }
 
 export function emailCheck(email: string): string {
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (email === '') {
-    return 'errorEmailInput';
-  }
+  let error;
   if (!valid) {
-    return 'errorInvalidEmail';
+    error = 'errorInvalidEmail';
   }
-  return '';
+  if (!email) {
+    error = 'errorEmailInput';
+  }
+  return error;
 }
