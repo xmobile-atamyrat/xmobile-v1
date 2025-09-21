@@ -57,7 +57,7 @@
   "shortPassword": "Password must be at least 8 characters",
   "hasConsecutiveAlphaNumeric": "Length of consecutive numbers or letters in password shouldn't be more than 3.",
   "hasUpperCase": "Password should contain uppercase.",
-  "hasNumber": "Password should contain number.",
+  "hasdigit": "Password should contain number.",
   "hasSpecial": "Password should contain special character.",
   "authError": "Authentication failed. Please, try again or contact us.",
   "add": "Add",
