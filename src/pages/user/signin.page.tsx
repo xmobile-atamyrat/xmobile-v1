@@ -1,6 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { emailCheck } from '@/pages/user/utils';
 import { signinClasses } from '@/styles/classMaps/user/signin';
 import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -45,7 +46,7 @@ export default function Signin() {
       <Box className={signinClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/xmobile_new_logo.png"
+          src="/black_logo.png"
           className={signinClasses.boxes.logo[platform]}
         />
         <Box className={signinClasses.boxes.label[platform]}>
@@ -70,41 +71,39 @@ export default function Signin() {
             const formData = new FormData(event.currentTarget);
             const { email, password } = Object.fromEntries(formData.entries());
 
-            if (email === '') {
-              setErrorMessage('errorEmailInput');
-            } else if (
-              !String(email).includes('@') ||
-              !String(email).includes('.')
-            ) {
-              setErrorMessage('errorInvalidEmail');
-            } else if (password === '') {
+            const emailMessage = emailCheck(String(email));
+            if (emailMessage) {
+              setErrorMessage(emailMessage);
+              return;
+            }
+            if (!password) {
               setErrorMessage('errorPasswordInput');
-            } else {
-              try {
-                const {
-                  success,
-                  data,
-                  message,
-                }: ResponseApi<{ accessToken: string; user: User }> = await (
-                  await fetch('/api/user/signin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password }),
-                  })
-                ).json();
-                if (message != null) {
-                  setErrorMessage(message);
-                } else if (success && data != null) {
-                  setUser(data.user);
-                  setAccessToken(data.accessToken);
-                  router.push('/');
-                }
-              } catch (error) {
-                if (error.name === 'JsonWebTokenError') {
-                  console.error((error as Error).message);
-                  setErrorMessage('authError');
-                } else setErrorMessage((error as Error).message);
+              return;
+            }
+            try {
+              const {
+                success,
+                data,
+                message,
+              }: ResponseApi<{ accessToken: string; user: User }> = await (
+                await fetch('/api/user/signin', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, password }),
+                })
+              ).json();
+              if (message != null) {
+                setErrorMessage(message);
+              } else if (success && data != null) {
+                setUser(data.user);
+                setAccessToken(data.accessToken);
+                router.push('/');
               }
+            } catch (error) {
+              if (error.name === 'JsonWebTokenError') {
+                console.error((error as Error).message);
+                setErrorMessage('authError');
+              } else setErrorMessage((error as Error).message);
             }
           }}
         >

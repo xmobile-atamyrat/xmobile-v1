@@ -6,7 +6,7 @@ export const signinClasses = {
     },
     main: {
       web: 'w-[594px] h-[691px] flex flex-col mt-[60px] mb-[221px] items-center p-0 justify-center',
-      mobile: 'w-full h-[80%] flex flex-col items-center justify-center',
+      mobile: 'w-full h-[80%] flex flex-col items-center mt-[auto]',
     },
     text: {
       web: 'w-[350px] flex flex-row justify-center items-center',
@@ -18,7 +18,7 @@ export const signinClasses = {
     },
     logo: {
       web: 'w-0',
-      mobile: 'w-[230px] h-[47px] mb-[58px]',
+      mobile: 'w-[250px]',
     },
     label: {
       web: 'flex mb-[80px]',
