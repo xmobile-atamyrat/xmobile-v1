@@ -230,7 +230,6 @@ export default function Signup() {
                             <Box>{t('passwordTooltip2')}</Box>
                             <Box>{t('passwordTooltip3')}</Box>
                             <Box>{t('passwordTooltip4')}</Box>
-                            <Box>{t('passwordTooltip5')}</Box>
                           </Box>
                         }
                         open={tooltipOpen}
