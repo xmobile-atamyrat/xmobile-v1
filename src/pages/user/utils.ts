@@ -9,7 +9,7 @@ export function passwordCheck(password: string): string {
     error = 'hasSpecial';
   }
   if (!hasNumber) {
-    error = 'hasdigit';
+    error = 'hasDigit';
   }
   if (!hasUppercase) {
     error = 'hasUpperCase';
