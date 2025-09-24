@@ -1,16 +1,31 @@
 import { Inter } from 'next/font/google';
 
 export const colors = {
-  text: '#1b1b1b',
+  text: {
+    web: '#303030',
+    mobile: '#221765',
+  },
   main: '#ff624c',
+  paperBackground: {
+    web: '#f4f4f4',
+    mobile: '#fff',
+  },
   border: {
     web: '#fff',
     mobile: '#e6e6e6',
   },
+  borderHover: {
+    web: '#ff624c',
+    mobile: '#554ba8',
+  },
   placeholder: '#838383',
-  buttonBackground: {
+  buttonHoverBg: {
     web: '#ec4d38',
-    mobile: '#1b1b1b',
+    mobile: '#000543',
+  },
+  buttonBg: {
+    web: '#ff624c',
+    mobile: '#110654',
   },
 };
 
