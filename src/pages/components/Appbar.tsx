@@ -310,7 +310,8 @@ export default function CustomAppBar({
                   onClick={() => router.push('/cart')}
                 >
                   <ShoppingCartCheckoutIcon
-                    className={`${appbarClasses.shoppingCCI[platform]} text-[${LOGO_COLOR}]`}
+                    className={appbarClasses.shoppingCCI[platform]}
+                    sx={{ color: LOGO_COLOR }}
                   />
                 </IconButton>
               </Box>

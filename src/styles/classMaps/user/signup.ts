@@ -6,7 +6,7 @@ export const signupClasses = {
     },
     logo: {
       web: 'w-0',
-      mobile: 'w-[250px]',
+      mobile: 'w-[230px] mb-[30px] mt-[60px]',
     },
     main: {
       web: 'w-[594px] h-[1138px] flex flex-col mt-[100px] items-center justify-center',
@@ -36,32 +36,31 @@ export const signupClasses = {
     },
   },
   paper: {
-    web: 'flex flex-col w-full h-[987px] rounded-[25px] bg-[#f4f4f4] px-[36px] pt-[48px] mb-[25px]',
-    mobile: 'flex flex-col w-[95%] h-[450px] rounded-[16px] p-2 gap-1 ',
+    web: `flex flex-col w-full h-[987px] rounded-[25px] px-[36px] pt-[48px] mb-[25px]`,
+    mobile: 'flex flex-col w-[95%] h-[450px] rounded-[16px] p-2 gap-1',
   },
   buttonSubmit: {
-    web: `normal-case bg-[#ff624c] font-bold w-[512px] min-h-[78px] text-[20px] leading-[30px] rounded-[10px] px-[179px] py-[24px]`,
-    mobile: `normal-case bg-[#1b1b1b] font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
+    web: `normal-case font-bold w-[512px] min-h-[78px] text-[20px] leading-[30px] rounded-[10px] px-[179px] py-[24px]`,
+    mobile: `normal-case font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
   },
-  buttonRedirect: 'normal-case px-2 text-[#000] font-bold text-[16px]',
+  buttonRedirect: 'normal-case px-2 text-[#1b1b1b] font-bold text-[16px]',
   link: {
-    web: 'absolute left-4 top-4 font-base text-[#222] font-light text-[36px] no-underline',
+    web: 'absolute left-4 top-4 font-base font-light text-[36px] no-underline',
     mobile:
-      'absolute left-4 top-4 font-base text-[#222] font-light text-[24px] no-underline',
+      'absolute left-4 top-4 font-base font-light text-[24px] no-underline',
   },
   label: {
     web: 'mb-[22px]  text-[20px] leading-[30px] tracking-[0]',
     mobile: '',
   },
   h3: {
-    web: 'font-bold text-[56px] text-[#303030] leading-[68px] tracking-[0]',
-    mobile: 'font-bold text-[24px] text-[#000] leading-[100%] tracking-[0]',
+    web: 'font-bold text-[56px] leading-[68px] tracking-[0]',
+    mobile: 'font-bold text-[24px] leading-[100%] tracking-[0]',
   },
   typography: 'normal-case text-[16px]',
   error: {
-    web: 'flex justify-end text-[16px] text-[#303030] mb-[30px] mt-[-35px]',
-    mobile:
-      'flex  mb-[10px] mt-[-25px] justify-center text-[#838383] text-[14px]',
+    web: 'flex justify-end text-[16px] mb-[30px] mt-[-35px]',
+    mobile: 'flex  mb-[10px] mt-[-25px] justify-center text-[14px]',
   },
   tooltip: {
     web: 'w-[330px] text-[13px]',
