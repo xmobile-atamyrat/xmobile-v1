@@ -41,16 +41,20 @@ export default function Signin() {
   return (
     <Box className={signinClasses.boxes.page[platform]}>
       <Link href="/">
-        <ArrowBackIos className={signinClasses.link[platform]}></ArrowBackIos>
+        <ArrowBackIos
+          className={`${signinClasses.link[platform]}`}
+          style={{ color: colors.text[platform] }}
+        ></ArrowBackIos>
       </Link>
       <Box className={signinClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/black_logo.png"
+          src="/xmobile-processed-logo.png"
           className={signinClasses.boxes.logo[platform]}
         />
         <Box className={signinClasses.boxes.label[platform]}>
           <Typography
+            color={colors.text[platform]}
             variant="h3"
             className={`${signinClasses.h3[platform]} ${interClassname.className}`}
           >
@@ -112,7 +116,7 @@ export default function Signin() {
               <Typography
                 component="span"
                 className={`font-bold ${interClassname.className}`}
-                color={colors.text}
+                color={colors.text[platform]}
               >
                 {`${t('email')} `}
               </Typography>
@@ -144,10 +148,10 @@ export default function Signin() {
                     borderColor: colors.border[platform],
                   },
                   '&:hover fieldset': {
-                    borderColor: colors.main,
+                    borderColor: colors.borderHover[platform],
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: colors.main,
+                    borderColor: colors.borderHover[platform],
                   },
                 },
                 '& .MuiInputBase-input': {
@@ -167,7 +171,7 @@ export default function Signin() {
               <Typography
                 component="span"
                 className={`font-bold ${interClassname.className}`}
-                color={colors.text}
+                color={colors.text[platform]}
               >
                 {`${t('password')} `}
               </Typography>
@@ -208,10 +212,10 @@ export default function Signin() {
                     borderColor: colors.border[platform],
                   },
                   '&:hover fieldset': {
-                    borderColor: colors.main,
+                    borderColor: colors.borderHover[platform],
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: colors.main,
+                    borderColor: colors.borderHover[platform],
                   },
                 },
                 '& .MuiInputBase-input': {
@@ -228,7 +232,8 @@ export default function Signin() {
           </Box>
           {errorMessage != null && (
             <Typography
-              className={`${signinClasses.error[platform]} ${interClassname.className}`}
+              color={colors.text[platform]}
+              className={`${signinClasses.error[platform]} ${interClassname.className} opacity-85`}
             >
               {t(errorMessage)}
             </Typography>
@@ -242,11 +247,12 @@ export default function Signin() {
                 type="submit"
                 className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
+                  backgroundColor: colors.buttonBg[platform],
                   '&:hover': {
-                    backgroundColor: colors.buttonBackground[platform],
+                    backgroundColor: colors.buttonHoverBg[platform],
                   },
                   '&:focus': {
-                    backgroundColor: colors.buttonBackground[platform],
+                    backgroundColor: colors.buttonHoverBg[platform],
                   },
                 }}
               >
