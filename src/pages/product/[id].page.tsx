@@ -209,7 +209,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (initialProduct == null) return;
+    if (initialProduct == null || accessToken == null) return;
     (async () => {
       setProduct(
         await computeProductPriceTags({
@@ -219,7 +219,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         }),
       );
     })();
-  }, [initialProduct]);
+  }, [initialProduct, accessToken]);
 
   return product ? (
     <Layout
