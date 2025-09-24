@@ -36,7 +36,7 @@ const withAuth = (
 ): NextApiHandler => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     if (
-      BYPASS_AUTH_PATHS.includes(req.url as string) &&
+      BYPASS_AUTH_PATHS.includes(req.url?.split('?')[0]) &&
       BYPASS_AUTH_METHODS.includes(req.method)
     ) {
       return handler(req, res);

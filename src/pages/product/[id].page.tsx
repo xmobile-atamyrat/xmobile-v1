@@ -209,7 +209,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, [product?.description, router.locale]);
 
   useEffect(() => {
-    if (initialProduct == null || accessToken == null) return;
+    // accessToken is intentionally left out as GET /api/prices and /api/prices/rate is public
+    if (initialProduct == null) return;
     (async () => {
       setProduct(
         await computeProductPriceTags({
@@ -219,7 +220,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         }),
       );
     })();
-  }, [initialProduct, accessToken]);
+    // No need to include accessToken as logged out users don't have a token
+  }, [initialProduct]);
 
   return product ? (
     <Layout
