@@ -108,15 +108,16 @@ export const getStaticProps: GetStaticProps = async ({
         product,
         messages,
       },
+      revalidate: 300, // regenerate static pages every 5 minutes
     };
   } catch (error) {
     console.error('Error fetching product during build:', error);
-
     return {
       props: {
         product: null,
         messages: null,
       },
+      revalidate: 300, // regenerate static pages every 5 minutes
     };
   }
 };
