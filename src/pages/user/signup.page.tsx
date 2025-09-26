@@ -52,16 +52,20 @@ export default function Signup() {
   return (
     <Box className={signupClasses.boxes.page[platform]}>
       <Link href="/">
-        <ArrowBackIos className={signupClasses.link[platform]}></ArrowBackIos>
+        <ArrowBackIos
+          className={signupClasses.link[platform]}
+          style={{ color: colors.text[platform] }}
+        ></ArrowBackIos>
       </Link>
       <Box className={signupClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/black_logo.png"
+          src="/xmobile-processed-logo.png"
           className={signupClasses.boxes.logo[platform]}
         />
         <Box className={signupClasses.boxes.label[platform]}>
           <Typography
+            color={colors.text[platform]}
             variant="h3"
             className={`${signupClasses.h3[platform]} ${interClassname.className}`}
           >
@@ -70,6 +74,9 @@ export default function Signup() {
         </Box>
         <Paper
           className={signupClasses.paper[platform]}
+          sx={{
+            backgroundColor: colors.paperBackground[platform],
+          }}
           elevation={0}
           square={false}
           component="form"
@@ -146,7 +153,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text}
+                  color={colors.text[platform]}
                 >
                   {`${t('email')} `}
                 </Typography>
@@ -178,10 +185,10 @@ export default function Signup() {
                       borderColor: colors.border[platform],
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                   },
                   '& .MuiInputBase-input': {
@@ -201,7 +208,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text}
+                  color={colors.text[platform]}
                 >
                   {`${t('password')} `}
                 </Typography>
@@ -264,10 +271,10 @@ export default function Signup() {
                       borderColor: colors.border[platform],
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                   },
                   '& .MuiInputBase-input': {
@@ -287,7 +294,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text}
+                  color={colors.text[platform]}
                 >
                   {t('confirmPassword')}
                 </Typography>
@@ -336,10 +343,10 @@ export default function Signup() {
                       borderColor: colors.border[platform],
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                   },
                   '& .MuiInputBase-input': {
@@ -359,7 +366,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text}
+                  color={colors.text[platform]}
                 >
                   {t('name')}
                 </Typography>
@@ -390,10 +397,10 @@ export default function Signup() {
                       borderColor: colors.border[platform],
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                   },
                   '& .MuiInputBase-input': {
@@ -413,7 +420,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text}
+                  color={colors.text[platform]}
                 >
                   {`${t('phoneNumber')} `}
                 </Typography>
@@ -445,10 +452,10 @@ export default function Signup() {
                       borderColor: colors.border[platform],
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
+                      borderColor: colors.borderHover[platform],
                     },
                   },
                   '& .MuiInputBase-input': {
@@ -468,8 +475,8 @@ export default function Signup() {
           <Box className={signupClasses.boxes.links[platform]}>
             {errorMessage != null && (
               <Typography
-                color="error"
-                className={`${signupClasses.error[platform]} ${interClassname.className} `}
+                color={colors.text[platform]}
+                className={`${signupClasses.error[platform]} ${interClassname.className} opacity-85`}
               >
                 {t(errorMessage)}
               </Typography>
@@ -482,11 +489,12 @@ export default function Signup() {
                 type="submit"
                 className={`${signupClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
+                  backgroundColor: colors.buttonBg[platform],
                   '&:hover': {
-                    backgroundColor: colors.buttonBackground[platform],
+                    backgroundColor: colors.buttonHoverBg[platform],
                   },
                   '&:focus': {
-                    backgroundColor: colors.buttonBackground[platform],
+                    backgroundColor: colors.buttonHoverBg[platform],
                   },
                 }}
               >
@@ -502,6 +510,7 @@ export default function Signup() {
               </Typography>
               <Button
                 className={`${interClassname.className} ${signupClasses.buttonRedirect}`}
+                sx={{ color: colors.text[platform] }}
                 onClick={() => router.push('/user/signin')}
               >
                 {t('signIn')}
