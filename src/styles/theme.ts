@@ -6,6 +6,10 @@ export const colors = {
     mobile: '#221765',
   },
   main: '#ff624c',
+  mainWebMobile: {
+    web: '#ff624c',
+    mobile: '#1b1b1b',
+  },
   paperBackground: {
     web: '#f4f4f4',
     mobile: '#fff',

@@ -17,7 +17,7 @@ export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
 export const drawerPaddingTopOffset = 2;
 
-export const MAIN_BG_COLOR = '#F8F9FA';
+export const MAIN_BG_COLOR = '#FFF';
 
 export const DEFAULT_MUI_COLOR = '#1976d2';
 
