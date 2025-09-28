@@ -9,6 +9,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
+import { colors, interClassname } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -22,7 +23,6 @@ import {
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
-import classNames from 'classnames';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useState } from 'react';
@@ -33,14 +33,12 @@ const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
-  cardClassName?: string;
   cartProps?: AddToCartProps;
 }
 
 export default function ProductCard({
   product: initialProduct,
   handleClickAddProduct,
-  cardClassName,
   cartProps,
 }: ProductCardProps) {
   const t = useTranslations();
@@ -101,14 +99,7 @@ export default function ProductCard({
   }, [initialProduct]);
 
   return (
-    <Card
-      // className={productCardClasses.card[platform]}
-      className={classNames(
-        productCardClasses.card[platform],
-        'border-[1px] px-2 py-2 relative',
-        cardClassName,
-      )}
-    >
+    <Card className={productCardClasses.card[platform]} elevation={0}>
       {product != null ? (
         <Box
           className={productCardClasses.boxes.main}
@@ -124,14 +115,17 @@ export default function ProductCard({
                   component="img"
                   image={imgUrl}
                   alt={product?.name}
-                  className={productCardClasses.cardMedia}
+                  className={productCardClasses.cardMedia[platform]}
                 />
               </Box>
             )}
             <Box>
+              <Typography></Typography>
+            </Box>
+            <Box>
               <Typography
                 gutterBottom
-                className={productCardClasses.typo[platform]}
+                className={`${productCardClasses.typo[platform]} ${interClassname.className}`}
                 component="div"
               >
                 {parseName(product.name, router.locale ?? 'tk').substring(
@@ -140,52 +134,19 @@ export default function ProductCard({
                 )}
               </Typography>
             </Box>
-            {/* hide description on cart page */}
-            {cartProps.cartAction === 'add' && (
-              <Box
-                className={`
-                  ${productCardClasses.boxes.addCard} 
-                  ${product.imgUrls[0] ? 'h-1/4' : 'h-3/5'}
-                `}
-              >
-                {parseName(product.description ?? '{}', router.locale ?? 'tk')
-                  ?.split('\n')
-                  ?.filter((desc) => {
-                    const trimmedDesc = desc.trim().split(']');
-                    return trimmedDesc.length > 1 && trimmedDesc[1] !== '';
-                  })
-                  ?.map((desc, index) => (
-                    <Typography
-                      key={`${desc}-${index}`}
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      {desc.replace('[', '').replace(']', ':')}
-                    </Typography>
-                  ))}
-              </Box>
-            )}
           </Box>
-          <Box className="flex items-end justify-between">
+          <Box className={productCardClasses.boxes.price}>
             {product?.price?.includes('[') ? (
               <CircularProgress
                 className={productCardClasses.circProgress[platform]}
               />
             ) : (
-              <Typography className={productCardClasses.typo2[platform]}>
+              <Typography
+                color={colors.mainWebMobile[platform]}
+                className={`${productCardClasses.typo2[platform]} ${interClassname.className}`}
+              >
                 {product?.price} {t('manat')}
               </Typography>
-            )}
-            {cartProps.cartAction === 'add' && (
-              <Box onClick={(e) => e.stopPropagation()}>
-                <AddToCart
-                  productId={product.id}
-                  cartAction={cartProps?.cartAction}
-                  quantity={cartProps?.quantity}
-                  cartItemId={cartProps?.cartItemId}
-                  onDelete={cartProps?.onDelete}
-                />
-              </Box>
             )}
           </Box>
           {cartProps.cartAction === 'delete' && (
