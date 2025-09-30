@@ -151,7 +151,7 @@ export default function Products() {
       >
         <Box className="flex flex-col w-full h-full">
           <SimpleBreadcrumbs />
-          <Box className="flex flex-wrap gap-4 w-full p-3">
+          <Box className="flex flex-wrap w-full">
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
               selectedCategoryId != null && (
                 <ProductCard
