@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import IconGroup from '@/pages/components/IconGroup';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
@@ -22,10 +23,10 @@ import {
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Product } from '@prisma/client';
+import { CartItem, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 
 // use lazy() to not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
@@ -47,11 +48,41 @@ export default function ProductCard({
   const [imgUrl, setImgUrl] = useState<string | null>();
   const [product, setProduct] = useState(initialProduct);
   const { network } = useNetworkContext();
-  const { createAbortController, clearAbortController } =
-    useAbortControllerContext();
-  const { accessToken } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const { createAbortController, clearAbortController } =
+    useAbortControllerContext();
+  const [cartItems, setCartItems] = useState<
+    (CartItem & { product: Product })[]
+  >([]);
+  const cartItem = useMemo(
+    () =>
+      product
+        ? cartItems.find((item) => item.productId === product.id)
+        : undefined,
+    [cartItems, product],
+  );
+
+  const fetchCartItems = async () => {
+    try {
+      const { success, data, message } = await fetchWithCreds<
+        (CartItem & { product: Product })[]
+      >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
+
+      if (success) {
+        setCartItems(data);
+      } else {
+        console.error(message);
+      }
+    } catch (error) {
+      console.error('Error fetching cart data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCartItems();
+  }, [user]);
 
   useEffect(() => {
     const abortController = createAbortController();
@@ -99,7 +130,10 @@ export default function ProductCard({
   }, [initialProduct]);
 
   return (
-    <Card className={productCardClasses.card[platform]} elevation={0}>
+    <Card
+      className={`${productCardClasses.card[platform]} group`}
+      elevation={0}
+    >
       {product != null ? (
         <Box
           className={productCardClasses.boxes.main}
@@ -108,47 +142,72 @@ export default function ProductCard({
             router.push(`/product/${product.id}`);
           }}
         >
-          {imgUrl != null && (
-            <Box className={productCardClasses.boxes.img[platform]}>
-              <CardMedia
-                component="img"
-                image={imgUrl}
-                alt={product?.name}
-                className={productCardClasses.cardMedia[platform]}
-              />
-            </Box>
-          )}
-          <Box className={productCardClasses.boxes.detail[platform]}>
-            <Typography
-              gutterBottom
-              className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
-            >
-              {parseName(product.name, router.locale ?? 'tk').substring(0, 24)}
-            </Typography>
-            {product?.price?.includes('[') ? (
-              <CircularProgress
-                className={productCardClasses.circProgress[platform]}
-              />
-            ) : (
+          <Box>
+            {imgUrl != null && (
+              <Box className={productCardClasses.boxes.img[platform]}>
+                <CardMedia
+                  component="img"
+                  image={imgUrl}
+                  alt={product?.name}
+                  className={productCardClasses.cardMedia[platform]}
+                />
+                {router.pathname === '/product' && (
+                  <IconGroup
+                    product={product}
+                    inCart={!!cartItem}
+                    cartItemId={cartItem?.id}
+                    onCartChange={fetchCartItems}
+                  />
+                )}
+              </Box>
+            )}
+            <Box>
               <Typography
-                color={colors.mainWebMobile[platform]}
-                className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                gutterBottom
+                className={`${productCardClasses.typo[platform]} ${interClassname.className}`}
+                component="div"
               >
-                {product?.price} {t('manat')}
+                {parseName(product.name, router.locale ?? 'tk').substring(
+                  0,
+                  24,
+                )}
               </Typography>
+            </Box>
+            <Box className={productCardClasses.boxes.detail[platform]}>
+              <Typography
+                gutterBottom
+                className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
+              >
+                {parseName(product.name, router.locale ?? 'tk').substring(
+                  0,
+                  24,
+                )}
+              </Typography>
+              {product?.price?.includes('[') ? (
+                <CircularProgress
+                  className={productCardClasses.circProgress[platform]}
+                />
+              ) : (
+                <Typography
+                  color={colors.mainWebMobile[platform]}
+                  className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                >
+                  {product?.price} {t('manat')}
+                </Typography>
+              )}
+            </Box>
+            {cartProps.cartAction === 'delete' && (
+              <Box onClick={(e) => e.stopPropagation()}>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  onDelete={cartProps?.onDelete}
+                />
+              </Box>
             )}
           </Box>
-          {cartProps.cartAction === 'delete' && (
-            <Box onClick={(e) => e.stopPropagation()}>
-              <AddToCart
-                productId={product.id}
-                cartAction={cartProps?.cartAction}
-                quantity={cartProps?.quantity}
-                cartItemId={cartProps?.cartItemId}
-                onDelete={cartProps?.onDelete}
-              />
-            </Box>
-          )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">
