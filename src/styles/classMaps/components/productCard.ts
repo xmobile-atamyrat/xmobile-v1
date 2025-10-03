@@ -15,6 +15,8 @@ export const productCardClasses = {
       mobile:
         'flex w-full h-[241px] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
+    icons:
+      'flex w-[50px] h-[50px] bg-white rounded-full border-[1px] border-[#ff624c] items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 mx-[10px]',
   },
   typo: {
     web: 'text-[20px] font-[600] leading-[30px]',
@@ -37,5 +39,15 @@ export const productCardClasses = {
   cardMedia: {
     web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
     mobile: 'w-auto h-[65%]',
+  },
+  iconGroup: {
+    web: 'flex flex-row h-[50px] w-[190px] justify-center mt-[15px]',
+    mobile: 'hidden',
+  },
+  icons: 'w-[20px] h-[20px] text-[#ff624c] ',
+  favIconMobile: {
+    web: 'hidden',
+    mobile:
+      'gap-[8px] w-[32px] h-[32px] rounded-[16px] bg-[#f5f5f5] justify-center items-center ml-auto mr-[13px] flex',
   },
 };

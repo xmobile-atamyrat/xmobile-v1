@@ -163,5 +163,7 @@
   "addToBase": "Tabana ekle",
   "alreadyExistsConcat": "Var!",
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
-  "category": "Kategori"
+  "category": "Kategori",
+  "shareFailed": "Beklenmedik hata oluştu.",
+  "linkCopied": "Bağlantı kopyalandı."
 }
