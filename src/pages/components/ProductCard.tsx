@@ -11,9 +11,6 @@ import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import { colors, interClassname } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
-import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import {
   Box,
   Card,
@@ -114,35 +111,12 @@ export default function ProductCard({
           <Box>
             {imgUrl != null && (
               <Box className={productCardClasses.boxes.img[platform]}>
-                <Box className="gap-[8px] w-[32px] h-[32px] rounded-[16px] bg-[#f5f5f5] justify-center items-center ml-auto mr-[13px] flex">
-                  <FavoriteBorderOutlinedIcon className="w-[13px] text-[#1b1b1b]" />
-                </Box>
                 <CardMedia
                   component="img"
                   image={imgUrl}
                   alt={product?.name}
                   className={productCardClasses.cardMedia[platform]}
                 />
-                {router.pathname === '/product' && (
-                  <Box className={productCardClasses.iconGroup[platform]}>
-                    {/* Cart Button */}
-                    <Box className={productCardClasses.boxes.icons}>
-                      <ShoppingCartOutlinedIcon
-                        className={productCardClasses.icons}
-                      />
-                    </Box>
-                    {/* Like Button */}
-                    <Box className={productCardClasses.boxes.icons}>
-                      <FavoriteBorderOutlinedIcon
-                        className={productCardClasses.icons}
-                      />
-                    </Box>
-                    {/* Share Button */}
-                    <Box className={productCardClasses.boxes.icons}>
-                      <ShareOutlinedIcon className={productCardClasses.icons} />
-                    </Box>
-                  </Box>
-                )}
               </Box>
             )}
             <Box>
