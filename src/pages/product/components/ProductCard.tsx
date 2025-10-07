@@ -1,6 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import IconGroup from '@/pages/components/IconGroup';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
+import { useCartState } from '@/pages/lib/CartContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -8,6 +8,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import IconGroup from '@/pages/product/components/IconGroup';
 import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import { colors, interClassname } from '@/styles/theme';
@@ -35,6 +36,7 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  cartItems?: CartItem[];
 }
 
 export default function ProductCard({
@@ -48,14 +50,12 @@ export default function ProductCard({
   const [imgUrl, setImgUrl] = useState<string | null>();
   const [product, setProduct] = useState(initialProduct);
   const { network } = useNetworkContext();
-  const { user, accessToken } = useUserContext();
+  const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
-  const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
-  >([]);
+  const { cartItems } = useCartState();
   const cartItem = useMemo(
     () =>
       product
@@ -63,26 +63,6 @@ export default function ProductCard({
         : undefined,
     [cartItems, product],
   );
-
-  const fetchCartItems = async () => {
-    try {
-      const { success, data, message } = await fetchWithCreds<
-        (CartItem & { product: Product })[]
-      >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
-
-      if (success) {
-        setCartItems(data);
-      } else {
-        console.error(message);
-      }
-    } catch (error) {
-      console.error('Error fetching cart data:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchCartItems();
-  }, [user]);
 
   useEffect(() => {
     const abortController = createAbortController();
@@ -156,7 +136,6 @@ export default function ProductCard({
                     product={product}
                     inCart={!!cartItem}
                     cartItemId={cartItem?.id}
-                    onCartChange={fetchCartItems}
                   />
                 )}
               </Box>
