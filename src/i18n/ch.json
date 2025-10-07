@@ -166,6 +166,7 @@
   "alreadyExistsConcat": "Barha!",
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
   "category": "Kategoriýa",
-  "shareFailed": "Karaşylmadyk problema döredi.",
-  "linkCopied": "Ssylka kopýalandy."
+  "genericError": "Karaşylmadyk problema döredi.",
+  "linkCopied": "Ssylka kopýalandy.",
+  "pleaseWait": "Haýyş 5 sekunt karaşyň."
 }

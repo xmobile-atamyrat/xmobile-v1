@@ -164,6 +164,7 @@
   "alreadyExistsConcat": "Var!",
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
   "category": "Kategori",
-  "shareFailed": "Beklenmedik hata oluştu.",
-  "linkCopied": "Bağlantı kopyalandı."
+  "genericError": "Beklenmedik hata oluştu.",
+  "linkCopied": "Bağlantı kopyalandı.",
+  "pleaseWait": "Lütfen 5 saniye bekleyiniz."
 }

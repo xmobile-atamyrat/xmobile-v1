@@ -1,4 +1,5 @@
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
+import { CartProvider } from '@/pages/lib/CartContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
@@ -21,23 +22,25 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
-            <CategoryContextProvider>
-              <ProductContextProvider>
-                <PrevProductContextProvider>
-                  <DollarRateContextProvider>
-                    <PlatformContextProvider>
-                      <NextIntlClientProvider
-                        locale={router.locale}
-                        timeZone="Asia/Ashgabat"
-                        messages={pageProps.messages}
-                      >
-                        <Component {...pageProps} />
-                      </NextIntlClientProvider>
-                    </PlatformContextProvider>
-                  </DollarRateContextProvider>
-                </PrevProductContextProvider>
-              </ProductContextProvider>
-            </CategoryContextProvider>
+            <CartProvider>
+              <CategoryContextProvider>
+                <ProductContextProvider>
+                  <PrevProductContextProvider>
+                    <DollarRateContextProvider>
+                      <PlatformContextProvider>
+                        <NextIntlClientProvider
+                          locale={router.locale}
+                          timeZone="Asia/Ashgabat"
+                          messages={pageProps.messages}
+                        >
+                          <Component {...pageProps} />
+                        </NextIntlClientProvider>
+                      </PlatformContextProvider>
+                    </DollarRateContextProvider>
+                  </PrevProductContextProvider>
+                </ProductContextProvider>
+              </CategoryContextProvider>
+            </CartProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>
       </NetworkContextProvider>

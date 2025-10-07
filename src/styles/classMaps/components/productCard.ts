@@ -16,7 +16,9 @@ export const productCardClasses = {
         'flex w-full h-[241px] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
     icons:
-      'flex w-[50px] h-[50px] bg-white rounded-full border-[1px] border-[#ff624c] items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 mx-[10px]',
+      'flex w-[50px] h-[50px] bg-white rounded-full border-[1px] border-[#ff624c] items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-100 mx-[10px]',
+    iconsInCart:
+      'opacity-100 bg-[#ff624c] text-[#fff] w-[50px] h-[50px] hover:bg-[#ee513b] mx-[10px]',
   },
   typo: {
     web: 'text-[20px] font-[600] leading-[30px]',
@@ -45,6 +47,7 @@ export const productCardClasses = {
     mobile: 'hidden',
   },
   icons: 'w-[20px] h-[20px] text-[#ff624c] ',
+  iconsInCart: 'text-[#fff] w-[20px] h-[20px]',
   favIconMobile: {
     web: 'hidden',
     mobile:
