@@ -11,8 +11,6 @@ export const productCardClasses = {
       mobile:
         'flex flex-col w-[182px] h-[241px] border-[1px] border-[#f2f2f2] rounded-[8px] justify-center items-center',
     },
-    icons:
-      'flex w-[50px] h-[50px] bg-white rounded-full border border-[#ff624c] items-center justify-center',
   },
   typo: {
     web: 'text-[20px] mt-[10px] font-[600] leading-[30px]',
@@ -33,12 +31,7 @@ export const productCardClasses = {
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[160px] w-auto p-0 mt-[24px] rounded-[5px] justify-center',
+    web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
     mobile: 'h-[180px] w-[120px] mt-[10px]',
   },
-  iconGroup: {
-    web: 'flex flex-row h-[50px] w-[190px] justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-[15px]',
-    mobile: 'hidden',
-  },
-  icons: 'w-[20px] h-[20px] text-[#ff624c]',
 };
