@@ -1,25 +1,29 @@
 export const productCardClasses = {
   card: {
-    web: 'w-[280px] h-auto border-[1px] rounded-[10px] px-2 py-2 relative border-[#f0f0f0] hover:border-[#30303040] group relative mx-[5px] my-[15px]',
-    mobile: 'w-[182px] h-[300px] gap-[8px] rounded-[12px] ml-[5px]',
+    web: 'w-[280px] min-h-[427px] border-[1px] rounded-[10px] px-2 py-2 border-[#f0f0f0] hover:border-[#30303040] mx-[8px] my-[15px]',
+    mobile: 'w-[42%] min-h-[241px] gap-[8px] mx-[8px] my-[8px]',
   },
   boxes: {
-    main: 'relative h-full w-full flex flex-col justify-between',
-    price: 'flex justify-between',
-    img: {
-      web: 'flex flex-col justify-center h-[315px] bg-[#f4f4f4] items-center',
+    main: 'relative h-full w-full flex flex-col',
+    detail: {
+      web: 'flex flex-col justify-start min-h-[60px] mb-[16px]',
       mobile:
-        'flex flex-col w-[182px] h-[241px] border-[1px] border-[#f2f2f2] rounded-[8px] justify-center items-center',
+        'flex flex-col justify-start h-[40px] mt-[8px] mb-[20px] gap-[4px]',
+    },
+    img: {
+      web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
+      mobile:
+        'flex w-full h-[241px] border-[1px] border-[#f2f2f2] rounded-[8px] justify-center items-center',
     },
   },
   typo: {
-    web: 'text-[20px] mt-[10px] font-[600] leading-[30px]',
-    mobile: 'text-[12px] font-[500] mt-[8px] text-[#1b1b1b] ml-[5px]',
+    web: 'text-[20px] font-[600] leading-[30px]',
+    mobile: 'text-[12px] font-medium text-[#1b1b1b] my-[2px]',
   },
   typo2: {
     web: 'font-[600] text-[24px] leading-[30px]',
     mobile:
-      'font-[500] text-[14px] leading-[100%] tracking-0 mb-[10px] text-[#1b1b1b] ml-[5px]',
+      'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b] my-[2px]',
   },
   typo3: {
     web: 'flex justify-center text-center text-xl font-medium',
@@ -32,6 +36,6 @@ export const productCardClasses = {
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
     web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
-    mobile: 'h-[180px] w-[120px] mt-[10px]',
+    mobile: 'w-[70%] h-[65%] object-cover',
   },
 };

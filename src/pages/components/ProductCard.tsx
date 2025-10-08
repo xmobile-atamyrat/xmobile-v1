@@ -108,31 +108,23 @@ export default function ProductCard({
             router.push(`/product/${product.id}`);
           }}
         >
-          <Box>
-            {imgUrl != null && (
-              <Box className={productCardClasses.boxes.img[platform]}>
-                <CardMedia
-                  component="img"
-                  image={imgUrl}
-                  alt={product?.name}
-                  className={productCardClasses.cardMedia[platform]}
-                />
-              </Box>
-            )}
-            <Box>
-              <Typography
-                gutterBottom
-                className={`${productCardClasses.typo[platform]} ${interClassname.className}`}
-                component="div"
-              >
-                {parseName(product.name, router.locale ?? 'tk').substring(
-                  0,
-                  24,
-                )}
-              </Typography>
+          {imgUrl != null && (
+            <Box className={productCardClasses.boxes.img[platform]}>
+              <CardMedia
+                component="img"
+                image={imgUrl}
+                alt={product?.name}
+                className={productCardClasses.cardMedia[platform]}
+              />
             </Box>
-          </Box>
-          <Box className={productCardClasses.boxes.price}>
+          )}
+          <Box className={productCardClasses.boxes.detail[platform]}>
+            <Typography
+              gutterBottom
+              className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
+            >
+              {parseName(product.name, router.locale ?? 'tk').substring(0, 24)}
+            </Typography>
             {product?.price?.includes('[') ? (
               <CircularProgress
                 className={productCardClasses.circProgress[platform]}
@@ -140,7 +132,7 @@ export default function ProductCard({
             ) : (
               <Typography
                 color={colors.mainWebMobile[platform]}
-                className={`${productCardClasses.typo2[platform]} ${interClassname.className}`}
+                className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
               >
                 {product?.price} {t('manat')}
               </Typography>
