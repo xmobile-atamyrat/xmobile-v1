@@ -27,9 +27,7 @@ export default async function handler(
       });
 
       if (!user) {
-        console.error(
-          `${filepath}: user not found. email: ${email}, password: ${password}`,
-        );
+        console.error(`${filepath}: user not found. email: ${email}`);
         return res
           .status(400)
           .json({ success: false, message: 'userNotFound' });
@@ -37,9 +35,7 @@ export default async function handler(
 
       const isPasswordCorrect = await bcrypt.compare(password, user.password);
       if (!isPasswordCorrect) {
-        console.error(
-          `${filepath}: password incorrect. email: ${email}, password: ${password}`,
-        );
+        console.error(`${filepath}: password incorrect. email: ${email}`);
         return res
           .status(400)
           .json({ success: false, message: 'passwordIncorrect' });
