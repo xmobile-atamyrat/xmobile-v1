@@ -49,7 +49,12 @@ export default function Products() {
 
   useEffect(() => {
     if (selectedCategoryId == null) {
-      router.push('/');
+      // TODO: navigating with router.push messes up styles
+      // Need to figure out why it's happening only here.
+      // Other router navigations like /cart don't break the styles.
+      // router.push('/');
+      window.location.href = '/';
+      return;
     }
 
     setProducts([]);
