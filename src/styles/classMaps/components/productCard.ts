@@ -4,14 +4,14 @@ export const productCardClasses = {
     mobile: 'w-[42%] min-h-[241px] gap-[8px] mx-[8px] my-[8px]',
   },
   boxes: {
-    main: 'relative h-full w-full flex flex-col',
+    main: 'relative h-full w-full flex flex justify-center',
     detail: {
       web: 'flex flex-col justify-start min-h-[60px] mb-[16px]',
       mobile:
         'flex flex-col justify-start min-h-[40px] mt-[8px] mb-[20px] gap-[4px]',
     },
     img: {
-      web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
+      web: 'flex flex-col justify-center h-[315px] w-[232.84px] bg-[#f4f4f4] items-center p-0 mb-[16px] rounded-[5px]',
       mobile:
         'flex w-full h-[241px] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },

@@ -153,15 +153,6 @@ export default function ProductCard({
               </Typography>
             </Box>
             <Box className={productCardClasses.boxes.detail[platform]}>
-              <Typography
-                gutterBottom
-                className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
-              >
-                {parseName(product.name, router.locale ?? 'tk').substring(
-                  0,
-                  24,
-                )}
-              </Typography>
               {product?.price?.includes('[') ? (
                 <CircularProgress
                   className={productCardClasses.circProgress[platform]}
