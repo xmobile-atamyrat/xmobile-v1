@@ -1,13 +1,14 @@
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Layout from '@/pages/components/Layout';
-import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
+import { useCartState } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import ProductCard from '@/pages/product/components/ProductCard';
 import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
 import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
@@ -46,6 +47,7 @@ export default function Products() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
   const router = useRouter();
+  const { cartItems } = useCartState();
 
   useEffect(() => {
     if (selectedCategoryId == null) {
@@ -170,6 +172,7 @@ export default function Products() {
                   product={product}
                   key={idx}
                   cartProps={{ cartAction: 'add' }}
+                  cartItems={cartItems}
                 />
               ))}
           </Box>

@@ -1,8 +1,8 @@
 import Layout from '@/pages/components/Layout';
-import ProductCard from '@/pages/components/ProductCard';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import ProductCard from '@/pages/product/components/ProductCard';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import HomeIcon from '@mui/icons-material/Home';
 import {

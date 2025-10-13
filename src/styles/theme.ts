@@ -48,3 +48,7 @@ export const units = {
     mobile: '14px',
   },
 };
+
+export const borders = {
+  onePxRed: '1px solid #ff624c',
+};

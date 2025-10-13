@@ -165,5 +165,8 @@
   "addToBase": "BASG goşuň",
   "alreadyExistsConcat": "Barha!",
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
-  "category": "Kategoriýa"
+  "category": "Kategoriýa",
+  "genericError": "Garaşylmadyk näsazlyk döredi.",
+  "linkCopied": "Salgy göçürildi.",
+  "pleaseWait": "Haýyş 5 sekunt garaşyň."
 }
