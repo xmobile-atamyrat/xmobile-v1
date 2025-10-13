@@ -8,22 +8,22 @@ export const productCardClasses = {
     detail: {
       web: 'flex flex-col justify-start min-h-[60px] mb-[16px]',
       mobile:
-        'flex flex-col justify-start h-[40px] mt-[8px] mb-[20px] gap-[4px]',
+        'flex flex-col justify-start min-h-[40px] mt-[8px] mb-[20px] gap-[4px]',
     },
     img: {
       web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
       mobile:
-        'flex w-full h-[241px] border-[1px] border-[#f2f2f2] rounded-[8px] justify-center items-center',
+        'flex w-full h-[241px] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
   },
   typo: {
     web: 'text-[20px] font-[600] leading-[30px]',
-    mobile: 'text-[12px] font-medium text-[#1b1b1b] my-[2px]',
+    mobile: 'text-[14px] font-medium text-[#1b1b1b] my-[2px]',
   },
   typo2: {
     web: 'font-[600] text-[24px] leading-[30px]',
     mobile:
-      'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b] my-[2px]',
+      'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b]',
   },
   typo3: {
     web: 'flex justify-center text-center text-xl font-medium',
@@ -36,6 +36,6 @@ export const productCardClasses = {
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
     web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
-    mobile: 'w-[70%] h-[65%] object-cover',
+    mobile: 'w-auto h-[65%]',
   },
 };
