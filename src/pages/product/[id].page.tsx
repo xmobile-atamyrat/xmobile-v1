@@ -406,7 +406,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           <Typography
             className={`${interClassname.className} ${detailPageClasses.specs[platform]}`}
           >
-            Specification
+            {t('specification')}
           </Typography>
           <Box className={detailPageClasses.detail.specs[platform]}>
             {Object.keys(description ?? {})
