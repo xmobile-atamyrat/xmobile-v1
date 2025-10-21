@@ -40,16 +40,16 @@ export const detailPageClasses = {
       mobile: 'font-bold text-[4.2vw] flex items-center capitalize',
     },
     font: {
-      web: 'text-[1vw]',
+      web: 'text-[1.05vw]',
       mobile: 'text-base',
     },
     font2: {
-      web: 'text-[1vw] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
+      web: 'text-[1.05vw] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
       mobile:
         'text-[clamp(2vw,_3vw,_13px)] font-regular leading-[20px] tracking-normal opacity-[40%]',
     },
     desc: {
-      web: 'text-[1vw] leading-[30px] font-semibold text-[#303030]',
+      web: 'text-[1.05vw] leading-[30px] font-semibold text-[#303030]',
       mobile:
         'font-bold text-[clamp(2vw,_3vw,_13px)] leading-[20px] tracking-normal opacity-[40%]',
     },
@@ -64,15 +64,15 @@ export const detailPageClasses = {
       'text-[#1c1b1b] font-medium text-[clamp(3vw,_4.67vw,_20px)] leading-[25px] tracking-normal gap-[2px]',
   },
   cardMedia: {
-    web: 'max-w-[27vw] h-[20.8vw]',
-    mobile: 'h-[70vw] w-auto',
+    web: 'h-[20.8vw] object-contain',
+    mobile: 'h-[70vw] object-contain',
   },
   list: {
     web: 'p-0 pb-10',
     mobile: 'hidden',
   },
   specs: {
-    web: 'text-[2.1vw] font-semibold text-[#303030] leading-[30px] tracking-normal my-[4.1vw]',
+    web: 'text-[2.4vw] font-semibold text-[#303030] leading-[30px] tracking-normal my-[4.1vw]',
     mobile: 'hidden',
   },
   divider: {
@@ -94,7 +94,7 @@ export const detailPageClasses = {
     },
     val: {
       web: 'flex flex-col max-w-[23.4vw]',
-      mobile: 'w-[20vw]',
+      mobile: 'max-w-[50vw]',
     },
     name: {
       web: '',

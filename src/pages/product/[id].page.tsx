@@ -332,7 +332,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 const end = words.slice(-2).join(' ');
                 return (
                   <ListItem key={index} className="p-0">
-                    <FiberManualRecordIcon className="w-[16px] h-[16px] text-[#ff624c]" />
+                    <FiberManualRecordIcon className="w-[1.1vw] h-[1.1vw] text-[#ff624c]" />
                     <ListItemText
                       sx={{ pl: 1 }}
                       primary={
