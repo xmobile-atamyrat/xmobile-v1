@@ -23,7 +23,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
-import { colors, interClassname, units } from '@/styles/theme';
+import { colors, interClassname } from '@/styles/theme';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -35,6 +35,7 @@ import {
   CardMedia,
   Divider,
   IconButton,
+  Link,
   List,
   ListItem,
   ListItemText,
@@ -45,7 +46,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import type { Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
@@ -306,6 +306,31 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             >
               {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
             </Typography>
+            {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) &&
+              platform === 'web' && (
+                <Box className={detailPageClasses.boxes.video}>
+                  {product.videoUrls.map(
+                    (videoUrl, index) =>
+                      videoUrl.length !== 0 && (
+                        <Link
+                          key={index}
+                          target="_blank"
+                          href={videoUrl}
+                          className={detailPageClasses.link[platform]}
+                        >
+                          <IconButton>
+                            {(() => {
+                              if (index === 0) return <TikTokIcon />;
+                              if (index === 1)
+                                return <InstagramIcon className="text-black" />;
+                              return <YouTubeIcon className="text-black" />;
+                            })()}
+                          </IconButton>
+                        </Link>
+                      ),
+                  )}
+                </Box>
+              )}
           </Box>
           <Divider className={detailPageClasses.divider[platform]} />
           <Box className="w-[24.3vw] h-auto my-4 flex">
@@ -359,43 +384,39 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </List>
           )}
 
-          {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) &&
-            platform === 'web' && (
-              <Box>
-                <Typography
-                  className={detailPageClasses.typographs.desc[platform]}
-                >{`${t('productVideo')}:`}</Typography>
-                <Box className={detailPageClasses.boxes.video[platform]}>
-                  {product.videoUrls.map(
-                    (videoUrl, index) =>
-                      videoUrl.length !== 0 && (
-                        <Link
+          {description && Object.keys(description).length > 0 && (
+            <Box className={detailPageClasses.boxes.detailSide[platform]}>
+              {Object.keys(description ?? {})
+                .filter((key) => {
+                  const line = description[key];
+                  if (!line || line.length === 0) return false;
+                  const long = line.some((descLine) => descLine.length > 35);
+                  return !long;
+                })
+                .slice(0, 3)
+                .map((key) => (
+                  <Box key={key} className={detailPageClasses.detailSide.part}>
+                    <Box className={detailPageClasses.detailSide.head}>
+                      <Typography
+                        className={`${detailPageClasses.detailSide.desc} ${interClassname.className}`}
+                      >
+                        {key}
+                      </Typography>
+                    </Box>
+                    <Box className={detailPageClasses.detailSide.val}>
+                      {description[key].map((descLine, index) => (
+                        <Typography
                           key={index}
-                          target="_blank"
-                          href={videoUrl}
-                          className={detailPageClasses.link[platform]}
+                          className={`${detailPageClasses.detailSide.font2} ${interClassname.className}`}
                         >
-                          <IconButton>
-                            {(() => {
-                              if (index === 0) return <TikTokIcon />;
-                              if (index === 1)
-                                return <InstagramIcon className="text-black" />;
-                              return <YouTubeIcon className="text-black" />;
-                            })()}
-                          </IconButton>
-                          <Typography fontSize={units.inputFontSize[platform]}>
-                            {(() => {
-                              if (index === 0) return 'TikTok';
-                              if (index === 1) return 'Instagram';
-                              return 'Youtube';
-                            })()}
-                          </Typography>
-                        </Link>
-                      ),
-                  )}
-                </Box>
-              </Box>
-            )}
+                          {descLine}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                ))}
+            </Box>
+          )}
           {user && platform === 'web' && (
             <AddToCart productId={product.id} cartAction="detail" />
           )}
