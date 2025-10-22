@@ -6,7 +6,7 @@ export const detailPageClasses = {
         'w-[88.7vw] h-full flex flex-col px-4 gap-4 pb-10 pt-[64px] justify-center items-center mx-auto',
     },
     images: {
-      web: 'flex flex-col gap-2 w-[41vw] h-[41vw] border-[2px] border-[#f0f0f0] justify-center items-center',
+      web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
       mobile:
         'flex flex-col gap-2 w-full h-[70vw] mx-auto items-center justify-center',
     },
@@ -20,7 +20,7 @@ export const detailPageClasses = {
       mobile:
         'flex flex-row w-full min-h-[11.7vw] p-0 justify-between items-center my-[20px]',
     },
-    video: 'flex flex-row w-[10vw] h-auto ml-[1vw]',
+    video: 'flex flex-row w-[5vw] h-auto ml-[1vw]',
     detail: {
       web: 'w-[79vw] h-auto flex flex-col justify-center items-center mb-[90px] m-auto p-0 gap-0',
       mobile:
@@ -86,7 +86,7 @@ export const detailPageClasses = {
       mobile: 'flex flex-col w-full h-auto gap-y-[15px] gap-x-[2vw]',
     },
     part: {
-      web: 'max-w-[39vw] flex flex-row',
+      web: 'max-w-[35vw] flex flex-row',
       mobile: 'flex flex-row w-full h-auto gap-[2.3vw]',
     },
     head: {
@@ -98,7 +98,7 @@ export const detailPageClasses = {
       mobile: 'max-w-[50vw]',
     },
     name: {
-      web: 'flex flex-row w-[50vw]',
+      web: 'flex flex-row w-[40vw]',
       mobile: 'w-[50vw] h-auto',
     },
   },
