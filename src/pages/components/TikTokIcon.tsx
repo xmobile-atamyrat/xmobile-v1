@@ -7,7 +7,7 @@ export default function TikTokIcon({
   color?: string;
 }) {
   return (
-    <SvgIcon {...props} style={{ fill: color, fontSize: '1.3vw' }}>
+    <SvgIcon {...props} style={{ fill: color }}>
       <path
         d="
             M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 
