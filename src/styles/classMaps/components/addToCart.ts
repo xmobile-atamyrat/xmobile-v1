@@ -31,7 +31,8 @@ export const addToCartClasses = {
     quantityButton: 'w-[24px] h-[24px] rounded-[100%] bg-[#f4f4f4] text-[#000]',
     addToCartText: {
       web: 'justify-center font-[700] text-[1vw] leading-[30px] tracking-0 text-[#fff]',
-      mobile: 'font-[500] text-[3.5vw] leading-[100%] tracking-normal',
+      mobile:
+        'font-[500] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-normal',
     },
   },
   iconButton: {

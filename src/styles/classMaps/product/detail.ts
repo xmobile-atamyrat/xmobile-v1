@@ -41,16 +41,16 @@ export const detailPageClasses = {
       mobile: 'font-bold text-[4.2vw] flex items-center capitalize',
     },
     font: {
-      web: 'text-[1.05vw]',
+      web: 'text-[clamp(13px,_1.05vw,_20px)]',
       mobile: 'text-base',
     },
     font2: {
-      web: 'text-[1.05vw] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
+      web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
       mobile:
         'text-[clamp(2vw,_3vw,_13px)] font-regular leading-[20px] tracking-normal opacity-[40%]',
     },
     desc: {
-      web: 'text-[1.05vw] leading-[30px] font-semibold text-[#303030] ml-[0.05vw]',
+      web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-semibold text-[#303030] ml-[0.05vw]',
       mobile:
         'font-bold text-[clamp(2vw,_3vw,_13px)] leading-[20px] tracking-normal opacity-[40%]',
     },
@@ -106,8 +106,8 @@ export const detailPageClasses = {
     part: 'w-[35vw] flex flex-row my-[0.4vw]',
     head: 'w-[10vw]',
     val: 'flex flex-col w-[25vw]',
-    desc: 'text-[1.05vw] leading-[30px] font-semibold text-[#303030]',
+    desc: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-semibold text-[#303030]',
     font2:
-      'text-[1.05vw] leading-[30px] font-regular tarcking-normal text-[#303030]',
+      'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030]',
   },
 };
