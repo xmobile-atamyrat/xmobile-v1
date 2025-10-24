@@ -20,7 +20,7 @@ export const detailPageClasses = {
       mobile:
         'flex flex-row w-full min-h-[11.7vw] p-0 justify-between items-center my-[20px]',
     },
-    video: 'flex flex-row w-[5vw] h-auto ml-[1vw]',
+    video: 'flex flex-row w-[5vw] h-auto ml-5',
     detail: {
       web: 'w-[79vw] h-auto flex flex-col justify-center items-center mb-[90px] m-auto p-0 gap-0',
       mobile:
@@ -56,7 +56,7 @@ export const detailPageClasses = {
     },
   },
   link: {
-    web: 'flex flex-row',
+    web: 'flex flex-row no-underline text-[#000]',
     mobile: 'px-3 pb-3 flex items-center flex-col',
   },
   productName: {
@@ -86,15 +86,15 @@ export const detailPageClasses = {
       mobile: 'flex flex-col w-full h-auto gap-y-[15px] gap-x-[2vw]',
     },
     part: {
-      web: 'max-w-[35vw] flex flex-row',
+      web: 'max-w-[35vw] flex flex-row space-x-5',
       mobile: 'flex flex-row w-full h-auto gap-[2.3vw]',
     },
     head: {
-      web: 'w-[12vw]',
+      web: 'flex w-[15vw]',
       mobile: 'w-[35vw] h-auto',
     },
     val: {
-      web: 'flex flex-col max-w-[23.4vw]',
+      web: 'flex flex-col max-w-[18.4vw]',
       mobile: 'max-w-[50vw]',
     },
     name: {
