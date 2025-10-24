@@ -1,7 +1,7 @@
 export const detailPageClasses = {
   boxes: {
     main: {
-      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[80px]',
+      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[42px]',
       mobile: 'w-full h-full flex flex-col px-4 gap-4 pb-10 pt-[64px]',
     },
     title: {

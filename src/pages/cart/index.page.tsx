@@ -4,7 +4,7 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
-import HomeIcon from '@mui/icons-material/Home';
+import { interClassname } from '@/styles/theme';
 import {
   Box,
   Breadcrumbs,
@@ -68,13 +68,24 @@ export default function CartPage() {
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box className={cartIndexClasses.box[platform]}>
-        <Breadcrumbs separator="›" maxItems={2} className="ml-3">
+        <Breadcrumbs
+          separator="|"
+          maxItems={2}
+          className={cartIndexClasses.breadcrumbs[platform]}
+        >
           <Link href="/" className={cartIndexClasses.link}>
-            <HomeIcon className="text-lg" />
-            <Typography fontSize={15}>{t('home')}</Typography>
+            <Typography
+              className={`${interClassname.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
+            >
+              {t('home')}
+            </Typography>
           </Link>
-          <Link href="/cart">
-            <Typography>{t('cart')}</Typography>
+          <Link href="/cart" className={cartIndexClasses.link}>
+            <Typography
+              className={`${interClassname.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
+            >
+              {t('cart')}
+            </Typography>
           </Link>
         </Breadcrumbs>
 

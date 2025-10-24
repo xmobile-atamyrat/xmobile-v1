@@ -1,51 +1,35 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { parseName } from '@/pages/lib/utils';
-import HomeIcon from '@mui/icons-material/Home';
+import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
+import { interClassname } from '@/styles/theme';
 import { Breadcrumbs } from '@mui/material';
 import Chip from '@mui/material/Chip';
-import { emphasize, styled } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 
 const StyledBreadcrumb = styled(Chip)(({ theme }) => {
-  const backgroundColor =
-    theme.palette.mode === 'light'
-      ? theme.palette.grey[100]
-      : theme.palette.grey[800];
   return {
-    backgroundColor,
-    height: theme.spacing(3),
-    color: theme.palette.text.primary,
-    fontWeight: theme.typography.fontWeightRegular,
-    '&:hover, &:focus': {
-      backgroundColor: emphasize(backgroundColor, 0.06),
-    },
-    '&:active': {
-      boxShadow: theme.shadows[1],
-      backgroundColor: emphasize(backgroundColor, 0.12),
-    },
+    backgroundColor: '#f5f5f5',
+    height: '24px',
+    color: '#1b1b1b',
+    fontWeight: theme.typography.fontWeightMedium,
   };
 }) as typeof Chip;
 
 export default function StyledBreadcrumbs() {
-  const { stack, setStack, setParentCategory, parentCategory } =
-    useCategoryContext();
+  const { stack, setStack, parentCategory } = useCategoryContext();
   const router = useRouter();
+  const platform = usePlatform();
 
   return (
-    <Breadcrumbs className="mx-2">
-      <StyledBreadcrumb
-        component="a"
-        label="Home"
-        icon={<HomeIcon fontSize="small" />}
-        onClick={() => {
-          setParentCategory(undefined);
-          setStack([]);
-          router.push('/');
-        }}
-      />
+    <Breadcrumbs
+      className={simpleBreadcrumbsClasses.styled[platform]}
+      separator=" "
+    >
       {stack.map((combo) => (
         <StyledBreadcrumb
-          className="my-2"
+          className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
           component="a"
           label={parseName(combo[1], router.locale ?? 'ru')}
           key={combo[1]}
@@ -55,9 +39,9 @@ export default function StyledBreadcrumbs() {
           }}
         />
       ))}
-      {stack[stack.length - 1][0].id !== parentCategory?.id && (
+      {stack.length && stack[stack.length - 1][0].id !== parentCategory?.id && (
         <StyledBreadcrumb
-          className="my-2"
+          className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
           component="a"
           label={parseName(parentCategory?.name, router.locale ?? 'ru')}
           onClick={() => {
