@@ -163,5 +163,6 @@
   "addToBase": "Tabana ekle",
   "alreadyExistsConcat": "Var!",
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
-  "category": "Kategori"
+  "category": "Kategori",
+  "allCategory": "Tüm Kategoriler"
 }
