@@ -4,9 +4,9 @@ export const simpleBreadcrumbsClasses = {
     web: 'mt-4 flex flex-row',
     mobile: 'hidden',
   },
-  text: 'no-underline text-[#303030] text-[16px] leading-[24px] tracking-normal',
+  text: 'no-underline text-[#303030] text-[16px] leading-[24px] tracking-normal cursor-pointer',
   productName: {
-    web: 'text-[#303030] text-[20px] leading-[30px] tracking-normal font-semibold',
+    web: 'text-[#303030] text-[16px] leading-[30px] tracking-normal font-semibold cursor-pointer',
     mobile: 'hidden',
   },
   mt: {
