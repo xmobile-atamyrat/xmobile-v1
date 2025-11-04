@@ -3,6 +3,7 @@ import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
+import { interClassname } from '@/styles/theme';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
@@ -57,16 +58,24 @@ export default function CategoryCard({
   }, [initialImgUrl, id]);
 
   return (
-    <Card className={categoryCardClasses.card[platform]} onClick={onClick}>
+    <Card
+      className={categoryCardClasses.card[platform]}
+      onClick={onClick}
+      elevation={0}
+    >
       {initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD ? (
         <Box className={categoryCardClasses.boxes.allP}>
-          <Typography className={categoryCardClasses.typography[platform]}>
+          <Typography
+            className={`${categoryCardClasses.typography[platform]} ${interClassname.className}`}
+          >
             {t('allProducts')}
           </Typography>
         </Box>
       ) : (
         <Box className={categoryCardClasses.boxes.cardMedia[platform]}>
-          <Typography className={categoryCardClasses.typography2[platform]}>
+          <Typography
+            className={`${categoryCardClasses.typography2[platform]} ${interClassname.className}`}
+          >
             {parseName(name, router.locale ?? 'tk')}
           </Typography>
           <CardMedia

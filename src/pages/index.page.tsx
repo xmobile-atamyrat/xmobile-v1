@@ -14,10 +14,12 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
-import { Box } from '@mui/material';
+import { interClassname } from '@/styles/theme';
+import { Box, Typography } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -126,6 +128,7 @@ export default function Home({
     [],
   );
   const { setProducts } = useProductContext();
+  const t = useTranslations();
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -202,6 +205,14 @@ export default function Home({
             }}
           />
         )}
+        {!parentCategory && (
+          <Typography
+            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+          >
+            {t('allCategory')}
+          </Typography>
+        )}
+
         <Box className={homePageClasses.card[platform]}>
           {parentCategory != null && (
             <CategoryCard
