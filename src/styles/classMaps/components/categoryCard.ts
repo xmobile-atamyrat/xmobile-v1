@@ -1,25 +1,28 @@
 export const categoryCardClasses = {
   card: {
-    web: 'w-[400px] h-[150px] hover:shadow-xl border-[1px] px-6',
-    mobile: 'w-[350px] h-[125px] hover:shadow-xl border-[1px] px-4',
+    web: 'w-[354px] h-[264px] rounded-[15px] bg-[#f4f4f4] p-[26px] relative',
+    mobile:
+      'w-[42.9vw] h-[100px] border-[1px] border-[#f4f5fd] gap-[8px] px-[12px] py-[10px] rounded-[16px]',
   },
   boxes: {
     allP: 'w-full h-full flex justify-center items-center',
     cardMedia: {
-      web: 'flex flex-row justify-between items-center gap-4 w-full h-full',
-      mobile: 'flex flex-row justify-between items-center gap-2 w-full h-full',
+      web: 'flex flex-col items-start',
+      mobile:
+        'flex flex-col-reverse justify-between items-center w-full h-full',
     },
   },
   typography: {
-    web: 'font-semibold text-[20px]',
-    mobile: 'font-semibold text-[18px]',
+    web: 'font-semibold text-[26px]',
+    mobile: 'font-semibold text-[14px]',
   },
   typography2: {
-    web: 'font-semibold text-[20px] flex justify-center items-center',
-    mobile: 'font-semibold text-[18px] flex justify-center items-center',
+    web: 'font-semibold text-[26px] leading-[36px] tracking-normal text-[#303030]',
+    mobile:
+      'font-regular text-[12px] leading-[100%] tracking-normal text-[#1c1b1b] text-center mt-2',
   },
   cardMedia: {
-    web: 'w-[150px]',
-    mobile: 'w-[125px]',
+    web: 'w-[150px] absolute right-[10px] bottom-[10px]',
+    mobile: 'w-[54px]',
   },
 };
