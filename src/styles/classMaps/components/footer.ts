@@ -1,6 +1,6 @@
 export const footerClasses = {
   boxes: {
-    main: 'p-10 bg-gray-100 h-50%',
+    main: 'p-10 bg-gray-100 h-50% mt-[50px]',
     main2: 'flex justify-center w-auto h-full',
     footerStack: {
       web: 'grid grid-cols-3',
