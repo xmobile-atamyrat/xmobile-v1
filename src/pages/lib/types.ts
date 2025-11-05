@@ -171,6 +171,7 @@ export interface AddToCartProps {
   quantity?: number;
   productId?: string;
   cartAction: 'add' | 'delete' | 'detail';
+  price?: string;
   onDelete?: (message: string) => void;
 }
 

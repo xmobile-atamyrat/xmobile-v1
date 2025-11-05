@@ -167,8 +167,12 @@
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
   "category": "Kategoriýa",
   "allCategory": "Ähli Kategoriýalar",
-  "specification": "Önüm hakynda"
+  "specification": "Önüm hakynda",
   "account": "Hasap",
   "appLanguage": "Programma dili",
-  "signOutVerify": "Hasapdan çykmak isleýäňizmi?"
+  "signOutVerify": "Hasapdan çykmak isleýäňizmi?",
+  "emptyCart": "Sebediňiz Boş",
+  "yourCart": "Sebediňiz",
+  "product": "Haryt",
+  "total": "Jemi"
 }

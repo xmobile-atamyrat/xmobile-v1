@@ -1,10 +1,8 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LoginIcon from '@mui/icons-material/Login';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import {
   Alert,
   Box,
@@ -31,6 +29,7 @@ export default function AddToCart({
   quantity: initialQuantity = 1,
   cartAction,
   cartItemId = undefined,
+  price,
   onDelete,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
@@ -186,22 +185,17 @@ export default function AddToCart({
         {cartAction === 'delete' && (
           <Box className={addToCartClasses.circIcon.box}>
             {/* removeButton */}
-            <IconButton
-              className="p-0.3"
-              onClick={handleProductQuantity('remove')}
-            >
-              <RemoveCircleIcon
+            <IconButton disableRipple onClick={handleProductQuantity('remove')}>
+              <RemoveIcon
                 className={addToCartClasses.circIcon.fSize[platform]}
-                color="primary"
               />
             </IconButton>
 
             {/* quantityInput */}
             <Input
-              type="number"
               name="quantity"
               inputProps={{ min: 1 }}
-              className={addToCartClasses.input[platform]}
+              className={`${addToCartClasses.inputDet} ${interClassname.className}`}
               value={quantity}
               disableUnderline
               onChange={(e) => {
@@ -211,31 +205,33 @@ export default function AddToCart({
             />
 
             {/* addButton */}
-            <IconButton
-              onClick={handleProductQuantity('add')}
-              className="p-0.3"
-            >
-              <AddCircleIcon
-                className={addToCartClasses.circIcon.fSize[platform]}
-                color="primary"
-              />
+            <IconButton disableRipple onClick={handleProductQuantity('add')}>
+              <AddIcon className={addToCartClasses.circIcon.fSize[platform]} />
             </IconButton>
 
+            <Box className={addToCartClasses.price[platform]}>
+              <Typography
+                className={`${interClassname.className} ${addToCartClasses.priceText[platform]}`}
+              >
+                {quantity * Number(price)} TMT
+              </Typography>
+            </Box>
+
             {/* delete button */}
-            <IconButton
-              color="primary"
-              className="pr-1"
-              type="submit"
-              onClick={() => {
-                onDelete(cartItemId);
-                deleteCartItems(cartItemId);
-              }}
-            >
-              <DeleteIcon
-                color="error"
-                className={addToCartClasses.circIcon.fSize[platform]}
-              />
-            </IconButton>
+            <Box className={addToCartClasses.deleteButton.box[platform]}>
+              <IconButton
+                disableRipple
+                // type="submit"
+                onClick={() => {
+                  onDelete(cartItemId);
+                  deleteCartItems(cartItemId);
+                }}
+              >
+                <DeleteIcon
+                  className={addToCartClasses.deleteButton.deleteIcon[platform]}
+                />
+              </IconButton>
+            </Box>
           </Box>
         )}
 
