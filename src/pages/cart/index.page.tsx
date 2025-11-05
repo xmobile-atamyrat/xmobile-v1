@@ -135,24 +135,24 @@ export default function CartPage() {
               </Suspense>
             </Box>
           ) : (
-            <Box className="text-center w-full">
+            <Box className="text-center flex flex-col">
               <CardMedia
                 component="img"
                 src="/emptyCart.png"
-                className="w-[22.34vw] h-[18.64vw] mx-auto my-[3.9vw]"
+                className={cartIndexClasses.emptyCart.img[platform]}
               />
               <Typography
-                className={`${interClassname.className} font-medium text-[30px] leading-[24px] tracking-normal text-[#000] text-center mb-[3.125vw]`}
+                className={`${interClassname.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
               >
                 {t('emptyCart')}
               </Typography>
               <Link
                 href="/"
-                className="min-w-[11.875vw] h-[3.22vw] bg-[#ff624c] rounded-[10px] py-[16px] px-[40px] gap-[10px]"
+                className={cartIndexClasses.emptyCart.link[platform]}
               >
                 <IconButton
                   disableRipple
-                  className={`${cartIndexClasses.iconButton} ${interClassname.className}`}
+                  className={`${cartIndexClasses.iconButton[platform]} ${interClassname.className}`}
                 >
                   {t('continueShopping')}
                 </IconButton>
