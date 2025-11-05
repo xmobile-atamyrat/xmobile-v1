@@ -3,6 +3,8 @@ import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
+import StyledBreadcrumbs from '@/pages/components/StyledBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
@@ -234,6 +236,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         }
       }}
     >
+      <SimpleBreadcrumbs currentProductName={product.name} />
       <Box className={detailPageClasses.boxes.main[platform]}>
         {/* title, images */}
         <Box className={detailPageClasses.boxes.title[platform]}>
@@ -305,9 +308,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Carousel>
           )}
         </Box>
-
         {/* price, description */}
         <Box className={detailPageClasses.boxes.price[platform]}>
+          <StyledBreadcrumbs />
           <Box className="w-full my-4 flex">
             {product.price?.includes('[') ? (
               <CircularProgress

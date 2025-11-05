@@ -1,25 +1,23 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
+import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
-import HomeIcon from '@mui/icons-material/Home';
-import {
-  Box,
-  Breadcrumbs,
-  Link,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import { interClassname, units } from '@/styles/theme';
+import { Box, Breadcrumbs, Link, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
 interface SimpleBreadcrumbsProps {
   onClick?: (combo: [ExtendedCategory, string]) => void;
+  currentProductName?: string;
 }
 
-export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
+export default function SimpleBreadcrumbs({
+  onClick,
+  currentProductName,
+}: SimpleBreadcrumbsProps) {
   const {
     stack,
     setStack,
@@ -29,20 +27,22 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
   } = useCategoryContext();
   const router = useRouter();
   const t = useTranslations();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const platform = usePlatform();
 
   return (
     <Box
-      className={`w-full px-3`}
+      className={`px-3`}
       style={{
-        marginTop:
-          isMdUp && router.pathname.includes('product')
-            ? appBarHeight
-            : undefined,
+        marginTop: router.pathname.includes('product')
+          ? units.mt[platform]
+          : undefined,
       }}
     >
-      <Breadcrumbs separator="›" maxItems={isMdUp ? 10 : 4}>
+      <Breadcrumbs
+        separator="|"
+        maxItems={units.breadcrumbs[platform]}
+        className={simpleBreadcrumbsClasses.breadcrumbs[platform]}
+      >
         <Link
           onClick={() => {
             setParentCategory(undefined);
@@ -52,8 +52,11 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
           }}
           className={simpleBreadcrumbsClasses.link}
         >
-          <HomeIcon sx={{ fontSize: 18 }} />
-          <Typography fontSize={15}>{t('home')}</Typography>
+          <Typography
+            className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
+          >
+            {t('home')}
+          </Typography>
         </Link>
 
         {stack.map((combo) => (
@@ -67,19 +70,35 @@ export default function SimpleBreadcrumbs({ onClick }: SimpleBreadcrumbsProps) {
               setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
               router.push('/');
             }}
-            className="py-2"
+            className={simpleBreadcrumbsClasses.link}
           >
-            <Typography fontSize={15}>
+            <Typography
+              className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
+            >
               {parseName(combo[1], router.locale ?? 'ru')}
             </Typography>
           </Link>
         ))}
 
-        <Typography fontSize={15}>
+        <Typography
+          className={`${interClassname.className} ${simpleBreadcrumbsClasses.text} mx-2`}
+        >
           {parentCategory == null
             ? t('allProducts')
             : parseName(parentCategory?.name, router.locale ?? 'ru')}
         </Typography>
+
+        {currentProductName ? (
+          <Typography
+            className={`${interClassname.className} ${simpleBreadcrumbsClasses.productName[platform]} mx-2`}
+            aria-current="page"
+            title={parseName(currentProductName, router.locale ?? 'ru')}
+          >
+            {parseName(currentProductName, router.locale ?? 'ru')}
+          </Typography>
+        ) : (
+          ''
+        )}
       </Breadcrumbs>
     </Box>
   );
