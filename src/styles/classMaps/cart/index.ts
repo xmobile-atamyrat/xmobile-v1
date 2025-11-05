@@ -6,7 +6,7 @@ export const cartIndexClasses = {
   prodCart: 'flex flex-wrap gap-4 w-full p-3 justify-center',
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton:
-    'mt-2 px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600',
+    'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',
   breadcrumbs: {
     web: 'ml-10 mt-4',
     mobile: 'hidden',
