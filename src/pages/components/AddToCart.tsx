@@ -165,7 +165,7 @@ export default function AddToCart({
     };
 
   return (
-    <Box>
+    <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
         {/* cartIcon */}
         {cartAction === 'add' && (
@@ -183,19 +183,23 @@ export default function AddToCart({
         )}
 
         {cartAction === 'delete' && (
-          <Box className={addToCartClasses.circIcon.box}>
-            {/* removeButton */}
-            <IconButton disableRipple onClick={handleProductQuantity('remove')}>
-              <RemoveIcon
-                className={addToCartClasses.circIcon.fSize[platform]}
-              />
-            </IconButton>
-
+          <Box className={addToCartClasses.circIcon.box[platform]}>
+            <Box className={addToCartClasses.quanChange[platform]}>
+              {/* removeButton */}
+              <IconButton
+                disableRipple
+                onClick={handleProductQuantity('remove')}
+              >
+                <RemoveIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+            </Box>
             {/* quantityInput */}
             <Input
               name="quantity"
               inputProps={{ min: 1 }}
-              className={`${addToCartClasses.inputDet} ${interClassname.className}`}
+              className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
               value={quantity}
               disableUnderline
               onChange={(e) => {

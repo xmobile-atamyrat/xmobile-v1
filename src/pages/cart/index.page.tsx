@@ -93,28 +93,28 @@ export default function CartPage() {
           {cartItems != null && cartItems.length > 0 ? (
             <Box>
               <Typography
-                className={`${interClassname.className} font-bold text-[56px] leading-[68px] tracking-normal text-[#303030] mb-[1.3vw]`}
+                className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
               >
                 {t('yourCart')}
               </Typography>
-              <Box className="flex flex-row w-[79.16vw] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center">
+              <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[2.9vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[2.9vw]`}
                 >
                   {t('product').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[31.875vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[31.875vw]`}
                 >
                   {t('price').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[9.11vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[9.11vw]`}
                 >
                   {t('quantity').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[7.86vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[7.86vw]`}
                 >
                   {t('total').toUpperCase()}
                 </Typography>
