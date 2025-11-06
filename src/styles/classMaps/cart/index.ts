@@ -31,4 +31,15 @@ export const cartIndexClasses = {
         'w-[88.7vw] h-[11.2vw] max-h-[48px] bg-[#ff624c] rounded-[12px] py-[4px] px-[20px] gap-[16px] flex justify-center items-center no-underline',
     },
   },
+  infoCol: {
+    web: 'flex flex-row w-[79.16vw] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
+    mobile: 'hidden',
+  },
+  infoColTypo:
+    'font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]',
+  yourCartTypo: {
+    web: 'font-bold text-[56px] leading-[68px] tracking-normal text-[#303030] mb-[1.3vw]',
+    mobile:
+      'font-medium text-[20px] leading-full tracking-normal text-[#000] text-center mb-[26px]',
+  },
 };

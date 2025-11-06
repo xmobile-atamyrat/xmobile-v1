@@ -10,17 +10,7 @@ import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
 import { colors, interClassname } from '@/styles/theme';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import {
-  Box,
-  Card,
-  CardActions,
-  CardContent,
-  CardMedia,
-  Divider,
-  IconButton,
-  Typography,
-} from '@mui/material';
+import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -38,7 +28,6 @@ interface ProductCardProps {
 
 export default function CartProductCard({
   product: initialProduct,
-  handleClickAddProduct,
   cartProps,
 }: ProductCardProps) {
   const t = useTranslations();
@@ -119,10 +108,10 @@ export default function CartProductCard({
   }, [initialProduct]);
 
   return (
-    <Card className={cartProductCardClasses.card[platform]} elevation={0}>
-      {product != null ? (
+    <Box>
+      <Card className={cartProductCardClasses.card[platform]} elevation={0}>
         <Box
-          className={cartProductCardClasses.boxes.main}
+          className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
             setSelectedProduct(initialProduct);
             router.push(`/product/${product.id}`);
@@ -138,68 +127,51 @@ export default function CartProductCard({
               />
             </Box>
           )}
-          <Box className={cartProductCardClasses.boxes.detail[platform]}>
-            <Typography
-              className={`${interClassname.className} font-regular text-[14px] leading-[20px] tracking-normal text-[#303030]`}
-            >
-              {categoryName && parseName(categoryName, router.locale ?? 'tk')}
-            </Typography>
-            <Typography
-              gutterBottom
-              className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
-            >
-              {parseName(product.name, router.locale ?? 'tk').substring(0, 24)}
-            </Typography>
-          </Box>
-          {product?.price?.includes('[') ? (
-            <CircularProgress
-              className={cartProductCardClasses.circProgress[platform]}
-            />
-          ) : (
-            <Typography
-              color={colors.text[platform]}
-              className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
-            >
-              {product?.price} {t('manat')}
-            </Typography>
-          )}
-          {cartProps.cartAction === 'delete' && (
-            <Box onClick={(e) => e.stopPropagation()}>
-              <AddToCart
-                productId={product.id}
-                cartAction={cartProps?.cartAction}
-                quantity={cartProps?.quantity}
-                cartItemId={cartProps?.cartItemId}
-                price={product.price}
-                onDelete={cartProps?.onDelete}
-              />
-            </Box>
-          )}
-        </Box>
-      ) : (
-        <Box className="w-full h-full flex flex-col justify-between">
-          <CardContent className="p-1">
-            <Typography
-              gutterBottom
-              className={cartProductCardClasses.typo3[platform]}
-            >
-              {t('addNewProduct')}
-            </Typography>
-          </CardContent>
-          <Box>
-            <Divider />
-            <CardActions className={cartProductCardClasses.cardActions}>
-              <IconButton
-                onClick={() => {
-                  if (handleClickAddProduct) handleClickAddProduct();
-                }}
+          <Box className={cartProductCardClasses.info[platform]}>
+            <Box className={cartProductCardClasses.boxes.detail[platform]}>
+              <Typography
+                className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
               >
-                <AddCircleIcon fontSize="large" color="primary" />
-              </IconButton>
-            </CardActions>
+                {categoryName && parseName(categoryName, router.locale ?? 'tk')}
+              </Typography>
+              <Typography
+                gutterBottom
+                className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
+              >
+                {parseName(product.name, router.locale ?? 'tk').substring(
+                  0,
+                  24,
+                )}
+              </Typography>
+            </Box>
+            {product?.price?.includes('[') ? (
+              <CircularProgress
+                className={cartProductCardClasses.circProgress[platform]}
+              />
+            ) : (
+              <Typography
+                color={colors.text[platform]}
+                className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+              >
+                {product?.price} {t('manat')}
+              </Typography>
+            )}
+            {cartProps.cartAction === 'delete' && (
+              <Box onClick={(e) => e.stopPropagation()}>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  price={product.price}
+                  onDelete={cartProps?.onDelete}
+                />
+              </Box>
+            )}
           </Box>
         </Box>
-      )}
-    </Card>
+      </Card>
+      <Divider className="my-[16px] color-[#afafaf] h-[1px] opacity-30" />
+    </Box>
   );
 }
