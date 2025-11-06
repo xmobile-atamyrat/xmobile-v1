@@ -160,7 +160,7 @@ export default function AddToCart({
   };
 
   return (
-    <Box>
+    <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
         {/* cartIcon */}
         {cartAction === 'add' && (
@@ -178,31 +178,38 @@ export default function AddToCart({
         )}
 
         {cartAction === 'delete' && (
-          <Box className={addToCartClasses.circIcon.box}>
-            {/* removeButton */}
-            <IconButton disableRipple onClick={handleProductQuantity('remove')}>
-              <RemoveIcon
-                className={addToCartClasses.circIcon.fSize[platform]}
+          <Box className={addToCartClasses.circIcon.box[platform]}>
+            <Box className={addToCartClasses.quanChange[platform]}>
+              {/* removeButton */}
+              <IconButton
+                disableRipple
+                onClick={handleProductQuantity('remove')}
+              >
+                <RemoveIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+
+              {/* quantityInput */}
+              <Input
+                name="quantity"
+                inputProps={{ min: 1 }}
+                className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
+                value={quantity}
+                disableUnderline
+                onChange={(e) => {
+                  setQuantity(Number(e.target.value));
+                  editCartItems(Number(e.target.value));
+                }}
               />
-            </IconButton>
 
-            {/* quantityInput */}
-            <Input
-              name="quantity"
-              inputProps={{ min: 1 }}
-              className={`${addToCartClasses.input} ${interClassname.className}`}
-              value={quantity}
-              disableUnderline
-              onChange={(e) => {
-                setQuantity(Number(e.target.value));
-                editCartItems(Number(e.target.value));
-              }}
-            />
-
-            {/* addButton */}
-            <IconButton disableRipple onClick={handleProductQuantity('add')}>
-              <AddIcon className={addToCartClasses.circIcon.fSize[platform]} />
-            </IconButton>
+              {/* addButton */}
+              <IconButton disableRipple onClick={handleProductQuantity('add')}>
+                <AddIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+            </Box>
 
             <Box className={addToCartClasses.price[platform]}>
               <Typography
