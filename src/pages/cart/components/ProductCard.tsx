@@ -128,34 +128,37 @@ export default function CartProductCard({
             </Box>
           )}
           <Box className={cartProductCardClasses.info[platform]}>
-            <Box className={cartProductCardClasses.boxes.detail[platform]}>
-              <Typography
-                className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
-              >
-                {categoryName && parseName(categoryName, router.locale ?? 'tk')}
-              </Typography>
-              <Typography
-                gutterBottom
-                className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
-              >
-                {parseName(product.name, router.locale ?? 'tk').substring(
-                  0,
-                  24,
-                )}
-              </Typography>
+            <Box className={cartProductCardClasses.det2[platform]}>
+              <Box className={cartProductCardClasses.boxes.detail[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
+                >
+                  {categoryName &&
+                    parseName(categoryName, router.locale ?? 'tk')}
+                </Typography>
+                <Typography
+                  gutterBottom
+                  className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
+                >
+                  {parseName(product.name, router.locale ?? 'tk').substring(
+                    0,
+                    24,
+                  )}
+                </Typography>
+              </Box>
+              {product?.price?.includes('[') ? (
+                <CircularProgress
+                  className={cartProductCardClasses.circProgress[platform]}
+                />
+              ) : (
+                <Typography
+                  color={colors.text[platform]}
+                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                >
+                  {product?.price} {t('manat')}
+                </Typography>
+              )}
             </Box>
-            {product?.price?.includes('[') ? (
-              <CircularProgress
-                className={cartProductCardClasses.circProgress[platform]}
-              />
-            ) : (
-              <Typography
-                color={colors.text[platform]}
-                className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
-              >
-                {product?.price} {t('manat')}
-              </Typography>
-            )}
             {cartProps.cartAction === 'delete' && (
               <Box onClick={(e) => e.stopPropagation()}>
                 <AddToCart

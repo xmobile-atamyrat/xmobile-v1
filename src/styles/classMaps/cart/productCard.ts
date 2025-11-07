@@ -10,7 +10,7 @@ export const cartProductCardClasses = {
     },
     detail: {
       web: 'flex flex-col justify-start items-start w-[20.83vw] ml-[1.3vw]',
-      mobile: 'flex flex-col justify-start items-start min-w-[280px] h-auto',
+      mobile: 'flex flex-col justify-start items-start w-[260px] h-auto',
     },
     img: {
       web: 'flex w-[12.34vw] h-[11vw] justify-center border-[1px] border-[#f0f0f0] items-center ml-[2.39vw]',
@@ -19,11 +19,11 @@ export const cartProductCardClasses = {
     },
   },
   typo: {
-    web: 'text-[20px] font-semibold leading-[30px] mt-[16px]',
+    web: 'text-[20px] font-semibold leading-[30px] mt-[16px] whitespace-normal break-words',
     mobile: 'text-[14px] font-medium text-[#1b1b1b]',
   },
   typo2: {
-    web: 'font-semibold text-[20px] leading-[30px] tracking-normal my-auto w-[11.75vw]',
+    web: 'font-semibold text-[20px] leading-[30px] tracking-normal my-auto w-[11vw]',
     mobile:
       'font-medium text-[16px] leading-full tracking-normal text-[#1b1b1b] mt-[5px]',
   },
@@ -46,10 +46,15 @@ export const cartProductCardClasses = {
   },
   info: {
     web: 'flex w-[66vw]',
-    mobile: 'ml-[12px] h-auto w-[280px]',
+    mobile:
+      'ml-[8vw] h-auto min-w-[280px] flex flex-row flex-wrap justify-between',
   },
   divider: {
     web: 'hidden',
     mobile: 'my-[16px] color-[#afafaf] h-[1px] opacity-30',
+  },
+  det2: {
+    web: 'flex flex-row m-0 p-0',
+    mobile: 'flex flex-col',
   },
 };

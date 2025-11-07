@@ -1,11 +1,11 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import LoginIcon from '@mui/icons-material/Login';
 import {
   Alert,
   Box,
+  CardMedia,
   IconButton,
   Input,
   Snackbar,
@@ -19,7 +19,7 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
-import { interClassname } from '@/styles/theme';
+import { img, interClassname } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -225,13 +225,15 @@ export default function AddToCart({
             <Box className={addToCartClasses.deleteButton.box[platform]}>
               <IconButton
                 disableRipple
-                // type="submit"
+                type="submit"
                 onClick={() => {
                   onDelete(cartItemId);
                   deleteCartItems(cartItemId);
                 }}
               >
-                <DeleteIcon
+                <CardMedia
+                  component="img"
+                  src={img.trash[platform]}
                   className={addToCartClasses.deleteButton.deleteIcon[platform]}
                 />
               </IconButton>

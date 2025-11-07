@@ -59,3 +59,10 @@ export const units = {
     mobile: 0,
   },
 };
+
+export const img = {
+  trash: {
+    web: '/deleteIcon.png',
+    mobile: '/deleteIconMobile.png',
+  },
+};
