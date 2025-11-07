@@ -91,7 +91,7 @@ export default function CartPage() {
         </Breadcrumbs>
         <Box className={cartIndexClasses.prodCart}>
           {cartItems != null && cartItems.length > 0 ? (
-            <Box>
+            <Box className="flex flex-col">
               <Typography
                 className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
               >
@@ -99,17 +99,17 @@ export default function CartPage() {
               </Typography>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[2.9vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[32vw] ml-[2.39vw]`}
                 >
                   {t('product').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[31.875vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[11vw]`}
                 >
                   {t('price').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[9.11vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[8vw]`}
                 >
                   {t('quantity').toUpperCase()}
                 </Typography>

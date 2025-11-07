@@ -9,11 +9,11 @@ export const addToCartClasses = {
   },
   circIcon: {
     box: {
-      web: 'flex column-reverse h-full',
+      web: 'flex column-reverse h-full w-[33.5vw] items-center justify-between',
       mobile: 'flex flex-row w-full justify-between',
     },
     fSize: {
-      web: 'w-[16px] h-[16px] text-[#303030]',
+      web: 'w-[16px] h-[16px] text-[#303030] items-center',
       mobile: 'w-[14px] h-[14px] text-[#1c1b1b]',
     },
   },
@@ -43,12 +43,12 @@ export const addToCartClasses = {
     mobile: 'hidden',
   },
   inputDet: {
-    web: 'w-[40px] h-[40px] rounded-full bg-[#f4f4f4] mx-[16px] font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] [&>input]:text-center mt-[10px]',
+    web: 'w-[40px] h-[40px] rounded-full bg-[#f4f4f4] mx-[16px] font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] [&>input]:text-center',
     mobile:
       'w-[40px] h-[24px] [&>input]:text-center text-[16px] font-medium leading-[150%] tracking-[0.5%] text-[#1c1b1b]',
   },
   price: {
-    web: 'ml-[5.2vw] flex justify-center items-center',
+    web: 'flex justify-center items-center w-[8vw]',
     mobile: '',
   },
   priceText: {
@@ -57,7 +57,7 @@ export const addToCartClasses = {
   },
   deleteButton: {
     box: {
-      web: 'ml-[clamp(10px,4vw,100px)] w-[64px] h-[64px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-0 top-auto flex justify-center items-center',
+      web: 'mx-[2vw] w-[64px] min-w-[30px] h-[64px] min-h-[30px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-0 top-auto flex justify-center items-center flex-shrink-0',
       mobile: 'w-[24px] h-[24px] color-[#838383]',
     },
     deleteIcon: {
@@ -70,7 +70,7 @@ export const addToCartClasses = {
     mobile: 'w-[60%]',
   },
   quanChange: {
-    web: 'flex',
+    web: 'flex items-center mr-[4vw]',
     mobile:
       'flex flex-row justify-between p-[4px] border-[1px] rounded-[8px] border-[#f4f5fd] w-[96px] h-[32px] mt-[10px]',
   },
