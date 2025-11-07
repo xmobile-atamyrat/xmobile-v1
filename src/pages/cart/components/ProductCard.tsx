@@ -171,7 +171,7 @@ export default function CartProductCard({
           </Box>
         </Box>
       </Card>
-      <Divider className="my-[16px] color-[#afafaf] h-[1px] opacity-30" />
+      <Divider className={cartProductCardClasses.divider[platform]} />
     </Box>
   );
 }
