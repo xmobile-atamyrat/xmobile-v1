@@ -10,7 +10,8 @@ export const addToCartClasses = {
   circIcon: {
     box: {
       web: 'flex column-reverse h-full w-[33.5vw] items-center justify-between',
-      mobile: 'flex flex-row w-full justify-between',
+      mobile:
+        'flex flex-row w-full h-full items-center justify-between mt-[10px]',
     },
     fSize: {
       web: 'w-[16px] h-[16px] text-[#303030] items-center',
@@ -49,7 +50,7 @@ export const addToCartClasses = {
   },
   price: {
     web: 'flex justify-center items-center w-[8vw]',
-    mobile: '',
+    mobile: 'hidden',
   },
   priceText: {
     web: 'font-semibold text-[20px] leading-[30px] tracking-normal text-[#303030]',
@@ -58,20 +59,20 @@ export const addToCartClasses = {
   deleteButton: {
     box: {
       web: 'mx-[2vw] w-[64px] min-w-[30px] h-[64px] min-h-[30px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-0 top-auto flex justify-center items-center flex-shrink-0',
-      mobile: 'w-[24px] h-[24px] color-[#838383]',
+      mobile: 'w-[40px] h-[40px] color-[#838383] p-0 gap-0 ml-[8px]',
     },
     deleteIcon: {
-      web: 'w-[25px] h-[25px] text-[#ff624c]',
-      mobile: 'w-[24px] h-[24px] text-[#838383]',
+      web: 'h-[25px] w-auto',
+      mobile: 'w-[24px] h-[24px]',
     },
   },
   main: {
     web: 'flex',
-    mobile: 'w-[60%]',
+    mobile: '',
   },
   quanChange: {
     web: 'flex items-center mr-[4vw]',
     mobile:
-      'flex flex-row justify-between p-[4px] border-[1px] rounded-[8px] border-[#f4f5fd] w-[96px] h-[32px] mt-[10px]',
+      'flex flex-row justify-between p-[4px] border-[1px] rounded-[8px] border-[#f4f5fd] w-[96px] h-[32px]',
   },
 };
