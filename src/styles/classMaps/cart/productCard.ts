@@ -9,11 +9,11 @@ export const cartProductCardClasses = {
       mobile: 'relative h-full w-full flex flex-row items-start',
     },
     detail: {
-      web: 'flex flex-col justify-start items-start w-[20.83vw] ml-[26px]',
+      web: 'flex flex-col justify-start items-start w-[20.83vw] ml-[1.3vw]',
       mobile: 'flex flex-col justify-start items-start min-w-[280px] h-auto',
     },
     img: {
-      web: 'flex w-[12.34vw] h-[214px] justify-center border-[1px] border-[#f0f0f0] items-center mx-[36px]',
+      web: 'flex w-[12.34vw] h-[11vw] justify-center border-[1px] border-[#f0f0f0] items-center ml-[2.39vw]',
       mobile:
         'flex min-w-[88px] h-[110px] rounded-[12px] border-[1px] border-[#f5f5f5] justify-center items-center',
     },
@@ -23,7 +23,7 @@ export const cartProductCardClasses = {
     mobile: 'text-[14px] font-medium text-[#1b1b1b]',
   },
   typo2: {
-    web: 'font-semibold text-[20px] leading-[30px] tracking-normal ml-[10px] my-auto w-[11.45vw]',
+    web: 'font-semibold text-[20px] leading-[30px] tracking-normal my-auto w-[11.75vw]',
     mobile:
       'font-medium text-[16px] leading-full tracking-normal text-[#1b1b1b] mt-[5px]',
   },
@@ -41,11 +41,15 @@ export const cartProductCardClasses = {
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
+    web: 'h-[7vw] w-auto p-0 rounded-[5px] justify-center',
     mobile: 'h-[70px] w-auto max-w-[88px]',
   },
   info: {
-    web: 'flex',
+    web: 'flex w-[66vw]',
     mobile: 'ml-[12px] h-auto w-[280px]',
+  },
+  divider: {
+    web: 'hidden',
+    mobile: 'my-[16px] color-[#afafaf] h-[1px] opacity-30',
   },
 };
