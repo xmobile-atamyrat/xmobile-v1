@@ -45,7 +45,7 @@ export const cartProductCardClasses = {
     mobile: 'h-[70px] w-auto max-w-[88px]',
   },
   info: {
-    web: 'flex w-[66vw]',
+    web: 'flex w-[66vw] h-[294px] items-center',
     mobile:
       'ml-[8vw] h-auto min-w-[280px] flex flex-row flex-wrap justify-between',
   },
