@@ -9,7 +9,7 @@ export const addToCartClasses = {
   },
   circIcon: {
     box: {
-      web: 'flex column-reverse h-full w-[33.5vw] items-center justify-between',
+      web: 'flex column-reverse h-[294px] w-[33.5vw] items-center justify-between',
       mobile:
         'flex flex-row w-full h-full items-center justify-between mt-[10px]',
     },
