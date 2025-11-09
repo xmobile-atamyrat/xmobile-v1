@@ -58,12 +58,16 @@ export const addToCartClasses = {
   },
   deleteButton: {
     box: {
-      web: 'mx-[2vw] w-[64px] min-w-[30px] h-[64px] min-h-[30px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-0 top-auto flex justify-center items-center flex-shrink-0',
+      web: 'mx-[2vw] w-[64px] h-[64px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 p-0 flex justify-center items-center flex-shrink-0 transition-all duration-200 group/delete',
       mobile: 'w-[40px] h-[40px] color-[#838383] p-0 gap-0 ml-[8px]',
     },
     deleteIcon: {
-      web: 'h-[25px] w-auto',
+      web: 'h-[25px] w-auto brightness-100 group-hover/delete:invert group-hover/delete:brightness-0 transition-all duration-200',
       mobile: 'w-[24px] h-[24px]',
+    },
+    iconButton: {
+      web: 'w-full h-full hover:bg-[#ff624c]',
+      mobile: 'w-full h-full',
     },
   },
   main: {

@@ -225,6 +225,7 @@ export default function AddToCart({
             <Box className={addToCartClasses.deleteButton.box[platform]}>
               <IconButton
                 disableRipple
+                className={addToCartClasses.deleteButton.iconButton[platform]}
                 type="submit"
                 onClick={() => {
                   onDelete(cartItemId);
