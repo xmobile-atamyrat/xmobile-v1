@@ -35,7 +35,6 @@ import {
   CardMedia,
   Divider,
   IconButton,
-  Link,
   List,
   ListItem,
   ListItemText,
@@ -46,6 +45,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import type { Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
@@ -295,54 +295,55 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               ))}
             </Carousel>
           )}
+          {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
+            <Box className={detailPageClasses.boxes.video[platform]}>
+              {product.videoUrls.map(
+                (videoUrl, index) =>
+                  videoUrl.length !== 0 && (
+                    <Link
+                      key={index}
+                      target="_blank"
+                      href={videoUrl}
+                      className={detailPageClasses.link[platform]}
+                    >
+                      <IconButton>
+                        {(() => {
+                          if (index === 0) return <TikTokIcon />;
+                          if (index === 1)
+                            return <InstagramIcon className="text-black" />;
+                          return <YouTubeIcon className="text-black" />;
+                        })()}
+                      </IconButton>
+                    </Link>
+                  ),
+              )}
+            </Box>
+          )}
         </Box>
 
         {/* side details */}
         <Box className={detailPageClasses.boxes.sideInfo[platform]}>
-          <Box className={detailPageClasses.detail.name[platform]}>
-            <Typography
-              variant="h5"
-              className={`${interClassname.className} ${detailPageClasses.productName[platform]}`}
-            >
-              {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-            </Typography>
-            {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) &&
-              platform === 'web' && (
-                <Box className={detailPageClasses.boxes.video}>
-                  {product.videoUrls.map(
-                    (videoUrl, index) =>
-                      videoUrl.length !== 0 && (
-                        <Link
-                          key={index}
-                          target="_blank"
-                          href={videoUrl}
-                          className={detailPageClasses.link[platform]}
-                        >
-                          <IconButton>
-                            {(() => {
-                              if (index === 0) return <TikTokIcon />;
-                              if (index === 1)
-                                return <InstagramIcon className="text-black" />;
-                              return <YouTubeIcon className="text-black" />;
-                            })()}
-                          </IconButton>
-                        </Link>
-                      ),
-                  )}
-                </Box>
-              )}
-          </Box>
-          <Divider className={detailPageClasses.divider[platform]} />
-          <Box className="w-[24.3vw] h-auto my-4 flex">
-            {product.price?.includes('[') ? (
-              <CircularProgress
-                className={detailPageClasses.circProgress[platform]}
-              />
-            ) : (
+          <Box className={detailPageClasses.boxes.info[platform]}>
+            <Box className={detailPageClasses.detail.name[platform]}>
               <Typography
-                className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
-              >{`${product.price} ${t('manat')}`}</Typography>
-            )}
+                variant="h5"
+                className={`${interClassname.className} ${detailPageClasses.productName[platform]}`}
+              >
+                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+              </Typography>
+            </Box>
+            <Divider className={detailPageClasses.divider[platform]} />
+            <Box className="w-[24.3vw] h-auto my-4 flex">
+              {product.price?.includes('[') ? (
+                <CircularProgress
+                  className={detailPageClasses.circProgress[platform]}
+                />
+              ) : (
+                <Typography
+                  className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
+                >{`${product.price} ${t('manat')}`}</Typography>
+              )}
+            </Box>
           </Box>
 
           {product.tags[0]?.includes('[') ? (
@@ -357,21 +358,21 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 const end = words.slice(-2).join(' ');
                 return (
                   <ListItem key={index} className="p-0">
-                    <FiberManualRecordIcon className="w-[1.1vw] h-[1.1vw] text-[#ff624c]" />
+                    <FiberManualRecordIcon
+                      className={detailPageClasses.listItemIcon[platform]}
+                    />
                     <ListItemText
-                      sx={{ pl: 1 }}
+                      className={detailPageClasses.listItemText[platform]}
                       primary={
                         <Box className="flex flex-row gap-4">
                           <Typography
-                            className={
-                              detailPageClasses.typographs.font[platform]
-                            }
+                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
                           >
                             {beginning}
                           </Typography>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold`}
-                            color={colors.main}
+                            className={`${detailPageClasses.typographs.font[platform]} font-semibold ${interClassname.className}`}
+                            color={colors.mainWebMobile[platform]}
                           >
                             {end}
                           </Typography>
