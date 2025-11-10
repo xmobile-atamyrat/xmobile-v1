@@ -1,9 +1,9 @@
 export const detailPageClasses = {
   boxes: {
     main: {
-      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[80px]',
+      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[50px]',
       mobile:
-        'w-[88.7vw] h-full flex flex-col px-4 gap-4 pb-10 pt-[64px] justify-center items-center mx-auto',
+        'w-full h-full flex flex-col px-4 gap-4 pb-10 pt-[78px] justify-center items-center mx-auto',
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
@@ -18,17 +18,24 @@ export const detailPageClasses = {
     sideInfo: {
       web: 'flex flex-col ml-[88px]',
       mobile:
-        'flex flex-row w-full min-h-[11.7vw] p-0 justify-between items-center my-[20px]',
+        'flex flex-col min-w-[88.78vw] min-h-[11.7vw] p-0 justify-start items-center my-[20px]',
     },
-    video: 'flex flex-row w-[5vw] h-auto ml-5',
+    video: {
+      web: 'flex flex-row h-auto mb-[10px] justify-center items-center',
+      mobile: 'flex mt-[30px] mb-[-40px] flex-row justify-center items-center',
+    },
     detail: {
       web: 'w-[79vw] h-auto flex flex-col justify-center items-center mb-[90px] m-auto p-0 gap-0',
       mobile:
-        'min-w-[88.78vw] h-auto flex p-0 gap-0 justify-center items-start mx-auto mt-[-30px] mb-[30px]',
+        'min-w-[88.78vw] h-auto flex p-0 gap-0 justify-start items-start mx-auto mt-[-30px] mb-[30px]',
     },
     detailSide: {
       web: 'w-[35vw] h-auto flex flex-col',
       mobile: 'hidden',
+    },
+    info: {
+      web: 'flex flex-col',
+      mobile: 'flex flex-row items-center w-full',
     },
   },
   circProgress: {
@@ -42,7 +49,7 @@ export const detailPageClasses = {
     },
     font: {
       web: 'text-[clamp(13px,_1.05vw,_20px)]',
-      mobile: 'text-base',
+      mobile: 'text-[clamp(13px,_1.05vw,_20px)]',
     },
     font2: {
       web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
@@ -62,15 +69,27 @@ export const detailPageClasses = {
   productName: {
     web: 'font-[600] text-[1.8vw] tracking-[0] leading-[46px]',
     mobile:
-      'text-[#1c1b1b] font-medium text-[clamp(3vw,_4.67vw,_20px)] leading-[25px] tracking-normal gap-[2px]',
+      'text-[#1c1b1b] font-medium text-[clamp(3vw,_4.67vw,_20px)] leading-[25px] tracking-normal gap-[2px] text-left',
   },
   cardMedia: {
     web: 'h-[20.8vw] object-contain',
-    mobile: 'h-[70vw] object-contain',
+    mobile: 'h-[60vw] object-contain',
   },
   list: {
     web: 'p-0 mb-[3vw]',
-    mobile: 'hidden',
+    mobile: 'flex flex-col min-w-[88.78vw] justify-start',
+  },
+  listItemIcon: {
+    web: 'w-[1.1vw] h-[1.1vw] text-[#ff624c]',
+    mobile: 'w-[7px] h-[7px] mr-[5px]',
+  },
+  listItemBox: {
+    web: 'flex flex-row gap-4',
+    mobile: '',
+  },
+  listItemText: {
+    web: 'pl-1',
+    mobile: '',
   },
   specs: {
     web: 'text-[2.4vw] font-semibold text-[#303030] leading-[30px] tracking-normal my-[4.1vw]',
@@ -99,7 +118,7 @@ export const detailPageClasses = {
     },
     name: {
       web: 'flex flex-row w-[40vw]',
-      mobile: 'w-[50vw] h-auto',
+      mobile: 'w-[50vw] h-auto justify-start gap-[2.3vw]',
     },
   },
   detailSide: {
