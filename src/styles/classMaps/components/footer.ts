@@ -1,20 +1,23 @@
 export const footerClasses = {
   boxes: {
-    main: 'p-10 bg-gray-100 h-50% mt-[50px]',
-    main2: 'flex justify-center w-auto h-full',
+    main: 'flex flex-col w-[78.95vw] h-[20%] mt-[80px] mx-auto',
+    main2: 'flex w-full h-full flex-row',
     footerStack: {
-      web: 'grid grid-cols-3',
+      web: 'flex flex-col',
       mobile: 'grid grid-cols-1',
     },
     menu: 'flex flex-col pb-6',
-    copyright: 'font-bold flex justify-center text-[14px]',
+    copyright:
+      'opacity-75 font-regular text-[14px] leading-[20px] tracking-normal text-[#303030]',
   },
   typography: {
-    web: 'text-base font-normal m-2',
+    web: 'font-regular text-[14px] leading-[20px] tracking-normal text-[#303030]',
     mobile: 'text-sm font-normal m-2',
   },
   typoContact: {
     web: 'text-xl font-semibold',
     mobile: 'text-lg font-semibold',
   },
+  socialLinks:
+    'font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]',
 };
