@@ -92,10 +92,10 @@ export default function CartPage() {
         <Box className={cartIndexClasses.prodCart}>
           {cartItems != null && cartItems.length > 0 ? (
             <Suspense fallback={<CircularProgress />}>
-              {cartItems.map((cartItem, idx) => (
+              {cartItems.map((cartItem) => (
                 <ProductCard
                   product={cartItem?.product}
-                  key={idx}
+                  key={cartItem?.id}
                   cartProps={{
                     cartAction: 'delete',
                     quantity: cartItem?.quantity,
