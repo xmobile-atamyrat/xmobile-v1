@@ -27,13 +27,9 @@ export default function Footer() {
   const platform = usePlatform();
   const router = useRouter();
   const { categories: allCategories } = useCategoryContext();
-  // const [localCategories, setLocalCategories] = useState<ExtendedCategory[]>(
-  //   [],
-  // );
-  // const { setProducts } = useProductContext();
 
   return (
-    <Box className={footerClasses.boxes.main}>
+    <Box className={footerClasses.boxes.main[platform]}>
       <Box className={footerClasses.boxes.main2}>
         {/* Footer Stack */}
         <Box className={footerClasses.boxes.footerStack[platform]}>
@@ -79,7 +75,7 @@ export default function Footer() {
               </Typography>
             </Box>
             {/* Address-icon */}
-            <Box className="flex items-center">
+            <Box className="flex items-center w-[26vw] mr-[50px]">
               <LocationOnIcon className="text-[#221765]" />
               <Typography
                 className={`${footerClasses.typography[platform]} ${interClassname.className} ml-[5px]`}
@@ -96,14 +92,14 @@ export default function Footer() {
         </Box>
 
         {/* social media */}
-        <Box className={`${footerClasses.boxes.menu} w-[340px]`}>
+        <Box className={`${footerClasses.boxes.menu} min-w-[14vw] mr-[50px]`}>
           <Typography
             className={`${footerClasses.typoContact[platform]} ${interClassname.className} mb-[12px]`}
           >
             {t('followUs')}
           </Typography>
 
-          <Box className="flex flex-col w-full">
+          <Box className="flex flex-col">
             <Link
               target="_blank"
               href={'https://www.instagram.com/xmobiletm/'}
@@ -126,13 +122,13 @@ export default function Footer() {
         </Box>
 
         {/* Categories */}
-        <Box className={`${footerClasses.boxes.menu} ml-[10px]`}>
+        <Box className={`${footerClasses.boxes.menu}`}>
           <Typography
             className={`${interClassname.className} font-semibold text-[20px] leading-[30px] tracking-normal text-[#303030]`}
           >
             {t('allCategory')}
           </Typography>
-          <Box className="grid grid-cols-2 mt-[24px] gap-[12px]">
+          <Box className="grid grid-cols-2 mt-[24px] gap-[12px] gap-x-[35px]">
             {allCategories.map((category) => {
               return (
                 <Typography
