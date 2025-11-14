@@ -42,14 +42,19 @@ export const detailPageClasses = {
     web: 'w-[30px] h-[30px]',
     mobile: 'w-[24px] h-[24px]',
   },
+  price: {
+    web: 'w-[24.3vw] h-auto my-4 flex',
+    mobile: 'h-auto my-4 flex',
+  },
   typographs: {
     price: {
       web: 'font-[700] text-[2.9vw] leading-[3.5vw] tracking-0 text-[#ff624c]',
-      mobile: 'font-bold text-[4.2vw] flex items-center capitalize',
+      mobile:
+        'font-bold text-[clamp(13px,_4.2vw,_25px)] flex items-center capitalize',
     },
     font: {
       web: 'text-[clamp(13px,_1.05vw,_20px)]',
-      mobile: 'text-[clamp(13px,_1.05vw,_20px)]',
+      mobile: 'text-[clamp(2vw,_3vw,_13px)]',
     },
     font2: {
       web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',

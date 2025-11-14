@@ -333,7 +333,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               </Typography>
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />
-            <Box className="w-[24.3vw] h-auto my-4 flex">
+            <Box className={detailPageClasses.price[platform]}>
               {product.price?.includes('[') ? (
                 <CircularProgress
                   className={detailPageClasses.circProgress[platform]}
