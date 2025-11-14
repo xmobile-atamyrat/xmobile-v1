@@ -114,7 +114,7 @@ export default function CartPage() {
                   {t('quantity').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[7.86vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[80px]`}
                 >
                   {t('total').toUpperCase()}
                 </Typography>
