@@ -1,9 +1,12 @@
 export const footerClasses = {
   boxes: {
-    main: 'flex flex-col w-[78.95vw] h-[20%] mt-[80px] mx-auto',
+    main: {
+      web: 'flex flex-col w-[78.95vw] h-[20%] mt-[80px] mx-auto',
+      mobile: 'hidden',
+    },
     main2: 'flex w-full h-full flex-row',
     footerStack: {
-      web: 'flex flex-col',
+      web: 'flex flex-col w-[35.5vw]',
       mobile: 'grid grid-cols-1',
     },
     menu: 'flex flex-col pb-6',
