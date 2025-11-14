@@ -5,7 +5,14 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LoginIcon from '@mui/icons-material/Login';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-import { Alert, Box, IconButton, Input, Snackbar } from '@mui/material';
+import {
+  Alert,
+  Box,
+  IconButton,
+  Input,
+  Snackbar,
+  Typography,
+} from '@mui/material';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
@@ -14,6 +21,9 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
+import { interClassname } from '@/styles/theme';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
 
 export default function AddToCart({
@@ -138,17 +148,22 @@ export default function AddToCart({
     [debounce],
   );
 
-  const handleProductQuantity = (action: 'add' | 'remove' | 'edit') => () => {
-    if (action === 'add') {
-      setQuantity(quantity + 1);
-      editCartItems(quantity + 1);
-    } else if (action === 'remove') {
-      if (quantity > 1) {
+  const handleProductQuantity =
+    (action: 'add' | 'remove' | 'quantityAdd' | 'quantityRemove') => () => {
+      if (action === 'add') {
+        setQuantity(quantity + 1);
+        editCartItems(quantity + 1);
+      } else if (action === 'remove') {
+        if (quantity > 1) {
+          setQuantity(quantity - 1);
+          editCartItems(quantity - 1);
+        }
+      } else if (action === 'quantityAdd') {
+        setQuantity(quantity + 1);
+      } else if (action === 'quantityRemove' && quantity > 1) {
         setQuantity(quantity - 1);
-        editCartItems(quantity - 1);
       }
-    }
-  };
+    };
 
   return (
     <Box>
@@ -186,7 +201,7 @@ export default function AddToCart({
               type="number"
               name="quantity"
               inputProps={{ min: 1 }}
-              className={addToCartClasses.input}
+              className={addToCartClasses.input[platform]}
               value={quantity}
               disableUnderline
               onChange={(e) => {
@@ -220,6 +235,54 @@ export default function AddToCart({
                 color="error"
                 className={addToCartClasses.circIcon.fSize[platform]}
               />
+            </IconButton>
+          </Box>
+        )}
+
+        {cartAction === 'detail' && (
+          <Box className={addToCartClasses.detail.box[platform]}>
+            <Box className="flex flex-row w-[15.3vw] h-[2.9vw] justify-between">
+              {/* removeButton */}
+              <IconButton
+                onClick={handleProductQuantity('quantityRemove')}
+                className={addToCartClasses.iconButton[platform]}
+              >
+                <RemoveIcon
+                  className={addToCartClasses.detail.quantityButton}
+                />
+              </IconButton>
+
+              {/* quantityInput */}
+              <Input
+                name="quantity"
+                inputProps={{ min: 1 }}
+                className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
+                value={quantity}
+                disableUnderline
+                onChange={(e) => {
+                  setQuantity(Number(e.target.value));
+                }}
+              />
+
+              {/* addButton */}
+              <IconButton
+                onClick={handleProductQuantity('quantityAdd')}
+                className={addToCartClasses.iconButton[platform]}
+              >
+                <AddIcon className={addToCartClasses.detail.quantityButton} />
+              </IconButton>
+            </Box>
+
+            {/* addCart */}
+            <IconButton
+              className={addToCartClasses.detail.addToCart[platform]}
+              onClick={addCartItems}
+            >
+              <Typography
+                className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
+              >
+                {t('addToCart')}
+              </Typography>
             </IconButton>
           </Box>
         )}

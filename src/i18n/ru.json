@@ -166,5 +166,6 @@
   "alreadyExistsConcat": "Существует!",
   "confirmProductSupplierDelete": "Вы уверены, что хотите удалить? Предмет также будет удален из всех предыдущих заказов!",
   "category": "Категория",
-  "allCategory": "Все Категории"
+  "allCategory": "Все Категории",
+  "specification": "Спецификация"
 }
