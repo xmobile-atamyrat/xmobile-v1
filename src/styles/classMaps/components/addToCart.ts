@@ -49,7 +49,7 @@ export const addToCartClasses = {
       'w-[40px] h-[24px] [&>input]:text-center text-[16px] font-medium leading-[150%] tracking-[0.5%] text-[#1c1b1b]',
   },
   price: {
-    web: 'flex justify-center items-center w-[8vw]',
+    web: 'flex justify-start items-center min-w-[12vw]',
     mobile: 'hidden',
   },
   priceText: {
@@ -75,7 +75,7 @@ export const addToCartClasses = {
     mobile: '',
   },
   quanChange: {
-    web: 'flex items-center mr-[4vw]',
+    web: 'flex items-center mr-[2vw]',
     mobile:
       'flex flex-row justify-between p-[4px] border-[1px] rounded-[8px] border-[#f4f5fd] w-[96px] h-[32px]',
   },
