@@ -1,6 +1,6 @@
 export const cartProductCardClasses = {
   card: {
-    web: 'w-[79.16vw] h-[294px] flex flex-row mt-[56px] border border-transparent hover:border-[1px] hover:border-[#30303025] transition-all group',
+    web: 'w-[79.16vw] h-[250px] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] transition-all group',
     mobile: 'flex flex-row w-[88.7vw] min-h-[110px] gap-[12px]',
   },
   boxes: {
