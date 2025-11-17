@@ -153,7 +153,7 @@ export default function CartProductCard({
               ) : (
                 <Typography
                   color={colors.text[platform]}
-                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]} ml-[1vw]`}
                 >
                   {product?.price} {t('manat')}
                 </Typography>
