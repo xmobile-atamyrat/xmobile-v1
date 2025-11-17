@@ -3,6 +3,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { appBarHeight, LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import { getCookie, setCookie } from '@/pages/lib/utils';
+
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
