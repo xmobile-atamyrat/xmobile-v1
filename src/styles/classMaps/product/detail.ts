@@ -35,7 +35,11 @@ export const detailPageClasses = {
     },
     info: {
       web: 'flex flex-col',
-      mobile: 'flex flex-row items-center w-full',
+      mobile: 'flex flex-row justify-between items-center w-full',
+    },
+    tag: {
+      web: 'flex flex-row gap-4',
+      mobile: 'flex flex-row gap-2 justify-between',
     },
   },
   circProgress: {
