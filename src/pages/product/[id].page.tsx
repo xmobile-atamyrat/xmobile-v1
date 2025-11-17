@@ -364,14 +364,14 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     <ListItemText
                       className={detailPageClasses.listItemText[platform]}
                       primary={
-                        <Box className="flex flex-row gap-4">
+                        <Box className={detailPageClasses.boxes.tag[platform]}>
                           <Typography
                             className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
                           >
                             {beginning}
                           </Typography>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold ${interClassname.className}`}
+                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[50px] text-end ${interClassname.className}`}
                             color={colors.mainWebMobile[platform]}
                           >
                             {end}
