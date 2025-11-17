@@ -9,7 +9,7 @@ export const addToCartClasses = {
   },
   circIcon: {
     box: {
-      web: 'flex column-reverse h-[294px] w-[33.5vw] items-center justify-between',
+      web: 'flex column-reverse h-full w-[33.5vw] items-center justify-between ml-[-1vw]',
       mobile:
         'flex flex-row w-full h-full items-center justify-between mt-[10px]',
     },
@@ -53,12 +53,12 @@ export const addToCartClasses = {
     mobile: 'hidden',
   },
   priceText: {
-    web: 'font-semibold text-[20px] leading-[30px] tracking-normal text-[#303030]',
+    web: 'font-semibold text-[20px] leading-[30px] tracking-normal text-[#303030] whitespace-nowrap',
     mobile: 'hidden',
   },
   deleteButton: {
     box: {
-      web: 'mx-[2vw] w-[64px] h-[64px] rounded-full border-[1px] border-[#ff624c] opacity-0 group-hover:opacity-100 p-0 flex justify-center items-center flex-shrink-0 transition-all duration-200 group/delete',
+      web: 'mx-[2vw] w-[64px] h-[64px] rounded-full border-[1px] border-[#ff624c] p-0 flex justify-center items-center flex-shrink-0 group/delete',
       mobile: 'w-[40px] h-[40px] color-[#838383] p-0 gap-0 ml-[8px]',
     },
     deleteIcon: {
