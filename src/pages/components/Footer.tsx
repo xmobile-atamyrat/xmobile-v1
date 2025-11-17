@@ -1,5 +1,6 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
 import { interClassname } from '@/styles/theme';
@@ -26,7 +27,13 @@ export default function Footer() {
   const t = useTranslations();
   const platform = usePlatform();
   const router = useRouter();
-  const { categories: allCategories } = useCategoryContext();
+  const {
+    categories: allCategories,
+    setSelectedCategoryId,
+    setStack,
+    setParentCategory,
+  } = useCategoryContext();
+  const { setProducts } = useProductContext();
 
   return (
     <Box className={footerClasses.boxes.main[platform]}>
@@ -41,7 +48,7 @@ export default function Footer() {
                 component="img"
                 image="xmobile-processed-logo.png"
                 alt="Logo"
-                className="w-[7.55vw]"
+                className="w-[145px]"
               />
             </Link>
           </Box>
@@ -133,8 +140,14 @@ export default function Footer() {
               return (
                 <Typography
                   key={category.id}
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
-                  // To-Do make categories functionable
+                  onClick={() => {
+                    setProducts([]);
+                    setStack([]);
+                    setParentCategory(undefined);
+                    setSelectedCategoryId(category.id);
+                    router.push('/product');
+                  }}
+                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] cursor-pointer`}
                 >
                   {parseName(category.name, router.locale ?? 'tk')}
                 </Typography>
