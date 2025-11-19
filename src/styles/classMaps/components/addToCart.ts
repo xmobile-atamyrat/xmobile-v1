@@ -44,7 +44,7 @@ export const addToCartClasses = {
     mobile: 'hidden',
   },
   inputDet: {
-    web: 'w-[40px] h-[40px] rounded-full bg-[#f4f4f4] mx-[16px] font-bold text-[16px] leading-[24px] tracking-normal text-[#303030] [&>input]:text-center',
+    web: 'w-[clamp(30px,_2vw,_40px)] h-[clamp(30px,_2vw,_40px)] rounded-full bg-[#f4f4f4] mx-[16px] font-bold text-[clamp(12px,_0.8vw,_16px)] leading-[24px] tracking-normal text-[#303030] [&>input]:text-center',
     mobile:
       'w-[40px] h-[24px] [&>input]:text-center text-[16px] font-medium leading-[150%] tracking-[0.5%] text-[#1c1b1b]',
   },
@@ -53,16 +53,16 @@ export const addToCartClasses = {
     mobile: 'hidden',
   },
   priceText: {
-    web: 'font-semibold text-[20px] leading-[30px] tracking-normal text-[#303030] whitespace-nowrap',
+    web: 'font-[500] text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal text-[#303030] whitespace-nowrap',
     mobile: 'hidden',
   },
   deleteButton: {
     box: {
-      web: 'mx-[2vw] w-[64px] h-[64px] rounded-full border-[1px] border-[#ff624c] p-0 flex justify-center items-center flex-shrink-0 group/delete',
+      web: 'mx-[2vw] w-[clamp(40px,_3.33vw,_64px)] h-[clamp(40px,_3.33vw,_64px)] rounded-full border-[1px] border-[#ff624c] p-0 flex justify-center items-center flex-shrink-0 group/delete',
       mobile: 'w-[40px] h-[40px] color-[#838383] p-0 gap-0 ml-[8px]',
     },
     deleteIcon: {
-      web: 'h-[25px] w-auto brightness-100 group-hover/delete:invert group-hover/delete:brightness-0 transition-all duration-200',
+      web: 'h-[clamp(15px,_1.3vw,_25px)] w-auto brightness-100 group-hover/delete:invert group-hover/delete:brightness-0 transition-all duration-200',
       mobile: 'w-[24px] h-[24px]',
     },
     iconButton: {
