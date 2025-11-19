@@ -32,7 +32,7 @@ export const cartIndexClasses = {
     },
   },
   infoCol: {
-    web: 'flex flex-row w-[79.16vw] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
+    web: 'flex flex-row w-[clamp(850px,_79.16vw,_1520px)] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
     mobile: 'hidden',
   },
   infoColTypo:
