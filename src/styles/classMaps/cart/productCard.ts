@@ -1,6 +1,6 @@
 export const cartProductCardClasses = {
   card: {
-    web: 'w-[79.16vw] h-[13.5vw] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] overflow-visible',
+    web: 'w-[clamp(850px,_79.16vw,_1520px)] h-[13.5vw] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] overflow-visible',
     mobile: 'flex flex-row w-[88.7vw] min-h-[110px] gap-[12px]',
   },
   boxes: {
@@ -19,11 +19,11 @@ export const cartProductCardClasses = {
     },
   },
   typo: {
-    web: 'text-[20px] font-semibold leading-[30px] mt-[16px] whitespace-normal break-words',
+    web: 'text-[clamp(16px,_1.041vw,_20px)] font-semibold leading-[30px] mt-[16px] whitespace-normal break-words',
     mobile: 'text-[14px] font-medium text-[#1b1b1b]',
   },
   typo2: {
-    web: 'font-semibold text-[20px] leading-[30px] tracking-normal my-auto w-[13vw]',
+    web: 'font-regular text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal my-auto w-[13vw]',
     mobile:
       'font-medium text-[16px] leading-full tracking-normal text-[#1b1b1b] mt-[5px]',
   },
