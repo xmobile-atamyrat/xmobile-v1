@@ -1,18 +1,14 @@
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   appBarHeight,
   AUTH_REFRESH_COOKIE_NAME,
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
-  LOGO_COLOR,
 } from '@/pages/lib/constants';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { Dvr } from '@mui/icons-material';
-import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -26,9 +22,9 @@ import { interClassname } from '@/styles/theme';
 import CallIcon from '@mui/icons-material/Call';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PersonIcon from '@mui/icons-material/Person';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import {
-  Avatar,
   CardMedia,
   Divider,
   Paper,
@@ -112,8 +108,6 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
-  const { setStack, setParentCategory, setSelectedCategoryId } =
-    useCategoryContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -289,7 +283,7 @@ export default function CustomAppBar({
           </Box>
         </Box>
         <Divider className="text-[#303030]" />
-        <Toolbar className={appbarClasses.toolBar}>
+        <Box className="my-[28px] w-[1516px] h-[48px] flex flex-row justify-between mx-auto">
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
@@ -302,9 +296,6 @@ export default function CustomAppBar({
               >
                 <ArrowBackIosIcon
                   className={appbarClasses.arrowBackIos[platform]}
-                  sx={{
-                    color: LOGO_COLOR,
-                  }}
                 />
               </IconButton>
             )}
@@ -314,88 +305,50 @@ export default function CustomAppBar({
               color="inherit"
               aria-label="open drawer"
               onClick={() => setOpenDrawer(!openDrawer)}
-              className="p-4 pl-[4px]"
+              className="p-4"
             >
-              <MenuIcon
-                className={appbarClasses.menuIcon[platform]}
-                sx={{
-                  color: LOGO_COLOR,
-                }}
+              <MenuIcon className={appbarClasses.menuIcon[platform]} />
+            </IconButton>
+          </Box>
+          {/* Add new pages as showed in figma
+
+          <Box
+            className={appbarClasses.boxes.logo[platform]}
+            onClick={() => {
+              setParentCategory(undefined);
+              setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
+              setStack([]);
+              router.push('/');
+            }}
+            component="button"
+          >
+            <CardMedia component="img" src="/xmobile-processed-logo.png" />
+          </Box> */}
+          <Box className="w-[560px] h-[48px]">
+            {SearchBar({
+              searchKeyword: localSearchKeyword,
+              searchPlaceholder: t('search'),
+              setSearchKeyword: setLocalSearchKeyword,
+              width: '95%',
+            })}
+          </Box>
+          <Box className="flex flex-row w-auto h-full justify-between items-center">
+            <IconButton onClick={() => router.push('/cart')}>
+              <ShoppingCartCheckoutIcon
+                className={appbarClasses.shoppingCCI[platform]}
               />
             </IconButton>
-            <Box
-              className={appbarClasses.boxes.logo[platform]}
-              onClick={() => {
-                setParentCategory(undefined);
-                setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-                setStack([]);
-                router.push('/');
-              }}
-              component="button"
-            >
-              <CardMedia component="img" src="/logo-recolored-cropped.jpeg" />
-            </Box>
+            <Divider
+              orientation="vertical"
+              className="h-[32px] text-[#303030] mx-[12px]"
+            />
+            <IconButton>
+              <PersonIcon className="text-[#303030] w-[28px] h-[28px]" />
+            </IconButton>
           </Box>
-
-          <Box className={appbarClasses.boxes.search}>
-            {isMdUp && showSearch && (
-              <Box
-                sx={{
-                  width: 400,
-                }}
-              >
-                {SearchBar({
-                  mt: isMdUp ? undefined : `${appBarHeight}px`,
-                  searchKeyword: localSearchKeyword,
-                  searchPlaceholder: t('search'),
-                  setSearchKeyword: setLocalSearchKeyword,
-                  width: '95%',
-                })}
-              </Box>
-            )}
-
-            {user && (
-              <Box>
-                <IconButton
-                  className="pl-1 pr-0"
-                  onClick={() => router.push('/cart')}
-                >
-                  <ShoppingCartCheckoutIcon
-                    className={appbarClasses.shoppingCCI[platform]}
-                    sx={{ color: LOGO_COLOR }}
-                  />
-                </IconButton>
-              </Box>
-            )}
-            <Box>
-              <IconButton
-                edge="end"
-                aria-label="account of current user"
-                aria-haspopup="true"
-                onClick={(event) => setAnchorEl(event.currentTarget)}
-                color="inherit"
-              >
-                {user != null ? (
-                  <Avatar
-                    className={appbarClasses.avatar[platform]}
-                    style={{
-                      backgroundColor: LOGO_COLOR,
-                    }}
-                  >
-                    {user.name[0].toUpperCase()}
-                  </Avatar>
-                ) : (
-                  <AccountCircle
-                    className={appbarClasses.accCircle[platform]}
-                    sx={{
-                      color: LOGO_COLOR,
-                    }}
-                  />
-                )}
-              </IconButton>
-            </Box>
-          </Box>
-        </Toolbar>
+        </Box>
+        {/* <Box className="w-full h-[72px] bg-[#ff624c] flex flex-row"></Box> */}
+        <Toolbar className={appbarClasses.toolBar}></Toolbar>
       </AppBar>
       {showSearch &&
         !isMdUp &&

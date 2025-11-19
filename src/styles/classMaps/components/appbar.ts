@@ -1,8 +1,8 @@
 export const appbarClasses = {
   boxes: {
-    form: 'flex items-center w-[560px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] ml-[-600px] justify-between px-[24px] py-[18px]',
+    form: 'flex items-center w-[560px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
     logo: {
-      web: 'flex items-center justify-center w-[120px] h-100%',
+      web: 'flex items-center justify-center w-[146px] h-100%',
       mobile: 'flex items-center justify-center w-[100px] h-100%',
     },
     search: 'flex w-fit h-full items-center justify-center',
@@ -18,11 +18,11 @@ export const appbarClasses = {
     'flex w-full text-[#303030] [&_.MuiInputBase-input]:text-[#303030]',
   toolBar: 'flex items-center justify-between',
   arrowBackIos: {
-    web: `w-[28px] h-[28px]`,
+    web: `w-[28px] h-[28px] text-[#303030] mx-auto`,
     mobile: `w-[24px] h-[24px]`,
   },
   menuIcon: {
-    web: `w-[34px] h-[34px]`,
+    web: `w-[34px] h-[34px] text-[#303030]`,
     mobile: `w-[30px] h-[30px]`,
   },
   menuItem: {
@@ -34,11 +34,11 @@ export const appbarClasses = {
     mobile: 'text-[14px]',
   },
   shoppingCCI: {
-    web: 'w-[36px] h-[36px]',
+    web: 'w-[28px] h-[28px] text-[#303030]',
     mobile: 'w-[30px] h-[30px]',
   },
   avatar: {
-    web: 'w-[36px] h-[36px]',
+    web: 'w-[28px] h-[28px] text-[#303030]',
     mobile: 'w-[30px] h-[30px]',
   },
   accCircle: {
@@ -51,7 +51,7 @@ export const appbarClasses = {
     mobile: 'w-[80px] h-[36px]',
   },
   appbar: {
-    web: 'bg-white h-[224px] mt-[16px]',
+    web: 'bg-white h-[142px] mt-[16px]',
     mobile: 'bg-white h-[56px]',
   },
 };
