@@ -58,17 +58,17 @@ export const detailPageClasses = {
     },
     font: {
       web: 'text-[clamp(13px,_1.05vw,_20px)]',
-      mobile: 'text-[clamp(2vw,_3vw,_13px)]',
+      mobile: 'text-[clamp(2vw,_4vw,_15px)]',
     },
     font2: {
       web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030] opacity-[75%]',
       mobile:
-        'text-[clamp(2vw,_3vw,_13px)] font-regular leading-[20px] tracking-normal opacity-[40%]',
+        'text-[clamp(2vw,_4vw,_15px)] font-regular leading-[20px] tracking-normal opacity-[40%]',
     },
     desc: {
       web: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-semibold text-[#303030] ml-[0.05vw]',
       mobile:
-        'font-bold text-[clamp(2vw,_3vw,_13px)] leading-[20px] tracking-normal opacity-[40%]',
+        'font-bold text-[clamp(2vw,_4vw,_15px)] leading-[20px] tracking-normal opacity-[40%]',
     },
   },
   link: {
@@ -119,11 +119,11 @@ export const detailPageClasses = {
     },
     head: {
       web: 'flex w-[15vw]',
-      mobile: 'w-[35vw] h-auto',
+      mobile: 'w-[25vw] h-auto',
     },
     val: {
       web: 'flex flex-col max-w-[18.4vw]',
-      mobile: 'max-w-[50vw]',
+      mobile: 'max-w-[50vw] ml-[1vw]',
     },
     name: {
       web: 'flex flex-row w-[40vw]',
