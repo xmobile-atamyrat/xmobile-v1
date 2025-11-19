@@ -354,8 +354,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <List className={detailPageClasses.list[platform]}>
               {product.tags.map((tag, index) => {
                 const words = tag.split(' ');
-                const beginning = words.slice(0, -2).join(' ');
-                const end = words.slice(-2).join(' ');
+                const n = words[words.length - 1].length < 1 ? 3 : 2;
+                const beginning = words.slice(0, -n).join(' ');
+                const end = words.slice(-n).join(' ');
                 return (
                   <ListItem key={index} className="p-0">
                     <FiberManualRecordIcon
