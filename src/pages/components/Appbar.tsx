@@ -66,15 +66,16 @@ export const SearchBar = ({
   mt?: string;
   width?: string;
 }) => {
+  const platform = usePlatform();
   return (
-    <Box className={appbarClasses.boxes.form}>
+    <Box className={appbarClasses.boxes.form[platform]}>
       <Paper
         component="form"
-        className={`${appbarClasses.paper} mt-${mt} w-${width}`}
+        className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
         elevation={0}
       >
         <InputBase
-          className={appbarClasses.inputBase}
+          className={appbarClasses.inputBase[platform]}
           placeholder={`${searchPlaceholder}...`}
           onChange={(e) => {
             const keyword = e.target.value;
@@ -131,14 +132,24 @@ export default function CustomAppBar({
 
   return (
     <Box className="flex-grow-1">
+      <IconButton
+        size="medium"
+        edge="start"
+        color="inherit"
+        className={appbarClasses.backButton[platform]}
+        aria-label="open drawer"
+        onClick={handleBackButton}
+      >
+        <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
+      </IconButton>
       <AppBar
         position="sticky"
         className={appbarClasses.appbar[platform]}
         elevation={0}
       >
-        <Box className="w-full h-[48px] flex justify-center items-start">
-          <Box className="w-[1516px] h-[32px] justify-between flex flex-row">
-            <Box className="gap-[24px] min-w-[214px] flex flex-row">
+        <Box className="w-full min-h-[48px] flex justify-center items-start">
+          <Box className="w-[78.95vw] min-h-[32px] justify-between flex flex-row items-center">
+            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
               <Box className="min-w-[234px] flex flex-row items-center">
                 <LocationOnIcon className="h-[16px] text-[#303030]" />
                 <Typography
@@ -150,7 +161,7 @@ export default function CustomAppBar({
               <Divider
                 orientation="vertical"
                 flexItem
-                className="text-[#303030] mx-[-15px]"
+                className="text-[#303030] mx-[-15px] min-h-[30px] my-auto"
               />
               <Box className="min-w-[234px] flex flex-row items-center">
                 <CallIcon className="h-[16px] text-[#303030]" />
@@ -283,7 +294,7 @@ export default function CustomAppBar({
           </Box>
         </Box>
         <Divider className="text-[#303030]" />
-        <Box className="my-[28px] w-[1516px] h-[48px] flex flex-row justify-between mx-auto">
+        <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
