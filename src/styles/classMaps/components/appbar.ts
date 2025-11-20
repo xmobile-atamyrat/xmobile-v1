@@ -1,6 +1,10 @@
 export const appbarClasses = {
   boxes: {
-    form: 'flex items-center w-[560px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
+    form: {
+      web: 'flex items-center w-[560px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
+      mobile:
+        'flex items-center w-[88.78vw] h-[40px] bg-[#f6f6f6] rounded-[12px] gap-[8px] mx-auto px-[10px]',
+    },
     logo: {
       web: 'flex items-center justify-center w-[146px] h-100%',
       mobile: 'flex items-center justify-center w-[100px] h-100%',
@@ -12,10 +16,14 @@ export const appbarClasses = {
     },
     toolbar: 'flex w-fit h-full items-center justify-start',
   },
-  paper:
-    'flex items-center rounded-2xl p-[2px_4px] justify-between w-full h-full',
-  inputBase:
-    'flex w-full text-[#303030] [&_.MuiInputBase-input]:text-[#303030]',
+  paper: {
+    web: 'flex items-center rounded-2xl p-[2px_4px] justify-between w-full h-full',
+    mobile: 'flex bg-[#f6f6f6] w-full justify-center',
+  },
+  inputBase: {
+    web: 'flex w-full text-[#303030] [&_.MuiInputBase-input]:text-[#303030]',
+    mobile: 'flex w-full text-[#0b0b0b] leading-[100%] text-[15px] font-medium',
+  },
   toolBar: 'flex items-center justify-between',
   arrowBackIos: {
     web: `w-[28px] h-[28px] text-[#303030] mx-auto`,
@@ -51,7 +59,11 @@ export const appbarClasses = {
     mobile: 'w-[80px] h-[36px]',
   },
   appbar: {
-    web: 'bg-white h-[142px] mt-[16px]',
-    mobile: 'bg-white h-[56px]',
+    web: 'bg-white min-h-[142px] mt-[16px]',
+    mobile: 'hidden',
+  },
+  backButton: {
+    web: 'hidden',
+    mobile: 'flex justify-center ml-[5px]',
   },
 };
