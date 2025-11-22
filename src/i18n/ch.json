@@ -166,5 +166,8 @@
   "alreadyExistsConcat": "Barha!",
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
   "category": "Kategoriýa",
-  "allCategory": "Hemme Kategoriýalar"
+  "allCategory": "Hemme Kategoriýalar",
+  "account": "Akkaunt",
+  "appLanguage": "Priloženiýa Dili",
+  "signOutVerify": "Akkoundyňyzdan çykjaksyzmy?"
 }
