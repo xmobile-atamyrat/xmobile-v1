@@ -1,7 +1,7 @@
 export const homePageClasses = {
   main: {
     web: 'w-full h-full flex flex-col mt-[64px]',
-    mobile: 'w-full h-full flex flex-col mt-[56px]',
+    mobile: 'w-full h-full flex flex-col',
   },
   card: {
     web: 'flex flex-wrap gap-[30px] w-full px-[10.31vw] justify-start',
