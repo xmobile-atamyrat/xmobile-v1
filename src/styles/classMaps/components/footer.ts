@@ -26,7 +26,7 @@ export const footerClasses = {
   mainMobile: {
     web: 'hidden',
     mobile:
-      'justify-between bg-[#fff] w-full h-[60px] px-[40px] py-[20px] shadow-[0_0_70px_0_#0000001A] flex items-center',
+      'justify-between bg-[#fff] w-full h-[60px] py-[20px] shadow-[0_0_70px_0_#0000001A] flex items-center',
   },
   mainBox: {
     web: 'flex flex-col w-full',
