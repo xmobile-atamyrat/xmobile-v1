@@ -44,12 +44,9 @@ export default function Footer() {
   } = useCategoryContext();
   const { setProducts } = useProductContext();
   const user = useUserContext();
-  // const pathname = usePathname();
-  // const [value, setValue] = React.useState(pathname);
 
-  const handleChange = (_: any, newValue: string) => {
-    // setValue(newValue);
-    router.push(newValue); // navigate
+  const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
+    router.push(newValue);
   };
 
   return (
@@ -65,7 +62,10 @@ export default function Footer() {
         elevation={0}
         className={footerClasses.mainMobile[platform]}
       >
-        <BottomNavigation onChange={handleChange}>
+        <BottomNavigation
+          onChange={handleChange}
+          className="w-full flex justify-between"
+        >
           <BottomNavigationAction
             color={colors.text.web}
             value="/"
@@ -103,7 +103,7 @@ export default function Footer() {
           )}
           <BottomNavigationAction
             color={colors.text.web}
-            value="/profile"
+            value="/user/profile"
             icon={
               <CardMedia
                 component="img"
