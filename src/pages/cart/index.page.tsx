@@ -120,10 +120,10 @@ export default function CartPage() {
                 </Typography>
               </Box>
               <Suspense fallback={<CircularProgress />}>
-                {cartItems.map((cartItem, idx) => (
+                {cartItems.map((cartItem) => (
                   <CartProductCard
                     product={cartItem?.product}
-                    key={idx}
+                    key={cartItem?.id}
                     cartProps={{
                       cartAction: 'delete',
                       quantity: cartItem?.quantity,
