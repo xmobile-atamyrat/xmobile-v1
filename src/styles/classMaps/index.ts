@@ -1,6 +1,6 @@
 export const homePageClasses = {
   main: {
-    web: 'w-full h-full flex flex-col mt-[64px]',
+    web: 'w-full h-full flex flex-col',
     mobile: 'w-full h-full flex flex-col',
   },
   card: {
