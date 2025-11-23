@@ -119,11 +119,11 @@ export const detailPageClasses = {
     },
     head: {
       web: 'flex w-[15vw]',
-      mobile: 'w-[25vw] h-auto',
+      mobile: 'w-[25vw] h-auto break-words',
     },
     val: {
       web: 'flex flex-col max-w-[18.4vw]',
-      mobile: 'max-w-[50vw] ml-[1vw]',
+      mobile: 'min-w-[30vw] max-w-[60vw] ml-[1vw]',
     },
     name: {
       web: 'flex flex-row w-[40vw]',
