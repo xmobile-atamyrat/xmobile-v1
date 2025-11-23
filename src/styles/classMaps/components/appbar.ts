@@ -45,10 +45,6 @@ export const appbarClasses = {
     web: 'w-[28px] h-[28px] text-[#303030]',
     mobile: 'w-[30px] h-[30px]',
   },
-  avatar: {
-    web: 'w-[28px] h-[28px] text-[#303030]',
-    mobile: 'w-[30px] h-[30px]',
-  },
   accCircle: {
     web: 'w-[42px] h-[42px]',
     mobile: 'w-[36px] h-[36px]',

@@ -22,8 +22,6 @@ import { interClassname } from '@/styles/theme';
 import CallIcon from '@mui/icons-material/Call';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import PersonIcon from '@mui/icons-material/Person';
-import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import {
   CardMedia,
   Divider,
@@ -114,6 +112,13 @@ export default function CustomAppBar({
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
+  const languages = [
+    { val: 'ru', name: 'Русский', img: '/Russia.png' },
+    { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
+    { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
+    { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
+    { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
+  ];
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -155,7 +160,7 @@ export default function CustomAppBar({
                 <Typography
                   className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
-                  {t('address')}
+                  {t('shortAddress')}
                 </Typography>
               </Box>
               <Divider
@@ -187,91 +192,26 @@ export default function CustomAppBar({
                   });
                 }}
               >
-                <MenuItem
-                  value="ru"
-                  className={appbarClasses.menuItem[platform]}
-                >
-                  <Box className={appbarClasses.boxes.lang[platform]}>
-                    <CardMedia
-                      component="img"
-                      src="/Russia.png"
-                      className="w-[24px] h-[18px]"
-                    />
-                    <Typography
-                      className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                    >
-                      Русский
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem
-                  value="tk"
-                  className={appbarClasses.menuItem[platform]}
-                >
-                  <Box className={appbarClasses.boxes.lang[platform]}>
-                    <CardMedia
-                      component="img"
-                      src="/Turkmenistan.png"
-                      className="w-[24px] h-[18px]"
-                    />
-                    <Typography
-                      className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                    >
-                      Türkmençe
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem
-                  value="tr"
-                  className={appbarClasses.menuItem[platform]}
-                >
-                  <Box className={appbarClasses.boxes.lang[platform]}>
-                    <CardMedia
-                      component="img"
-                      src="/Turkey.png"
-                      className="w-[24px] h-[18px]"
-                    />
-                    <Typography
-                      className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                    >
-                      Türkce
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem
-                  value="ch"
-                  className={appbarClasses.menuItem[platform]}
-                >
-                  <Box className={appbarClasses.boxes.lang[platform]}>
-                    <CardMedia
-                      component="img"
-                      src="/Turkmenistan.png"
-                      className="w-[24px] h-[18px]"
-                    />
-                    <Typography
-                      className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                    >
-                      Çärjowça
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem
-                  value="en"
-                  className={appbarClasses.menuItem[platform]}
-                >
-                  <Box className={appbarClasses.boxes.lang[platform]}>
-                    <CardMedia
-                      component="img"
-                      src="/UnitedKingdom.png"
-                      className="w-[24px] h-[18px]"
-                    />
-                    <Typography
-                      className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                    >
-                      English
-                    </Typography>
-                  </Box>
-                </MenuItem>
+                {languages.map((lang) => (
+                  <MenuItem
+                    key={lang.val}
+                    value={lang.val}
+                    className={appbarClasses.menuItem[platform]}
+                  >
+                    <Box className={appbarClasses.boxes.lang[platform]}>
+                      <CardMedia
+                        component="img"
+                        src={lang.img}
+                        className="w-[24px] h-[18px]"
+                      />
+                      <Typography
+                        className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
+                      >
+                        {lang.name}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
               </Select>
               <Divider
                 orientation="vertical"
@@ -344,21 +284,53 @@ export default function CustomAppBar({
             })}
           </Box>
           <Box className="flex flex-row w-auto h-full justify-between items-center">
-            <IconButton onClick={() => router.push('/cart')}>
-              <ShoppingCartCheckoutIcon
+            {user && (
+              <Box className="flex flex-row items-center">
+                <IconButton
+                  onClick={() => router.push('/cart')}
+                  className="rounded-none"
+                >
+                  <CardMedia
+                    component="img"
+                    src="/cartWeb.png"
+                    className={appbarClasses.shoppingCCI[platform]}
+                  />
+                  <Typography
+                    className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
+                  >
+                    Cart
+                  </Typography>
+                </IconButton>
+                <Divider
+                  orientation="vertical"
+                  className="h-[32px] text-[#303030] mx-[12px]"
+                />
+              </Box>
+            )}
+            <IconButton
+              onClick={(event) => setAnchorEl(event.currentTarget)}
+              className="rounded-none"
+            >
+              <CardMedia
+                component="img"
+                src="/userBlack.png"
                 className={appbarClasses.shoppingCCI[platform]}
               />
-            </IconButton>
-            <Divider
-              orientation="vertical"
-              className="h-[32px] text-[#303030] mx-[12px]"
-            />
-            <IconButton>
-              <PersonIcon className="text-[#303030] w-[28px] h-[28px]" />
+              <Box className="flex flex-col items-start justify-center ml-[20px]">
+                <Typography
+                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                >
+                  User
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                >
+                  {user ? user.name.split(' ')[0] : 'Account'}
+                </Typography>
+              </Box>
             </IconButton>
           </Box>
         </Box>
-        {/* <Box className="w-full h-[72px] bg-[#ff624c] flex flex-row"></Box> */}
         <Toolbar className={appbarClasses.toolBar}></Toolbar>
       </AppBar>
       {showSearch &&
