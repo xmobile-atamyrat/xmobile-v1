@@ -5,7 +5,8 @@ import {
 } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
-import { interClassname } from '@/styles/theme';
+import { profileClasses } from '@/styles/classMaps/user/profile';
+import { colors, interClassname } from '@/styles/theme';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import {
   Box,
@@ -60,29 +61,31 @@ export default function Profile() {
   return (
     <Box className="w-full h-full">
       {!user ? (
-        <Box className="w-[88.78vw] h-full mx-auto flex flex-col items-center justify-center">
+        <Box className={profileClasses.boxes.loggedOutMain}>
           <CardMedia
             component="img"
             src="/xmobile-processed-logo.png"
-            className="w-[230px] mb-[50px]"
+            className={profileClasses.logo}
           />
-          <Box className="h-[116px] flex flex-col w-full justify-center items-center">
+          <Box className={profileClasses.boxes.loggedOutOptions}>
             <Link
-              className="no-underline flex w-full justify-center items-center bg-[#221765] rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[48px]"
+              className={`${profileClasses.logInOptionsLink} bg-[#221765]`}
               href="/user/signin"
             >
               <Typography
-                className={`font-medium text-[16px] leading-[24px] tracking-normal text-[#fff] ${interClassname.className}`}
+                className={`${profileClasses.logInOptionsTypo} ${interClassname.className}`}
+                color={colors.white}
               >
                 {t('signin')}
               </Typography>
             </Link>
             <Link
-              className="no-underline flex w-full justify-center items-center bg-[#fff] rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[48px] border-[1px] border-[#221765] mt-[20px]"
+              className={`${profileClasses.logInOptionsLink} bg-[#fff] border-[1px] border-[#221765] mt-[20px]`}
               href="/user/signup"
             >
               <Typography
-                className={`font-medium text-[16px] leading-[24px] tracking-normal text-[#221765] ${interClassname.className}`}
+                className={`${profileClasses.logInOptionsTypo} ${interClassname.className}`}
+                color={colors.darkBlue}
               >
                 {t('signup')}
               </Typography>
@@ -90,68 +93,58 @@ export default function Profile() {
           </Box>
         </Box>
       ) : (
-        <Box className="w-full h-full flex flex-col items-center">
+        <Box className={profileClasses.boxes.loggedInMain}>
           <Typography
-            className={`mt-[8px] font-medium text-[20px] leading-none tracking-normal text-[#000] ${interClassname.className}`}
+            className={`${profileClasses.typos.account} ${interClassname.className}`}
           >
             {t('account')}
           </Typography>
 
-          <Box className="w-full h-[90px] py-[16px] px-[28px] gap-[16px] flex justify-center items-center mt-[25px]">
-            <Box className="gap-[16px] w-[86.91%] h-[60px] flex flex-col justify-center">
+          <Box className={profileClasses.boxes.accountMain}>
+            <Box className={profileClasses.boxes.account}>
               <Typography
-                className={`${interClassname.className} font-medium text-[16px] leading-none tracking-normal text-[#1b1b1b]`}
+                className={`${interClassname.className} ${profileClasses.typos.name}`}
               >
                 {user.name}
               </Typography>
               <Typography
-                className={`${interClassname.className} font-regular text-[14px] leading-none tracking-normal text-[#838383]`}
+                className={`${interClassname.className} ${profileClasses.typos.email}`}
               >
                 {user.email}
               </Typography>
             </Box>
           </Box>
-          <Box className="w-full h-[4px] bg-[#f6f6f6]"></Box>
-          <Box className="w-full px-[30px] mt-[20px]">
-            <Box className="flex flex-row w-full h-[30px] items-center">
-              <CardMedia
-                component="img"
-                src="/language.png"
-                className="w-[20px] h-[20px]"
-              />
-              <Button
-                className="flex flex-row ml-[20px] w-full h-full items-center justify-between no-underline p-0 normal-case"
-                onClick={handleToggleLang}
+          <Box className={profileClasses.boxes.divider}></Box>
+          <Box className={profileClasses.boxes.section}>
+            <CardMedia
+              component="img"
+              src="/language.png"
+              className={profileClasses.sectionIcon}
+            />
+            <Button className={profileClasses.btn} onClick={handleToggleLang}>
+              <Typography
+                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
               >
-                <Typography
-                  className={`${interClassname.className} font-medium text-[13px] leading-[18px] tracking-normal text-[#000]`}
-                >
-                  {t('appLanguage')}
-                </Typography>
-                <ArrowForwardIosIcon className="w-[17px] h-[17px] text-[#000]" />
-              </Button>
-            </Box>
+                {t('appLanguage')}
+              </Typography>
+              <ArrowForwardIosIcon className={profileClasses.icons} />
+            </Button>
           </Box>
-          <Divider className="h-[1px] text-[#e7e7e7] w-[80%] my-[20px]" />
-          <Box className="w-full px-[30px]">
-            <Box className="flex flex-row w-full h-[30px] items-center">
-              <CardMedia
-                component="img"
-                src="/logout.png"
-                className="w-[20px] h-[20px]"
-              />
-              <Button
-                className="flex flex-row ml-[20px] w-full h-full items-center justify-between no-underline p-0 normal-case"
-                onClick={handleToggle}
+          <Divider className={profileClasses.divider} />
+          <Box className={profileClasses.boxes.section}>
+            <CardMedia
+              component="img"
+              src="/logout.png"
+              className={profileClasses.sectionIcon}
+            />
+            <Button className={profileClasses.btn} onClick={handleToggle}>
+              <Typography
+                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
               >
-                <Typography
-                  className={`${interClassname.className} font-medium text-[13px] leading-[18px] tracking-normal text-[#000]`}
-                >
-                  {t('signout')}
-                </Typography>
-                <ArrowForwardIosIcon className="w-[17px] h-[17px] text-[#000]" />
-              </Button>
-            </Box>
+                {t('signout')}
+              </Typography>
+              <ArrowForwardIosIcon className={profileClasses.icons} />
+            </Button>
           </Box>
           <Dialog
             open={open}
@@ -159,28 +152,30 @@ export default function Profile() {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             PaperProps={{
-              className:
-                'w-[90vw] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+              className: profileClasses.dialog.main,
             }}
           >
             <Typography
               id="alert-dialog-title"
-              className={`flex justify-center font-semibold text-[22px] leading-[28px] tracking-normal text-[#000] ${interClassname.className}`}
+              className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
             >
               {t('signout').toUpperCase()}
             </Typography>
-            <Box className="flex h-[20px] justify-center mt-[20px]">
+            <Box className={profileClasses.boxes.verifyTxt}>
               <Typography
-                className={`flex justify-center font-medium text-[15px] leading-[20px] tracking-normal text-[#353636] h-[20px]`}
+                className={`${profileClasses.typos.verifyTxt} ${interClassname.className}`}
               >
                 {t('signOutVerify')}
               </Typography>
             </Box>
-            <Box className="w-[90%] flex flex-row justify-between mt-[30px] mx-auto">
+            <Box className={profileClasses.boxes.verify}>
               <Button onClick={handleToggle}>
-                <Box className="flex justify-center items-center w-[160px] h-[50px] rounded-[12px] border-[1px] border-[#838383]">
+                <Box
+                  className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+                >
                   <Typography
-                    className={`${interClassname.className} font-regular text-[17px] leading-[22px] tracking-normal text-[#000] normal-case`}
+                    className={`${interClassname.className} ${profileClasses.typos.option}`}
+                    color={colors.black}
                   >
                     {t('no')}
                   </Typography>
@@ -200,9 +195,10 @@ export default function Profile() {
                   })();
                 }}
               >
-                <Box className="flex justify-center items-center w-[160px] h-[50px] rounded-[12px] bg-[#ff3b30]">
+                <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
                   <Typography
-                    className={`${interClassname.className} font-regular text-[17px] leading-[22px] tracking-normal text-[#fff] normal-case`}
+                    className={`${interClassname.className} ${profileClasses.typos.option}`}
+                    color={colors.white}
                   >
                     {t('yes')}
                   </Typography>
@@ -216,20 +212,19 @@ export default function Profile() {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             PaperProps={{
-              className:
-                'w-[90vw] h-[329px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+              className: profileClasses.dialog.main,
             }}
           >
             <Typography
               id="alert-dialog-title"
-              className={`flex justify-center font-semibold text-[22px] leading-[28px] tracking-normal text-[#000] ${interClassname.className}`}
+              className={`${profileClasses.typos.language} ${interClassname.className}`}
             >
-              {'Language'.toUpperCase()}
+              {'Language'}
             </Typography>
-            <List className="min-w-[110px] h-[238px] border-0 flex flex-col mt-[20px]">
+            <List className={profileClasses.boxes.langList}>
               {lang.map((language) => (
                 <ListItemButton
-                  className="px-[12px] gap-[10px]"
+                  className={profileClasses.boxes.langListitemButton}
                   key={language.val}
                   selected={selectedLocale === language.val}
                   onClick={() => {
@@ -243,18 +238,18 @@ export default function Profile() {
                   }}
                   sx={{
                     '&.Mui-selected': {
-                      backgroundColor: '#f4f4f4',
+                      backgroundColor: colors.paperBackground.web,
                     },
                   }}
                 >
-                  <Box className="flex flex-row justify-start w-full items-center px-[12px] gap-[10px]">
+                  <Box className={profileClasses.boxes.langOption}>
                     <CardMedia
                       component="img"
                       src={language.img}
-                      className="w-[24px] h-[18px]"
+                      className={profileClasses.langImg}
                     />
                     <Typography
-                      className={`text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal ${interClassname.className}`}
+                      className={`${profileClasses.typos.langOption} ${interClassname.className}`}
                     >
                       {language.name}
                     </Typography>
