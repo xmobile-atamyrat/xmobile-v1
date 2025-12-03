@@ -212,7 +212,7 @@ export default function Profile() {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             PaperProps={{
-              className: profileClasses.dialog.main,
+              className: `${profileClasses.dialog.main} h-[300px]`,
             }}
           >
             <Typography
