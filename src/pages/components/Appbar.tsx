@@ -244,13 +244,13 @@ export default function CustomAppBar({
                   padding: { xs: '8px', sm: '20px' },
                 },
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR, // Change border color here
+                  borderColor: LOGO_COLOR,
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR, // Change border color on hover
+                  borderColor: LOGO_COLOR,
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR, // Change border color when focused
+                  borderColor: LOGO_COLOR,
                 },
               }}
               onChange={(event) => {

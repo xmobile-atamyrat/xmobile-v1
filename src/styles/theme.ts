@@ -31,6 +31,9 @@ export const colors = {
     web: '#ff624c',
     mobile: '#110654',
   },
+  darkBlue: '#221765',
+  white: '#fff',
+  black: '#000',
 };
 
 export const interClassname = Inter({

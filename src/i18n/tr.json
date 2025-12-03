@@ -164,5 +164,8 @@
   "alreadyExistsConcat": "Var!",
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
   "category": "Kategori",
-  "allCategory": "Tüm Kategoriler"
+  "allCategory": "Tüm Kategoriler",
+  "account": "Hesap",
+  "appLanguage": "Uygulama Dili",
+  "signOutVerify": "Hesapdan çıkmak istiyormusunuz?"
 }
