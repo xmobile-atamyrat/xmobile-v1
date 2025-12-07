@@ -1,9 +1,6 @@
 import Collapsable from '@/pages/components/Collapsable';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  HIGHEST_LEVEL_CATEGORY_ID,
-  MAIN_BG_COLOR,
-} from '@/pages/lib/constants';
+import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import {
   CategoryStack,
@@ -14,13 +11,9 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { drawerClasses } from '@/styles/classMaps/components/drawer';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import { IconButton, List, Paper, Tooltip } from '@mui/material';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
+import { IconButton, List, Paper, Popover, Tooltip } from '@mui/material';
 import * as React from 'react';
 import { Dispatch, SetStateAction } from 'react';
-
-const drawerWidth = 300;
 
 interface CustomDrawerProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
@@ -51,9 +44,7 @@ function ConstructDrawerList(
             key={name}
             pl={depth}
             initialOpenState={true} // {id === selectedCategoryId}
-            collapsable={
-              successorCategories != null && successorCategories.length > 0
-            }
+            collapsable={false}
             setEditCategoriesModal={setEditCategoriesModal}
             setDeleteCategoriesModal={setDeleteCategoriesModal}
             closeDrawer={closeDrawer}
@@ -89,32 +80,65 @@ export default function CustomDrawer({
   const platform = usePlatform();
 
   return (
-    <Drawer
-      variant="temporary"
+    // <Drawer
+    //   variant="temporary"
+    //   open={openDrawer}
+    //   sx={{
+    //     height: '100%',
+    //     width: drawerWidth,
+    //     [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+    //   }}
+    //   onClose={closeDrawer}
+    // >
+    //   {categories?.length > 0 && (
+    //     <Box className={`${drawerClasses.box}  bg-[${MAIN_BG_COLOR}]`}>
+    //       {ConstructDrawerList(
+    //         categories,
+    //         selectedCategoryId,
+    //         setSelectedCategoryId,
+    //         setEditCategoriesModal,
+    //         setDeleteCategoriesModal,
+    //         0, // depth
+    //         closeDrawer,
+    //         [],
+    //       )}
+    //     </Box>
+    //   )}
+    //   {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+    //     <Paper className={drawerClasses.paper}>
+    //       <Tooltip title="Edit categories">
+    //         <IconButton
+    //           onClick={() => {
+    //             setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
+    //             setEditCategoriesModal({ open: true, dialogType: 'add' });
+    //           }}
+    //         >
+    //           <AddCircleIcon
+    //             className={drawerClasses.addCircleIcon[platform]}
+    //             color="primary"
+    //           />
+    //         </IconButton>
+    //       </Tooltip>
+    //     </Paper>
+    //   )}
+    // </Drawer>
+
+    <Popover
       open={openDrawer}
-      sx={{
-        height: '100%',
-        width: drawerWidth,
-        [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
-      }}
       onClose={closeDrawer}
+      className="mt-[150px] ml-[180px]"
     >
-      {categories?.length > 0 && (
-        <Box
-          className={`${drawerClasses.box[platform]}  bg-[${MAIN_BG_COLOR}]`}
-        >
-          {ConstructDrawerList(
-            categories,
-            selectedCategoryId,
-            setSelectedCategoryId,
-            setEditCategoriesModal,
-            setDeleteCategoriesModal,
-            0, // depth
-            closeDrawer,
-            [],
-          )}
-        </Box>
-      )}
+      {categories?.length > 0 &&
+        ConstructDrawerList(
+          categories,
+          selectedCategoryId,
+          setSelectedCategoryId,
+          setEditCategoriesModal,
+          setDeleteCategoriesModal,
+          0, // depth
+          closeDrawer,
+          [],
+        )}
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Paper className={drawerClasses.paper}>
           <Tooltip title="Edit categories">
@@ -132,6 +156,6 @@ export default function CustomDrawer({
           </Tooltip>
         </Paper>
       )}
-    </Drawer>
+    </Popover>
   );
 }
