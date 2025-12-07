@@ -40,7 +40,6 @@ export default function Collapsable({
           ${selectedCategoryId === id ? 'bg-slate-200' : ''}
           ${collapsableClasses.box}
           `}
-        style={{ paddingLeft: `${pl * 2}rem` }}
       >
         <Box className="w-[90%]">
           <CollapsableBase
