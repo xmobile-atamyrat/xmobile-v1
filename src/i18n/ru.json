@@ -168,4 +168,7 @@
   "category": "Категория",
   "allCategory": "Все Категории",
   "specification": "Спецификация"
+  "account": "Аккаунт",
+  "appLanguage": "Язык приложения",
+  "signOutVerify": "Вы действительно хотите выйти из аккаунта?"
 }
