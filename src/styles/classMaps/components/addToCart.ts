@@ -11,7 +11,7 @@ export const addToCartClasses = {
     box: {
       web: 'flex column-reverse h-full w-[33.5vw] items-center justify-between ml-[-1vw]',
       mobile:
-        'flex flex-row w-full h-full items-center justify-between mt-[10px]',
+        'flex flex-row w-[50vw] h-full items-center justify-between mt-[10px]',
     },
     fSize: {
       web: 'w-[16px] h-[16px] text-[#303030] items-center',
