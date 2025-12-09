@@ -166,4 +166,7 @@
   "category": "Category",
   "allCategory": "All Categories",
   "specification": "Specification"
+  "account": "Account",
+  "appLanguage": "App Language",
+  "signOutVerify": "Are you sure to Log out?"
 }
