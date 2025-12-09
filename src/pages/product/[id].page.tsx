@@ -4,15 +4,11 @@ import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
-import StyledBreadcrumbs from '@/pages/components/StyledBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  PRODUCT_IMAGE_WIDTH_RESP,
-  squareBracketRegex,
-} from '@/pages/lib/constants';
+import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -27,6 +23,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
+import { colors, interClassname } from '@/styles/theme';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -36,14 +33,13 @@ import {
   Alert,
   Box,
   CardMedia,
+  Divider,
   IconButton,
   List,
   ListItem,
   ListItemText,
   Snackbar,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Product } from '@prisma/client';
@@ -146,14 +142,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
-
   // Check if user landed directly (no category context)
   const isDirectLanding = stack.length === 0 && !parentCategory;
 
@@ -238,145 +231,71 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     >
       <SimpleBreadcrumbs currentProductName={product.name} />
       <Box className={detailPageClasses.boxes.main[platform]}>
-        {/* title, images */}
-        <Box className={detailPageClasses.boxes.title[platform]}>
-          <Box className={detailPageClasses.boxes.typo}>
-            <Typography variant="h5" className="text-center">
-              {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-            </Typography>
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-              <Box>
-                <IconButton
-                  onClick={() => {
-                    if (initialProduct == null) return;
-                    setAddEditProductDialog({
-                      open: true,
-                      id: initialProduct.id,
-                      description: initialProduct.description,
-                      dialogType: 'edit',
-                      imageUrls: initialProduct.imgUrls,
-                      name: initialProduct.name,
-                      price: (() => {
-                        const priceMatch =
-                          initialProduct.price?.match(squareBracketRegex);
-                        if (priceMatch != null) {
-                          return priceMatch[0]; // initialProduct.price = [id]{value}
-                        }
-                        return initialProduct.price;
-                      })(),
-                      tags: initialProduct.tags,
-                      videoUrls: initialProduct.videoUrls,
-                    });
-                  }}
-                >
-                  <EditIcon color="primary" fontSize="medium" />
-                </IconButton>
-                <IconButton
-                  onClick={() => {
-                    setShowDeleteProductDialog({
-                      show: true,
-                      productId: product.id,
-                    });
-                  }}
-                >
-                  <DeleteIcon color="error" fontSize="medium" />
-                </IconButton>
-              </Box>
-            )}
+        {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+          <Box>
+            <IconButton
+              onClick={() => {
+                if (initialProduct == null) return;
+                setAddEditProductDialog({
+                  open: true,
+                  id: initialProduct.id,
+                  description: initialProduct.description,
+                  dialogType: 'edit',
+                  imageUrls: initialProduct.imgUrls,
+                  name: initialProduct.name,
+                  price: (() => {
+                    const priceMatch =
+                      initialProduct.price?.match(squareBracketRegex);
+                    if (priceMatch != null) {
+                      return priceMatch[0]; // initialProduct.price = [id]{value}
+                    }
+                    return initialProduct.price;
+                  })(),
+                  tags: initialProduct.tags,
+                  videoUrls: initialProduct.videoUrls,
+                });
+              }}
+            >
+              <EditIcon color="primary" fontSize="medium" />
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                setShowDeleteProductDialog({
+                  show: true,
+                  productId: product.id,
+                });
+              }}
+            >
+              <DeleteIcon color="error" fontSize="medium" />
+            </IconButton>
           </Box>
+        )}
+        {/* images */}
+        <Box className={detailPageClasses.boxes.images[platform]}>
           {imgUrls.length === 1 && (
-            <Box className={detailPageClasses.boxes.img}>
+            <Box className={detailPageClasses.boxes.img[platform]}>
               <CardMedia
                 component="img"
                 image={imgUrls[0]}
                 alt={product?.name}
-                sx={PRODUCT_IMAGE_WIDTH_RESP}
+                className={detailPageClasses.cardMedia[platform]}
               />
             </Box>
           )}
           {imgUrls.length > 1 && (
-            <Carousel isMdUp={isMdUp}>
+            <Carousel>
               {imgUrls.map((imgUrl, index) => (
                 <CardMedia
                   component="img"
                   image={imgUrl}
                   alt={product?.name}
-                  className="w-full"
+                  className={detailPageClasses.cardMedia[platform]}
                   key={index}
                 />
               ))}
             </Carousel>
           )}
-        </Box>
-        {/* price, description */}
-        <Box className={detailPageClasses.boxes.price[platform]}>
-          <StyledBreadcrumbs />
-          <Box className="w-full my-4 flex">
-            {product.price?.includes('[') ? (
-              <CircularProgress
-                className={detailPageClasses.circProgress[platform]}
-              />
-            ) : (
-              <Typography
-                className={detailPageClasses.typographs.price[platform]}
-              >{`${product.price} ${t('manat')}`}</Typography>
-            )}
-
-            <Box className="ml-10">
-              <AddToCart productId={product.id} cartAction="add" />
-            </Box>
-          </Box>
-          {product.tags.length > 0 && product.tags[0].includes('[') ? (
-            <CircularProgress
-              className={detailPageClasses.circProgress[platform]}
-            />
-          ) : (
-            <List className="p-0 pb-10">
-              {product.tags.map((tag, index) => {
-                const words = tag.split(' ');
-                const beginning = words.slice(0, -2).join(' ');
-                const end = words.slice(-2).join(' ');
-                return (
-                  <ListItem key={index} className="p-0">
-                    <FiberManualRecordIcon
-                      className="w-[16px] h-[16px]"
-                      color="disabled"
-                    />
-                    <ListItemText
-                      sx={{ pl: 1 }}
-                      primary={
-                        <Box className="flex flex-row gap-4">
-                          <Typography
-                            className={
-                              detailPageClasses.typographs.font[platform]
-                            }
-                          >
-                            {beginning}
-                          </Typography>
-                          <Typography
-                            className={
-                              (detailPageClasses.typographs.font[platform],
-                              'font-semibold')
-                            }
-                          >
-                            {end}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
-          )}
-
-          <Box>
-            {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
-              <Typography
-                className={detailPageClasses.typographs.prodVideo[platform]}
-              >{`${t('productVideo')}:`}</Typography>
-            )}
-
+          {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
             <Box className={detailPageClasses.boxes.video[platform]}>
               {product.videoUrls.map(
                 (videoUrl, index) =>
@@ -395,59 +314,159 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                           return <YouTubeIcon className="text-black" />;
                         })()}
                       </IconButton>
-                      <Typography fontSize={isMdUp ? 18 : 15}>
-                        {(() => {
-                          if (index === 0) return 'TikTok';
-                          if (index === 1) return 'Instagram';
-                          return 'Youtube';
-                        })()}
-                      </Typography>
                     </Link>
                   ),
               )}
             </Box>
+          )}
+        </Box>
+
+        {/* side details */}
+        <Box className={detailPageClasses.boxes.sideInfo[platform]}>
+          <Box className={detailPageClasses.boxes.info[platform]}>
+            <Box className={detailPageClasses.detail.name[platform]}>
+              <Typography
+                variant="h5"
+                className={`${interClassname.className} ${detailPageClasses.productName[platform]}`}
+              >
+                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+              </Typography>
+            </Box>
+            <Divider className={detailPageClasses.divider[platform]} />
+            <Box className={detailPageClasses.price[platform]}>
+              {product.price?.includes('[') ? (
+                <CircularProgress
+                  className={detailPageClasses.circProgress[platform]}
+                />
+              ) : (
+                <Typography
+                  className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
+                >{`${product.price} ${t('manat')}`}</Typography>
+              )}
+            </Box>
           </Box>
 
-          {description && Object.keys(description).length > 0
-            ? Object.keys(description ?? {})
-                .filter(
-                  (key) =>
-                    description[key] != null && description[key].length > 0,
-                )
-                .map((key) => (
-                  <Box key={key} className="w-full flex flex-col pb-4">
-                    <Box className="w-full flex flex-row gap-2 justify-between">
-                      <Box className="w-[30%]">
-                        <Typography
-                          className={
-                            detailPageClasses.typographs.prodVideo[platform]
-                          }
-                        >
-                          {key}
-                        </Typography>
-                      </Box>
-                      <Box className="flex flex-col w-[70%]">
-                        {description[key].map((descLine, index) => (
+          {product.tags[0]?.includes('[') ? (
+            <CircularProgress
+              className={detailPageClasses.circProgress[platform]}
+            />
+          ) : (
+            <List className={detailPageClasses.list[platform]}>
+              {product.tags.map((tag, index) => {
+                const words = tag.split(' ');
+                const n = words[words.length - 1].length < 1 ? 3 : 2;
+                const beginning = words.slice(0, -n).join(' ');
+                const end = words.slice(-n).join(' ');
+                return (
+                  <ListItem key={index} className="p-0">
+                    <FiberManualRecordIcon
+                      className={detailPageClasses.listItemIcon[platform]}
+                    />
+                    <ListItemText
+                      className={detailPageClasses.listItemText[platform]}
+                      primary={
+                        <Box className={detailPageClasses.boxes.tag[platform]}>
                           <Typography
-                            key={index}
-                            className={
-                              detailPageClasses.typographs.font2[platform]
-                            }
+                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
                           >
-                            {descLine}
+                            {beginning}
                           </Typography>
-                        ))}
-                      </Box>
+                          <Typography
+                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[50px] text-end ${interClassname.className}`}
+                            color={colors.mainWebMobile[platform]}
+                          >
+                            {end}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
+          )}
+
+          {description && Object.keys(description).length > 0 && (
+            <Box className={detailPageClasses.boxes.detailSide[platform]}>
+              {Object.keys(description ?? {})
+                .filter((key) => {
+                  const line = description[key];
+                  if (!line || line.length === 0) return false;
+                  const long = line.some((descLine) => descLine.length > 35);
+                  return !long;
+                })
+                .slice(0, 3)
+                .map((key) => (
+                  <Box key={key} className={detailPageClasses.detailSide.part}>
+                    <Box className={detailPageClasses.detailSide.head}>
+                      <Typography
+                        className={`${detailPageClasses.detailSide.desc} ${interClassname.className}`}
+                      >
+                        {key}
+                      </Typography>
+                    </Box>
+                    <Box className={detailPageClasses.detailSide.val}>
+                      {description[key].map((descLine, index) => (
+                        <Typography
+                          key={index}
+                          className={`${detailPageClasses.detailSide.font2} ${interClassname.className}`}
+                        >
+                          {descLine}
+                        </Typography>
+                      ))}
                     </Box>
                   </Box>
-                ))
-            : parseName(product?.description ?? '{}', router.locale ?? 'tk')
-                ?.split('\n')
-                .map((desc, index) => (
-                  <Typography key={`${desc}-${index}`}>{desc}</Typography>
                 ))}
+            </Box>
+          )}
+          {user && platform === 'web' && (
+            <AddToCart productId={product.id} cartAction="detail" />
+          )}
         </Box>
       </Box>
+      {description && Object.keys(description).length > 0 && (
+        <Box className={detailPageClasses.boxes.detail[platform]}>
+          <Typography
+            className={`${interClassname.className} ${detailPageClasses.specs[platform]}`}
+          >
+            {t('specification')}
+          </Typography>
+          <Box className={detailPageClasses.detail.specs[platform]}>
+            {Object.keys(description ?? {})
+              .filter(
+                (key) =>
+                  description[key] != null && description[key].length > 0,
+              )
+              .map((key) => (
+                <Box
+                  key={key}
+                  className={detailPageClasses.detail.part[platform]}
+                >
+                  <Box className={detailPageClasses.detail.head[platform]}>
+                    <Typography
+                      className={`${detailPageClasses.typographs.desc[platform]} ${interClassname.className}`}
+                    >
+                      {key}
+                    </Typography>
+                  </Box>
+                  <Box className={detailPageClasses.detail.val[platform]}>
+                    {description[key].map((descLine, index) => (
+                      <Typography
+                        key={index}
+                        className={`${detailPageClasses.typographs.font2[platform]} ${interClassname.className}`}
+                      >
+                        {descLine}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              ))}
+          </Box>
+        </Box>
+      )}
+      {user && platform === 'mobile' && (
+        <AddToCart productId={product.id} cartAction="detail" />
+      )}
       {showDeleteProductDialog?.show && (
         <DeleteDialog
           title={t('deleteProduct')}
