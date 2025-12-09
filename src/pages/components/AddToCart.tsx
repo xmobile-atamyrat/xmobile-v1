@@ -194,24 +194,26 @@ export default function AddToCart({
                   className={addToCartClasses.circIcon.fSize[platform]}
                 />
               </IconButton>
-            </Box>
-            {/* quantityInput */}
-            <Input
-              name="quantity"
-              inputProps={{ min: 1 }}
-              className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
-              value={quantity}
-              disableUnderline
-              onChange={(e) => {
-                setQuantity(Number(e.target.value));
-                editCartItems(Number(e.target.value));
-              }}
-            />
+              {/* quantityInput */}
+              <Input
+                name="quantity"
+                inputProps={{ min: 1 }}
+                className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
+                value={quantity}
+                disableUnderline
+                onChange={(e) => {
+                  setQuantity(Number(e.target.value));
+                  editCartItems(Number(e.target.value));
+                }}
+              />
 
-            {/* addButton */}
-            <IconButton disableRipple onClick={handleProductQuantity('add')}>
-              <AddIcon className={addToCartClasses.circIcon.fSize[platform]} />
-            </IconButton>
+              {/* addButton */}
+              <IconButton disableRipple onClick={handleProductQuantity('add')}>
+                <AddIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+            </Box>
 
             <Box className={addToCartClasses.price[platform]}>
               <Typography
