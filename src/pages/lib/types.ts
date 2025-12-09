@@ -170,7 +170,7 @@ export interface AddToCartProps {
   userId?: string;
   quantity?: number;
   productId?: string;
-  cartAction: 'add' | 'delete';
+  cartAction: 'add' | 'delete' | 'detail';
   onDelete?: (message: string) => void;
 }
 
