@@ -166,4 +166,7 @@
   "category": "Kategori",
   "allCategory": "Tüm Kategoriler",
   "specification": "Hakkında"
+  "account": "Hesap",
+  "appLanguage": "Uygulama Dili",
+  "signOutVerify": "Hesapdan çıkmak istiyormusunuz?"
 }
