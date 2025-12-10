@@ -167,8 +167,12 @@
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
   "category": "Kategoriýa",
   "allCategory": "Hemme Kategoriýalar",
-  "specification": "Towar hakynda"
+  "specification": "Towar hakynda",
   "account": "Akkaunt",
   "appLanguage": "Priloženiýa Dili",
-  "signOutVerify": "Akkoundyňyzdan çykjaksyzmy?"
+  "signOutVerify": "Akkoundyňyzdan çykjaksyzmy?",
+  "emptyCart": "Sätiliňiz Boş",
+  "yourCart": "Sätiliňiz",
+  "product": "Produkt",
+  "total": "Jemi"
 }

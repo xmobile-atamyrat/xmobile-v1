@@ -165,8 +165,12 @@
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
   "category": "Kategori",
   "allCategory": "Tüm Kategoriler",
-  "specification": "Hakkında"
+  "specification": "Hakkında",
   "account": "Hesap",
   "appLanguage": "Uygulama Dili",
-  "signOutVerify": "Hesapdan çıkmak istiyormusunuz?"
+  "signOutVerify": "Hesapdan çıkmak istiyormusunuz?",
+  "emptyCart": "Sepetiniz Boş",
+  "yourCart": "Sepetiniz",
+  "product": "Ürün",
+  "total": "Toplam"
 }

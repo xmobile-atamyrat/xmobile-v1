@@ -1,5 +1,5 @@
+import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
-import ProductCard from '@/pages/components/ProductCard';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -8,6 +8,7 @@ import { interClassname } from '@/styles/theme';
 import {
   Box,
   Breadcrumbs,
+  CardMedia,
   CircularProgress,
   IconButton,
   Link,
@@ -88,27 +89,71 @@ export default function CartPage() {
             </Typography>
           </Link>
         </Breadcrumbs>
-
         <Box className={cartIndexClasses.prodCart}>
           {cartItems != null && cartItems.length > 0 ? (
-            <Suspense fallback={<CircularProgress />}>
-              {cartItems.map((cartItem) => (
-                <ProductCard
-                  product={cartItem?.product}
-                  key={cartItem?.id}
-                  cartProps={{
-                    cartAction: 'delete',
-                    quantity: cartItem?.quantity,
-                    cartItemId: cartItem?.id,
-                    onDelete,
-                  }}
-                />
-              ))}
-            </Suspense>
+            <Box className="flex flex-col">
+              <Typography
+                className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
+              >
+                {t('yourCart')}
+              </Typography>
+              <Box className={cartIndexClasses.infoCol[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[32vw] ml-[2.39vw]`}
+                >
+                  {t('product').toUpperCase()}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[11vw]`}
+                >
+                  {t('price').toUpperCase()}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[8vw]`}
+                >
+                  {t('quantity').toUpperCase()}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[80px]`}
+                >
+                  {t('total').toUpperCase()}
+                </Typography>
+              </Box>
+              <Suspense fallback={<CircularProgress />}>
+                {cartItems.map((cartItem) => (
+                  <CartProductCard
+                    product={cartItem?.product}
+                    key={cartItem?.id}
+                    cartProps={{
+                      cartAction: 'delete',
+                      quantity: cartItem?.quantity,
+                      cartItemId: cartItem?.id,
+                      onDelete,
+                    }}
+                  />
+                ))}
+              </Suspense>
+            </Box>
           ) : (
-            <Box className="text-center w-full">
-              <Link href="/">
-                <IconButton className={cartIndexClasses.iconButton}>
+            <Box className="text-center flex flex-col">
+              <CardMedia
+                component="img"
+                src="/emptyCart.png"
+                className={cartIndexClasses.emptyCart.img[platform]}
+              />
+              <Typography
+                className={`${interClassname.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
+              >
+                {t('emptyCart')}
+              </Typography>
+              <Link
+                href="/"
+                className={cartIndexClasses.emptyCart.link[platform]}
+              >
+                <IconButton
+                  disableRipple
+                  className={`${cartIndexClasses.iconButton[platform]} ${interClassname.className}`}
+                >
                   {t('continueShopping')}
                 </IconButton>
               </Link>
