@@ -1,13 +1,11 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import DeleteIcon from '@mui/icons-material/Delete';
 import LoginIcon from '@mui/icons-material/Login';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import {
   Alert,
   Box,
+  CardMedia,
   IconButton,
   Input,
   Snackbar,
@@ -21,7 +19,7 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
-import { interClassname } from '@/styles/theme';
+import { img, interClassname } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -31,6 +29,7 @@ export default function AddToCart({
   quantity: initialQuantity = 1,
   cartAction,
   cartItemId = undefined,
+  price,
   onDelete,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
@@ -166,7 +165,7 @@ export default function AddToCart({
     };
 
   return (
-    <Box>
+    <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
         {/* cartIcon */}
         {cartAction === 'add' && (
@@ -184,58 +183,64 @@ export default function AddToCart({
         )}
 
         {cartAction === 'delete' && (
-          <Box className={addToCartClasses.circIcon.box}>
-            {/* removeButton */}
-            <IconButton
-              className="p-0.3"
-              onClick={handleProductQuantity('remove')}
-            >
-              <RemoveCircleIcon
-                className={addToCartClasses.circIcon.fSize[platform]}
-                color="primary"
+          <Box className={addToCartClasses.circIcon.box[platform]}>
+            <Box className={addToCartClasses.quanChange[platform]}>
+              {/* removeButton */}
+              <IconButton
+                disableRipple
+                onClick={handleProductQuantity('remove')}
+              >
+                <RemoveIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+              {/* quantityInput */}
+              <Input
+                name="quantity"
+                inputProps={{ min: 1 }}
+                className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
+                value={quantity}
+                disableUnderline
+                onChange={(e) => {
+                  setQuantity(Number(e.target.value));
+                  editCartItems(Number(e.target.value));
+                }}
               />
-            </IconButton>
 
-            {/* quantityInput */}
-            <Input
-              type="number"
-              name="quantity"
-              inputProps={{ min: 1 }}
-              className={addToCartClasses.input[platform]}
-              value={quantity}
-              disableUnderline
-              onChange={(e) => {
-                setQuantity(Number(e.target.value));
-                editCartItems(Number(e.target.value));
-              }}
-            />
+              {/* addButton */}
+              <IconButton disableRipple onClick={handleProductQuantity('add')}>
+                <AddIcon
+                  className={addToCartClasses.circIcon.fSize[platform]}
+                />
+              </IconButton>
+            </Box>
 
-            {/* addButton */}
-            <IconButton
-              onClick={handleProductQuantity('add')}
-              className="p-0.3"
-            >
-              <AddCircleIcon
-                className={addToCartClasses.circIcon.fSize[platform]}
-                color="primary"
-              />
-            </IconButton>
+            <Box className={addToCartClasses.price[platform]}>
+              <Typography
+                className={`${interClassname.className} ${addToCartClasses.priceText[platform]}`}
+              >
+                {quantity * Number(price)} TMT
+              </Typography>
+            </Box>
 
             {/* delete button */}
-            <IconButton
-              color="primary"
-              className="pr-1"
-              type="submit"
-              onClick={() => {
-                onDelete(cartItemId);
-                deleteCartItems(cartItemId);
-              }}
-            >
-              <DeleteIcon
-                color="error"
-                className={addToCartClasses.circIcon.fSize[platform]}
-              />
-            </IconButton>
+            <Box className={addToCartClasses.deleteButton.box[platform]}>
+              <IconButton
+                disableRipple
+                className={addToCartClasses.deleteButton.iconButton[platform]}
+                type="submit"
+                onClick={() => {
+                  onDelete(cartItemId);
+                  deleteCartItems(cartItemId);
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src={img.trash[platform]}
+                  className={addToCartClasses.deleteButton.deleteIcon[platform]}
+                />
+              </IconButton>
+            </Box>
           </Box>
         )}
 
