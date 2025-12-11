@@ -1,7 +1,7 @@
 export const appbarClasses = {
   boxes: {
     form: {
-      web: 'flex items-center w-[560px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
+      web: 'flex items-center min-w-[200px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
       mobile:
         'flex items-center w-[88.78vw] h-[40px] bg-[#f6f6f6] rounded-[12px] gap-[8px] mx-auto px-[10px]',
     },
