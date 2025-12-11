@@ -1,4 +1,6 @@
 {
+  "user": "Kullanıcı",
+  "guest": "Misafir",
   "cancel": "İptal",
   "submit": "Gönder",
   "addNewCategory": "Yeni Kategori Ekle",
@@ -172,5 +174,6 @@
   "emptyCart": "Sepetiniz Boş",
   "yourCart": "Sepetiniz",
   "product": "Ürün",
-  "total": "Toplam"
+  "total": "Toplam",
+  "shortAddress": "Türkmenabat, S.A. Niyazov Cad."
 }
