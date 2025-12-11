@@ -149,7 +149,7 @@ export default function Products() {
           router.push('/');
         }}
       >
-        <Box className="flex flex-col w-full h-full">
+        <Box className="flex flex-col w-full h-full px-[10.31vw]">
           <SimpleBreadcrumbs />
           <Box className="flex flex-wrap w-full">
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
