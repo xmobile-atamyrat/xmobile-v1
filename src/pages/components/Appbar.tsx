@@ -261,21 +261,7 @@ export default function CustomAppBar({
               <MenuIcon className={appbarClasses.menuIcon[platform]} />
             </IconButton>
           </Box>
-          {/* Add new pages as showed in figma
-
-          <Box
-            className={appbarClasses.boxes.logo[platform]}
-            onClick={() => {
-              setParentCategory(undefined);
-              setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-              setStack([]);
-              router.push('/');
-            }}
-            component="button"
-          >
-            <CardMedia component="img" src="/xmobile-processed-logo.png" />
-          </Box> */}
-          <Box className="w-[560px] h-[48px]">
+          <Box className="w-[30vw] h-[48px]">
             {SearchBar({
               searchKeyword: localSearchKeyword,
               searchPlaceholder: t('search'),
@@ -298,7 +284,7 @@ export default function CustomAppBar({
                   <Typography
                     className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
                   >
-                    Cart
+                    {t('cart')}
                   </Typography>
                 </IconButton>
                 <Divider
@@ -320,12 +306,12 @@ export default function CustomAppBar({
                 <Typography
                   className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
                 >
-                  User
+                  {t('user')}
                 </Typography>
                 <Typography
                   className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
                 >
-                  {user ? user.name.split(' ')[0] : 'Account'}
+                  {user ? user.name.split(' ')[0] : t('guest')}
                 </Typography>
               </Box>
             </IconButton>
