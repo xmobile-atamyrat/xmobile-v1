@@ -1,4 +1,6 @@
 {
+  "user": "User",
+  "guest": "Guest",
   "cancel": "Cancel",
   "submit": "Submit",
   "addNewCategory": "Add New Category",

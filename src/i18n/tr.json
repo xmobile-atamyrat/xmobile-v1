@@ -1,4 +1,6 @@
 {
+  "user": "Kullanıcı",
+  "guest": "Misafir",
   "cancel": "İptal",
   "submit": "Gönder",
   "addNewCategory": "Yeni Kategori Ekle",
