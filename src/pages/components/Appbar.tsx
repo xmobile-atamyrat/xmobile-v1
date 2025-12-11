@@ -36,7 +36,6 @@ import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -317,7 +316,6 @@ export default function CustomAppBar({
             </IconButton>
           </Box>
         </Box>
-        <Toolbar className={appbarClasses.toolBar}></Toolbar>
       </AppBar>
       {showSearch &&
         !isMdUp &&

@@ -55,7 +55,7 @@ export const appbarClasses = {
     mobile: 'w-[80px] h-[36px]',
   },
   appbar: {
-    web: 'bg-white min-h-[142px] mt-[16px]',
+    web: 'bg-white min-h-[142px] my-[16px]',
     mobile: 'hidden',
   },
   backButton: {
