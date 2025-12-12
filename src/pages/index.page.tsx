@@ -12,10 +12,12 @@ import {
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { getCookie } from '@/pages/lib/utils';
+import { getCookie, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
-import { Box, Typography } from '@mui/material';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { Box, CardMedia, IconButton, Typography } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
@@ -205,12 +207,55 @@ export default function Home({
             }}
           />
         )}
-        {!parentCategory && (
-          <Typography
-            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-          >
-            {t('allCategory')}
-          </Typography>
+        {!parentCategory ? (
+          <Box>
+            <CardMedia
+              component="img"
+              src="/xmobile-processed-logo.png"
+              className="w-[150px] h-auto mx-auto my-[36px]"
+            />
+            <Typography
+              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+            >
+              {t('allCategory')}
+            </Typography>
+          </Box>
+        ) : (
+          <Box className="flex items-center w-full px-[24px] justify-between">
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={appbarClasses.backButton[platform]}
+              aria-label="open drawer"
+              onClick={() => {
+                router.reload();
+              }}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
+            <Typography
+              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+            >
+              {parseName(parentCategory.name, router.locale ?? 'ru')}
+            </Typography>
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={`${appbarClasses.backButton[platform]} invisible`}
+              aria-label="open drawer"
+              onClick={() => {
+                router.back();
+              }}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
+          </Box>
         )}
 
         <Box className={homePageClasses.card[platform]}>
