@@ -72,7 +72,7 @@ export const SearchBar = ({
         elevation={0}
       >
         <InputBase
-          className={appbarClasses.inputBase[platform]}
+          className={`${appbarClasses.inputBase[platform]} ${interClassname.className}`}
           placeholder={`${searchPlaceholder}...`}
           onChange={(e) => {
             const keyword = e.target.value;
@@ -136,7 +136,7 @@ export default function CustomAppBar({
 
   return (
     <Box className="flex-grow-1">
-      <IconButton
+      {/* <IconButton
         size="medium"
         edge="start"
         color="inherit"
@@ -145,7 +145,7 @@ export default function CustomAppBar({
         onClick={handleBackButton}
       >
         <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
-      </IconButton>
+      </IconButton> */}
       <AppBar
         position="sticky"
         className={appbarClasses.appbar[platform]}
