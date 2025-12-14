@@ -212,7 +212,7 @@ export default function Home({
             <CardMedia
               component="img"
               src="/xmobile-processed-logo.png"
-              className="w-[150px] h-auto mx-auto my-[36px]"
+              className={homePageClasses.logo[platform]}
             />
             <Typography
               className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
