@@ -1,7 +1,7 @@
 export const cartIndexClasses = {
   box: {
     web: 'w-full h-full flex flex-col mt-[64px]',
-    mobile: 'w-full h-full flex flex-col mt-[56px]',
+    mobile: 'w-full h-full flex flex-col my-[36px]',
   },
   prodCart: 'flex flex-wrap gap-4 w-full justify-center',
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',

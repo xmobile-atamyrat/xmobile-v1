@@ -167,6 +167,7 @@
   "confirmProductSupplierDelete": "Are you sure you want to delete? The item will be removed from all previous orders as well!",
   "category": "Category",
   "allCategory": "All Categories",
+  "categories": "Categories",
   "specification": "Specification",
   "account": "Account",
   "appLanguage": "App Language",
