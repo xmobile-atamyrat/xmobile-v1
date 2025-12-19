@@ -12,8 +12,8 @@ export const homePageClasses = {
     mobile:
       'font-medium text-[20px] leading-[100%] tracking-normal text-center text-[#000]',
   },
-  logo: {
+  topLayer: {
     web: 'hidden',
-    mobile: 'w-[150px] h-auto mx-auto my-[36px]',
+    mobile: 'w-full flex flex-row justify-between items-center my-[36px]',
   },
 };
