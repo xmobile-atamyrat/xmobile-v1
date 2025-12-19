@@ -7,6 +7,7 @@ import {
   ALL_PRODUCTS_CATEGORY_CARD,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
+  PAGENAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -208,16 +209,25 @@ export default function Home({
           />
         )}
         {!parentCategory ? (
-          <Box>
-            <CardMedia
-              component="img"
-              src="/xmobile-processed-logo.png"
-              className={homePageClasses.logo[platform]}
-            />
+          <Box className="w-full flex-col px-[24px]">
+            <Box className={homePageClasses.topLayer[platform]}>
+              <CardMedia
+                component="img"
+                src="/xmobile-processed-logo.png"
+                className="w-auto h-[40px]"
+              />
+              <Box className="w-[36px] h-[36px] rounded-full bg-[#f5f5f5] justify-center items-center flex">
+                <CardMedia
+                  component="img"
+                  src="/bell.png"
+                  className="w-[20px] h-[20px]"
+                />
+              </Box>
+            </Box>
             <Typography
               className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
             >
-              {t('allCategory')}
+              {t(PAGENAME.category[platform])}
             </Typography>
           </Box>
         ) : (

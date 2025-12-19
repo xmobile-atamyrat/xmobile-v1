@@ -169,6 +169,7 @@
   "confirmProductSupplierDelete": "Вы уверены, что хотите удалить? Предмет также будет удален из всех предыдущих заказов!",
   "category": "Категория",
   "allCategory": "Все Категории",
+  "categories": "Категории",
   "specification": "Спецификация",
   "account": "Аккаунт",
   "appLanguage": "Язык приложения",

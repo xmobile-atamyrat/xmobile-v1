@@ -136,16 +136,6 @@ export default function CustomAppBar({
 
   return (
     <Box className="flex-grow-1">
-      {/* <IconButton
-        size="medium"
-        edge="start"
-        color="inherit"
-        className={appbarClasses.backButton[platform]}
-        aria-label="open drawer"
-        onClick={handleBackButton}
-      >
-        <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
-      </IconButton> */}
       <AppBar
         position="sticky"
         className={appbarClasses.appbar[platform]}
@@ -218,14 +208,22 @@ export default function CustomAppBar({
                 className="text-[#303030] mx-[-15px]"
               />
               <Box className="w-[56px] flex flex-row items-center justify-between">
-                <IconButton href={'https://www.tiktok.com/@xmobiletm/'}>
+                <IconButton
+                  href={'https://www.tiktok.com/@xmobiletm/'}
+                  target="_blank"
+                  rel="noopener"
+                >
                   <CardMedia
                     component="img"
                     src="/tiktok.png"
-                    className="w-[16px] h-[16px]"
+                    className="w-auto h-[16px]"
                   />
                 </IconButton>
-                <IconButton href={'https://www.instagram.com/xmobiletm/'}>
+                <IconButton
+                  href={'https://www.instagram.com/xmobiletm/'}
+                  target="_blank"
+                  rel="noopener"
+                >
                   <InstagramIcon className="w-[16px] h-[16px] text-[#000]"></InstagramIcon>
                 </IconButton>
               </Box>
