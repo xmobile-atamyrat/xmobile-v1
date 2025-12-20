@@ -1,7 +1,7 @@
-export const homePageClasses = {
-  category: {
+export const categoryPageClasses = {
+  main: {
     web: 'w-full h-full flex flex-col',
-    mobile: 'hidden',
+    mobile: 'w-full h-full flex flex-col',
   },
   card: {
     web: 'flex flex-wrap gap-[30px] w-full px-[10.31vw] justify-center items-start',
@@ -12,11 +12,4 @@ export const homePageClasses = {
     mobile:
       'font-medium text-[20px] leading-[100%] tracking-normal text-center text-[#000]',
   },
-  topLayer: 'w-full flex flex-row justify-between items-center my-[36px]',
-  newProducts: {
-    web: 'hidden',
-    mobile: 'w-full h-full flex flex-col px-[24px]',
-  },
-  newProductsTitle:
-    'font-medium text-[20px] leading-[28px] tracking-normal text-[#000] my-[25px]',
 };
