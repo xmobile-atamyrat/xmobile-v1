@@ -160,10 +160,41 @@ async function handleGetProduct(query: {
   categoryId?: string;
   productId?: string;
   page?: string;
+  all?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
   const { searchKeyword, productId, categoryId, page } = query;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
+
+  if (query.all === 'true') {
+    const allProductsFetched = await dbClient.product.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const allProducts = await Promise.all(
+      allProductsFetched.map(async (product) => {
+        const productPrice = await getPrice(product?.price as string);
+        product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+        return product;
+      }),
+    );
+
+    let filtered = allProducts;
+    if (searchKeyword != null) {
+      filtered = allProducts.filter((p) =>
+        p.name.toLocaleLowerCase().includes(searchKeyword.toLocaleLowerCase()),
+      );
+    }
+
+    return {
+      resp: {
+        success: true,
+        data: filtered.slice(skip, skip + productsPerPage),
+      },
+      status: 200,
+    };
+  }
+
   if (productId != null) {
     const product = await getProduct(productId as string);
     if (product == null) {

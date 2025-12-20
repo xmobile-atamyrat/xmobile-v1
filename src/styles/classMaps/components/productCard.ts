@@ -1,7 +1,7 @@
 export const productCardClasses = {
   card: {
     web: 'w-[280px] min-h-[427px] border-[1px] rounded-[10px] px-2 py-2 border-[#f0f0f0] hover:border-[#30303040] mx-[8px] my-[15px]',
-    mobile: 'w-[42%] min-h-[241px] gap-[8px] mx-[8px] my-[8px]',
+    mobile: 'w-[80%] min-h-[241px] gap-[8px] mx-[8px] my-[8px]',
   },
   boxes: {
     main: 'relative h-full w-full flex flex-col',

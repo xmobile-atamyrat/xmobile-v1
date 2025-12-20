@@ -1,4 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -50,7 +51,7 @@ export default function Footer() {
     setProducts([]);
     setStack([]);
     setParentCategory(undefined);
-    setSelectedCategoryId(undefined);
+    setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
   };
 
   return (
@@ -83,7 +84,7 @@ export default function Footer() {
           />
           <BottomNavigationAction
             color={colors.text.web}
-            value="/"
+            value="/category"
             icon={
               <CardMedia
                 component="img"
