@@ -1,13 +1,15 @@
 import dbClient from '@/lib/dbClient';
+import { SearchBar } from '@/pages/components/Appbar';
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
+import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
+import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   ALL_PRODUCTS_CATEGORY_CARD,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
-  PAGENAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -19,6 +21,7 @@ import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, CardMedia, IconButton, Typography } from '@mui/material';
+import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
@@ -132,6 +135,32 @@ export default function Home({
   );
   const { setProducts } = useProductContext();
   const t = useTranslations();
+  const [localSearchKeyword, setLocalSearchKeyword] = useState('');
+  const [newProducts, setNewProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setIsLoading(true);
+      try {
+        const fetched = await fetchProducts({
+          all: true,
+          page: 1,
+          searchKeyword: localSearchKeyword,
+        });
+        if (!mounted) return;
+        setNewProducts(fetched);
+      } catch (error) {
+        console.error('Error fetching new products:', error);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [localSearchKeyword]);
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -199,7 +228,7 @@ export default function Home({
           : handleHeaderBackButton
       }
     >
-      <Box className={homePageClasses.main[platform]}>
+      <Box className={homePageClasses.category[platform]}>
         {(stack.length > 0 || parentCategory != null) && (
           <SimpleBreadcrumbs
             onClick={(combo: [ExtendedCategory, string]) => {
@@ -210,24 +239,10 @@ export default function Home({
         )}
         {!parentCategory ? (
           <Box className="w-full flex-col px-[24px]">
-            <Box className={homePageClasses.topLayer[platform]}>
-              <CardMedia
-                component="img"
-                src="/xmobile-processed-logo.png"
-                className="w-auto h-[40px]"
-              />
-              <Box className="w-[36px] h-[36px] rounded-full bg-[#f5f5f5] justify-center items-center flex">
-                <CardMedia
-                  component="img"
-                  src="/bell.png"
-                  className="w-[20px] h-[20px]"
-                />
-              </Box>
-            </Box>
             <Typography
               className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
             >
-              {t(PAGENAME.category[platform])}
+              {t('allCategory')}
             </Typography>
           </Box>
         ) : (
@@ -320,25 +335,44 @@ export default function Home({
           })}
         </Box>
       </Box>
-      {/* <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={(_, reason) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setSnackbarOpen(false);
-        }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage?.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
+      <Box className={homePageClasses.newProducts[platform]}>
+        <Box className={homePageClasses.topLayer}>
+          <CardMedia
+            component="img"
+            src="/xmobile-processed-logo.png"
+            className="w-auto h-[40px]"
+          />
+          <Box className="w-[36px] h-[36px] rounded-full bg-[#f5f5f5] justify-center items-center flex">
+            <CardMedia
+              component="img"
+              src="/bell.png"
+              className="w-[20px] h-[20px]"
+            />
+          </Box>
+        </Box>
+        {SearchBar({
+          searchKeyword: localSearchKeyword,
+          searchPlaceholder: t('search'),
+          setSearchKeyword: setLocalSearchKeyword,
+          width: '100%',
+        })}
+        <Typography
+          className={`${interClassname.className} ${homePageClasses.newProductsTitle}`}
         >
-          {snackbarMessage?.message && t(snackbarMessage.message)}
-        </Alert>
-      </Snackbar> */}
+          {t('newProducts')}
+        </Typography>
+        {isLoading && <Typography>Loading...</Typography>}
+        <Box className="grid grid-cols-2 gap-0 w-full px-[12px]">
+          {newProducts.length > 0 &&
+            newProducts.map((product, idx) => (
+              <ProductCard
+                product={product}
+                key={idx}
+                cartProps={{ cartAction: 'add' }}
+              />
+            ))}
+        </Box>
+      </Box>
     </Layout>
   );
 }
