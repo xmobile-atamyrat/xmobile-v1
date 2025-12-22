@@ -181,15 +181,18 @@ async function handleGetProduct(query: {
 
     let filtered = allProducts;
     if (searchKeyword != null) {
-      filtered = allProducts.filter((p) =>
-        p.name.toLocaleLowerCase().includes(searchKeyword.toLocaleLowerCase()),
+      const searchCheck = searchKeyword.toLocaleLowerCase();
+      filtered = allProducts.filter((product) =>
+        product.name.toLocaleLowerCase().includes(searchCheck),
       );
     }
+
+    const paged = filtered.slice(skip, skip + productsPerPage);
 
     return {
       resp: {
         success: true,
-        data: filtered.slice(skip, skip + productsPerPage),
+        data: paged,
       },
       status: 200,
     };
