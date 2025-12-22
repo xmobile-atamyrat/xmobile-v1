@@ -36,20 +36,14 @@ export default function Footer() {
   const t = useTranslations();
   const platform = usePlatform();
   const router = useRouter();
-  const {
-    categories: allCategories,
-    setSelectedCategoryId,
-    setStack,
-    setParentCategory,
-  } = useCategoryContext();
+  const { categories: allCategories, setSelectedCategoryId } =
+    useCategoryContext();
   const { setProducts } = useProductContext();
   const user = useUserContext();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
     router.push(newValue);
     setProducts([]);
-    setStack([]);
-    setParentCategory(undefined);
     setSelectedCategoryId(undefined);
   };
 
@@ -225,10 +219,8 @@ export default function Footer() {
                     key={category.id}
                     onClick={() => {
                       setProducts([]);
-                      setStack([]);
-                      setParentCategory(undefined);
                       setSelectedCategoryId(category.id);
-                      router.push('/product');
+                      router.push(`/product?categoryId=${category.id}`);
                     }}
                     className={`${interClassname.className} ${footerClasses.typos.categoryNames}`}
                   >

@@ -4,15 +4,17 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
+import {
+  AddEditProductProps,
+  ExtendedCategory,
+  SnackbarProps,
+} from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
-import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
@@ -20,7 +22,6 @@ import {
   CircularProgress,
   IconButton,
   Snackbar,
-  Typography,
 } from '@mui/material';
 import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
@@ -40,8 +41,7 @@ export default function Products() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
-  const { selectedCategoryId, parentCategory, setParentCategory } =
-    useCategoryContext();
+  const { categories: allCategories } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const {
     prevPage,
@@ -55,6 +55,7 @@ export default function Products() {
   } = usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
+  const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
   const { user } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -62,38 +63,76 @@ export default function Products() {
   const router = useRouter();
   const platform = usePlatform();
 
+  // Get categoryId from URL query params
+  const categoryId = router.query.categoryId as string | undefined;
+
+  // Build category path when categoryId is available
   useEffect(() => {
-    if (selectedCategoryId == null) {
-      // TODO: navigating with router.push messes up styles
-      // Need to figure out why it's happening only here.
-      // Other router navigations like /cart don't break the styles.
-      // router.push('/');
-      window.location.href = '/';
+    if (!categoryId || !allCategories || allCategories.length === 0) {
+      setCategoryPath([]);
       return;
     }
 
+    const path = buildCategoryPath(categoryId, allCategories);
+    setCategoryPath(path);
+  }, [categoryId, allCategories]);
+
+  useEffect(() => {
+    // Redirect to home if no categoryId in URL
+    if (!categoryId) {
+      router.replace('/');
+      return;
+    }
+
+    // Reset state when categoryId changes
     setProducts([]);
     setPage(0);
     setHasMore(true);
-    setIsLoading(false);
+    setIsLoading(true);
+
+    // Load first page of products
+    (async () => {
+      try {
+        const fetchProductsParams: any = { page: 1 };
+        fetchProductsParams.categoryId = categoryId;
+        if (searchKeyword) {
+          fetchProductsParams.searchKeyword = searchKeyword;
+        }
+
+        const newProducts = await fetchProducts(fetchProductsParams);
+        setProducts(newProducts);
+        setPrevProducts(newProducts);
+        setPrevCategory(categoryId);
+        setPrevSearchKeyword(searchKeyword);
+        setPage(1);
+
+        if (newProducts.length === 0) {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategoryId]);
+  }, [categoryId, searchKeyword]);
 
   const loadMoreProducts = useCallback(async () => {
-    if (isLoading || !hasMore || !selectedCategoryId) return;
+    if (isLoading || !hasMore || !categoryId) return;
     setIsLoading(true);
 
     try {
       const fetchProductsParams: any = { page: page + 1 };
-      fetchProductsParams.categoryId = selectedCategoryId;
+      fetchProductsParams.categoryId = categoryId;
       if (searchKeyword) {
         fetchProductsParams.searchKeyword = searchKeyword;
       }
 
       let newProducts: Product[];
       if (
-        prevCategory === selectedCategoryId &&
+        prevCategory === categoryId &&
         !searchKeyword &&
         fetchProductsParams.page <= prevPage &&
         prevSearchKeyword === searchKeyword
@@ -110,7 +149,7 @@ export default function Products() {
         });
         setPrevProducts(updatedPrevProducts);
         setPrevSearchKeyword(searchKeyword);
-        setPrevCategory(selectedCategoryId);
+        setPrevCategory(categoryId);
 
         if (newProducts.length !== 0) setPrevPage(fetchProductsParams.page);
       }
@@ -125,7 +164,7 @@ export default function Products() {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, selectedCategoryId, page, searchKeyword]);
+  }, [isLoading, hasMore, categoryId, page, searchKeyword]);
 
   useEffect(() => {
     const loadMoreTrigger = document.getElementById('load-more-trigger');
@@ -145,7 +184,7 @@ export default function Products() {
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts, selectedCategoryId]);
+  }, [loadMoreProducts, categoryId]);
 
   useEffect(() => {
     setPage(0);
@@ -155,122 +194,129 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchKeyword]);
 
+  // Don't render if no categoryId
+  if (!categoryId) {
+    return null;
+  }
+
   return (
-    selectedCategoryId != null && (
-      <Box>
-        <Box className="flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]">
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={appbarClasses.backButton[platform]}
-            aria-label="open drawer"
-            onClick={() => {
-              router.push('/');
-            }}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-          <Typography
-            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]} uppercase`}
-          >
-            {parseName(parentCategory?.name, router.locale ?? 'ru')}
-          </Typography>
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={`${appbarClasses.backButton[platform]} invisible`}
-            aria-label="open drawer"
-            onClick={() => {
-              router.back();
-            }}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-        </Box>
-        <Layout
-          showSearch
-          handleHeaderBackButton={() => {
-            setParentCategory(undefined);
+    <Box>
+      <Box className="flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]">
+        <IconButton
+          size="medium"
+          edge="start"
+          color="inherit"
+          className={appbarClasses.backButton[platform]}
+          aria-label="open drawer"
+          onClick={() => {
             router.push('/');
           }}
         >
-          <Box className="flex flex-col w-full h-full">
-            <SimpleBreadcrumbs />
-            <Box className="flex flex-wrap w-full px-[10.31vw]">
-              {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
-                selectedCategoryId != null && (
-                  <ProductCard
-                    handleClickAddProduct={() =>
-                      setAddEditProductDialog({
-                        open: true,
-                        dialogType: 'add',
-                        imageUrls: [],
-                      })
-                    }
-                  />
-                )}
-              {products.length > 0 &&
-                products.map((product, idx) => (
-                  <ProductCard
-                    product={product}
-                    key={idx}
-                    cartProps={{ cartAction: 'add' }}
-                  />
-                ))}
-            </Box>
-          </Box>
-          <div id="load-more-trigger"></div>
-          {isLoading && (
-            <Box className="w-full flex justify-center">
-              <CircularProgress />
-            </Box>
-          )}
-          {addEditProductDialog.open && (
-            <AddEditProductDialog
-              args={addEditProductDialog}
-              handleClose={() =>
-                setAddEditProductDialog({
-                  open: false,
-                  id: undefined,
-                  description: undefined,
-                  dialogType: undefined,
-                  imageUrls: [],
-                  name: undefined,
-                })
-              }
-              snackbarErrorHandler={(message) => {
-                setSnackbarOpen(true);
-                setSnackbarMessage({ message, severity: 'error' });
-              }}
-            />
-          )}
-          <Snackbar
-            open={snackbarOpen}
-            autoHideDuration={6000}
-            onClose={(_, reason) => {
-              if (reason === 'clickaway') {
-                return;
-              }
-              setSnackbarOpen(false);
-            }}
-          >
-            <Alert
-              onClose={() => setSnackbarOpen(false)}
-              severity={snackbarMessage?.severity}
-              variant="filled"
-              sx={{ width: '100%' }}
-            >
-              {snackbarMessage?.message && t(snackbarMessage.message)}
-            </Alert>
-          </Snackbar>
-        </Layout>
+          <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
+        </IconButton>
+
+        {/* TODO: handle finding parent category */}
+        {/* <Typography
+          className={`${interClassname.className} ${homePageClasses.categoriesText[platform]} uppercase`}
+        >
+          {parseName(parentCategory?.name, router.locale ?? 'ru')}
+        </Typography> */}
+
+        <IconButton
+          size="medium"
+          edge="start"
+          color="inherit"
+          className={`${appbarClasses.backButton[platform]} invisible`}
+          aria-label="open drawer"
+          onClick={() => {
+            router.back();
+          }}
+        >
+          <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
+        </IconButton>
       </Box>
-    )
+      <Layout
+        showSearch
+        handleHeaderBackButton={() => {
+          if (categoryPath.length > 1) {
+            // Navigate to the parent category page
+            const parentCategory = categoryPath[categoryPath.length - 2];
+            router.push(`/category/${parentCategory.id}`);
+          } else {
+            // If we're at the root category, go to home
+            router.push('/');
+          }
+        }}
+      >
+        <Box className="flex flex-col w-full h-full">
+          <SimpleBreadcrumbs categoryPath={categoryPath} />
+          <Box className="flex flex-wrap w-full px-[10.31vw]">
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <ProductCard
+                handleClickAddProduct={() =>
+                  setAddEditProductDialog({
+                    open: true,
+                    dialogType: 'add',
+                    imageUrls: [],
+                  })
+                }
+              />
+            )}
+            {products.length > 0 &&
+              products.map((product, idx) => (
+                <ProductCard
+                  product={product}
+                  key={idx}
+                  cartProps={{ cartAction: 'add' }}
+                />
+              ))}
+          </Box>
+        </Box>
+        <div id="load-more-trigger"></div>
+        {isLoading && (
+          <Box className="w-full flex justify-center">
+            <CircularProgress />
+          </Box>
+        )}
+        {addEditProductDialog.open && (
+          <AddEditProductDialog
+            args={addEditProductDialog}
+            handleClose={() =>
+              setAddEditProductDialog({
+                open: false,
+                id: undefined,
+                description: undefined,
+                dialogType: undefined,
+                imageUrls: [],
+                name: undefined,
+              })
+            }
+            snackbarErrorHandler={(message) => {
+              setSnackbarOpen(true);
+              setSnackbarMessage({ message, severity: 'error' });
+            }}
+          />
+        )}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setSnackbarOpen(false);
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarMessage?.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+          </Alert>
+        </Snackbar>
+      </Layout>
+    </Box>
   );
 }

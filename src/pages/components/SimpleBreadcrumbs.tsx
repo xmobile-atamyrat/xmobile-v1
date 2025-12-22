@@ -1,5 +1,3 @@
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -10,21 +8,14 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
 interface SimpleBreadcrumbsProps {
-  onClick?: (combo: [ExtendedCategory, string]) => void;
   currentProductName?: string;
+  categoryPath?: ExtendedCategory[]; // Category path for URL-based navigation
 }
 
 export default function SimpleBreadcrumbs({
-  onClick,
   currentProductName,
+  categoryPath,
 }: SimpleBreadcrumbsProps) {
-  const {
-    stack,
-    setStack,
-    setParentCategory,
-    parentCategory,
-    setSelectedCategoryId,
-  } = useCategoryContext();
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
@@ -45,9 +36,6 @@ export default function SimpleBreadcrumbs({
       >
         <Link
           onClick={() => {
-            setParentCategory(undefined);
-            setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-            setStack([]);
             router.push('/');
           }}
           className={simpleBreadcrumbsClasses.link}
@@ -59,34 +47,24 @@ export default function SimpleBreadcrumbs({
           </Typography>
         </Link>
 
-        {stack.map((combo) => (
-          <Link
-            key={combo[1]}
-            onClick={() => {
-              if (onClick) {
-                onClick(combo);
-                return;
-              }
-              setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
-              router.push('/');
-            }}
-            className={simpleBreadcrumbsClasses.link}
-          >
-            <Typography
-              className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
-            >
-              {parseName(combo[1], router.locale ?? 'ru')}
-            </Typography>
-          </Link>
-        ))}
-
-        <Typography
-          className={`${interClassname.className} ${simpleBreadcrumbsClasses.text} mx-2`}
-        >
-          {parentCategory == null
-            ? t('allProducts')
-            : parseName(parentCategory?.name, router.locale ?? 'ru')}
-        </Typography>
+        {categoryPath && categoryPath.length > 0
+          ? // URL-based navigation: show all categories in path except the last one (current)
+            categoryPath.map((cat) => (
+              <Link
+                key={cat.id}
+                onClick={() => {
+                  router.push(`/category/${cat.id}`);
+                }}
+                className={simpleBreadcrumbsClasses.link}
+              >
+                <Typography
+                  className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
+                >
+                  {parseName(cat.name, router.locale ?? 'ru')}
+                </Typography>
+              </Link>
+            ))
+          : null}
 
         {currentProductName ? (
           <Typography

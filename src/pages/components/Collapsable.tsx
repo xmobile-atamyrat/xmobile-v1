@@ -1,11 +1,6 @@
 import CollapsableBase from '@/pages/components/CollapsableBase';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  CategoryStack,
-  DeleteCategoriesProps,
-  EditCategoriesProps,
-  ExtendedCategory,
-} from '@/pages/lib/types';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Box, Collapse, IconButton } from '@mui/material';
@@ -22,8 +17,6 @@ interface CollapsableProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
-  categoryStackList: CategoryStack;
-  parentCategory?: ExtendedCategory;
 }
 
 export default function Collapsable({
@@ -37,8 +30,6 @@ export default function Collapsable({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
-  categoryStackList,
-  parentCategory,
 }: CollapsableProps) {
   const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
@@ -59,8 +50,6 @@ export default function Collapsable({
             setDeleteCategoriesModal={setDeleteCategoriesModal}
             setEditCategoriesModal={setEditCategoriesModal}
             closeDrawer={closeDrawer}
-            categoryStackList={categoryStackList}
-            parentCategory={parentCategory}
           />
         </Box>
         <IconButton
@@ -83,8 +72,6 @@ export default function Collapsable({
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
         closeDrawer={closeDrawer}
-        categoryStackList={categoryStackList}
-        parentCategory={parentCategory}
       />
     </Box>
   );
