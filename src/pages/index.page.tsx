@@ -7,15 +7,18 @@ import {
   ALL_PRODUCTS_CATEGORY_CARD,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
+  PAGENAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { getCookie } from '@/pages/lib/utils';
+import { getCookie, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
-import { Box, Typography } from '@mui/material';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { Box, CardMedia, IconButton, Typography } from '@mui/material';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
@@ -205,12 +208,64 @@ export default function Home({
             }}
           />
         )}
-        {!parentCategory && (
-          <Typography
-            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-          >
-            {t('allCategory')}
-          </Typography>
+        {!parentCategory ? (
+          <Box className="w-full flex-col px-[24px]">
+            <Box className={homePageClasses.topLayer[platform]}>
+              <CardMedia
+                component="img"
+                src="/xmobile-processed-logo.png"
+                className="w-auto h-[40px]"
+              />
+              <Box className="w-[36px] h-[36px] rounded-full bg-[#f5f5f5] justify-center items-center flex">
+                <CardMedia
+                  component="img"
+                  src="/bell.png"
+                  className="w-[20px] h-[20px]"
+                />
+              </Box>
+            </Box>
+            <Typography
+              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+            >
+              {t(PAGENAME.category[platform])}
+            </Typography>
+          </Box>
+        ) : (
+          <Box className="flex items-center w-full px-[24px] justify-between">
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={appbarClasses.backButton[platform]}
+              aria-label="open drawer"
+              onClick={() => {
+                router.reload();
+              }}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
+            <Typography
+              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+            >
+              {parseName(parentCategory.name, router.locale ?? 'ru')}
+            </Typography>
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={`${appbarClasses.backButton[platform]} invisible`}
+              aria-label="open drawer"
+              onClick={() => {
+                router.back();
+              }}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
+          </Box>
         )}
 
         <Box className={homePageClasses.card[platform]}>

@@ -1,35 +1,30 @@
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   appBarHeight,
   AUTH_REFRESH_COOKIE_NAME,
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
-  LOGO_COLOR,
-  LOGO_COLOR_LIGHT,
-  MAIN_BG_COLOR,
-  mobileAppBarHeight,
 } from '@/pages/lib/constants';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { Dvr } from '@mui/icons-material';
-import AccountCircle from '@mui/icons-material/AccountCircle';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import CloseIcon from '@mui/icons-material/Close';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
-import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import { interClassname } from '@/styles/theme';
+import CallIcon from '@mui/icons-material/Call';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import {
-  Avatar,
   CardMedia,
+  Divider,
   Paper,
   Select,
   useMediaQuery,
@@ -41,12 +36,10 @@ import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import Flag from 'react-flagkit';
 
 interface CustomAppBarProps {
   openDrawer: boolean;
@@ -70,24 +63,16 @@ export const SearchBar = ({
   mt?: string;
   width?: string;
 }) => {
+  const platform = usePlatform();
   return (
-    <Box className={appbarClasses.boxes.form}>
+    <Box className={appbarClasses.boxes.form[platform]}>
       <Paper
         component="form"
-        sx={{
-          mt,
-          width,
-        }}
-        className={appbarClasses.paper}
-        style={{
-          backgroundColor: LOGO_COLOR_LIGHT,
-        }}
+        className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
+        elevation={0}
       >
-        <IconButton type="button" className="p-[10px]">
-          <SearchIcon className="text-white" />
-        </IconButton>
         <InputBase
-          className={appbarClasses.inputBase}
+          className={`${appbarClasses.inputBase[platform]} ${interClassname.className}`}
           placeholder={`${searchPlaceholder}...`}
           onChange={(e) => {
             const keyword = e.target.value;
@@ -103,21 +88,8 @@ export const SearchBar = ({
             }
           }}
         />
-        {searchKeyword !== '' && (
-          <IconButton
-            type="button"
-            className="p-[10px]"
-            onClick={() => {
-              setSearchKeyword('');
-              if (handleSearch) {
-                handleSearch('');
-              }
-            }}
-          >
-            <CloseIcon className="text-white" />
-          </IconButton>
-        )}
       </Paper>
+      <SearchIcon className="text-[#30303090]" />
     </Box>
   );
 };
@@ -134,13 +106,18 @@ export default function CustomAppBar({
   const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
-  const { setStack, setParentCategory, setSelectedCategoryId } =
-    useCategoryContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
+  const languages = [
+    { val: 'ru', name: 'Русский', img: '/Russia.png' },
+    { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
+    { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
+    { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
+    { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
+  ];
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -158,18 +135,103 @@ export default function CustomAppBar({
   }, [localSearchKeyword]);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box className="flex-grow-1">
       <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (appBarTheme) => appBarTheme.zIndex.drawer + 1,
-          height: { xs: mobileAppBarHeight, md: appBarHeight },
-        }}
-        style={{
-          backgroundColor: MAIN_BG_COLOR,
-        }}
+        position="sticky"
+        className={appbarClasses.appbar[platform]}
+        elevation={0}
       >
-        <Toolbar className={appbarClasses.toolBar}>
+        <Box className="w-full min-h-[48px] flex justify-center items-start">
+          <Box className="w-[78.95vw] min-h-[32px] justify-between flex flex-row items-center">
+            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
+              <Box className="min-w-[234px] flex flex-row items-center">
+                <LocationOnIcon className="h-[16px] text-[#303030]" />
+                <Typography
+                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                >
+                  {t('shortAddress')}
+                </Typography>
+              </Box>
+              <Divider
+                orientation="vertical"
+                flexItem
+                className="text-[#303030] mx-[-15px] min-h-[30px] my-auto"
+              />
+              <Box className="min-w-[234px] flex flex-row items-center">
+                <CallIcon className="h-[16px] text-[#303030]" />
+                <Typography
+                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                >
+                  (+993) 61 004933
+                </Typography>
+              </Box>
+            </Box>
+            <Box className="gap-[24px] min-w-[214px] flex flex-row">
+              <Select
+                value={selectedLocale}
+                variant="standard"
+                disableUnderline
+                className={appbarClasses.select[platform]}
+                onChange={(event) => {
+                  const newLocale = event.target.value;
+                  setSelectedLocale(newLocale);
+                  setCookie(LOCALE_COOKIE_NAME, newLocale);
+                  router.push(router.pathname, router.asPath, {
+                    locale: newLocale,
+                  });
+                }}
+              >
+                {languages.map((lang) => (
+                  <MenuItem
+                    key={lang.val}
+                    value={lang.val}
+                    className={appbarClasses.menuItem[platform]}
+                  >
+                    <Box className={appbarClasses.boxes.lang[platform]}>
+                      <CardMedia
+                        component="img"
+                        src={lang.img}
+                        className="w-[24px] h-[18px]"
+                      />
+                      <Typography
+                        className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
+                      >
+                        {lang.name}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+              <Divider
+                orientation="vertical"
+                flexItem
+                className="text-[#303030] mx-[-15px]"
+              />
+              <Box className="w-[56px] flex flex-row items-center justify-between">
+                <IconButton
+                  href={'https://www.tiktok.com/@xmobiletm/'}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <CardMedia
+                    component="img"
+                    src="/tiktok.png"
+                    className="w-auto h-[16px]"
+                  />
+                </IconButton>
+                <IconButton
+                  href={'https://www.instagram.com/xmobiletm/'}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <InstagramIcon className="w-[16px] h-[16px] text-[#000]"></InstagramIcon>
+                </IconButton>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+        <Divider className="text-[#303030]" />
+        <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
@@ -182,9 +244,6 @@ export default function CustomAppBar({
               >
                 <ArrowBackIosIcon
                   className={appbarClasses.arrowBackIos[platform]}
-                  sx={{
-                    color: LOGO_COLOR,
-                  }}
                 />
               </IconButton>
             )}
@@ -194,157 +253,67 @@ export default function CustomAppBar({
               color="inherit"
               aria-label="open drawer"
               onClick={() => setOpenDrawer(!openDrawer)}
-              className="p-4 pl-[4px]"
+              className="p-4"
             >
-              <MenuIcon
-                className={appbarClasses.menuIcon[platform]}
-                sx={{
-                  color: LOGO_COLOR,
-                }}
-              />
+              <MenuIcon className={appbarClasses.menuIcon[platform]} />
             </IconButton>
-            <Box
-              className={appbarClasses.boxes.logo[platform]}
-              onClick={() => {
-                setParentCategory(undefined);
-                setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-                setStack([]);
-                router.push('/');
-              }}
-              component="button"
-            >
-              <CardMedia component="img" src="/logo-recolored-cropped.jpeg" />
-            </Box>
           </Box>
-
-          <Box className={appbarClasses.boxes.search}>
-            {isMdUp && showSearch && (
-              <Box
-                sx={{
-                  width: 400,
-                }}
-              >
-                {SearchBar({
-                  mt: isMdUp ? undefined : `${appBarHeight}px`,
-                  searchKeyword: localSearchKeyword,
-                  searchPlaceholder: t('search'),
-                  setSearchKeyword: setLocalSearchKeyword,
-                  width: '95%',
-                })}
-              </Box>
-            )}
-
-            <Select
-              value={selectedLocale}
-              color="info"
-              size="small"
-              className={appbarClasses.select[platform]}
-              sx={{
-                '& .MuiInputBase-input': {
-                  padding: { xs: '8px', sm: '20px' },
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: LOGO_COLOR,
-                },
-              }}
-              onChange={(event) => {
-                const newLocale = event.target.value;
-                setSelectedLocale(newLocale);
-                setCookie(LOCALE_COOKIE_NAME, newLocale);
-                router.push(router.pathname, router.asPath, {
-                  locale: newLocale,
-                });
-              }}
-            >
-              <MenuItem value="ru" className={appbarClasses.menuItem[platform]}>
-                <Box className={appbarClasses.boxes.lang[platform]}>
-                  <Flag country="RU" size={18} />
-                  <Typography className={appbarClasses.typography[platform]}>
-                    rus
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem value="tk" className={appbarClasses.menuItem[platform]}>
-                <Box className={appbarClasses.boxes.lang[platform]}>
-                  <Flag country="TM" size={18} />
-                  <Typography className={appbarClasses.typography[platform]}>
-                    tkm
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem value="tr" className={appbarClasses.menuItem[platform]}>
-                <Box className={appbarClasses.boxes.lang[platform]}>
-                  <Flag country="TR" size={18} />
-                  <Typography className={appbarClasses.typography[platform]}>
-                    tür
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem value="ch" className={appbarClasses.menuItem[platform]}>
-                <Box className={appbarClasses.boxes.lang[platform]}>
-                  <Flag country="TM" size={18} />
-                  <Typography className={appbarClasses.typography[platform]}>
-                    çär
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem value="en" className={appbarClasses.menuItem[platform]}>
-                <Box className={appbarClasses.boxes.lang[platform]}>
-                  <Flag country="US" size={18} />
-                  <Typography className={appbarClasses.typography[platform]}>
-                    eng
-                  </Typography>
-                </Box>
-              </MenuItem>
-            </Select>
+          <Box className="w-[30vw] h-[48px]">
+            {SearchBar({
+              searchKeyword: localSearchKeyword,
+              searchPlaceholder: t('search'),
+              setSearchKeyword: setLocalSearchKeyword,
+              width: '95%',
+            })}
+          </Box>
+          <Box className="flex flex-row w-auto h-full justify-between items-center">
             {user && (
-              <Box>
+              <Box className="flex flex-row items-center">
                 <IconButton
-                  className="pl-1 pr-0"
                   onClick={() => router.push('/cart')}
+                  className="rounded-none"
                 >
-                  <ShoppingCartCheckoutIcon
+                  <CardMedia
+                    component="img"
+                    src="/cartWeb.png"
                     className={appbarClasses.shoppingCCI[platform]}
-                    sx={{ color: LOGO_COLOR }}
                   />
+                  <Typography
+                    className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
+                  >
+                    {t('cart')}
+                  </Typography>
                 </IconButton>
+                <Divider
+                  orientation="vertical"
+                  className="h-[32px] text-[#303030] mx-[12px]"
+                />
               </Box>
             )}
-            <Box>
-              <IconButton
-                edge="end"
-                aria-label="account of current user"
-                aria-haspopup="true"
-                onClick={(event) => setAnchorEl(event.currentTarget)}
-                color="inherit"
-              >
-                {user != null ? (
-                  <Avatar
-                    className={appbarClasses.avatar[platform]}
-                    style={{
-                      backgroundColor: LOGO_COLOR,
-                    }}
-                  >
-                    {user.name[0].toUpperCase()}
-                  </Avatar>
-                ) : (
-                  <AccountCircle
-                    className={appbarClasses.accCircle[platform]}
-                    sx={{
-                      color: LOGO_COLOR,
-                    }}
-                  />
-                )}
-              </IconButton>
-            </Box>
+            <IconButton
+              onClick={(event) => setAnchorEl(event.currentTarget)}
+              className="rounded-none"
+            >
+              <CardMedia
+                component="img"
+                src="/userBlack.png"
+                className={appbarClasses.shoppingCCI[platform]}
+              />
+              <Box className="flex flex-col items-start justify-center ml-[20px]">
+                <Typography
+                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                >
+                  {t('user')}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                >
+                  {user ? user.name.split(' ')[0] : t('guest')}
+                </Typography>
+              </Box>
+            </IconButton>
           </Box>
-        </Toolbar>
+        </Box>
       </AppBar>
       {showSearch &&
         !isMdUp &&
