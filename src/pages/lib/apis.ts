@@ -21,6 +21,9 @@ export const fetchProducts = async ({
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
   if (all) {
     url += `&all=true`;
+    if (searchKeyword) {
+      url += `&searchKeyword=${searchKeyword}`;
+    }
   } else if (categoryId) {
     url += `&categoryId=${categoryId}`;
     if (searchKeyword) {
