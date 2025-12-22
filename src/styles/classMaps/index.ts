@@ -14,6 +14,6 @@ export const homePageClasses = {
   },
   topLayer: {
     web: 'hidden',
-    mobile: 'w-full flex flex-row justify-between items-center my-[36px]',
+    mobile: 'w-full flex flex-row justify-between items-center my-[12px]',
   },
 };
