@@ -18,5 +18,5 @@ export const homePageClasses = {
     mobile: 'w-full h-full flex flex-col px-[24px]',
   },
   newProductsTitle:
-    'font-medium text-[20px] leading-[28px] tracking-normal text-[#000] my-[25px]',
+    'font-medium text-[20px] leading-[28px] tracking-normal text-[#1c1b1b] mt-[40px] mb-[25px]',
 };
