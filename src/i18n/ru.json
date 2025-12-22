@@ -1,6 +1,8 @@
 {
   "lowercaseRussianAlphabet": "а б в г д е ё ж з и й к л м н о п р с т у ф х ц ч ш щ ъ ы ь э ю я",
   "uppercaseRussianAlphabet": "А Б В Г Д Е Ё Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я",
+  "user": "Пользователь",
+  "guest": "Гость",
   "cancel": "Отмена",
   "submit": "Отправь",
   "addNewCategory": "Добавить новую категорию",
@@ -167,6 +169,7 @@
   "confirmProductSupplierDelete": "Вы уверены, что хотите удалить? Предмет также будет удален из всех предыдущих заказов!",
   "category": "Категория",
   "allCategory": "Все Категории",
+  "categories": "Категории",
   "specification": "Спецификация",
   "account": "Аккаунт",
   "appLanguage": "Язык приложения",
@@ -174,5 +177,6 @@
   "emptyCart": "Пустая Корзина",
   "yourCart": "Вашa Корзина",
   "product": "Товар",
-  "total": "Итого"
+  "total": "Итого",
+  "shortAddress": "Туркменабат, пр. С.А. Ниязова"
 }

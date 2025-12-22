@@ -1,6 +1,8 @@
 {
   "lowercaseTurkmenAlphabet": "a, b, ç, d, e, ä, ü, f, g, h, ı, ä i,  j, k, l, m, n, ň, o, ö, p, r, s, ş, t, u, ü, w, y, ý, z, ž",
   "uppercaseTurkmenAlpahbet": "A, B, Ç, D, E, Ä, F, G, H, I, Ä, J, K, L, M, N, Ň, O, Ö, P, R, S, Ş, T, U, Ü, W, Y, Z, Ž",
+  "user": "Ulanyjy",
+  "guest": "Myhman",
   "cancel": "Izä",
   "submit": "Tapşyr",
   "addNewCategory": "Taza kategoriýa koş",
@@ -167,6 +169,7 @@
   "confirmProductSupplierDelete": "Öçürmek isleýändigiňize ynanýarsyňyzmy? Haryt öňki sargytlardan hem aýrylar!",
   "category": "Kategoriýa",
   "allCategory": "Hemme Kategoriýalar",
+  "categories": "Kategoriýalar",
   "specification": "Towar hakynda",
   "account": "Akkaunt",
   "appLanguage": "Priloženiýa Dili",
@@ -174,5 +177,6 @@
   "emptyCart": "Sätiliňiz Boş",
   "yourCart": "Sätiliňiz",
   "product": "Produkt",
-  "total": "Jemi"
+  "total": "Jemi",
+  "shortAddress": "Türkmenabat, S.A. Niyazow köçe."
 }

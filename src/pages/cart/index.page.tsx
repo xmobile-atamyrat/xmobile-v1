@@ -1,5 +1,6 @@
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
+import { PAGENAME } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -95,7 +96,7 @@ export default function CartPage() {
               <Typography
                 className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
               >
-                {t('yourCart')}
+                {t(PAGENAME.cart[platform])}
               </Typography>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography

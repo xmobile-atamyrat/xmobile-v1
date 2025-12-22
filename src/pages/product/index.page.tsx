@@ -4,11 +4,24 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
+import { parseName } from '@/pages/lib/utils';
+import { homePageClasses } from '@/styles/classMaps';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { interClassname } from '@/styles/theme';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  IconButton,
+  Snackbar,
+  Typography,
+} from '@mui/material';
 import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -27,7 +40,8 @@ export default function Products() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
-  const { selectedCategoryId, setParentCategory } = useCategoryContext();
+  const { selectedCategoryId, parentCategory, setParentCategory } =
+    useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const {
     prevPage,
@@ -46,6 +60,7 @@ export default function Products() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const t = useTranslations();
   const router = useRouter();
+  const platform = usePlatform();
 
   useEffect(() => {
     if (selectedCategoryId == null) {
@@ -142,83 +157,120 @@ export default function Products() {
 
   return (
     selectedCategoryId != null && (
-      <Layout
-        showSearch
-        handleHeaderBackButton={() => {
-          setParentCategory(undefined);
-          router.push('/');
-        }}
-      >
-        <Box className="flex flex-col w-full h-full">
-          <SimpleBreadcrumbs />
-          <Box className="flex flex-wrap w-full">
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
-              selectedCategoryId != null && (
-                <ProductCard
-                  handleClickAddProduct={() =>
-                    setAddEditProductDialog({
-                      open: true,
-                      dialogType: 'add',
-                      imageUrls: [],
-                    })
-                  }
-                />
-              )}
-            {products.length > 0 &&
-              products.map((product, idx) => (
-                <ProductCard
-                  product={product}
-                  key={idx}
-                  cartProps={{ cartAction: 'add' }}
-                />
-              ))}
-          </Box>
-        </Box>
-        <div id="load-more-trigger"></div>
-        {isLoading && (
-          <Box className="w-full flex justify-center">
-            <CircularProgress />
-          </Box>
-        )}
-        {addEditProductDialog.open && (
-          <AddEditProductDialog
-            args={addEditProductDialog}
-            handleClose={() =>
-              setAddEditProductDialog({
-                open: false,
-                id: undefined,
-                description: undefined,
-                dialogType: undefined,
-                imageUrls: [],
-                name: undefined,
-              })
-            }
-            snackbarErrorHandler={(message) => {
-              setSnackbarOpen(true);
-              setSnackbarMessage({ message, severity: 'error' });
+      <Box>
+        <Box className="flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]">
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            className={appbarClasses.backButton[platform]}
+            aria-label="open drawer"
+            onClick={() => {
+              router.push('/');
             }}
-          />
-        )}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') {
-              return;
-            }
-            setSnackbarOpen(false);
+          >
+            <ArrowBackIosIcon
+              className={appbarClasses.arrowBackIos[platform]}
+            />
+          </IconButton>
+          <Typography
+            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]} uppercase`}
+          >
+            {parseName(parentCategory?.name, router.locale ?? 'ru')}
+          </Typography>
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            className={`${appbarClasses.backButton[platform]} invisible`}
+            aria-label="open drawer"
+            onClick={() => {
+              router.back();
+            }}
+          >
+            <ArrowBackIosIcon
+              className={appbarClasses.arrowBackIos[platform]}
+            />
+          </IconButton>
+        </Box>
+        <Layout
+          showSearch
+          handleHeaderBackButton={() => {
+            setParentCategory(undefined);
+            router.push('/');
           }}
         >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarMessage?.severity}
-            variant="filled"
-            sx={{ width: '100%' }}
+          <Box className="flex flex-col w-full h-full">
+            <SimpleBreadcrumbs />
+            <Box className="flex flex-wrap w-full px-[10.31vw]">
+              {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
+                selectedCategoryId != null && (
+                  <ProductCard
+                    handleClickAddProduct={() =>
+                      setAddEditProductDialog({
+                        open: true,
+                        dialogType: 'add',
+                        imageUrls: [],
+                      })
+                    }
+                  />
+                )}
+              {products.length > 0 &&
+                products.map((product, idx) => (
+                  <ProductCard
+                    product={product}
+                    key={idx}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+            </Box>
+          </Box>
+          <div id="load-more-trigger"></div>
+          {isLoading && (
+            <Box className="w-full flex justify-center">
+              <CircularProgress />
+            </Box>
+          )}
+          {addEditProductDialog.open && (
+            <AddEditProductDialog
+              args={addEditProductDialog}
+              handleClose={() =>
+                setAddEditProductDialog({
+                  open: false,
+                  id: undefined,
+                  description: undefined,
+                  dialogType: undefined,
+                  imageUrls: [],
+                  name: undefined,
+                })
+              }
+              snackbarErrorHandler={(message) => {
+                setSnackbarOpen(true);
+                setSnackbarMessage({ message, severity: 'error' });
+              }}
+            />
+          )}
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={6000}
+            onClose={(_, reason) => {
+              if (reason === 'clickaway') {
+                return;
+              }
+              setSnackbarOpen(false);
+            }}
           >
-            {snackbarMessage?.message && t(snackbarMessage.message)}
-          </Alert>
-        </Snackbar>
-      </Layout>
+            <Alert
+              onClose={() => setSnackbarOpen(false)}
+              severity={snackbarMessage?.severity}
+              variant="filled"
+              sx={{ width: '100%' }}
+            >
+              {snackbarMessage?.message && t(snackbarMessage.message)}
+            </Alert>
+          </Snackbar>
+        </Layout>
+      </Box>
     )
   );
 }

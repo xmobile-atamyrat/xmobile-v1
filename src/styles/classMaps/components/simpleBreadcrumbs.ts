@@ -1,7 +1,7 @@
 export const simpleBreadcrumbsClasses = {
-  link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
+  link: 'flex flex-row justify-center items-center gap-1 no-underline mx-2',
   breadcrumbs: {
-    web: 'mt-4 flex flex-row',
+    web: 'flex flex-row',
     mobile: 'hidden',
   },
   text: 'no-underline text-[#303030] text-[16px] leading-[24px] tracking-normal cursor-pointer',
