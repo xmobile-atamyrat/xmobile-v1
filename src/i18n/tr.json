@@ -1,4 +1,6 @@
 {
+  "user": "Kullanıcı",
+  "guest": "Misafir",
   "cancel": "İptal",
   "submit": "Gönder",
   "addNewCategory": "Yeni Kategori Ekle",
@@ -165,6 +167,7 @@
   "confirmProductSupplierDelete": "Silmek istediğinden emin misin? Öğe önceki tüm siparişlerden de kaldırılacak!",
   "category": "Kategori",
   "allCategory": "Tüm Kategoriler",
+  "categories": "Kategoriler",
   "specification": "Hakkında",
   "account": "Hesap",
   "appLanguage": "Uygulama Dili",
@@ -172,5 +175,6 @@
   "emptyCart": "Sepetiniz Boş",
   "yourCart": "Sepetiniz",
   "product": "Ürün",
-  "total": "Toplam"
+  "total": "Toplam",
+  "shortAddress": "Türkmenabat, S.A. Niyazov Cad."
 }

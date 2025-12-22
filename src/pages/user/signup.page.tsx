@@ -55,7 +55,7 @@ export default function Signup() {
         <ArrowBackIos
           className={signupClasses.link[platform]}
           style={{ color: colors.text[platform] }}
-        ></ArrowBackIos>
+        />
       </Link>
       <Box className={signupClasses.boxes.main[platform]}>
         <CardMedia

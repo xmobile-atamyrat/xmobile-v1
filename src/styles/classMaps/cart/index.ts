@@ -1,16 +1,16 @@
 export const cartIndexClasses = {
   box: {
     web: 'w-full h-full flex flex-col mt-[64px]',
-    mobile: 'w-full h-full flex flex-col mt-[56px]',
+    mobile: 'w-full h-full flex flex-col my-[36px]',
   },
-  prodCart: 'flex flex-wrap gap-4 w-full p-3 justify-center',
+  prodCart: 'flex flex-wrap gap-4 w-full justify-center',
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
     web: 'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',
     mobile: 'text-[#fff] font-medium text-[16px] leading-full tracking-normal',
   },
   breadcrumbs: {
-    web: 'ml-10 mt-4',
+    web: 'ml-[10vw] mb-[32px] flex flex-row mt-[-50px]',
     mobile: 'hidden',
   },
   breadcrumbsText:
