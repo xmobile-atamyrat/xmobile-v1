@@ -13,6 +13,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
+import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -190,7 +191,7 @@ export default function CategoryPage({
     <Layout handleHeaderBackButton={handleHeaderBackButton}>
       <Box className={homePageClasses.main[platform]}>
         <SimpleBreadcrumbs categoryPath={categoryPath} />
-        <Box className="flex items-center w-full px-[24px] justify-between">
+        <Box className={categoryIdClasses.boxes.header[platform]}>
           <IconButton
             size="medium"
             edge="start"
@@ -198,7 +199,7 @@ export default function CategoryPage({
             className={appbarClasses.backButton[platform]}
             aria-label="open drawer"
             onClick={() => {
-              router.reload();
+              router.back();
             }}
           >
             <ArrowBackIosIcon
