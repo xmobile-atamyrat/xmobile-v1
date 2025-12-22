@@ -60,10 +60,6 @@ export interface CategoryContextProps {
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
-  stack: CategoryStack;
-  setStack: Dispatch<SetStateAction<CategoryStack>>;
-  parentCategory: ExtendedCategory;
-  setParentCategory: Dispatch<SetStateAction<ExtendedCategory>>;
 }
 
 export interface ProtectedUser extends Omit<User, 'password'> {}
