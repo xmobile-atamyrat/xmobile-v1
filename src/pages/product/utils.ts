@@ -100,7 +100,7 @@ export const computePrice = async ({
     method: 'GET',
   });
 
-  if (success) {
+  if (success && data) {
     sessionStorage.setItem(priceId, data.priceInTmt);
     return data.priceInTmt;
   }

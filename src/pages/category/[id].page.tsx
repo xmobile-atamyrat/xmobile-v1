@@ -198,9 +198,7 @@ export default function CategoryPage({
             color="inherit"
             className={appbarClasses.backButton[platform]}
             aria-label="open drawer"
-            onClick={() => {
-              router.back();
-            }}
+            onClick={handleHeaderBackButton}
           >
             <ArrowBackIosIcon
               className={appbarClasses.arrowBackIos[platform]}
