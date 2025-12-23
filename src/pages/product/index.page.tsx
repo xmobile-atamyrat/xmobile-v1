@@ -4,7 +4,7 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
+import { buildCategoryPath, findCategory } from '@/pages/lib/categoryPathUtils';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -14,7 +14,10 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { productIndexPageClasses } from '@/styles/classMaps/product';
+import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
@@ -22,6 +25,7 @@ import {
   CircularProgress,
   IconButton,
   Snackbar,
+  Typography,
 } from '@mui/material';
 import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
@@ -65,6 +69,7 @@ export default function Products() {
 
   // Get categoryId from URL query params
   const categoryId = router.query.categoryId as string | undefined;
+  const category = findCategory(allCategories, categoryId);
 
   // Build category path when categoryId is available
   useEffect(() => {
@@ -194,60 +199,51 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchKeyword]);
 
+  const handleBackButton = () => {
+    if (categoryPath.length > 1) {
+      // Navigate to the parent category page
+      const parentCategory = categoryPath[categoryPath.length - 2];
+      router.push(`/category/${parentCategory.id}`);
+    } else {
+      // If we're at the root category, go to home
+      router.push('/');
+    }
+  };
+
   // Don't render if no categoryId
   if (!categoryId) {
-    return null;
+    router.push('/');
   }
 
   return (
     <Box>
-      <Box className="flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]">
-        <IconButton
-          size="medium"
-          edge="start"
-          color="inherit"
-          className={appbarClasses.backButton[platform]}
-          aria-label="open drawer"
-          onClick={() => {
-            router.push('/');
-          }}
-        >
-          <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
-        </IconButton>
+      <Box className={productIndexPageClasses.boxes.appbar[platform]}>
+        <Box className="w-1/3 flex justify-start">
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            className={appbarClasses.backButton[platform]}
+            aria-label="open drawer"
+            onClick={handleBackButton}
+          >
+            <ArrowBackIosIcon
+              className={appbarClasses.arrowBackIos[platform]}
+            />
+          </IconButton>
+        </Box>
 
-        {/* TODO: handle finding parent category */}
-        {/* <Typography
-          className={`${interClassname.className} ${homePageClasses.categoriesText[platform]} uppercase`}
-        >
-          {parseName(parentCategory?.name, router.locale ?? 'ru')}
-        </Typography> */}
-
-        <IconButton
-          size="medium"
-          edge="start"
-          color="inherit"
-          className={`${appbarClasses.backButton[platform]} invisible`}
-          aria-label="open drawer"
-          onClick={() => {
-            router.back();
-          }}
-        >
-          <ArrowBackIosIcon className={appbarClasses.arrowBackIos[platform]} />
-        </IconButton>
+        <Box className="w-1/3 flex justify-center">
+          {category && (
+            <Typography
+              className={`${interClassname.className} ${productIndexPageClasses.categoryName[platform]}`}
+            >
+              {parseName(category?.name, router.locale ?? 'ru')}
+            </Typography>
+          )}
+        </Box>
       </Box>
-      <Layout
-        showSearch
-        handleHeaderBackButton={() => {
-          if (categoryPath.length > 1) {
-            // Navigate to the parent category page
-            const parentCategory = categoryPath[categoryPath.length - 2];
-            router.push(`/category/${parentCategory.id}`);
-          } else {
-            // If we're at the root category, go to home
-            router.push('/');
-          }
-        }}
-      >
+      <Layout showSearch handleHeaderBackButton={handleBackButton}>
         <Box className="flex flex-col w-full h-full">
           <SimpleBreadcrumbs categoryPath={categoryPath} />
           <Box className="flex flex-wrap w-full px-[10.31vw]">
