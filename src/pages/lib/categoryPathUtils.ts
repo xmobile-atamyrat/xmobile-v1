@@ -27,33 +27,32 @@ export function findParentCategory(
   return search(allCategories);
 }
 
+export function findCategory(
+  cats: ExtendedCategory[],
+  targetId: string,
+): ExtendedCategory | null {
+  const directMatch = cats.find((cat) => cat.id === targetId);
+  if (directMatch) {
+    return directMatch;
+  }
+
+  // Search in subcategories
+  const subcategoryResults = cats
+    .filter(
+      (cat) => cat.successorCategories && cat.successorCategories.length > 0,
+    )
+    .map((cat) => findCategory(cat.successorCategories!, targetId))
+    .filter((result): result is ExtendedCategory => result !== null);
+
+  return subcategoryResults[0] || null;
+}
+
 // Helper function to build full category path from root to current category
 export function buildCategoryPath(
   categoryId: string,
   allCategories: ExtendedCategory[],
 ): ExtendedCategory[] {
   const path: ExtendedCategory[] = [];
-
-  // Find the current category
-  function findCategory(
-    cats: ExtendedCategory[],
-    targetId: string,
-  ): ExtendedCategory | null {
-    const directMatch = cats.find((cat) => cat.id === targetId);
-    if (directMatch) {
-      return directMatch;
-    }
-
-    // Search in subcategories
-    const subcategoryResults = cats
-      .filter(
-        (cat) => cat.successorCategories && cat.successorCategories.length > 0,
-      )
-      .map((cat) => findCategory(cat.successorCategories!, targetId))
-      .filter((result): result is ExtendedCategory => result !== null);
-
-    return subcategoryResults[0] || null;
-  }
 
   // Build path recursively from current to root
   function buildPath(currentId: string): boolean {
@@ -73,6 +72,7 @@ export function buildCategoryPath(
 
     return true; // Reached root
   }
+  // Find the current category
 
   buildPath(categoryId);
   return path;
