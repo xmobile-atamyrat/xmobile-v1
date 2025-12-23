@@ -8,6 +8,7 @@ import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
@@ -16,6 +17,7 @@ import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
+  ExtendedCategory,
   ResponseApi,
   SnackbarProps,
 } from '@/pages/lib/types';
@@ -138,17 +140,35 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const { setProducts } = useProductContext();
-  const { selectedCategoryId, stack, parentCategory } = useCategoryContext();
+  const { categories: allCategories, selectedCategoryId } =
+    useCategoryContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
+  const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+
+  // Get categoryId from query params
+  const categoryIdFromQuery =
+    (router.query.categoryId as string) || product?.categoryId;
+
+  // Build category path when categoryId is available
+  useEffect(() => {
+    if (!categoryIdFromQuery || !allCategories || allCategories.length === 0) {
+      setCategoryPath([]);
+      return;
+    }
+
+    const path = buildCategoryPath(categoryIdFromQuery, allCategories);
+    setCategoryPath(path);
+  }, [categoryIdFromQuery, allCategories]);
+
   // Check if user landed directly (no category context)
-  const isDirectLanding = stack.length === 0 && !parentCategory;
+  const isDirectLanding = !categoryIdFromQuery;
 
   useEffect(() => {
     if (product == null) {
@@ -224,12 +244,19 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       handleHeaderBackButton={() => {
         if (isDirectLanding) {
           router.push('/');
+        } else if (categoryPath.length > 0) {
+          // Navigate to the category page
+          const currentCategory = categoryPath[categoryPath.length - 1];
+          router.push(`/category/${currentCategory.id}`);
         } else {
           router.push('/product');
         }
       }}
     >
-      <SimpleBreadcrumbs currentProductName={product.name} />
+      <SimpleBreadcrumbs
+        currentProductName={product.name}
+        categoryPath={categoryPath}
+      />
       <Box className={detailPageClasses.boxes.main[platform]}>
         {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
           <Box>
