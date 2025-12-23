@@ -1,11 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  CategoryStack,
-  DeleteCategoriesProps,
-  EditCategoriesProps,
-  ExtendedCategory,
-} from '@/pages/lib/types';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
@@ -34,8 +29,6 @@ interface CollapsableBaseProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
-  categoryStackList: CategoryStack;
-  parentCategory?: ExtendedCategory;
 }
 
 export default function CollapsableBase({
@@ -45,8 +38,6 @@ export default function CollapsableBase({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
-  categoryStackList,
-  parentCategory,
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
@@ -55,7 +46,6 @@ export default function CollapsableBase({
   const openEditMenu = Boolean(anchorEl);
   const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
-  const { setStack, setParentCategory } = useCategoryContext();
 
   useEffect(() => {
     if (categoryImgUrl != null && id != null) {
@@ -97,13 +87,8 @@ export default function CollapsableBase({
       <ListItemButton
         onClick={() => {
           setSelectedCategoryId(id);
-          setStack(categoryStackList);
-          if (parentCategory != null) {
-            setParentCategory(parentCategory);
-          }
           closeDrawer();
-
-          router.push('/product');
+          router.push(`/product?categoryId=${id}`);
         }}
         className={collapsableClasses.listItemButton}
       >

@@ -1,5 +1,5 @@
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
 import { interClassname } from '@/styles/theme';
@@ -17,38 +17,44 @@ const StyledBreadcrumb = styled(Chip)(({ theme }) => {
   };
 }) as typeof Chip;
 
-export default function StyledBreadcrumbs() {
-  const { stack, setStack, parentCategory } = useCategoryContext();
+interface StyledBreadcrumbsProps {
+  categoryPath?: ExtendedCategory[];
+}
+
+export default function StyledBreadcrumbs({
+  categoryPath,
+}: StyledBreadcrumbsProps) {
   const router = useRouter();
   const platform = usePlatform();
+
+  if (!categoryPath || categoryPath.length === 0) {
+    return null;
+  }
 
   return (
     <Breadcrumbs
       className={simpleBreadcrumbsClasses.styled[platform]}
       separator=" "
     >
-      {stack.map((combo) => (
+      {categoryPath.slice(0, -1).map((cat) => (
         <StyledBreadcrumb
           className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
           component="a"
-          label={parseName(combo[1], router.locale ?? 'ru')}
-          key={combo[1]}
+          label={parseName(cat.name, router.locale ?? 'ru')}
+          key={cat.id}
           onClick={() => {
-            setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
-            router.push('/');
+            router.push(`/category/${cat.id}`);
           }}
         />
       ))}
-      {stack.length && stack[stack.length - 1][0].id !== parentCategory?.id && (
-        <StyledBreadcrumb
-          className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
-          component="a"
-          label={parseName(parentCategory?.name, router.locale ?? 'ru')}
-          onClick={() => {
-            router.push('/');
-          }}
-        />
-      )}
+      <StyledBreadcrumb
+        className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
+        component="span"
+        label={parseName(
+          categoryPath[categoryPath.length - 1].name,
+          router.locale ?? 'ru',
+        )}
+      />
     </Breadcrumbs>
   );
 }
