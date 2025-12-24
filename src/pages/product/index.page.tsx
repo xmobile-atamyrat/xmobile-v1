@@ -218,7 +218,7 @@ export default function Products() {
   return (
     <Box>
       <Box className={productIndexPageClasses.boxes.appbar[platform]}>
-        <Box className="w-1/3 flex justify-start">
+        <Box className="w-1/6 flex justify-start">
           <IconButton
             size="medium"
             edge="start"
@@ -233,7 +233,7 @@ export default function Products() {
           </IconButton>
         </Box>
 
-        <Box className="w-1/3 flex justify-center">
+        <Box className="flex justify-start">
           {category && (
             <Typography
               className={`${interClassname.className} ${productIndexPageClasses.categoryName[platform]}`}

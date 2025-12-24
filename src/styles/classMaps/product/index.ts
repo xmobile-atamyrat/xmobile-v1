@@ -8,7 +8,7 @@ export const productIndexPageClasses = {
   },
   categoryName: {
     mobile:
-      'font-medium text-[20px] leading-[100%] tracking-normal text-center text-[#000]',
+      'font-medium text-[20px] leading-[100%] tracking-normal text-[#000]',
     web: 'hidden',
   },
 };
