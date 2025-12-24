@@ -1,7 +1,7 @@
 import {
   createCompressedImg,
   createCompressedImgUrl,
-} from '@/pages/api/product.page';
+} from '@/pages/api/product/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import fs from 'fs';
 import { NextApiRequest, NextApiResponse } from 'next';
