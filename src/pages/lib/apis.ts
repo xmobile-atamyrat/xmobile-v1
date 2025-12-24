@@ -44,3 +44,24 @@ export const fetchProducts = async ({
   }
   return Array.isArray(data) ? data : [data];
 };
+
+export const fetchNewProducts = async ({
+  searchKeyword,
+  page,
+}: {
+  searchKeyword?: string;
+  page?: number;
+}): Promise<Product[]> => {
+  let url = `${BASE_URL}/api/product/new?page=${page || 1}`;
+  if (searchKeyword) {
+    url += `&searchKeyword=${encodeURIComponent(searchKeyword)}`;
+  }
+
+  const { success, data, message }: ResponseApi<Product[]> = await (
+    await fetch(url)
+  ).json();
+  if (!success || data == null) {
+    throw new Error(message);
+  }
+  return Array.isArray(data) ? data : [];
+};
