@@ -50,8 +50,6 @@ export default function Layout({
 
       if (success && categoriesData) {
         setCategories(categoriesData);
-
-        // TODO: get selected category id and toggle to selected category when drawer is opened
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
