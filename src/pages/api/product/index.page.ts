@@ -164,6 +164,7 @@ async function handleGetProduct(query: {
   const { searchKeyword, productId, categoryId, page } = query;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
+
   if (productId != null) {
     const product = await getProduct(productId as string);
     if (product == null) {

@@ -77,7 +77,7 @@ export default function Footer() {
           />
           <BottomNavigationAction
             color={colors.text.web}
-            value="/"
+            value="/category"
             icon={
               <CardMedia
                 component="img"

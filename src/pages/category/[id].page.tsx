@@ -189,7 +189,7 @@ export default function CategoryPage({
 
   return (
     <Layout handleHeaderBackButton={handleHeaderBackButton}>
-      <Box className={homePageClasses.main[platform]}>
+      <Box className={categoryIdClasses.boxes.main[platform]}>
         <SimpleBreadcrumbs categoryPath={categoryPath} />
         <Box className={categoryIdClasses.boxes.header[platform]}>
           <IconButton
