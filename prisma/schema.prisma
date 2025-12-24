@@ -15,9 +15,11 @@ model User {
   password        String
   grade           UserRole        @default(FREE)
   phoneNumber     String?
+  address         String?
 
   cartItems       CartItem[]
   chatSessions    ChatSession[]
+  orders          UserOrder[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -68,6 +70,7 @@ model Product {
   categoryId      String
 
   cartItems       CartItem[]
+  userOrderItems  UserOrderItem[]
 
   tags            String[]
   videoUrls       String[]
@@ -271,4 +274,59 @@ enum OrderPriceColor {
   white
   orange
   green
+}
+
+model UserOrder {
+  id                  String            @id @default(uuid())
+  orderNumber         String            @unique
+  status              UserOrderStatus   @default(PENDING)
+  totalPrice          String
+  
+  user                User              @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId              String
+  
+  deliveryAddress     String
+  deliveryPhone       String
+  notes               String?
+  adminNotes          String?
+  
+  cancelledAt         DateTime?
+  cancelledBy         String?
+  cancellationReason  String?
+  completedAt         DateTime?
+  
+  items               UserOrderItem[]
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model UserOrderItem {
+  id              String      @id @default(uuid())
+  quantity        Int         @default(1)
+  productName     String
+  productPrice    String
+  
+  order           UserOrder   @relation(references: [id], fields: [orderId], onDelete: Cascade)
+  orderId         String
+  
+  product         Product?    @relation(references: [id], fields: [productId], onDelete: SetNull)
+  productId       String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([orderId])
+}
+
+enum UserOrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  USER_CANCELLED
+  ADMIN_CANCELLED
 }
