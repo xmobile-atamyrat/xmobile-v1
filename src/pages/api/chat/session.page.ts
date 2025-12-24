@@ -54,45 +54,44 @@ async function handler(
   } else if (method === 'POST') {
     try {
       // Check if user already has an active or pending session
-      const existingSession = await dbClient.chatSession.findFirst({
-        where: {
-          users: { some: { id: userId } },
-          status: { in: ['PENDING', 'ACTIVE'] },
-        },
-      });
-
-      if (existingSession) {
-        return res.status(409).json({
-          success: false,
-          message: 'You already have an active session',
-          data: existingSession,
+      if (grade === 'FREE') {
+        const existingSession = await dbClient.chatSession.findFirst({
+          where: {
+            users: { some: { id: userId } },
+            status: { in: ['PENDING', 'ACTIVE'] },
+          },
         });
-      }
 
-      // Only FREE users can create sessions
-      if (grade !== 'FREE') {
-        return res.status(403).json({
-          success: false,
-          message: 'Only regular users can create sessions',
-        });
-      }
+        if (existingSession) {
+          return res.status(409).json({
+            success: false,
+            message: 'You already have an active session',
+            data: existingSession,
+          });
+        }
 
-      const newSession = await dbClient.chatSession.create({
-        data: {
-          status: 'PENDING',
-          users: {
-            connect: {
-              id: userId,
+        const newSession = await dbClient.chatSession.create({
+          data: {
+            status: 'PENDING',
+            users: {
+              connect: {
+                id: userId,
+              },
             },
           },
-        },
+        });
+
+        // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
+        // Example: socket.send({ type: 'new_session', sessionId, payload: {...} })
+        // Will be handled by generic relay in WS server
+
+        return res.status(201).json({ success: true, data: newSession });
+      }
+
+      return res.status(403).json({
+        success: false,
+        message: 'Only regular users can create sessions',
       });
-
-      // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
-      // Example: socket.send({ type: 'new_session', sessionId, payload: {...} })
-      // Will be handled by generic relay in WS server
-
-      return res.status(201).json({ success: true, data: newSession });
     } catch (error) {
       console.error(
         filepath,
