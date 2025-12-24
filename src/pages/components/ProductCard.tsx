@@ -128,7 +128,7 @@ export default function ProductCard({
               gutterBottom
               className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
             >
-              {parseName(product.name, router.locale ?? 'tk').substring(0, 24)}
+              {parseName(product.name, router.locale ?? 'tk')}
             </Typography>
             {product?.price?.includes('[') ? (
               <CircularProgress
