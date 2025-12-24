@@ -3,31 +3,26 @@ import { SearchBar } from '@/pages/components/Appbar';
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
-import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
-  ALL_PRODUCTS_CATEGORY_CARD,
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
+  PAGENAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { ExtendedCategory } from '@/pages/lib/types';
-import { getCookie, parseName } from '@/pages/lib/utils';
+import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
-import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, CardMedia, IconButton, Typography } from '@mui/material';
+import { Box, CardMedia, CircularProgress, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -121,24 +116,12 @@ export default function Home({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
-  const {
-    setSelectedCategoryId,
-    selectedCategoryId,
-    categories: allCategories,
-    stack,
-    setStack,
-    parentCategory,
-    setParentCategory,
-  } = useCategoryContext();
-  const [localCategories, setLocalCategories] = useState<ExtendedCategory[]>(
-    [],
-  );
+  const { categories: allCategories, setSelectedCategoryId } =
+    useCategoryContext();
   const { setProducts } = useProductContext();
   const t = useTranslations();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const [newProducts, setNewProducts] = useState<Product[]>([]);
-  const [newPage, setNewPage] = useState(1);
-  const [newHasMore, setHasNewMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -153,8 +136,6 @@ export default function Home({
         });
         if (!mounted) return;
         setNewProducts(fetched);
-        setNewPage(2);
-        setHasNewMore(fetched.length >= 20); // productsPerPage = 20
       } catch (error) {
         console.error('Error fetching new products:', error);
       } finally {
@@ -167,47 +148,6 @@ export default function Home({
   }, [localSearchKeyword]);
 
   useEffect(() => {
-    const loadMoreTrigger = document.getElementById('load-more-products');
-    if (!loadMoreTrigger) return () => undefined;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (async () => {
-              if (isLoading || !newHasMore) return;
-              setIsLoading(true);
-              try {
-                const fetched = await fetchProducts({
-                  all: true,
-                  page: newPage,
-                  searchKeyword: localSearchKeyword,
-                });
-                setNewPage(newPage + 1);
-                if (fetched.length < 20) {
-                  setHasNewMore(false);
-                } else {
-                  setNewProducts((prev) => [...prev, ...fetched]);
-                  setNewPage(newPage + 1);
-                }
-              } catch (error) {
-                console.error('Error fetching more products:', error);
-              } finally {
-                setIsLoading(false);
-              }
-            })();
-          }
-        });
-      },
-      { rootMargin: '100px' },
-    );
-
-    observer.observe(loadMoreTrigger);
-    return () => {
-      observer.disconnect();
-    };
-  });
-
-  useEffect(() => {
     if (locale == null || router.locale === locale) return;
     router.push(router.pathname, router.asPath, {
       locale: locale || getCookie(LOCALE_COOKIE_NAME),
@@ -215,139 +155,25 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  const handleHeaderBackButton = useCallback(() => {
-    if (router.pathname.includes('product')) return;
-
-    if (stack.length === 0) {
-      setParentCategory(undefined);
-      setLocalCategories(allCategories);
-      return;
-    }
-
-    const currCat = stack.pop()?.[0];
-    setStack([...stack]);
-    setParentCategory(currCat);
-    if (currCat != null) {
-      setSelectedCategoryId(currCat.id);
-      setLocalCategories(currCat.successorCategories ?? []);
-    }
-  }, [
-    allCategories,
-    setSelectedCategoryId,
-    setStack,
-    stack,
-    router,
-    setParentCategory,
-  ]);
-
   useEffect(() => {
-    if (allCategories == null || allCategories.length === 0) return;
-
-    if (stack.length === 0) {
-      setLocalCategories(allCategories);
-    } else {
-      const currCat = stack.pop()?.[0];
-      setStack([...stack]);
-      setParentCategory(currCat);
-      if (currCat != null) {
-        setSelectedCategoryId(currCat.id);
-        setLocalCategories(currCat.successorCategories ?? []);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allCategories]);
-
-  // Reset categories to the highest level when the `home button` or `logo` is clicked on the index page.
-  useEffect(() => {
-    if (selectedCategoryId === HIGHEST_LEVEL_CATEGORY_ID) {
-      setLocalCategories(allCategories);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategoryId]);
+    // Reset selectedCategoryId when on home page
+    // This ensures clean state when navigating back to home
+    setSelectedCategoryId(undefined);
+  }, []);
 
   return (
-    <Layout
-      handleHeaderBackButton={
-        stack.length === 0 && parentCategory == null
-          ? undefined
-          : handleHeaderBackButton
-      }
-    >
+    <Layout>
       <Box className={homePageClasses.category[platform]}>
-        {(stack.length > 0 || parentCategory != null) && (
-          <SimpleBreadcrumbs
-            onClick={(combo: [ExtendedCategory, string]) => {
-              setStack([...stack.slice(0, stack.indexOf(combo) + 1)]);
-              handleHeaderBackButton();
-            }}
-          />
-        )}
-        {!parentCategory ? (
-          <Box className="w-full flex-col px-[24px]">
-            <Typography
-              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-            >
-              {t('allCategory')}
-            </Typography>
-          </Box>
-        ) : (
-          <Box className="flex items-center w-full px-[24px] justify-between">
-            <IconButton
-              size="medium"
-              edge="start"
-              color="inherit"
-              className={appbarClasses.backButton[platform]}
-              aria-label="open drawer"
-              onClick={() => {
-                router.reload();
-              }}
-            >
-              <ArrowBackIosIcon
-                className={appbarClasses.arrowBackIos[platform]}
-              />
-            </IconButton>
-            <Typography
-              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-            >
-              {parseName(parentCategory.name, router.locale ?? 'ru')}
-            </Typography>
-            <IconButton
-              size="medium"
-              edge="start"
-              color="inherit"
-              className={`${appbarClasses.backButton[platform]} invisible`}
-              aria-label="open drawer"
-              onClick={() => {
-                router.back();
-              }}
-            >
-              <ArrowBackIosIcon
-                className={appbarClasses.arrowBackIos[platform]}
-              />
-            </IconButton>
-          </Box>
-        )}
+        <Box className="w-full flex-col px-[24px]">
+          <Typography
+            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+          >
+            {t(PAGENAME.category[platform])}
+          </Typography>
+        </Box>
 
         <Box className={homePageClasses.card[platform]}>
-          {parentCategory != null && (
-            <CategoryCard
-              id=""
-              name=""
-              initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
-              onClick={() => {
-                if (parentCategory == null) return;
-                setProducts([]);
-                setStack((currStack) => [
-                  ...currStack,
-                  [parentCategory, parentCategory.name],
-                ]);
-                setSelectedCategoryId(parentCategory.id);
-                setParentCategory(undefined);
-                router.push('/product');
-              }}
-            />
-          )}
-          {localCategories?.map((category) => {
+          {allCategories?.map((category) => {
             const { imgUrl, name, id, successorCategories } = category;
             return (
               <CategoryCard
@@ -356,23 +182,15 @@ export default function Home({
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
                 onClick={() => {
-                  if (parentCategory != null) {
-                    setStack((prevStack) => [
-                      ...prevStack,
-                      [parentCategory, parentCategory.name],
-                    ]);
-                  }
-                  setParentCategory(category);
-                  setSelectedCategoryId(id);
-
+                  // Navigate to category page or products
                   if (
                     successorCategories == null ||
                     successorCategories.length === 0
                   ) {
                     setProducts([]);
-                    router.push('/product');
+                    router.push(`/product?categoryId=${id}`);
                   } else {
-                    setLocalCategories(successorCategories);
+                    router.push(`/category/${id}`);
                   }
                 }}
               />
@@ -406,7 +224,11 @@ export default function Home({
         >
           {t('newProducts')}
         </Typography>
-        {isLoading && <Typography>Loading...</Typography>}
+        {isLoading && (
+          <Box className="flex justify-center items-center h-64">
+            <CircularProgress />
+          </Box>
+        )}
         <Box className="grid grid-cols-2 gap-0 w-full px-[12px]">
           {newProducts.length > 0 &&
             newProducts.map((product, idx) => (
@@ -416,7 +238,6 @@ export default function Home({
                 cartProps={{ cartAction: 'add' }}
               />
             ))}
-          <div id="load-more-products" />
         </Box>
       </Box>
     </Layout>

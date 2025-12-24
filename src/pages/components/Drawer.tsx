@@ -6,7 +6,6 @@ import {
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import {
-  CategoryStack,
   DeleteCategoriesProps,
   EditCategoriesProps,
   ExtendedCategory,
@@ -37,7 +36,6 @@ function ConstructDrawerList(
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
   depth: number,
   closeDrawer: () => void,
-  categoryStackList: CategoryStack,
 ): React.ReactNode {
   return (
     <List component="div" disablePadding className={drawerClasses.list}>
@@ -57,8 +55,6 @@ function ConstructDrawerList(
             setEditCategoriesModal={setEditCategoriesModal}
             setDeleteCategoriesModal={setDeleteCategoriesModal}
             closeDrawer={closeDrawer}
-            categoryStackList={categoryStackList}
-            parentCategory={category}
           >
             {ConstructDrawerList(
               successorCategories!,
@@ -68,7 +64,6 @@ function ConstructDrawerList(
               setDeleteCategoriesModal,
               depth + 1,
               closeDrawer,
-              [...categoryStackList, [category, name]],
             )}
           </Collapsable>
         );
@@ -111,7 +106,6 @@ export default function CustomDrawer({
             setDeleteCategoriesModal,
             0, // depth
             closeDrawer,
-            [],
           )}
         </Box>
       )}
