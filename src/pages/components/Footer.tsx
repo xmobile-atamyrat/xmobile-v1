@@ -1,7 +1,6 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
 import { colors, interClassname } from '@/styles/theme';
@@ -39,7 +38,6 @@ export default function Footer() {
   const { categories: allCategories, setSelectedCategoryId } =
     useCategoryContext();
   const { setProducts } = useProductContext();
-  const user = useUserContext();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
     router.push(newValue);
@@ -86,19 +84,17 @@ export default function Footer() {
               />
             }
           />
-          {user.user && (
-            <BottomNavigationAction
-              color={colors.blackText}
-              value="/cart"
-              icon={
-                <CardMedia
-                  component="img"
-                  image="/cartBlack.png"
-                  className={footerClasses.imgs.icons[platform]}
-                />
-              }
-            />
-          )}
+          <BottomNavigationAction
+            color={colors.text.web}
+            value="/cart"
+            icon={
+              <CardMedia
+                component="img"
+                image="/cartBlack.png"
+                className={footerClasses.imgs.icons[platform]}
+              />
+            }
+          />
           <BottomNavigationAction
             color={colors.blackText}
             value="/user/profile"
