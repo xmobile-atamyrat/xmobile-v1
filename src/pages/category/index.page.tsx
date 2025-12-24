@@ -7,10 +7,19 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { categoryPageClasses } from '@/styles/classMaps/category';
 import { interClassname } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
-export default function Home() {
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  return {
+    props: {
+      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+    },
+  };
+};
+
+export default function CategoriesPage() {
   const router = useRouter();
   const platform = usePlatform();
   const { categories: allCategories } = useCategoryContext();
