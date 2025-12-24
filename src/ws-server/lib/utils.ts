@@ -1,3 +1,4 @@
+import dbClient from '@/lib/dbClient';
 import { ChatMessageProps } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 
@@ -10,4 +11,19 @@ export function sendMessage(
   }
 
   safeConnection.send(JSON.stringify(message));
+}
+
+export async function verifySessionParticipant(
+  sessionId: string,
+  userId: string,
+) {
+  const session = await dbClient.chatSession.findFirst({
+    where: {
+      id: sessionId,
+      users: { some: { id: userId } },
+    },
+    include: { users: true },
+  });
+
+  return session;
 }

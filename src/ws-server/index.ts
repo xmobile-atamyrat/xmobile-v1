@@ -5,16 +5,16 @@ import {
   generateTokens,
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { ChatMessageProps } from '@/pages/lib/types';
+import { AuthenticatedConnection } from '@/ws-server/lib/types';
+import { sendMessage, verifySessionParticipant } from '@/ws-server/lib/utils';
 import { UserRole } from '@prisma/client';
+import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
 import { parse } from 'url';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { z, ZodError } from 'zod';
-import cookie from 'cookie';
-import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
-import { ChatMessageProps } from '@/pages/lib/types';
-import { sendMessage } from '@/ws-server/lib/utils';
-import { AuthenticatedConnection } from '@/ws-server/lib/types';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -23,10 +23,11 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 const MessageSchema = z.object({
+  tempId: z.string().optional(), // todo: remove optional after completion
   sessionId: z.string(),
   senderId: z.string(),
   senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
-  content: z.string(),
+  content: z.string().max(5000),
   timestamp: z.string(),
 });
 
@@ -126,12 +127,58 @@ const handleMessage = async (
   try {
     const parsedMessage = JSON.parse(incomingMessage.toString());
 
-    const { senderId, senderRole, content, sessionId, timestamp } =
+    const { senderId, senderRole, content, sessionId, timestamp, tempId } =
       MessageSchema.parse(parsedMessage);
     parsedTimestamp = timestamp;
 
+    // Warn if tempId is missing (for monitoring client adoption)
+    if (!tempId) {
+      console.warn(
+        filepath,
+        `Message received without tempId from user ${senderId} - no idempotency protection`,
+      );
+    }
+
+    // Session Authorization Check
+    const session = await verifySessionParticipant(sessionId, senderId);
+
+    if (!session) {
+      console.error(
+        filepath,
+        `Unauthorized: User ${senderId} not in session ${sessionId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        tempId,
+        timestamp,
+        success: false,
+        error: 'UNAUTHORIZED',
+      });
+      return;
+    }
+
+    // Idempotency Check using tempId
+    if (tempId) {
+      const existing = await dbClient.chatMessage.findUnique({
+        where: { tempId },
+      });
+      if (existing) {
+        // Message already saved, just send ACK
+        sendMessage(safeConnection, {
+          type: 'ack',
+          tempId,
+          messageId: existing.id,
+          timestamp,
+          date: existing.updatedAt,
+          success: true,
+        });
+        return;
+      }
+    }
+
     const message = await dbClient.chatMessage.create({
       data: {
+        tempId,
         senderId,
         content,
         senderRole,
@@ -141,18 +188,13 @@ const handleMessage = async (
 
     sendMessage(safeConnection, {
       type: 'ack',
+      tempId,
       messageId: message.id,
       timestamp,
       date: message.updatedAt,
       success: true,
     });
 
-    const { users: sessionUsers } = await dbClient.chatSession.findUnique({
-      where: {
-        id: message.sessionId,
-      },
-      select: { users: true },
-    });
     const outgoingMessage: ChatMessageProps = {
       type: 'message',
       messageId: message.id,
@@ -163,7 +205,7 @@ const handleMessage = async (
       isRead: message.isRead,
       date: message.updatedAt,
     };
-    sessionUsers.forEach((sessionUser) => {
+    session.users.forEach((sessionUser) => {
       connections.get(sessionUser.id)?.forEach((conn) => {
         if (safeConnection !== conn) {
           sendMessage(conn, outgoingMessage);
@@ -191,6 +233,61 @@ const handleMessage = async (
   }
 };
 
+/*
+// TODO: Re-enable next week after client implementation and testing
+const handleReadReceipt = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  try {
+    const { sessionId, messageIds } = JSON.parse(incomingMessage.toString());
+    const userId = safeConnection.userId;
+
+    if (!sessionId || !Array.isArray(messageIds)) {
+      console.error(filepath, 'Invalid read receipt format');
+      return;
+    }
+
+    // Verify user is participant
+    const session = await verifySessionParticipant(sessionId, userId);
+
+    if (!session) {
+      console.error(
+        filepath,
+        `Unauthorized: User ${userId} not in session ${sessionId}`,
+      );
+      return;
+    }
+
+    // Mark messages as read
+    await dbClient.chatMessage.updateMany({
+      where: {
+        id: { in: messageIds },
+        sessionId,
+      },
+      data: { isRead: true },
+    });
+
+    // Broadcast read receipt to other participants
+    const readAck: ChatMessageProps = {
+      type: 'read_ack',
+      sessionId,
+      messageIds,
+    };
+
+    session.users.forEach((user) => {
+      if (user.id !== userId) {
+        connections.get(user.id)?.forEach((conn) => {
+          sendMessage(conn, readAck);
+        });
+      }
+    });
+  } catch (error) {
+    console.error(filepath, 'Error handling read receipt:', error);
+  }
+};
+*/
+
 wsServer.on('connection', async (connection, request) => {
   try {
     const { safeConnection, accessToken, refreshToken } =
@@ -214,9 +311,24 @@ wsServer.on('connection', async (connection, request) => {
         }
       }
 
-      safeConnection.on('message', (message: RawData) =>
-        handleMessage(message, safeConnection),
-      );
+      safeConnection.on('message', (message: RawData) => {
+        /*
+        // TODO: Re-enable read receipts next week
+        try {
+          const parsed = JSON.parse(message.toString());
+
+          if (parsed.type === 'read') {
+            handleReadReceipt(message, safeConnection);
+          } else {
+            handleMessage(message, safeConnection);
+          }
+        } catch (error) {
+          handleMessage(message, safeConnection);
+        }
+        */
+        // Temporary: only handle messages
+        handleMessage(message, safeConnection);
+      });
 
       safeConnection.on('close', () =>
         safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),

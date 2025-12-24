@@ -25,21 +25,38 @@ async function handler(
         cursorMessageId,
       }: { sessionId: string; cursorMessageId: string } = req.body;
 
+      // Verify user is participant in session
+      const session = await dbClient.chatSession.findFirst({
+        where: {
+          id: sessionId,
+          users: { some: { id: req.userId } },
+        },
+      });
+
+      if (!session) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: Not a participant in this session',
+        });
+      }
+
       const messages = await dbClient.chatMessage.findMany({
         where: {
           sessionId,
         },
-        cursor: {
-          id: cursorMessageId,
-        },
-        skip: 1, // skip the cursor message itself
+        cursor: cursorMessageId
+          ? {
+              id: cursorMessageId,
+            }
+          : undefined,
+        skip: cursorMessageId ? 1 : 0,
         take: messagesPerPage,
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      res.status(200).json({ success: true, data: messages.reverse() });
+      return res.status(200).json({ success: true, data: messages.reverse() });
     } catch (error) {
       console.error(
         filepath,
@@ -48,7 +65,7 @@ async function handler(
         cursorMessageId: ${req.body?.cursorMessageId},
         Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'PATCH') {
     try {
@@ -72,23 +89,22 @@ async function handler(
         message: ${req.body},
         Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'DELETE') {
     try {
       const { messageId } = req.body;
       if (!messageId) {
-        res
+        return res
           .status(400)
           .json({ success: false, message: 'messageId is required' });
-        return;
       }
 
       await dbClient.chatMessage.delete({
         where: { id: messageId },
       });
 
-      res
+      return res
         .status(200)
         .json({ success: true, message: 'Message deleted successfully' });
     } catch (error) {
@@ -98,12 +114,15 @@ async function handler(
       messageId: ${req.body?.messageId},
       Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);
-    res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res
+      .status(405)
+      .json({ success: false, message: 'Method not allowed' });
   }
+  return undefined;
 }
 
 export default withAuth(handler);
