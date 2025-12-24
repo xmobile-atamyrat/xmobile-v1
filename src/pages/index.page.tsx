@@ -1,17 +1,13 @@
 import dbClient from '@/lib/dbClient';
 import { SearchBar } from '@/pages/components/Appbar';
-import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
-import { fetchProducts } from '@/pages/lib/apis';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { fetchNewProducts } from '@/pages/lib/apis';
 import {
   LOCALE_COOKIE_NAME,
-  PAGENAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { useProductContext } from '@/pages/lib/ProductContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
@@ -116,9 +112,6 @@ export default function Home({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
-  const { categories: allCategories, setSelectedCategoryId } =
-    useCategoryContext();
-  const { setProducts } = useProductContext();
   const t = useTranslations();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const [newProducts, setNewProducts] = useState<Product[]>([]);
@@ -131,10 +124,9 @@ export default function Home({
     (async () => {
       setIsLoading(true);
       try {
-        const fetched = await fetchProducts({
-          all: true,
+        const fetched = await fetchNewProducts({
           page: 1,
-          searchKeyword: localSearchKeyword,
+          searchKeyword: localSearchKeyword || undefined,
         });
         if (!mounted) return;
         setNewProducts(fetched);
@@ -162,18 +154,16 @@ export default function Home({
               if (isLoading || !newHasMore) return;
               setIsLoading(true);
               try {
-                const fetched = await fetchProducts({
-                  all: true,
+                const fetched = await fetchNewProducts({
                   page: newPage,
-                  searchKeyword: localSearchKeyword,
+                  searchKeyword: localSearchKeyword || undefined,
                 });
-                setNewPage(newPage + 1);
                 if (fetched.length < 20) {
                   setHasNewMore(false);
                 } else {
                   setNewProducts((prev) => [...prev, ...fetched]);
-                  setNewPage(newPage + 1);
                 }
+                setNewPage(newPage + 1);
               } catch (error) {
                 console.error('Error fetching more products:', error);
               } finally {
@@ -200,50 +190,9 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  useEffect(() => {
-    // Reset selectedCategoryId when on home page
-    // This ensures clean state when navigating back to home
-    setSelectedCategoryId(undefined);
-  }, []);
-
   return (
     <Layout>
-      <Box className={homePageClasses.category[platform]}>
-        <Box className="w-full flex-col px-[24px]">
-          <Typography
-            className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-          >
-            {t(PAGENAME.category[platform])}
-          </Typography>
-        </Box>
-
-        <Box className={homePageClasses.card[platform]}>
-          {allCategories?.map((category) => {
-            const { imgUrl, name, id, successorCategories } = category;
-            return (
-              <CategoryCard
-                id={id}
-                name={name}
-                initialImgUrl={imgUrl ?? undefined}
-                key={id}
-                onClick={() => {
-                  // Navigate to category page or products
-                  if (
-                    successorCategories == null ||
-                    successorCategories.length === 0
-                  ) {
-                    setProducts([]);
-                    router.push(`/product?categoryId=${id}`);
-                  } else {
-                    router.push(`/category/${id}`);
-                  }
-                }}
-              />
-            );
-          })}
-        </Box>
-      </Box>
-      <Box className={homePageClasses.newProducts[platform]}>
+      <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
         <Box className={homePageClasses.topLayer}>
           <CardMedia
             component="img"
@@ -264,8 +213,10 @@ export default function Home({
           setSearchKeyword: setLocalSearchKeyword,
           width: '100%',
         })}
+      </Box>
+      <Box className="px-[10.31vw]">
         <Typography
-          className={`${interClassname.className} ${homePageClasses.newProductsTitle}`}
+          className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
         >
           {t('newProducts')}
         </Typography>
@@ -274,7 +225,7 @@ export default function Home({
             <CircularProgress />
           </Box>
         )}
-        <Box className="grid grid-cols-2 gap-0 w-full px-[12px]">
+        <Box className={homePageClasses.newProductsBox[platform]}>
           {newProducts.length > 0 &&
             newProducts.map((product, idx) => (
               <ProductCard
@@ -283,9 +234,9 @@ export default function Home({
                 cartProps={{ cartAction: 'add' }}
               />
             ))}
-          <div id="load-more-products" />
         </Box>
       </Box>
+      <div id="load-more-products" />
     </Layout>
   );
 }
