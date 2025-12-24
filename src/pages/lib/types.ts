@@ -13,6 +13,29 @@ export interface ExtendedCategory extends Category {
   successorCategories?: ExtendedCategory[];
 }
 
+export interface ProtectedUser extends Omit<User, 'password'> {}
+
+// Need to mirror the ChatSession from Prisma but with simplified relations for frontend
+export interface ChatSession {
+  id: string;
+  status: 'PENDING' | 'ACTIVE' | 'CLOSED';
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  users?: ProtectedUser[];
+}
+
+export interface GetMessagesRequest {
+  type: 'get_messages';
+  sessionId: string;
+  cursorId?: string; // ID of the oldest message for pagination
+}
+
+export interface HistoryResponseMessage {
+  type: 'history';
+  sessionId: string;
+  messages: any[]; // We will map these to ChatMessageProps on the client
+}
+
 export type ChatMessageProps =
   | {
       type: 'message';
@@ -20,10 +43,11 @@ export type ChatMessageProps =
       senderId: string;
       senderRole: string;
       content: string;
+      tempId?: string; // Client-side ID for idempotency
 
       isRead?: boolean;
       messageId?: string;
-      date?: Date;
+      date?: Date | string; // Allow string for serialization
       timestamp?: string;
       status?: 'sending' | 'sent' | 'error';
     }
@@ -72,7 +96,8 @@ export type ChatMessageProps =
       type: 'auth_refresh';
       accessToken: string;
       refreshToken: string;
-    };
+    }
+  | HistoryResponseMessage;
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
@@ -89,8 +114,6 @@ export interface CategoryContextProps {
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
 }
-
-export interface ProtectedUser extends Omit<User, 'password'> {}
 
 export interface UserContextProps {
   user?: User;

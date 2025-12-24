@@ -19,31 +19,45 @@ async function handler(
   const { userId, grade, method } = req;
   if (method === 'GET') {
     try {
-      const sessions = await dbClient.chatSession.findMany({
+      if (grade === 'SUPERUSER' || grade === 'ADMIN') {
+        const allSessions = await dbClient.chatSession.findMany({
+          orderBy: { updatedAt: 'desc' },
+          where:
+            grade === 'ADMIN' ? { status: { in: ['PENDING', 'ACTIVE'] } } : {},
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                grade: true,
+                // Exclude password
+              },
+            },
+          },
+        });
+        return res.status(200).json({ success: true, data: allSessions });
+      }
+      const rawSessions = await dbClient.chatSession.findMany({
         where: {
+          users: { some: { id: userId } },
+        },
+        include: {
           users: {
-            some: {
-              id: userId,
+            select: {
+              id: true,
+              name: true,
+              grade: true,
             },
           },
         },
       });
 
-      if (grade === 'SUPERUSER') {
-        res.status(200).json({ success: true, data: sessions });
-      } else if (grade === 'ADMIN') {
-        const adminSessions = sessions.filter(
-          (session) => session.status !== 'CLOSED',
-        );
+      const userSession = rawSessions.filter((session) => {
+        return session.status === 'ACTIVE' || session.status === 'PENDING';
+      });
 
-        return res.status(200).json({ success: true, data: adminSessions });
-      } else {
-        const userSession = sessions.filter((session) => {
-          return session.status === 'ACTIVE' || session.status === 'PENDING';
-        });
-
-        return res.status(200).json({ success: true, data: userSession });
-      }
+      return res.status(200).json({ success: true, data: userSession });
     } catch (error) {
       console.error(
         filepath,
@@ -179,7 +193,6 @@ async function handler(
       .status(405)
       .json({ success: false, message: 'Method not allowed' });
   }
-  return undefined;
 }
 
 export default withAuth(handler);

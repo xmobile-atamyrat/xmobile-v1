@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import { ChatMessageProps } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
+import { WebSocket } from 'ws';
 
 export function sendMessage(
   safeConnection: AuthenticatedConnection,
