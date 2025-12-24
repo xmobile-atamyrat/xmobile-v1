@@ -316,7 +316,7 @@ export default function CustomAppBar({
         </Box>
       </AppBar>
       {showSearch &&
-        !isMdUp &&
+        platform === 'mobile' &&
         SearchBar({
           mt: isMdUp ? undefined : `${appBarHeight}px`,
           searchKeyword: localSearchKeyword,
