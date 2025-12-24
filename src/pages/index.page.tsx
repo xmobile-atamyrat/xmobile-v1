@@ -123,6 +123,8 @@ export default function Home({
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [newPage, setNewPage] = useState(1);
+  const [newHasMore, setHasNewMore] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -136,6 +138,8 @@ export default function Home({
         });
         if (!mounted) return;
         setNewProducts(fetched);
+        setNewPage(2);
+        setHasNewMore(fetched.length >= 20);
       } catch (error) {
         console.error('Error fetching new products:', error);
       } finally {
@@ -146,6 +150,47 @@ export default function Home({
       mounted = false;
     };
   }, [localSearchKeyword]);
+
+  useEffect(() => {
+    const loadMoreTrigger = document.getElementById('load-more-products');
+    if (!loadMoreTrigger) return () => undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (async () => {
+              if (isLoading || !newHasMore) return;
+              setIsLoading(true);
+              try {
+                const fetched = await fetchProducts({
+                  all: true,
+                  page: newPage,
+                  searchKeyword: localSearchKeyword,
+                });
+                setNewPage(newPage + 1);
+                if (fetched.length < 20) {
+                  setHasNewMore(false);
+                } else {
+                  setNewProducts((prev) => [...prev, ...fetched]);
+                  setNewPage(newPage + 1);
+                }
+              } catch (error) {
+                console.error('Error fetching more products:', error);
+              } finally {
+                setIsLoading(false);
+              }
+            })();
+          }
+        });
+      },
+      { rootMargin: '100px' },
+    );
+
+    observer.observe(loadMoreTrigger);
+    return () => {
+      observer.disconnect();
+    };
+  });
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -238,6 +283,7 @@ export default function Home({
                 cartProps={{ cartAction: 'add' }}
               />
             ))}
+          <div id="load-more-products" />
         </Box>
       </Box>
     </Layout>
