@@ -69,6 +69,14 @@ async function handler(
         });
       }
 
+      // Only FREE users can create sessions
+      if (grade !== 'FREE') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only regular users can create sessions',
+        });
+      }
+
       const newSession = await dbClient.chatSession.create({
         data: {
           status: 'PENDING',
