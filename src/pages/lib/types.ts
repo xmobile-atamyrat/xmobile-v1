@@ -29,11 +29,39 @@ export type ChatMessageProps =
     }
   | {
       type: 'ack';
-      timestamp: string;
+      tempId?: string;
+      timestamp?: string;
       success: boolean;
 
       date?: Date;
       messageId?: string;
+      error?: string;
+    }
+  | {
+      type: 'read';
+      sessionId: string;
+      messageIds: string[];
+    }
+  | {
+      type: 'read_ack';
+      sessionId: string;
+      messageIds: string[];
+    }
+  | {
+      type: 'session_update';
+      sessionId: string;
+      status: 'PENDING' | 'ACTIVE' | 'CLOSED';
+      users?: any[];
+    }
+  | {
+      type: 'new_session';
+      session: any;
+    }
+  | {
+      type: 'typing';
+      sessionId: string;
+      userId: string;
+      isTyping: boolean;
     }
   | {
       type: 'error';
