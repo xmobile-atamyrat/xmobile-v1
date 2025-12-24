@@ -1,8 +1,8 @@
-import { NextApiResponse } from 'next';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import { NextApiResponse } from 'next';
 
 import dbClient from '@/lib/dbClient';
 import { ResponseApi } from '@/pages/lib/types';
@@ -36,23 +36,39 @@ async function handler(
           (session) => session.status !== 'CLOSED',
         );
 
-        res.status(200).json({ success: true, data: adminSessions });
+        return res.status(200).json({ success: true, data: adminSessions });
       } else {
         const userSession = sessions.filter((session) => {
           return session.status === 'ACTIVE' || session.status === 'PENDING';
         });
 
-        res.status(200).json({ success: true, data: userSession });
+        return res.status(200).json({ success: true, data: userSession });
       }
     } catch (error) {
       console.error(
         filepath,
         `Couldn't find session with userId: ${userId}. Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'POST') {
     try {
+      // Check if user already has an active or pending session
+      const existingSession = await dbClient.chatSession.findFirst({
+        where: {
+          users: { some: { id: userId } },
+          status: { in: ['PENDING', 'ACTIVE'] },
+        },
+      });
+
+      if (existingSession) {
+        return res.status(409).json({
+          success: false,
+          message: 'You already have an active session',
+          data: existingSession,
+        });
+      }
+
       const newSession = await dbClient.chatSession.create({
         data: {
           status: 'PENDING',
@@ -64,13 +80,17 @@ async function handler(
         },
       });
 
-      res.status(201).json({ success: true, data: newSession });
+      // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
+      // Example: socket.send({ type: 'new_session', sessionId, payload: {...} })
+      // Will be handled by generic relay in WS server
+
+      return res.status(201).json({ success: true, data: newSession });
     } catch (error) {
       console.error(
         filepath,
         `Couldn't create a session for a userId: ${userId}. Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'PATCH') {
     try {
@@ -78,16 +98,42 @@ async function handler(
         chatStatus,
         sessionId,
       }: { chatStatus: ChatStatus; sessionId: string } = req.body;
-      const session = await dbClient.chatSession.update({
-        where: {
-          id: sessionId,
-        },
-        data: {
-          status: chatStatus,
-        },
+
+      // For CLOSED status, use atomic check to prevent conflicts
+      if (chatStatus === 'CLOSED') {
+        const result = await dbClient.chatSession.updateMany({
+          where: {
+            id: sessionId,
+            status: { in: ['PENDING', 'ACTIVE'] }, // Only if not already closed
+          },
+          data: {
+            status: 'CLOSED',
+          },
+        });
+
+        if (result.count === 0) {
+          return res.status(409).json({
+            success: false,
+            message: 'Session already closed or not found',
+          });
+        }
+      } else {
+        // For other status changes, just update normally
+        await dbClient.chatSession.update({
+          where: { id: sessionId },
+          data: { status: chatStatus },
+        });
+      }
+
+      // Fetch updated session to return
+      const session = await dbClient.chatSession.findUnique({
+        where: { id: sessionId },
       });
 
-      res.status(200).json({ success: true, data: session });
+      // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
+      // Example: socket.send({ type: 'session_update', sessionId, payload: { status } })
+
+      return res.status(200).json({ success: true, data: session });
     } catch (error) {
       console.error(
         filepath,
@@ -95,13 +141,15 @@ async function handler(
         `status: ${req.body?.chatStatus}, sessionId: ${req.body?.sessionId},`,
         `Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else if (method === 'DELETE') {
     try {
       // todo: only super-user should be allowed for this endpoint
       if (grade !== 'SUPERUSER') {
-        return;
+        return res
+          .status(403)
+          .json({ success: false, message: 'Unauthorized' });
       }
       const sessionId = req.body.sessionId;
       await dbClient.chatSession.delete({
@@ -109,17 +157,22 @@ async function handler(
           id: sessionId,
         },
       });
+
+      return res.status(200).json({ success: true });
     } catch (error) {
       console.error(
         filepath,
         `Couldn't delete session. sessionId: ${req.body?.sessionId}. Error: ${error}`,
       );
-      res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: error.message });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);
-    res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res
+      .status(405)
+      .json({ success: false, message: 'Method not allowed' });
   }
+  return undefined;
 }
 
 export default withAuth(handler);
