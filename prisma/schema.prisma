@@ -330,3 +330,10 @@ enum UserOrderStatus {
   USER_CANCELLED
   ADMIN_CANCELLED
 }
+
+model OrderNumberCounter {
+  id      Int   @id @default(1)
+  counter Int   @default(1)
+  
+  @@map("order_number_counter")
+}
