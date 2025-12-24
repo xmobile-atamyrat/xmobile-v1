@@ -1,5 +1,4 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -37,21 +36,15 @@ export default function Footer() {
   const t = useTranslations();
   const platform = usePlatform();
   const router = useRouter();
-  const {
-    categories: allCategories,
-    setSelectedCategoryId,
-    setStack,
-    setParentCategory,
-  } = useCategoryContext();
+  const { categories: allCategories, setSelectedCategoryId } =
+    useCategoryContext();
   const { setProducts } = useProductContext();
   const user = useUserContext();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
     router.push(newValue);
     setProducts([]);
-    setStack([]);
-    setParentCategory(undefined);
-    setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
+    setSelectedCategoryId(undefined);
   };
 
   return (
@@ -226,10 +219,8 @@ export default function Footer() {
                     key={category.id}
                     onClick={() => {
                       setProducts([]);
-                      setStack([]);
-                      setParentCategory(undefined);
                       setSelectedCategoryId(category.id);
-                      router.push('/product');
+                      router.push(`/product?categoryId=${category.id}`);
                     }}
                     className={`${interClassname.className} ${footerClasses.typos.categoryNames}`}
                   >
