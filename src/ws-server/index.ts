@@ -233,6 +233,69 @@ const handleMessage = async (
   }
 };
 
+const GetMessagesSchema = z.object({
+  type: z.literal('get_messages'),
+  sessionId: z.string(),
+  cursorId: z.string().optional(),
+});
+
+const handleGetMessages = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  try {
+    const parsed = JSON.parse(incomingMessage.toString());
+    const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
+    const userId = safeConnection.userId;
+
+    // session verification
+    const session = await verifySessionParticipant(sessionId, userId);
+    if (!session) {
+      console.error(
+        filepath,
+        `Unauthorized history request: User ${userId} not in session ${sessionId}`,
+      );
+      return;
+    }
+
+    // fetch messages
+    // We want "limit" 50 before the cursor.
+    // Prisma cursor pagination:
+    // take: -50 (backwards from cursor)
+    // skip: 1 (to exclude the cursor itself)
+    // cursor: { id: cursorId }
+    // orderBy: { createdAt: 'asc', id: 'asc' } (deterministic)
+    const messages = await dbClient.chatMessage.findMany({
+      take: -50,
+      skip: cursorId ? 1 : 0,
+      cursor: cursorId ? { id: cursorId } : undefined,
+      where: { sessionId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      include: {
+        // We might need to select specific fields if we want to check something,
+        // but currently we just return the message object.
+        // senderId, senderRole, content, etc. are on the root.
+      },
+    });
+
+    sendMessage(safeConnection, {
+      type: 'history',
+      sessionId,
+      messages: messages.map((msg) => ({
+        ...msg,
+        type: 'message', // Augment for frontend compatibility
+        messageId: msg.id,
+      })),
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      // Ignored: expected as this handler is tried for all messages in the loop below
+    } else {
+      console.error(filepath, 'handleGetMessages error:', error);
+    }
+  }
+};
+
 /*
 // TODO: Re-enable next week after client implementation and testing
 const handleReadReceipt = async (
@@ -312,22 +375,17 @@ wsServer.on('connection', async (connection, request) => {
       }
 
       safeConnection.on('message', (message: RawData) => {
-        /*
-        // TODO: Re-enable read receipts next week
         try {
           const parsed = JSON.parse(message.toString());
-
-          if (parsed.type === 'read') {
-            handleReadReceipt(message, safeConnection);
+          if (parsed.type === 'get_messages') {
+            handleGetMessages(message, safeConnection);
           } else {
+            // Default to chat message handler
             handleMessage(message, safeConnection);
           }
         } catch (error) {
-          handleMessage(message, safeConnection);
+          console.error(filepath, 'Failed to route message:', error);
         }
-        */
-        // Temporary: only handle messages
-        handleMessage(message, safeConnection);
       });
 
       safeConnection.on('close', () =>
