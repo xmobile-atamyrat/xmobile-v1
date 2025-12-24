@@ -1,7 +1,7 @@
 export const productCardClasses = {
   card: {
     web: 'w-[280px] min-h-[427px] border-[1px] rounded-[10px] px-2 py-2 border-[#f0f0f0] hover:border-[#30303040] mx-[8px] my-[15px]',
-    mobile: 'w-[80%] min-h-[241px] gap-[8px] mx-[8px] my-[8px]',
+    mobile: 'w-[80%] min-h-[45vw] gap-[8px] mx-[8px] my-[8px]',
   },
   boxes: {
     main: 'relative h-full w-full flex flex-col',
@@ -13,7 +13,7 @@ export const productCardClasses = {
     img: {
       web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
       mobile:
-        'flex w-full h-[241px] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
+        'flex w-full h-[45vw] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
   },
   typo: {
@@ -36,6 +36,6 @@ export const productCardClasses = {
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
     web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
-    mobile: 'w-auto h-[65%]',
+    mobile: 'w-auto h-[25vw]',
   },
 };
