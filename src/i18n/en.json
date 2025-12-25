@@ -225,5 +225,7 @@
   "reasonPlaceholder": "Enter cancellation reason...",
   "page": "Page",
   "of": "of",
-  "itemsPerPage": "Items per page"
+  "itemsPerPage": "Items per page",
+  "totalAmount": "Total Amount",
+  "checkout": "Checkout"
 }

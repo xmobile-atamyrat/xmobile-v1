@@ -227,5 +227,7 @@
   "reasonPlaceholder": "Введите причину отмены...",
   "page": "Страница",
   "of": "из",
-  "itemsPerPage": "Элементов на странице"
+  "itemsPerPage": "Элементов на странице",
+  "totalAmount": "Общая сумма",
+  "checkout": "Купить"
 }
