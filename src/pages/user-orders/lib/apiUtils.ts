@@ -42,7 +42,13 @@ export async function getOrdersList({
     if (status) queryParams.append('status', status);
     if (userId) queryParams.append('userId', userId);
     if (dateFrom) queryParams.append('dateFrom', dateFrom);
-    if (dateTo) queryParams.append('dateTo', dateTo);
+    if (dateTo) {
+      // If dateTo is just a date (YYYY-MM-DD), append end of day time
+      // Otherwise use as-is (in case it already includes time)
+      const dateToValue =
+        dateTo.length === 10 ? `${dateTo}T23:59:59.999Z` : dateTo;
+      queryParams.append('dateTo', dateToValue);
+    }
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
 
