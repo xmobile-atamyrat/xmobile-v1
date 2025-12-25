@@ -49,7 +49,7 @@ export const cartIndexClasses = {
   infoColTypo:
     'font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]',
   yourCartTypo: {
-    web: 'item-center font-bold text-[36px] leading-[68px] tracking-normal text-[#303030] text-center',
+    web: 'item-center font-bold text-[30px] leading-[68px] tracking-normal text-[#303030] text-center',
     mobile:
       'font-medium text-[20px] leading-full tracking-normal text-[#000] text-center mb-[26px]',
   },
