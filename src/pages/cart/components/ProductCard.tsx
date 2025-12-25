@@ -168,6 +168,7 @@ export default function CartProductCard({
                   cartItemId={cartProps?.cartItemId}
                   price={product.price}
                   onDelete={cartProps?.onDelete}
+                  setTotalPrice={cartProps?.setTotalPrice}
                 />
               </Box>
             )}
