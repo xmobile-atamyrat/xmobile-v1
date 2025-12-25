@@ -51,7 +51,7 @@ export default function Signup() {
 
   return (
     <Box className={signupClasses.boxes.page[platform]}>
-      <Link href="/">
+      <Link href="/user/profile">
         <ArrowBackIos
           className={signupClasses.link[platform]}
           style={{ color: colors.blackText }}
