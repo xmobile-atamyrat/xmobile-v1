@@ -24,8 +24,11 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
 import { colors, interClassname } from '@/styles/theme';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -168,8 +171,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, [categoryIdFromQuery, allCategories]);
 
   // Check if user landed directly (no category context)
-  const isDirectLanding = !categoryIdFromQuery;
-
   useEffect(() => {
     if (product == null) {
       return;
@@ -242,21 +243,38 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   return product ? (
     <Layout
       handleHeaderBackButton={() => {
-        if (isDirectLanding) {
-          router.push('/');
-        } else if (categoryPath.length > 0) {
-          // Navigate to the category page
-          const currentCategory = categoryPath[categoryPath.length - 1];
-          router.push(`/category/${currentCategory.id}`);
-        } else {
-          router.push('/product');
-        }
+        router.push(`/product?categoryId=${categoryIdFromQuery}`);
       }}
     >
       <SimpleBreadcrumbs
         currentProductName={product.name}
         categoryPath={categoryPath}
       />
+      <Box className={productIndexPageClasses.boxes.appbar[platform]}>
+        <Box className="w-1/6 flex justify-start">
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            className={appbarClasses.backButton[platform]}
+            aria-label="open drawer"
+            onClick={() => {
+              if (categoryPath.length > 1) {
+                // Navigate to the parent category page
+                const parentCategory = categoryPath[categoryPath.length - 2];
+                router.push(`/category/${parentCategory.id}`);
+              } else {
+                // If we're at the root category, go to home
+                router.push('/');
+              }
+            }}
+          >
+            <ArrowBackIosIcon
+              className={appbarClasses.arrowBackIos[platform]}
+            />
+          </IconButton>
+        </Box>
+      </Box>
       <Box className={detailPageClasses.boxes.main[platform]}>
         {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
           <Box>
@@ -595,11 +613,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   ) : (
     <Layout
       handleHeaderBackButton={() => {
-        if (isDirectLanding) {
-          router.push('/');
-        } else {
-          router.push('/product');
-        }
+        router.push('/');
       }}
     >
       <Box className="flex justify-center items-center h-64">
