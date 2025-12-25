@@ -48,7 +48,7 @@ export default function CartPage() {
     (async () => {
       // TODO: fix this to redirect to login page
       if (!user) {
-        router.push('/user/profile');
+        return;
       }
 
       try {
