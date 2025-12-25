@@ -7,7 +7,6 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { profileClasses } from '@/styles/classMaps/user/profile';
-import { signinClasses } from '@/styles/classMaps/user/signin';
 import { colors, interClassname } from '@/styles/theme';
 import { ArrowBackIos } from '@mui/icons-material';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -68,8 +67,8 @@ export default function Profile() {
         <Box className={profileClasses.boxes.main[platform]}>
           <Link href="/">
             <ArrowBackIos
-              className={`${signinClasses.link[platform]}`}
-              style={{ color: colors.text[platform] }}
+              className={`${profileClasses.link[platform]}`}
+              style={{ color: colors.blackText }}
             />
           </Link>
           <Box className={profileClasses.boxes.loggedOutMain[platform]}>
