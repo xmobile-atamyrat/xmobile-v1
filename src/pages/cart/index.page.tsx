@@ -35,6 +35,7 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
   >([]);
+  const [totalPrice, setTotalPrice] = useState(0);
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
@@ -98,7 +99,7 @@ export default function CartPage() {
                 >
                   {t('cart')}
                 </Typography>
-                <CheckoutSummary cartItems={cartItems} />
+                <CheckoutSummary totalPrice={totalPrice} />
               </Box>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography
@@ -132,6 +133,7 @@ export default function CartPage() {
                       quantity: cartItem?.quantity,
                       cartItemId: cartItem?.id,
                       onDelete,
+                      setTotalPrice,
                     }}
                   />
                 ))}
