@@ -41,7 +41,7 @@ export const cartProductCardClasses = {
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[7vw] w-auto p-0 rounded-[5px] justify-center',
+    web: 'h-[7vw] max-h-[120px] w-auto p-0 rounded-[5px] justify-center',
     mobile: 'h-[70px] w-auto max-w-[88px]',
   },
   info: {
