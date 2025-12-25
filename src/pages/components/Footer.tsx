@@ -122,7 +122,7 @@ export default function Footer() {
               <Link href="/">
                 <CardMedia
                   component="img"
-                  image="xmobile-processed-logo.png"
+                  image="/xmobile-processed-logo.png"
                   alt="Logo"
                   className={footerClasses.imgs.logo}
                 />
