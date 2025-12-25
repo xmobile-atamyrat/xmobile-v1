@@ -227,5 +227,7 @@
   "reasonPlaceholder": "Ýatyryş sebäbini giriziň...",
   "page": "Sahypa",
   "of": "dan",
-  "itemsPerPage": "Sahypa başyna elementler"
+  "itemsPerPage": "Sahypa başyna elementler",
+  "totalAmount": "Jemi mukdar",
+  "checkout": "Çykyş"
 }

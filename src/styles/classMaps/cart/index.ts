@@ -3,7 +3,18 @@ export const cartIndexClasses = {
     web: 'w-full h-full flex flex-col mt-[64px] px-[10vw]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
+<<<<<<< HEAD
   prodCart: 'flex flex-wrap gap-4 w-full',
+=======
+  cartHeader: {
+    web: 'flex flex-row w-full justify-between items-center',
+    mobile: 'flex w-full justify-center',
+  },
+  prodCart: {
+    web: 'flex flex-wrap gap-4 w-full justify-center',
+    mobile: 'flex flex-wrap gap-4 w-full justify-center pb-[100px]',
+  },
+>>>>>>> efe19d1 (checkout summary component UI)
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
     web: 'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',
@@ -38,7 +49,7 @@ export const cartIndexClasses = {
   infoColTypo:
     'font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]',
   yourCartTypo: {
-    web: 'font-bold text-[56px] leading-[68px] tracking-normal text-[#303030] mb-[1.3vw]',
+    web: 'item-center font-bold text-[36px] leading-[68px] tracking-normal text-[#303030] text-center',
     mobile:
       'font-medium text-[20px] leading-full tracking-normal text-[#000] text-center mb-[26px]',
   },
