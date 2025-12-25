@@ -1,6 +1,6 @@
 export const cartProductCardClasses = {
   card: {
-    web: 'w-[clamp(850px,_79.16vw,_1520px)] h-[13.5vw] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] overflow-visible',
+    web: 'w-[79.16vw] min-w-[850px] h-[13.5vw] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] overflow-visible',
     mobile: 'flex flex-row w-[88.7vw] min-h-[110px] gap-[12px]',
   },
   boxes: {
@@ -41,7 +41,7 @@ export const cartProductCardClasses = {
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[7vw] w-auto p-0 rounded-[5px] justify-center',
+    web: 'h-[7vw] max-h-[120px] w-auto p-0 rounded-[5px] justify-center',
     mobile: 'h-[70px] w-auto max-w-[88px]',
   },
   info: {
