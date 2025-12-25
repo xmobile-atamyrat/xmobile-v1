@@ -179,5 +179,6 @@
   "yourCart": "Sätiliňiz",
   "product": "Produkt",
   "total": "Jemi",
-  "shortAddress": "Türkmenabat, S.A. Niyazow köçe."
+  "shortAddress": "Türkmenabat, S.A. Niyazow köçe.",
+  "noProductsFound": "Önüm tapylmady"
 }
