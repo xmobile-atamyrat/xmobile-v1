@@ -169,6 +169,7 @@ export interface AddToCartProps {
   cartAction: 'add' | 'delete' | 'detail';
   price?: string;
   onDelete?: (message: string) => void;
+  setTotalPrice?: Dispatch<SetStateAction<number>>;
 }
 
 export interface SnackbarProps {

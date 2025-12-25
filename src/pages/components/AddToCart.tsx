@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -31,6 +31,7 @@ export default function AddToCart({
   cartItemId = undefined,
   price,
   onDelete,
+  setTotalPrice,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const { user, accessToken } = useUserContext();
@@ -151,18 +152,29 @@ export default function AddToCart({
     (action: 'add' | 'remove' | 'quantityAdd' | 'quantityRemove') => () => {
       if (action === 'add') {
         setQuantity(quantity + 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur + Number(price));
         editCartItems(quantity + 1);
       } else if (action === 'remove') {
         if (quantity > 1) {
           setQuantity(quantity - 1);
+          if (setTotalPrice) setTotalPrice((cur) => cur - Number(price));
           editCartItems(quantity - 1);
         }
       } else if (action === 'quantityAdd') {
         setQuantity(quantity + 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur + Number(price));
       } else if (action === 'quantityRemove' && quantity > 1) {
         setQuantity(quantity - 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur - Number(price));
       }
     };
+
+  // TODO: this might create a race condition across items.
+  // Need to find a synchronous way of doing it
+  useEffect(() => {
+    if (price?.startsWith('[')) return;
+    if (setTotalPrice) setTotalPrice((curr) => curr + quantity * Number(price));
+  }, [price]);
 
   return (
     <Box className={addToCartClasses.main[platform]}>
@@ -202,7 +214,15 @@ export default function AddToCart({
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
-                  setQuantity(Number(e.target.value));
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                  if (setTotalPrice)
+                    setTotalPrice(
+                      (cur) =>
+                        cur -
+                        quantity * Number(price) +
+                        quantity * Number(price),
+                    );
                   editCartItems(Number(e.target.value));
                 }}
               />
@@ -231,6 +251,8 @@ export default function AddToCart({
                 type="submit"
                 onClick={() => {
                   onDelete(cartItemId);
+                  if (setTotalPrice)
+                    setTotalPrice((cur) => cur - quantity * Number(price));
                   deleteCartItems(cartItemId);
                 }}
               >
@@ -265,7 +287,12 @@ export default function AddToCart({
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
-                  setQuantity(Number(e.target.value));
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                  setTotalPrice(
+                    (cur) =>
+                      cur - quantity * Number(price) + quantity * Number(price),
+                  );
                 }}
               />
 
