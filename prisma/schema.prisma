@@ -282,8 +282,12 @@ model UserOrder {
   status              UserOrderStatus   @default(PENDING)
   totalPrice          String
   
-  user                User              @relation(references: [id], fields: [userId], onDelete: Cascade)
-  userId              String
+  user                User?             @relation(references: [id], fields: [userId], onDelete: SetNull)
+  userId              String?
+  
+  // User snapshot fields for analytics even if user is deleted
+  userName            String?
+  userEmail           String?
   
   deliveryAddress     String
   deliveryPhone       String
@@ -303,6 +307,10 @@ model UserOrder {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([userName])
+  @@index([userEmail])
+  @@index([deliveryAddress])
+  @@index([deliveryPhone])
 }
 
 model UserOrderItem {

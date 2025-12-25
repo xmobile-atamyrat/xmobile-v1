@@ -32,7 +32,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     try {
       const validated = getOrdersQuerySchema.parse(query);
       const { resp, status } = await getUserOrdersController({
-        userId: userId!,
         ...validated,
       });
       return res.status(status).json(resp);

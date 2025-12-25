@@ -36,7 +36,7 @@ export const getOrdersQuerySchema = z.object({
 
 export const getAdminOrdersQuerySchema = z.object({
   status: z.nativeEnum(UserOrderStatus).optional(),
-  userId: z.string().optional(),
+  searchKeyword: z.string().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   page: z

@@ -14,7 +14,7 @@ export interface CreateOrderData {
 }
 
 export interface GetOrdersFilters {
-  userId?: string;
+  searchKeyword?: string;
   status?: UserOrderStatus;
   dateFrom?: string;
   dateTo?: string;
@@ -38,6 +38,16 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     throw new Error('Cart is empty');
   }
 
+  // Get user data for snapshot
+  const user = await dbClient.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   // Calculate total price
   const totalPrice = await calculateTotalPrice(cartItems);
 
@@ -51,6 +61,8 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
       data: {
         orderNumber,
         userId,
+        userName: user.name,
+        userEmail: user.email,
         deliveryAddress,
         deliveryPhone,
         notes,
@@ -92,7 +104,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
  */
 export async function getOrders(filters: GetOrdersFilters) {
   const {
-    userId,
+    searchKeyword,
     status,
     dateFrom,
     dateTo,
@@ -104,7 +116,18 @@ export async function getOrders(filters: GetOrdersFilters) {
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
-  if (userId) where.userId = userId;
+
+  // Search across UserOrder fields (snapshots and delivery info)
+  if (searchKeyword && searchKeyword.trim()) {
+    const keyword = searchKeyword.trim();
+    where.OR = [
+      { userName: { contains: keyword, mode: 'insensitive' } },
+      { userEmail: { contains: keyword, mode: 'insensitive' } },
+      { deliveryAddress: { contains: keyword, mode: 'insensitive' } },
+      { deliveryPhone: { contains: keyword } },
+    ];
+  }
+
   if (status) where.status = status;
   if (dateFrom || dateTo) {
     where.createdAt = {};
@@ -119,6 +142,7 @@ export async function getOrders(filters: GetOrdersFilters) {
         items: {
           include: { product: true },
         },
+        // Include user relation if it still exists (for backward compatibility)
         user: {
           select: {
             id: true,
