@@ -177,5 +177,6 @@
   "yourCart": "Sepetiniz",
   "product": "Ürün",
   "total": "Toplam",
-  "shortAddress": "Türkmenabat, S.A. Niyazov Cad."
+  "shortAddress": "Türkmenabat, S.A. Niyazov Cad.",
+  "noProductsFound": "Ürün Bulunamadı!"
 }
