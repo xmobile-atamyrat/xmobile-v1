@@ -3,8 +3,9 @@ import { Inter } from 'next/font/google';
 export const colors = {
   text: {
     web: '#303030',
-    mobile: '#221765',
+    mobile: '#ff624c',
   },
+  blackText: '#303030',
   main: '#ff624c',
   mainWebMobile: {
     web: '#ff624c',
@@ -23,14 +24,8 @@ export const colors = {
     mobile: '#554ba8',
   },
   placeholder: '#838383',
-  buttonHoverBg: {
-    web: '#ec4d38',
-    mobile: '#000543',
-  },
-  buttonBg: {
-    web: '#ff624c',
-    mobile: '#110654',
-  },
+  buttonHoverBg: '#ec4d38',
+  buttonBg: '#ff624c',
   darkBlue: '#221765',
   white: '#fff',
   black: '#000',

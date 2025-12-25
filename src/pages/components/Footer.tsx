@@ -65,7 +65,7 @@ export default function Footer() {
           className={footerClasses.boxes.bottomNavigation}
         >
           <BottomNavigationAction
-            color={colors.text.web}
+            color={colors.blackText}
             value="/"
             icon={
               <CardMedia
@@ -76,7 +76,7 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            color={colors.text.web}
+            color={colors.blackText}
             value="/category"
             icon={
               <CardMedia
@@ -88,7 +88,7 @@ export default function Footer() {
           />
           {user.user && (
             <BottomNavigationAction
-              color={colors.text.web}
+              color={colors.blackText}
               value="/cart"
               icon={
                 <CardMedia
@@ -100,7 +100,7 @@ export default function Footer() {
             />
           )}
           <BottomNavigationAction
-            color={colors.text.web}
+            color={colors.blackText}
             value="/user/profile"
             icon={
               <CardMedia
