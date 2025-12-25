@@ -8,6 +8,7 @@ import {
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
@@ -113,7 +114,7 @@ export default function Home({
   const router = useRouter();
   const platform = usePlatform();
   const t = useTranslations();
-  const [localSearchKeyword, setLocalSearchKeyword] = useState('');
+  const { searchKeyword, setSearchKeyword } = useProductContext();
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newPage, setNewPage] = useState(1);
@@ -126,7 +127,7 @@ export default function Home({
       try {
         const fetched = await fetchNewProducts({
           page: 1,
-          searchKeyword: localSearchKeyword || undefined,
+          searchKeyword: searchKeyword || undefined,
         });
         if (!mounted) return;
         setNewProducts(fetched);
@@ -141,7 +142,7 @@ export default function Home({
     return () => {
       mounted = false;
     };
-  }, [localSearchKeyword]);
+  }, [searchKeyword]);
 
   useEffect(() => {
     const loadMoreTrigger = document.getElementById('load-more-products');
@@ -156,7 +157,7 @@ export default function Home({
               try {
                 const fetched = await fetchNewProducts({
                   page: newPage,
-                  searchKeyword: localSearchKeyword || undefined,
+                  searchKeyword: searchKeyword || undefined,
                 });
                 if (fetched.length < 20) {
                   setHasNewMore(false);
@@ -208,18 +209,20 @@ export default function Home({
           </Box>
         </Box>
         {SearchBar({
-          searchKeyword: localSearchKeyword,
+          searchKeyword,
           searchPlaceholder: t('search'),
-          setSearchKeyword: setLocalSearchKeyword,
+          setSearchKeyword,
           width: '100%',
         })}
       </Box>
       <Box className="px-[10.31vw]">
-        <Typography
-          className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
-        >
-          {t('newProducts')}
-        </Typography>
+        {!searchKeyword && (
+          <Typography
+            className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+          >
+            {t('newProducts')}
+          </Typography>
+        )}
         {isLoading && (
           <Box className="flex justify-center items-center h-64">
             <CircularProgress />
@@ -235,6 +238,9 @@ export default function Home({
               />
             ))}
         </Box>
+        {newProducts.length === 0 && (
+          <Typography>{t('noProductsFound')}</Typography>
+        )}
       </Box>
       <div id="load-more-products" />
     </Layout>

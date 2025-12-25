@@ -177,5 +177,6 @@
   "yourCart": "Your Cart",
   "product": "Product",
   "total": "Total",
-  "shortAddress": "Turkmenabat, S.A. Niyazov Ave."
+  "shortAddress": "Turkmenabat, S.A. Niyazov Ave.",
+  "noProductsFound": "No Products Found!"
 }
