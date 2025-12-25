@@ -12,6 +12,7 @@ interface SimpleBreadcrumbsProps {
   categoryPath?: ExtendedCategory[]; // Category path for URL-based navigation
 }
 
+// Note: Currently completely hidden in mobile view
 export default function SimpleBreadcrumbs({
   currentProductName,
   categoryPath,
