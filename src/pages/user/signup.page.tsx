@@ -54,7 +54,7 @@ export default function Signup() {
       <Link href="/">
         <ArrowBackIos
           className={signupClasses.link[platform]}
-          style={{ color: colors.text[platform] }}
+          style={{ color: colors.blackText }}
         />
       </Link>
       <Box className={signupClasses.boxes.main[platform]}>
@@ -65,7 +65,7 @@ export default function Signup() {
         />
         <Box className={signupClasses.boxes.label[platform]}>
           <Typography
-            color={colors.text[platform]}
+            color={colors.blackText}
             variant="h3"
             className={`${signupClasses.h3[platform]} ${interClassname.className}`}
           >
@@ -153,7 +153,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text[platform]}
+                  color={colors.blackText}
                 >
                   {`${t('email')} `}
                 </Typography>
@@ -208,7 +208,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text[platform]}
+                  color={colors.blackText}
                 >
                   {`${t('password')} `}
                 </Typography>
@@ -294,7 +294,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text[platform]}
+                  color={colors.blackText}
                 >
                   {t('confirmPassword')}
                 </Typography>
@@ -366,7 +366,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text[platform]}
+                  color={colors.blackText}
                 >
                   {t('name')}
                 </Typography>
@@ -420,7 +420,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   className={`font-bold ${interClassname.className}`}
-                  color={colors.text[platform]}
+                  color={colors.blackText}
                 >
                   {`${t('phoneNumber')} `}
                 </Typography>
@@ -475,7 +475,7 @@ export default function Signup() {
           <Box className={signupClasses.boxes.links[platform]}>
             {errorMessage != null && (
               <Typography
-                color={colors.text[platform]}
+                color={colors.blackText}
                 className={`${signupClasses.error[platform]} ${interClassname.className} opacity-85`}
               >
                 {t(errorMessage)}
@@ -485,16 +485,16 @@ export default function Signup() {
               <Button
                 fullWidth
                 variant="contained"
-                size="large"
+                disableElevation
                 type="submit"
                 className={`${signupClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
-                  backgroundColor: colors.buttonBg[platform],
+                  backgroundColor: colors.buttonBg,
                   '&:hover': {
-                    backgroundColor: colors.buttonHoverBg[platform],
+                    backgroundColor: colors.buttonHoverBg,
                   },
                   '&:focus': {
-                    backgroundColor: colors.buttonHoverBg[platform],
+                    backgroundColor: colors.buttonHoverBg,
                   },
                 }}
               >
@@ -510,7 +510,7 @@ export default function Signup() {
               </Typography>
               <Button
                 className={`${interClassname.className} ${signupClasses.buttonRedirect}`}
-                sx={{ color: colors.text[platform] }}
+                sx={{ color: colors.blackText }}
                 onClick={() => router.push('/user/signin')}
               >
                 {t('signIn')}
