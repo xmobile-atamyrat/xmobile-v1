@@ -3,7 +3,7 @@ export const cartIndexClasses = {
     web: 'w-full h-full flex flex-col mt-[64px]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
-  prodCart: 'flex flex-wrap gap-4 w-full justify-center',
+  prodCart: 'flex flex-wrap gap-4 w-full ml-[10vw]',
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
     web: 'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',
@@ -32,7 +32,7 @@ export const cartIndexClasses = {
     },
   },
   infoCol: {
-    web: 'flex flex-row w-[clamp(850px,_79.16vw,_1520px)] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
+    web: 'flex flex-row w-[79.16vw] min-w-[850px] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
     mobile: 'hidden',
   },
   infoColTypo:
