@@ -64,4 +64,8 @@ export const profileClasses = {
   btn: 'flex flex-row ml-[20px] w-full h-full items-center justify-between no-unerline p-0 normal-case',
   icons: 'w-[17px] h-[17px] text-[#000]',
   langImg: 'w-[24px] h-[18px]',
+  link: {
+    web: 'absolute left-4 top-4 font-base font-light text-[36px] no-underline',
+    mobile: 'hidden',
+  },
 };
