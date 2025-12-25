@@ -55,7 +55,8 @@ export default function UserOrdersPage() {
 
   // Filters
   const [status, setStatus] = useState<UserOrderStatus | undefined>();
-  const [userId, setUserId] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState('');
   const [dateFrom, setDateFrom] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
@@ -79,7 +80,7 @@ export default function UserOrdersPage() {
       const result = await getOrdersList({
         accessToken,
         status,
-        userId: userId || undefined,
+        searchKeyword: debouncedSearchKeyword || undefined,
         dateFrom,
         dateTo,
         page,
@@ -112,7 +113,6 @@ export default function UserOrdersPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/');
       return;
     }
 
@@ -125,14 +125,19 @@ export default function UserOrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accessToken, page, limit]);
 
-  const handleApplyFilters = () => {
-    setPage(1);
-    fetchOrders();
-  };
+  // Debounce search keyword
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchKeyword(searchKeyword);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   const handleClearFilters = () => {
     setStatus(undefined);
-    setUserId('');
+    setSearchKeyword('');
+    setDebouncedSearchKeyword('');
     const date = new Date();
     date.setDate(date.getDate() - 30);
     setDateFrom(date.toISOString().split('T')[0]);
@@ -140,12 +145,14 @@ export default function UserOrdersPage() {
     setPage(1);
   };
 
+  // Fetch orders when filters change
   useEffect(() => {
-    if (status === undefined && !userId && dateFrom && dateTo) {
+    if (user && accessToken) {
+      setPage(1);
       fetchOrders();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, userId, dateFrom, dateTo]);
+  }, [status, debouncedSearchKeyword, dateFrom, dateTo]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -170,15 +177,14 @@ export default function UserOrdersPage() {
 
           <OrderFilters
             status={status}
-            userId={userId}
+            searchKeyword={searchKeyword}
             dateFrom={dateFrom}
             dateTo={dateTo}
             onStatusChange={setStatus}
-            onUserIdChange={setUserId}
+            onSearchKeywordChange={setSearchKeyword}
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}
             onClear={handleClearFilters}
-            onApply={handleApplyFilters}
           />
 
           {loading && (

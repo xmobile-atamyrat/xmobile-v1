@@ -5,7 +5,7 @@ import { Dispatch, SetStateAction } from 'react';
 interface GetOrdersParams {
   accessToken: string;
   status?: UserOrderStatus;
-  userId?: string;
+  searchKeyword?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -30,7 +30,7 @@ interface GetOrdersResponse {
 export async function getOrdersList({
   accessToken,
   status,
-  userId,
+  searchKeyword,
   dateFrom,
   dateTo,
   page = 1,
@@ -40,7 +40,7 @@ export async function getOrdersList({
   try {
     const queryParams = new URLSearchParams();
     if (status) queryParams.append('status', status);
-    if (userId) queryParams.append('userId', userId);
+    if (searchKeyword) queryParams.append('searchKeyword', searchKeyword);
     if (dateFrom) queryParams.append('dateFrom', dateFrom);
     if (dateTo) {
       // If dateTo is just a date (YYYY-MM-DD), append end of day time
