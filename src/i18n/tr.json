@@ -225,5 +225,7 @@
   "reasonPlaceholder": "İptal nedenini girin...",
   "page": "Sayfa",
   "of": "of",
-  "itemsPerPage": "Sayfa başına öğe"
+  "itemsPerPage": "Sayfa başına öğe",
+  "totalAmount": "Toplam Tutar",
+  "checkout": "Çıkış yapmak"
 }

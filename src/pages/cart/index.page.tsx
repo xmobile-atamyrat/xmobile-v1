@@ -1,6 +1,6 @@
+import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
-import { PAGENAME } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -90,14 +90,17 @@ export default function CartPage() {
             </Typography>
           </Link>
         </Breadcrumbs>
-        <Box className={cartIndexClasses.prodCart}>
+        <Box className={cartIndexClasses.prodCart[platform]}>
           {cartItems != null && cartItems.length > 0 ? (
             <Box className="flex flex-col">
-              <Typography
-                className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
-              >
-                {t(PAGENAME.cart[platform])}
-              </Typography>
+              <Box className={cartIndexClasses.cartHeader[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
+                >
+                  {t('cart')}
+                </Typography>
+                <CheckoutSummary cartItems={cartItems} />
+              </Box>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography
                   className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[32vw] ml-[2.39vw]`}
