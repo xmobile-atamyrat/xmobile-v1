@@ -26,7 +26,7 @@ export const cartCheckoutClasses = {
       'w-full h-12 rounded-[12px] flex items-center justify-center text-transform-none',
   },
   checkoutButtonText: {
-    web: 'font-bold text-[20px] leading-[30px]',
+    web: 'font-bold text-[18px] leading-[30px]',
     mobile: 'font-medium text-[16px] leading-normal text-center',
   },
 };
