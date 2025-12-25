@@ -43,7 +43,7 @@ export default function Signin() {
       <Link href="/">
         <ArrowBackIos
           className={`${signinClasses.link[platform]}`}
-          style={{ color: colors.text[platform] }}
+          style={{ color: colors.blackText }}
         />
       </Link>
       <Box className={signinClasses.boxes.main[platform]}>
@@ -54,7 +54,7 @@ export default function Signin() {
         />
         <Box className={signinClasses.boxes.label[platform]}>
           <Typography
-            color={colors.text[platform]}
+            color={colors.blackText}
             variant="h3"
             className={`${signinClasses.h3[platform]} ${interClassname.className}`}
           >
@@ -116,7 +116,7 @@ export default function Signin() {
               <Typography
                 component="span"
                 className={`font-bold ${interClassname.className}`}
-                color={colors.text[platform]}
+                color={colors.blackText}
               >
                 {`${t('email')} `}
               </Typography>
@@ -171,7 +171,7 @@ export default function Signin() {
               <Typography
                 component="span"
                 className={`font-bold ${interClassname.className}`}
-                color={colors.text[platform]}
+                color={colors.blackText}
               >
                 {`${t('password')} `}
               </Typography>
@@ -232,7 +232,7 @@ export default function Signin() {
           </Box>
           {errorMessage != null && (
             <Typography
-              color={colors.text[platform]}
+              color={colors.blackText}
               className={`${signinClasses.error[platform]} ${interClassname.className} opacity-85`}
             >
               {t(errorMessage)}
@@ -245,14 +245,15 @@ export default function Signin() {
                 variant="contained"
                 size="large"
                 type="submit"
+                disableElevation
                 className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
-                  backgroundColor: colors.buttonBg[platform],
+                  backgroundColor: colors.buttonBg,
                   '&:hover': {
-                    backgroundColor: colors.buttonHoverBg[platform],
+                    backgroundColor: colors.buttonHoverBg,
                   },
                   '&:focus': {
-                    backgroundColor: colors.buttonHoverBg[platform],
+                    backgroundColor: colors.buttonHoverBg,
                   },
                 }}
               >

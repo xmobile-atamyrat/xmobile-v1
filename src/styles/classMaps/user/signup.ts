@@ -41,7 +41,7 @@ export const signupClasses = {
   },
   buttonSubmit: {
     web: `normal-case font-bold w-[512px] min-h-[78px] text-[20px] leading-[30px] rounded-[10px] px-[179px] py-[24px]`,
-    mobile: `normal-case font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
+    mobile: `normal-case font-[500] w-full h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
   },
   buttonRedirect: 'normal-case px-2 text-[#1b1b1b] font-bold text-[16px]',
   link: {
