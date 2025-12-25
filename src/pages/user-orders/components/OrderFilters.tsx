@@ -19,28 +19,26 @@ import { useState } from 'react';
 
 interface OrderFiltersProps {
   status?: UserOrderStatus;
-  userId?: string;
+  searchKeyword?: string;
   dateFrom?: string;
   dateTo?: string;
   onStatusChange: (status: UserOrderStatus | undefined) => void;
-  onUserIdChange: (userId: string) => void;
+  onSearchKeywordChange: (searchKeyword: string) => void;
   onDateFromChange: (date: string) => void;
   onDateToChange: (date: string) => void;
   onClear: () => void;
-  onApply: () => void;
 }
 
 export default function OrderFilters({
   status,
-  userId,
+  searchKeyword,
   dateFrom,
   dateTo,
   onStatusChange,
-  onUserIdChange,
+  onSearchKeywordChange,
   onDateFromChange,
   onDateToChange,
   onClear,
-  onApply,
 }: OrderFiltersProps) {
   const t = useTranslations();
   const platform = usePlatform();
@@ -92,12 +90,12 @@ export default function OrderFilters({
           </Select>
 
           <TextField
-            label={t('selectUser')}
-            value={userId || ''}
-            onChange={(e) => onUserIdChange(e.target.value)}
+            label={t('searchCustomer')}
+            value={searchKeyword || ''}
+            onChange={(e) => onSearchKeywordChange(e.target.value)}
             className={userOrdersIndexClasses.filterField[platform]}
             size="small"
-            placeholder={t('selectUser')}
+            placeholder={t('searchCustomerPlaceholder')}
           />
 
           <TextField
@@ -124,30 +122,15 @@ export default function OrderFilters({
             }}
           />
 
-          <Box
-            className={
-              platform === 'web'
-                ? 'flex flex-row gap-2'
-                : 'flex flex-row gap-2 w-full'
-            }
+          <Button
+            variant="outlined"
+            onClick={onClear}
+            sx={{ textTransform: 'none' }}
+            size="small"
+            className={platform === 'mobile' ? 'w-full' : ''}
           >
-            <Button
-              variant="outlined"
-              onClick={onClear}
-              sx={{ textTransform: 'none' }}
-              size="small"
-            >
-              {t('clearFilters')}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={onApply}
-              sx={{ textTransform: 'none' }}
-              size="small"
-            >
-              {t('applyFilters')}
-            </Button>
-          </Box>
+            {t('clearFilters')}
+          </Button>
         </Box>
       </Collapse>
     </Box>
