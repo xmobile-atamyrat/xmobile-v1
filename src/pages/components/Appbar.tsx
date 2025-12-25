@@ -12,6 +12,7 @@ import { Dvr } from '@mui/icons-material';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
@@ -356,6 +357,15 @@ export default function CustomAppBar({
               >
                 <AnalyticsIcon />
                 <Typography>{t('analytics')}</Typography>
+              </MenuItem>
+            )}
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <MenuItem
+                className={appbarClasses.menuItemAcc}
+                onClick={() => router.push('/user-orders')}
+              >
+                <ListAltIcon />
+                <Typography>{t('userOrders')}</Typography>
               </MenuItem>
             )}
             {user?.grade === 'SUPERUSER' && (
