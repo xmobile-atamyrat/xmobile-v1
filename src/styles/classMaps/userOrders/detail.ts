@@ -19,9 +19,13 @@ export const userOrdersDetailClasses = {
     web: 'text-xl font-semibold mb-4',
     mobile: 'text-lg font-semibold mb-3',
   },
+  infoRowBox: {
+    web: 'flex flex-col',
+    mobile: 'flex flex-col gap-3',
+  },
   infoRow: {
     web: 'flex flex-row gap-4 mb-3',
-    mobile: 'flex flex-col gap-2 mb-2',
+    mobile: 'flex flex-col gap-1 mb-2',
   },
   infoLabel: {
     web: 'w-48 font-medium',

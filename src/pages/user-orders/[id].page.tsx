@@ -4,6 +4,7 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
 import { userOrdersDetailClasses } from '@/styles/classMaps/userOrders';
 import { interClassname } from '@/styles/theme';
 import {
@@ -21,7 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
-import { GetStaticProps } from 'next';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -34,13 +35,13 @@ import {
   updateOrderStatus,
 } from './lib/apiUtils';
 
-export const getStaticProps = (async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
     },
   };
-}) satisfies GetStaticProps<object>;
+};
 
 export default function UserOrderDetailPage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function UserOrderDetailPage() {
           email: string;
           phoneNumber: string | null;
           address: string | null;
-        };
+        } | null;
       })
     | null
   >(null);
@@ -128,7 +129,6 @@ export default function UserOrderDetailPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/');
       return;
     }
 
@@ -275,7 +275,7 @@ export default function UserOrderDetailPage() {
               {t('customerInfo')}
             </Typography>
             {order.user && (
-              <>
+              <Box className={userOrdersDetailClasses.infoRowBox[platform]}>
                 <Box className={userOrdersDetailClasses.infoRow[platform]}>
                   <Typography
                     className={`${interClassname.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
@@ -297,10 +297,10 @@ export default function UserOrderDetailPage() {
                   <Typography
                     className={`${interClassname.className} ${userOrdersDetailClasses.infoValue[platform]}`}
                   >
-                    {order.user.email}
+                    {order.userEmail || order.user?.email || '-'}
                   </Typography>
                 </Box>
-                {order.user.phoneNumber && (
+                {order.user?.phoneNumber && (
                   <Box className={userOrdersDetailClasses.infoRow[platform]}>
                     <Typography
                       className={`${interClassname.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
@@ -314,7 +314,7 @@ export default function UserOrderDetailPage() {
                     </Typography>
                   </Box>
                 )}
-              </>
+              </Box>
             )}
             <Box className={userOrdersDetailClasses.infoRow[platform]}>
               <Typography
@@ -411,7 +411,7 @@ export default function UserOrderDetailPage() {
                       <TableRow key={item.id}>
                         <TableCell>
                           <Typography className={interClassname.className}>
-                            {item.productName}
+                            {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
                         </TableCell>
                         <TableCell>

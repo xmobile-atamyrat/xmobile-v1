@@ -1,6 +1,9 @@
 import dbClient from '@/lib/dbClient';
+import { getPrice } from '@/pages/api/prices/index.page';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
 import { calculateTotalPrice, generateOrderNumber } from '../utils/orderUtils';
+
+const squareBracketRegex = /\[([^\]]+)\]/;
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -56,6 +59,29 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
 
   // Create order with items in a transaction
   const order = await dbClient.$transaction(async (tx) => {
+    // Extract actual price values for order items
+    const orderItemsData = await Promise.all(
+      cartItems.map(async (item) => {
+        let productPrice = '0';
+        if (item.product.price) {
+          const priceMatch = item.product.price.match(squareBracketRegex);
+          if (priceMatch) {
+            const priceId = priceMatch[1];
+            const price = await getPrice(priceId);
+            if (price && price.priceInTmt) {
+              productPrice = price.priceInTmt;
+            }
+          }
+        }
+        return {
+          quantity: item.quantity,
+          productName: item.product.name,
+          productPrice,
+          productId: item.productId,
+        };
+      }),
+    );
+
     // Create the order
     const newOrder = await tx.userOrder.create({
       data: {
@@ -69,12 +95,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
         totalPrice,
         status: 'PENDING',
         items: {
-          create: cartItems.map((item) => ({
-            quantity: item.quantity,
-            productName: item.product.name,
-            productPrice: item.product.price || '0',
-            productId: item.productId,
-          })),
+          create: orderItemsData,
         },
       },
       include: { items: true },
