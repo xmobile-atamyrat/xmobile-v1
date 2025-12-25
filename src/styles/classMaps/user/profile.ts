@@ -1,9 +1,18 @@
 export const profileClasses = {
   boxes: {
-    loggedOutMain:
-      'w-[88.78vw] h-full mx-auto flex flex-col items-center justify-center',
-    loggedOutOptions:
-      'h-[116px] flex flex-col w-full justify-center items-center',
+    main: {
+      web: 'w-full',
+      mobile: 'w-full h-full',
+    },
+    loggedOutMain: {
+      web: 'w-[88.78vw] mx-auto flex flex-col my-[300px] items-center',
+      mobile:
+        'w-[88.78vw] h-full mx-auto flex flex-col mt-auto justify-center items-center',
+    },
+    loggedOutOptions: {
+      web: 'flex flex-row w-[75%] justify-between h-[100px] mt-[50px]',
+      mobile: 'flex flex-col w-full justify-center items-center',
+    },
     loggedInMain: 'w-full h-full flex flex-col items-center',
     accountMain:
       'w-full h-[90px] py-[16px] px-[28px] gap-[16px] flex justify-center items-center mt-[25px]',
@@ -40,10 +49,16 @@ export const profileClasses = {
   dialog: {
     main: 'w-[90vw] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
   },
-  logo: 'w-[230px] mb-[50px]',
-  logInOptionsLink:
-    'no-underline flex w-full justify-center items-center rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[48px]',
-  logInOptionsTypo: 'font-medium text-[16px] leading-[24px] tracking-normal',
+  logo: 'w-[230px] mb-[30px] mx-auto',
+  logInOptionsLink: {
+    web: 'no-underline flex w-[45%] justify-center items-center rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[75px]',
+    mobile:
+      'no-underline flex w-full justify-center items-center rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[48px] mt-[20px]',
+  },
+  logInOptionsTypo: {
+    web: 'font-medium text-[18px] leading-[24px] tracking-normal',
+    mobile: 'font-medium text-[16px] leading-[24px] tracking-normal',
+  },
   sectionIcon: 'w-[20px] h-[20px]',
   divider: 'h-[1px] text-[#e7e7e7] w-[80%]',
   btn: 'flex flex-row ml-[20px] w-full h-full items-center justify-between no-unerline p-0 normal-case',
