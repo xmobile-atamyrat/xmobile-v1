@@ -1,16 +1,16 @@
 export const cartIndexClasses = {
   box: {
-    web: 'w-full h-full flex flex-col mt-[64px]',
+    web: 'w-full h-full flex flex-col mt-[64px] px-[10vw]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
-  prodCart: 'flex flex-wrap gap-4 w-full justify-center',
+  prodCart: 'flex flex-wrap gap-4 w-full',
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
     web: 'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',
     mobile: 'text-[#fff] font-medium text-[16px] leading-full tracking-normal',
   },
   breadcrumbs: {
-    web: 'ml-[10vw] mb-[32px] flex flex-row mt-[-50px]',
+    web: 'mb-[32px] flex flex-row mt-[-50px]',
     mobile: 'hidden',
   },
   breadcrumbsText:
@@ -32,7 +32,7 @@ export const cartIndexClasses = {
     },
   },
   infoCol: {
-    web: 'flex flex-row w-[clamp(850px,_79.16vw,_1520px)] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
+    web: 'flex flex-row w-[79.16vw] min-w-[850px] h-[88px] rounded-[15px] bg-[#f4f4f4] items-center',
     mobile: 'hidden',
   },
   infoColTypo:
