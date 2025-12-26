@@ -38,7 +38,7 @@ import {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages: (await import(`../../../i18n/${context.locale}.json`)).default,
     },
   };
 };
@@ -187,7 +187,7 @@ export default function UserOrderDetailPage() {
 
   if (loading) {
     return (
-      <Layout handleHeaderBackButton={() => router.push('/user-orders')}>
+      <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
         <Box
           sx={{
             mt:
@@ -206,7 +206,7 @@ export default function UserOrderDetailPage() {
 
   if (!order) {
     return (
-      <Layout handleHeaderBackButton={() => router.push('/user-orders')}>
+      <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
         <Box
           sx={{
             mt:
@@ -226,7 +226,7 @@ export default function UserOrderDetailPage() {
   }
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/user-orders')}>
+    <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
       {['ADMIN', 'SUPERUSER'].includes(user?.grade) && (
         <Box
           sx={{

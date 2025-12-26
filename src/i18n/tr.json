@@ -248,5 +248,6 @@
   "isCompleted": "tamamlandı.",
   "waitForConfirmation": "Lütfen onay çağrısını bekleyin.",
   "orderPlacedSuccessfully": "Siparişiniz başarıyla verildi. Yakında sizinle iletişime geçeceğiz.",
-  "products": "Ürünler"
+  "products": "Ürünler",
+  "myOrders": "Siparişlerim"
 }
