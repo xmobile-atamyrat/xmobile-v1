@@ -256,5 +256,11 @@
   "cancelOrderConfirmation": "Are you sure you want to cancel this order?",
   "orderCancelled": "Order cancelled successfully",
   "cancelOrderError": "Failed to cancel order",
-  "completedAt": "Completed At"
+  "completedAt": "Completed At",
+  "orderedItems": "Ordered Items",
+  "orderInfo": "Order Info",
+  "city": "City / Velayat",
+  "cityPlaceholder": "Turkmenabat",
+  "streetAddress": "Street Address",
+  "cancelTheOrder": "Cancel the Order"
 }

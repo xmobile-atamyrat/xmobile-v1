@@ -256,5 +256,11 @@
   "cancelOrderConfirmation": "Bu siparişi iptal etmek istediğinizden emin misiniz?",
   "orderCancelled": "Sipariş başarıyla iptal edildi",
   "cancelOrderError": "Sipariş iptal edilemedi",
-  "completedAt": "Tamamlandı"
+  "completedAt": "Tamamlandı",
+  "orderedItems": "Sipariş Edilen Ürünler",
+  "orderInfo": "Sipariş Bilgisi",
+  "city": "Şehir / Velayat",
+  "cityPlaceholder": "Türkmenabat",
+  "streetAddress": "Sokak Adresi",
+  "cancelTheOrder": "Siparişi İptal Et"
 }
