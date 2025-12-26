@@ -1,11 +1,11 @@
 export const ordersDetailClasses = {
   container: {
-    web: 'flex flex-col w-full px-4 py-4',
+    web: 'flex flex-col w-full px-[150px] py-4',
     mobile: 'flex flex-col w-full px-[28px] py-4',
   },
   header: {
     web: 'flex items-center gap-4 mb-4',
-    mobile: 'flex items-center gap-4 mb-4 relative',
+    mobile: 'flex justify-between items-center my-4 relative',
   },
   orderNumber: {
     web: 'text-2xl font-semibold mb-2',
@@ -13,7 +13,7 @@ export const ordersDetailClasses = {
   },
   statusIcon: {
     web: 'hidden',
-    mobile: 'absolute right-0 p-[5px] rounded-[8px]',
+    mobile: 'flex justify-center items-center p-[5px] rounded-[8px]',
   },
   orderedItemsSection: {
     web: 'hidden',
@@ -35,15 +35,15 @@ export const ordersDetailClasses = {
   addressRow: {
     web: 'hidden',
     mobile:
-      'flex items-center justify-between h-[32px] py-[12px] text-[12px] text-[#6f7384]',
+      'flex flex-row items-center justify-between h-[32px] py-[12px] text-[12px] text-[#6f7384] w-full',
   },
   addressLabel: {
     web: 'hidden',
-    mobile: 'font-normal',
+    mobile: 'font-normal w-1/2',
   },
   addressValue: {
     web: 'hidden',
-    mobile: 'font-normal',
+    mobile: 'font-normal w-1/2',
   },
   orderInfoSection: {
     web: 'hidden',
