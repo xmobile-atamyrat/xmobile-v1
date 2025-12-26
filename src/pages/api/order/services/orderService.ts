@@ -2,6 +2,11 @@ import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
 import { calculateTotalPrice, generateOrderNumber } from '../utils/orderUtils';
+import {
+  notifyOrderCancelledByUser,
+  notifyOrderCreated,
+  notifyOrderStatusUpdated,
+} from '../utils/slackNotifications';
 
 const squareBracketRegex = /\[([^\]]+)\]/;
 
@@ -116,6 +121,14 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     }
 
     return newOrder;
+  });
+
+  // Send Slack notification (fire and forget - don't block on this)
+  notifyOrderCreated(order).catch((error) => {
+    console.error(
+      '[OrderService] Failed to send Slack notification for order creation:',
+      error,
+    );
   });
 
   return order;
@@ -254,7 +267,7 @@ export async function cancelOrderByUser(
     throw new Error('Order is already cancelled');
   }
 
-  return dbClient.userOrder.update({
+  const updatedOrder = await dbClient.userOrder.update({
     where: { id: orderId },
     data: {
       status: 'USER_CANCELLED',
@@ -263,6 +276,16 @@ export async function cancelOrderByUser(
       cancellationReason,
     },
   });
+
+  // Send Slack notification (fire and forget - don't block on this)
+  notifyOrderCancelledByUser(updatedOrder).catch((error) => {
+    console.error(
+      '[OrderService] Failed to send Slack notification for order cancellation:',
+      error,
+    );
+  });
+
+  return updatedOrder;
 }
 
 /**
@@ -299,10 +322,21 @@ export async function updateOrderStatus(
     }
   }
 
-  return dbClient.userOrder.update({
+  const previousStatus = order.status;
+  const updatedOrder = await dbClient.userOrder.update({
     where: { id: orderId },
     data: updateData,
   });
+
+  // Send Slack notification (fire and forget - don't block on this)
+  notifyOrderStatusUpdated(updatedOrder, previousStatus).catch((error) => {
+    console.error(
+      '[OrderService] Failed to send Slack notification for order status update:',
+      error,
+    );
+  });
+
+  return updatedOrder;
 }
 
 /**
