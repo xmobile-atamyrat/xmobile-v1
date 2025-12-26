@@ -241,5 +241,12 @@
   "deliveryFee": "Delivery Fee",
   "orderNow": "Order Now",
   "order": "Order",
-  "addressText": "Address"
+  "addressText": "Address",
+  "successfullyOrdered": "Successfully Ordered",
+  "thankYou": "Thank You!",
+  "yourOrder": "Your Order",
+  "isCompleted": "is Completed.",
+  "waitForConfirmation": "Please wait for the confirmation call.",
+  "orderPlacedSuccessfully": "Your order has been placed successfully. We will contact you soon.",
+  "products": "Products"
 }

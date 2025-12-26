@@ -241,5 +241,12 @@
   "deliveryFee": "Teslimat Ücreti",
   "orderNow": "Şimdi Sipariş Ver",
   "order": "Sipariş Ver",
-  "addressText": "Address"
+  "addressText": "Address",
+  "successfullyOrdered": "Başarıyla Sipariş Verildi",
+  "thankYou": "Teşekkürler!",
+  "yourOrder": "Siparişiniz",
+  "isCompleted": "tamamlandı.",
+  "waitForConfirmation": "Lütfen onay çağrısını bekleyin.",
+  "orderPlacedSuccessfully": "Siparişiniz başarıyla verildi. Yakında sizinle iletişime geçeceğiz.",
+  "products": "Ürünler"
 }

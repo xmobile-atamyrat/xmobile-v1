@@ -243,5 +243,12 @@
   "deliveryFee": "Eltip bermek tölegi",
   "orderNow": "Häzir sargyt et",
   "order": "Sargyt et",
-  "addressText": "Address"
+  "addressText": "Salgy",
+  "successfullyOrdered": "Üstünlikli sargyt edildi",
+  "thankYou": "Sag boluň!",
+  "yourOrder": "Siziň sargydyňyz",
+  "isCompleted": "tamamlandy.",
+  "waitForConfirmation": "Tassyklama üçin jaňy garaşyň.",
+  "orderPlacedSuccessfully": "Siziň sargydyňyz üstünlikli goýuldy. Gysga wagtdan soň siz bilen habarlaşarys.",
+  "products": "Önümler"
 }
