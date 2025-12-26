@@ -1,5 +1,4 @@
 import Layout from '@/pages/components/Layout';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -138,7 +137,6 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/user/profile');
       return;
     }
 
@@ -174,28 +172,21 @@ export default function OrdersPage() {
 
   return (
     <Layout handleHeaderBackButton={handleBackButton}>
-      <Box
-        sx={{
-          mt:
-            platform === 'web'
-              ? `${appBarHeight}px`
-              : `${mobileAppBarHeight}px`,
-          p: platform === 'web' ? 2 : 1,
-        }}
-        className={ordersIndexClasses.container[platform]}
-      >
+      <Box className={ordersIndexClasses.container[platform]}>
         {/* Title */}
-        <Box className="flex items-center gap-4 mb-4">
+        <Box className="flex items-center mb-4">
           {platform === 'mobile' && (
             <IconButton onClick={handleBackButton}>
               <ArrowBackIosIcon />
             </IconButton>
           )}
-          <Typography
-            className={`${interClassname.className} ${ordersIndexClasses.title[platform]}`}
-          >
-            {t('myOrders')}
-          </Typography>
+          <Box className="flex w-full justify-center">
+            <Typography
+              className={`${interClassname.className} ${ordersIndexClasses.title[platform]}`}
+            >
+              {t('myOrders')}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Mobile Tabs */}
@@ -216,6 +207,7 @@ export default function OrdersPage() {
                   backgroundColor:
                     activeTab === 'ongoing' ? '#1c1b1b' : 'transparent',
                 },
+                textTransform: 'none',
               }}
             >
               <Typography
@@ -239,6 +231,7 @@ export default function OrdersPage() {
                   backgroundColor:
                     activeTab === 'completed' ? '#1c1b1b' : 'transparent',
                 },
+                textTransform: 'none',
               }}
             >
               <Typography
@@ -293,16 +286,14 @@ export default function OrdersPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Box className={ordersIndexClasses.pagination[platform]}>
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(_, value) => setPage(value)}
-                  color="primary"
-                />
-              </Box>
-            )}
+            <Box className={ordersIndexClasses.pagination[platform]}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, value) => setPage(value)}
+                color="primary"
+              />
+            </Box>
           </>
         )}
       </Box>
