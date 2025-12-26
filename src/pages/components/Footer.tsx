@@ -3,7 +3,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
-import { colors, interClassname } from '@/styles/theme';
+import { interClassname } from '@/styles/theme';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MailIcon from '@mui/icons-material/Mail';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -63,7 +63,6 @@ export default function Footer() {
           className={footerClasses.boxes.bottomNavigation}
         >
           <BottomNavigationAction
-            color={colors.blackText}
             value="/"
             icon={
               <CardMedia
@@ -74,7 +73,6 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            color={colors.blackText}
             value="/category"
             icon={
               <CardMedia
@@ -85,7 +83,6 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            color={colors.text.web}
             value="/cart"
             icon={
               <CardMedia
@@ -96,7 +93,6 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            color={colors.blackText}
             value="/user/profile"
             icon={
               <CardMedia

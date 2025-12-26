@@ -5,7 +5,6 @@ export const profileClasses = {
       mobile: 'w-full h-full',
     },
     loggedOutMain: {
-      // web: 'w-[88.78vw] mx-auto flex flex-col my-[300px] items-center bg-[#f4f4f4]',
       web: 'flex flex-col w-[594px] mx-auto my-[300px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
       mobile:
         'w-[88.78vw] h-full mx-auto flex flex-col mt-auto justify-center items-center',
