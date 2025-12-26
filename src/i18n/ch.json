@@ -258,5 +258,11 @@
   "cancelOrderConfirmation": "Bu sargydy ýatyrmak isleýändigiňize ynanýarsyňyzmy?",
   "orderCancelled": "Sargyt üstünlikli ýatyryldy",
   "cancelOrderError": "Sargydy ýatyrmak mümkin bolmady",
-  "completedAt": "Tamamlandy"
+  "completedAt": "Tamamlandy",
+  "orderedItems": "Sargyt edilen önümler",
+  "orderInfo": "Sargyt maglumatlary",
+  "city": "Şäher / Welaýat",
+  "cityPlaceholder": "Türkmenabat",
+  "streetAddress": "Köçe salgysy",
+  "cancelTheOrder": "Sargydy ýatyrmak"
 }

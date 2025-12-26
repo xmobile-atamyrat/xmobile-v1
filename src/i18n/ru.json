@@ -259,5 +259,11 @@
   "cancelOrderConfirmation": "Вы уверены, что хотите отменить этот заказ?",
   "orderCancelled": "Заказ успешно отменен",
   "cancelOrderError": "Не удалось отменить заказ",
-  "completedAt": "Завершено"
+  "completedAt": "Завершено",
+  "orderedItems": "Заказанные товары",
+  "orderInfo": "Информация о заказе",
+  "city": "Город / Велаят",
+  "cityPlaceholder": "Туркменабат",
+  "streetAddress": "Адрес улицы",
+  "cancelTheOrder": "Отменить заказ"
 }
