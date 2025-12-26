@@ -5,6 +5,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { formatDate } from '@/pages/orders/lib/utils';
 import { ordersDetailClasses } from '@/styles/classMaps/orders/detail';
 import { interClassname } from '@/styles/theme';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -72,27 +73,6 @@ export default function OrderDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [itemsDialogOpen, setItemsDialogOpen] = useState(false);
 
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '-';
-    const d = new Date(date);
-    if (platform === 'mobile') {
-      return d.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const fetchOrder = async () => {
     if (!accessToken || !id || typeof id !== 'string') return;
 
@@ -127,7 +107,6 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/user/profile');
       return;
     }
 
@@ -324,7 +303,7 @@ export default function OrderDetailPage() {
             <Typography
               className={`${interClassname.className} ${ordersDetailClasses.orderedItemsText.mobile}`}
             >
-              {t('orderedItems')} ({order.items.length})
+              {t('orderedItems')} ({order.items?.length})
             </Typography>
             <ArrowForwardIosIcon sx={{ fontSize: '32px', color: '#1c1b1b' }} />
           </Box>
@@ -609,7 +588,7 @@ export default function OrderDetailPage() {
                   {t('createdAt')}:
                 </Typography>
                 <Typography className={interClassname.className}>
-                  {formatDate(order.createdAt)}
+                  {formatDate(order.createdAt, platform)}
                 </Typography>
               </Box>
               {order.completedAt && (
@@ -620,7 +599,7 @@ export default function OrderDetailPage() {
                     {t('completedAt')}:
                   </Typography>
                   <Typography className={interClassname.className}>
-                    {formatDate(order.completedAt)}
+                    {formatDate(order.completedAt, platform)}
                   </Typography>
                 </Box>
               )}
@@ -632,7 +611,7 @@ export default function OrderDetailPage() {
                     {t('cancelledAt')}:
                   </Typography>
                   <Typography className={interClassname.className}>
-                    {formatDate(order.cancelledAt)}
+                    {formatDate(order.cancelledAt, platform)}
                   </Typography>
                 </Box>
               )}
