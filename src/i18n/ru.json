@@ -229,5 +229,19 @@
   "of": "из",
   "itemsPerPage": "Элементов на странице",
   "totalAmount": "Общая сумма",
-  "checkout": "Купить"
+  "checkout": "Купить",
+  "fullName": "Полное имя",
+  "fullNamePlaceholder": "Введите полное имя",
+  "addressPlaceholder": "Введите ваш текущий адрес проживания",
+  "orderNotes": "Примечания к заказу",
+  "orderNotesPlaceholder": "Введите примечание",
+  "customerDetails": "Данные клиента",
+  "information": "Информация",
+  "delivery": "Доставка",
+  "payment": "Оплата",
+  "orderSummary": "Сводка заказа",
+  "deliveryFee": "Стоимость доставки",
+  "orderNow": "Заказать сейчас",
+  "order": "Заказать",
+  "addressText": "Address"
 }
