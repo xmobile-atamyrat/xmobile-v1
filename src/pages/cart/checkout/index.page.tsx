@@ -557,7 +557,7 @@ export default function CheckoutPage() {
                     backgroundColor: colors.main,
                     color: 'white',
                     '&:hover': {
-                      backgroundColor: colors.buttonHoverBg.web,
+                      backgroundColor: colors.buttonHoverBg,
                     },
                     '&:disabled': {
                       backgroundColor: '#ccc',

@@ -1,7 +1,7 @@
 export const checkoutSuccessClasses = {
   container: {
     web: 'flex flex-col items-center justify-center',
-    mobile: 'flex flex-col w-full h-[100vh] items-center justify-center px-6',
+    mobile: 'flex flex-col w-full h-[80vh] items-center justify-center px-6',
   },
   imageContainer: {
     web: 'mb-[50px]',

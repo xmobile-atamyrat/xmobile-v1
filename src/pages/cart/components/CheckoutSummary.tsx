@@ -41,10 +41,7 @@ export default function CheckoutSummary({
             backgroundColor: colors.main,
             color: colors.white,
             '&:hover': {
-              backgroundColor:
-                platform === 'web'
-                  ? colors.buttonHoverBg.web
-                  : colors.buttonHoverBg.mobile,
+              backgroundColor: colors.buttonHoverBg,
             },
           }}
         >
