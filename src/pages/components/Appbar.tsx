@@ -362,7 +362,7 @@ export default function CustomAppBar({
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <MenuItem
                 className={appbarClasses.menuItemAcc}
-                onClick={() => router.push('/user-orders')}
+                onClick={() => router.push('/orders/admin')}
               >
                 <ListAltIcon />
                 <Typography>{t('userOrders')}</Typography>
@@ -375,6 +375,12 @@ export default function CustomAppBar({
               >
                 <Dvr />
                 <Typography>{t('procurement')}</Typography>
+              </MenuItem>
+            )}
+            {user?.grade === 'FREE' && (
+              <MenuItem className={appbarClasses.menuItemAcc}>
+                <img src="/orders/my_order_icon.svg" alt="My Orders Icon" />
+                <Typography>{t('myOrders')}</Typography>
               </MenuItem>
             )}
             <MenuItem

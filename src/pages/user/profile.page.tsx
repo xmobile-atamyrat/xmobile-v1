@@ -61,6 +61,11 @@ export default function Profile() {
   const handleToggle = () => {
     setOpen(!open);
   };
+
+  const handleToggleMyOrders = () => {
+    router.push('/');
+  };
+
   return (
     <Box className="w-full h-full">
       {!user ? (
@@ -137,6 +142,25 @@ export default function Profile() {
                 className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
               >
                 {t('appLanguage')}
+              </Typography>
+              <ArrowForwardIosIcon className={profileClasses.icons} />
+            </Button>
+          </Box>
+          <Box className={profileClasses.boxes.divider}></Box>
+          <Box className={profileClasses.boxes.section}>
+            <CardMedia
+              component="img"
+              src="/orders/my_order_icon.svg"
+              className={profileClasses.sectionIcon}
+            />
+            <Button
+              className={profileClasses.btn}
+              onClick={handleToggleMyOrders}
+            >
+              <Typography
+                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
+              >
+                {t('myOrders')}
               </Typography>
               <ArrowForwardIosIcon className={profileClasses.icons} />
             </Button>
