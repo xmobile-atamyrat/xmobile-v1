@@ -1,6 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
-import { UserOrder, UserOrderStatus } from '@prisma/client';
+import { Prisma, UserOrder, UserOrderStatus } from '@prisma/client';
 import { calculateTotalPrice, generateOrderNumber } from '../utils/orderUtils';
 import {
   notifyOrderCancelledByUser,
@@ -151,7 +151,7 @@ export async function getOrders(filters: GetOrdersFilters) {
   const pageSize = Math.min(limit, MAX_PAGE_SIZE);
   const skip = (page - 1) * pageSize;
 
-  const where: any = {};
+  const where: Prisma.UserOrderWhereInput = {};
 
   // Filter by userId if provided (for user's own orders)
   if (userId) {
@@ -305,7 +305,7 @@ export async function updateOrderStatus(
     throw new Error('Order not found');
   }
 
-  const updateData: any = {
+  const updateData: Prisma.UserOrderUpdateInput = {
     status,
     ...(adminNotes !== undefined && { adminNotes }),
   };
