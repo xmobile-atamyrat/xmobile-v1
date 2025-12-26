@@ -3,9 +3,6 @@ export const cartIndexClasses = {
     web: 'w-full h-full flex flex-col mt-[64px] px-[10vw]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
-<<<<<<< HEAD
-  prodCart: 'flex flex-wrap gap-4 w-full',
-=======
   cartHeader: {
     web: 'flex flex-row w-full justify-between items-center',
     mobile: 'flex w-full justify-center',
@@ -14,7 +11,6 @@ export const cartIndexClasses = {
     web: 'flex flex-wrap gap-4 w-full justify-center',
     mobile: 'flex flex-wrap gap-4 w-full justify-center pb-[100px]',
   },
->>>>>>> efe19d1 (checkout summary component UI)
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
     web: 'text-[#fff] font-bold text-[20px] leading-[30px] tracking-normal m-0',

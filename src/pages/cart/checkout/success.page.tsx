@@ -115,7 +115,7 @@ export default function CheckoutSuccessPage() {
             color: 'white',
             '&:hover': {
               backgroundColor:
-                platform === 'web' ? colors.buttonHoverBg.web : '#000',
+                platform === 'web' ? colors.buttonHoverBg : '#000',
             },
           }}
         >
