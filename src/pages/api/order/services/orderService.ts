@@ -17,6 +17,7 @@ export interface CreateOrderData {
 }
 
 export interface GetOrdersFilters {
+  userId?: string; // For filtering user's own orders
   searchKeyword?: string;
   status?: UserOrderStatus;
   dateFrom?: string;
@@ -125,6 +126,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
  */
 export async function getOrders(filters: GetOrdersFilters) {
   const {
+    userId,
     searchKeyword,
     status,
     dateFrom,
@@ -137,6 +139,11 @@ export async function getOrders(filters: GetOrdersFilters) {
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
+
+  // Filter by userId if provided (for user's own orders)
+  if (userId) {
+    where.userId = userId;
+  }
 
   // Search across UserOrder fields (snapshots and delivery info)
   if (searchKeyword && searchKeyword.trim()) {

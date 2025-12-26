@@ -251,5 +251,12 @@
   "waitForConfirmation": "Tassyklama üçin jaňy garaşyň.",
   "orderPlacedSuccessfully": "Siziň sargydyňyz üstünlikli goýuldy. Gysga wagtdan soň siz bilen habarlaşarys.",
   "products": "Önümler",
-  "myOrders": "Sargytlarym"
+  "myOrders": "Sargytlarym",
+  "ongoing": "Dowam edýär",
+  "cancelOrder": "Sargydy ýatyrmak",
+  "confirmCancel": "Ýatyrmagy tassyklamak",
+  "cancelOrderConfirmation": "Bu sargydy ýatyrmak isleýändigiňize ynanýarsyňyzmy?",
+  "orderCancelled": "Sargyt üstünlikli ýatyryldy",
+  "cancelOrderError": "Sargydy ýatyrmak mümkin bolmady",
+  "completedAt": "Tamamlandy"
 }

@@ -252,5 +252,12 @@
   "orderPlacedSuccessfully": "Ваш заказ успешно размещен. Мы свяжемся с вами в ближайшее время.",
   "products": "Товары",
   "myOrders": "Мои заказы",
-  "notes": "Примечания"
+  "notes": "Примечания",
+  "ongoing": "В процессе",
+  "cancelOrder": "Отменить заказ",
+  "confirmCancel": "Подтвердить отмену",
+  "cancelOrderConfirmation": "Вы уверены, что хотите отменить этот заказ?",
+  "orderCancelled": "Заказ успешно отменен",
+  "cancelOrderError": "Не удалось отменить заказ",
+  "completedAt": "Завершено"
 }

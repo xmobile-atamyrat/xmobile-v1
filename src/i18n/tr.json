@@ -249,5 +249,12 @@
   "waitForConfirmation": "Lütfen onay çağrısını bekleyin.",
   "orderPlacedSuccessfully": "Siparişiniz başarıyla verildi. Yakında sizinle iletişime geçeceğiz.",
   "products": "Ürünler",
-  "myOrders": "Siparişlerim"
+  "myOrders": "Siparişlerim",
+  "ongoing": "Devam Ediyor",
+  "cancelOrder": "Siparişi İptal Et",
+  "confirmCancel": "İptali Onayla",
+  "cancelOrderConfirmation": "Bu siparişi iptal etmek istediğinizden emin misiniz?",
+  "orderCancelled": "Sipariş başarıyla iptal edildi",
+  "cancelOrderError": "Sipariş iptal edilemedi",
+  "completedAt": "Tamamlandı"
 }
