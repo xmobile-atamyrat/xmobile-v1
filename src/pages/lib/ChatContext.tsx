@@ -44,7 +44,6 @@ const ChatContext = createContext<ChatContextProps>({
   disconnect: () => {},
   sendMessage: () => {},
   joinSession: async () => {},
-  // leaveSession: () => {},
   loadMessages: async () => {},
   loadSessions: async () => {},
   createSession: async () => null,
@@ -192,7 +191,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
           setCurrentSession(undefined);
           setMessages([]);
 
-          console.warn('Session closed by admin');
           window.alert('This chat session has been closed by the admin.');
         } else {
           setCurrentSession((prev) =>
@@ -232,8 +230,10 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
     setMessages([]);
 
-    // Admin claims PENDING session, broadcasts ACTIVE status
-    if (session.status === 'PENDING') {
+    // Only admins can join PENDING sessions
+    const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+
+    if (session.status === 'PENDING' && isAdmin) {
       try {
         const res = await fetch(`${BASE_URL}/api/chat/sessionActions`, {
           method: 'POST',
@@ -265,6 +265,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
     } else {
+      // Regular users or already active sessions: just set current session
       setCurrentSession(session);
     }
 

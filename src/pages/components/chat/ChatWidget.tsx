@@ -50,19 +50,13 @@ const ChatWidget = () => {
 
   useEffect(() => {
     if (isOpen && !isAdmin && sessions.length > 0 && !currentSession) {
-      const activeSession = sessions[0];
-      setCurrentSession(activeSession);
-      joinSession(activeSession.id);
-      loadMessages(activeSession.id);
+      const userSession = sessions[0];
+      setCurrentSession(userSession);
+      if (isConnected) {
+        loadMessages(userSession.id);
+      }
     }
-  }, [sessions, isAdmin, currentSession, isOpen]);
-
-  // Monitor session status changes to show alerts
-  useEffect(() => {
-    if (currentSession?.status === 'CLOSED') {
-      window.alert(t('chatSessionClosedByAdmin'));
-    }
-  }, [currentSession?.status, t]);
+  }, [sessions, isAdmin, currentSession, isOpen, isConnected]);
 
   if (!user) return null;
 
