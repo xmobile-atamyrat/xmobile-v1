@@ -248,5 +248,6 @@
   "isCompleted": "is Completed.",
   "waitForConfirmation": "Please wait for the confirmation call.",
   "orderPlacedSuccessfully": "Your order has been placed successfully. We will contact you soon.",
-  "products": "Products"
+  "products": "Products",
+  "myOrders": "My Orders"
 }

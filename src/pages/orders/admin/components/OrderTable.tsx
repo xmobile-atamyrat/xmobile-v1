@@ -1,4 +1,6 @@
-import { UserOrder } from '@prisma/client';
+import { usePlatform } from '@/pages/lib/PlatformContext';
+import { userOrdersComponentClasses } from '@/styles/classMaps/userOrders/components';
+import { interClassname } from '@/styles/theme';
 import {
   Table,
   TableBody,
@@ -8,11 +10,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { useRouter } from 'next/router';
+import { UserOrder } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { interClassname } from '@/styles/theme';
-import { userOrdersComponentClasses } from '@/styles/classMaps/userOrders/components';
-import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useRouter } from 'next/router';
 import OrderStatusBadge from './OrderStatusBadge';
 
 interface OrderTableProps {
@@ -81,7 +81,7 @@ export default function OrderTable({ orders }: OrderTableProps) {
             <TableRow
               key={order.id}
               className={userOrdersComponentClasses.tableRow[platform]}
-              onClick={() => router.push(`/user-orders/${order.id}`)}
+              onClick={() => router.push(`/orders/admin/${order.id}`)}
             >
               <TableCell>
                 <Typography className={interClassname.className}>

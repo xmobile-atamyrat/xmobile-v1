@@ -29,7 +29,7 @@ import { getOrdersList } from './lib/apiUtils';
 export const getStaticProps = (async (context) => {
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages: (await import(`../../../i18n/${context.locale}.json`)).default,
     },
   };
 }) satisfies GetStaticProps<object>;

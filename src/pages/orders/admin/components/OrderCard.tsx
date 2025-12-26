@@ -42,7 +42,7 @@ export default function OrderCard({ order }: OrderCardProps) {
   return (
     <Box
       className={userOrdersComponentClasses.orderCard[platform]}
-      onClick={() => router.push(`/user-orders/${order.id}`)}
+      onClick={() => router.push(`/orders/admin/${order.id}`)}
     >
       <Box className="flex flex-row justify-between items-start mb-2">
         <Typography className={`${interClassname.className} font-bold text-lg`}>
