@@ -24,6 +24,8 @@ export const updateAdminNotesSchema = z.object({
 
 export const getOrdersQuerySchema = z.object({
   status: z.nativeEnum(UserOrderStatus).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
   page: z
     .string()
     .optional()
