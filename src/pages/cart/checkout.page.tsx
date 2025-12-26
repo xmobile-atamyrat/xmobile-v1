@@ -8,12 +8,15 @@ import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
 import { colors, interClassname, units } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
+  Alert,
   Box,
   Breadcrumbs,
   Button,
+  CircularProgress,
   Divider,
   IconButton,
   Link,
+  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -50,6 +53,8 @@ export default function CheckoutPage() {
   const [computedProducts, setComputedProducts] = useState<
     Record<string, Product>
   >({});
+  const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   // Fetch cart items
   useEffect(() => {
@@ -144,9 +149,45 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItemsSignature, accessToken]);
 
-  const handleOrder = () => {
-    // TODO: Implement order creation
-    // Order creation will be implemented in next phase
+  const handleOrder = async () => {
+    // Validate required fields
+    if (!fullName.trim()) {
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      return;
+    }
+    if (!address.trim()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { success } = await fetchWithCreds({
+        accessToken,
+        path: '/api/order',
+        method: 'POST',
+        body: {
+          deliveryAddress: address.trim(),
+          deliveryPhone: phoneNumber.trim(),
+          notes: notes.trim() || undefined,
+        },
+      });
+
+      if (success) {
+        // Redirect to success page
+        router.push('/cart/checkout/success');
+      } else {
+        // Show error snackbar
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getProductPrice = (product: Product): number => {
@@ -505,6 +546,12 @@ export default function CheckoutPage() {
                 </Box>
                 <Button
                   onClick={handleOrder}
+                  disabled={
+                    loading ||
+                    !fullName.trim() ||
+                    !phoneNumber.trim() ||
+                    !address.trim()
+                  }
                   className={`${interClassname.className} ${checkoutDialogClasses.orderButton.web}`}
                   sx={{
                     backgroundColor: colors.main,
@@ -512,15 +559,44 @@ export default function CheckoutPage() {
                     '&:hover': {
                       backgroundColor: colors.buttonHoverBg.web,
                     },
+                    '&:disabled': {
+                      backgroundColor: '#ccc',
+                      color: '#666',
+                    },
                   }}
                 >
-                  {t('orderNow')}
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    t('orderNow')
+                  )}
                 </Button>
               </Box>
             </Box>
           )}
         </Box>
       </Box>
+
+      {/* Snackbar for error messages */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setSnackbarOpen(false);
+        }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="error"
+          variant="filled"
+          className="w-100%"
+        >
+          {t('serverError')}
+        </Alert>
+      </Snackbar>
     </Layout>
   );
 }
