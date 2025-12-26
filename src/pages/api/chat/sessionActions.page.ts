@@ -17,63 +17,54 @@ async function handler(
 
   const { userId, method } = req;
   if (method === 'POST') {
-    // add user to session
     try {
       const { sessionId }: { sessionId: string } = req.body;
 
-      // Atomic operation: only update if PENDING and no admin exists
-      // This prevents race condition where two admins click simultaneously
-      const result = await dbClient.chatSession.updateMany({
-        where: {
-          id: sessionId,
-          status: 'PENDING',
-          users: {
-            none: {
-              grade: { in: ['ADMIN', 'SUPERUSER'] },
+      // Hybrid Transaction Pattern:
+      // 1. ATOMIC LOCK: updateMany allows filtering by relations (users: { none: ADMIN }).
+      //    Standard update cannot filter by relations, so it cannot atomically check "Is this unassigned?".
+      // 2. CONSISTENCY: $transaction ensures if "Add User" fails, the status change rolls back.
+      const updatedSession = await dbClient.$transaction(async (tx) => {
+        const result = await tx.chatSession.updateMany({
+          where: {
+            id: sessionId,
+            status: 'PENDING',
+            users: {
+              none: {
+                grade: { in: ['ADMIN', 'SUPERUSER'] },
+              },
             },
           },
-        },
-        data: {
-          status: 'ACTIVE',
-        },
-      });
-
-      // If count = 0, either session doesn't exist, not PENDING, or already has admin
-      if (result.count === 0) {
-        // Check which case it is for better error message
-        const session = await dbClient.chatSession.findUnique({
-          where: { id: sessionId },
-          include: { users: true },
+          data: {
+            status: 'ACTIVE',
+          },
         });
 
-        if (!session) {
-          return res.status(404).json({
-            success: false,
-            message: 'Session not found',
-          });
+        if (result.count === 0) {
+          throw new Error('Session unavailable');
         }
 
-        // Session exists but update failed = already has admin or not PENDING
-        return res.status(409).json({
-          success: false,
-          message: 'Session unavailable',
-        });
-      }
-
-      // Update succeeded atomically - safe to add admin
-      await dbClient.chatSession.update({
-        where: { id: sessionId },
-        data: {
-          users: {
-            connect: { id: userId },
+        return tx.chatSession.update({
+          where: { id: sessionId },
+          data: {
+            users: {
+              connect: { id: userId },
+            },
           },
-        },
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                grade: true,
+              },
+            },
+          },
+        });
       });
 
-      // TODO Phase 2: Client broadcasts via WebSocket
-      // socket.send({ type: 'session_update', sessionId, payload: { status: 'ACTIVE', adminId } })
-
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ success: true, data: updatedSession });
     } catch (error) {
       console.error(
         filepath,
@@ -81,6 +72,7 @@ async function handler(
         `userId: ${userId}, sessionId: ${req.body?.sessionId}.`,
         `Error: ${error}`,
       );
+
       return res.status(400).json({ success: false, message: error.message });
     }
   } else {

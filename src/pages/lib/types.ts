@@ -36,21 +36,24 @@ export interface HistoryResponseMessage {
   messages: any[]; // We will map these to ChatMessageProps on the client
 }
 
-export type ChatMessageProps =
-  | {
-      type: 'message';
-      sessionId: string;
-      senderId: string;
-      senderRole: string;
-      content: string;
-      tempId?: string; // Client-side ID for idempotency
+export interface ChatMessage {
+  // todo: now is this chatmessage type from prisma model? becaues prisma uses the same type name, i think its not a good practice here
+  type: 'message';
+  sessionId: string;
+  senderId: string;
+  senderRole: string;
+  content: string;
+  tempId?: string; // Client-side ID for idempotency
 
-      isRead?: boolean;
-      messageId?: string;
-      date?: Date | string; // Allow string for serialization
-      timestamp?: string;
-      status?: 'sending' | 'sent' | 'error';
-    }
+  isRead?: boolean;
+  messageId?: string;
+  date?: Date | string; // Allow string for serialization
+  timestamp?: string;
+  status?: 'sending' | 'sent' | 'error';
+}
+
+export type ChatEvent =
+  | ChatMessage
   | {
       type: 'ack';
       tempId?: string;
@@ -98,6 +101,9 @@ export type ChatMessageProps =
       refreshToken: string;
     }
   | HistoryResponseMessage;
+
+// Legacy alias to ease refactoring (deprecated)
+export type ChatMessageProps = ChatEvent;
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
