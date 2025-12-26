@@ -24,8 +24,17 @@ export const checkoutSuccessClasses = {
     web: 'font-semibold text-[20px] leading-[24px] text-black',
     mobile: 'font-semibold text-[15px] leading-[20px] text-black',
   },
+  yourOrder: {
+    mobile: 'font-medium text-[12px] leading-[20px] text-[#353636] text-center',
+    web: 'font-medium text-[18px] leading-[20px] text-[#353636] text-center',
+  },
+  confirmation: {
+    mobile:
+      'font-medium text-[12px] leading-[20px] text-[#353636] text-center mt-2',
+    web: 'font-medium text-[18px] leading-[20px] text-[#353636] text-center mt-2',
+  },
   button: {
-    web: 'bg-[#ff624c] text-white font-bold text-[20px] leading-[30px] rounded-[10px] py-[16px] px-[40px] normal-case',
+    web: 'bg-[#ff624c] text-white font-bold text-[20px] leading-[30px] rounded-[10px] py-[16px] px-[40px] normal-case w-[210px]',
     mobile:
       'bg-[#1b1b1b] text-white font-medium text-[16px] leading-normal rounded-[12px] h-12 w-full max-w-[380px] normal-case',
   },

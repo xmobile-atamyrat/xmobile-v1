@@ -40,7 +40,7 @@ export default function CheckoutSuccessPage() {
           pagination?: unknown;
         }>({
           accessToken,
-          path: '/api/order?limit=1',
+          path: '/api/order?limit=1', // get the last order
           method: 'GET',
         });
 
@@ -77,50 +77,58 @@ export default function CheckoutSuccessPage() {
         </Typography>
 
         {/* Message */}
-        {platform === 'mobile' ? (
-          <Box className={checkoutSuccessClasses.message.mobile}>
-            <Typography
-              className={`${interClassname.className} font-medium text-[12px] leading-[20px] text-[#353636] text-center`}
-            >
-              {t('yourOrder')}{' '}
-              {orderNumber && (
-                <span
-                  className={`${interClassname.className} ${checkoutSuccessClasses.orderNumber.mobile}`}
-                >
-                  {orderNumber}
-                </span>
-              )}{' '}
-              {t('isCompleted')}
-            </Typography>
-            <Typography
-              className={`${interClassname.className} font-medium text-[12px] leading-[20px] text-[#353636] text-center mt-2`}
-            >
-              {t('waitForConfirmation')}
-            </Typography>
-          </Box>
-        ) : (
+        <Box className={checkoutSuccessClasses.message[platform]}>
           <Typography
-            className={`${interClassname.className} ${checkoutSuccessClasses.message.web}`}
+            className={`${interClassname.className} ${checkoutSuccessClasses.yourOrder[platform]}`}
           >
-            {t('orderPlacedSuccessfully')}
+            {t('yourOrder')}{' '}
+            {orderNumber && (
+              <span
+                className={`${interClassname.className} ${checkoutSuccessClasses.orderNumber[platform]}`}
+              >
+                {orderNumber}
+              </span>
+            )}{' '}
+            {t('isCompleted')}
           </Typography>
-        )}
+          <Typography
+            className={`${interClassname.className} ${checkoutSuccessClasses.confirmation[platform]}`}
+          >
+            {t('waitForConfirmation')}
+          </Typography>
+        </Box>
 
-        {/* Button */}
-        <Button
-          onClick={() => router.push('/')}
-          className={`${interClassname.className} ${checkoutSuccessClasses.button[platform]}`}
-          sx={{
-            backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
-            color: 'white',
-            '&:hover': {
-              backgroundColor:
-                platform === 'web' ? colors.buttonHoverBg : '#000',
-            },
-          }}
-        >
-          {platform === 'web' ? t('products') : t('continueShopping')}
-        </Button>
+        {/* Buttons */}
+        <Box className="flex flex-row gap-2 w-full justify-center">
+          <Button
+            onClick={() => router.push('/')}
+            className={`${interClassname.className} ${checkoutSuccessClasses.button[platform]}`}
+            sx={{
+              backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
+              color: 'white',
+              '&:hover': {
+                backgroundColor:
+                  platform === 'web' ? colors.buttonHoverBg : '#000',
+              },
+            }}
+          >
+            {t('products')}
+          </Button>
+          <Button
+            onClick={() => router.push('/orders')}
+            className={`${interClassname.className} ${checkoutSuccessClasses.button[platform]}`}
+            sx={{
+              backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
+              color: 'white',
+              '&:hover': {
+                backgroundColor:
+                  platform === 'web' ? colors.buttonHoverBg : '#000',
+              },
+            }}
+          >
+            {t('myOrders')}
+          </Button>
+        </Box>
       </Box>
     </Layout>
   );
