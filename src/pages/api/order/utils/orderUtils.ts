@@ -1,7 +1,27 @@
 import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
+import { PrismaClient } from '@prisma/client';
 
 const squareBracketRegex = /\[([^\]]+)\]/;
+
+// Type for transaction client with orderNumberCounter model
+type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+> & {
+  orderNumberCounter: {
+    findUnique: (args: {
+      where: { id: number };
+    }) => Promise<{ id: number; counter: number } | null>;
+    create: (args: {
+      data: { id: number; counter: number };
+    }) => Promise<{ id: number; counter: number }>;
+    update: (args: {
+      where: { id: number };
+      data: { counter: { increment: number } };
+    }) => Promise<{ id: number; counter: number }>;
+  };
+};
 
 /**
  * Generates a unique order number in format: ORD-YYYYMMDD-XXX
@@ -13,22 +33,22 @@ export async function generateOrderNumber(): Promise<string> {
 
   // Use a transaction with SELECT FOR UPDATE to lock the counter row
   // Note: Run `npx prisma migrate dev` after schema changes to generate Prisma client
-  const result = await dbClient.$transaction(async (tx) => {
+  const result = await dbClient.$transaction(async (tx: TransactionClient) => {
     // Lock the counter row for update
-    const counter = await (tx as any).orderNumberCounter.findUnique({
+    const counter = await tx.orderNumberCounter.findUnique({
       where: { id: 1 },
     });
 
     if (!counter) {
       // Initialize counter if it doesn't exist
-      await (tx as any).orderNumberCounter.create({
+      await tx.orderNumberCounter.create({
         data: { id: 1, counter: 1 },
       });
       return { counter: 1 };
     }
 
     // Increment and update
-    const updated = await (tx as any).orderNumberCounter.update({
+    const updated = await tx.orderNumberCounter.update({
       where: { id: 1 },
       data: { counter: { increment: 1 } },
     });
