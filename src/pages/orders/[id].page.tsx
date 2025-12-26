@@ -426,7 +426,7 @@ export default function OrderDetailPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {order.items.map((item) => {
+                  {order.items?.map((item) => {
                     const itemPrice = parseFloat(item.productPrice) || 0;
                     const subtotal = itemPrice * item.quantity;
                     return (
@@ -631,7 +631,7 @@ export default function OrderDetailPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {order.items.map((item) => {
+                  {order.items?.map((item) => {
                     const itemPrice = parseFloat(item.productPrice) || 0;
                     const subtotal = itemPrice * item.quantity;
                     return (
