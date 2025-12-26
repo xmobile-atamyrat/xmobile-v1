@@ -243,5 +243,12 @@
   "deliveryFee": "Стоимость доставки",
   "orderNow": "Заказать сейчас",
   "order": "Заказать",
-  "addressText": "Address"
+  "addressText": "Адрес",
+  "successfullyOrdered": "Успешно заказано",
+  "thankYou": "Спасибо!",
+  "yourOrder": "Ваш заказ",
+  "isCompleted": "завершен.",
+  "waitForConfirmation": "Пожалуйста, дождитесь звонка для подтверждения.",
+  "orderPlacedSuccessfully": "Ваш заказ успешно размещен. Мы свяжемся с вами в ближайшее время.",
+  "products": "Товары"
 }
