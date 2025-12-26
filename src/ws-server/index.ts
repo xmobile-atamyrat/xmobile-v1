@@ -6,7 +6,7 @@ import {
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
-import { ChatMessageProps } from '@/pages/lib/types';
+import { ChatMessage } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import { sendMessage, verifySessionParticipant } from '@/ws-server/lib/utils';
 import { UserRole } from '@prisma/client';
@@ -23,7 +23,7 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 const MessageSchema = z.object({
-  tempId: z.string().optional(), // todo: remove optional after completion
+  tempId: z.string().optional(),
   sessionId: z.string(),
   senderId: z.string(),
   senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
@@ -31,7 +31,7 @@ const MessageSchema = z.object({
   timestamp: z.string(),
 });
 
-const connections = new Map<string, Set<AuthenticatedConnection>>();
+export const connections = new Map<string, Set<AuthenticatedConnection>>();
 
 const safeCloseConnection = (
   code: number,
@@ -131,7 +131,6 @@ const handleMessage = async (
       MessageSchema.parse(parsedMessage);
     parsedTimestamp = timestamp;
 
-    // Warn if tempId is missing (for monitoring client adoption)
     if (!tempId) {
       console.warn(
         filepath,
@@ -139,31 +138,45 @@ const handleMessage = async (
       );
     }
 
-    // Session Authorization Check
-    const session = await verifySessionParticipant(sessionId, senderId);
+    const session = await verifySessionParticipant(
+      sessionId,
+      safeConnection.userId,
+    );
 
     if (!session) {
       console.error(
         filepath,
-        `Unauthorized: User ${senderId} not in session ${sessionId}`,
+        `Message rejected: User ${safeConnection.userId} not in session ${sessionId}`,
       );
       sendMessage(safeConnection, {
         type: 'ack',
-        tempId,
-        timestamp,
         success: false,
-        error: 'UNAUTHORIZED',
+        tempId,
+        error: 'wrong_session',
       });
       return;
     }
 
-    // Idempotency Check using tempId
+    if (session.status === 'CLOSED') {
+      console.warn(
+        filepath,
+        `Message rejected: Session ${sessionId} is CLOSED`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'closed_session',
+      });
+      return;
+    }
+
+    // Idempotency: prevent duplicate message if client retries with same tempId
     if (tempId) {
       const existing = await dbClient.chatMessage.findUnique({
         where: { tempId },
       });
       if (existing) {
-        // Message already saved, just send ACK
         sendMessage(safeConnection, {
           type: 'ack',
           tempId,
@@ -195,7 +208,7 @@ const handleMessage = async (
       success: true,
     });
 
-    const outgoingMessage: ChatMessageProps = {
+    const outgoingMessage: ChatMessage = {
       type: 'message',
       messageId: message.id,
       sessionId,
@@ -207,9 +220,9 @@ const handleMessage = async (
     };
     session.users.forEach((sessionUser) => {
       connections.get(sessionUser.id)?.forEach((conn) => {
-        if (safeConnection !== conn) {
-          sendMessage(conn, outgoingMessage);
-        }
+        // if (safeConnection !== conn) {
+        sendMessage(conn, outgoingMessage);
+        // }
       });
     });
   } catch (error) {
@@ -248,7 +261,6 @@ const handleGetMessages = async (
     const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
     const userId = safeConnection.userId;
 
-    // session verification
     const session = await verifySessionParticipant(sessionId, userId);
     if (!session) {
       console.error(
@@ -258,24 +270,13 @@ const handleGetMessages = async (
       return;
     }
 
-    // fetch messages
-    // We want "limit" 50 before the cursor.
-    // Prisma cursor pagination:
-    // take: -50 (backwards from cursor)
-    // skip: 1 (to exclude the cursor itself)
-    // cursor: { id: cursorId }
-    // orderBy: { createdAt: 'asc', id: 'asc' } (deterministic)
+    // Cursor pagination: take: -50 (backwards), skip: 1 (exclude cursor), orderBy deterministic
     const messages = await dbClient.chatMessage.findMany({
       take: -50,
       skip: cursorId ? 1 : 0,
       cursor: cursorId ? { id: cursorId } : undefined,
       where: { sessionId },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      include: {
-        // We might need to select specific fields if we want to check something,
-        // but currently we just return the message object.
-        // senderId, senderRole, content, etc. are on the root.
-      },
     });
 
     sendMessage(safeConnection, {
@@ -288,68 +289,52 @@ const handleGetMessages = async (
       })),
     });
   } catch (error) {
-    if (error instanceof ZodError) {
-      // Ignored: expected as this handler is tried for all messages in the loop below
-    } else {
+    if (!(error instanceof ZodError)) {
       console.error(filepath, 'handleGetMessages error:', error);
     }
   }
 };
 
-/*
-// TODO: Re-enable next week after client implementation and testing
-const handleReadReceipt = async (
+/**
+ * Generic session relay - broadcasts any message to all session participants
+ * Use for: session_status, typing_indicators, read_receipts, etc.
+ * Server just validates sender is in session, then relays message as-is
+ */
+const handleSessionRelay = async (
   incomingMessage: RawData,
   safeConnection: AuthenticatedConnection,
 ) => {
   try {
-    const { sessionId, messageIds } = JSON.parse(incomingMessage.toString());
-    const userId = safeConnection.userId;
+    const parsed = JSON.parse(incomingMessage.toString());
+    const { sessionId } = parsed;
 
-    if (!sessionId || !Array.isArray(messageIds)) {
-      console.error(filepath, 'Invalid read receipt format');
+    if (!sessionId) {
+      console.error(filepath, 'Relay message missing sessionId');
       return;
     }
 
-    // Verify user is participant
-    const session = await verifySessionParticipant(sessionId, userId);
+    const session = await verifySessionParticipant(
+      sessionId,
+      safeConnection.userId,
+    );
 
     if (!session) {
       console.error(
         filepath,
-        `Unauthorized: User ${userId} not in session ${sessionId}`,
+        `Unauthorized relay: User ${safeConnection.userId} not in session ${sessionId}`,
       );
       return;
     }
 
-    // Mark messages as read
-    await dbClient.chatMessage.updateMany({
-      where: {
-        id: { in: messageIds },
-        sessionId,
-      },
-      data: { isRead: true },
-    });
-
-    // Broadcast read receipt to other participants
-    const readAck: ChatMessageProps = {
-      type: 'read_ack',
-      sessionId,
-      messageIds,
-    };
-
-    session.users.forEach((user) => {
-      if (user.id !== userId) {
-        connections.get(user.id)?.forEach((conn) => {
-          sendMessage(conn, readAck);
-        });
-      }
+    session.users.forEach((sessionUser) => {
+      connections.get(sessionUser.id)?.forEach((conn) => {
+        sendMessage(conn, parsed);
+      });
     });
   } catch (error) {
-    console.error(filepath, 'Error handling read receipt:', error);
+    console.error(filepath, 'Error in session relay:', error);
   }
 };
-*/
 
 wsServer.on('connection', async (connection, request) => {
   try {
@@ -377,14 +362,18 @@ wsServer.on('connection', async (connection, request) => {
       safeConnection.on('message', (message: RawData) => {
         try {
           const parsed = JSON.parse(message.toString());
+
           if (parsed.type === 'get_messages') {
             handleGetMessages(message, safeConnection);
-          } else {
-            // Default to chat message handler
+          } else if (parsed.type === 'message') {
             handleMessage(message, safeConnection);
+          } else if (parsed.sessionId) {
+            handleSessionRelay(message, safeConnection);
+          } else {
+            console.warn(filepath, 'Unknown message type:', parsed.type);
           }
-        } catch (error) {
-          console.error(filepath, 'Failed to route message:', error);
+        } catch (err) {
+          console.error(filepath, 'Failed to handle message:', err);
         }
       });
 
@@ -398,4 +387,4 @@ wsServer.on('connection', async (connection, request) => {
   }
 });
 
-server.listen(port);
+server.listen(port, () => {});

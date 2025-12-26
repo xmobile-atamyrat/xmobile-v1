@@ -17,13 +17,28 @@ async function handler(
   addCors(res);
 
   const { userId, grade, method } = req;
+
   if (method === 'GET') {
     try {
       if (grade === 'SUPERUSER' || grade === 'ADMIN') {
+        // Admins: see PENDING or THEIR OWN active chats.
+        // Superusers: see everything.
+        const whereClause =
+          grade === 'SUPERUSER'
+            ? {}
+            : {
+                OR: [
+                  { status: ChatStatus.PENDING },
+                  {
+                    status: ChatStatus.ACTIVE,
+                    users: { some: { id: userId } },
+                  },
+                ],
+              };
+
         const allSessions = await dbClient.chatSession.findMany({
           orderBy: { updatedAt: 'desc' },
-          where:
-            grade === 'ADMIN' ? { status: { in: ['PENDING', 'ACTIVE'] } } : {},
+          where: whereClause,
           include: {
             users: {
               select: {
@@ -31,33 +46,34 @@ async function handler(
                 name: true,
                 email: true,
                 grade: true,
-                // Exclude password
               },
             },
           },
         });
+
         return res.status(200).json({ success: true, data: allSessions });
       }
-      const rawSessions = await dbClient.chatSession.findMany({
-        where: {
-          users: { some: { id: userId } },
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              grade: true,
+      if (grade === 'FREE') {
+        const userSessions = await dbClient.chatSession.findMany({
+          where: {
+            users: { some: { id: userId } },
+            status: { in: ['PENDING', 'ACTIVE'] },
+          },
+          include: {
+            users: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      const userSession = rawSessions.filter((session) => {
-        return session.status === 'ACTIVE' || session.status === 'PENDING';
-      });
+        return res.status(200).json({ success: true, data: userSessions });
+      }
 
-      return res.status(200).json({ success: true, data: userSession });
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
     } catch (error) {
       console.error(
         filepath,
@@ -67,7 +83,6 @@ async function handler(
     }
   } else if (method === 'POST') {
     try {
-      // Check if user already has an active or pending session
       if (grade === 'FREE') {
         const existingSession = await dbClient.chatSession.findFirst({
           where: {
@@ -79,7 +94,7 @@ async function handler(
         if (existingSession) {
           return res.status(409).json({
             success: false,
-            message: 'You already have an active session',
+            message: 'User already has an active session',
             data: existingSession,
           });
         }
@@ -94,10 +109,6 @@ async function handler(
             },
           },
         });
-
-        // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
-        // Example: socket.send({ type: 'new_session', sessionId, payload: {...} })
-        // Will be handled by generic relay in WS server
 
         return res.status(201).json({ success: true, data: newSession });
       }
@@ -125,7 +136,7 @@ async function handler(
         const result = await dbClient.chatSession.updateMany({
           where: {
             id: sessionId,
-            status: { in: ['PENDING', 'ACTIVE'] }, // Only if not already closed
+            status: { in: ['PENDING', 'ACTIVE'] },
           },
           data: {
             status: 'CLOSED',
@@ -139,20 +150,15 @@ async function handler(
           });
         }
       } else {
-        // For other status changes, just update normally
         await dbClient.chatSession.update({
           where: { id: sessionId },
           data: { status: chatStatus },
         });
       }
 
-      // Fetch updated session to return
       const session = await dbClient.chatSession.findUnique({
         where: { id: sessionId },
       });
-
-      // TODO Phase 2: Client broadcasts via WebSocket after HTTP success
-      // Example: socket.send({ type: 'session_update', sessionId, payload: { status } })
 
       return res.status(200).json({ success: true, data: session });
     } catch (error) {
@@ -166,7 +172,6 @@ async function handler(
     }
   } else if (method === 'DELETE') {
     try {
-      // todo: only super-user should be allowed for this endpoint
       if (grade !== 'SUPERUSER') {
         return res
           .status(403)
