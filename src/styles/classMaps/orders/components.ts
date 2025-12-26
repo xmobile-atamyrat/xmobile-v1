@@ -18,7 +18,7 @@ export const ordersComponentClasses = {
   },
   orderCardStatusIcon: {
     web: 'hidden',
-    mobile: 'p-[5px] rounded-[8px]',
+    mobile: 'flex justify-center items-center p-[5px] rounded-[8px]',
   },
   orderCardAddress: {
     web: 'hidden',

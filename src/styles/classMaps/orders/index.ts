@@ -4,8 +4,8 @@ export const ordersIndexClasses = {
     mobile: 'flex flex-col w-full px-4 py-4',
   },
   title: {
-    web: 'text-[30px] font-medium mb-6',
-    mobile: 'text-[20px] font-medium mb-4 text-center',
+    web: 'text-[30px] font-medium',
+    mobile: 'text-[20px] font-medium text-center',
   },
   tabs: {
     web: 'hidden',
