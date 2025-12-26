@@ -378,7 +378,12 @@ export default function CustomAppBar({
               </MenuItem>
             )}
             {user?.grade === 'FREE' && (
-              <MenuItem className={appbarClasses.menuItemAcc}>
+              <MenuItem
+                className={appbarClasses.menuItemAcc}
+                onClick={() => {
+                  router.push('/orders');
+                }}
+              >
                 <img src="/orders/my_order_icon.svg" alt="My Orders Icon" />
                 <Typography>{t('myOrders')}</Typography>
               </MenuItem>
