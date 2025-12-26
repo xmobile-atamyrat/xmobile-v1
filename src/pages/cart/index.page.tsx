@@ -99,7 +99,10 @@ export default function CartPage() {
                 >
                   {t('cart')}
                 </Typography>
-                <CheckoutSummary totalPrice={totalPrice} />
+                <CheckoutSummary
+                  totalPrice={totalPrice}
+                  onCheckoutClick={() => router.push('/cart/checkout')}
+                />
               </Box>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography

@@ -6,9 +6,13 @@ import { useTranslations } from 'next-intl';
 
 interface CheckoutSummaryProps {
   totalPrice: number;
+  onCheckoutClick: () => void;
 }
 
-export default function CheckoutSummary({ totalPrice }: CheckoutSummaryProps) {
+export default function CheckoutSummary({
+  totalPrice,
+  onCheckoutClick,
+}: CheckoutSummaryProps) {
   const t = useTranslations();
   const platform = usePlatform();
 
@@ -32,6 +36,7 @@ export default function CheckoutSummary({ totalPrice }: CheckoutSummaryProps) {
         </Box>
         <Button
           className={cartCheckoutClasses.checkoutButton[platform]}
+          onClick={onCheckoutClick}
           sx={{
             backgroundColor: colors.main,
             color: colors.white,

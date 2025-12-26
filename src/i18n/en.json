@@ -227,5 +227,19 @@
   "of": "of",
   "itemsPerPage": "Items per page",
   "totalAmount": "Total Amount",
-  "checkout": "Checkout"
+  "checkout": "Checkout",
+  "fullName": "Full Name",
+  "fullNamePlaceholder": "Enter full name",
+  "addressPlaceholder": "Enter your current living Address",
+  "orderNotes": "Order Notes",
+  "orderNotesPlaceholder": "Enter note",
+  "customerDetails": "Customer Details",
+  "information": "Information",
+  "delivery": "Delivery",
+  "payment": "Payment",
+  "orderSummary": "Order Summary",
+  "deliveryFee": "Delivery Fee",
+  "orderNow": "Order Now",
+  "order": "Order",
+  "addressText": "Address"
 }
