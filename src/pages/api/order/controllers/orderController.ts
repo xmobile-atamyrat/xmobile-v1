@@ -59,9 +59,13 @@ export async function createOrderController(
  */
 export async function getUserOrdersController(
   filters: GetOrdersFilters,
+  userId: string,
 ): Promise<{ resp: ResponseApi; status: number }> {
   try {
-    const result = await getOrders(filters);
+    const result = await getOrders({
+      ...filters,
+      userId, // Always filter by the authenticated user's ID
+    });
     return {
       resp: {
         success: true,

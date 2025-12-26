@@ -31,9 +31,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   } else if (method === 'GET') {
     try {
       const validated = getOrdersQuerySchema.parse(query);
-      const { resp, status } = await getUserOrdersController({
-        ...validated,
-      });
+      const { resp, status } = await getUserOrdersController(
+        {
+          ...validated,
+        },
+        userId!,
+      );
       return res.status(status).json(resp);
     } catch (error: any) {
       if (error.name === 'ZodError') {
