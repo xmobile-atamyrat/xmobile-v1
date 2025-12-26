@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
 import CustomAppBar from '@/pages/components/Appbar';
+import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import CustomDrawer from '@/pages/components/Drawer';
 import Footer from '@/pages/components/Footer';
@@ -142,6 +143,7 @@ export default function Layout({
           }}
         />
       )}
+      <ChatWidget />
     </Box>
   );
 }
