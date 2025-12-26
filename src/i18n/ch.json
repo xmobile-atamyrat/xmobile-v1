@@ -229,5 +229,19 @@
   "of": "dan",
   "itemsPerPage": "Sahypa başyna elementler",
   "totalAmount": "Jemi mukdar",
-  "checkout": "Çykyş"
+  "checkout": "Çykyş",
+  "fullName": "Doly ady",
+  "fullNamePlaceholder": "Doly adyňyzy giriziň",
+  "addressPlaceholder": "Häzirki ýaşaýan salgyňyzy giriziň",
+  "orderNotes": "Sargyt bellikleri",
+  "orderNotesPlaceholder": "Bellik giriziň",
+  "customerDetails": "Müşderi maglumatlary",
+  "information": "Maglumat",
+  "delivery": "Eltip bermek",
+  "payment": "Töleg",
+  "orderSummary": "Sargyt jemleýji",
+  "deliveryFee": "Eltip bermek tölegi",
+  "orderNow": "Häzir sargyt et",
+  "order": "Sargyt et",
+  "addressText": "Address"
 }

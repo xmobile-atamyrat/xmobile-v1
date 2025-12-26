@@ -227,5 +227,19 @@
   "of": "of",
   "itemsPerPage": "Sayfa başına öğe",
   "totalAmount": "Toplam Tutar",
-  "checkout": "Çıkış yapmak"
+  "checkout": "Çıkış yapmak",
+  "fullName": "Ad Soyad",
+  "fullNamePlaceholder": "Ad soyadınızı girin",
+  "addressPlaceholder": "Mevcut yaşadığınız adresi girin",
+  "orderNotes": "Sipariş Notları",
+  "orderNotesPlaceholder": "Not girin",
+  "customerDetails": "Müşteri Bilgileri",
+  "information": "Bilgi",
+  "delivery": "Teslimat",
+  "payment": "Ödeme",
+  "orderSummary": "Sipariş Özeti",
+  "deliveryFee": "Teslimat Ücreti",
+  "orderNow": "Şimdi Sipariş Ver",
+  "order": "Sipariş Ver",
+  "addressText": "Address"
 }
