@@ -1,6 +1,6 @@
 export const ordersIndexClasses = {
   container: {
-    web: 'flex flex-col w-full px-[200px] py-8',
+    web: 'flex flex-col w-full px-[150px] py-8',
     mobile: 'flex flex-col w-full px-4 py-4',
   },
   title: {

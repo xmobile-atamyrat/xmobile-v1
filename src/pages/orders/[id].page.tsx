@@ -38,8 +38,6 @@ import CancelOrderDialog from './components/CancelOrderDialog';
 import OrderStatusBadge from './components/OrderStatusBadge';
 import { cancelUserOrder, getUserOrderDetail } from './lib/apiUtils';
 
-const DELIVERY_FEE = 20; // Fixed delivery fee in TMT
-
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
@@ -161,11 +159,7 @@ export default function OrderDetailPage() {
   };
 
   const handleBackButton = () => {
-    if (platform === 'mobile') {
-      router.push('/user/profile');
-    } else {
-      router.push('/orders');
-    }
+    router.push('/orders');
   };
 
   if (loading) {
@@ -239,25 +233,9 @@ export default function OrderDetailPage() {
     return null;
   };
 
-  const calculateSubtotal = () => {
-    return order.items.reduce((sum, item) => {
-      const price = parseFloat(item.productPrice) || 0;
-      return sum + price * item.quantity;
-    }, 0);
-  };
-
   return (
     <Layout handleHeaderBackButton={handleBackButton}>
-      <Box
-        sx={{
-          mt:
-            platform === 'web'
-              ? `${appBarHeight}px`
-              : `${mobileAppBarHeight}px`,
-          p: platform === 'web' ? 2 : 1,
-        }}
-        className={ordersDetailClasses.container[platform]}
-      >
+      <Box className={ordersDetailClasses.container[platform]}>
         {/* Header - Mobile */}
         {platform === 'mobile' ? (
           <Box className={ordersDetailClasses.header.mobile}>
@@ -267,7 +245,7 @@ export default function OrderDetailPage() {
             <Typography
               className={`${interClassname.className} ${ordersDetailClasses.orderNumber.mobile}`}
             >
-              {t('order')} {order.orderNumber}
+              {order.orderNumber}
             </Typography>
             {getStatusIcon()}
           </Box>
@@ -305,7 +283,7 @@ export default function OrderDetailPage() {
             >
               {t('orderedItems')} ({order.items?.length})
             </Typography>
-            <ArrowForwardIosIcon sx={{ fontSize: '32px', color: '#1c1b1b' }} />
+            <ArrowForwardIosIcon sx={{ fontSize: '24px', color: '#1c1b1b' }} />
           </Box>
         )}
 
@@ -317,7 +295,7 @@ export default function OrderDetailPage() {
             >
               {t('addressText')}
             </Typography>
-            <Box className="flex flex-col gap-0">
+            <Box className="flex flex-col gap-4">
               <Box className={ordersDetailClasses.addressRow.mobile}>
                 <Typography
                   className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
@@ -342,35 +320,12 @@ export default function OrderDetailPage() {
                   {order.deliveryPhone}
                 </Typography>
               </Box>
-              <Box className={ordersDetailClasses.addressRow.mobile}>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
-                >
-                  {t('city')}
-                </Typography>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
-                >
-                  {t('cityPlaceholder')}
-                </Typography>
-              </Box>
+
               <Box className={ordersDetailClasses.addressRow.mobile}>
                 <Typography
                   className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
                 >
                   {t('addressText')}
-                </Typography>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
-                >
-                  {order.deliveryAddress}
-                </Typography>
-              </Box>
-              <Box className={ordersDetailClasses.addressRow.mobile}>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
-                >
-                  {t('streetAddress')}
                 </Typography>
                 <Typography
                   className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
@@ -532,30 +487,6 @@ export default function OrderDetailPage() {
               {t('orderInfo')}
             </Typography>
             <Box className="flex flex-col gap-0">
-              <Box className={ordersDetailClasses.orderInfoRow.mobile}>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
-                >
-                  {t('subtotal')}
-                </Typography>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
-                >
-                  {calculateSubtotal().toFixed(2)} TMT
-                </Typography>
-              </Box>
-              <Box className={ordersDetailClasses.orderInfoRow.mobile}>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
-                >
-                  {t('deliveryFee')}
-                </Typography>
-                <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
-                >
-                  {DELIVERY_FEE.toFixed(2)} TMT
-                </Typography>
-              </Box>
               <Box className={ordersDetailClasses.orderInfoTotal.mobile}>
                 <Typography
                   className={`${interClassname.className} ${ordersDetailClasses.orderInfoTotalLabel.mobile}`}
@@ -659,7 +590,7 @@ export default function OrderDetailPage() {
             <Typography
               className={`${interClassname.className} text-lg font-semibold mb-4`}
             >
-              {t('orderedItems')} ({order.items.length})
+              {t('orderedItems')} ({order.items?.length})
             </Typography>
             <TableContainer>
               <Table>
