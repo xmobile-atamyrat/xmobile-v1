@@ -63,7 +63,7 @@ export default function Profile() {
   };
 
   const handleToggleMyOrders = () => {
-    router.push('/');
+    router.push('/orders');
   };
 
   return (
