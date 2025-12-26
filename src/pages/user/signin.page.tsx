@@ -248,7 +248,7 @@ export default function Signin() {
                 disableElevation
                 className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
-                  backgroundColor: colors.buttonBg,
+                  backgroundColor: colors.main,
                   '&:hover': {
                     backgroundColor: colors.buttonHoverBg,
                   },

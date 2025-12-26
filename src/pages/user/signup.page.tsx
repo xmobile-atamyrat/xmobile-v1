@@ -489,7 +489,7 @@ export default function Signup() {
                 type="submit"
                 className={`${signupClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
-                  backgroundColor: colors.buttonBg,
+                  backgroundColor: colors.main,
                   '&:hover': {
                     backgroundColor: colors.buttonHoverBg,
                   },
