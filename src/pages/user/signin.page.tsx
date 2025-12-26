@@ -40,7 +40,7 @@ export default function Signin() {
 
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link href="/">
+      <Link href="/user/profile">
         <ArrowBackIos
           className={`${signinClasses.link[platform]}`}
           style={{ color: colors.blackText }}
@@ -248,7 +248,7 @@ export default function Signin() {
                 disableElevation
                 className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
                 sx={{
-                  backgroundColor: colors.buttonBg,
+                  backgroundColor: colors.main,
                   '&:hover': {
                     backgroundColor: colors.buttonHoverBg,
                   },

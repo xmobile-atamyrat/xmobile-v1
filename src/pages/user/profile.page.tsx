@@ -3,10 +3,12 @@ import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
+import { ArrowBackIos } from '@mui/icons-material';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import {
   Box,
@@ -46,6 +48,7 @@ export default function Profile() {
     { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
     { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
   ];
+  const platform = usePlatform();
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -61,35 +64,43 @@ export default function Profile() {
   return (
     <Box className="w-full h-full">
       {!user ? (
-        <Box className={profileClasses.boxes.loggedOutMain}>
-          <CardMedia
-            component="img"
-            src="/xmobile-processed-logo.png"
-            className={profileClasses.logo}
-          />
-          <Box className={profileClasses.boxes.loggedOutOptions}>
-            <Link
-              className={`${profileClasses.logInOptionsLink} bg-[#221765]`}
-              href="/user/signin"
-            >
-              <Typography
-                className={`${profileClasses.logInOptionsTypo} ${interClassname.className}`}
-                color={colors.white}
+        <Box className={profileClasses.boxes.main[platform]}>
+          <Link href="/">
+            <ArrowBackIos
+              className={`${profileClasses.link[platform]}`}
+              style={{ color: colors.blackText }}
+            />
+          </Link>
+          <Box className={profileClasses.boxes.loggedOutMain[platform]}>
+            <CardMedia
+              component="img"
+              src="/xmobile-processed-logo.png"
+              className={profileClasses.logo}
+            />
+            <Box className={profileClasses.boxes.loggedOutOptions[platform]}>
+              <Link
+                className={`${profileClasses.logInOptionsLink[platform]} bg-[#ff624c]`}
+                href="/user/signin"
               >
-                {t('signin')}
-              </Typography>
-            </Link>
-            <Link
-              className={`${profileClasses.logInOptionsLink} bg-[#fff] border-[1px] border-[#221765] mt-[20px]`}
-              href="/user/signup"
-            >
-              <Typography
-                className={`${profileClasses.logInOptionsTypo} ${interClassname.className}`}
-                color={colors.darkBlue}
+                <Typography
+                  className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
+                  color={colors.white}
+                >
+                  {t('signin')}
+                </Typography>
+              </Link>
+              <Link
+                className={`${profileClasses.logInOptionsLink[platform]} bg-[#fff] border-[1px] border-[#ff624c] mb-[20px]`}
+                href="/user/signup"
               >
-                {t('signup')}
-              </Typography>
-            </Link>
+                <Typography
+                  className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
+                  color={colors.main}
+                >
+                  {t('signup')}
+                </Typography>
+              </Link>
+            </Box>
           </Box>
         </Box>
       ) : (
