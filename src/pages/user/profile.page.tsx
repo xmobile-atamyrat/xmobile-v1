@@ -90,7 +90,7 @@ export default function Profile() {
                 </Typography>
               </Link>
               <Link
-                className={`${profileClasses.logInOptionsLink[platform]} bg-[#fff] border-[1px] border-[#ff624c]`}
+                className={`${profileClasses.logInOptionsLink[platform]} bg-[#fff] border-[1px] border-[#ff624c] mb-[20px]`}
                 href="/user/signup"
               >
                 <Typography
