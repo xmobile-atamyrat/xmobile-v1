@@ -69,6 +69,7 @@ export interface UserContextProps {
   setUser: Dispatch<SetStateAction<ProtectedUser>>;
   accessToken: string;
   setAccessToken: Dispatch<SetStateAction<string>>;
+  isLoading: boolean;
 }
 
 export interface DollarRateProps {
