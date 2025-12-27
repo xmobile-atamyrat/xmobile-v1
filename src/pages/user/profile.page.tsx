@@ -120,7 +120,11 @@ export default function Profile() {
                 <Typography
                   className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
                 >
-                  {`${t('hello')} ${user.name.split(' ')[0]}`}
+                  {`${t('hello')} ${
+                    user?.name && user.name.trim() !== ''
+                      ? user.name.trim().split(' ')[0]
+                      : ''
+                  }`}
                 </Typography>
                 <Typography
                   className={`${interClassname.className} ${profileClasses.typos.email}`}
@@ -137,7 +141,7 @@ export default function Profile() {
                 onClick={handleToggleLang}
                 variant={platform === 'web' ? 'outlined' : 'text'}
                 sx={{
-                  '&:hover': { backgroundColor: '#ffe8e5' },
+                  '&:hover': { backgroundColor: colors.lightRed },
                 }}
               >
                 <CardMedia
@@ -160,7 +164,7 @@ export default function Profile() {
                 onClick={handleToggleMyOrders}
                 variant={platform === 'web' ? 'outlined' : 'text'}
                 sx={{
-                  '&:hover': { backgroundColor: '#ffe8e5' },
+                  '&:hover': { backgroundColor: colors.lightRed },
                 }}
               >
                 <CardMedia
@@ -181,7 +185,7 @@ export default function Profile() {
                 onClick={handleToggle}
                 variant={platform === 'web' ? 'outlined' : 'text'}
                 sx={{
-                  '&:hover': { backgroundColor: '#ec4d38' },
+                  '&:hover': { backgroundColor: colors.buttonHoverBg },
                 }}
                 disableRipple
               >
