@@ -50,7 +50,11 @@ export default function App({ Component, pageProps }: AppProps) {
                           timeZone="Asia/Ashgabat"
                           messages={pageProps.messages}
                         >
-                          <Component {...pageProps} />
+                          {isLoading ? (
+                            <Loader />
+                          ) : (
+                            <Component {...pageProps} />
+                          )}
                         </NextIntlClientProvider>
                       </PlatformContextProvider>
                     </DollarRateContextProvider>
