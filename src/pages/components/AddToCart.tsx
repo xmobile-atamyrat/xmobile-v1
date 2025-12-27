@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -169,13 +169,6 @@ export default function AddToCart({
       }
     };
 
-  // TODO: this might create a race condition across items.
-  // Need to find a synchronous way of doing it
-  useEffect(() => {
-    if (price?.startsWith('[')) return;
-    if (setTotalPrice) setTotalPrice((curr) => curr + quantity * Number(price));
-  }, [price]);
-
   return (
     <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
@@ -221,7 +214,7 @@ export default function AddToCart({
                       (cur) =>
                         cur -
                         quantity * Number(price) +
-                        quantity * Number(price),
+                        newQuantity * Number(price),
                     );
                   editCartItems(Number(e.target.value));
                 }}
@@ -291,7 +284,9 @@ export default function AddToCart({
                   setQuantity(newQuantity);
                   setTotalPrice(
                     (cur) =>
-                      cur - quantity * Number(price) + quantity * Number(price),
+                      cur -
+                      quantity * Number(price) +
+                      newQuantity * Number(price),
                   );
                 }}
               />
