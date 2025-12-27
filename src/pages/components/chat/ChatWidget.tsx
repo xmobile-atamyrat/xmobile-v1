@@ -169,25 +169,15 @@ const ChatWidget = () => {
         <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
           {isAdmin ? t('chatAdminDashboard') : t('chatSupportChat')}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: isConnected ? '#4caf50' : '#f44336',
-            }}
-          />
-          {platform === 'mobile' && (
-            <IconButton
-              size="small"
-              onClick={handleToggle}
-              sx={{ color: 'white' }}
-            >
-              <CloseIcon />
-            </IconButton>
-          )}
-        </Box>
+        {platform === 'mobile' && (
+          <IconButton
+            size="small"
+            onClick={handleToggle}
+            sx={{ color: 'white' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
       </Box>
     );
   };
