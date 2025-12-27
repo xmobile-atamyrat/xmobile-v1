@@ -1,9 +1,10 @@
+import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
-import { PAGENAME } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { computeProductPrice } from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
 import {
@@ -35,6 +36,7 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
   >([]);
+  const [totalPrice, setTotalPrice] = useState(0);
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
@@ -46,9 +48,8 @@ export default function CartPage() {
 
   useEffect(() => {
     (async () => {
-      // TODO: fix this to redirect to login page
       if (!user) {
-        router.push('/');
+        return;
       }
 
       try {
@@ -57,7 +58,20 @@ export default function CartPage() {
         >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
 
         if (success) {
-          setCartItems(data);
+          const computedData = await Promise.all(
+            data.map(async (item) => {
+              const computedProduct = await computeProductPrice({
+                product: item.product,
+                accessToken,
+                fetchWithCreds,
+              });
+              return {
+                ...item,
+                product: computedProduct,
+              };
+            }),
+          );
+          setCartItems(computedData);
         } else {
           console.error(message);
         }
@@ -66,6 +80,16 @@ export default function CartPage() {
       }
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (cartItems == null) return;
+    let totPrice = 0;
+    cartItems.forEach((item) => {
+      if (!Number.isNaN(Number(item.product.price)))
+        totPrice += Number(item.product.price) * item.quantity;
+    });
+    setTotalPrice(totPrice);
+  }, [cartItems]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -90,14 +114,20 @@ export default function CartPage() {
             </Typography>
           </Link>
         </Breadcrumbs>
-        <Box className={cartIndexClasses.prodCart}>
+        <Box className={cartIndexClasses.prodCart[platform]}>
           {cartItems != null && cartItems.length > 0 ? (
             <Box className="flex flex-col">
-              <Typography
-                className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
-              >
-                {t(PAGENAME.cart[platform])}
-              </Typography>
+              <Box className={cartIndexClasses.cartHeader[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
+                >
+                  {t('cart')}
+                </Typography>
+                <CheckoutSummary
+                  totalPrice={totalPrice}
+                  onCheckoutClick={() => router.push('/cart/checkout')}
+                />
+              </Box>
               <Box className={cartIndexClasses.infoCol[platform]}>
                 <Typography
                   className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[32vw] ml-[2.39vw]`}
@@ -130,6 +160,7 @@ export default function CartPage() {
                       quantity: cartItem?.quantity,
                       cartItemId: cartItem?.id,
                       onDelete,
+                      setTotalPrice,
                     }}
                   />
                 ))}
