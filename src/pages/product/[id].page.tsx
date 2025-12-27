@@ -464,7 +464,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 ))}
             </Box>
           )}
-          {user && platform === 'web' && (
+          {platform === 'web' && (
             <AddToCart productId={product.id} cartAction="detail" />
           )}
         </Box>
@@ -509,7 +509,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           </Box>
         </Box>
       )}
-      {user && platform === 'mobile' && (
+      {platform === 'mobile' && (
         <AddToCart productId={product.id} cartAction="detail" />
       )}
       {showDeleteProductDialog?.show && (
