@@ -48,6 +48,14 @@ async function handler(
                 grade: true,
               },
             },
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                senderId: true,
+                senderRole: true,
+              },
+            },
           },
         });
 

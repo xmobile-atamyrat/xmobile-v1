@@ -412,6 +412,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       currentSession,
       isSendingMessage,
       showClosureNotification,
+      messages,
     ],
   );
 
