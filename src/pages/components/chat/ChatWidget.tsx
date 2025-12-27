@@ -89,6 +89,7 @@ const ChatWidget = () => {
   const handleEndSession = async () => {
     if (!currentSession || !isAdmin) return;
 
+    // eslint-disable-next-line no-alert
     if (window.confirm(t('chatConfirmEndSession'))) {
       await endSession(currentSession.id);
     }
