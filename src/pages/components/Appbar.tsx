@@ -140,11 +140,25 @@ export default function CustomAppBar({
         className={appbarClasses.appbar[platform]}
         elevation={0}
       >
-        <Box className="w-full min-h-[48px] flex justify-center items-start">
-          <Box className="w-[78.95vw] min-h-[32px] justify-between flex flex-row items-center">
-            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
-              <Box className="min-w-[234px] flex flex-row items-center">
-                <LocationOnIcon className="h-[16px] text-[#303030]" />
+        <Box className="w-full min-h-[64px] flex justify-center items-start">
+          <Box className="w-[78.95vw] h-full justify-between flex flex-row items-center">
+            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center">
+              <Box className="min-w-[234px] h-full flex flex-row items-center">
+                {platform === 'web' && (
+                  <>
+                    <Box className="w-auto h-[64px] flex justify-center items-center cursor-pointer pb-2 pr-2">
+                      <CardMedia
+                        component="img"
+                        src="/xmobile-processed-logo.png"
+                        className="w-auto h-[36px]"
+                        onClick={() => {
+                          router.push('/');
+                        }}
+                      />
+                    </Box>
+                  </>
+                )}
+                <LocationOnIcon className="h-[20px] text-[#303030]" />
                 <Typography
                   className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
@@ -154,7 +168,7 @@ export default function CustomAppBar({
               <Divider
                 orientation="vertical"
                 flexItem
-                className="text-[#303030] mx-[-15px] min-h-[30px] my-auto"
+                className="text-[#303030] mx-[-15px] h-[30px] my-auto"
               />
               <Box className="min-w-[234px] flex flex-row items-center">
                 <CallIcon className="h-[16px] text-[#303030]" />
@@ -231,6 +245,7 @@ export default function CustomAppBar({
         </Box>
         <Divider className="text-[#303030]" />
         <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
+          {/* Back button, Menu, Logo */}
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
@@ -257,6 +272,8 @@ export default function CustomAppBar({
               <MenuIcon className={appbarClasses.menuIcon[platform]} />
             </IconButton>
           </Box>
+
+          {/* Search Bar */}
           <Box className="w-[30vw] h-[48px]">
             {SearchBar({
               searchKeyword: localSearchKeyword,
@@ -265,6 +282,8 @@ export default function CustomAppBar({
               width: '95%',
             })}
           </Box>
+
+          {/* Cart, Profile */}
           <Box className="flex flex-row w-auto h-full justify-between items-center">
             <Box className="flex flex-row items-center">
               <IconButton
