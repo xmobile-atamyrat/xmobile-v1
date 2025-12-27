@@ -111,23 +111,9 @@ const ChatWindow = () => {
       </Box>
 
       {/* Input Area */}
-      {currentSession.status === 'PENDING' && (
-        <Box
-          sx={{
-            p: 1,
-            textAlign: 'center',
-            color: '#838383',
-            fontSize: '13px',
-            borderTop: '1px solid #E6E6E6',
-            backgroundColor: '#fff',
-          }}
-        >
-          {t('chatWaitingForSupport')}
-        </Box>
-      )}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected || currentSession.status !== 'ACTIVE'}
+        disabled={!isConnected}
         isSending={isSendingMessage}
       />
     </Box>
