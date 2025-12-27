@@ -25,7 +25,6 @@ export const colors = {
   },
   placeholder: '#838383',
   buttonHoverBg: '#ec4d38',
-  buttonBg: '#ff624c',
   darkBlue: '#221765',
   white: '#fff',
   black: '#000',
