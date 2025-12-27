@@ -9,7 +9,7 @@ import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import '@/styles/globals.css';
-import { Box, ThemeProvider } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
@@ -48,12 +48,7 @@ export default function App({ Component, pageProps }: AppProps) {
                         timeZone="Asia/Ashgabat"
                         messages={pageProps.messages}
                       >
-                        {isLoading && <Loader />}
-                        <Box
-                          className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500 ease-in-out`}
-                        >
-                          <Component {...pageProps} />
-                        </Box>
+                        {isLoading ? <Loader /> : <Component {...pageProps} />}
                       </NextIntlClientProvider>
                     </PlatformContextProvider>
                   </DollarRateContextProvider>
