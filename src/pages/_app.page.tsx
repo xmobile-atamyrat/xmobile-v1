@@ -1,3 +1,4 @@
+import Loader from '@/pages/components/Loader';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
@@ -8,13 +9,29 @@ import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import '@/styles/globals.css';
-import { ThemeProvider } from '@mui/material';
+import { Box, ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    if (hasShownSplash) {
+      setIsLoading(false);
+    }
+
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      sessionStorage.setItem('hasShownSplash', 'true');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  });
 
   return (
     <ThemeProvider theme={theme}>
@@ -31,7 +48,12 @@ export default function App({ Component, pageProps }: AppProps) {
                         timeZone="Asia/Ashgabat"
                         messages={pageProps.messages}
                       >
-                        <Component {...pageProps} />
+                        {isLoading && <Loader />}
+                        <Box
+                          className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500 ease-in-out`}
+                        >
+                          <Component {...pageProps} />
+                        </Box>
                       </NextIntlClientProvider>
                     </PlatformContextProvider>
                   </DollarRateContextProvider>
