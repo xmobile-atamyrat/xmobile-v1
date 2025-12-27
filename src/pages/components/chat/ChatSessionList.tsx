@@ -1,9 +1,8 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import { usePlatform } from '@/pages/lib/PlatformContext';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useTranslations } from 'next-intl';
 import {
   Accordion,
   AccordionDetails,
@@ -16,6 +15,7 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
+import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
 interface ChatSessionListProps {
@@ -93,6 +93,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               const userInfo = user
                 ? `${user.name} (${user.email}${user.phoneNumber ? `, ${user.phoneNumber}` : ''})`
                 : 'Unknown User';
+              const lastMessage = (session as any).messages?.[0];
+              const hasUnread = lastMessage?.senderRole === 'FREE';
               return (
                 <ListItemButton
                   key={session.id}
@@ -102,18 +104,31 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                     '&:hover': { backgroundColor: '#F6F6F6' },
                   }}
                 >
-                  <ListItemText
-                    primary={userInfo}
-                    secondary={`${t('chatStarted')}: ${new Date(session.createdAt).toLocaleTimeString()}`}
-                    primaryTypographyProps={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: '12px',
-                      color: '#838383',
-                    }}
-                  />
+                  <Box sx={{ position: 'relative', flex: 1 }}>
+                    <ListItemText
+                      primary={userInfo}
+                      secondary={`${t('chatStarted')}: ${new Date(session.createdAt).toLocaleTimeString()}`}
+                      primaryTypographyProps={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '12px',
+                        color: '#838383',
+                      }}
+                    />
+                  </Box>
+                  {hasUnread && (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: '#2196F3',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                 </ListItemButton>
               );
             })}
@@ -146,6 +161,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               const userInfo = user
                 ? `${user.name} (${user.email}${user.phoneNumber ? `, ${user.phoneNumber}` : ''})`
                 : 'User';
+              const lastMessage = (session as any).messages?.[0];
+              const hasUnread = lastMessage?.senderRole === 'FREE';
               return (
                 <ListItemButton
                   key={session.id}
@@ -155,18 +172,31 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                     '&:hover': { backgroundColor: '#F6F6F6' },
                   }}
                 >
-                  <ListItemText
-                    primary={userInfo}
-                    secondary={`${t('chatLastActive')}: ${new Date(session.updatedAt).toLocaleTimeString()}`}
-                    primaryTypographyProps={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: '12px',
-                      color: '#838383',
-                    }}
-                  />
+                  <Box sx={{ position: 'relative', flex: 1 }}>
+                    <ListItemText
+                      primary={userInfo}
+                      secondary={`${t('chatLastActive')}: ${new Date(session.updatedAt).toLocaleTimeString()}`}
+                      primaryTypographyProps={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '12px',
+                        color: '#838383',
+                      }}
+                    />
+                  </Box>
+                  {hasUnread && (
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: '#2196F3',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                 </ListItemButton>
               );
             })}

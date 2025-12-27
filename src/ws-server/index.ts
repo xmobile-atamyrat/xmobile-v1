@@ -248,6 +248,7 @@ const handleMessage = async (
       isRead: message.isRead,
       date: message.updatedAt,
     };
+
     session.users.forEach((sessionUser) => {
       connections.get(sessionUser.id)?.forEach((conn) => {
         sendMessage(conn, outgoingMessage);
