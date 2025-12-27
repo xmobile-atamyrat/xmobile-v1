@@ -23,6 +23,7 @@ import { img, interClassname } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useRouter } from 'next/router';
 
 export default function AddToCart({
   productId,
@@ -40,8 +41,12 @@ export default function AddToCart({
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const router = useRouter();
 
   const addCartItems = async () => {
+    if (!user) {
+      router.push('/user/profile');
+    }
     const userId = user?.id;
 
     if (userId == null) {
