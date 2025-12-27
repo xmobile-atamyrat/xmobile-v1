@@ -72,19 +72,23 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Sync ref to avoid stale closures in WebSocket callbacks
   useEffect(() => {
     sessionRef.current = currentSession;
   }, [currentSession]);
 
-  // Auto-connect when user logs in
   useEffect(() => {
     if (user && accessToken && !isConnected) {
       connect();
     }
-    return () => {
+  }, [user, accessToken, isConnected]);
+
+  useEffect(() => {
+    if (!user || !accessToken) {
       clearTimeout(reconnectTimeoutRef.current);
       disconnect();
+    }
+    return () => {
+      clearTimeout(reconnectTimeoutRef.current);
     };
   }, [user, accessToken]);
 
@@ -365,7 +369,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
           const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
           if (isAdmin) {
-            // Admin: return to list
             setCurrentSession(undefined);
           } else {
             // User: mark as closed (will show closure UI)
@@ -405,7 +408,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       isConnected,
-      messages,
       sessions,
       currentSession,
       isSendingMessage,
