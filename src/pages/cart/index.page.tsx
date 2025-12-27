@@ -4,6 +4,7 @@ import Layout from '@/pages/components/Layout';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { computeProductPrice } from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
 import {
@@ -57,7 +58,20 @@ export default function CartPage() {
         >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
 
         if (success) {
-          setCartItems(data);
+          const computedData = await Promise.all(
+            data.map(async (item) => {
+              const computedProduct = await computeProductPrice({
+                product: item.product,
+                accessToken,
+                fetchWithCreds,
+              });
+              return {
+                ...item,
+                product: computedProduct,
+              };
+            }),
+          );
+          setCartItems(computedData);
         } else {
           console.error(message);
         }
@@ -66,6 +80,16 @@ export default function CartPage() {
       }
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (cartItems == null) return;
+    let totPrice = 0;
+    cartItems.forEach((item) => {
+      if (!Number.isNaN(Number(item.product.price)))
+        totPrice += Number(item.product.price) * item.quantity;
+    });
+    setTotalPrice(totPrice);
+  }, [cartItems]);
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>

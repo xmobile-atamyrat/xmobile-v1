@@ -1,13 +1,10 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPrice } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
 import { colors, interClassname } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
@@ -27,19 +24,16 @@ interface ProductCardProps {
 }
 
 export default function CartProductCard({
-  product: initialProduct,
+  product,
   cartProps,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
-  const [product, setProduct] = useState(initialProduct);
   const { network } = useNetworkContext();
   const { createAbortController, clearAbortController } =
     useAbortControllerContext();
-  const { accessToken } = useUserContext();
-  const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
   const [categoryName, setCategoryName] = useState<string | null>(null);
 
@@ -93,27 +87,13 @@ export default function CartProductCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.imgUrls, network]);
 
-  useEffect(() => {
-    if (initialProduct == null) return;
-
-    (async () => {
-      setProduct(
-        await computeProductPrice({
-          product: initialProduct,
-          accessToken,
-          fetchWithCreds,
-        }),
-      );
-    })();
-  }, [initialProduct]);
-
   return (
     <Box>
       <Card className={cartProductCardClasses.card[platform]} elevation={0}>
         <Box
           className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
-            setSelectedProduct(initialProduct);
+            setSelectedProduct(product);
             router.push(`/product/${product.id}`);
           }}
         >
