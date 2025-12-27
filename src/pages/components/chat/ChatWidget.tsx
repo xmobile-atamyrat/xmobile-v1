@@ -7,6 +7,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -14,6 +15,7 @@ import {
   IconButton,
   Paper,
   Slide,
+  Snackbar,
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
@@ -35,6 +37,8 @@ const ChatWidget = () => {
     loadMessages,
     sessions,
     joinSession,
+    showClosureNotification,
+    setShowClosureNotification,
   } = useChatContext();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -262,7 +266,7 @@ const ChatWidget = () => {
             position: 'fixed',
             ...(platform === 'web'
               ? {
-                  bottom: '80px',
+                  bottom: '96px',
                   right: '24px',
                   width: '420px',
                   height: '600px',
@@ -293,6 +297,21 @@ const ChatWidget = () => {
           </Box>
         </Paper>
       </Slide>
+
+      <Snackbar
+        open={showClosureNotification}
+        autoHideDuration={5000}
+        onClose={() => setShowClosureNotification(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowClosureNotification(false)}
+          severity="warning"
+          variant="filled"
+        >
+          {t('chatSessionClosedByAdmin')}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
