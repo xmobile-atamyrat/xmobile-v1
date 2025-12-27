@@ -220,9 +220,7 @@ const handleMessage = async (
     };
     session.users.forEach((sessionUser) => {
       connections.get(sessionUser.id)?.forEach((conn) => {
-        // if (safeConnection !== conn) {
         sendMessage(conn, outgoingMessage);
-        // }
       });
     });
   } catch (error) {
