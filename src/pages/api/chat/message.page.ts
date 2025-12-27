@@ -81,7 +81,7 @@ async function handler(
         data,
       });
 
-      res.status(200).json({ success: true, data: message });
+      return res.status(200).json({ success: true, data: message });
     } catch (error) {
       console.error(
         filepath,
@@ -122,7 +122,6 @@ async function handler(
       .status(405)
       .json({ success: false, message: 'Method not allowed' });
   }
-  return undefined;
 }
 
 export default withAuth(handler);

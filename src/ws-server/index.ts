@@ -171,6 +171,20 @@ const handleMessage = async (
       return;
     }
 
+    if (senderId !== safeConnection.userId) {
+      console.error(
+        filepath,
+        `Message rejected: senderId mismatch. Authenticated: ${safeConnection.userId}, Claimed: ${senderId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'invalid_sender',
+      });
+      return;
+    }
+
     // Idempotency: prevent duplicate message if client retries with same tempId
     if (tempId) {
       const existing = await dbClient.chatMessage.findUnique({
@@ -385,4 +399,4 @@ wsServer.on('connection', async (connection, request) => {
   }
 });
 
-server.listen(port, () => {});
+server.listen(port);
