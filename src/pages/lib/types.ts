@@ -78,11 +78,11 @@ export type ChatEvent =
       type: 'session_update';
       sessionId: string;
       status: 'PENDING' | 'ACTIVE' | 'CLOSED';
-      users?: any[];
+      users?: ProtectedUser[];
     }
   | {
       type: 'new_session';
-      session: any;
+      session: ChatSession;
     }
   | {
       type: 'typing';
