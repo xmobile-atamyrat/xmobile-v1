@@ -142,22 +142,23 @@ export default function CustomAppBar({
       >
         <Box className="w-full min-h-[64px] flex justify-center items-start">
           <Box className="w-[78.95vw] h-full justify-between flex flex-row items-center">
-            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center">
-              <Box className="min-w-[234px] h-full flex flex-row items-center">
-                {platform === 'web' && (
-                  <>
-                    <Box className="w-auto h-[64px] flex justify-center items-center cursor-pointer pb-2 pr-2">
-                      <CardMedia
-                        component="img"
-                        src="/xmobile-processed-logo.png"
-                        className="w-auto h-[36px]"
-                        onClick={() => {
-                          router.push('/');
-                        }}
-                      />
-                    </Box>
-                  </>
-                )}
+            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center justify-center">
+              <Box className="min-w-[100px] h-auto cursor-pointer">
+                <CardMedia
+                  component="img"
+                  src="/xmobile-processed-logo.png"
+                  className="w-[100px] h-auto"
+                  onClick={() => {
+                    router.push('/');
+                  }}
+                />
+              </Box>
+              <Divider
+                orientation="vertical"
+                flexItem
+                className="text-[#303030] mx-[-15px] h-[30px] my-auto"
+              />
+              <Box className="min-w-[200px] h-full flex flex-row items-center">
                 <LocationOnIcon className="h-[20px] text-[#303030]" />
                 <Typography
                   className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
@@ -243,7 +244,7 @@ export default function CustomAppBar({
             </Box>
           </Box>
         </Box>
-        <Divider className="text-[#303030]" />
+        <Divider className="text-[#303030] mt-[-10px]" />
         <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
           {/* Back button, Menu, Logo */}
           <Box className={appbarClasses.boxes.toolbar}>
