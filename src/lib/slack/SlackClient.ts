@@ -1,9 +1,13 @@
+import https from 'https';
+import { URL } from 'url';
 import { SlackMessage, SlackSendResult } from './types';
 
 export class SlackClient {
   private webhookUrl: string;
 
   private name: string;
+
+  private readonly REQUEST_TIMEOUT_MS = 10000; // 10 seconds
 
   constructor(name: string, webhookUrl: string) {
     this.name = name;
@@ -19,39 +23,85 @@ export class SlackClient {
 
   /**
    * Sends a structured message to Slack
+   * Uses https.request instead of fetch to explicitly close connections,
+   * which is more reliable in strict firewall environments.
    */
   async sendMessage(message: SlackMessage): Promise<SlackSendResult> {
     try {
-      const response = await fetch(this.webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
+      const url = new URL(this.webhookUrl);
+      const data = JSON.stringify(message);
+
+      const result = await new Promise<SlackSendResult>((resolve) => {
+        const options = {
+          hostname: url.hostname,
+          path: url.pathname + url.search,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data),
+            Connection: 'close', // Explicitly close connection after request
+          },
+          timeout: this.REQUEST_TIMEOUT_MS,
+        };
+
+        const req = https.request(options, (res) => {
+          let body = '';
+
+          res.on('data', (chunk) => {
+            body += chunk;
+          });
+
+          res.on('end', () => {
+            // Slack webhooks return "ok" on success
+            if (
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 300
+            ) {
+              if (body === 'ok') {
+                resolve({
+                  success: true,
+                  message: 'Message sent successfully',
+                });
+              } else {
+                resolve({
+                  success: true,
+                  message: body,
+                });
+              }
+            } else {
+              resolve({
+                success: false,
+                error: `Slack API error: ${res.statusCode} - ${body}`,
+              });
+            }
+          });
+        });
+
+        req.on('error', (error) => {
+          resolve({
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Unknown error sending Slack message',
+          });
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          resolve({
+            success: false,
+            error: 'Request timeout',
+          });
+        });
+
+        // Write data and explicitly end the request
+        req.write(data);
+        req.end();
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          success: false,
-          error: `Slack API error: ${response.status} - ${errorText}`,
-        };
-      }
-
-      const responseText = await response.text();
-
-      // Slack webhooks return "ok" on success
-      if (responseText === 'ok') {
-        return {
-          success: true,
-          message: 'Message sent successfully',
-        };
-      }
-
-      return {
-        success: true,
-        message: responseText,
-      };
+      return result;
     } catch (error) {
       return {
         success: false,
