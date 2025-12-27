@@ -32,7 +32,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function CartPage() {
-  const { user, accessToken } = useUserContext();
+  const { user, accessToken, isLoading } = useUserContext();
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
   >([]);
@@ -45,6 +45,15 @@ export default function CartPage() {
   const onDelete = (cartItemId: string) => {
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
   };
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+    if (!user) {
+      router.push('/user/profile');
+    }
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     (async () => {
@@ -90,6 +99,18 @@ export default function CartPage() {
     });
     setTotalPrice(totPrice);
   }, [cartItems]);
+
+  if (isLoading) {
+    return (
+      <Layout handleHeaderBackButton={() => router.push('/')}>
+        <Box className={cartIndexClasses.box[platform]}>
+          <Box className="flex justify-center items-center h-full">
+            <CircularProgress />
+          </Box>
+        </Box>
+      </Layout>
+    );
+  }
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>

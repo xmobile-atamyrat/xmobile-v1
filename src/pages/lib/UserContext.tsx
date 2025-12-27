@@ -20,6 +20,7 @@ const UserContext = createContext<UserContextProps>({
   setUser: () => undefined,
   accessToken: undefined,
   setAccessToken: () => undefined,
+  isLoading: true,
 });
 
 export const useUserContext = () => useContext(UserContext);
@@ -31,6 +32,7 @@ export default function UserContextProvider({
 }) {
   const [user, setUser] = useState<ProtectedUser>();
   const [accessToken, setAccessToken] = useState<string>();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
@@ -54,8 +56,12 @@ export default function UserContextProvider({
           }
         } catch (error) {
           console.error(error);
+        } finally {
+          setIsLoading(false);
         }
       })();
+    } else {
+      setIsLoading(false);
     }
   }, []);
 
@@ -65,8 +71,9 @@ export default function UserContextProvider({
       setUser,
       accessToken,
       setAccessToken,
+      isLoading,
     } as UserContextProps;
-  }, [user, setUser, accessToken, setAccessToken]);
+  }, [user, setUser, accessToken, setAccessToken, isLoading]);
   return (
     <UserContext.Provider value={userContextState}>
       {children}

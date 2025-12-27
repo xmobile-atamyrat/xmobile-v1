@@ -32,7 +32,7 @@ export async function notifyOrderCreated(order: UserOrder): Promise<void> {
   if (!result.success) {
     console.error(
       `[SlackNotification] Failed to send order creation notification:`,
-      result.error,
+      result,
     );
   }
 }
@@ -61,7 +61,7 @@ export async function notifyOrderCancelledByUser(
   if (!result.success) {
     console.error(
       `[SlackNotification] Failed to send order cancellation notification:`,
-      result.error,
+      result,
     );
   }
 }
@@ -115,7 +115,7 @@ export async function notifyOrderStatusUpdated(
   if (!result.success) {
     console.error(
       `[SlackNotification] Failed to send order status update notification:`,
-      result.error,
+      result,
     );
   }
 }
