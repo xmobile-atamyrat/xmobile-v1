@@ -19,6 +19,8 @@ interface ChatContextProps {
   sessions: ChatSession[];
   currentSession: ChatSession | undefined;
   isSendingMessage: boolean;
+  showClosureNotification: boolean;
+  setShowClosureNotification: React.Dispatch<React.SetStateAction<boolean>>;
   connect: () => void;
   disconnect: () => void;
   sendMessage: (content: string) => void;
@@ -40,6 +42,8 @@ const ChatContext = createContext<ChatContextProps>({
   sessions: [],
   currentSession: undefined,
   isSendingMessage: false,
+  showClosureNotification: false,
+  setShowClosureNotification: () => {},
   connect: () => {},
   disconnect: () => {},
   sendMessage: () => {},
@@ -62,6 +66,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [showClosureNotification, setShowClosureNotification] = useState(false);
 
   const ws = useRef<WebSocket | null>(null);
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
@@ -183,15 +188,20 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // bug: user's chat interface doesnt refresh automatically (manually does) after admin closes session
     if (data.type === 'session_update') {
       const activeSession = sessionRef.current;
       if (activeSession?.id === data.sessionId) {
         if (data.status === 'CLOSED') {
-          setCurrentSession(undefined);
-          setMessages([]);
+          const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
-          window.alert('This chat session has been closed by the admin.');
+          if (!isAdmin) {
+            setShowClosureNotification(true);
+          }
+
+          setCurrentSession((prev) =>
+            prev ? { ...prev, status: 'CLOSED' } : undefined,
+          );
+          setMessages([]);
         } else {
           setCurrentSession((prev) =>
             prev ? { ...prev, status: data.status } : undefined,
@@ -352,9 +362,17 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (currentSession?.id === sessionId) {
-          setCurrentSession((prev) =>
-            prev ? { ...prev, status: 'CLOSED' } : undefined,
-          );
+          const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+
+          if (isAdmin) {
+            // Admin: return to list
+            setCurrentSession(undefined);
+          } else {
+            // User: mark as closed (will show closure UI)
+            setCurrentSession((prev) =>
+              prev ? { ...prev, status: 'CLOSED' } : undefined,
+            );
+          }
         }
 
         loadSessions();
@@ -371,6 +389,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
+      showClosureNotification,
+      setShowClosureNotification,
       connect,
       disconnect,
       sendMessage,
@@ -389,7 +409,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
-      messages,
+      showClosureNotification,
     ],
   );
 
