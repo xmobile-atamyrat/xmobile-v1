@@ -1,6 +1,7 @@
 import Loader from '@/pages/components/Loader';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
+import { ChatContextProvider } from '@/pages/lib/ChatContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
@@ -38,23 +39,25 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
-            <CategoryContextProvider>
-              <ProductContextProvider>
-                <PrevProductContextProvider>
-                  <DollarRateContextProvider>
-                    <PlatformContextProvider>
-                      <NextIntlClientProvider
-                        locale={router.locale}
-                        timeZone="Asia/Ashgabat"
-                        messages={pageProps.messages}
-                      >
-                        {isLoading ? <Loader /> : <Component {...pageProps} />}
-                      </NextIntlClientProvider>
-                    </PlatformContextProvider>
-                  </DollarRateContextProvider>
-                </PrevProductContextProvider>
-              </ProductContextProvider>
-            </CategoryContextProvider>
+            <ChatContextProvider>
+              <CategoryContextProvider>
+                <ProductContextProvider>
+                  <PrevProductContextProvider>
+                    <DollarRateContextProvider>
+                      <PlatformContextProvider>
+                        <NextIntlClientProvider
+                          locale={router.locale}
+                          timeZone="Asia/Ashgabat"
+                          messages={pageProps.messages}
+                        >
+                          <Component {...pageProps} />
+                        </NextIntlClientProvider>
+                      </PlatformContextProvider>
+                    </DollarRateContextProvider>
+                  </PrevProductContextProvider>
+                </ProductContextProvider>
+              </CategoryContextProvider>
+            </ChatContextProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>
       </NetworkContextProvider>

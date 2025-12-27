@@ -13,27 +13,80 @@ export interface ExtendedCategory extends Category {
   successorCategories?: ExtendedCategory[];
 }
 
-export type ChatMessageProps =
-  | {
-      type: 'message';
-      sessionId: string;
-      senderId: string;
-      senderRole: string;
-      content: string;
+export interface ProtectedUser extends Omit<User, 'password'> {}
 
-      isRead?: boolean;
-      messageId?: string;
-      date?: Date;
-      timestamp?: string;
-      status?: 'sending' | 'sent' | 'error';
-    }
+export interface ChatSession {
+  id: string;
+  status: 'PENDING' | 'ACTIVE' | 'CLOSED';
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  users?: ProtectedUser[];
+}
+
+export interface GetMessagesRequest {
+  type: 'get_messages';
+  sessionId: string;
+  cursorId?: string;
+}
+
+export interface ChatMessage {
+  type: 'message';
+  sessionId: string;
+  senderId: string;
+  senderRole: string;
+  content: string;
+  tempId?: string;
+
+  isRead?: boolean;
+  messageId?: string;
+  date?: Date | string;
+  timestamp?: string;
+  status?: 'sending' | 'sent' | 'error';
+}
+
+export interface HistoryResponseMessage {
+  type: 'history';
+  sessionId: string;
+  messages: ChatMessage[];
+}
+
+export type ChatEvent =
+  | ChatMessage
   | {
       type: 'ack';
-      timestamp: string;
+      tempId?: string;
+      timestamp?: string;
       success: boolean;
 
       date?: Date;
       messageId?: string;
+      error?: string;
+    }
+  | {
+      type: 'read';
+      sessionId: string;
+      messageIds: string[];
+    }
+  | {
+      type: 'read_ack';
+      sessionId: string;
+      messageIds: string[];
+    }
+  | {
+      type: 'session_update';
+      sessionId: string;
+      status: 'PENDING' | 'ACTIVE' | 'CLOSED';
+      users?: ProtectedUser[];
+    }
+  | {
+      type: 'new_session';
+      session: ChatSession;
+    }
+  | {
+      type: 'typing';
+      sessionId: string;
+      userId: string;
+      isTyping: boolean;
     }
   | {
       type: 'error';
@@ -44,7 +97,11 @@ export type ChatMessageProps =
       type: 'auth_refresh';
       accessToken: string;
       refreshToken: string;
-    };
+    }
+  | HistoryResponseMessage;
+
+// Legacy alias to ease refactoring (deprecated)
+export type ChatMessageProps = ChatEvent;
 
 export type CategoryLayers = { [key: number]: ExtendedCategory[] };
 
@@ -61,8 +118,6 @@ export interface CategoryContextProps {
   selectedCategoryId?: string;
   setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>;
 }
-
-export interface ProtectedUser extends Omit<User, 'password'> {}
 
 export interface UserContextProps {
   user?: User;
