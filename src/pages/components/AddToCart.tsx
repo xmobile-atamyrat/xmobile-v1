@@ -31,6 +31,7 @@ export default function AddToCart({
   cartItemId = undefined,
   price,
   onDelete,
+  setTotalPrice,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const { user, accessToken } = useUserContext();
@@ -151,16 +152,20 @@ export default function AddToCart({
     (action: 'add' | 'remove' | 'quantityAdd' | 'quantityRemove') => () => {
       if (action === 'add') {
         setQuantity(quantity + 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur + Number(price));
         editCartItems(quantity + 1);
       } else if (action === 'remove') {
         if (quantity > 1) {
           setQuantity(quantity - 1);
+          if (setTotalPrice) setTotalPrice((cur) => cur - Number(price));
           editCartItems(quantity - 1);
         }
       } else if (action === 'quantityAdd') {
         setQuantity(quantity + 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur + Number(price));
       } else if (action === 'quantityRemove' && quantity > 1) {
         setQuantity(quantity - 1);
+        if (setTotalPrice) setTotalPrice((cur) => cur - Number(price));
       }
     };
 
@@ -202,7 +207,15 @@ export default function AddToCart({
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
-                  setQuantity(Number(e.target.value));
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                  if (setTotalPrice)
+                    setTotalPrice(
+                      (cur) =>
+                        cur -
+                        quantity * Number(price) +
+                        newQuantity * Number(price),
+                    );
                   editCartItems(Number(e.target.value));
                 }}
               />
@@ -231,6 +244,8 @@ export default function AddToCart({
                 type="submit"
                 onClick={() => {
                   onDelete(cartItemId);
+                  if (setTotalPrice)
+                    setTotalPrice((cur) => cur - quantity * Number(price));
                   deleteCartItems(cartItemId);
                 }}
               >
@@ -265,7 +280,14 @@ export default function AddToCart({
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
-                  setQuantity(Number(e.target.value));
+                  const newQuantity = Number(e.target.value);
+                  setQuantity(newQuantity);
+                  setTotalPrice(
+                    (cur) =>
+                      cur -
+                      quantity * Number(price) +
+                      newQuantity * Number(price),
+                  );
                 }}
               />
 
