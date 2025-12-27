@@ -1,6 +1,6 @@
 import { Box, CardMedia } from '@mui/material';
 
-const Loader: React.FC = () => {
+export default function Loader() {
   return (
     <Box className="flex justify-center items-center h-full w-full">
       <CardMedia
@@ -10,6 +10,4 @@ const Loader: React.FC = () => {
       />
     </Box>
   );
-};
-
-export default Loader;
+}
