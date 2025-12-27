@@ -9,6 +9,9 @@ import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
 import { ArrowForwardIos } from '@mui/icons-material';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import {
   Box,
@@ -49,6 +52,7 @@ export default function Profile() {
     { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
   ];
   const platform = usePlatform();
+  const isAdmin = user && ['SUPERUSER', 'ADMIN'].includes(user.grade);
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -63,7 +67,8 @@ export default function Profile() {
   };
 
   const handleToggleMyOrders = () => {
-    router.push('/orders');
+    const route = isAdmin ? '/orders/admin' : '/orders';
+    router.push(route);
   };
 
   return (
@@ -158,6 +163,80 @@ export default function Profile() {
                 <ArrowForwardIos className={profileClasses.icons[platform]} />
               </Button>
               <Divider className={profileClasses.divider[platform]} />
+              {isAdmin && (
+                <Box className="w-full">
+                  <Button
+                    className={profileClasses.boxes.sectionOrders[platform]}
+                    disableRipple
+                    onClick={() => router.push('/product/update-prices')}
+                    variant={platform === 'web' ? 'outlined' : 'text'}
+                    sx={{
+                      '&:hover': { backgroundColor: colors.lightRed },
+                    }}
+                  >
+                    <DriveFolderUploadIcon
+                      className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    >
+                      {t('updatePrices')}
+                    </Typography>
+                    <ArrowForwardIos
+                      className={profileClasses.icons[platform]}
+                    />
+                  </Button>
+                  <Divider className={profileClasses.divider[platform]} />
+                  <Button
+                    className={profileClasses.boxes.sectionOrders[platform]}
+                    disableRipple
+                    onClick={() => router.push('/analytics')}
+                    variant={platform === 'web' ? 'outlined' : 'text'}
+                    sx={{
+                      '&:hover': { backgroundColor: colors.lightRed },
+                    }}
+                  >
+                    <AnalyticsIcon
+                      className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    >
+                      {t('analytics')}
+                    </Typography>
+                    <ArrowForwardIos
+                      className={profileClasses.icons[platform]}
+                    />
+                  </Button>
+                  <Divider className={profileClasses.divider[platform]} />
+                  {user?.grade === 'SUPERUSER' && (
+                    <Box>
+                      <Button
+                        className={profileClasses.boxes.sectionOrders[platform]}
+                        disableRipple
+                        onClick={() => router.push('/procurement')}
+                        variant={platform === 'web' ? 'outlined' : 'text'}
+                        sx={{
+                          '&:hover': { backgroundColor: colors.lightRed },
+                        }}
+                      >
+                        <LocalShippingOutlinedIcon
+                          className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                        />
+                        <Typography
+                          className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                        >
+                          {t('procurement')}
+                        </Typography>
+                        <ArrowForwardIos
+                          className={profileClasses.icons[platform]}
+                        />
+                      </Button>
+                      <Divider className={profileClasses.divider[platform]} />
+                    </Box>
+                  )}
+                </Box>
+              )}
               <Button
                 className={profileClasses.boxes.sectionOrders[platform]}
                 disableRipple
@@ -175,7 +254,7 @@ export default function Profile() {
                 <Typography
                   className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                 >
-                  {t('myOrders')}
+                  {isAdmin ? t('userOrders') : t('myOrders')}
                 </Typography>
                 <ArrowForwardIos className={profileClasses.icons[platform]} />
               </Button>
