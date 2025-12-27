@@ -5,6 +5,7 @@ import { ChatMessage, ChatSession } from '@/pages/lib/types';
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -19,12 +20,10 @@ interface ChatContextProps {
   sessions: ChatSession[];
   currentSession: ChatSession | undefined;
   isSendingMessage: boolean;
-  showClosureNotification: boolean;
-  setShowClosureNotification: React.Dispatch<React.SetStateAction<boolean>>;
   connect: () => void;
   disconnect: () => void;
   sendMessage: (content: string) => void;
-  joinSession: (sessionId: string) => Promise<void>;
+  joinSession: (sessionId: string) => Promise<boolean>;
   loadMessages: (sessionId: string, cursorId?: string) => Promise<void>;
   loadSessions: () => Promise<void>;
   createSession: () => Promise<ChatSession | null>;
@@ -42,12 +41,10 @@ const ChatContext = createContext<ChatContextProps>({
   sessions: [],
   currentSession: undefined,
   isSendingMessage: false,
-  showClosureNotification: false,
-  setShowClosureNotification: () => {},
   connect: () => {},
   disconnect: () => {},
   sendMessage: () => {},
-  joinSession: async () => {},
+  joinSession: async () => false,
   loadMessages: async () => {},
   loadSessions: async () => {},
   createSession: async () => null,
@@ -66,7 +63,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [showClosureNotification, setShowClosureNotification] = useState(false);
 
   const ws = useRef<WebSocket | null>(null);
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
@@ -92,7 +88,125 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user, accessToken]);
 
-  const connect = () => {
+  const loadSessions = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/chat/session`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSessions(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [accessToken]);
+
+  const loadMessages = useCallback(
+    async (sessionId: string, cursorId?: string) => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        ws.current.send(
+          JSON.stringify({
+            type: 'get_messages',
+            sessionId,
+            cursorId,
+          }),
+        );
+      } else {
+        console.warn('WS not connected, cannot load messages');
+      }
+    },
+    [],
+  );
+
+  const handleIncomingMessage = useCallback(
+    (data: any) => {
+      if (data.type === 'ack') {
+        setIsSendingMessage(false);
+        if (!data.success) {
+          setMessages([]);
+          if (data.error === 'closed_session') {
+            console.warn('Session closed error');
+            setCurrentSession(undefined);
+          } else if (data.error === 'wrong_session') {
+            console.warn('Not a participant error');
+            setCurrentSession(undefined);
+          }
+        }
+        return;
+      }
+
+      if (data.type === 'history') {
+        const activeSession = sessionRef.current;
+        if (activeSession && data.sessionId === activeSession.id) {
+          setMessages((prev) => {
+            const incomingMessages = data.messages.map((msg: any) => ({
+              ...msg,
+              type: 'message',
+              messageId: msg.id,
+            }));
+
+            // Deduplicate by messageId
+            const existingIds = new Set(
+              prev
+                .filter((m) => m.type === 'message' && m.messageId)
+                .map((m: any) => m.messageId),
+            );
+
+            const uniqueNewMessages = incomingMessages.filter(
+              (msg: any) => !existingIds.has(msg.messageId),
+            );
+
+            // Combine and Sort by time
+            return [...prev, ...uniqueNewMessages].sort((a: any, b: any) => {
+              const timeA = new Date(a.date || a.createdAt).getTime();
+              const timeB = new Date(b.date || b.createdAt).getTime();
+              return timeA - timeB;
+            });
+          });
+        }
+        return;
+      }
+
+      if (data.type === 'message') {
+        const activeSession = sessionRef.current;
+        if (activeSession && data.sessionId === activeSession.id) {
+          setMessages((prev) => {
+            if (
+              prev.some(
+                (m) => m.type === 'message' && m.messageId === data.messageId,
+              )
+            )
+              return prev;
+            return [...prev, data];
+          });
+        }
+      }
+
+      if (data.type === 'session_update') {
+        const activeSession = sessionRef.current;
+
+        if (activeSession?.id === data.sessionId) {
+          if (data.status === 'CLOSED') {
+            setCurrentSession((prev) =>
+              prev ? { ...prev, status: 'CLOSED' } : undefined,
+            );
+            setMessages([]);
+          } else {
+            setCurrentSession((prev) =>
+              prev ? { ...prev, status: data.status } : undefined,
+            );
+          }
+        }
+
+        loadSessions();
+      }
+    },
+    [user, loadSessions],
+  );
+
+  const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
     if (!accessToken) return;
 
@@ -121,176 +235,96 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         }
       }, 2000);
     };
-  };
+  }, [accessToken, handleIncomingMessage, user]);
 
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     ws.current?.close();
     ws.current = null;
     setIsConnected(false);
-  };
+  }, []);
 
-  const handleIncomingMessage = (data: any) => {
-    if (data.type === 'ack') {
-      setIsSendingMessage(false);
-      if (!data.success) {
-        setMessages([]);
-        if (data.error === 'closed_session') {
-          console.warn('Session closed error');
-          setCurrentSession(undefined);
-        } else if (data.error === 'wrong_session') {
-          console.warn('Not a participant error');
-          setCurrentSession(undefined);
-        }
+  const sendMessage = useCallback(
+    (content: string) => {
+      if (!ws.current || !isConnected || !currentSession || !user) return;
+
+      setIsSendingMessage(true);
+
+      ws.current.send(
+        JSON.stringify({
+          type: 'message',
+          tempId: uuidv4(),
+          content,
+          sessionId: currentSession.id,
+          senderId: user.id,
+          senderRole: user.grade,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    },
+    [isConnected, currentSession, user],
+  );
+
+  const joinSession = useCallback(
+    async (sessionId: string) => {
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session) {
+        console.warn('Session not found:', sessionId);
+        return false;
       }
-      return;
-    }
 
-    if (data.type === 'history') {
-      const activeSession = sessionRef.current;
-      if (activeSession && data.sessionId === activeSession.id) {
-        setMessages((prev) => {
-          const incomingMessages = data.messages.map((msg: any) => ({
-            ...msg,
-            type: 'message',
-            messageId: msg.id,
-          }));
+      setMessages([]);
 
-          // Deduplicate by messageId
-          const existingIds = new Set(
-            prev
-              .filter((m) => m.type === 'message' && m.messageId)
-              .map((m: any) => m.messageId),
-          );
+      // Only admins can join PENDING sessions
+      const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
-          const uniqueNewMessages = incomingMessages.filter(
-            (msg: any) => !existingIds.has(msg.messageId),
-          );
-
-          // Combine and Sort by time
-          return [...prev, ...uniqueNewMessages].sort((a: any, b: any) => {
-            const timeA = new Date(a.date || a.createdAt).getTime();
-            const timeB = new Date(b.date || b.createdAt).getTime();
-            return timeA - timeB;
+      if (session.status === 'PENDING' && isAdmin) {
+        try {
+          const res = await fetch(`${BASE_URL}/api/chat/sessionActions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ sessionId }),
           });
-        });
-      }
-      return;
-    }
+          const data = await res.json();
 
-    if (data.type === 'message') {
-      const activeSession = sessionRef.current;
-      if (activeSession && data.sessionId === activeSession.id) {
-        setMessages((prev) => {
-          if (
-            prev.some(
-              (m) => m.type === 'message' && m.messageId === data.messageId,
-            )
-          )
-            return prev;
-          return [...prev, data];
-        });
-      }
-    }
+          if (data.success && data.data) {
+            setCurrentSession(data.data);
 
-    if (data.type === 'session_update') {
-      const activeSession = sessionRef.current;
-      if (activeSession?.id === data.sessionId) {
-        if (data.status === 'CLOSED') {
-          const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-
-          if (!isAdmin) {
-            setShowClosureNotification(true);
+            if (ws.current?.readyState === WebSocket.OPEN) {
+              ws.current.send(
+                JSON.stringify({
+                  type: 'session_update',
+                  sessionId,
+                  status: 'ACTIVE',
+                  adminId: user.id,
+                }),
+              );
+            }
+          } else {
+            throw new Error(data.message || 'Failed to claim session');
           }
-
-          setCurrentSession((prev) =>
-            prev ? { ...prev, status: 'CLOSED' } : undefined,
-          );
-          setMessages([]);
-        } else {
-          setCurrentSession((prev) =>
-            prev ? { ...prev, status: data.status } : undefined,
-          );
+        } catch (error) {
+          console.error('Failed to claim session:', error);
+          loadSessions();
+          return false;
         }
+      } else {
+        setCurrentSession(session);
+      }
+
+      if (isConnected) {
+        await loadMessages(sessionId);
       }
 
       loadSessions();
-    }
-  };
+      return true;
+    },
+    [sessions, user, accessToken, isConnected, loadMessages, loadSessions],
+  );
 
-  const sendMessage = (content: string) => {
-    if (!ws.current || !isConnected || !currentSession || !user) return;
-
-    setIsSendingMessage(true);
-
-    ws.current.send(
-      JSON.stringify({
-        type: 'message',
-        tempId: uuidv4(),
-        content,
-        sessionId: currentSession.id,
-        senderId: user.id,
-        senderRole: user.grade,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-  };
-
-  const joinSession = async (sessionId: string) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (!session) {
-      console.warn('Session not found:', sessionId);
-      return;
-    }
-
-    setMessages([]);
-
-    // Only admins can join PENDING sessions
-    const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-
-    if (session.status === 'PENDING' && isAdmin) {
-      try {
-        const res = await fetch(`${BASE_URL}/api/chat/sessionActions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ sessionId }),
-        });
-        const data = await res.json();
-
-        if (data.success && data.data) {
-          setCurrentSession(data.data);
-
-          if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(
-              JSON.stringify({
-                type: 'session_update',
-                sessionId,
-                status: 'ACTIVE',
-              }),
-            );
-          }
-        } else {
-          throw new Error(data.message || 'Failed to claim session');
-        }
-      } catch (error) {
-        console.error('Failed to claim session:', error);
-        throw error;
-      }
-    } else {
-      // Regular users or already active sessions: just set current session
-      setCurrentSession(session);
-    }
-
-    if (isConnected) {
-      await loadMessages(sessionId);
-    }
-
-    loadSessions();
-  };
-
-  const createSession = async () => {
+  const createSession = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/chat/session`, {
         method: 'POST',
@@ -311,79 +345,52 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       console.error(err);
       return null;
     }
-  };
+  }, [accessToken]);
 
-  const loadSessions = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/chat/session`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSessions(data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const endSession = useCallback(
+    async (sessionId: string) => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/chat/session`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ sessionId, chatStatus: 'CLOSED' }),
+        });
+        const data = await res.json();
 
-  const loadMessages = async (sessionId: string, cursorId?: string) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({
-          type: 'get_messages',
-          sessionId,
-          cursorId,
-        }),
-      );
-    } else {
-      console.warn('WS not connected, cannot load messages');
-    }
-  };
-
-  const endSession = async (sessionId: string) => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/chat/session`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ sessionId, chatStatus: 'CLOSED' }),
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-          ws.current.send(
-            JSON.stringify({
-              type: 'session_update',
-              sessionId,
-              status: 'CLOSED',
-            }),
-          );
-        }
-
-        if (currentSession?.id === sessionId) {
-          const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-
-          if (isAdmin) {
-            setCurrentSession(undefined);
-          } else {
-            // User: mark as closed (will show closure UI)
-            setCurrentSession((prev) =>
-              prev ? { ...prev, status: 'CLOSED' } : undefined,
+        if (data.success) {
+          if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(
+              JSON.stringify({
+                type: 'session_update',
+                sessionId,
+                status: 'CLOSED',
+              }),
             );
           }
-        }
 
-        loadSessions();
+          if (currentSession?.id === sessionId) {
+            const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+
+            if (isAdmin) {
+              setCurrentSession(undefined);
+            } else {
+              setCurrentSession((prev) =>
+                prev ? { ...prev, status: 'CLOSED' } : undefined,
+              );
+            }
+          }
+
+          loadSessions();
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    },
+    [accessToken, currentSession, user, loadSessions],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -392,8 +399,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
-      showClosureNotification,
-      setShowClosureNotification,
       connect,
       disconnect,
       sendMessage,
@@ -408,11 +413,18 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       isConnected,
+      messages,
       sessions,
       currentSession,
       isSendingMessage,
-      showClosureNotification,
-      messages,
+      connect,
+      disconnect,
+      sendMessage,
+      joinSession,
+      loadMessages,
+      loadSessions,
+      createSession,
+      endSession,
     ],
   );
 

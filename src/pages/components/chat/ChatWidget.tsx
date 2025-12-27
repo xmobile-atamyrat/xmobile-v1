@@ -37,12 +37,12 @@ const ChatWidget = () => {
     loadMessages,
     sessions,
     joinSession,
-    showClosureNotification,
-    setShowClosureNotification,
   } = useChatContext();
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showTakenAlert, setShowTakenAlert] = useState(false);
+  const [isSessionClosed, setSessionClosed] = useState(false);
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
@@ -50,7 +50,15 @@ const ChatWidget = () => {
     if (isOpen) {
       loadSessions();
     }
-  }, [isOpen]);
+  }, [isOpen, loadSessions]);
+
+  useEffect(() => {
+    if (currentSession?.status === 'CLOSED') {
+      if (!isAdmin) {
+        setSessionClosed(true);
+      }
+    }
+  }, [currentSession, isAdmin]);
 
   useEffect(() => {
     if (isOpen && !isAdmin && sessions.length > 0 && !currentSession) {
@@ -60,7 +68,15 @@ const ChatWidget = () => {
         loadMessages(userSession.id);
       }
     }
-  }, [sessions, isAdmin, currentSession, isOpen, isConnected]);
+  }, [
+    sessions,
+    isAdmin,
+    currentSession,
+    isOpen,
+    isConnected,
+    loadMessages,
+    setCurrentSession,
+  ]);
 
   if (!user) return null;
 
@@ -76,7 +92,10 @@ const ChatWidget = () => {
 
   const handleSessionSelect = async (session: ChatSession) => {
     try {
-      await joinSession(session.id);
+      const success = await joinSession(session.id);
+      if (!success) {
+        setShowTakenAlert(true);
+      }
     } catch (error) {
       console.error('Failed to join session', error);
     }
@@ -300,17 +319,34 @@ const ChatWidget = () => {
       </Slide>
 
       <Snackbar
-        open={showClosureNotification}
+        open={isSessionClosed}
         autoHideDuration={5000}
-        onClose={() => setShowClosureNotification(false)}
+        onClose={() => setSessionClosed(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setShowClosureNotification(false)}
-          severity="warning"
+          onClose={() => setSessionClosed(false)}
+          severity="info"
           variant="filled"
+          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
         >
           {t('chatSessionClosedByAdmin')}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={showTakenAlert}
+        autoHideDuration={5000}
+        onClose={() => setShowTakenAlert(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowTakenAlert(false)}
+          severity="info"
+          variant="filled"
+          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
+        >
+          {t('chatSessionTakenByOther')}
         </Alert>
       </Snackbar>
     </>

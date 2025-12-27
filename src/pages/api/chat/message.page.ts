@@ -43,6 +43,13 @@ async function handler(
     }
   } else if (method === 'DELETE') {
     try {
+      if (req.grade !== 'SUPERUSER') {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: Only superadmins can delete messages',
+        });
+      }
+
       const { messageId } = req.body;
       if (!messageId) {
         return res
