@@ -131,6 +131,7 @@ model ChatSession {
 
 model ChatMessage {
   id              String        @id @default(cuid())
+  tempId          String?       @unique
   senderId        String
   senderRole      UserRole
   content         String
@@ -143,6 +144,8 @@ model ChatMessage {
   updatedAt       DateTime      @updatedAt
 
   @@index([sessionId, createdAt])
+  @@index([sessionId, isRead])
+  @@index([tempId])
 }
 
 enum ChatStatus {
