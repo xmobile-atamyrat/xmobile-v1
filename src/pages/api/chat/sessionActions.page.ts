@@ -73,7 +73,9 @@ async function handler(
         `Error: ${error}`,
       );
 
-      return res.status(400).json({ success: false, message: error.message });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Failed to join session' });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);

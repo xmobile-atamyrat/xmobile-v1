@@ -67,7 +67,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               sx={{
                 ml: 2,
                 '& .MuiBadge-badge': {
-                  backgroundColor: '#DC1010',
+                  backgroundColor: '#ff624c',
                   color: '#fff',
                   fontSize: '11px',
                 },
@@ -124,7 +124,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        backgroundColor: '#2196F3',
+                        backgroundColor: '#ff624c',
                         flexShrink: 0,
                       }}
                     />
@@ -192,7 +192,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        backgroundColor: '#2196F3',
+                        backgroundColor: '#ff624c',
                         flexShrink: 0,
                       }}
                     />
