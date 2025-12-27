@@ -69,8 +69,9 @@ const authenticateConnection = async (
       return { safeConnection: null };
     }
 
-    const { userId } = await verifyToken(accessToken, ACCESS_SECRET);
+    const { userId, grade } = await verifyToken(accessToken, ACCESS_SECRET);
     safeConnection.userId = userId;
+    safeConnection.userGrade = grade;
 
     return { safeConnection };
   } catch (accessTokenError) {
@@ -87,6 +88,7 @@ const authenticateConnection = async (
           generateTokens(userId, grade);
 
         safeConnection.userId = userId;
+        safeConnection.userGrade = grade;
 
         return {
           safeConnection,
@@ -138,6 +140,34 @@ const handleMessage = async (
       );
     }
 
+    if (senderId !== safeConnection.userId) {
+      console.error(
+        filepath,
+        `Message rejected: senderId mismatch. Authenticated: ${safeConnection.userId}, Claimed: ${senderId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'invalid_sender',
+      });
+      return;
+    }
+
+    if (senderRole !== safeConnection.userGrade) {
+      console.error(
+        filepath,
+        `Message rejected: senderRole mismatch. Authenticated: ${safeConnection.userGrade}, Claimed: ${senderRole}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'invalid_role',
+      });
+      return;
+    }
+
     const session = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
@@ -167,20 +197,6 @@ const handleMessage = async (
         success: false,
         tempId,
         error: 'closed_session',
-      });
-      return;
-    }
-
-    if (senderId !== safeConnection.userId) {
-      console.error(
-        filepath,
-        `Message rejected: senderId mismatch. Authenticated: ${safeConnection.userId}, Claimed: ${senderId}`,
-      );
-      sendMessage(safeConnection, {
-        type: 'ack',
-        success: false,
-        tempId,
-        error: 'invalid_sender',
       });
       return;
     }

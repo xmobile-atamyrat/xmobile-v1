@@ -9,7 +9,6 @@ import { ResponseApi } from '@/pages/lib/types';
 import { ChatMessage } from '@prisma/client';
 
 const filepath = 'src/pages/api/chat/message.page.ts';
-const messagesPerPage = 50;
 
 async function handler(
   req: AuthenticatedRequest,
@@ -18,56 +17,7 @@ async function handler(
   addCors(res);
 
   const { method } = req;
-  if (method === 'GET') {
-    try {
-      const {
-        sessionId,
-        cursorMessageId,
-      }: { sessionId: string; cursorMessageId: string } = req.body;
-
-      // Verify user is participant in session
-      const session = await dbClient.chatSession.findFirst({
-        where: {
-          id: sessionId,
-          users: { some: { id: req.userId } },
-        },
-      });
-
-      if (!session) {
-        return res.status(403).json({
-          success: false,
-          message: 'Unauthorized: Not a participant in this session',
-        });
-      }
-
-      const messages = await dbClient.chatMessage.findMany({
-        where: {
-          sessionId,
-        },
-        cursor: cursorMessageId
-          ? {
-              id: cursorMessageId,
-            }
-          : undefined,
-        skip: cursorMessageId ? 1 : 0,
-        take: messagesPerPage,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      return res.status(200).json({ success: true, data: messages.reverse() });
-    } catch (error) {
-      console.error(
-        filepath,
-        `Couldn't fetch the messages; 
-        sessionId: ${req.body?.sessionId}, 
-        cursorMessageId: ${req.body?.cursorMessageId},
-        Error: ${error}`,
-      );
-      return res.status(400).json({ success: false, message: error.message });
-    }
-  } else if (method === 'PATCH') {
+  if (method === 'PATCH') {
     try {
       const { isRead, content, messageId } = req.body;
       const data: Partial<ChatMessage> = {};
