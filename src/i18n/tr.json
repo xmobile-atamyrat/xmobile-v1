@@ -262,5 +262,6 @@
   "city": "Şehir / Velayat",
   "cityPlaceholder": "Türkmenabat",
   "streetAddress": "Sokak Adresi",
-  "cancelTheOrder": "Siparişi İptal Et"
+  "cancelTheOrder": "Siparişi İptal Et",
+  "serverError": "There is server error. Please, contact the administrators."
 }
