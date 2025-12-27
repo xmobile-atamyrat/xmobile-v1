@@ -210,7 +210,11 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
     if (!accessToken) return;
 
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000'}/ws/?accessToken=${accessToken}`;
+    const wsBase =
+      process.env.NODE_ENV === 'production'
+        ? `wss://${process.env.NEXT_PUBLIC_HOST}`
+        : `ws://localhost:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}`;
+    const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
