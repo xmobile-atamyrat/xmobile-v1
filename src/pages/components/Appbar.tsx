@@ -10,10 +10,9 @@ import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { Dvr } from '@mui/icons-material';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
-import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
-import LoginIcon from '@mui/icons-material/Login';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
@@ -141,11 +140,25 @@ export default function CustomAppBar({
         className={appbarClasses.appbar[platform]}
         elevation={0}
       >
-        <Box className="w-full min-h-[48px] flex justify-center items-start">
-          <Box className="w-[78.95vw] min-h-[32px] justify-between flex flex-row items-center">
-            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
-              <Box className="min-w-[234px] flex flex-row items-center">
-                <LocationOnIcon className="h-[16px] text-[#303030]" />
+        <Box className="w-full min-h-[64px] flex justify-center items-start">
+          <Box className="w-[78.95vw] h-full justify-between flex flex-row items-center">
+            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center">
+              <Box className="min-w-[234px] h-full flex flex-row items-center">
+                {platform === 'web' && (
+                  <>
+                    <Box className="w-auto h-[64px] flex justify-center items-center cursor-pointer pb-2 pr-2">
+                      <CardMedia
+                        component="img"
+                        src="/xmobile-processed-logo.png"
+                        className="w-auto h-[36px]"
+                        onClick={() => {
+                          router.push('/');
+                        }}
+                      />
+                    </Box>
+                  </>
+                )}
+                <LocationOnIcon className="h-[20px] text-[#303030]" />
                 <Typography
                   className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
@@ -155,7 +168,7 @@ export default function CustomAppBar({
               <Divider
                 orientation="vertical"
                 flexItem
-                className="text-[#303030] mx-[-15px] min-h-[30px] my-auto"
+                className="text-[#303030] mx-[-15px] h-[30px] my-auto"
               />
               <Box className="min-w-[234px] flex flex-row items-center">
                 <CallIcon className="h-[16px] text-[#303030]" />
@@ -232,6 +245,7 @@ export default function CustomAppBar({
         </Box>
         <Divider className="text-[#303030]" />
         <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
+          {/* Back button, Menu, Logo */}
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
               <IconButton
@@ -258,6 +272,8 @@ export default function CustomAppBar({
               <MenuIcon className={appbarClasses.menuIcon[platform]} />
             </IconButton>
           </Box>
+
+          {/* Search Bar */}
           <Box className="w-[30vw] h-[48px]">
             {SearchBar({
               searchKeyword: localSearchKeyword,
@@ -266,32 +282,36 @@ export default function CustomAppBar({
               width: '95%',
             })}
           </Box>
+
+          {/* Cart, Profile */}
           <Box className="flex flex-row w-auto h-full justify-between items-center">
-            {user && (
-              <Box className="flex flex-row items-center">
-                <IconButton
-                  onClick={() => router.push('/cart')}
-                  className="rounded-none"
-                >
-                  <CardMedia
-                    component="img"
-                    src="/cartWeb.png"
-                    className={appbarClasses.shoppingCCI[platform]}
-                  />
-                  <Typography
-                    className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
-                  >
-                    {t('cart')}
-                  </Typography>
-                </IconButton>
-                <Divider
-                  orientation="vertical"
-                  className="h-[32px] text-[#303030] mx-[12px]"
+            <Box className="flex flex-row items-center">
+              <IconButton
+                onClick={() => router.push('/cart')}
+                className="rounded-none"
+              >
+                <CardMedia
+                  component="img"
+                  src="/cartWeb.png"
+                  className={appbarClasses.shoppingCCI[platform]}
                 />
-              </Box>
-            )}
+                <Typography
+                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
+                >
+                  {t('cart')}
+                </Typography>
+              </IconButton>
+              <Divider
+                orientation="vertical"
+                className="h-[32px] text-[#303030] mx-[12px]"
+              />
+            </Box>
             <IconButton
-              onClick={(event) => setAnchorEl(event.currentTarget)}
+              onClick={
+                user
+                  ? (event) => setAnchorEl(event.currentTarget)
+                  : () => router.push('/user/profile')
+              }
               className="rounded-none"
             >
               <CardMedia
@@ -338,7 +358,7 @@ export default function CustomAppBar({
         open={isMenuOpen}
         onClose={() => setAnchorEl(null)}
       >
-        {user != null ? (
+        {user != null && (
           <Box>
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <MenuItem
@@ -358,6 +378,15 @@ export default function CustomAppBar({
                 <Typography>{t('analytics')}</Typography>
               </MenuItem>
             )}
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <MenuItem
+                className={appbarClasses.menuItemAcc}
+                onClick={() => router.push('/orders/admin')}
+              >
+                <ListAltIcon />
+                <Typography>{t('userOrders')}</Typography>
+              </MenuItem>
+            )}
             {user?.grade === 'SUPERUSER' && (
               <MenuItem
                 className={appbarClasses.menuItemAcc}
@@ -365,6 +394,17 @@ export default function CustomAppBar({
               >
                 <Dvr />
                 <Typography>{t('procurement')}</Typography>
+              </MenuItem>
+            )}
+            {user?.grade === 'FREE' && (
+              <MenuItem
+                className={appbarClasses.menuItemAcc}
+                onClick={() => {
+                  router.push('/orders');
+                }}
+              >
+                <img src="/orders/my_order_icon.svg" alt="My Orders Icon" />
+                <Typography>{t('myOrders')}</Typography>
               </MenuItem>
             )}
             <MenuItem
@@ -383,23 +423,6 @@ export default function CustomAppBar({
             >
               <LogoutIcon />
               <Typography>{t('signout')}</Typography>
-            </MenuItem>
-          </Box>
-        ) : (
-          <Box>
-            <MenuItem
-              onClick={() => router.push('/user/signin')}
-              className={appbarClasses.menuItemAcc}
-            >
-              <LoginIcon />
-              <Typography>{t('signin')}</Typography>
-            </MenuItem>
-            <MenuItem
-              onClick={() => router.push('/user/signup')}
-              className={appbarClasses.menuItemAcc}
-            >
-              <AppRegistrationIcon />
-              <Typography>{t('signup')}</Typography>
             </MenuItem>
           </Box>
         )}
