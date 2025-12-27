@@ -5,16 +5,16 @@ import {
   generateTokens,
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { ChatMessage } from '@/pages/lib/types';
+import { AuthenticatedConnection } from '@/ws-server/lib/types';
+import { sendMessage, verifySessionParticipant } from '@/ws-server/lib/utils';
 import { UserRole } from '@prisma/client';
+import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
 import { parse } from 'url';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
 import { z, ZodError } from 'zod';
-import cookie from 'cookie';
-import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
-import { ChatMessageProps } from '@/pages/lib/types';
-import { sendMessage } from '@/ws-server/lib/utils';
-import { AuthenticatedConnection } from '@/ws-server/lib/types';
 
 const filepath = 'src/ws-server/index.ts';
 
@@ -23,14 +23,15 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 const MessageSchema = z.object({
+  tempId: z.string().optional(),
   sessionId: z.string(),
   senderId: z.string(),
   senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
-  content: z.string(),
+  content: z.string().max(5000),
   timestamp: z.string(),
 });
 
-const connections = new Map<string, Set<AuthenticatedConnection>>();
+export const connections = new Map<string, Set<AuthenticatedConnection>>();
 
 const safeCloseConnection = (
   code: number,
@@ -68,8 +69,9 @@ const authenticateConnection = async (
       return { safeConnection: null };
     }
 
-    const { userId } = await verifyToken(accessToken, ACCESS_SECRET);
+    const { userId, grade } = await verifyToken(accessToken, ACCESS_SECRET);
     safeConnection.userId = userId;
+    safeConnection.userGrade = grade;
 
     return { safeConnection };
   } catch (accessTokenError) {
@@ -86,6 +88,7 @@ const authenticateConnection = async (
           generateTokens(userId, grade);
 
         safeConnection.userId = userId;
+        safeConnection.userGrade = grade;
 
         return {
           safeConnection,
@@ -126,12 +129,99 @@ const handleMessage = async (
   try {
     const parsedMessage = JSON.parse(incomingMessage.toString());
 
-    const { senderId, senderRole, content, sessionId, timestamp } =
+    const { senderId, senderRole, content, sessionId, timestamp, tempId } =
       MessageSchema.parse(parsedMessage);
     parsedTimestamp = timestamp;
 
+    if (!tempId) {
+      console.warn(
+        filepath,
+        `Message received without tempId from user ${senderId} - no idempotency protection`,
+      );
+    }
+
+    if (senderId !== safeConnection.userId) {
+      console.error(
+        filepath,
+        `Message rejected: senderId mismatch. Authenticated: ${safeConnection.userId}, Claimed: ${senderId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'invalid_sender',
+      });
+      return;
+    }
+
+    if (senderRole !== safeConnection.userGrade) {
+      console.error(
+        filepath,
+        `Message rejected: senderRole mismatch. Authenticated: ${safeConnection.userGrade}, Claimed: ${senderRole}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'invalid_role',
+      });
+      return;
+    }
+
+    const session = await verifySessionParticipant(
+      sessionId,
+      safeConnection.userId,
+    );
+
+    if (!session) {
+      console.error(
+        filepath,
+        `Message rejected: User ${safeConnection.userId} not in session ${sessionId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'wrong_session',
+      });
+      return;
+    }
+
+    if (session.status === 'CLOSED') {
+      console.warn(
+        filepath,
+        `Message rejected: Session ${sessionId} is CLOSED`,
+      );
+      sendMessage(safeConnection, {
+        type: 'ack',
+        success: false,
+        tempId,
+        error: 'closed_session',
+      });
+      return;
+    }
+
+    // Idempotency: prevent duplicate message if client retries with same tempId
+    if (tempId) {
+      const existing = await dbClient.chatMessage.findUnique({
+        where: { tempId },
+      });
+      if (existing) {
+        sendMessage(safeConnection, {
+          type: 'ack',
+          tempId,
+          messageId: existing.id,
+          timestamp,
+          date: existing.updatedAt,
+          success: true,
+        });
+        return;
+      }
+    }
+
     const message = await dbClient.chatMessage.create({
       data: {
+        tempId,
         senderId,
         content,
         senderRole,
@@ -141,19 +231,14 @@ const handleMessage = async (
 
     sendMessage(safeConnection, {
       type: 'ack',
+      tempId,
       messageId: message.id,
       timestamp,
       date: message.updatedAt,
       success: true,
     });
 
-    const { users: sessionUsers } = await dbClient.chatSession.findUnique({
-      where: {
-        id: message.sessionId,
-      },
-      select: { users: true },
-    });
-    const outgoingMessage: ChatMessageProps = {
+    const outgoingMessage: ChatMessage = {
       type: 'message',
       messageId: message.id,
       sessionId,
@@ -163,11 +248,10 @@ const handleMessage = async (
       isRead: message.isRead,
       date: message.updatedAt,
     };
-    sessionUsers.forEach((sessionUser) => {
+
+    session.users.forEach((sessionUser) => {
       connections.get(sessionUser.id)?.forEach((conn) => {
-        if (safeConnection !== conn) {
-          sendMessage(conn, outgoingMessage);
-        }
+        sendMessage(conn, outgoingMessage);
       });
     });
   } catch (error) {
@@ -188,6 +272,96 @@ const handleMessage = async (
     } catch (err) {
       console.error(filepath, err);
     }
+  }
+};
+
+const GetMessagesSchema = z.object({
+  type: z.literal('get_messages'),
+  sessionId: z.string(),
+  cursorId: z.string().optional(),
+});
+
+const handleGetMessages = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  try {
+    const parsed = JSON.parse(incomingMessage.toString());
+    const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
+    const userId = safeConnection.userId;
+
+    const session = await verifySessionParticipant(sessionId, userId);
+    if (!session) {
+      console.error(
+        filepath,
+        `Unauthorized history request: User ${userId} not in session ${sessionId}`,
+      );
+      return;
+    }
+
+    // Cursor pagination: take: -50 (backwards), skip: 1 (exclude cursor), orderBy deterministic
+    const messages = await dbClient.chatMessage.findMany({
+      take: -50,
+      skip: cursorId ? 1 : 0,
+      cursor: cursorId ? { id: cursorId } : undefined,
+      where: { sessionId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    sendMessage(safeConnection, {
+      type: 'history',
+      sessionId,
+      messages: messages.map((msg) => ({
+        ...msg,
+        type: 'message', // Augment for frontend compatibility
+        messageId: msg.id,
+      })),
+    });
+  } catch (error) {
+    if (!(error instanceof ZodError)) {
+      console.error(filepath, 'handleGetMessages error:', error);
+    }
+  }
+};
+
+/**
+ * Generic session relay - broadcasts any message to all session participants
+ * Use for: session_status, typing_indicators, read_receipts, etc.
+ * Server just validates sender is in session, then relays message as-is
+ */
+const handleSessionRelay = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  try {
+    const parsed = JSON.parse(incomingMessage.toString());
+    const { sessionId } = parsed;
+
+    if (!sessionId) {
+      console.error(filepath, 'Relay message missing sessionId');
+      return;
+    }
+
+    const session = await verifySessionParticipant(
+      sessionId,
+      safeConnection.userId,
+    );
+
+    if (!session) {
+      console.error(
+        filepath,
+        `Unauthorized relay: User ${safeConnection.userId} not in session ${sessionId}`,
+      );
+      return;
+    }
+
+    session.users.forEach((sessionUser) => {
+      connections.get(sessionUser.id)?.forEach((conn) => {
+        sendMessage(conn, parsed);
+      });
+    });
+  } catch (error) {
+    console.error(filepath, 'Error in session relay:', error);
   }
 };
 
@@ -214,9 +388,23 @@ wsServer.on('connection', async (connection, request) => {
         }
       }
 
-      safeConnection.on('message', (message: RawData) =>
-        handleMessage(message, safeConnection),
-      );
+      safeConnection.on('message', (message: RawData) => {
+        try {
+          const parsed = JSON.parse(message.toString());
+
+          if (parsed.type === 'get_messages') {
+            handleGetMessages(message, safeConnection);
+          } else if (parsed.type === 'message') {
+            handleMessage(message, safeConnection);
+          } else if (parsed.sessionId) {
+            handleSessionRelay(message, safeConnection);
+          } else {
+            console.warn(filepath, 'Unknown message type:', parsed.type);
+          }
+        } catch (err) {
+          console.error(filepath, 'Failed to handle message:', err);
+        }
+      });
 
       safeConnection.on('close', () =>
         safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
