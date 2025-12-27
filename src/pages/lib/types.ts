@@ -15,7 +15,6 @@ export interface ExtendedCategory extends Category {
 
 export interface ProtectedUser extends Omit<User, 'password'> {}
 
-// Need to mirror the ChatSession from Prisma but with simplified relations for frontend
 export interface ChatSession {
   id: string;
   status: 'PENDING' | 'ACTIVE' | 'CLOSED';
@@ -27,29 +26,28 @@ export interface ChatSession {
 export interface GetMessagesRequest {
   type: 'get_messages';
   sessionId: string;
-  cursorId?: string; // ID of the oldest message for pagination
-}
-
-export interface HistoryResponseMessage {
-  type: 'history';
-  sessionId: string;
-  messages: any[]; // We will map these to ChatMessageProps on the client
+  cursorId?: string;
 }
 
 export interface ChatMessage {
-  // todo: now is this chatmessage type from prisma model? becaues prisma uses the same type name, i think its not a good practice here
   type: 'message';
   sessionId: string;
   senderId: string;
   senderRole: string;
   content: string;
-  tempId?: string; // Client-side ID for idempotency
+  tempId?: string;
 
   isRead?: boolean;
   messageId?: string;
-  date?: Date | string; // Allow string for serialization
+  date?: Date | string;
   timestamp?: string;
   status?: 'sending' | 'sent' | 'error';
+}
+
+export interface HistoryResponseMessage {
+  type: 'history';
+  sessionId: string;
+  messages: ChatMessage[];
 }
 
 export type ChatEvent =
