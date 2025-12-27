@@ -1,4 +1,4 @@
-import Footer from '@/pages/components/Footer';
+import Layout from '@/pages/components/Layout';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
@@ -8,8 +8,8 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
-import { ArrowBackIos } from '@mui/icons-material';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import { ArrowForwardIos } from '@mui/icons-material';
+import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import {
   Box,
   Button,
@@ -67,15 +67,9 @@ export default function Profile() {
   };
 
   return (
-    <Box className="w-full h-full">
+    <Layout handleHeaderBackButton={() => router.push('/')}>
       {!user ? (
         <Box className={profileClasses.boxes.main[platform]}>
-          <Link href="/">
-            <ArrowBackIos
-              className={`${profileClasses.link[platform]}`}
-              style={{ color: colors.blackText }}
-            />
-          </Link>
           <Box className={profileClasses.boxes.loggedOutMain[platform]}>
             <CardMedia
               component="img"
@@ -111,75 +105,99 @@ export default function Profile() {
       ) : (
         <Box className={profileClasses.boxes.loggedInMain}>
           <Typography
-            className={`${profileClasses.typos.account} ${interClassname.className}`}
+            className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
           >
             {t('account')}
           </Typography>
-
-          <Box className={profileClasses.boxes.accountMain}>
-            <Box className={profileClasses.boxes.account}>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.name}`}
-              >
-                {user.name}
-              </Typography>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.email}`}
-              >
-                {user.email}
-              </Typography>
+          <Box className={profileClasses.boxes.sectionBox[platform]}>
+            <Box className={profileClasses.boxes.accountMain[platform]}>
+              <CardMedia
+                component="img"
+                src="/defaultProfile.jpg"
+                className={profileClasses.profileImg[platform]}
+              />
+              <Box className={profileClasses.boxes.account}>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
+                >
+                  {`${t('hello')} ${user.name.split(' ')[0]}`}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.email}`}
+                >
+                  {user.email}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-          <Box className={profileClasses.boxes.divider}></Box>
-          <Box className={profileClasses.boxes.section}>
-            <CardMedia
-              component="img"
-              src="/language.png"
-              className={profileClasses.sectionIcon}
-            />
-            <Button className={profileClasses.btn} onClick={handleToggleLang}>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
+            <Box className={profileClasses.boxes.divider[platform]}></Box>
+            <Box className="w-[90%] flex flex-col items-center mx-auto">
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleToggleLang}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                sx={{
+                  '&:hover': { backgroundColor: '#ffe8e5' },
+                }}
               >
-                {t('appLanguage')}
-              </Typography>
-              <ArrowForwardIosIcon className={profileClasses.icons} />
-            </Button>
-          </Box>
-          <Box className={profileClasses.boxes.divider}></Box>
-          <Box className={profileClasses.boxes.section}>
-            <CardMedia
-              component="img"
-              src="/orders/my_order_icon.svg"
-              className={profileClasses.sectionIcon}
-            />
-            <Button
-              className={profileClasses.btn}
-              onClick={handleToggleMyOrders}
-            >
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
+                <CardMedia
+                  component="img"
+                  src="/language.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('appLanguage')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+              <Button
+                className={profileClasses.boxes.sectionOrders[platform]}
+                disableRipple
+                onClick={handleToggleMyOrders}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                sx={{
+                  '&:hover': { backgroundColor: '#ffe8e5' },
+                }}
               >
-                {t('myOrders')}
-              </Typography>
-              <ArrowForwardIosIcon className={profileClasses.icons} />
-            </Button>
-          </Box>
-          <Divider className={profileClasses.divider} />
-          <Box className={profileClasses.boxes.section}>
-            <CardMedia
-              component="img"
-              src="/logout.png"
-              className={profileClasses.sectionIcon}
-            />
-            <Button className={profileClasses.btn} onClick={handleToggle}>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt}`}
+                <CardMedia
+                  component="img"
+                  src="/orders/my_order_icon.svg"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('myOrders')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+              <Button
+                className={profileClasses.boxes.sectionLogOut[platform]}
+                onClick={handleToggle}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                sx={{
+                  '&:hover': { backgroundColor: '#ec4d38' },
+                }}
+                disableRipple
               >
-                {t('signout')}
-              </Typography>
-              <ArrowForwardIosIcon className={profileClasses.icons} />
-            </Button>
+                <MeetingRoomOutlinedIcon
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                >
+                  {t('signout')}
+                </Typography>
+                <ArrowForwardIos
+                  className={profileClasses.iconLogOut[platform]}
+                />
+              </Button>
+            </Box>
           </Box>
           <Dialog
             open={open}
@@ -204,7 +222,7 @@ export default function Profile() {
               </Typography>
             </Box>
             <Box className={profileClasses.boxes.verify}>
-              <Button onClick={handleToggle}>
+              <Button onClick={handleToggle} disableRipple>
                 <Box
                   className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
                 >
@@ -217,6 +235,7 @@ export default function Profile() {
                 </Box>
               </Button>
               <Button
+                disableRipple
                 onClick={() => {
                   (async () => {
                     try {
@@ -295,7 +314,6 @@ export default function Profile() {
           </Dialog>
         </Box>
       )}
-      <Footer />
-    </Box>
+    </Layout>
   );
 }

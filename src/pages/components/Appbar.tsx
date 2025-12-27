@@ -308,7 +308,7 @@ export default function CustomAppBar({
             </Box>
             <IconButton
               onClick={
-                user
+                ['SUPERUSER', 'ADMIN'].includes(user?.grade)
                   ? (event) => setAnchorEl(event.currentTarget)
                   : () => router.push('/user/profile')
               }
