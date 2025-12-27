@@ -35,7 +35,7 @@ export const profileClasses = {
         'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
     },
     sectionLogOut: {
-      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] my-[30px] bg-[#ff624c] !hover:bg-[#ec4d38]',
+      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] my-[30px] bg-[#ff624c]',
       mobile:
         'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
     },
@@ -106,7 +106,6 @@ export const profileClasses = {
     web: 'hidden',
     mobile: 'h-[1px] text-[#e7e7e7] w-[80%] mx-auto',
   },
-  btn: 'flex flex-row ml-[20px] w-full h-full items-center justify-between no-unerline p-0 normal-case',
   icons: {
     web: 'w-[22px] h-[22px] text-[#303030]',
     mobile: 'w-[17px] h-[17px] text-[#000]',
