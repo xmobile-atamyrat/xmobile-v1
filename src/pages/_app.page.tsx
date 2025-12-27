@@ -1,3 +1,4 @@
+import Loader from '@/pages/components/Loader';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
@@ -13,9 +14,25 @@ import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    if (hasShownSplash) {
+      setIsLoading(false);
+    }
+
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      sessionStorage.setItem('hasShownSplash', 'true');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  });
 
   return (
     <ThemeProvider theme={theme}>
