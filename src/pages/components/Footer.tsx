@@ -93,7 +93,7 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            value="/user/profile"
+            value="/user"
             icon={
               <CardMedia
                 component="img"

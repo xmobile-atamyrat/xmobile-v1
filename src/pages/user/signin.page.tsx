@@ -40,7 +40,7 @@ export default function Signin() {
 
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link href="/user/profile">
+      <Link href="/user/sign_in_up">
         <ArrowBackIos
           className={`${signinClasses.link[platform]}`}
           style={{ color: colors.blackText }}
