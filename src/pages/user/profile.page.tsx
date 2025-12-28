@@ -348,7 +348,7 @@ export default function Profile() {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             PaperProps={{
-              className: `${profileClasses.dialog.main} h-[300px]`,
+              className: `${profileClasses.dialog.main[platform]} h-[300px]`,
             }}
           >
             <Typography
