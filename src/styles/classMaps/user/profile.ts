@@ -5,7 +5,7 @@ export const profileClasses = {
       mobile: 'w-full h-full',
     },
     loggedOutMain: {
-      web: 'flex flex-col w-[594px] mx-auto my-[300px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
+      web: 'flex flex-col w-[594px] mx-auto my-[150px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
       mobile:
         'w-[88.78vw] h-full mx-auto flex flex-col mt-auto justify-center items-center',
     },
@@ -15,11 +15,11 @@ export const profileClasses = {
     },
     loggedInMain: 'w-full h-full flex flex-col items-center',
     accountMain: {
-      web: 'w-[90%] h-[150px] py-[32px] px-[72px] gap-[16px] flex justify-center items-center',
+      web: 'w-full h-[150px] py-[32px] px-[72px] gap-[16px] flex justify-center items-center',
       mobile:
         'w-full h-[90px] py-[16px] px-[28px] gap-[16px] flex justify-center items-center mt-[25px]',
     },
-    account: 'gap-[16px] w-[86.91%] h-[60px] flex flex-col justify-center',
+    account: 'gap-[16px] w-full h-[60px] flex flex-col justify-center',
     divider: {
       web: 'hidden',
       mobile: 'w-full h-[4px] bg-[#f6f6f6]',
@@ -35,12 +35,12 @@ export const profileClasses = {
         'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
     },
     sectionLogOut: {
-      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] my-[30px] bg-[#ff624c]',
+      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] my-[30px]',
       mobile:
         'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
     },
     verifyTxt: 'flex h-[20px] justify-center mt-[20px]',
-    verify: 'w-[90%] flex flex-row justify-between mt-[30px] mx-auto',
+    verify: 'w-[80%] flex flex-row justify-between mt-[30px] mx-auto',
     option:
       'flex justify-center items-center w-[160px] h-[50px] rounded-[12px] normal-case',
     langList: 'min-w-[110px] h-[238px] border-0 flex flex-col mt-[20px]',
@@ -48,7 +48,7 @@ export const profileClasses = {
     langOption:
       'flex flex-row justify-start w-full items-center px-[12px] gap-[10px]',
     sectionBox: {
-      web: 'w-[54.16vw] flex flex-col my-[100px] bg-[#f4f4f4] rounded-[25px] py-[40px]',
+      web: 'w-[550px] flex flex-col my-[100px] bg-[#f4f4f4] rounded-[25px] py-[40px]',
       mobile: 'w-full h-full',
     },
   },
@@ -71,7 +71,7 @@ export const profileClasses = {
         'font-medium text-[13px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[20px] normal-case',
     },
     sectionTxtLogOut: {
-      web: 'font-medium text-[16px] leading-[18px] tracking-normal text-[#fff] text-start w-full ml-[30px] normal-case',
+      web: 'font-medium text-[16px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[30px] normal-case',
       mobile:
         'font-medium text-[13px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[20px] normal-case',
     },
@@ -86,7 +86,11 @@ export const profileClasses = {
       'text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal',
   },
   dialog: {
-    main: 'w-[90vw] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+    main: {
+      mobile:
+        'w-[75vw] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+      web: 'w-[500px] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+    },
   },
   logo: 'w-[230px] mb-[30px] mx-auto',
   logInOptionsLink: {
@@ -99,7 +103,7 @@ export const profileClasses = {
     mobile: 'font-medium text-[16px] leading-[24px] tracking-normal',
   },
   sectionIcon: {
-    web: 'w-[27px] h-[27px] text-[#fff]',
+    web: 'w-[27px] h-[27px] text-[#000]',
     mobile: 'w-[20px] h-[20px] text-[#000]',
   },
   divider: {
@@ -111,7 +115,7 @@ export const profileClasses = {
     mobile: 'w-[17px] h-[17px] text-[#000]',
   },
   iconLogOut: {
-    web: 'w-[22px] h-[22px] text-[#fff]',
+    web: 'w-[22px] h-[22px] text-[#000]',
     mobile: 'w-[17px] h-[17px] text-[#000]',
   },
   langImg: 'w-[24px] h-[18px]',
@@ -122,5 +126,9 @@ export const profileClasses = {
   profileImg: {
     web: 'w-[86px] h-[86px] rounded-full',
     mobile: 'w-[60px] h-[60px] rounded-full',
+  },
+  accountTitle: {
+    web: '',
+    mobile: 'px-[24px] mt-[36px]',
   },
 };

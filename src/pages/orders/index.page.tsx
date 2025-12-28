@@ -163,11 +163,7 @@ export default function OrdersPage() {
   };
 
   const handleBackButton = () => {
-    if (platform === 'mobile') {
-      router.push('/user/profile');
-    } else {
-      router.push('/');
-    }
+    router.push('/user/profile');
   };
 
   return (
