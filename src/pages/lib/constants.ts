@@ -40,17 +40,6 @@ export const PRODUCT_IMAGE_WIDTH_RESP = {
   },
 };
 
-export const PAGENAME = {
-  category: {
-    web: 'allCategory',
-    mobile: 'categories',
-  },
-  cart: {
-    web: 'yourCart',
-    mobile: 'cart',
-  },
-};
-
 /*
 To store images in:
   * BAD quality -> reduce quality, and resize width for higher compression
