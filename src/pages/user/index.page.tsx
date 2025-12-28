@@ -122,7 +122,7 @@ export default function Profile() {
               <Typography
                 className={`${interClassname.className} ${profileClasses.typos.email}`}
               >
-                {user.email}
+                {user?.email}
               </Typography>
             </Box>
           </Box>
