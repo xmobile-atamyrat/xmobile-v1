@@ -1,7 +1,6 @@
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { PAGENAME } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { categoryPageClasses } from '@/styles/classMaps/category';
@@ -33,7 +32,7 @@ export default function CategoriesPage() {
           <Typography
             className={`${interClassname.className} ${categoryPageClasses.categoriesText[platform]}`}
           >
-            {t(PAGENAME.category[platform])}
+            {t('categories')}
           </Typography>
         </Box>
         <Box className={categoryPageClasses.card[platform]}>
