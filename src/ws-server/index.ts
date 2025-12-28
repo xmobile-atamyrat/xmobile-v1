@@ -22,6 +22,12 @@ const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
+console.log('[WS-Server] Initializing WebSocket server', {
+  port,
+  nodeEnv: process.env.NODE_ENV,
+  hasPort: !!port,
+});
+
 const MessageSchema = z.object({
   tempId: z.string().optional(),
   sessionId: z.string(),
@@ -54,8 +60,24 @@ const authenticateConnection = async (
   connection: WebSocket,
 ) => {
   const safeConnection = connection as AuthenticatedConnection;
+  console.log('[WS-Server] authenticateConnection() called', {
+    url: request.url?.replace(/accessToken=[^&]*/, 'accessToken=HIDDEN'),
+    method: request.method,
+    headers: {
+      cookie: !!request.headers.cookie,
+      upgrade: request.headers.upgrade,
+      connection: request.headers.connection,
+    },
+  });
+
   try {
     const accessToken = parse(request.url, true).query?.accessToken;
+
+    console.log('[WS-Server] Parsed access token from URL', {
+      hasAccessToken: !!accessToken,
+      accessTokenType: typeof accessToken,
+      urlPath: parse(request.url, true).pathname,
+    });
 
     if (!accessToken || typeof accessToken !== 'string') {
       console.error(
@@ -69,20 +91,42 @@ const authenticateConnection = async (
       return { safeConnection: null };
     }
 
+    console.log('[WS-Server] Verifying access token');
     const { userId, grade } = await verifyToken(accessToken, ACCESS_SECRET);
+    console.log('[WS-Server] Access token verified successfully', {
+      userId,
+      grade,
+    });
     safeConnection.userId = userId;
     safeConnection.userGrade = grade;
 
     return { safeConnection };
   } catch (accessTokenError) {
+    console.log('[WS-Server] Access token verification failed', {
+      errorName: accessTokenError.name,
+      errorMessage: accessTokenError.message,
+      isTokenExpired: accessTokenError.name === 'TokenExpiredError',
+    });
     if (accessTokenError.name === 'TokenExpiredError') {
+      console.log('[WS-Server] Access token expired, trying refresh token');
       try {
         const cookies = cookie.parse(request.headers?.cookie);
         const refreshToken = cookies[AUTH_REFRESH_COOKIE_NAME];
 
+        console.log('[WS-Server] Refresh token found', {
+          hasRefreshToken: !!refreshToken,
+        });
+
         const { userId, grade } = await verifyToken(
           refreshToken,
           REFRESH_SECRET,
+        );
+        console.log(
+          '[WS-Server] Refresh token verified, generating new tokens',
+          {
+            userId,
+            grade,
+          },
         );
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
           generateTokens(userId, grade);
@@ -99,6 +143,10 @@ const authenticateConnection = async (
         console.error(
           filepath,
           'Unauthorized: Invalid or expired refresh token',
+          {
+            errorName: refreshTokenError.name,
+            errorMessage: refreshTokenError.message,
+          },
         );
         safeCloseConnection(
           1008,
@@ -366,9 +414,21 @@ const handleSessionRelay = async (
 };
 
 wsServer.on('connection', async (connection, request) => {
+  console.log('[WS-Server] New WebSocket connection attempt', {
+    url: request.url?.replace(/accessToken=[^&]*/, 'accessToken=HIDDEN'),
+    remoteAddress: request.socket.remoteAddress,
+    readyState: connection.readyState,
+  });
+
   try {
     const { safeConnection, accessToken, refreshToken } =
       await authenticateConnection(request, connection);
+
+    console.log('[WS-Server] Authentication result', {
+      hasSafeConnection: !!safeConnection,
+      hasUserId: !!safeConnection?.userId,
+      hasNewTokens: !!(accessToken && refreshToken),
+    });
 
     if (safeConnection?.userId != null) {
       if (!connections.has(safeConnection.userId)) {
@@ -376,7 +436,15 @@ wsServer.on('connection', async (connection, request) => {
       }
       connections.get(safeConnection.userId)?.add(safeConnection);
 
+      console.log('[WS-Server] Connection authenticated and added', {
+        userId: safeConnection.userId,
+        userGrade: safeConnection.userGrade,
+        totalConnectionsForUser: connections.get(safeConnection.userId)?.size,
+        totalUsers: connections.size,
+      });
+
       if (accessToken != null) {
+        console.log('[WS-Server] Sending token refresh to client');
         try {
           sendMessage(safeConnection, {
             type: 'auth_refresh',
@@ -384,13 +452,19 @@ wsServer.on('connection', async (connection, request) => {
             refreshToken,
           });
         } catch (error) {
-          console.error(filepath, error);
+          console.error(filepath, 'Error sending auth refresh:', error);
         }
       }
 
       safeConnection.on('message', (message: RawData) => {
         try {
           const parsed = JSON.parse(message.toString());
+          console.log('[WS-Server] Message received from client', {
+            type: parsed.type,
+            sessionId: parsed.sessionId,
+            senderId: parsed.senderId,
+            hasContent: !!parsed.content,
+          });
 
           if (parsed.type === 'get_messages') {
             handleGetMessages(message, safeConnection);
@@ -402,18 +476,60 @@ wsServer.on('connection', async (connection, request) => {
             console.warn(filepath, 'Unknown message type:', parsed.type);
           }
         } catch (err) {
-          console.error(filepath, 'Failed to handle message:', err);
+          console.error(filepath, 'Failed to handle message:', err, {
+            rawMessage: message.toString().substring(0, 200),
+          });
         }
       });
 
-      safeConnection.on('close', () =>
-        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
-      );
+      safeConnection.on('close', (code, reason) => {
+        console.log('[WS-Server] Connection closed by client', {
+          userId: safeConnection.userId,
+          code,
+          reason: reason.toString(),
+        });
+        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection);
+      });
+
+      safeConnection.on('error', (error) => {
+        console.error('[WS-Server] WebSocket error', {
+          userId: safeConnection.userId,
+          error: error.message,
+          stack: error.stack,
+        });
+      });
+    } else {
+      console.warn('[WS-Server] Connection rejected - no authenticated user');
     }
   } catch (error) {
-    console.error('Connection error:', error);
+    console.error('[WS-Server] Connection error:', error, {
+      errorName: error.name,
+      errorMessage: error.message,
+      stack: error.stack,
+    });
     safeCloseConnection(1008, 'Unauthorized: Connection failed', connection);
   }
 });
 
-server.listen(port);
+if (!port) {
+  console.error('[WS-Server] ERROR: NEXT_PUBLIC_WEBSOCKET_PORT is not set');
+  process.exit(1);
+}
+
+server.on('error', (error: NodeJS.ErrnoException) => {
+  console.error('[WS-Server] Server error:', {
+    code: error.code,
+    message: error.message,
+    port,
+  });
+  if (error.code === 'EADDRINUSE') {
+    console.error(`[WS-Server] Port ${port} is already in use`);
+  }
+  process.exit(1);
+});
+
+server.listen(port, () => {
+  console.log(`[WS-Server] WebSocket server listening on port ${port}`);
+});
+
+console.log('[WS-Server] Server setup complete, waiting for connections...');

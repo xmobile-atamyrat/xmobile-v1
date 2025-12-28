@@ -73,7 +73,13 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   }, [currentSession]);
 
   useEffect(() => {
+    console.log('[ChatContext] useEffect - connection check', {
+      hasUser: !!user,
+      hasAccessToken: !!accessToken,
+      isConnected,
+    });
     if (user && accessToken && !isConnected) {
+      console.log('[ChatContext] Conditions met, calling connect()');
       connect();
     }
   }, [user, accessToken, isConnected]);
@@ -207,33 +213,81 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const connect = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) return;
-    if (!accessToken) return;
+    console.log('[ChatContext] connect() called', {
+      hasWs: !!ws.current,
+      wsState: ws.current?.readyState,
+      hasAccessToken: !!accessToken,
+      isConnected,
+    });
+
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      console.log('[ChatContext] WebSocket already open, skipping connection');
+      return;
+    }
+    if (!accessToken) {
+      console.warn('[ChatContext] No access token, cannot connect');
+      return;
+    }
 
     const wsBase =
       process.env.NODE_ENV === 'production'
-        ? `wss://${process.env.NEXT_PUBLIC_HOST}`
+        ? `wss://${process.env.NEXT_PUBLIC_HOST}:443`
         : `ws://localhost:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}`;
     const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
+
+    console.log('[ChatContext] Creating WebSocket connection', {
+      nodeEnv: process.env.NODE_ENV,
+      wsBase,
+      wsUrl: wsUrl.replace(accessToken, 'TOKEN_HIDDEN'),
+      host: process.env.NEXT_PUBLIC_HOST,
+      port: process.env.NEXT_PUBLIC_WEBSOCKET_PORT,
+    });
+
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
+      console.log('[ChatContext] WebSocket connection opened successfully');
       setIsConnected(true);
     };
 
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[ChatContext] WebSocket message received', {
+          type: data.type,
+          sessionId: data.sessionId,
+          hasMessageId: !!data.messageId,
+        });
         handleIncomingMessage(data);
       } catch (err) {
-        console.error('Failed to parse WS message:', err);
+        console.error('[ChatContext] Failed to parse WS message:', err, {
+          rawData: event.data,
+        });
       }
     };
 
-    ws.current.onclose = () => {
+    ws.current.onerror = (error) => {
+      console.error('[ChatContext] WebSocket error occurred', {
+        error,
+        readyState: ws.current?.readyState,
+        url: wsUrl.replace(accessToken, 'TOKEN_HIDDEN'),
+      });
+    };
+
+    ws.current.onclose = (event) => {
+      console.log('[ChatContext] WebSocket connection closed', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+        readyState: ws.current?.readyState,
+      });
       setIsConnected(false);
 
       reconnectTimeoutRef.current = setTimeout(() => {
+        console.log('[ChatContext] Attempting to reconnect...', {
+          hasUser: !!user,
+          hasAccessToken: !!accessToken,
+        });
         if (user && accessToken) {
           connect();
         }
@@ -242,6 +296,10 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   }, [accessToken, handleIncomingMessage, user]);
 
   const disconnect = useCallback(() => {
+    console.log('[ChatContext] disconnect() called', {
+      hasWs: !!ws.current,
+      wsState: ws.current?.readyState,
+    });
     ws.current?.close();
     ws.current = null;
     setIsConnected(false);
@@ -249,21 +307,41 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
   const sendMessage = useCallback(
     (content: string) => {
-      if (!ws.current || !isConnected || !currentSession || !user) return;
+      console.log('[ChatContext] sendMessage() called', {
+        hasWs: !!ws.current,
+        isConnected,
+        hasCurrentSession: !!currentSession,
+        hasUser: !!user,
+        wsState: ws.current?.readyState,
+      });
+
+      if (!ws.current || !isConnected || !currentSession || !user) {
+        console.warn(
+          '[ChatContext] Cannot send message - missing requirements',
+        );
+        return;
+      }
+
+      const messageData = {
+        type: 'message',
+        tempId: uuidv4(),
+        content,
+        sessionId: currentSession.id,
+        senderId: user.id,
+        senderRole: user.grade,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log('[ChatContext] Sending message', {
+        tempId: messageData.tempId,
+        sessionId: messageData.sessionId,
+        senderId: messageData.senderId,
+        contentLength: content.length,
+      });
 
       setIsSendingMessage(true);
 
-      ws.current.send(
-        JSON.stringify({
-          type: 'message',
-          tempId: uuidv4(),
-          content,
-          sessionId: currentSession.id,
-          senderId: user.id,
-          senderRole: user.grade,
-          timestamp: new Date().toISOString(),
-        }),
-      );
+      ws.current.send(JSON.stringify(messageData));
     },
     [isConnected, currentSession, user],
   );
