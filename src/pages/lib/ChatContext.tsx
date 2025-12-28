@@ -212,7 +212,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
     const wsBase =
       process.env.NODE_ENV === 'production'
-        ? `wss://${process.env.NEXT_PUBLIC_HOST}`
+        ? `wss://xmobile.com.tm`
         : `ws://localhost:${process.env.NEXT_PUBLIC_WEBSOCKET_PORT}`;
     const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
     ws.current = new WebSocket(wsUrl);
