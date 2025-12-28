@@ -109,11 +109,13 @@ export default function Profile() {
         </Box>
       ) : (
         <Box className={profileClasses.boxes.loggedInMain}>
-          <Typography
-            className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
-          >
-            {t('account')}
-          </Typography>
+          <Box className={profileClasses.accountTitle[platform]}>
+            <Typography
+              className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
+            >
+              {t('account')}
+            </Typography>
+          </Box>
           <Box className={profileClasses.boxes.sectionBox[platform]}>
             <Box className={profileClasses.boxes.accountMain[platform]}>
               <CardMedia
@@ -263,9 +265,6 @@ export default function Profile() {
                 className={profileClasses.boxes.sectionLogOut[platform]}
                 onClick={handleToggle}
                 variant={platform === 'web' ? 'outlined' : 'text'}
-                sx={{
-                  '&:hover': { backgroundColor: colors.buttonHoverBg },
-                }}
                 disableRipple
               >
                 <MeetingRoomOutlinedIcon
@@ -288,7 +287,7 @@ export default function Profile() {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
             PaperProps={{
-              className: profileClasses.dialog.main,
+              className: profileClasses.dialog.main[platform],
             }}
           >
             <Typography
