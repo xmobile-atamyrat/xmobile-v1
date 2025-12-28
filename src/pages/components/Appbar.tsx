@@ -1,19 +1,10 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import {
-  appBarHeight,
-  AUTH_REFRESH_COOKIE_NAME,
-  LOCALE_COOKIE_NAME,
-} from '@/pages/lib/constants';
-import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
+import { appBarHeight, LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import { getCookie, setCookie } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { Dvr } from '@mui/icons-material';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -33,7 +24,6 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
-import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
@@ -99,10 +89,8 @@ export default function CustomAppBar({
   showSearch = false,
   handleBackButton,
 }: CustomAppBarProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { user, setUser, setAccessToken } = useUserContext();
+  const { user } = useUserContext();
   const router = useRouter();
-  const isMenuOpen = Boolean(anchorEl);
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
@@ -308,11 +296,7 @@ export default function CustomAppBar({
               />
             </Box>
             <IconButton
-              onClick={
-                user
-                  ? (event) => setAnchorEl(event.currentTarget)
-                  : () => router.push('/user/profile')
-              }
+              onClick={() => router.push('/user/profile')}
               className="rounded-none"
             >
               <CardMedia
@@ -345,89 +329,6 @@ export default function CustomAppBar({
           setSearchKeyword: setLocalSearchKeyword,
           width: '95%',
         })}
-      <Menu
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={isMenuOpen}
-        onClose={() => setAnchorEl(null)}
-      >
-        {user != null && (
-          <Box>
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-              <MenuItem
-                className={appbarClasses.menuItemAcc}
-                onClick={() => router.push('/product/update-prices')}
-              >
-                <DriveFolderUploadIcon />
-                <Typography>{t('updatePrices')}</Typography>
-              </MenuItem>
-            )}
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-              <MenuItem
-                className={appbarClasses.menuItemAcc}
-                onClick={() => router.push('/analytics')}
-              >
-                <AnalyticsIcon />
-                <Typography>{t('analytics')}</Typography>
-              </MenuItem>
-            )}
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-              <MenuItem
-                className={appbarClasses.menuItemAcc}
-                onClick={() => router.push('/orders/admin')}
-              >
-                <ListAltIcon />
-                <Typography>{t('userOrders')}</Typography>
-              </MenuItem>
-            )}
-            {user?.grade === 'SUPERUSER' && (
-              <MenuItem
-                className={appbarClasses.menuItemAcc}
-                onClick={() => router.push('/procurement')}
-              >
-                <Dvr />
-                <Typography>{t('procurement')}</Typography>
-              </MenuItem>
-            )}
-            {user?.grade === 'FREE' && (
-              <MenuItem
-                className={appbarClasses.menuItemAcc}
-                onClick={() => {
-                  router.push('/orders');
-                }}
-              >
-                <img src="/orders/my_order_icon.svg" alt="My Orders Icon" />
-                <Typography>{t('myOrders')}</Typography>
-              </MenuItem>
-            )}
-            <MenuItem
-              onClick={() => {
-                (async () => {
-                  try {
-                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
-                    setUser(undefined);
-                    setAccessToken(undefined);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                })();
-              }}
-              className={appbarClasses.menuItemAcc}
-            >
-              <LogoutIcon />
-              <Typography>{t('signout')}</Typography>
-            </MenuItem>
-          </Box>
-        )}
-      </Menu>
     </Box>
   );
 }
