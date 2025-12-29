@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ChatSessionList from './ChatSessionList';
 import ChatWindow from './ChatWindow';
@@ -43,6 +44,7 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const [showTakenAlert, setShowTakenAlert] = useState(false);
   const [isSessionClosed, setSessionClosed] = useState(false);
+  const router = useRouter();
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
@@ -78,9 +80,11 @@ const ChatWidget = () => {
     setCurrentSession,
   ]);
 
-  if (!user) return null;
-
   const handleToggle = () => {
+    if (!user) {
+      router.push('/user/profile');
+      return;
+    }
     setIsOpen((prev) => !prev);
   };
 
