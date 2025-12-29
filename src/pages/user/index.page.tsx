@@ -57,7 +57,7 @@ export default function Profile() {
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
-  });
+  }, []);
 
   useEffect(() => {
     if (isLoading) {
@@ -66,7 +66,7 @@ export default function Profile() {
     if (!user) {
       router.push('/user/sign_in_up');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, router]);
 
   const handleToggleLang = () => {
     setOpenLang(!openLang);
@@ -77,7 +77,8 @@ export default function Profile() {
   };
 
   const handleToggleMyOrders = () => {
-    router.push('/orders');
+    const route = isAdmin ? '/orders/admin' : '/orders';
+    router.push(route);
   };
 
   if (isLoading) {
