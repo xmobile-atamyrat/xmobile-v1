@@ -34,7 +34,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signup() {
-  const { setUser, setAccessToken } = useUserContext();
+  const { user, setUser, setAccessToken } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -48,6 +48,7 @@ export default function Signup() {
   const handleClose = () => {
     setTooltipOpen(false);
   };
+  if (user) router.push('/user');
 
   return (
     <Box className={signupClasses.boxes.page[platform]}>
