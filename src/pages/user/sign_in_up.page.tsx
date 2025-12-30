@@ -1,5 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
 import { Box, CardMedia, Link, Typography } from '@mui/material';
@@ -16,9 +17,11 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function SignInUp() {
+  const { user } = useUserContext();
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
+  if (user) router.push('/user');
 
   return (
     <Layout handleHeaderBackButton={() => router.back()}>

@@ -296,11 +296,7 @@ export default function CustomAppBar({
               />
             </Box>
             <IconButton
-              onClick={
-                user
-                  ? () => router.push('/user')
-                  : () => router.push('/user/sign_in_up')
-              }
+              onClick={() => router.push(user ? '/user' : '/user/sign_in_up')}
               className="rounded-none"
             >
               <CardMedia
