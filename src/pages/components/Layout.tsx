@@ -8,6 +8,7 @@ import NotificationPermissionBanner from '@/pages/components/NotificationPermiss
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -17,6 +18,7 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { deleteCategory } from '@/pages/lib/utils';
+import { layoutClasses } from '@/styles/classMaps/components/layout';
 import { Box } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
@@ -41,6 +43,7 @@ export default function Layout({
     useCategoryContext();
   const { setProducts } = useProductContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
+  const platform = usePlatform();
 
   useEffect(() => {
     if (categories.length > 0) return;
@@ -56,7 +59,7 @@ export default function Layout({
   }, []);
 
   return (
-    <Box className="w-full h-full">
+    <Box className={layoutClasses.main[platform]}>
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
         showSearch={showSearch}

@@ -1,6 +1,6 @@
 export const cartIndexClasses = {
   box: {
-    web: 'w-full h-full flex flex-col mt-[64px] px-[10vw]',
+    web: 'w-full h-full flex flex-col mt-[64px]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
   cartHeader: {

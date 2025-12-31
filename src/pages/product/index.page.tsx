@@ -246,7 +246,7 @@ export default function Products() {
       <Layout showSearch handleHeaderBackButton={handleBackButton}>
         <Box className="flex flex-col w-full h-full">
           <SimpleBreadcrumbs categoryPath={categoryPath} />
-          <Box className="flex flex-wrap w-full px-[10.31vw]">
+          <Box className="flex flex-wrap w-full">
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <ProductCard
                 handleClickAddProduct={() =>
