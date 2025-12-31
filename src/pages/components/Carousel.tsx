@@ -22,7 +22,6 @@ const DEFAULT_SETTINGS: CarouselSettings = {
   autoplay: true,
   autoplaySpeed: 5000,
   pauseOnHover: true,
-  // adaptiveHeight: true,
 };
 
 export default function Carousel({ children, settings }: CarouselProps) {
