@@ -38,6 +38,7 @@ import {
   Alert,
   Box,
   CardMedia,
+  Dialog,
   Divider,
   IconButton,
   List,
@@ -154,6 +155,17 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     useAbortControllerContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const [dialogStatus, setDialogStatus] = useState(false);
+  const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
+
+  const handleDialogClose = () => {
+    setDialogStatus(false);
+  };
+
+  const handleDialogOpen = (imgUrl: string) => {
+    setDialogStatus(true);
+    setCarouselDialogImage(imgUrl);
+  };
 
   // Get categoryId from query params
   const categoryIdFromQuery =
@@ -324,22 +336,43 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 image={imgUrls[0]}
                 alt={product?.name}
                 className={detailPageClasses.cardMedia[platform]}
+                onClick={() => handleDialogOpen(imgUrls[0])}
               />
+              <Dialog open={dialogStatus} onClose={handleDialogClose}>
+                <CardMedia
+                  component="img"
+                  image={imgUrls[0]}
+                  alt={product?.name}
+                  className="w-[90vw] h-auto"
+                />
+              </Dialog>
             </Box>
           )}
           {imgUrls.length > 1 && (
-            <Carousel>
-              {imgUrls.map((imgUrl, index) => (
-                <CardMedia
-                  component="img"
-                  image={imgUrl}
-                  alt={product?.name}
-                  className={detailPageClasses.cardMedia[platform]}
-                  key={index}
-                />
-              ))}
-            </Carousel>
+            <Box className={detailPageClasses.boxes.img[platform]}>
+              <Carousel>
+                {imgUrls.map((imgUrl, index) => (
+                  <CardMedia
+                    component="img"
+                    image={imgUrl}
+                    alt={product?.name}
+                    className={detailPageClasses.cardMedia[platform]}
+                    key={index}
+                    onClick={() => handleDialogOpen(imgUrl)}
+                  />
+                ))}
+              </Carousel>
+            </Box>
           )}
+          <Dialog open={dialogStatus} onClose={handleDialogClose}>
+            <CardMedia
+              component="img"
+              image={carouselDialogImage}
+              alt={product?.name}
+              className={detailPageClasses.dialogImg[platform]}
+            />
+          </Dialog>
+
           {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
             <Box className={detailPageClasses.boxes.video[platform]}>
               {product.videoUrls.map(

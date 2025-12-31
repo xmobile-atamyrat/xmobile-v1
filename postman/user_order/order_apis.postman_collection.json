@@ -1,1321 +1,1314 @@
 {
-	"info": {
-		"_postman_id": "order-api-collection",
-		"name": "Order API - Checkout System",
-		"description": "Collection for testing the order/checkout system APIs including user and admin endpoints",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "Auth - Get Tokens",
-			"item": [
-				{
-					"name": "Get User Token",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data.accessToken) {",
-									"        pm.environment.set('userToken', jsonData.data.accessToken);",
-									"        pm.environment.set('userId', jsonData.data.user.id);",
-									"        console.log('User token saved:', jsonData.data.accessToken);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/user/signin",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "user", "signin"]
-						}
-					}
-				},
-				{
-					"name": "Get Admin Token",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data.accessToken) {",
-									"        pm.environment.set('adminToken', jsonData.data.accessToken);",
-									"        pm.environment.set('adminId', jsonData.data.user.id);",
-									"        console.log('Admin token saved:', jsonData.data.accessToken);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/user/signin",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "user", "signin"]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "User APIs",
-			"item": [
-				{
-					"name": "Create Order (Checkout)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order created with PENDING status', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.status).to.eql('PENDING');",
-									"        pm.environment.set('orderId', jsonData.data.id);",
-									"        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
-									"        console.log('Order created:', jsonData.data.orderNumber);",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"deliveryAddress\": \"123 Test Street, Test City, Test Country\",\n    \"deliveryPhone\": \"+99312345678\",\n    \"notes\": \"Please call before delivery\",\n    \"updateAddress\": true\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order"]
-						}
-					}
-				},
-				{
-					"name": "Get User Orders",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Response has orders and pagination', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.orders).to.be.an('array');",
-									"        pm.expect(jsonData.data.pagination).to.be.an('object');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/order?status=PENDING&page=1&limit=20",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order"],
-							"query": [
-								{
-									"key": "status",
-									"value": "PENDING",
-									"disabled": true
-								},
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "20"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Get Order by ID",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order has items', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.items).to.be.an('array');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/order/{{orderId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "{{orderId}}"]
-						}
-					}
-				},
-				{
-					"name": "Cancel Order (User)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order status is USER_CANCELLED', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.status).to.eql('USER_CANCELLED');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{userToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"cancellationReason\": \"Changed my mind\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order/{{orderId}}?action=cancel",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "{{orderId}}"],
-							"query": [
-								{
-									"key": "action",
-									"value": "cancel"
-								}
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Admin APIs",
-			"item": [
-				{
-					"name": "Get All Orders (Admin)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Response has orders and pagination', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.orders).to.be.an('array');",
-									"        pm.expect(jsonData.data.pagination).to.be.an('object');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin?status=PENDING&page=1&limit=20",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin"],
-							"query": [
-								{
-									"key": "status",
-									"value": "PENDING",
-									"disabled": true
-								},
-								{
-									"key": "userId",
-									"value": "{{userId}}",
-									"disabled": true
-								},
-								{
-									"key": "dateFrom",
-									"value": "2025-01-01",
-									"disabled": true
-								},
-								{
-									"key": "dateTo",
-									"value": "2025-12-31",
-									"disabled": true
-								},
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "20"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Get Order by ID (Admin)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order includes user info', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.user).to.be.an('object');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin/{{orderId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin", "{{orderId}}"]
-						}
-					}
-				},
-				{
-					"name": "Update Order Status (Admin)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order status updated', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.status).to.eql(pm.environment.get('targetStatus') || 'IN_PROGRESS');",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"status\": \"IN_PROGRESS\",\n    \"adminNotes\": \"Order is being prepared for delivery\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin", "{{orderId}}"],
-							"query": [
-								{
-									"key": "action",
-									"value": "status"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Mark Order as Completed (Admin)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order status is COMPLETED', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.status).to.eql('COMPLETED');",
-									"        pm.expect(jsonData.data.completedAt).to.not.be.null;",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"status\": \"COMPLETED\",\n    \"adminNotes\": \"Order delivered and payment collected\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin", "{{orderId}}"],
-							"query": [
-								{
-									"key": "action",
-									"value": "status"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Cancel Order (Admin)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Order status is ADMIN_CANCELLED', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.status).to.eql('ADMIN_CANCELLED');",
-									"        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"status\": \"ADMIN_CANCELLED\",\n    \"cancellationReason\": \"Product out of stock\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin", "{{orderId}}"],
-							"query": [
-								{
-									"key": "action",
-									"value": "status"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Update Admin Notes",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Status code is 200', function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test('Response has success true', function () {",
-									"    const jsonData = pm.response.json();",
-									"    pm.expect(jsonData.success).to.be.true;",
-									"});",
-									"",
-									"pm.test('Admin notes updated', function () {",
-									"    const jsonData = pm.response.json();",
-									"    if (jsonData.success && jsonData.data) {",
-									"        pm.expect(jsonData.data.adminNotes).to.not.be.empty;",
-									"    }",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{adminToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"adminNotes\": \"Customer requested early delivery. Will call before arriving.\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=notes",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "order", "admin", "{{orderId}}"],
-							"query": [
-								{
-									"key": "action",
-									"value": "notes"
-								}
-							]
-						}
-					}
-				}
-			]
-		},
-		{
-			"name": "Workflows",
-			"item": [
-				{
-					"name": "Scenario 1: Complete Order Flow",
-					"item": [
-						{
-							"name": "1. Get User Token",
-							"event": [
-								{
-									"listen": "prerequest",
-									"script": {
-										"exec": [
-											"// This will be run before the request"
-										],
-										"type": "text/javascript"
-									}
-								},
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data.accessToken) {",
-											"        pm.environment.set('userToken', jsonData.data.accessToken);",
-											"        pm.environment.set('userId', jsonData.data.user.id);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/user/signin",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "user", "signin"]
-								}
-							}
-						},
-						{
-							"name": "2. Create Order (Checkout)",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.environment.set('orderId', jsonData.data.id);",
-											"        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
-											"        pm.expect(jsonData.data.status).to.eql('PENDING');",
-											"        console.log('Order created:', jsonData.data.orderNumber);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{userToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"deliveryAddress\": \"123 Main Street, Ashgabat, Turkmenistan\",\n    \"deliveryPhone\": \"+99312345678\",\n    \"notes\": \"Please call 30 minutes before delivery\",\n    \"updateAddress\": true\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order"]
-								}
-							}
-						},
-						{
-							"name": "3. Get Admin Token",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data.accessToken) {",
-											"        pm.environment.set('adminToken', jsonData.data.accessToken);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/user/signin",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "user", "signin"]
-								}
-							}
-						},
-						{
-							"name": "4. Admin: Update Status to IN_PROGRESS",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.expect(jsonData.data.status).to.eql('IN_PROGRESS');",
-											"        console.log('Order status updated to IN_PROGRESS');",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{adminToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"status\": \"IN_PROGRESS\",\n    \"adminNotes\": \"Order is being prepared for delivery\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order", "admin", "{{orderId}}"],
-									"query": [
-										{
-											"key": "action",
-											"value": "status"
-										}
-									]
-								}
-							}
-						},
-						{
-							"name": "5. Admin: Mark Order as COMPLETED",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.expect(jsonData.data.status).to.eql('COMPLETED');",
-											"        pm.expect(jsonData.data.completedAt).to.not.be.null;",
-											"        console.log('Order completed successfully');",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{adminToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"status\": \"COMPLETED\",\n    \"adminNotes\": \"Order delivered and payment collected successfully\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order", "admin", "{{orderId}}"],
-									"query": [
-										{
-											"key": "action",
-											"value": "status"
-										}
-									]
-								}
-							}
-						}
-					]
-				},
-				{
-					"name": "Scenario 2: User Cancels Order",
-					"item": [
-						{
-							"name": "1. Get User Token",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data.accessToken) {",
-											"        pm.environment.set('userToken', jsonData.data.accessToken);",
-											"        pm.environment.set('userId', jsonData.data.user.id);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/user/signin",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "user", "signin"]
-								}
-							}
-						},
-						{
-							"name": "2. Create Order",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.environment.set('orderId', jsonData.data.id);",
-											"        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
-											"        pm.expect(jsonData.data.status).to.eql('PENDING');",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{userToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"deliveryAddress\": \"456 Cancel Street, Test City\",\n    \"deliveryPhone\": \"+99398765432\",\n    \"notes\": \"This order will be cancelled\",\n    \"updateAddress\": false\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order"]
-								}
-							}
-						},
-						{
-							"name": "3. User Cancels Order",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.expect(jsonData.data.status).to.eql('USER_CANCELLED');",
-											"        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
-											"        pm.expect(jsonData.data.cancelledBy).to.eql(pm.environment.get('userId'));",
-											"        console.log('Order cancelled by user');",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{userToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"cancellationReason\": \"Found a better deal elsewhere\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order/{{orderId}}?action=cancel",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order", "{{orderId}}"],
-									"query": [
-										{
-											"key": "action",
-											"value": "cancel"
-										}
-									]
-								}
-							}
-						}
-					]
-				},
-				{
-					"name": "Scenario 3: Admin Cancels Order",
-					"item": [
-						{
-							"name": "1. Get User Token",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data.accessToken) {",
-											"        pm.environment.set('userToken', jsonData.data.accessToken);",
-											"        pm.environment.set('userId', jsonData.data.user.id);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/user/signin",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "user", "signin"]
-								}
-							}
-						},
-						{
-							"name": "2. Create Order",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.environment.set('orderId', jsonData.data.id);",
-											"        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{userToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"deliveryAddress\": \"789 Admin Cancel Street, Test City\",\n    \"deliveryPhone\": \"+99355555555\",\n    \"notes\": \"This order will be cancelled by admin\",\n    \"updateAddress\": false\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order"]
-								}
-							}
-						},
-						{
-							"name": "3. Get Admin Token",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data.accessToken) {",
-											"        pm.environment.set('adminToken', jsonData.data.accessToken);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/user/signin",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "user", "signin"]
-								}
-							}
-						},
-						{
-							"name": "4. Admin Cancels Order",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const jsonData = pm.response.json();",
-											"    if (jsonData.success && jsonData.data) {",
-											"        pm.expect(jsonData.data.status).to.eql('ADMIN_CANCELLED');",
-											"        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
-											"        console.log('Order cancelled by admin');",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{adminToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"status\": \"ADMIN_CANCELLED\",\n    \"cancellationReason\": \"Product is out of stock\"\n}"
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "order", "admin", "{{orderId}}"],
-									"query": [
-										{
-											"key": "action",
-											"value": "status"
-										}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
-		}
-	],
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		}
-	],
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:3000",
-			"type": "string"
-		}
-	]
+  "info": {
+    "_postman_id": "order-api-collection",
+    "name": "Order API - Checkout System",
+    "description": "Collection for testing the order/checkout system APIs including user and admin endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Get Tokens",
+      "item": [
+        {
+          "name": "Get User Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data.accessToken) {",
+                  "        pm.environment.set('userToken', jsonData.data.accessToken);",
+                  "        pm.environment.set('userId', jsonData.data.user.id);",
+                  "        console.log('User token saved:', jsonData.data.accessToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "signin"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data.accessToken) {",
+                  "        pm.environment.set('adminToken', jsonData.data.accessToken);",
+                  "        pm.environment.set('adminId', jsonData.data.user.id);",
+                  "        console.log('Admin token saved:', jsonData.data.accessToken);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "signin"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User APIs",
+      "item": [
+        {
+          "name": "Create Order (Checkout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order created with PENDING status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.status).to.eql('PENDING');",
+                  "        pm.environment.set('orderId', jsonData.data.id);",
+                  "        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
+                  "        console.log('Order created:', jsonData.data.orderNumber);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"deliveryAddress\": \"123 Test Street, Test City, Test Country\",\n    \"deliveryPhone\": \"+99312345678\",\n    \"notes\": \"Please call before delivery\",\n    \"updateAddress\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order"]
+            }
+          }
+        },
+        {
+          "name": "Get User Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response has orders and pagination', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.orders).to.be.an('array');",
+                  "        pm.expect(jsonData.data.pagination).to.be.an('object');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/order?status=PENDING&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order has items', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.items).to.be.an('array');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/order/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Order (User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order status is USER_CANCELLED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.status).to.eql('USER_CANCELLED');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"cancellationReason\": \"Changed my mind\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order/{{orderId}}?action=cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "{{orderId}}"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "cancel"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs",
+      "item": [
+        {
+          "name": "Get All Orders (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response has orders and pagination', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.orders).to.be.an('array');",
+                  "        pm.expect(jsonData.data.pagination).to.be.an('object');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin?status=PENDING&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2025-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2025-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order includes user info', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.user).to.be.an('object');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order status updated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.status).to.eql(pm.environment.get('targetStatus') || 'IN_PROGRESS');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"IN_PROGRESS\",\n    \"adminNotes\": \"Order is being prepared for delivery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin", "{{orderId}}"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "status"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Order as Completed (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order status is COMPLETED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.status).to.eql('COMPLETED');",
+                  "        pm.expect(jsonData.data.completedAt).to.not.be.null;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"COMPLETED\",\n    \"adminNotes\": \"Order delivered and payment collected\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin", "{{orderId}}"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "status"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Order (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Order status is ADMIN_CANCELLED', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.status).to.eql('ADMIN_CANCELLED');",
+                  "        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"ADMIN_CANCELLED\",\n    \"cancellationReason\": \"Product out of stock\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin", "{{orderId}}"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "status"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Admin Notes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Admin notes updated', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        pm.expect(jsonData.data.adminNotes).to.not.be.empty;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"adminNotes\": \"Customer requested early delivery. Will call before arriving.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "order", "admin", "{{orderId}}"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "notes"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "item": [
+        {
+          "name": "Scenario 1: Complete Order Flow",
+          "item": [
+            {
+              "name": "1. Get User Token",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": ["// This will be run before the request"],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data.accessToken) {",
+                      "        pm.environment.set('userToken', jsonData.data.accessToken);",
+                      "        pm.environment.set('userId', jsonData.data.user.id);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/signin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "user", "signin"]
+                }
+              }
+            },
+            {
+              "name": "2. Create Order (Checkout)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.environment.set('orderId', jsonData.data.id);",
+                      "        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
+                      "        pm.expect(jsonData.data.status).to.eql('PENDING');",
+                      "        console.log('Order created:', jsonData.data.orderNumber);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"deliveryAddress\": \"123 Main Street, Ashgabat, Turkmenistan\",\n    \"deliveryPhone\": \"+99312345678\",\n    \"notes\": \"Please call 30 minutes before delivery\",\n    \"updateAddress\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order"]
+                }
+              }
+            },
+            {
+              "name": "3. Get Admin Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data.accessToken) {",
+                      "        pm.environment.set('adminToken', jsonData.data.accessToken);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/signin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "user", "signin"]
+                }
+              }
+            },
+            {
+              "name": "4. Admin: Update Status to IN_PROGRESS",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.expect(jsonData.data.status).to.eql('IN_PROGRESS');",
+                      "        console.log('Order status updated to IN_PROGRESS');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"IN_PROGRESS\",\n    \"adminNotes\": \"Order is being prepared for delivery\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order", "admin", "{{orderId}}"],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "status"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "5. Admin: Mark Order as COMPLETED",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.expect(jsonData.data.status).to.eql('COMPLETED');",
+                      "        pm.expect(jsonData.data.completedAt).to.not.be.null;",
+                      "        console.log('Order completed successfully');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"COMPLETED\",\n    \"adminNotes\": \"Order delivered and payment collected successfully\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order", "admin", "{{orderId}}"],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "status"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scenario 2: User Cancels Order",
+          "item": [
+            {
+              "name": "1. Get User Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data.accessToken) {",
+                      "        pm.environment.set('userToken', jsonData.data.accessToken);",
+                      "        pm.environment.set('userId', jsonData.data.user.id);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/signin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "user", "signin"]
+                }
+              }
+            },
+            {
+              "name": "2. Create Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.environment.set('orderId', jsonData.data.id);",
+                      "        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
+                      "        pm.expect(jsonData.data.status).to.eql('PENDING');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"deliveryAddress\": \"456 Cancel Street, Test City\",\n    \"deliveryPhone\": \"+99398765432\",\n    \"notes\": \"This order will be cancelled\",\n    \"updateAddress\": false\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order"]
+                }
+              }
+            },
+            {
+              "name": "3. User Cancels Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.expect(jsonData.data.status).to.eql('USER_CANCELLED');",
+                      "        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
+                      "        pm.expect(jsonData.data.cancelledBy).to.eql(pm.environment.get('userId'));",
+                      "        console.log('Order cancelled by user');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"cancellationReason\": \"Found a better deal elsewhere\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order/{{orderId}}?action=cancel",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order", "{{orderId}}"],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "cancel"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scenario 3: Admin Cancels Order",
+          "item": [
+            {
+              "name": "1. Get User Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data.accessToken) {",
+                      "        pm.environment.set('userToken', jsonData.data.accessToken);",
+                      "        pm.environment.set('userId', jsonData.data.user.id);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"user@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/signin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "user", "signin"]
+                }
+              }
+            },
+            {
+              "name": "2. Create Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.environment.set('orderId', jsonData.data.id);",
+                      "        pm.environment.set('orderNumber', jsonData.data.orderNumber);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"deliveryAddress\": \"789 Admin Cancel Street, Test City\",\n    \"deliveryPhone\": \"+99355555555\",\n    \"notes\": \"This order will be cancelled by admin\",\n    \"updateAddress\": false\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order"]
+                }
+              }
+            },
+            {
+              "name": "3. Get Admin Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data.accessToken) {",
+                      "        pm.environment.set('adminToken', jsonData.data.accessToken);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"admin@test.com\",\n    \"password\": \"Abcd&1234\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/signin",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "user", "signin"]
+                }
+              }
+            },
+            {
+              "name": "4. Admin Cancels Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.expect(jsonData.data.status).to.eql('ADMIN_CANCELLED');",
+                      "        pm.expect(jsonData.data.cancelledAt).to.not.be.null;",
+                      "        console.log('Order cancelled by admin');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{adminToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"ADMIN_CANCELLED\",\n    \"cancellationReason\": \"Product is out of stock\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/order/admin/{{orderId}}?action=status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "order", "admin", "{{orderId}}"],
+                  "query": [
+                    {
+                      "key": "action",
+                      "value": "status"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
 }
-
