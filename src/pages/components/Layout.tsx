@@ -3,7 +3,6 @@ import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog'
 import CustomAppBar from '@/pages/components/Appbar';
 import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import CustomDrawer from '@/pages/components/Drawer';
 import Footer from '@/pages/components/Footer';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -36,7 +35,6 @@ export default function Layout({
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
-  const [openDrawer, setOpenDrawer] = useState(false);
   const t = useTranslations();
   const { setCategories, setSelectedCategoryId, categories } =
     useCategoryContext();
@@ -59,17 +57,8 @@ export default function Layout({
   return (
     <Box className="w-full h-full">
       <CustomAppBar
-        openDrawer={openDrawer}
-        setOpenDrawer={setOpenDrawer}
         handleBackButton={handleHeaderBackButton}
         showSearch={showSearch}
-      />
-
-      <CustomDrawer
-        openDrawer={openDrawer}
-        setEditCategoriesModal={setEditCategoriesModal}
-        setDeleteCategoriesModal={setDeleteCategoriesModal}
-        closeDrawer={() => setOpenDrawer(false)}
       />
       <Box
         component="main"
