@@ -338,14 +338,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 className={detailPageClasses.cardMedia[platform]}
                 onClick={() => handleDialogOpen(imgUrls[0])}
               />
-              <Dialog open={dialogStatus} onClose={handleDialogClose}>
-                <CardMedia
-                  component="img"
-                  image={imgUrls[0]}
-                  alt={product?.name}
-                  className="w-[90vw] h-auto"
-                />
-              </Dialog>
             </Box>
           )}
           {imgUrls.length > 1 && (
