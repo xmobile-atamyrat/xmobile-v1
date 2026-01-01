@@ -4,7 +4,7 @@ export const categoryPageClasses = {
     mobile: 'w-full h-full flex flex-col',
   },
   card: {
-    web: 'flex flex-wrap gap-[30px] w-full  justify-center items-start',
+    web: 'flex flex-wrap gap-[30px] w-full justify-center items-start',
     mobile: 'flex flex-wrap gap-4 w-full p-3 justify-center',
   },
   categoriesText: {
