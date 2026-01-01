@@ -59,6 +59,8 @@ export default function Layout({
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
         showSearch={showSearch}
+        setDeleteCategoriesModal={setDeleteCategoriesModal}
+        setEditCategoriesModal={setEditCategoriesModal}
       />
       <Box
         component="main"
