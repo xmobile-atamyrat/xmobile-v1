@@ -13,7 +13,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
-import categoryList from '@/pages/components/Drawer';
+import CategoryList from '@/pages/components/Drawer';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { drawerClasses } from '@/styles/classMaps/components/drawer';
@@ -295,12 +295,12 @@ export default function CustomAppBar({
             >
               {categories?.length > 0 && (
                 <Box className={`${drawerClasses.box}`}>
-                  {categoryList(
-                    categories,
-                    setEditCategoriesModal,
-                    setDeleteCategoriesModal,
-                    () => setMenuStatus(false),
-                  )}
+                  <CategoryList
+                    categories={categories}
+                    setEditCategoriesModal={setEditCategoriesModal}
+                    setDeleteCategoriesModal={setDeleteCategoriesModal}
+                    closeDrawer={() => setMenuStatus(false)}
+                  />
                 </Box>
               )}
               {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (

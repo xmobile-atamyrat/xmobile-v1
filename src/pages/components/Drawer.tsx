@@ -9,12 +9,21 @@ import { Box, List } from '@mui/material';
 import * as React from 'react';
 import { Dispatch, SetStateAction } from 'react';
 
-export default function categoryList(
-  categories: ExtendedCategory[],
-  setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
-  setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
-  closeDrawer?: () => void,
-): React.ReactNode {
+export default function CategoryList({
+  categories,
+  setEditCategoriesModal,
+  setDeleteCategoriesModal,
+  closeDrawer,
+}: {
+  categories: ExtendedCategory[];
+  setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
+  setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
+  closeDrawer?: () => void;
+}) {
+  const [hoveredCategoryId, setHoveredCategoryId] = React.useState<
+    string | null
+  >(null);
+
   return (
     <Box>
       {categories.length > 0 && (
@@ -30,14 +39,17 @@ export default function categoryList(
                 setEditCategoriesModal={setEditCategoriesModal}
                 setDeleteCategoriesModal={setDeleteCategoriesModal}
                 closeDrawer={closeDrawer}
+                isOpen={hoveredCategoryId === id}
+                onHover={setHoveredCategoryId}
               >
-                {category.successorCategories.length > 0 &&
-                  categoryList(
-                    category.successorCategories,
-                    setEditCategoriesModal,
-                    setDeleteCategoriesModal,
-                    closeDrawer,
-                  )}
+                {category.successorCategories.length > 0 && (
+                  <CategoryList
+                    categories={category.successorCategories}
+                    setEditCategoriesModal={setEditCategoriesModal}
+                    setDeleteCategoriesModal={setDeleteCategoriesModal}
+                    closeDrawer={closeDrawer}
+                  />
+                )}
               </Collapsable>
             );
           })}

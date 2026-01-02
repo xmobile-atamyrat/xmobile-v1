@@ -3,7 +3,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import { Box, Menu } from '@mui/material';
-import { Dispatch, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface CollapsableProps {
   children: React.ReactNode;
@@ -13,6 +13,8 @@ interface CollapsableProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
+  isOpen?: boolean;
+  onHover?: (id: string | null) => void;
 }
 
 export default function Collapsable({
@@ -23,9 +25,11 @@ export default function Collapsable({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
+  isOpen,
+  onHover,
 }: CollapsableProps) {
   const { selectedCategoryId } = useCategoryContext();
-  const [open, setOpen] = useState(false);
+  const open = isOpen ?? false;
   const timeoutRef = useRef<any>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -34,15 +38,28 @@ export default function Collapsable({
       clearTimeout(timeoutRef.current);
     }
     setAnchorEl(event.currentTarget);
-    setOpen(true);
+    if (onHover) {
+      onHover(id);
+    }
   };
 
   const handleMenuClose = () => {
     timeoutRef.current = setTimeout(() => {
-      setOpen(false);
       setAnchorEl(null);
+      if (onHover) {
+        if (isOpen) {
+          onHover(null);
+        }
+      }
     }, 200);
   };
+
+  // Effect to clean up timeout if we suddenly close (e.g. sibling hovered)
+  useEffect(() => {
+    if (!open && timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  }, [open]);
 
   const handleMenuEnter = () => {
     if (timeoutRef.current) {
@@ -51,8 +68,8 @@ export default function Collapsable({
   };
 
   const handleForceClose = () => {
-    setOpen(false);
     setAnchorEl(null);
+    if (onHover) onHover(null);
   };
 
   return collapsable ? (
