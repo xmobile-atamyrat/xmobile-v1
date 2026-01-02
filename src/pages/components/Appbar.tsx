@@ -118,8 +118,7 @@ export default function CustomAppBar({
     { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
   ];
   const [menuStatus, setMenuStatus] = useState(false);
-  const { categories, selectedCategoryId, setSelectedCategoryId } =
-    useCategoryContext();
+  const { categories, setSelectedCategoryId } = useCategoryContext();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuButton = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -298,11 +297,8 @@ export default function CustomAppBar({
                 <Box className={`${drawerClasses.box}`}>
                   {categoryList(
                     categories,
-                    selectedCategoryId,
-                    setSelectedCategoryId,
                     setEditCategoriesModal,
                     setDeleteCategoriesModal,
-                    0, // depth
                     () => setMenuStatus(false),
                   )}
                 </Box>
