@@ -1,9 +1,9 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { blobToBase64, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
+import { interClassname } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -12,7 +12,6 @@ import {
   Box,
   IconButton,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
   Menu,
   MenuItem,
@@ -20,10 +19,9 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 interface CollapsableBaseProps {
-  imgUrl: string | null;
   categoryTitle: string;
   id: string;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
@@ -32,7 +30,6 @@ interface CollapsableBaseProps {
 }
 
 export default function CollapsableBase({
-  imgUrl: categoryImgUrl,
   categoryTitle,
   id,
   setEditCategoriesModal,
@@ -44,45 +41,14 @@ export default function CollapsableBase({
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const router = useRouter();
   const openEditMenu = Boolean(anchorEl);
-  const [imgUrl, setImgUrl] = useState<string | null>();
   const t = useTranslations();
-
-  useEffect(() => {
-    if (categoryImgUrl != null && id != null) {
-      const cacheImgUrl = sessionStorage.getItem(id);
-      if (cacheImgUrl != null) {
-        setImgUrl(cacheImgUrl);
-      } else {
-        setImgUrl('/xmobile-original-logo.jpeg');
-        if (process.env.NODE_ENV === 'development') {
-          return;
-        }
-        (async () => {
-          if (categoryImgUrl.startsWith('http')) {
-            setImgUrl(categoryImgUrl);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${categoryImgUrl}`,
-            );
-            const resp = await imgFetcher;
-            if (resp.ok) {
-              const imgBlob = await resp.blob();
-              const base64 = await blobToBase64(imgBlob);
-              setImgUrl(base64);
-              sessionStorage.setItem(id, base64);
-            }
-          }
-        })();
-      }
-    }
-  }, [categoryImgUrl, id]);
 
   return (
     <Box
       className={`
-        ${selectedCategoryId === id ? 'bg-slate-200' : ''}
+        ${selectedCategoryId === id ? 'bg-[#f4f4f4] h-[48px]' : ''}
         ${collapsableClasses.baseBox}   
-        `}
+        group-relative`}
     >
       <ListItemButton
         onClick={() => {
@@ -90,25 +56,10 @@ export default function CollapsableBase({
           closeDrawer();
           router.push(`/product?categoryId=${id}`);
         }}
-        className={collapsableClasses.listItemButton}
       >
-        {imgUrl != null && (
-          <ListItemIcon>
-            <img
-              src={imgUrl}
-              className={collapsableClasses.listItemIcon}
-              alt={categoryTitle}
-            />
-          </ListItemIcon>
-        )}
         <ListItemText
           primary={parseName(categoryTitle, router.locale ?? 'tk')}
-          style={{
-            overflow: 'auto',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
-          sx={{ pr: 0 }}
+          className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
         />
       </ListItemButton>
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
@@ -152,7 +103,6 @@ export default function CollapsableBase({
                     dialogType: 'edit',
                     categoryId: id,
                     categoryName: categoryTitle,
-                    imageUrl: imgUrl,
                   })
                 }
                 className={collapsableClasses.menuItem}
@@ -166,7 +116,6 @@ export default function CollapsableBase({
                 onClick={() =>
                   setDeleteCategoriesModal({
                     categoryId: id,
-                    imgUrl,
                     open: true,
                   })
                 }
