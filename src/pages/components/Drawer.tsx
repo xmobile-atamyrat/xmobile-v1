@@ -11,41 +11,33 @@ import { Dispatch, SetStateAction } from 'react';
 
 export default function categoryList(
   categories: ExtendedCategory[],
-  selectedCategoryId: string | undefined,
-  setSelectedCategoryId: Dispatch<SetStateAction<string | undefined>>,
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>,
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>,
-  depth: number,
-  closeDrawer: () => void,
+  closeDrawer?: () => void,
 ): React.ReactNode {
   return (
     <Box>
       {categories.length > 0 && (
         <List component="div" disablePadding className={drawerClasses.list}>
           {categories.map((category) => {
-            const { id, name, imgUrl, successorCategories } = category;
+            const { id, name } = category;
             return (
               <Collapsable
                 id={id}
                 categoryTitle={name}
-                imgUrl={imgUrl}
                 key={name}
-                pl={depth}
-                initialOpenState={true} // {id === selectedCategoryId}
-                collapsable={false}
+                collapsable={category.successorCategories.length > 0}
                 setEditCategoriesModal={setEditCategoriesModal}
                 setDeleteCategoriesModal={setDeleteCategoriesModal}
                 closeDrawer={closeDrawer}
               >
-                {categoryList(
-                  successorCategories! || [],
-                  selectedCategoryId,
-                  setSelectedCategoryId,
-                  setEditCategoriesModal,
-                  setDeleteCategoriesModal,
-                  depth + 1,
-                  closeDrawer,
-                )}
+                {category.successorCategories.length > 0 &&
+                  categoryList(
+                    category.successorCategories,
+                    setEditCategoriesModal,
+                    setDeleteCategoriesModal,
+                    closeDrawer,
+                  )}
               </Collapsable>
             );
           })}
