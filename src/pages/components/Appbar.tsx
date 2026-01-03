@@ -292,6 +292,7 @@ export default function CustomAppBar({
                 vertical: 'top',
                 horizontal: 'left',
               }}
+              TransitionProps={{ exit: false }}
             >
               {categories?.length > 0 && (
                 <Box className={`${drawerClasses.box}`}>
@@ -300,6 +301,7 @@ export default function CustomAppBar({
                     setEditCategoriesModal={setEditCategoriesModal}
                     setDeleteCategoriesModal={setDeleteCategoriesModal}
                     closeDrawer={() => setMenuStatus(false)}
+                    isDrawerOpen={menuStatus}
                   />
                 </Box>
               )}

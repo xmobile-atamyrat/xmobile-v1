@@ -15,6 +15,8 @@ interface CollapsableProps {
   closeDrawer: () => void;
   isOpen?: boolean;
   onHover?: (id: string | null) => void;
+  isActiveParent?: boolean;
+  hasSubcategories?: boolean;
 }
 
 export default function Collapsable({
@@ -27,6 +29,8 @@ export default function Collapsable({
   closeDrawer,
   isOpen,
   onHover,
+  isActiveParent,
+  hasSubcategories,
 }: CollapsableProps) {
   const { selectedCategoryId } = useCategoryContext();
   const open = isOpen ?? false;
@@ -87,6 +91,8 @@ export default function Collapsable({
           setDeleteCategoriesModal={setDeleteCategoriesModal}
           setEditCategoriesModal={setEditCategoriesModal}
           closeDrawer={closeDrawer}
+          isActiveParent={isActiveParent}
+          hasSubcategories={hasSubcategories}
         />
         <Menu
           open={open}
@@ -102,6 +108,7 @@ export default function Collapsable({
           disableRestoreFocus
           hideBackdrop
           disableScrollLock
+          TransitionProps={{ exit: false }}
           sx={{
             pointerEvents: 'none',
             '& .MuiPaper-root': {
@@ -126,6 +133,8 @@ export default function Collapsable({
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
         closeDrawer={closeDrawer}
+        isActiveParent={isActiveParent}
+        hasSubcategories={hasSubcategories}
       />
     </Box>
   );
