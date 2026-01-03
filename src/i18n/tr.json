@@ -299,5 +299,16 @@
   "hoursAgo": "sa önce",
   "daysAgo": "gün önce",
   "notificationsDenied": "Bildirim izni reddedildi. Bildirimleri almak için lütfen tarayıcı ayarlarınızdan etkinleştirin.",
-  "serverLogs": "Sunucu Günlükleri"
+  "serverLogs": "Sunucu Günlükleri",
+  "brands": "Brands",
+  "noBrands": "No brands found",
+  "moreBrands": "More Brands",
+  "lessBrands": "Less Brands",
+  "addNewBrand": "Add Brand",
+  "editBrand": "Edit Brand",
+  "brandName": "Brand Name",
+  "priceLowToHigh": "Price Low-to-High",
+  "priceHighToLow": "Price High-to-Low",
+  "new": "New",
+  "aToZ": "A to Z"
 }
