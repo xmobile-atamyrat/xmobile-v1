@@ -7,6 +7,7 @@ import { interClassname } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
   Box,
@@ -27,6 +28,8 @@ interface CollapsableBaseProps {
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
+  isActiveParent?: boolean;
+  hasSubcategories?: boolean;
 }
 
 export default function CollapsableBase({
@@ -35,6 +38,8 @@ export default function CollapsableBase({
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
+  isActiveParent,
+  hasSubcategories,
 }: CollapsableBaseProps) {
   const { selectedCategoryId, setSelectedCategoryId } = useCategoryContext();
   const { user } = useUserContext();
@@ -46,9 +51,12 @@ export default function CollapsableBase({
   return (
     <Box
       className={`
-        ${selectedCategoryId === id ? 'bg-[#f4f4f4] h-[48px]' : ''}
-        ${collapsableClasses.baseBox}   
-        group-relative`}
+        ${
+          selectedCategoryId === id || isActiveParent
+            ? 'bg-[#f4f4f4] h-[48px]'
+            : ''
+        }
+        ${collapsableClasses.baseBox}`}
     >
       <ListItemButton
         onClick={() => {
@@ -61,6 +69,9 @@ export default function CollapsableBase({
           primary={parseName(categoryTitle, router.locale ?? 'tk')}
           className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
         />
+        {hasSubcategories && (
+          <KeyboardArrowRightIcon className="text-[#30303080] text-[20px]" />
+        )}
       </ListItemButton>
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
         selectedCategoryId === id && (
