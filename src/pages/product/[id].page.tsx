@@ -298,6 +298,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   })(),
                   tags: initialProduct.tags,
                   videoUrls: initialProduct.videoUrls,
+                  brandId: initialProduct.brandId,
                 });
               }}
             >
@@ -537,7 +538,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 return;
               }
               const prods = await fetchProducts({
-                categoryId: selectedCategoryId,
+                categoryIds: [selectedCategoryId],
               });
               setProducts(prods);
               setPrevCategory(selectedCategoryId);

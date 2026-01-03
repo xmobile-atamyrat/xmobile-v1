@@ -35,6 +35,51 @@ interface FilterSidebarProps {
   }) => void;
 }
 
+const FilterSection = ({
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <Box>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={1}
+        onClick={() => setOpen(!open)}
+        sx={{ cursor: 'pointer' }}
+      >
+        <Typography
+          variant="h6"
+          fontFamily="Inter, sans-serif"
+          fontWeight={700}
+          fontSize="20px"
+          lineHeight="30px"
+          color="#303030"
+        >
+          {title}
+        </Typography>
+        <ExpandLess
+          sx={{
+            transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+            transition: 'transform 0.2s',
+          }}
+        />
+      </Box>
+      <Collapse in={open} timeout="auto" unmountOnExit>
+        {children}
+      </Collapse>
+    </Box>
+  );
+};
+
 export default function FilterSidebar({
   categories,
   selectedCategoryIds,
@@ -47,15 +92,10 @@ export default function FilterSidebar({
   const router = useRouter();
   const locale = router.locale || 'en';
 
-  // -- Brands State --
   const [brands, setBrands] = useState<
     { id: string; name: string; productCount: number }[]
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
-
-  // -- Collapsible State --
-  const [openCategories, setOpenCategories] = useState(true);
-  const [openBrands, setOpenBrands] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -64,7 +104,6 @@ export default function FilterSidebar({
     })();
   }, []);
 
-  // -- Price State --
   const [localPriceRange, setLocalPriceRange] = useState<number[]>([0, 5000]); // Arbitrary default max
 
   useEffect(() => {
@@ -97,8 +136,7 @@ export default function FilterSidebar({
     });
   };
 
-  // -- Category Logic --
-  // Show ONLY Top Level Categories (Level 1)
+  // Show ONLY Top Level Categories (Level 1, no parent)
   const topLevelCategories = categories.filter((c) => !c.predecessorId);
 
   const handleCategoryClick = (id: string) => {
@@ -201,70 +239,19 @@ export default function FilterSidebar({
         p: 3,
       }}
     >
-      {/* Categories (Top Level Only) */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={1}
-        onClick={() => setOpenCategories(!openCategories)}
-        sx={{ cursor: 'pointer' }}
-      >
-        <Typography
-          variant="h6"
-          fontFamily="Inter, sans-serif"
-          fontWeight={700}
-          fontSize="20px"
-          lineHeight="30px"
-          color="#303030"
-        >
-          {t('categories') || 'Categories'}
-        </Typography>
-        <ExpandLess
-          sx={{
-            transform: openCategories ? 'rotate(0deg)' : 'rotate(180deg)',
-            transition: 'transform 0.2s',
-          }}
-        />
-      </Box>
-      <Collapse in={openCategories} timeout="auto" unmountOnExit>
+      {/* Categories */}
+      <FilterSection title={t('categories') || 'Categories'}>
         <List dense>
           {topLevelCategories.map((cat) => (
             <CategoryItem key={cat.id} cat={cat} />
           ))}
         </List>
-      </Collapse>
+      </FilterSection>
 
       <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
 
       {/* Explicit Brands */}
-      <Box
-        mb={1}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        onClick={() => setOpenBrands(!openBrands)}
-        sx={{ cursor: 'pointer' }}
-      >
-        <Typography
-          variant="h6"
-          fontFamily="Inter, sans-serif"
-          fontWeight={700}
-          fontSize="20px"
-          lineHeight="30px"
-          color="#303030"
-        >
-          {t('brands') || 'Brands'}
-        </Typography>
-        <ExpandLess
-          sx={{
-            transform: openBrands ? 'rotate(0deg)' : 'rotate(180deg)',
-            transition: 'transform 0.2s',
-          }}
-        />
-      </Box>
-
-      <Collapse in={openBrands} timeout="auto" unmountOnExit>
+      <FilterSection title={t('brands') || 'Brands'}>
         <Box display="flex" flexDirection="column">
           {brands.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
@@ -344,164 +331,147 @@ export default function FilterSidebar({
             </Box>
           )}
         </Box>
-      </Collapse>
+      </FilterSection>
 
       <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
 
       {/* Price */}
-      <Box
-        mb={2}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Typography
-          variant="h6"
-          fontFamily="Inter, sans-serif"
-          fontWeight={700}
-          fontSize="20px"
-          lineHeight="30px"
-          color="#303030"
-        >
-          {t('price') || 'Price'}
-        </Typography>
-        <ExpandLess sx={{ transform: 'rotate(180deg)' }} />
-      </Box>
-
-      <Box px={1}>
-        <Box display="flex" gap={2} mb={2}>
-          <TextField
-            size="small"
-            value={minPrice}
-            onChange={handleMinInputChange}
-            placeholder="100"
+      <FilterSection title={t('price') || 'Price'}>
+        <Box px={1} pt={1}>
+          <Box display="flex" gap={2} mb={2}>
+            <TextField
+              size="small"
+              value={minPrice}
+              onChange={handleMinInputChange}
+              placeholder="100"
+              sx={{
+                bgcolor: '#f4f4f4',
+                borderRadius: '10px',
+                opacity: 0.5,
+                '& .MuiOutlinedInput-root': {
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  lineHeight: '24px',
+                  color: '#303030',
+                  '& fieldset': {
+                    borderColor: '#303030',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#303030',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#303030',
+                  },
+                },
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Typography
+                      fontFamily="Inter, sans-serif"
+                      fontSize="16px"
+                      fontWeight={400}
+                      color="#303030"
+                    >
+                      TMT
+                    </Typography>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              size="small"
+              value={maxPrice}
+              onChange={handleMaxInputChange}
+              placeholder="5,000"
+              sx={{
+                bgcolor: '#f4f4f4',
+                borderRadius: '10px',
+                opacity: 0.5,
+                '& .MuiOutlinedInput-root': {
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  lineHeight: '24px',
+                  color: '#303030',
+                  '& fieldset': {
+                    borderColor: '#303030',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#303030',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#303030',
+                  },
+                },
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Typography
+                      fontFamily="Inter, sans-serif"
+                      fontSize="16px"
+                      fontWeight={400}
+                      color="#303030"
+                    >
+                      TMT
+                    </Typography>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+          <Slider
+            value={localPriceRange}
+            onChange={(_, val) => setLocalPriceRange(val as number[])}
+            onChangeCommitted={handlePriceCommit}
+            valueLabelDisplay="auto"
+            min={0}
+            max={20000}
             sx={{
-              bgcolor: '#f4f4f4',
-              borderRadius: '10px',
-              opacity: 0.5,
-              '& .MuiOutlinedInput-root': {
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '16px',
-                fontWeight: 400,
-                lineHeight: '24px',
-                color: '#303030',
-                '& fieldset': {
-                  borderColor: '#303030',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#303030',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#303030',
+              color: '#FF624C',
+              height: 6,
+              '& .MuiSlider-thumb': {
+                width: 16,
+                height: 16,
+                backgroundColor: '#FF624C',
+                border: '3px solid white',
+                boxShadow: '0 0 0 1px #FF624C',
+                '&:hover, &.Mui-focusVisible': {
+                  boxShadow: '0 0 0 8px rgba(255, 98, 76, 0.16)',
                 },
               },
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Typography
-                    fontFamily="Inter, sans-serif"
-                    fontSize="16px"
-                    fontWeight={400}
-                    color="#303030"
-                  >
-                    TMT
-                  </Typography>
-                </InputAdornment>
-              ),
+              '& .MuiSlider-track': {
+                backgroundColor: '#FF624C',
+                border: 'none',
+              },
+              '& .MuiSlider-rail': {
+                backgroundColor: '#d9d9d9',
+                opacity: 1,
+              },
             }}
           />
-          <TextField
-            size="small"
-            value={maxPrice}
-            onChange={handleMaxInputChange}
-            placeholder="5,000"
-            sx={{
-              bgcolor: '#f4f4f4',
-              borderRadius: '10px',
-              opacity: 0.5,
-              '& .MuiOutlinedInput-root': {
+          <Box display="flex" justifyContent="flex-start" mt={2}>
+            <Typography
+              onClick={handleClearFilters}
+              sx={{
                 fontFamily: 'Inter, sans-serif',
-                fontSize: '16px',
-                fontWeight: 400,
-                lineHeight: '24px',
+                fontSize: '14px',
+                fontWeight: 700,
+                textDecoration: 'underline',
                 color: '#303030',
-                '& fieldset': {
-                  borderColor: '#303030',
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
                 },
-                '&:hover fieldset': {
-                  borderColor: '#303030',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#303030',
-                },
-              },
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Typography
-                    fontFamily="Inter, sans-serif"
-                    fontSize="16px"
-                    fontWeight={400}
-                    color="#303030"
-                  >
-                    TMT
-                  </Typography>
-                </InputAdornment>
-              ),
-            }}
-          />
+              }}
+            >
+              {t('clearFilters') || 'Clear Filters'}
+            </Typography>
+          </Box>
         </Box>
-        <Slider
-          value={localPriceRange}
-          onChange={(_, val) => setLocalPriceRange(val as number[])}
-          onChangeCommitted={handlePriceCommit}
-          valueLabelDisplay="auto"
-          min={0}
-          max={20000}
-          sx={{
-            color: '#FF624C',
-            height: 6,
-            '& .MuiSlider-thumb': {
-              width: 16,
-              height: 16,
-              backgroundColor: '#FF624C',
-              border: '3px solid white',
-              boxShadow: '0 0 0 1px #FF624C',
-              '&:hover, &.Mui-focusVisible': {
-                boxShadow: '0 0 0 8px rgba(255, 98, 76, 0.16)',
-              },
-            },
-            '& .MuiSlider-track': {
-              backgroundColor: '#FF624C',
-              border: 'none',
-            },
-            '& .MuiSlider-rail': {
-              backgroundColor: '#d9d9d9',
-              opacity: 1,
-            },
-          }}
-        />
-        <Box display="flex" justifyContent="flex-start" mt={2}>
-          <Typography
-            onClick={handleClearFilters}
-            sx={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '14px',
-              fontWeight: 700,
-              textDecoration: 'underline',
-              color: '#303030',
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8,
-              },
-            }}
-          >
-            {t('clearFilters') || 'Clear Filters'}
-          </Typography>
-        </Box>
-      </Box>
+      </FilterSection>
     </Paper>
   );
 }
