@@ -301,5 +301,16 @@
   "hoursAgo": "sag öň",
   "daysAgo": "gün öň",
   "notificationsDenied": "Bildiriş rugsady ýatyryldy. Bildirişleri almak üçin brauzeriň sazlamalarynda açmagyňyzy haýyş edýäris.",
-  "serverLogs": "Serwer surnallary"
+  "serverLogs": "Serwer surnallary",
+  "brands": "Brendler",
+  "noBrands": "Brend tapylmady",
+  "moreBrands": "Köpräk görmek",
+  "lessBrands": "Azrak görmek",
+  "addNewBrand": "Brend goş",
+  "editBrand": "Brend üýtget",
+  "brandName": "Brend ady",
+  "priceLowToHigh": "Arzandan gymmada",
+  "priceHighToLow": "Gymmatdan arzana",
+  "new": "Täze",
+  "aToZ": "A-dan Z-a"
 }

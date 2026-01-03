@@ -299,5 +299,16 @@
   "hoursAgo": "h ago",
   "daysAgo": "d ago",
   "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings to receive notifications.",
-  "serverLogs": "Server Logs"
+  "serverLogs": "Server Logs",
+  "brands": "Brands",
+  "noBrands": "No brands found",
+  "moreBrands": "More Brands",
+  "lessBrands": "Less Brands",
+  "addNewBrand": "Add Brand",
+  "editBrand": "Edit Brand",
+  "brandName": "Brand Name",
+  "priceLowToHigh": "Price Low-to-High",
+  "priceHighToLow": "Price High-to-Low",
+  "new": "New",
+  "aToZ": "A to Z"
 }
