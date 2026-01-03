@@ -1,10 +1,13 @@
 import dbClient from '@/lib/dbClient';
 import { SearchBar } from '@/pages/components/Appbar';
+import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import ProductCard from '@/pages/components/ProductCard';
-import { fetchNewProducts } from '@/pages/lib/apis';
+import SortDropdown from '@/pages/components/SortDropdown';
+import { fetchProducts } from '@/pages/lib/apis';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   LOCALE_COOKIE_NAME,
   POST_SOVIET_COUNTRIES,
@@ -118,11 +121,26 @@ export default function Home({
   const platform = usePlatform();
   const t = useTranslations();
   const { user } = useUserContext();
+  const { categories } = useCategoryContext();
   const { searchKeyword, setSearchKeyword } = useProductContext();
-  const [newProducts, setNewProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [newPage, setNewPage] = useState(1);
-  const [newHasMore, setHasNewMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const [filters, setFilters] = useState({
+    categoryIds: [] as string[],
+    brandIds: [] as string[],
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest',
+  });
+
+  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setPage(1);
+    setProducts([]);
+  };
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
 
@@ -131,16 +149,30 @@ export default function Home({
     (async () => {
       setIsLoading(true);
       try {
-        const fetched = await fetchNewProducts({
-          page: 1,
+        const fetched = await fetchProducts({
+          page,
           searchKeyword: searchKeyword || undefined,
+          categoryIds: filters.categoryIds,
+          brandIds: filters.brandIds,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          sortBy: filters.sortBy,
         });
         if (!mounted) return;
-        setNewProducts(fetched);
-        setNewPage(2);
-        setHasNewMore(fetched.length >= 20);
+
+        if (fetched.length < 20) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        if (page === 1) {
+          setProducts(fetched);
+        } else {
+          setProducts((prev) => [...prev, ...fetched]);
+        }
       } catch (error) {
-        console.error('Error fetching new products:', error);
+        console.error('Error fetching products:', error);
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -148,7 +180,7 @@ export default function Home({
     return () => {
       mounted = false;
     };
-  }, [searchKeyword]);
+  }, [searchKeyword, filters, page]);
 
   useEffect(() => {
     const loadMoreTrigger = document.getElementById('load-more-products');
@@ -158,24 +190,8 @@ export default function Home({
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             (async () => {
-              if (isLoading || !newHasMore) return;
-              setIsLoading(true);
-              try {
-                const fetched = await fetchNewProducts({
-                  page: newPage,
-                  searchKeyword: searchKeyword || undefined,
-                });
-                if (fetched.length < 20) {
-                  setHasNewMore(false);
-                } else {
-                  setNewProducts((prev) => [...prev, ...fetched]);
-                }
-                setNewPage(newPage + 1);
-              } catch (error) {
-                console.error('Error fetching more products:', error);
-              } finally {
-                setIsLoading(false);
-              }
+              if (isLoading || !hasMore) return;
+              setPage((prev) => prev + 1);
             })();
           }
         });
@@ -228,32 +244,69 @@ export default function Home({
           width: '100%',
         })}
       </Box>
-      <Box className={homePageClasses.main[platform]}>
-        {!searchKeyword && (
-          <Typography
-            className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
-          >
-            {t('newProducts')}
-          </Typography>
-        )}
-        {isLoading && (
-          <Box className="flex justify-center items-center h-64">
-            <CircularProgress />
+      <Box className="flex flex-row gap-6 w-full">
+        {/* Sidebar - Desktop Only */}
+        {platform === 'web' && (
+          <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
+            <FilterSidebar
+              categories={categories}
+              selectedCategoryIds={filters.categoryIds}
+              selectedBrandIds={filters.brandIds}
+              minPrice={filters.minPrice}
+              maxPrice={filters.maxPrice}
+              onFilterChange={handleFilterChange}
+            />
           </Box>
         )}
-        <Box className={homePageClasses.newProductsBox[platform]}>
-          {newProducts.length > 0 &&
-            newProducts.map((product, idx) => (
-              <ProductCard
-                product={product}
-                key={idx}
-                cartProps={{ cartAction: 'add' }}
-              />
-            ))}
+
+        <Box className={homePageClasses.main[platform]}>
+          <Box className="px-[10.31vw] w-full">
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              {!searchKeyword && (
+                <Typography
+                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+                >
+                  {t('newProducts')}
+                </Typography>
+              )}
+              {/* Sort Dropdown - Desktop Only */}
+              {platform === 'web' && (
+                <SortDropdown
+                  value={filters.sortBy}
+                  onChange={(val) => handleFilterChange({ sortBy: val })}
+                />
+              )}
+            </Box>
+
+            {isLoading && page === 1 && (
+              <Box className="flex justify-center items-center h-64">
+                <CircularProgress />
+              </Box>
+            )}
+            <Box className={homePageClasses.newProductsBox[platform]}>
+              {products.length > 0 &&
+                products.map((product, idx) => (
+                  <ProductCard
+                    product={product}
+                    key={idx}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+            </Box>
+            {products.length === 0 && !isLoading && (
+              <Typography>{t('noProductsFound')}</Typography>
+            )}
+            {isLoading && page > 1 && (
+              <Box className="flex justify-center items-center py-4">
+                <CircularProgress />
+              </Box>
+            )}
+          </Box>
         </Box>
-        {newProducts.length === 0 && (
-          <Typography>{t('noProductsFound')}</Typography>
-        )}
       </Box>
       <div id="load-more-products" />
     </Layout>
