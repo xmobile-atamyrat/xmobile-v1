@@ -3,31 +3,47 @@ import { ResponseApi, BrandProps } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
 export const fetchProducts = async ({
-  categoryId,
+  categoryIds,
+  brandIds,
+  minPrice,
+  maxPrice,
+  sortBy,
   searchKeyword,
   productId,
   page,
 }: {
-  categoryId?: string;
+  categoryIds?: string[];
+  brandIds?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: string;
   searchKeyword?: string;
   productId?: string;
   page?: number;
 }): Promise<Product[]> => {
-  if (categoryId == null && searchKeyword == null && productId == null)
-    return [];
+  // Allow fetching if ANY filter is present (removed restrict check)
 
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
-  if (categoryId) {
-    url += `&categoryId=${categoryId}`;
-    if (searchKeyword) {
-      url += `&searchKeyword=${searchKeyword}`;
-    }
-  } else if (productId) {
-    url += `&productId=${productId}`;
-  } else {
-    console.error('Neither categoryId nor productId is provided');
-    return [];
+
+  // Helper to append params
+  const appendParam = (key: string, val: any) => {
+    if (val) url += `&${key}=${val}`;
+  };
+
+  if (categoryIds && categoryIds.length > 0) {
+    categoryIds.forEach((cid) => appendParam('categoryId', cid));
   }
+
+  appendParam('searchKeyword', searchKeyword);
+  appendParam('productId', productId);
+
+  if (brandIds && brandIds.length > 0) {
+    brandIds.forEach((bid) => appendParam('brandIds', bid));
+  }
+
+  appendParam('minPrice', minPrice);
+  appendParam('maxPrice', maxPrice);
+  appendParam('sortBy', sortBy);
 
   const { success, data, message }: ResponseApi<Product[]> = await (
     await fetch(url)
