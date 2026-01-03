@@ -437,12 +437,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                       primary={
                         <Box className={detailPageClasses.boxes.tag[platform]}>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
+                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className} max-w-[17vw]`}
                           >
                             {beginning}
                           </Typography>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[50px] text-end ${interClassname.className}`}
+                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[2vw] text-end ${interClassname.className}`}
                             color={colors.mainWebMobile[platform]}
                           >
                             {end}
