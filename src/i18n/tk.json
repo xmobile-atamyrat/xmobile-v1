@@ -289,5 +289,16 @@
   "chatSessionClosedByAdmin": "Bu söhbetdeşlik admin tarapyndan ýapyldy.",
   "chatConfirmEndSession": "Siz bu söhbeti tamamlamak isleýärsiňizmi? Bu sessiýany ýapar.",
   "chatConfirmLeaveSession": "Siz bu söhbetden çykmak isleýärsiňizmi?",
-  "chatSessionTakenByOther": "Bu sessiýa başga bir administrator tarapyndan alyndy."
+  "chatSessionTakenByOther": "Bu sessiýa başga bir administrator tarapyndan alyndy.",
+  "brands": "Brendler",
+  "noBrands": "Brend tapylmady",
+  "moreBrands": "Köpräk görmek",
+  "lessBrands": "Azrak görmek",
+  "addNewBrand": "Brend goş",
+  "editBrand": "Brend üýtget",
+  "brandName": "Brend ady",
+  "priceLowToHigh": "Arzandan gymmada",
+  "priceHighToLow": "Gymmatdan arzana",
+  "new": "Täze",
+  "aToZ": "A-dan Z-a"
 }

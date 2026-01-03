@@ -290,5 +290,16 @@
   "chatSessionClosedByAdmin": "Эта сессия чата была закрыта администратором.",
   "chatConfirmEndSession": "Вы уверены, что хотите завершить этот чат? Это закроет сессию.",
   "chatConfirmLeaveSession": "Вы уверены, что хотите покинуть этот чат?",
-  "chatSessionTakenByOther": "Эта сессия была занята другим администратором."
+  "chatSessionTakenByOther": "Эта сессия была занята другим администратором.",
+  "brands": "Бренды",
+  "noBrands": "Бренды не найдены",
+  "moreBrands": "Показать еще",
+  "lessBrands": "Свернуть",
+  "addNewBrand": "Добавить бренд",
+  "editBrand": "Редактировать бренд",
+  "brandName": "Название бренда",
+  "priceLowToHigh": "Сначала дешевые",
+  "priceHighToLow": "Сначала дорогие",
+  "new": "Новые",
+  "aToZ": "От А до Я"
 }

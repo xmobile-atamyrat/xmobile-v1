@@ -287,5 +287,16 @@
   "cityPlaceholder": "Türkmenabat",
   "streetAddress": "Sokak Adresi",
   "cancelTheOrder": "Siparişi İptal Et",
-  "serverError": "There is server error. Please, contact the administrators."
+  "serverError": "There is server error. Please, contact the administrators.",
+  "brands": "Brands",
+  "noBrands": "No brands found",
+  "moreBrands": "More Brands",
+  "lessBrands": "Less Brands",
+  "addNewBrand": "Add Brand",
+  "editBrand": "Edit Brand",
+  "brandName": "Brand Name",
+  "priceLowToHigh": "Price Low-to-High",
+  "priceHighToLow": "Price High-to-Low",
+  "new": "New",
+  "aToZ": "A to Z"
 }
