@@ -72,7 +72,7 @@ model Product {
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   categoryId      String
 
-  brand           Brand?      @relation(fields: [brandId], references: [id])
+  brand           Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
   brandId         String?
 
   cartItems       CartItem[]
