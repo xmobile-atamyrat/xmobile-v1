@@ -99,7 +99,7 @@ export default function Products() {
     (async () => {
       try {
         const fetchProductsParams: any = { page: 1 };
-        fetchProductsParams.categoryId = categoryId;
+        fetchProductsParams.categoryIds = [categoryId];
         if (searchKeyword) {
           fetchProductsParams.searchKeyword = searchKeyword;
         }
@@ -130,7 +130,7 @@ export default function Products() {
 
     try {
       const fetchProductsParams: any = { page: page + 1 };
-      fetchProductsParams.categoryId = categoryId;
+      fetchProductsParams.categoryIds = [categoryId];
       if (searchKeyword) {
         fetchProductsParams.searchKeyword = searchKeyword;
       }

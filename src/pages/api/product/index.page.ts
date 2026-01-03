@@ -1,14 +1,14 @@
 import dbClient from '@/lib/dbClient';
-import { getCategory } from '@/pages/api/category.page';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
   IMG_COMPRESSION_OPTIONS,
+  SORT_OPTIONS,
 } from '@/pages/lib/constants';
-import { ResponseApi } from '@/pages/lib/types';
-import { Product } from '@prisma/client';
+import { ResponseApi, SortOption } from '@/pages/lib/types';
+import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -120,10 +120,14 @@ async function createProduct(
         await createCompressedImg(imgUrl, 'good');
       });
 
+      const cachedPrice = parseFloat(
+        (await getPrice(fields.price?.[0]))?.price || '0',
+      );
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
           categoryId: fields.categoryId[0],
+          brandId: fields.brandId?.[0] || null,
           description: fields.description?.[0],
           tags: fields.tags ? JSON.parse(fields.tags[0]) : [],
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
@@ -132,6 +136,7 @@ async function createProduct(
             ...(fileKeys.map((key) => files[key][0].path) ?? []),
           ],
           price: fields.price?.[0],
+          cachedPrice,
         },
       });
       resolve({ success: true, data: product, status: 200 });
@@ -150,18 +155,59 @@ async function getProduct(productId: string): Promise<Product | null> {
 
   // product.price = [id]{value}
   const productPrice = await getPrice(product?.price as string);
-  product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+  if (product) {
+    product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+  }
 
   return product;
 }
 
+async function getRecursiveCategoryIds(
+  rootId: string,
+  visited: Set<string> = new Set(),
+): Promise<string[]> {
+  if (visited.has(rootId)) return [];
+  visited.add(rootId);
+
+  const category = await dbClient.category.findUnique({
+    where: { id: rootId },
+    include: { successorCategories: true },
+  });
+  if (!category) return [];
+  const ids = [rootId];
+  if (category.successorCategories) {
+    if (category.successorCategories) {
+      const nestedIds = await Promise.all(
+        category.successorCategories.map((sub) =>
+          getRecursiveCategoryIds(sub.id, visited),
+        ),
+      );
+      ids.push(...nestedIds.flat());
+    }
+  }
+  return ids;
+}
+
 async function handleGetProduct(query: {
   searchKeyword?: string;
-  categoryId?: string;
+  categoryId?: string | string[];
+  brandIds?: string | string[];
   productId?: string;
   page?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: SortOption;
 }): Promise<{ resp: ResponseApi; status: number }> {
-  const { searchKeyword, productId, categoryId, page } = query;
+  const {
+    searchKeyword,
+    productId,
+    categoryId,
+    brandIds,
+    page,
+    minPrice,
+    maxPrice,
+    sortBy,
+  } = query;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
@@ -182,77 +228,92 @@ async function handleGetProduct(query: {
     return { resp: { success: true, data: product }, status: 200 };
   }
 
-  if (categoryId != null) {
-    const category = await getCategory(categoryId as string);
-    if (category == null) {
-      console.error(
-        filepath,
-        'Category not found',
-        `Method: GET`,
-        `productId: ${categoryId}`,
-      );
-      return {
-        resp: { success: false, message: "Couldn't find the category" },
-        status: 404,
-      };
-    }
-
-    const { successorCategories, products } = category;
-    if (successorCategories?.length === 0) {
-      let filteredProducts = products;
-      if (searchKeyword != null) {
-        filteredProducts = products?.filter((product) => {
-          return product.name
-            .toLocaleLowerCase()
-            .includes(searchKeyword.toLocaleLowerCase());
-        });
-      }
-      return {
-        resp: {
-          success: true,
-          data: filteredProducts.slice(skip, skip + productsPerPage),
-        },
-        status: 200,
-      };
-    }
-
-    const queue = successorCategories!;
-    let allProducts = products!;
-    while (queue.length > 0) {
-      const { id } = queue.shift()!;
-      const { products: sucProducts, successorCategories: newSucCat } =
-        (await getCategory(id as string))!;
-      allProducts.push(...sucProducts!);
-      queue.push(...newSucCat!);
-    }
-
-    if (searchKeyword != null) {
-      allProducts = allProducts.filter((product) => {
-        return product.name
-          .toLocaleLowerCase()
-          .includes(searchKeyword.toLocaleLowerCase());
-      });
-    }
-    return {
-      resp: {
-        success: true,
-        data: allProducts.slice(skip, skip + productsPerPage),
-      },
-      status: 200,
-    };
+  const where: Prisma.ProductWhereInput = {};
+  if (categoryId) {
+    const cats = Array.isArray(categoryId) ? categoryId : [categoryId];
+    const ids: string[] = [];
+    const recursiveIds = await Promise.all(
+      cats.map((cid) => getRecursiveCategoryIds(cid)),
+    );
+    ids.push(...recursiveIds.flat());
+    where.categoryId = { in: ids };
   }
 
-  console.error(
-    filepath,
-    'Neither categoryId nor productId has been provided',
-    `Method: GET`,
+  if (brandIds) {
+    const bIds = Array.isArray(brandIds) ? brandIds : [brandIds];
+    where.brandId = { in: bIds };
+  }
+
+  if (searchKeyword) {
+    where.name = { contains: searchKeyword, mode: 'insensitive' };
+  }
+
+  // minPrice/maxPrice are provided in TMT, convert to usd
+  if (minPrice || maxPrice) {
+    const dollarRate = await dbClient.dollarRate.findFirst({
+      where: { currency: 'TMT' },
+    });
+    const rate = dollarRate?.rate || 1;
+
+    if (minPrice) {
+      const minTmt = parseFloat(minPrice);
+      if (!Number.isNaN(minTmt)) {
+        const currentFilter =
+          typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
+        where.cachedPrice = { ...currentFilter, gte: minTmt / rate };
+      }
+    }
+    if (maxPrice) {
+      const maxTmt = parseFloat(maxPrice);
+      if (!Number.isNaN(maxTmt)) {
+        const currentFilter =
+          typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
+        where.cachedPrice = { ...currentFilter, lte: maxTmt / rate };
+      }
+    }
+  }
+
+  let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' }; // default
+  if (sortBy) {
+    switch (sortBy) {
+      case SORT_OPTIONS.PRICE_ASC:
+        orderBy = { cachedPrice: 'asc' };
+        break;
+      case SORT_OPTIONS.PRICE_DESC:
+        orderBy = { cachedPrice: 'desc' };
+        break;
+      case SORT_OPTIONS.A_Z:
+        orderBy = { name: 'asc' };
+        break;
+      case SORT_OPTIONS.NEWEST:
+        orderBy = { createdAt: 'desc' };
+        break;
+      default:
+        break;
+    }
+  }
+
+  const products = await dbClient.product.findMany({
+    where,
+    orderBy,
+    skip,
+    take: productsPerPage,
+    include: { brand: true },
+  });
+
+  const productsWithDisplayPrice = await Promise.all(
+    products.map(async (product) => {
+      const productPrice = await getPrice(product.price as string);
+      if (productPrice) {
+        product.price = `${product.price}{${productPrice.priceInTmt}}`;
+      }
+      return product;
+    }),
   );
+
   return {
-    resp: {
-      success: false,
-      message: 'Neither categoryId nor productId has been provided',
-    },
-    status: 404,
+    resp: { success: true, data: productsWithDisplayPrice },
+    status: 200,
   };
 }
 
@@ -272,11 +333,26 @@ async function handleEditProduct(
       }
 
       const data: Partial<Product> = { imgUrls: [] };
-      if (fields.categoryId?.length > 0) data.categoryId = fields.categoryId[0];
+      if (fields.categoryId?.length > 0 && fields.categoryId[0] !== '') {
+        data.categoryId = fields.categoryId[0];
+      }
       if (fields.name?.length > 0) data.name = fields.name[0];
       if (fields.description?.length > 0)
         data.description = fields.description[0];
-      if (fields.price?.length > 0) data.price = fields.price[0];
+      if (fields.price?.length > 0) {
+        data.price = fields.price[0];
+        data.cachedPrice = parseFloat(
+          (await getPrice(fields.price[0]))?.price || '0',
+        );
+      }
+
+      if (fields.brandId?.length > 0) {
+        data.brandId = fields.brandId[0];
+        if (data.brandId === '') {
+          data.brandId = null;
+        }
+      }
+
       if (fields.tags?.length > 0) data.tags = JSON.parse(fields.tags[0]);
       if (fields.videoUrls?.length > 0)
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
