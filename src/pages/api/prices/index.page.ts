@@ -139,6 +139,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           const data: any = { name: price.name };
           if (price.price != null) {
             data.price = price.price;
+
+            // Sync with Product.cachedPrice
+            const val = parseFloat(price.price);
+            if (!Number.isNaN(val)) {
+              await dbClient.product.updateMany({
+                where: { price: { contains: `[${price.id}]` } },
+                data: { cachedPrice: val },
+              });
+            }
           }
           if (price.priceInTmt != null) {
             data.priceInTmt = price.priceInTmt;
