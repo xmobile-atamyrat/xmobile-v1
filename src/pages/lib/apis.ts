@@ -21,7 +21,8 @@ export const fetchProducts = async ({
   productId?: string;
   page?: number;
 }): Promise<Product[]> => {
-  // Allow fetching if ANY filter is present (removed restrict check)
+  if (categoryIds == null && searchKeyword == null && productId == null)
+    return [];
 
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
 
@@ -54,6 +55,7 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
+// todo: legacy func, fetchProducts applies default sortBy=newest parameter
 export const fetchNewProducts = async ({
   searchKeyword,
   page,

@@ -313,6 +313,12 @@
   "priceHighToLow": "Kymmatdan arzana",
   "new": "Taza",
   "aToZ": "A-dan Z-ýa",
-  "sortBy": "Tertiple"
+  "sortBy": "Tertiple",
+  "brandDeleteConfirm": "\"{name}\" brendini öçürmük islotranyňyza uwerenmi? Produktlar bilan baglanyşyk aýrylady.",
+  "createBrandError": "Brend döredip bolmady",
+  "updateBrandError": "Brend tazalap bolmady",
+  "deleteBrandError": "Brend öçürüp bolmady",
+  "brand": "Brend",
+  "brandSearchPlaceholder": "Brend ahtar ýa-da koş..."
 }
 

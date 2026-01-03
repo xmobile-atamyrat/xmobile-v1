@@ -314,5 +314,11 @@
   "priceHighToLow": "Сначала дорогие",
   "new": "Новые",
   "aToZ": "От А до Я",
-  "sortBy": "Сортировать по"
+  "sortBy": "Сортировать по",
+  "brandDeleteConfirm": "Вы уверены, что хотите удалить бренд \"{name}\"? Связь с продуктами будет удалена.",
+  "createBrandError": "Не удалось создать бренд",
+  "updateBrandError": "Не удалось обновить бренд",
+  "deleteBrandError": "Не удалось удалить бренд",
+  "brand": "Бренд",
+  "brandSearchPlaceholder": "Найти или добавить бренд..."
 }
