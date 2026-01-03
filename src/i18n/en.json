@@ -310,5 +310,7 @@
   "priceLowToHigh": "Price Low-to-High",
   "priceHighToLow": "Price High-to-Low",
   "new": "New",
-  "aToZ": "A to Z"
+  "aToZ": "A to Z",
+  "sortBy": "Sort by"
 }
+
