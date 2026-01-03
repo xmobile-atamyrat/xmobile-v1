@@ -67,9 +67,13 @@ model Product {
   description     String?
   imgUrls         String[]
   price           String?
+  cachedPrice     Float?      @default(0)
 
   categories      Category    @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   categoryId      String
+
+  brand           Brand?      @relation(fields: [brandId], references: [id])
+  brandId         String?
 
   cartItems       CartItem[]
   userOrderItems  UserOrderItem[]
@@ -79,6 +83,17 @@ model Product {
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@index([brandId])
+}
+
+model Brand {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Prices {
