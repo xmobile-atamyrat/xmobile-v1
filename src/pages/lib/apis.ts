@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { ResponseApi } from '@/pages/lib/types';
+import { ResponseApi, BrandProps } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
 export const fetchProducts = async ({
@@ -57,4 +57,16 @@ export const fetchNewProducts = async ({
     throw new Error(message);
   }
   return Array.isArray(data) ? data : [];
+};
+
+export const fetchBrands = async (): Promise<BrandProps[]> => {
+  const { success, data, message }: ResponseApi<any[]> = await (
+    await fetch(`${BASE_URL}/api/brand`)
+  ).json();
+
+  if (!success || data == null) {
+    console.error('Failed to fetch brands:', message);
+    return [];
+  }
+  return data;
 };
