@@ -266,7 +266,7 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
-            <Box className="flex flex-row w-[15.3vw] h-[2.9vw] justify-between">
+            <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between">
               {/* removeButton */}
               <IconButton
                 onClick={handleProductQuantity('quantityRemove')}
