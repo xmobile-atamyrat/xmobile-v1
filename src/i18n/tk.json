@@ -313,6 +313,12 @@
   "priceHighToLow": "Gymmatdan arzana",
   "new": "Täze",
   "aToZ": "A-dan Z-a",
-  "sortBy": "Tertiple"
+  "sortBy": "Tertiple",
+  "brandDeleteConfirm": "\"{name}\" brendini pozmak isleýändigiňize ynanýarsyňyzmy? Önümler bilen baglanyşyk aýrylar.",
+  "createBrandError": "Brend döredip bolmady",
+  "updateBrandError": "Brend täzeläp bolmady",
+  "deleteBrandError": "Brend pozup bolmady",
+  "brand": "Brend",
+  "brandSearchPlaceholder": "Brend gözle ýa-da goş..."
 }
 
