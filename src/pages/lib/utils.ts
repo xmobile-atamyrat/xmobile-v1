@@ -194,11 +194,13 @@ export async function addEditProduct({
   tags,
   videoUrls,
   selectedProductId,
+  brandId,
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   productNameRequiredError: string;
   categoryId: string;
+  brandId?: string;
   productImageUrls: string[];
   productImageFiles: File[];
   deleteImageUrls: string[];
@@ -255,6 +257,7 @@ export async function addEditProduct({
 
   newFormData.append('name', JSON.stringify(productNames));
   newFormData.append('categoryId', categoryId);
+  if (brandId) newFormData.append('brandId', brandId);
 
   if (Object.keys(productDescriptions).length > 0)
     newFormData.append('description', JSON.stringify(productDescriptions));
@@ -305,7 +308,7 @@ export async function addEditProduct({
   }
 
   const prods = await fetchProducts({
-    categoryId,
+    categoryIds: [categoryId],
   });
   setProducts(prods as Product[]);
   setPrevProducts(prods as Product[]);
