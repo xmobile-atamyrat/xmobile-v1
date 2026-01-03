@@ -140,6 +140,6 @@ export const detailPageClasses = {
   },
   dialogImg: {
     web: 'w-[90vw] h-auto',
-    mobile: 'w-auto h-[90vw]',
+    mobile: 'w-auto h-[90vw] object-contain',
   },
 };
