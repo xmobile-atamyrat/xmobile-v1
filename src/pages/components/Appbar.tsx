@@ -1,22 +1,34 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { appBarHeight, LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  HIGHEST_LEVEL_CATEGORY_ID,
+  LOCALE_COOKIE_NAME,
+} from '@/pages/lib/constants';
 import { getCookie, setCookie } from '@/pages/lib/utils';
+
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
+import CategoryList from '@/pages/components/Drawer';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
+import { drawerClasses } from '@/styles/classMaps/components/drawer';
 import { interClassname } from '@/styles/theme';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CallIcon from '@mui/icons-material/Call';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import {
   CardMedia,
   Divider,
+  Menu,
   Paper,
   Select,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -31,10 +43,10 @@ import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface CustomAppBarProps {
-  openDrawer: boolean;
-  setOpenDrawer: Dispatch<SetStateAction<boolean>>;
   showSearch?: boolean;
   handleBackButton?: () => void;
+  setEditCategoriesModal?: Dispatch<SetStateAction<EditCategoriesProps>>;
+  setDeleteCategoriesModal?: Dispatch<SetStateAction<DeleteCategoriesProps>>;
 }
 
 export const SearchBar = ({
@@ -84,10 +96,10 @@ export const SearchBar = ({
 };
 
 export default function CustomAppBar({
-  setOpenDrawer,
-  openDrawer,
   showSearch = false,
   handleBackButton,
+  setEditCategoriesModal,
+  setDeleteCategoriesModal,
 }: CustomAppBarProps) {
   const { user } = useUserContext();
   const router = useRouter();
@@ -105,6 +117,14 @@ export default function CustomAppBar({
     { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
     { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
   ];
+  const [menuStatus, setMenuStatus] = useState(false);
+  const { categories, setSelectedCategoryId } = useCategoryContext();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuButton = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+    setMenuStatus(true);
+  };
 
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
@@ -255,11 +275,57 @@ export default function CustomAppBar({
               edge="start"
               color="inherit"
               aria-label="open drawer"
-              onClick={() => setOpenDrawer(!openDrawer)}
+              onClick={handleMenuButton}
               className="p-4"
             >
               <MenuIcon className={appbarClasses.menuIcon[platform]} />
             </IconButton>
+            <Menu
+              open={menuStatus}
+              onClose={() => setMenuStatus(false)}
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              TransitionProps={{ exit: false }}
+            >
+              {categories?.length > 0 && (
+                <Box className={`${drawerClasses.box}`}>
+                  <CategoryList
+                    categories={categories}
+                    setEditCategoriesModal={setEditCategoriesModal}
+                    setDeleteCategoriesModal={setDeleteCategoriesModal}
+                    closeDrawer={() => setMenuStatus(false)}
+                    isDrawerOpen={menuStatus}
+                  />
+                </Box>
+              )}
+              {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+                <Paper className={drawerClasses.paper}>
+                  <Tooltip title="Edit categories">
+                    <IconButton
+                      onClick={() => {
+                        setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
+                        setEditCategoriesModal({
+                          open: true,
+                          dialogType: 'add',
+                        });
+                      }}
+                    >
+                      <AddCircleIcon
+                        className={drawerClasses.addCircleIcon[platform]}
+                        color="primary"
+                      />
+                    </IconButton>
+                  </Tooltip>
+                </Paper>
+              )}
+            </Menu>
           </Box>
 
           {/* Search Bar */}
