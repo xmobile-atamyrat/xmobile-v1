@@ -233,10 +233,10 @@ export default function FilterSidebar({
       elevation={0}
       sx={{
         width: '100%',
-        maxWidth: 300,
+        maxWidth: 400,
         bgcolor: '#f5f5f5',
         borderRadius: '16px',
-        p: 3,
+        p: 4,
       }}
     >
       {/* Categories */}
@@ -340,14 +340,13 @@ export default function FilterSidebar({
         <Box px={1} pt={1}>
           <Box display="flex" gap={2} mb={2}>
             <TextField
-              size="small"
+              size="medium"
               value={minPrice}
               onChange={handleMinInputChange}
-              placeholder="100"
+              placeholder="0"
               sx={{
-                bgcolor: '#f4f4f4',
-                borderRadius: '10px',
-                opacity: 0.5,
+                bgcolor: '#EFEFEF',
+                borderRadius: '12px',
                 '& .MuiOutlinedInput-root': {
                   fontFamily: 'Inter, sans-serif',
                   fontSize: '16px',
@@ -355,19 +354,21 @@ export default function FilterSidebar({
                   lineHeight: '24px',
                   color: '#303030',
                   '& fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#D1D1D1',
+                    borderWidth: '1px',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#B0B0B0',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#909090',
+                    borderWidth: '1px',
                   },
                 },
               }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end">
+                  <InputAdornment position="end" sx={{ ml: 0.5 }}>
                     <Typography
                       fontFamily="Inter, sans-serif"
                       fontSize="16px"
@@ -381,14 +382,13 @@ export default function FilterSidebar({
               }}
             />
             <TextField
-              size="small"
+              size="medium"
               value={maxPrice}
               onChange={handleMaxInputChange}
               placeholder="5,000"
               sx={{
-                bgcolor: '#f4f4f4',
-                borderRadius: '10px',
-                opacity: 0.5,
+                bgcolor: '#EFEFEF',
+                borderRadius: '12px',
                 '& .MuiOutlinedInput-root': {
                   fontFamily: 'Inter, sans-serif',
                   fontSize: '16px',
@@ -396,19 +396,21 @@ export default function FilterSidebar({
                   lineHeight: '24px',
                   color: '#303030',
                   '& fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#D1D1D1',
+                    borderWidth: '1px',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#B0B0B0',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#303030',
+                    borderColor: '#909090',
+                    borderWidth: '1px',
                   },
                 },
               }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end">
+                  <InputAdornment position="end" sx={{ ml: 0.5 }}>
                     <Typography
                       fontFamily="Inter, sans-serif"
                       fontSize="16px"
