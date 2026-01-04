@@ -42,6 +42,24 @@ export const detailPageClasses = {
       mobile: 'flex flex-row gap-2 justify-between',
     },
   },
+  imageContainer: {
+    web: 'relative w-full h-full',
+    mobile: 'relative w-full h-full',
+  },
+  enlargeIcon: {
+    web: 'absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 transition-all',
+    mobile:
+      'absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 transition-all',
+  },
+  closeButton: {
+    web: 'absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 transition-all z-10',
+    mobile:
+      'absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 transition-all z-10',
+  },
+  dialogPaper: {
+    web: 'bg-white rounded-lg max-w-[90vw] max-h-[90vh] p-8',
+    mobile: 'bg-white rounded-lg max-w-[95vw] max-h-[95vh] p-4',
+  },
   circProgress: {
     web: 'w-[30px] h-[30px]',
     mobile: 'w-[24px] h-[24px]',
@@ -139,7 +157,7 @@ export const detailPageClasses = {
       'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030]',
   },
   dialogImg: {
-    web: 'w-[90vw] h-auto',
-    mobile: 'w-auto h-[90vw] object-contain',
+    web: 'w-auto h-auto max-w-[80vw] max-h-[80vh] object-contain',
+    mobile: 'w-auto h-auto max-w-[85vw] max-h-[85vh] object-contain',
   },
 };
