@@ -2,76 +2,139 @@ import CollapsableBase from '@/pages/components/CollapsableBase';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
-import { ExpandLess, ExpandMore } from '@mui/icons-material';
-import { Box, Collapse, IconButton } from '@mui/material';
-import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
+import { Box, Menu } from '@mui/material';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface CollapsableProps {
-  imgUrl: string | null;
-  children: ReactNode;
+  children: React.ReactNode;
   categoryTitle: string;
-  pl: number;
   id: string;
-  initialOpenState: boolean;
   collapsable: boolean;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
+  isOpen?: boolean;
+  onHover?: (id: string | null) => void;
+  isActiveParent?: boolean;
+  hasSubcategories?: boolean;
 }
 
 export default function Collapsable({
-  categoryTitle,
   children,
-  imgUrl,
-  pl,
+  categoryTitle,
   id,
-  initialOpenState,
   collapsable,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
+  isOpen,
+  onHover,
+  isActiveParent,
+  hasSubcategories,
 }: CollapsableProps) {
-  const [open, setOpen] = useState(initialOpenState);
   const { selectedCategoryId } = useCategoryContext();
+  const open = isOpen ?? false;
+  const timeoutRef = useRef<any>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setAnchorEl(event.currentTarget);
+    if (onHover) {
+      onHover(id);
+    }
+  };
+
+  const handleMenuClose = () => {
+    timeoutRef.current = setTimeout(() => {
+      setAnchorEl(null);
+      if (onHover) {
+        if (isOpen) {
+          onHover(null);
+        }
+      }
+    }, 200);
+  };
+
+  // Effect to clean up timeout if we suddenly close (e.g. sibling hovered)
+  useEffect(() => {
+    if (!open && timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  }, [open]);
+
+  const handleMenuEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  };
+
+  const handleForceClose = () => {
+    setAnchorEl(null);
+    if (onHover) onHover(null);
+  };
+
   return collapsable ? (
     <Box className="w-full">
       <Box
         className={`
           ${selectedCategoryId === id ? 'bg-slate-200' : ''}
-          ${collapsableClasses.box}
-          `}
-        style={{ paddingLeft: `${pl * 2}rem` }}
+          ${collapsableClasses.box}`}
+        onMouseEnter={handleMenuOpen}
+        onMouseLeave={handleMenuClose}
       >
-        <Box className="w-[90%]">
-          <CollapsableBase
-            categoryTitle={categoryTitle}
-            id={id}
-            imgUrl={imgUrl}
-            setDeleteCategoriesModal={setDeleteCategoriesModal}
-            setEditCategoriesModal={setEditCategoriesModal}
-            closeDrawer={closeDrawer}
-          />
-        </Box>
-        <IconButton
-          className={collapsableClasses.iconButton}
-          onClick={() => setOpen(!open)}
+        <CollapsableBase
+          categoryTitle={categoryTitle}
+          id={id}
+          setDeleteCategoriesModal={setDeleteCategoriesModal}
+          setEditCategoriesModal={setEditCategoriesModal}
+          closeDrawer={closeDrawer}
+          isActiveParent={isActiveParent}
+          hasSubcategories={hasSubcategories}
+        />
+        <Menu
+          open={open}
+          anchorEl={anchorEl}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          disableRestoreFocus
+          hideBackdrop
+          disableScrollLock
+          TransitionProps={{ exit: false }}
+          sx={{
+            pointerEvents: 'none',
+            '& .MuiPaper-root': {
+              pointerEvents: 'auto',
+            },
+          }}
+          MenuListProps={{
+            onMouseEnter: handleMenuEnter,
+            onMouseLeave: handleMenuClose,
+          }}
+          onClose={handleForceClose}
         >
-          {open ? <ExpandLess /> : <ExpandMore />}
-        </IconButton>
+          {children}
+        </Menu>
       </Box>
-      <Collapse in={open} timeout="auto" unmountOnExit>
-        {children}
-      </Collapse>
     </Box>
   ) : (
-    <Box style={{ paddingLeft: `${pl * 2}rem` }}>
+    <Box>
       <CollapsableBase
         categoryTitle={categoryTitle}
         id={id}
-        imgUrl={imgUrl}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
         closeDrawer={closeDrawer}
+        isActiveParent={isActiveParent}
+        hasSubcategories={hasSubcategories}
       />
     </Box>
   );
