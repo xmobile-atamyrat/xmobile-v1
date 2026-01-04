@@ -3,7 +3,7 @@ export const detailPageClasses = {
     main: {
       web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[50px]',
       mobile:
-        'w-full h-full flex flex-col px-4 gap-4 pb-10 pt-[78px] justify-center items-center mx-auto',
+        'w-full h-full flex flex-col px-4 gap-4 pb-10 justify-center items-center mx-auto',
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
