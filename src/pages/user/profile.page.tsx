@@ -37,6 +37,8 @@ export const getStaticProps = (async (context) => {
   };
 }) satisfies GetStaticProps<object>;
 
+const PRIMARY_PHONE_NUMBER = '+99361004933';
+
 export default function Profile() {
   const { user, setUser, setAccessToken } = useUserContext();
   const [open, setOpen] = useState(false);
@@ -72,7 +74,7 @@ export default function Profile() {
   };
 
   const handleContactClick = () => {
-    window.location.href = 'tel:+99361004933';
+    window.location.href = `tel:${PRIMARY_PHONE_NUMBER}`;
   };
 
   return (
