@@ -27,7 +27,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { Product } from '@prisma/client';
+
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -48,10 +48,6 @@ export default function Products() {
   const { categories: allCategories } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const {
-    prevPage,
-    prevCategory,
-    prevProducts,
-    prevSearchKeyword,
     setPrevSearchKeyword,
     setPrevCategory,
     setPrevProducts,
@@ -135,29 +131,17 @@ export default function Products() {
         fetchProductsParams.searchKeyword = searchKeyword;
       }
 
-      let newProducts: Product[];
-      if (
-        prevCategory === categoryId &&
-        !searchKeyword &&
-        fetchProductsParams.page <= prevPage &&
-        prevSearchKeyword === searchKeyword
-      ) {
-        newProducts = prevProducts;
-        setProducts(newProducts);
-      } else {
-        newProducts = await fetchProducts(fetchProductsParams);
-        let updatedPrevProducts = prevProducts;
+      const newProducts = await fetchProducts(fetchProductsParams);
 
-        setProducts((prevPageProducts) => {
-          updatedPrevProducts = [...prevPageProducts, ...newProducts];
-          return updatedPrevProducts;
-        });
-        setPrevProducts(updatedPrevProducts);
-        setPrevSearchKeyword(searchKeyword);
-        setPrevCategory(categoryId);
+      setProducts((prevPageProducts) => [...prevPageProducts, ...newProducts]);
+      setPrevProducts((prev) => [...prev, ...newProducts]);
+      setPrevSearchKeyword(searchKeyword);
+      setPrevCategory(categoryId);
 
-        if (newProducts.length !== 0) setPrevPage(fetchProductsParams.page);
+      if (newProducts.length !== 0) {
+        setPrevPage(fetchProductsParams.page);
       }
+
       setPage((prev) => prev + 1);
 
       if (newProducts.length === 0) {
