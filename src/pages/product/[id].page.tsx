@@ -368,7 +368,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 </Carousel>
                 <IconButton
                   className={detailPageClasses.enlargeIcon[platform]}
-                  onClick={() => handleDialogOpen(imgUrls[0])}
+                  onClick={() =>
+                    handleDialogOpen(carouselDialogImage || imgUrls[0])
+                  }
                   aria-label="enlarge image"
                 >
                   <OpenInFullIcon />
