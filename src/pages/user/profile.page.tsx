@@ -71,9 +71,163 @@ export default function Profile() {
     router.push(route);
   };
 
+  const handleContactClick = () => {
+    window.location.href = 'tel:+99361004933';
+  };
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      {!user ? (
+      {!user && platform === 'mobile' ? (
+        // Mobile view for unauthenticated users
+        <Box className={profileClasses.boxes.loggedInMain}>
+          <Box className={profileClasses.accountTitle[platform]}>
+            <Typography
+              className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
+            >
+              {t('account')}
+            </Typography>
+          </Box>
+          <Box className={profileClasses.boxes.sectionBox[platform]}>
+            {/* Sign in/up prompt */}
+            <Box className={profileClasses.boxes.accountMain[platform]}>
+              <CardMedia
+                component="img"
+                src="/defaultProfile.jpg"
+                className={profileClasses.profileImg[platform]}
+              />
+              <Box className={profileClasses.boxes.account}>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
+                >
+                  {t('guest')}
+                </Typography>
+                <Box className="flex gap-2 mt-1">
+                  <Link
+                    href="/user/signin"
+                    className="text-[#ff624c] text-sm underline"
+                  >
+                    {t('signin')}
+                  </Link>
+                  <Typography className="text-sm">/</Typography>
+                  <Link
+                    href="/user/signup"
+                    className="text-[#ff624c] text-sm underline"
+                  >
+                    {t('signup')}
+                  </Link>
+                </Box>
+              </Box>
+            </Box>
+            <Box className={profileClasses.boxes.divider[platform]}></Box>
+
+            {/* Menu items available for unauthenticated users */}
+            <Box className="w-[90%] flex flex-col items-center mx-auto">
+              {/* Contact Us */}
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleContactClick}
+                variant="text"
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/contact.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('contact')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+
+              {/* App Language */}
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleToggleLang}
+                variant="text"
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/language.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('appLanguage')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Language Dialog */}
+          <Dialog
+            open={openLang}
+            onClose={handleToggleLang}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            PaperProps={{
+              className: `${profileClasses.dialog.main[platform]} h-[300px]`,
+            }}
+          >
+            <Typography
+              id="alert-dialog-title"
+              className={`${profileClasses.typos.language} ${interClassname.className}`}
+            >
+              {'Language'}
+            </Typography>
+            <List className={profileClasses.boxes.langList}>
+              {lang.map((language) => (
+                <ListItemButton
+                  className={profileClasses.boxes.langListitemButton}
+                  key={language.val}
+                  selected={selectedLocale === language.val}
+                  onClick={() => {
+                    const newLocale = language.val;
+                    setSelectedLocale(newLocale);
+                    setCookie(LOCALE_COOKIE_NAME, newLocale);
+                    router.push(router.pathname, router.asPath, {
+                      locale: newLocale,
+                    });
+                    handleToggleLang();
+                  }}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: colors.paperBackground.web,
+                    },
+                  }}
+                >
+                  <Box className={profileClasses.boxes.langOption}>
+                    <CardMedia
+                      component="img"
+                      src={language.img}
+                      className={profileClasses.langImg}
+                    />
+                    <Typography
+                      className={`${profileClasses.typos.langOption} ${interClassname.className}`}
+                    >
+                      {language.name}
+                    </Typography>
+                  </Box>
+                </ListItemButton>
+              ))}
+            </List>
+          </Dialog>
+        </Box>
+      ) : null}
+      {!user && platform === 'web' ? (
+        // Web view for unauthenticated users (keep original design)
         <Box className={profileClasses.boxes.main[platform]}>
           <Box className={profileClasses.boxes.loggedOutMain[platform]}>
             <CardMedia
@@ -107,7 +261,8 @@ export default function Profile() {
             </Box>
           </Box>
         </Box>
-      ) : (
+      ) : null}
+      {user ? (
         <Box className={profileClasses.boxes.loggedInMain}>
           <Box className={profileClasses.accountTitle[platform]}>
             <Typography
@@ -395,7 +550,7 @@ export default function Profile() {
             </List>
           </Dialog>
         </Box>
-      )}
+      ) : null}
     </Layout>
   );
 }
