@@ -29,10 +29,12 @@ import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
 import { colors, interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import InstagramIcon from '@mui/icons-material/Instagram';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import {
   Alert,
@@ -331,32 +333,64 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         <Box className={detailPageClasses.boxes.images[platform]}>
           {imgUrls.length === 1 && (
             <Box className={detailPageClasses.boxes.img[platform]}>
-              <CardMedia
-                component="img"
-                image={imgUrls[0]}
-                alt={product?.name}
-                className={detailPageClasses.cardMedia[platform]}
-                onClick={() => handleDialogOpen(imgUrls[0])}
-              />
+              <Box className={detailPageClasses.imageContainer[platform]}>
+                <CardMedia
+                  component="img"
+                  image={imgUrls[0]}
+                  alt={product?.name}
+                  className={detailPageClasses.cardMedia[platform]}
+                  onClick={() => handleDialogOpen(imgUrls[0])}
+                />
+                <IconButton
+                  className={detailPageClasses.enlargeIcon[platform]}
+                  onClick={() => handleDialogOpen(imgUrls[0])}
+                  aria-label="enlarge image"
+                >
+                  <OpenInFullIcon />
+                </IconButton>
+              </Box>
             </Box>
           )}
           {imgUrls.length > 1 && (
             <Box className={detailPageClasses.boxes.img[platform]}>
-              <Carousel>
-                {imgUrls.map((imgUrl, index) => (
-                  <CardMedia
-                    component="img"
-                    image={imgUrl}
-                    alt={product?.name}
-                    className={detailPageClasses.cardMedia[platform]}
-                    key={index}
-                    onClick={() => handleDialogOpen(imgUrl)}
-                  />
-                ))}
-              </Carousel>
+              <Box className={detailPageClasses.imageContainer[platform]}>
+                <Carousel>
+                  {imgUrls.map((imgUrl, index) => (
+                    <CardMedia
+                      component="img"
+                      image={imgUrl}
+                      alt={product?.name}
+                      className={detailPageClasses.cardMedia[platform]}
+                      key={index}
+                      onClick={() => handleDialogOpen(imgUrl)}
+                    />
+                  ))}
+                </Carousel>
+                <IconButton
+                  className={detailPageClasses.enlargeIcon[platform]}
+                  onClick={() => handleDialogOpen(imgUrls[0])}
+                  aria-label="enlarge image"
+                >
+                  <OpenInFullIcon />
+                </IconButton>
+              </Box>
             </Box>
           )}
-          <Dialog open={dialogStatus} onClose={handleDialogClose}>
+          <Dialog
+            open={dialogStatus}
+            onClose={handleDialogClose}
+            maxWidth={false}
+            PaperProps={{
+              className: detailPageClasses.dialogPaper[platform],
+            }}
+          >
+            <IconButton
+              className={detailPageClasses.closeButton[platform]}
+              onClick={handleDialogClose}
+              aria-label="close"
+            >
+              <CloseIcon />
+            </IconButton>
             <CardMedia
               component="img"
               image={carouselDialogImage}
