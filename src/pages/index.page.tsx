@@ -244,7 +244,7 @@ export default function Home({
           width: '100%',
         })}
       </Box>
-      <Box className="flex flex-row gap-6 w-full">
+      <Box className="flex flex-row gap-6 w-full px-[10.31vw]">
         {/* Sidebar - Desktop Only */}
         {platform === 'web' && (
           <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
@@ -260,7 +260,7 @@ export default function Home({
         )}
 
         <Box className={homePageClasses.main[platform]}>
-          <Box className="px-[10.31vw] w-full">
+          <Box className="w-full">
             <Box
               display="flex"
               justifyContent="space-between"
