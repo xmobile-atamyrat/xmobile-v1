@@ -3,7 +3,7 @@ export const detailPageClasses = {
     main: {
       web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[50px]',
       mobile:
-        'w-full h-full flex flex-col px-4 gap-4 pb-10 pt-[78px] justify-center items-center mx-auto',
+        'w-full h-full flex flex-col px-4 gap-4 pb-10 justify-center items-center mx-auto',
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
@@ -81,7 +81,7 @@ export const detailPageClasses = {
       'text-[#1c1b1b] font-medium text-[clamp(3vw,_4.67vw,_20px)] leading-[25px] tracking-normal gap-[2px] text-left',
   },
   cardMedia: {
-    web: 'h-[20.8vw] object-contain',
+    web: 'h-[20.8vw] object-contain cursor-pointer',
     mobile: 'h-[60vw] object-contain',
   },
   list: {
@@ -137,5 +137,9 @@ export const detailPageClasses = {
     desc: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-semibold text-[#303030]',
     font2:
       'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030]',
+  },
+  dialogImg: {
+    web: 'w-[90vw] h-auto',
+    mobile: 'w-auto h-[90vw] object-contain',
   },
 };

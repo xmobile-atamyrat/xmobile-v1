@@ -1,10 +1,10 @@
 export const drawerClasses = {
   box: {
-    web: 'pt-[66px] overflow-auto h-screen',
-    mobile: 'pt-[58px] overflow-auto h-screen',
+    web: 'overflow-auto min-h-[200px]',
+    mobile: 'overflow-auto',
   },
-  list: 'flex flex-col',
-  paper: 'h-12 w-full bg-slate-100 flex justify-center',
+  list: 'flex flex-col min-w-[200px] rounded-[4px] py-[12px] gap-[17px]',
+  paper: 'w-full bg-slate-100 flex justify-center',
   addCircleIcon: {
     web: 'text-lg',
     mobile: 'text-sm',
