@@ -22,7 +22,7 @@ import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -34,7 +34,7 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signup() {
-  const { user, setUser, setAccessToken } = useUserContext();
+  const { user, setUser, setAccessToken, isLoading } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +48,16 @@ export default function Signup() {
   const handleClose = () => {
     setTooltipOpen(false);
   };
-  if (user) router.push('/user');
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/user');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <Box className={signupClasses.boxes.page[platform]}>

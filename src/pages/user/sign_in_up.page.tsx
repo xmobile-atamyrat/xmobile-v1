@@ -7,6 +7,7 @@ import { Box, CardMedia, Link, Typography } from '@mui/material';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -17,11 +18,20 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function SignInUp() {
-  const { user } = useUserContext();
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
-  if (user) router.push('/user');
+  const { user, isLoading } = useUserContext();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/user');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <Layout handleHeaderBackButton={() => router.back()}>
