@@ -34,7 +34,11 @@ export default function SignInUp() {
   }
 
   return (
-    <Layout handleHeaderBackButton={() => router.back()}>
+    <Layout
+      handleHeaderBackButton={() => {
+        router.push('/');
+      }}
+    >
       <Box className={profileClasses.boxes.main[platform]}>
         <Box className={profileClasses.boxes.loggedOutMain[platform]}>
           <CardMedia
