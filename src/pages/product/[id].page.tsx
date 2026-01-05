@@ -437,7 +437,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                       primary={
                         <Box className={detailPageClasses.boxes.tag[platform]}>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className} max-w-[17vw]`}
+                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
                           >
                             {beginning}
                           </Typography>

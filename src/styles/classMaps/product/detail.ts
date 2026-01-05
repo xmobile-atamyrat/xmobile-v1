@@ -57,7 +57,7 @@ export const detailPageClasses = {
         'font-bold text-[clamp(13px,_4.2vw,_25px)] flex items-center capitalize',
     },
     font: {
-      web: 'text-[clamp(13px,_1.05vw,_20px)]',
+      web: 'text-[clamp(12px,_1.05vw,_20px)] max-w-[17vw]',
       mobile: 'text-[clamp(2vw,_4vw,_15px)]',
     },
     font2: {

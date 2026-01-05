@@ -26,4 +26,8 @@ export const homePageClasses = {
     mobile: 'grid grid-cols-2 gap-0 w-full',
     web: 'flex flex-wrap w-full',
   },
+  main: {
+    web: 'w-full',
+    mobile: 'w-full px-[24px]',
+  },
 };
