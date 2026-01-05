@@ -8,8 +8,8 @@ export const cartIndexClasses = {
     mobile: 'flex w-full justify-center',
   },
   prodCart: {
-    web: 'flex flex-wrap gap-4 w-full justify-center',
-    mobile: 'flex flex-wrap gap-4 w-full justify-center pb-[100px]',
+    web: 'flex flex-wrap gap-4 w-full pb-[5vw]',
+    mobile: 'flex flex-wrap gap-4 w-full',
   },
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {

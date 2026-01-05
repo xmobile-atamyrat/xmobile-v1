@@ -242,9 +242,10 @@ export default function Products() {
             </Typography>
           )}
         </Box>
+        <Box className="w-1/6 flex justify-start invisible"></Box>
       </Box>
       <Layout showSearch handleHeaderBackButton={handleBackButton}>
-        <Box className="flex flex-col w-full h-full">
+        <Box className="flex flex-col w-full h-full px-[24px]">
           <SimpleBreadcrumbs categoryPath={categoryPath} />
           <Box className="flex flex-wrap w-full">
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (

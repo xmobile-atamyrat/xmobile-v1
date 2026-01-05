@@ -2,7 +2,7 @@ export const productIndexPageClasses = {
   boxes: {
     appbar: {
       mobile:
-        'flex flex-row items-center w-full h-[30px] px-[24px] justify-start my-[20px]',
+        'flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]',
       web: 'hidden',
     },
     category: {
