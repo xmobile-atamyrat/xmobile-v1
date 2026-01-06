@@ -290,5 +290,15 @@
   "chatSessionClosedByAdmin": "Эта сессия чата была закрыта администратором.",
   "chatConfirmEndSession": "Вы уверены, что хотите завершить этот чат? Это закроет сессию.",
   "chatConfirmLeaveSession": "Вы уверены, что хотите покинуть этот чат?",
-  "chatSessionTakenByOther": "Эта сессия была занята другим администратором."
+  "chatSessionTakenByOther": "Эта сессия была занята другим администратором.",
+  "notifications": "Уведомления",
+  "noNotifications": "Нет уведомлений",
+  "markAllRead": "Отметить все как прочитанные",
+  "enableNotifications": "Включите уведомления браузера для получения обновлений",
+  "enable": "Включить",
+  "loading": "Загрузка",
+  "justNow": "Только что",
+  "minutesAgo": "м назад",
+  "hoursAgo": "ч назад",
+  "daysAgo": "д назад"
 }
