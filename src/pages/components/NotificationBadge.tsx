@@ -1,9 +1,9 @@
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
+import CardMedia from '@mui/material/CardMedia';
 import IconButton from '@mui/material/IconButton';
 
 interface NotificationBadgeProps {
@@ -36,7 +36,9 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
           className="p-2"
           size="small"
         >
-          <NotificationsIcon
+          <CardMedia
+            component="img"
+            src="/bell.png"
             className={notificationClasses.badge.icon[platform]}
           />
         </IconButton>
