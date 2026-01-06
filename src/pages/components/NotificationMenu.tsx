@@ -42,7 +42,9 @@ export default function NotificationMenu({
         await markAsRead([notification.id]);
       }
       onClose();
-      router.push(`/chat?sessionId=${notification.sessionId}`);
+      router.push('/');
+      // TODO: enable after chat page is implemented
+      // router.push(`/chat?sessionId=${notification.sessionId}`);
     },
     [markAsRead, onClose, router],
   );
