@@ -20,6 +20,7 @@ model User {
   cartItems       CartItem[]
   chatSessions    ChatSession[]
   orders          UserOrder[]
+  inAppNotifications  InAppNotification[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -123,6 +124,7 @@ model ChatSession {
   users           User[]
 
   messages        ChatMessage[]
+  notifications   InAppNotification[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -152,6 +154,36 @@ enum ChatStatus {
   CLOSED
   ACTIVE
   PENDING
+}
+
+enum NotificationType {
+  CHAT_MESSAGE
+}
+
+model InAppNotification {
+  id          String            @id @default(uuid())
+  
+  // Recipient of the notification
+  user        User              @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId      String
+  
+  // Related chat session
+  session     ChatSession       @relation(references: [id], fields: [sessionId], onDelete: Cascade)
+  sessionId   String
+  
+  // Notification metadata
+  type        NotificationType  @default(CHAT_MESSAGE)
+  title       String?           // Optional title
+  content     String            // Notification content (message preview)
+  isRead      Boolean           @default(false)
+  
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  readAt      DateTime?         // When notification was read
+  
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([sessionId])
 }
 
 model ProcurementSupplier {
