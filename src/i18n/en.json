@@ -287,5 +287,15 @@
   "chatSessionClosedByAdmin": "This chat session has been closed by an admin.",
   "chatConfirmEndSession": "Are you sure you want to end this chat? This will close the session.",
   "chatConfirmLeaveSession": "Are you sure you want to leave this chat?",
-  "chatSessionTakenByOther": "This session has been taken by another admin."
+  "chatSessionTakenByOther": "This session has been taken by another admin.",
+  "notifications": "Notifications",
+  "noNotifications": "No notifications",
+  "markAllRead": "Mark all as read",
+  "enableNotifications": "Enable browser notifications to receive updates",
+  "enable": "Enable",
+  "loading": "Loading",
+  "justNow": "Just now",
+  "minutesAgo": "m ago",
+  "hoursAgo": "h ago",
+  "daysAgo": "d ago"
 }

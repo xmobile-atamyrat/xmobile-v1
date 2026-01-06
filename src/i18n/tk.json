@@ -289,5 +289,15 @@
   "chatSessionClosedByAdmin": "Bu söhbetdeşlik admin tarapyndan ýapyldy.",
   "chatConfirmEndSession": "Siz bu söhbeti tamamlamak isleýärsiňizmi? Bu sessiýany ýapar.",
   "chatConfirmLeaveSession": "Siz bu söhbetden çykmak isleýärsiňizmi?",
-  "chatSessionTakenByOther": "Bu sessiýa başga bir administrator tarapyndan alyndy."
+  "chatSessionTakenByOther": "Bu sessiýa başga bir administrator tarapyndan alyndy.",
+  "notifications": "Bildirişler",
+  "noNotifications": "Bildiriş ýok",
+  "markAllRead": "Hemmesini okalan diýip belläň",
+  "enableNotifications": "Täzelikleri almak üçin brauzer bildirişlerini açyň",
+  "enable": "Açmak",
+  "loading": "Ýüklenýär",
+  "justNow": "Şu wagt",
+  "minutesAgo": "min öň",
+  "hoursAgo": "sag öň",
+  "daysAgo": "gün öň"
 }
