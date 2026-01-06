@@ -27,7 +27,23 @@ export default function NotificationPermissionBanner() {
       setPermission(result);
       if (result === 'granted') {
         setDismissed(true);
+        // Show a test notification to confirm it works
+        try {
+          const testNotification = new Notification('Notifications enabled', {
+            body: 'You will receive notifications for new messages',
+            icon: '/xm-logo.png',
+            tag: 'test-notification',
+          });
+          setTimeout(() => testNotification.close(), 3000);
+        } catch (error) {
+          console.error('Failed to show test notification:', error);
+        }
       }
+    } else if (Notification.permission === 'denied') {
+      // Permission was previously denied, inform user
+      alert(
+        'Notification permission was denied. Please enable it in your browser settings to receive notifications.',
+      );
     }
   }, []);
 
