@@ -162,9 +162,25 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setDialogStatus(false);
   };
 
-  const handleDialogOpen = (imgUrl: string) => {
+  const handleDialogOpen = async (imgUrl: string, originalImgUrl: string) => {
     setDialogStatus(true);
+    // Start with the current quality image
     setCarouselDialogImage(imgUrl);
+
+    // Fetch high-quality version for enlarged view
+    try {
+      if (!originalImgUrl.startsWith('http')) {
+        const highQualityImgFetcher = fetch(
+          `${BASE_URL}/api/localImage?imgUrl=${originalImgUrl}&network=fast`,
+        );
+        const highQualityBlob = await (await highQualityImgFetcher).blob();
+        const highQualityUrl = URL.createObjectURL(highQualityBlob);
+        setCarouselDialogImage(highQualityUrl);
+      }
+    } catch (error) {
+      console.error('Failed to load high-quality image:', error);
+      // Keep the original image if high-quality fetch fails
+    }
   };
 
   // Get categoryId from query params
@@ -336,7 +352,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 image={imgUrls[0]}
                 alt={product?.name}
                 className={detailPageClasses.cardMedia[platform]}
-                onClick={() => handleDialogOpen(imgUrls[0])}
+                onClick={() => handleDialogOpen(imgUrls[0], product.imgUrls[0])}
               />
             </Box>
           )}
@@ -350,7 +366,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     alt={product?.name}
                     className={detailPageClasses.cardMedia[platform]}
                     key={index}
-                    onClick={() => handleDialogOpen(imgUrl)}
+                    onClick={() =>
+                      handleDialogOpen(imgUrl, product.imgUrls[index])
+                    }
                   />
                 ))}
               </Carousel>
