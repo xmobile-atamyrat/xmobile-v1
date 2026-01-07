@@ -50,6 +50,20 @@ export interface HistoryResponseMessage {
   messages: ChatMessage[];
 }
 
+export interface InAppNotification {
+  id: string;
+  userId: string;
+  sessionId: string;
+  type: 'CHAT_MESSAGE';
+  title?: string | null;
+  content: string;
+  isRead: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  readAt?: Date | string | null;
+  session?: ChatSession; // Optional, when included in API response
+}
+
 export type ChatEvent =
   | ChatMessage
   | {
@@ -97,6 +111,24 @@ export type ChatEvent =
       type: 'auth_refresh';
       accessToken: string;
       refreshToken: string;
+    }
+  | {
+      type: 'notification';
+      notification: InAppNotification;
+    }
+  | {
+      type: 'notifications';
+      notifications: InAppNotification[];
+      unreadCount: number;
+    }
+  | {
+      type: 'mark_notification_read';
+      notificationIds: string[];
+    }
+  | {
+      type: 'mark_notification_read_ack';
+      notificationIds: string[];
+      success: boolean;
     }
   | HistoryResponseMessage;
 

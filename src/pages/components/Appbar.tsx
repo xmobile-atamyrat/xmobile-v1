@@ -14,6 +14,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 
 import CategoryList from '@/pages/components/Drawer';
+import NotificationBadge from '@/pages/components/NotificationBadge';
+import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { drawerClasses } from '@/styles/classMaps/components/drawer';
@@ -120,6 +122,8 @@ export default function CustomAppBar({
   const [menuStatus, setMenuStatus] = useState(false);
   const { categories, setSelectedCategoryId } = useCategoryContext();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] =
+    useState<null | HTMLElement>(null);
 
   const handleMenuButton = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -338,7 +342,7 @@ export default function CustomAppBar({
             })}
           </Box>
 
-          {/* Cart, Profile */}
+          {/* Cart, Notifications, Profile */}
           <Box className="flex flex-row w-auto h-full justify-between items-center">
             <Box className="flex flex-row items-center">
               <IconButton
@@ -360,6 +364,24 @@ export default function CustomAppBar({
                 orientation="vertical"
                 className="h-[32px] text-[#303030] mx-[12px]"
               />
+              {user && (
+                <>
+                  <NotificationBadge
+                    onClick={(e: React.MouseEvent<HTMLElement>) =>
+                      setNotificationAnchorEl(e.currentTarget)
+                    }
+                  />
+                  <NotificationMenu
+                    anchorEl={notificationAnchorEl}
+                    open={Boolean(notificationAnchorEl)}
+                    onClose={() => setNotificationAnchorEl(null)}
+                  />
+                  <Divider
+                    orientation="vertical"
+                    className="h-[32px] text-[#303030] mx-[12px]"
+                  />
+                </>
+              )}
             </Box>
             <IconButton
               onClick={() => router.push('/user/profile')}
