@@ -317,6 +317,8 @@
   "updateBrandError": "Marka güncellenemedi",
   "deleteBrandError": "Marka silinemedi",
   "brand": "Marka",
-  "brandSearchPlaceholder": "Marka ara veya ekle..."
+  "brandSearchPlaceholder": "Marka ara veya ekle...",
+  "filter": "Filtre",
+  "apply": "Uygula"
 }
 

@@ -319,6 +319,8 @@
   "updateBrandError": "Brend täzeläp bolmady",
   "deleteBrandError": "Brend pozup bolmady",
   "brand": "Brend",
-  "brandSearchPlaceholder": "Brend gözle ýa-da goş..."
+  "brandSearchPlaceholder": "Brend gözle ýa-da goş...",
+  "filter": "Filtr",
+  "apply": "Ulan"
 }
 

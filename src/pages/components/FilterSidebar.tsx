@@ -21,6 +21,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import SortDropdown from './SortDropdown';
 
 interface FilterSidebarProps {
   categories: ExtendedCategory[];
@@ -28,6 +29,7 @@ interface FilterSidebarProps {
   selectedBrandIds: string[];
   minPrice: string;
   maxPrice: string;
+  sortBy?: string;
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
@@ -36,6 +38,7 @@ interface FilterSidebarProps {
     sortBy?: string;
   }) => void;
   hideSections?: ('categories' | 'brands')[];
+  variant?: 'sidebar' | 'mobile';
 }
 
 const FilterSection = ({
@@ -43,11 +46,13 @@ const FilterSection = ({
   children,
   open,
   onToggle,
+  variant = 'sidebar',
 }: {
   title: string;
   children: React.ReactNode;
   open: boolean;
   onToggle: () => void;
+  variant?: 'sidebar' | 'mobile';
 }) => {
   return (
     <Box>
@@ -55,7 +60,7 @@ const FilterSection = ({
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        mb={1}
+        mb={2}
         onClick={onToggle}
         sx={{ cursor: 'pointer' }}
       >
@@ -63,8 +68,8 @@ const FilterSection = ({
           variant="h6"
           fontFamily="Inter, sans-serif"
           fontWeight={700}
-          fontSize="20px"
-          lineHeight="30px"
+          fontSize={variant === 'mobile' ? '18px' : '20px'}
+          lineHeight={variant === 'mobile' ? '24px' : '30px'}
           color="#303030"
         >
           {title}
@@ -76,7 +81,12 @@ const FilterSection = ({
           }}
         />
       </Box>
-      <Collapse in={open} timeout="auto" unmountOnExit>
+      <Collapse
+        in={open}
+        timeout="auto"
+        unmountOnExit
+        sx={{ pb: variant === 'mobile' ? 2 : 0 }}
+      >
         {children}
       </Collapse>
     </Box>
@@ -89,8 +99,10 @@ export default function FilterSidebar({
   selectedBrandIds,
   minPrice,
   maxPrice,
+  sortBy,
   onFilterChange,
   hideSections = [],
+  variant = 'sidebar',
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -108,6 +120,7 @@ export default function FilterSidebar({
   const [brandsOpen, setBrandsOpen] = useState(
     !hideSections.includes('brands'),
   );
+  const [sortByOpen, setSortByOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
 
   // Sync with prop changes (e.g. Mode switch)
@@ -257,17 +270,17 @@ export default function FilterSidebar({
       elevation={0}
       sx={{
         width: '100%',
-        maxWidth: 300,
-        bgcolor: '#f5f5f5',
-        borderRadius: '16px',
-        p: 3,
+        maxWidth: variant === 'mobile' ? '100%' : 300,
+        bgcolor: variant === 'mobile' ? '#fff' : '#f5f5f5',
+        borderRadius: variant === 'mobile' ? 0 : '16px',
+        p: variant === 'mobile' ? 0 : 3,
       }}
     >
-      {/* Categories */}
       <FilterSection
         title={t('categories') || 'Categories'}
         open={categoriesOpen}
         onToggle={() => setCategoriesOpen(!categoriesOpen)}
+        variant={variant}
       >
         <List dense>
           {topLevelCategories.map((cat) => (
@@ -276,13 +289,15 @@ export default function FilterSidebar({
         </List>
       </FilterSection>
 
-      <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
+      {variant !== 'mobile' && (
+        <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
+      )}
 
-      {/* Explicit Brands */}
       <FilterSection
         title={t('brands') || 'Brands'}
         open={brandsOpen}
         onToggle={() => setBrandsOpen(!brandsOpen)}
+        variant={variant}
       >
         <Box display="flex" flexDirection="column">
           {brands.length === 0 && (
@@ -295,7 +310,13 @@ export default function FilterSidebar({
             return (
               <Box key={brand.id} display="flex" flexDirection="column">
                 <FormControlLabel
-                  sx={{ ml: 0.5, mr: 0, alignItems: 'center' }}
+                  sx={{
+                    pl: 2,
+                    py: 0.5,
+                    mr: 0,
+                    alignItems: 'center',
+                    width: '100%',
+                  }}
                   control={
                     <CustomCheckbox
                       checked={isSelected}
@@ -365,13 +386,32 @@ export default function FilterSidebar({
         </Box>
       </FilterSection>
 
-      <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
+      {variant !== 'mobile' && (
+        <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
+      )}
 
-      {/* Price */}
+      {variant === 'mobile' && (
+        <>
+          <FilterSection
+            title={t('sortBy') || 'Sort by'}
+            open={sortByOpen}
+            onToggle={() => setSortByOpen(!sortByOpen)}
+            variant={variant}
+          >
+            <SortDropdown
+              variant="chips"
+              value={sortBy || SORT_OPTIONS.NEWEST}
+              onChange={(v) => onFilterChange({ sortBy: v })}
+            />
+          </FilterSection>
+        </>
+      )}
+
       <FilterSection
         title={t('price') || 'Price'}
         open={priceOpen}
         onToggle={() => setPriceOpen(!priceOpen)}
+        variant={variant}
       >
         <Box px={1} pt={1}>
           <Box display="flex" gap={2} mb={2}>
@@ -466,20 +506,26 @@ export default function FilterSidebar({
             min={0}
             max={20000}
             sx={{
-              color: '#FF624C',
+              color: variant === 'mobile' ? '#191919' : '#FF624C',
               height: 6,
               '& .MuiSlider-thumb': {
                 width: 16,
                 height: 16,
-                backgroundColor: '#FF624C',
+                backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
                 border: '3px solid white',
-                boxShadow: '0 0 0 1px #FF624C',
+                boxShadow:
+                  variant === 'mobile'
+                    ? '0 0 0 1px #191919'
+                    : '0 0 0 1px #FF624C',
                 '&:hover, &.Mui-focusVisible': {
-                  boxShadow: '0 0 0 8px rgba(255, 98, 76, 0.16)',
+                  boxShadow:
+                    variant === 'mobile'
+                      ? '0 0 0 8px rgba(25, 25, 25, 0.16)'
+                      : '0 0 0 8px rgba(255, 98, 76, 0.16)',
                 },
               },
               '& .MuiSlider-track': {
-                backgroundColor: '#FF624C',
+                backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
                 border: 'none',
               },
               '& .MuiSlider-rail': {
@@ -488,26 +534,27 @@ export default function FilterSidebar({
               },
             }}
           />
-          <Box display="flex" justifyContent="flex-start" mt={2}>
-            <Typography
-              onClick={handleClearFilters}
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                fontWeight: 700,
-                textDecoration: 'underline',
-                color: '#303030',
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8,
-                },
-              }}
-            >
-              {t('clearFilters') || 'Clear Filters'}
-            </Typography>
-          </Box>
         </Box>
       </FilterSection>
+
+      <Box display="flex" justifyContent="flex-start" mt={3}>
+        <Typography
+          onClick={handleClearFilters}
+          sx={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px',
+            fontWeight: 700,
+            textDecoration: 'underline',
+            color: '#303030',
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.8,
+            },
+          }}
+        >
+          {t('clearFilters') || 'Clear Filters'}
+        </Typography>
+      </Box>
     </Paper>
   );
 }
