@@ -287,5 +287,16 @@
   "cityPlaceholder": "Türkmenabat",
   "streetAddress": "Sokak Adresi",
   "cancelTheOrder": "Siparişi İptal Et",
-  "serverError": "There is server error. Please, contact the administrators."
+  "serverError": "There is server error. Please, contact the administrators.",
+  "notifications": "Bildirimler",
+  "noNotifications": "Bildirim yok",
+  "markAllRead": "Tümünü okundu işaretle",
+  "enableNotifications": "Güncellemeleri almak için tarayıcı bildirimlerini etkinleştirin",
+  "enable": "Etkinleştir",
+  "loading": "Yükleniyor",
+  "justNow": "Şimdi",
+  "minutesAgo": "dk önce",
+  "hoursAgo": "sa önce",
+  "daysAgo": "gün önce",
+  "notificationsDenied": "Bildirim izni reddedildi. Bildirimleri almak için lütfen tarayıcı ayarlarınızdan etkinleştirin."
 }
