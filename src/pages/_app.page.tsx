@@ -10,6 +10,7 @@ import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
+import { registerServiceWorker } from '@/pages/lib/serviceWorker';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
@@ -20,6 +21,15 @@ import { useEffect, useState } from 'react';
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+
+  // Register Service Worker for notifications
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      registerServiceWorker().catch((error) => {
+        console.error('Service Worker registration error:', error);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const hasShownSplash = sessionStorage.getItem('hasShownSplash');
