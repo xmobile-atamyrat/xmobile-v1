@@ -9,7 +9,7 @@ export const cartIndexClasses = {
   },
   prodCart: {
     web: 'flex flex-wrap gap-4 w-full pb-[5vw]',
-    mobile: 'flex flex-wrap gap-4 w-full',
+    mobile: 'flex flex-wrap gap-4 w-full px-[24px] pb-[50px]',
   },
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
