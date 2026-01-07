@@ -20,7 +20,7 @@ import { User } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -31,16 +31,26 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Signin() {
-  const { setUser, setAccessToken } = useUserContext();
+  const { user, setUser, setAccessToken, isLoading } = useUserContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations();
   const platform = usePlatform();
 
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/user');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return null;
+  }
+
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link href="/user/profile">
+      <Link href="/user/sign_in_up">
         <ArrowBackIos
           className={`${signinClasses.link[platform]}`}
           style={{ color: colors.blackText }}

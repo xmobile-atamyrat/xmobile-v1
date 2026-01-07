@@ -339,6 +339,7 @@ export const deleteCookie = (name: string) => {
   if (typeof document !== 'undefined') {
     const serializedCookie = cookie.serialize(name, '', {
       maxAge: 0,
+      path: '/',
     });
     document.cookie = serializedCookie;
   }
