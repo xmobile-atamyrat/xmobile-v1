@@ -4,7 +4,7 @@ export const checkoutDialogClasses = {
     mobile: 'rounded-[40px]',
   },
   dialogContent: {
-    web: 'px-36 py-[60px]',
+    web: 'py-[60px]',
     mobile: 'px-6 py-4',
   },
   breadcrumbs: {
