@@ -1,4 +1,5 @@
 import { fetchBrands } from '@/pages/lib/apis';
+import { SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import CheckIcon from '@mui/icons-material/Check';
@@ -32,20 +33,22 @@ interface FilterSidebarProps {
     brandIds?: string[];
     minPrice?: string;
     maxPrice?: string;
+    sortBy?: string;
   }) => void;
+  hideSections?: ('categories' | 'brands')[];
 }
 
 const FilterSection = ({
   title,
   children,
-  defaultOpen = true,
+  open,
+  onToggle,
 }: {
   title: string;
   children: React.ReactNode;
-  defaultOpen?: boolean;
+  open: boolean;
+  onToggle: () => void;
 }) => {
-  const [open, setOpen] = useState(defaultOpen);
-
   return (
     <Box>
       <Box
@@ -53,7 +56,7 @@ const FilterSection = ({
         justifyContent="space-between"
         alignItems="center"
         mb={1}
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         sx={{ cursor: 'pointer' }}
       >
         <Typography
@@ -87,6 +90,7 @@ export default function FilterSidebar({
   minPrice,
   maxPrice,
   onFilterChange,
+  hideSections = [],
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -96,6 +100,25 @@ export default function FilterSidebar({
     { id: string; name: string; productCount: number }[]
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
+
+  // -- Section Visibility Logic --
+  const [categoriesOpen, setCategoriesOpen] = useState(
+    !hideSections.includes('categories'),
+  );
+  const [brandsOpen, setBrandsOpen] = useState(
+    !hideSections.includes('brands'),
+  );
+  const [priceOpen, setPriceOpen] = useState(true);
+
+  // Sync with prop changes (e.g. Mode switch)
+  useEffect(() => {
+    if (hideSections.includes('categories')) {
+      setCategoriesOpen(false);
+    }
+    if (hideSections.includes('brands')) {
+      setBrandsOpen(false);
+    }
+  }, [hideSections]);
 
   useEffect(() => {
     (async () => {
@@ -133,6 +156,7 @@ export default function FilterSidebar({
       maxPrice: '',
       categoryIds: [],
       brandIds: [],
+      sortBy: SORT_OPTIONS.NEWEST,
     });
   };
 
@@ -233,14 +257,18 @@ export default function FilterSidebar({
       elevation={0}
       sx={{
         width: '100%',
-        maxWidth: 400,
+        maxWidth: 300,
         bgcolor: '#f5f5f5',
         borderRadius: '16px',
-        p: 4,
+        p: 3,
       }}
     >
       {/* Categories */}
-      <FilterSection title={t('categories') || 'Categories'}>
+      <FilterSection
+        title={t('categories') || 'Categories'}
+        open={categoriesOpen}
+        onToggle={() => setCategoriesOpen(!categoriesOpen)}
+      >
         <List dense>
           {topLevelCategories.map((cat) => (
             <CategoryItem key={cat.id} cat={cat} />
@@ -251,7 +279,11 @@ export default function FilterSidebar({
       <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
 
       {/* Explicit Brands */}
-      <FilterSection title={t('brands') || 'Brands'}>
+      <FilterSection
+        title={t('brands') || 'Brands'}
+        open={brandsOpen}
+        onToggle={() => setBrandsOpen(!brandsOpen)}
+      >
         <Box display="flex" flexDirection="column">
           {brands.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
@@ -336,17 +368,22 @@ export default function FilterSidebar({
       <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
 
       {/* Price */}
-      <FilterSection title={t('price') || 'Price'}>
+      <FilterSection
+        title={t('price') || 'Price'}
+        open={priceOpen}
+        onToggle={() => setPriceOpen(!priceOpen)}
+      >
         <Box px={1} pt={1}>
           <Box display="flex" gap={2} mb={2}>
             <TextField
-              size="medium"
+              size="small"
               value={minPrice}
               onChange={handleMinInputChange}
-              placeholder="0"
+              placeholder="100"
               sx={{
-                bgcolor: '#EFEFEF',
-                borderRadius: '12px',
+                bgcolor: '#f4f4f4',
+                borderRadius: '10px',
+                opacity: 0.5,
                 '& .MuiOutlinedInput-root': {
                   fontFamily: 'Inter, sans-serif',
                   fontSize: '16px',
@@ -354,21 +391,19 @@ export default function FilterSidebar({
                   lineHeight: '24px',
                   color: '#303030',
                   '& fieldset': {
-                    borderColor: '#D1D1D1',
-                    borderWidth: '1px',
+                    borderColor: '#303030',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#B0B0B0',
+                    borderColor: '#303030',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#909090',
-                    borderWidth: '1px',
+                    borderColor: '#303030',
                   },
                 },
               }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end" sx={{ ml: 0.5 }}>
+                  <InputAdornment position="end">
                     <Typography
                       fontFamily="Inter, sans-serif"
                       fontSize="16px"
@@ -382,13 +417,14 @@ export default function FilterSidebar({
               }}
             />
             <TextField
-              size="medium"
+              size="small"
               value={maxPrice}
               onChange={handleMaxInputChange}
               placeholder="5,000"
               sx={{
-                bgcolor: '#EFEFEF',
-                borderRadius: '12px',
+                bgcolor: '#f4f4f4',
+                borderRadius: '10px',
+                opacity: 0.5,
                 '& .MuiOutlinedInput-root': {
                   fontFamily: 'Inter, sans-serif',
                   fontSize: '16px',
@@ -396,21 +432,19 @@ export default function FilterSidebar({
                   lineHeight: '24px',
                   color: '#303030',
                   '& fieldset': {
-                    borderColor: '#D1D1D1',
-                    borderWidth: '1px',
+                    borderColor: '#303030',
                   },
                   '&:hover fieldset': {
-                    borderColor: '#B0B0B0',
+                    borderColor: '#303030',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#909090',
-                    borderWidth: '1px',
+                    borderColor: '#303030',
                   },
                 },
               }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end" sx={{ ml: 0.5 }}>
+                  <InputAdornment position="end">
                     <Typography
                       fontFamily="Inter, sans-serif"
                       fontSize="16px"
