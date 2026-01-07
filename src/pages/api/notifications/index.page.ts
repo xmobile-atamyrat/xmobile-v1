@@ -60,12 +60,14 @@ async function handler(
           nextCursor,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       console.error(
         filepath,
-        `Couldn't fetch notifications for userId: ${userId}. Error: ${error}`,
+        `Couldn't fetch notifications for userId: ${userId}. Error: ${errorMessage}`,
       );
-      return res.status(400).json({ success: false, message: error.message });
+      return res.status(400).json({ success: false, message: errorMessage });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);
