@@ -31,11 +31,15 @@ async function handler(
         data: { count },
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to count unread notifications';
       console.error(
         filepath,
-        `Couldn't count unread notifications for userId: ${userId}. Error: ${error}`,
+        `Couldn't count unread notifications for userId: ${userId}. Error: ${errorMessage}`,
       );
-      return res.status(400).json({ success: false, message: error.message });
+      return res
+        .status(400)
+        .json({ success: false, message: errorMessage });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);
