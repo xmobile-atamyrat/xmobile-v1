@@ -26,6 +26,7 @@ export default function NotificationMenu({
     notifications,
     unreadCount,
     isLoading,
+    hasMore,
     loadNotifications,
     markAsRead,
   } = useNotificationContext();
@@ -57,16 +58,16 @@ export default function NotificationMenu({
   }, [notifications, markAsRead]);
 
   const loadMore = useCallback(async () => {
-    if (loadingRef.current || !accessToken) return;
+    if (loadingRef.current || !accessToken || !hasMore) return;
 
     loadingRef.current = true;
     try {
-      // Load more notifications - cursor is managed internally
+      // Load more notifications - cursor is managed internally via nextCursorRef
       await loadNotifications();
     } finally {
       loadingRef.current = false;
     }
-  }, [loadNotifications, accessToken]);
+  }, [loadNotifications, accessToken, hasMore]);
 
   // Load more when scrolling to bottom
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function NotificationMenu({
       if (!element) return;
 
       const { scrollTop, scrollHeight, clientHeight } = element;
-      if (scrollHeight - scrollTop - clientHeight < 100) {
+      if (scrollHeight - scrollTop - clientHeight < 100 && hasMore) {
         loadMore();
       }
     };
