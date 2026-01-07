@@ -89,7 +89,11 @@ async function handler(
         filepath,
         `Couldn't mark notifications as read for userId: ${userId}. Error: ${error}`,
       );
-      return res.status(400).json({ success: false, message: error.message });
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to mark notifications as read';
+      return res.status(400).json({ success: false, message });
     }
   } else {
     console.error(`${filepath}: Method not allowed`);
