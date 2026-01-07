@@ -202,7 +202,7 @@ export default function FilterSidebar({
           sx={{
             width: 20,
             height: 20,
-            backgroundColor: '#FF624C',
+            backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
