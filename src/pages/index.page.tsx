@@ -12,6 +12,7 @@ import {
   LOCALE_COOKIE_NAME,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
+import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -128,19 +129,7 @@ export default function Home({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const [filters, setFilters] = useState({
-    categoryIds: [] as string[],
-    brandIds: [] as string[],
-    minPrice: '',
-    maxPrice: '',
-    sortBy: 'newest',
-  });
-
-  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-    setPage(1);
-    setProducts([]);
-  };
+  const { filters, setFilters } = useProductFilters();
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
 
@@ -203,7 +192,7 @@ export default function Home({
     return () => {
       observer.disconnect();
     };
-  });
+  }, [isLoading, hasMore]);
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -245,7 +234,6 @@ export default function Home({
         })}
       </Box>
       <Box className="flex flex-row gap-6 w-full px-[10.31vw]">
-        {/* Sidebar - Desktop Only */}
         {platform === 'web' && (
           <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
             <FilterSidebar
@@ -254,7 +242,11 @@ export default function Home({
               selectedBrandIds={filters.brandIds}
               minPrice={filters.minPrice}
               maxPrice={filters.maxPrice}
-              onFilterChange={handleFilterChange}
+              onFilterChange={(newFilters) => {
+                setFilters(newFilters);
+                setPage(1);
+                setProducts([]);
+              }}
             />
           </Box>
         )}
@@ -273,11 +265,14 @@ export default function Home({
                   {t('newProducts')}
                 </Typography>
               )}
-              {/* Sort Dropdown - Desktop Only */}
               {platform === 'web' && (
                 <SortDropdown
                   value={filters.sortBy}
-                  onChange={(val) => handleFilterChange({ sortBy: val })}
+                  onChange={(val) => {
+                    setFilters({ sortBy: val });
+                    setPage(1);
+                    setProducts([]);
+                  }}
                 />
               )}
             </Box>
