@@ -160,8 +160,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [carouselDialogImageUrl, setCarouselDialogImageUrl] =
     useState<string>('');
 
+  const isLocalImage = (url: string): boolean => {
+    return url && !url.startsWith('http');
+  };
+
   const cleanupObjectUrl = (url: string) => {
-    if (url && !url.startsWith('http')) {
+    if (url && url.startsWith('blob:')) {
       URL.revokeObjectURL(url);
     }
   };
@@ -181,14 +185,14 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     // Fetch high-quality version for enlarged view
     // Only fetch from API if it's a local image (not an external URL)
     try {
-      if (!originalImgUrl.startsWith('http')) {
+      if (isLocalImage(originalImgUrl)) {
         const response = await fetch(
           `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(originalImgUrl)}&network=fast`,
         );
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch high-quality image: ${response.status} ${response.statusText}`,
+            `Failed to fetch high-quality image: ${response.status}`,
           );
         }
 
