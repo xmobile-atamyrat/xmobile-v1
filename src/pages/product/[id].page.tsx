@@ -160,13 +160,17 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [carouselDialogImageUrl, setCarouselDialogImageUrl] =
     useState<string>('');
 
+  const cleanupObjectUrl = (url: string) => {
+    if (url && !url.startsWith('http')) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const handleDialogClose = () => {
     setDialogStatus(false);
     // Clean up object URL to prevent memory leaks
-    if (carouselDialogImageUrl && !carouselDialogImageUrl.startsWith('http')) {
-      URL.revokeObjectURL(carouselDialogImageUrl);
-      setCarouselDialogImageUrl('');
-    }
+    cleanupObjectUrl(carouselDialogImageUrl);
+    setCarouselDialogImageUrl('');
   };
 
   const handleDialogOpen = async (imgUrl: string, originalImgUrl: string) => {
@@ -175,10 +179,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setCarouselDialogImage(imgUrl);
 
     // Fetch high-quality version for enlarged view
+    // Only fetch from API if it's a local image (not an external URL)
     try {
       if (!originalImgUrl.startsWith('http')) {
         const response = await fetch(
-          `${BASE_URL}/api/localImage?imgUrl=${originalImgUrl}&network=fast`,
+          `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(originalImgUrl)}&network=fast`,
         );
 
         if (!response.ok) {
@@ -189,12 +194,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
 
         const highQualityBlob = await response.blob();
         // Revoke previous object URL if exists
-        if (
-          carouselDialogImageUrl &&
-          !carouselDialogImageUrl.startsWith('http')
-        ) {
-          URL.revokeObjectURL(carouselDialogImageUrl);
-        }
+        cleanupObjectUrl(carouselDialogImageUrl);
         const highQualityUrl = URL.createObjectURL(highQualityBlob);
         setCarouselDialogImageUrl(highQualityUrl);
         setCarouselDialogImage(highQualityUrl);
