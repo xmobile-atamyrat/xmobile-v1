@@ -70,23 +70,22 @@ export async function createNotificationsForSession(
       return [];
     }
 
-    // Create notifications in batch using transaction
+    // Create notifications in batch using transaction with parallel execution
     const createdNotifications = await dbClient.$transaction(async (tx) => {
-      const notifications = [];
-      for (let i = 0; i < recipients.length; i += 1) {
-        const notification = await tx.inAppNotification.create({
+      // Create all notifications in parallel
+      const notificationPromises = recipients.map((recipient) =>
+        tx.inAppNotification.create({
           data: {
-            userId: recipients[i].id,
+            userId: recipient.id,
             sessionId,
             type: NotificationType.CHAT_MESSAGE,
             title: notificationTitle,
             content,
             isRead: false,
           },
-        });
-        notifications.push(notification);
-      }
-      return notifications;
+        }),
+      );
+      return Promise.all(notificationPromises);
     });
 
     return createdNotifications;
@@ -99,6 +98,7 @@ export async function createNotificationsForSession(
 /**
  * Sends notifications to a user via WebSocket if they are connected
  * @param connectionsMap - The connections map from the WebSocket server
+ * @returns Number of unique notifications sent (not total sends)
  */
 export function sendNotificationsToUser(
   connectionsMap: Map<string, Set<AuthenticatedConnection>>,
@@ -110,15 +110,18 @@ export function sendNotificationsToUser(
     return 0;
   }
 
-  let sentCount = 0;
-  userConnections.forEach((conn) => {
-    notifications.forEach((notification) => {
+  // Send each notification to all user's connections
+  // Count unique notifications sent, not total sends
+  let uniqueNotificationsSent = 0;
+  notifications.forEach((notification) => {
+    let sentToAtLeastOne = false;
+    userConnections.forEach((conn) => {
       try {
         sendMessage(conn, {
           type: 'notification',
           notification,
         });
-        sentCount += 1;
+        sentToAtLeastOne = true;
       } catch (error) {
         console.error(
           `Failed to send notification ${notification.id} to user ${userId}:`,
@@ -126,9 +129,12 @@ export function sendNotificationsToUser(
         );
       }
     });
+    if (sentToAtLeastOne) {
+      uniqueNotificationsSent += 1;
+    }
   });
 
-  return sentCount;
+  return uniqueNotificationsSent;
 }
 
 /**
