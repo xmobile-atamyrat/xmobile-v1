@@ -65,11 +65,10 @@ export class SlackClient {
       }
 
       // If all IPs failed (or no IPs were available), try hostname as fallback
-      if (ipsToTry.length > 0) {
-        console.warn(
-          `[SlackClient:${this.name}] All ${ipsToTry.length} IPs failed, trying hostname as fallback`,
-        );
-      }
+      console.warn(
+        `[SlackClient:${this.name}] All IPs: ${ipsToTry} failed, trying hostname as fallback`,
+      );
+
       const hostnameResult = await this.sendRequestWithHostname(
         url,
         data,
