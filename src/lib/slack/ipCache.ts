@@ -19,6 +19,18 @@ export class SlackIpCache {
 
   private static readonly WORKING_IP_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+  // Seed IPs that always work on Telekom network (manually managed)
+  private static readonly SEED_IPS_FOR_HOOKS_SLACK_COM = [
+    '3.68.124.95',
+    '52.29.238.212',
+    '3.68.170.153',
+    '3.68.175.98',
+    '3.68.124.168',
+  ];
+
+  // Infinite expiration (far future timestamp)
+  private static readonly INFINITE_EXPIRATION = Number.MAX_SAFE_INTEGER;
+
   // DNS cache: hostname -> { ips, expiresAt }
   private dnsCache: Map<string, CachedDnsResult> = new Map();
 
@@ -103,19 +115,90 @@ export class SlackIpCache {
 
   /**
    * Gets currently valid working IPs for a hostname.
+   * Always includes seed IPs for hooks.slack.com.
    */
   private getWorkingIps(hostname: string): string[] {
+    // Ensure seed IPs are initialized for hooks.slack.com
+    if (hostname === 'hooks.slack.com') {
+      this.ensureSeedIpsInitialized(hostname);
+    }
+
     const workingSet = this.workingIps.get(hostname);
     if (!workingSet) {
+      // Return seed IPs if available for this hostname
+      if (hostname === 'hooks.slack.com') {
+        return [...SlackIpCache.SEED_IPS_FOR_HOOKS_SLACK_COM];
+      }
       return [];
     }
 
     this.cleanupExpiredIps(hostname);
-    return Array.from(workingSet).map((entry) => entry.ip);
+    const working = Array.from(workingSet).map((entry) => entry.ip);
+
+    // Always include seed IPs for hooks.slack.com (they never expire)
+    if (hostname === 'hooks.slack.com') {
+      const seedSet = new Set(working);
+      SlackIpCache.SEED_IPS_FOR_HOOKS_SLACK_COM.forEach((seedIp) => {
+        if (!seedSet.has(seedIp)) {
+          working.push(seedIp);
+        }
+      });
+      // Put seed IPs first
+      return [
+        ...SlackIpCache.SEED_IPS_FOR_HOOKS_SLACK_COM.filter((seedIp) =>
+          working.includes(seedIp),
+        ),
+        ...working.filter(
+          (ip) => !SlackIpCache.SEED_IPS_FOR_HOOKS_SLACK_COM.includes(ip),
+        ),
+      ];
+    }
+
+    return working;
+  }
+
+  /**
+   * Ensures seed IPs are initialized in the working IPs cache for hooks.slack.com.
+   */
+  private ensureSeedIpsInitialized(hostname: string): void {
+    if (hostname !== 'hooks.slack.com') {
+      return;
+    }
+
+    let workingSet = this.workingIps.get(hostname);
+    if (!workingSet) {
+      workingSet = new Set();
+      this.workingIps.set(hostname, workingSet);
+    }
+
+    // Add seed IPs with infinite expiration if not already present
+    SlackIpCache.SEED_IPS_FOR_HOOKS_SLACK_COM.forEach((seedIp) => {
+      const exists = Array.from(workingSet).some(
+        (entry) => entry.ip === seedIp,
+      );
+      if (!exists) {
+        workingSet.add({
+          ip: seedIp,
+          expiresAt: SlackIpCache.INFINITE_EXPIRATION,
+        });
+      } else {
+        // Update existing entry to have infinite expiration
+        const entries = Array.from(workingSet);
+        const entry = entries.find((e) => e.ip === seedIp);
+        if (entry) {
+          workingSet.delete(entry);
+          workingSet.add({
+            ip: seedIp,
+            expiresAt: SlackIpCache.INFINITE_EXPIRATION,
+          });
+        }
+      }
+    });
   }
 
   /**
    * Removes expired IP entries from the working IPs cache.
+   * Never removes seed IPs (they have infinite expiration).
    */
   private cleanupExpiredIps(hostname: string): void {
     const workingSet = this.workingIps.get(hostname);
@@ -127,7 +210,11 @@ export class SlackIpCache {
     const expired: WorkingIpEntry[] = [];
 
     workingSet.forEach((entry) => {
-      if (entry.expiresAt <= now) {
+      // Never expire seed IPs (they have INFINITE_EXPIRATION)
+      if (
+        entry.expiresAt <= now &&
+        entry.expiresAt !== SlackIpCache.INFINITE_EXPIRATION
+      ) {
         expired.push(entry);
       }
     });
