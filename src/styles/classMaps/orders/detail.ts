@@ -1,6 +1,6 @@
 export const ordersDetailClasses = {
   container: {
-    web: 'flex flex-col w-full px-[150px] py-4',
+    web: 'flex flex-col w-full py-4',
     mobile: 'flex flex-col w-full px-[28px] py-4',
   },
   header: {
