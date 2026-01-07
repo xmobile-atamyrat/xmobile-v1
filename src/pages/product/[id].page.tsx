@@ -161,7 +161,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     useState<string>('');
 
   const isLocalImage = (url: string): boolean => {
-    return url && !url.startsWith('http');
+    return (
+      url &&
+      !url.startsWith('http://') &&
+      !url.startsWith('https://') &&
+      !url.startsWith('blob:')
+    );
   };
 
   const cleanupObjectUrl = (url: string) => {
@@ -185,6 +190,10 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     // Fetch high-quality version for enlarged view
     // Only fetch from API if it's a local image (not an external URL)
     try {
+      if (!originalImgUrl) {
+        throw new Error('Invalid image URL: URL is empty');
+      }
+
       if (isLocalImage(originalImgUrl)) {
         const response = await fetch(
           `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(originalImgUrl)}&network=fast`,
