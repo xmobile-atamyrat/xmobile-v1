@@ -510,7 +510,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
           )}
           {platform === 'web' && (
-            <AddToCart productId={product.id} cartAction="detail" />
+            <AddToCart
+              productId={product.id}
+              cartAction="detail"
+              selectedTag={
+                initialProduct?.tags && initialProduct.tags.length > 0
+                  ? initialProduct.tags[selectedTagIndex]
+                  : undefined
+              }
+            />
           )}
         </Box>
       </Box>
@@ -555,7 +563,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         </Box>
       )}
       {platform === 'mobile' && (
-        <AddToCart productId={product.id} cartAction="detail" />
+        <AddToCart
+          productId={product.id}
+          cartAction="detail"
+          selectedTag={
+            initialProduct?.tags && initialProduct.tags.length > 0
+              ? initialProduct.tags[selectedTagIndex]
+              : undefined
+          }
+        />
       )}
       {showDeleteProductDialog?.show && (
         <DeleteDialog

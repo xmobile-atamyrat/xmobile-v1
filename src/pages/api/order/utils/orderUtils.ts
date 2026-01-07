@@ -64,13 +64,32 @@ export async function generateOrderNumber(): Promise<string> {
  * Calculates total price from cart items
  */
 export async function calculateTotalPrice(
-  cartItems: Array<{ product: { price: string | null }; quantity: number }>,
+  cartItems: Array<{
+    product: { price: string | null };
+    quantity: number;
+    selectedTag?: string | null;
+  }>,
 ): Promise<string> {
   const prices = await Promise.all(
-    cartItems
-      .filter((item) => item.product.price)
-      .map(async (item) => {
-        const priceMatch = item.product.price!.match(squareBracketRegex);
+    cartItems.map(async (item) => {
+      // 1. Try to get price from selectedTag first
+      if (item.selectedTag) {
+        const tagMatch = item.selectedTag.match(squareBracketRegex);
+        if (tagMatch) {
+          const priceId = tagMatch[1];
+          const price = await getPrice(priceId);
+          if (price && price.priceInTmt) {
+            const itemPrice = parseFloat(price.priceInTmt);
+            if (!Number.isNaN(itemPrice)) {
+              return itemPrice * item.quantity;
+            }
+          }
+        }
+      }
+
+      // 2. Fallback to product price if no specific tag price
+      if (item.product.price) {
+        const priceMatch = item.product.price.match(squareBracketRegex);
         if (!priceMatch) return 0;
 
         const priceId = priceMatch[1];
@@ -81,7 +100,10 @@ export async function calculateTotalPrice(
         if (Number.isNaN(itemPrice)) return 0;
 
         return itemPrice * item.quantity;
-      }),
+      }
+
+      return 0;
+    }),
   );
 
   const total = prices.reduce((sum, price) => sum + price, 0);

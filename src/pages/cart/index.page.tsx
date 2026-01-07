@@ -1,10 +1,11 @@
 import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
+import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { computeProductPrice } from '@/pages/product/utils';
+import { computePrice, computeProductPrice } from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
 import {
@@ -34,7 +35,7 @@ export const getStaticProps = (async (context) => {
 export default function CartPage() {
   const { user, accessToken, isLoading } = useUserContext();
   const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
+    (CartItem & { product: Product; variantName?: string })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const router = useRouter();
@@ -68,15 +69,33 @@ export default function CartPage() {
 
         if (success) {
           const computedData = await Promise.all(
-            data.map(async (item) => {
-              const computedProduct = await computeProductPrice({
+            data.map(async (item: any) => {
+              let computedProduct = await computeProductPrice({
                 product: item.product,
                 accessToken,
                 fetchWithCreds,
               });
+
+              if (item.selectedTag) {
+                const tagMatch = item.selectedTag.match(squareBracketRegex);
+
+                if (tagMatch != null) {
+                  const priceId = tagMatch[1];
+                  const price = await computePrice({
+                    priceId,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  computedProduct = { ...computedProduct, price };
+                }
+              }
+
               return {
                 ...item,
                 product: computedProduct,
+                variantName: item.selectedTag
+                  ? item.selectedTag.replace(squareBracketRegex, '').trim()
+                  : undefined,
               };
             }),
           );
@@ -183,6 +202,9 @@ export default function CartPage() {
                       onDelete,
                       setTotalPrice,
                     }}
+                    variantName={cartItem?.variantName
+                      ?.replace(/tmt/gi, '')
+                      .trim()}
                   />
                 ))}
               </Suspense>

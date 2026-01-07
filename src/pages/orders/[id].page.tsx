@@ -60,7 +60,9 @@ export default function OrderDetailPage() {
           id: string;
           quantity: number;
           productName: string;
+
           productPrice: string;
+          selectedTag: string | null;
         }>;
       })
     | null
@@ -434,6 +436,16 @@ export default function OrderDetailPage() {
                         <TableCell>
                           <Typography className={interClassname.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
+                            {item.selectedTag && (
+                              <Typography
+                                component="span"
+                                className={`${interClassname.className} text-sm text-gray-500 ml-2`}
+                              >
+                                {item.selectedTag
+                                  .replace(/\[.*\]|tmt/gi, '')
+                                  .trim()}
+                              </Typography>
+                            )}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -639,6 +651,16 @@ export default function OrderDetailPage() {
                         <TableCell>
                           <Typography className={interClassname.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
+                            {item.selectedTag && (
+                              <Typography
+                                component="span"
+                                className={`${interClassname.className} text-sm text-gray-500 ml-2`}
+                              >
+                                {item.selectedTag
+                                  .replace(/\[.*\]|tmt/gi, '')
+                                  .trim()}
+                              </Typography>
+                            )}
                           </Typography>
                         </TableCell>
                         <TableCell>
