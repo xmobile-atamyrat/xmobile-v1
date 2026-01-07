@@ -297,5 +297,6 @@
   "justNow": "Şimdi",
   "minutesAgo": "dk önce",
   "hoursAgo": "sa önce",
-  "daysAgo": "gün önce"
+  "daysAgo": "gün önce",
+  "notificationsDenied": "Bildirim izni reddedildi. Bildirimleri almak için lütfen tarayıcı ayarlarınızdan etkinleştirin."
 }
