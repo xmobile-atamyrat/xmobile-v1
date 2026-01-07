@@ -86,7 +86,10 @@ self.addEventListener('notificationclick', (event) => {
         for (let i = 0; i < clientList.length; i += 1) {
           const client = clientList[i];
           if (client.url && 'focus' in client) {
-            const url = sessionId ? `/chat?sessionId=${sessionId}` : '/';
+            const url = '/';
+            // TODO: uncomment after when /chat page is implemented
+            // const url = sessionId ? `/chat?sessionId=${sessionId}` : '/';
+
             // Navigate to the correct page if needed
             if (client.url.includes('/chat') || !sessionId) {
               return client.focus();
@@ -101,7 +104,9 @@ self.addEventListener('notificationclick', (event) => {
         }
         // If no window is open, open a new one
         if (clients.openWindow) {
-          const url = sessionId ? `/chat?sessionId=${sessionId}` : '/';
+          const url = '/';
+          // TODO: uncomment after when /chat page is implemented
+          // const url = sessionId ? `/chat?sessionId=${sessionId}` : '/';
           return clients.openWindow(url);
         }
         return null;
