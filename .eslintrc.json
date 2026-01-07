@@ -8,6 +8,7 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "plugins": ["prettier", "unused-imports", "@typescript-eslint"],
+  "ignorePatterns": ["public/**/*"],
   "rules": {
     "prettier/prettier": "error",
     "import/extensions": "off",
