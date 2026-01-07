@@ -1,10 +1,13 @@
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
+import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
+import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath, findCategory } from '@/pages/lib/categoryPathUtils';
+import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -27,11 +30,10 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -47,16 +49,8 @@ export default function Products() {
   const [page, setPage] = useState(0);
   const { categories: allCategories } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
-  const {
-    prevPage,
-    prevCategory,
-    prevProducts,
-    prevSearchKeyword,
-    setPrevSearchKeyword,
-    setPrevCategory,
-    setPrevProducts,
-    setPrevPage,
-  } = usePrevProductContext();
+  const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
+    usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
@@ -67,39 +61,64 @@ export default function Products() {
   const router = useRouter();
   const platform = usePlatform();
 
-  // Get categoryId from URL query params
-  const categoryId = router.query.categoryId as string | undefined;
-  const category = findCategory(allCategories, categoryId);
+  const { filters, setFilters } = useProductFilters();
 
-  // Build category path when categoryId is available
+  // Landing Mode: user navigated from header (single category, possibly subcategory)
+  // Filter Mode: user selected categories from sidebar (root categories only)
+  const isLandingMode =
+    router.isReady && !!router.query.categoryId && !router.query.categoryIds;
+
+  // Hide category section in Landing Mode since user already chose their category
+  const hideSections = useMemo<('categories' | 'brands')[]>(
+    () => (isLandingMode ? ['categories'] : []),
+    [isLandingMode],
+  );
+
+  // Fallback from filter state to URL param for fetching
+  const effectiveCategoryIds = useMemo(() => {
+    if (filters.categoryIds.length > 0) {
+      return filters.categoryIds;
+    }
+    if (router.query.categoryId) {
+      return [router.query.categoryId as string];
+    }
+    return [];
+  }, [filters.categoryIds, router.query.categoryId]);
+
+  // For breadcrumbs/title: use single selected category or Landing category
+  const primaryCategoryId =
+    filters.categoryIds.length === 1
+      ? filters.categoryIds[0]
+      : (router.query.categoryId as string | undefined);
+  const category = findCategory(allCategories, primaryCategoryId);
+
   useEffect(() => {
-    if (!categoryId || !allCategories || allCategories.length === 0) {
+    if (!primaryCategoryId || !allCategories || allCategories.length === 0) {
       setCategoryPath([]);
       return;
     }
 
-    const path = buildCategoryPath(categoryId, allCategories);
+    const path = buildCategoryPath(primaryCategoryId, allCategories);
     setCategoryPath(path);
-  }, [categoryId, allCategories]);
+  }, [primaryCategoryId, allCategories]);
 
   useEffect(() => {
-    // Redirect to home if no categoryId in URL
-    if (!categoryId) {
-      router.replace('/');
-      return;
-    }
-
-    // Reset state when categoryId changes
     setProducts([]);
     setPage(0);
     setHasMore(true);
     setIsLoading(true);
 
-    // Load first page of products
     (async () => {
       try {
-        const fetchProductsParams: any = { page: 1 };
-        fetchProductsParams.categoryIds = [categoryId];
+        const fetchProductsParams: any = {
+          page: 1,
+          categoryIds: effectiveCategoryIds,
+          brandIds: filters.brandIds,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          sortBy: filters.sortBy,
+        };
+
         if (searchKeyword) {
           fetchProductsParams.searchKeyword = searchKeyword;
         }
@@ -107,7 +126,8 @@ export default function Products() {
         const newProducts = await fetchProducts(fetchProductsParams);
         setProducts(newProducts);
         setPrevProducts(newProducts);
-        setPrevCategory(categoryId);
+        // Cache for back-navigation optimization
+        if (primaryCategoryId) setPrevCategory(primaryCategoryId);
         setPrevSearchKeyword(searchKeyword);
         setPage(1);
 
@@ -120,44 +140,32 @@ export default function Products() {
         setIsLoading(false);
       }
     })();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, searchKeyword]);
+  }, [filters, searchKeyword, router.isReady]);
 
   const loadMoreProducts = useCallback(async () => {
-    if (isLoading || !hasMore || !categoryId) return;
+    if (isLoading || !hasMore) return;
     setIsLoading(true);
 
     try {
-      const fetchProductsParams: any = { page: page + 1 };
-      fetchProductsParams.categoryIds = [categoryId];
+      const fetchProductsParams: any = {
+        page: page + 1,
+        categoryIds: effectiveCategoryIds,
+        brandIds: filters.brandIds,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        sortBy: filters.sortBy,
+      };
+
       if (searchKeyword) {
         fetchProductsParams.searchKeyword = searchKeyword;
       }
 
-      let newProducts: Product[];
-      if (
-        prevCategory === categoryId &&
-        !searchKeyword &&
-        fetchProductsParams.page <= prevPage &&
-        prevSearchKeyword === searchKeyword
-      ) {
-        newProducts = prevProducts;
-        setProducts(newProducts);
-      } else {
-        newProducts = await fetchProducts(fetchProductsParams);
-        let updatedPrevProducts = prevProducts;
-
-        setProducts((prevPageProducts) => {
-          updatedPrevProducts = [...prevPageProducts, ...newProducts];
-          return updatedPrevProducts;
-        });
-        setPrevProducts(updatedPrevProducts);
-        setPrevSearchKeyword(searchKeyword);
-        setPrevCategory(categoryId);
-
-        if (newProducts.length !== 0) setPrevPage(fetchProductsParams.page);
-      }
+      const newProducts = await fetchProducts(fetchProductsParams);
+      setProducts((prev) => {
+        const updated = [...prev, ...newProducts];
+        setPrevProducts(updated);
+        return updated;
+      });
       setPage((prev) => prev + 1);
 
       if (newProducts.length === 0) {
@@ -169,7 +177,7 @@ export default function Products() {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, categoryId, page, searchKeyword]);
+  }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
 
   useEffect(() => {
     const loadMoreTrigger = document.getElementById('load-more-trigger');
@@ -181,7 +189,7 @@ export default function Products() {
           loadMoreProducts();
         }
       },
-      { rootMargin: '100px' }, // Adds a threshold for when to load
+      { rootMargin: '100px' },
     );
 
     observer.observe(loadMoreTrigger);
@@ -189,31 +197,19 @@ export default function Products() {
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts, categoryId]);
-
-  useEffect(() => {
-    setPage(0);
-    setHasMore(true);
-    setIsLoading(false);
-    setProducts([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchKeyword]);
+  }, [loadMoreProducts]);
 
   const handleBackButton = () => {
     if (categoryPath.length > 1) {
-      // Navigate to the parent category page
       const parentCategory = categoryPath[categoryPath.length - 2];
       router.push(`/category/${parentCategory.id}`);
     } else {
-      // If we're at the root category, go to home
       router.push('/');
     }
   };
 
-  // Don't render if no categoryId
-  if (!categoryId) {
-    router.push('/');
-  }
+  // Don't render if not ready
+  if (!router.isReady) return null;
 
   return (
     <Box>
@@ -246,35 +242,74 @@ export default function Products() {
       </Box>
       <Layout showSearch handleHeaderBackButton={handleBackButton}>
         <Box className={productIndexPageClasses.boxes.products[platform]}>
-          <SimpleBreadcrumbs categoryPath={categoryPath} />
-          <Box className="flex flex-wrap w-full">
-            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-              <ProductCard
-                handleClickAddProduct={() =>
-                  setAddEditProductDialog({
-                    open: true,
-                    dialogType: 'add',
-                    imageUrls: [],
-                  })
-                }
-              />
-            )}
-            {products.length > 0 &&
-              products.map((product, idx) => (
-                <ProductCard
-                  product={product}
-                  key={idx}
-                  cartProps={{ cartAction: 'add' }}
+          {isLandingMode && categoryPath.length > 0 && (
+            <SimpleBreadcrumbs categoryPath={categoryPath} />
+          )}
+
+          <Box className="flex flex-row gap-6 w-full">
+            {platform === 'web' && (
+              <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
+                <FilterSidebar
+                  categories={allCategories}
+                  selectedCategoryIds={filters.categoryIds}
+                  selectedBrandIds={filters.brandIds}
+                  minPrice={filters.minPrice}
+                  maxPrice={filters.maxPrice}
+                  onFilterChange={(newFilters) => {
+                    setFilters(newFilters);
+                  }}
+                  hideSections={hideSections}
                 />
-              ))}
+              </Box>
+            )}
+
+            <Box className="flex flex-col w-full">
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                {platform === 'web' && (
+                  <Box sx={{ marginLeft: 'auto' }}>
+                    <SortDropdown
+                      value={filters.sortBy}
+                      onChange={(val) => setFilters({ sortBy: val })}
+                    />
+                  </Box>
+                )}
+              </Box>
+              <Box className="flex flex-wrap w-full">
+                {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
+                  <ProductCard
+                    handleClickAddProduct={() =>
+                      setAddEditProductDialog({
+                        open: true,
+                        dialogType: 'add',
+                        imageUrls: [],
+                      })
+                    }
+                  />
+                )}
+                {products.length > 0 &&
+                  products.map((product, idx) => (
+                    <ProductCard
+                      product={product}
+                      key={idx}
+                      cartProps={{ cartAction: 'add' }}
+                    />
+                  ))}
+              </Box>
+              <div id="load-more-trigger"></div>
+              {isLoading && (
+                <Box className="w-full flex justify-center">
+                  <CircularProgress />
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
-        <div id="load-more-trigger"></div>
-        {isLoading && (
-          <Box className="w-full flex justify-center">
-            <CircularProgress />
-          </Box>
-        )}
+
         {addEditProductDialog.open && (
           <AddEditProductDialog
             args={addEditProductDialog}
