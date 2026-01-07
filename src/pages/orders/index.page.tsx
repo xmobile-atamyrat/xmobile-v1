@@ -163,7 +163,7 @@ export default function OrdersPage() {
   };
 
   const handleBackButton = () => {
-    router.push('/user/profile');
+    router.push('/user');
   };
 
   return (
