@@ -320,5 +320,7 @@
   "updateBrandError": "Не удалось обновить бренд",
   "deleteBrandError": "Не удалось удалить бренд",
   "brand": "Бренд",
-  "brandSearchPlaceholder": "Найти или добавить бренд..."
+  "brandSearchPlaceholder": "Найти или добавить бренд...",
+  "filter": "Фильтр",
+  "apply": "Применить"
 }

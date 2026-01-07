@@ -309,7 +309,7 @@
   "brandName": "Brand Name",
   "priceLowToHigh": "Price Low-to-High",
   "priceHighToLow": "Price High-to-Low",
-  "new": "New",
+  "newest": "New",
   "aToZ": "A to Z",
   "sortBy": "Sort by",
   "brandDeleteConfirm": "Are you sure you want to delete brand \"{name}\"? Products will be unlinked.",
@@ -317,6 +317,8 @@
   "updateBrandError": "Failed to update brand",
   "deleteBrandError": "Failed to delete brand",
   "brand": "Brand",
-  "brandSearchPlaceholder": "Search or add brand..."
+  "brandSearchPlaceholder": "Search or add brand...",
+  "filter": "Filter",
+  "apply": "Apply"
 }
 

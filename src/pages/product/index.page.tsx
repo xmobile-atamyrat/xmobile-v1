@@ -25,15 +25,20 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
   Box,
+  Button,
+  CardMedia,
   CircularProgress,
+  Dialog,
   IconButton,
+  Slide,
   Snackbar,
   Typography,
 } from '@mui/material';
+import { TransitionProps } from '@mui/material/transitions';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -42,6 +47,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     },
   };
 };
+
+const SlideTransition = React.forwardRef(function Transition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function Products() {
   const [isLoading, setIsLoading] = useState(true);
@@ -57,11 +69,32 @@ export default function Products() {
   const { user } = useUserContext();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // local state for mobile (doesn't automatically apply filters) - trigger 'Apply Button'
+  const [localFilters, setLocalFilters] = useState({
+    categoryIds: [] as string[],
+    brandIds: [] as string[],
+    minPrice: '',
+    maxPrice: '',
+    sortBy: '',
+  });
   const t = useTranslations();
   const router = useRouter();
   const platform = usePlatform();
 
   const { filters, setFilters } = useProductFilters();
+
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      setLocalFilters({
+        categoryIds: filters.categoryIds,
+        brandIds: filters.brandIds,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        sortBy: filters.sortBy,
+      });
+    }
+  }, [mobileFilterOpen, filters]);
 
   // Landing Mode: user navigated from header (single category, possibly subcategory)
   // Filter Mode: user selected categories from sidebar (root categories only)
@@ -214,7 +247,8 @@ export default function Products() {
   return (
     <Box>
       <Box className={productIndexPageClasses.boxes.appbar[platform]}>
-        <Box className="flex w-1/6 justify-start">
+        {/* Left side: Back button + Title */}
+        <Box className="flex items-center gap-2">
           <IconButton
             size="medium"
             edge="start"
@@ -239,8 +273,72 @@ export default function Products() {
           )}
         </Box>
         <Box className="w-1/6 flex justify-start invisible"></Box>
+
+        {platform === 'mobile' && (
+          <IconButton onClick={() => setMobileFilterOpen(true)}>
+            <CardMedia
+              component="img"
+              src="/filter.svg"
+              sx={{ width: 30, height: 30 }}
+            />
+          </IconButton>
+        )}
       </Box>
       <Layout showSearch handleHeaderBackButton={handleBackButton}>
+        <Dialog
+          fullScreen
+          open={mobileFilterOpen}
+          onClose={() => setMobileFilterOpen(false)}
+          TransitionComponent={SlideTransition}
+        >
+          <Box className="flex flex-col h-full bg-white">
+            <Box className="flex items-center justify-between p-4 border-b">
+              <IconButton onClick={() => setMobileFilterOpen(false)}>
+                <ArrowBackIosIcon />
+              </IconButton>
+              <Typography variant="h6" fontWeight={600}>
+                {t('filter') || 'Filter'}
+              </Typography>
+              <Box sx={{ width: 40 }} />
+            </Box>
+            <Box className="flex-1 overflow-auto p-4">
+              <FilterSidebar
+                variant="mobile"
+                categories={allCategories}
+                selectedCategoryIds={localFilters.categoryIds}
+                selectedBrandIds={localFilters.brandIds}
+                minPrice={localFilters.minPrice}
+                maxPrice={localFilters.maxPrice}
+                sortBy={localFilters.sortBy}
+                onFilterChange={(newFilters) => {
+                  setLocalFilters((prev) => ({ ...prev, ...newFilters }));
+                }}
+                hideSections={hideSections}
+              />
+            </Box>
+            <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => {
+                  setFilters(localFilters);
+                  setMobileFilterOpen(false);
+                }}
+                sx={{
+                  bgcolor: '#191919',
+                  borderRadius: 2,
+                  py: 1.5,
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: '#000' },
+                }}
+              >
+                {t('apply') || 'Apply'}
+              </Button>
+            </Box>
+          </Box>
+        </Dialog>
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
             <SimpleBreadcrumbs categoryPath={categoryPath} />
