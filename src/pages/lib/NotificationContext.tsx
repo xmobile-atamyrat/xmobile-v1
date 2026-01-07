@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { showNotification } from '@/pages/lib/serviceWorker';
 import { InAppNotification } from '@/pages/lib/types';
 import {
   createContext,
@@ -10,53 +11,6 @@ import {
   useRef,
   useState,
 } from 'react';
-
-// Helper function to show browser notification
-// Shows notifications in both foreground and background when permission is granted
-const showBrowserNotification = (notification: InAppNotification) => {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
-  }
-
-  try {
-    const browserNotification = new Notification(
-      notification.title || 'New message',
-      {
-        body: notification.content,
-        icon: '/xm-logo.png',
-        badge: '/xm-logo.png',
-        tag: notification.id,
-        requireInteraction: false,
-        silent: false,
-        data: {
-          sessionId: notification.sessionId,
-          notificationId: notification.id,
-        },
-      },
-    );
-
-    // Handle notification click to focus window and navigate
-    browserNotification.onclick = (event) => {
-      event.preventDefault();
-      window.focus();
-      // Navigate to chat session
-      if (window.location.pathname !== '/chat') {
-        window.location.href = `/chat?sessionId=${notification.sessionId}`;
-      }
-      browserNotification.close();
-    };
-
-    // Auto-close after 5 seconds (only if app is in foreground)
-    // Background notifications are handled by the OS
-    if (!document.hidden) {
-      setTimeout(() => {
-        browserNotification.close();
-      }, 5000);
-    }
-  } catch (error) {
-    console.error('Failed to show browser notification:', error);
-  }
-};
 
 interface NotificationContextProps {
   notifications: InAppNotification[];
@@ -259,8 +213,16 @@ export const NotificationContextProvider = ({
             });
             setUnreadCount((prev) => prev + 1);
 
-            // Show browser notification (works in both foreground and background)
-            showBrowserNotification(notification);
+            // Show notification using Service Worker (mobile) or Notification API (desktop)
+            // Works in both foreground and background on mobile browsers
+            showNotification({
+              title: notification.title,
+              content: notification.content,
+              id: notification.id,
+              sessionId: notification.sessionId,
+            }).catch((error) => {
+              console.error('Failed to show notification:', error);
+            });
           } else if (data.type === 'notifications') {
             // Batch of notifications on connect
             const incomingNotifications =
