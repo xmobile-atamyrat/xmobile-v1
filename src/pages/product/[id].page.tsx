@@ -157,9 +157,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const platform = usePlatform();
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
+  const [carouselDialogImageUrl, setCarouselDialogImageUrl] =
+    useState<string>('');
 
   const handleDialogClose = () => {
     setDialogStatus(false);
+    // Clean up object URL to prevent memory leaks
+    if (carouselDialogImageUrl && !carouselDialogImageUrl.startsWith('http')) {
+      URL.revokeObjectURL(carouselDialogImageUrl);
+      setCarouselDialogImageUrl('');
+    }
   };
 
   const handleDialogOpen = async (imgUrl: string, originalImgUrl: string) => {
@@ -170,11 +177,26 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     // Fetch high-quality version for enlarged view
     try {
       if (!originalImgUrl.startsWith('http')) {
-        const highQualityImgFetcher = fetch(
+        const response = await fetch(
           `${BASE_URL}/api/localImage?imgUrl=${originalImgUrl}&network=fast`,
         );
-        const highQualityBlob = await (await highQualityImgFetcher).blob();
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch high-quality image: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const highQualityBlob = await response.blob();
+        // Revoke previous object URL if exists
+        if (
+          carouselDialogImageUrl &&
+          !carouselDialogImageUrl.startsWith('http')
+        ) {
+          URL.revokeObjectURL(carouselDialogImageUrl);
+        }
         const highQualityUrl = URL.createObjectURL(highQualityBlob);
+        setCarouselDialogImageUrl(highQualityUrl);
         setCarouselDialogImage(highQualityUrl);
       }
     } catch (error) {
