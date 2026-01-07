@@ -19,14 +19,32 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
-import { Box, CardMedia, CircularProgress, Typography } from '@mui/material';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import {
+  Box,
+  Button,
+  CardMedia,
+  CircularProgress,
+  Dialog,
+  IconButton,
+  Slide,
+  Typography,
+} from '@mui/material';
+import { TransitionProps } from '@mui/material/transitions';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+const SlideTransition = React.forwardRef(function Transition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -128,10 +146,31 @@ export default function Home({
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const [localFilters, setLocalFilters] = useState({
+    categoryIds: [] as string[],
+    brandIds: [] as string[],
+    minPrice: '',
+    maxPrice: '',
+    sortBy: '',
+  });
 
   const { filters, setFilters } = useProductFilters();
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
+
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      setLocalFilters({
+        categoryIds: filters.categoryIds,
+        brandIds: filters.brandIds,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        sortBy: filters.sortBy,
+      });
+    }
+  }, [mobileFilterOpen, filters]);
 
   useEffect(() => {
     let mounted = true;
@@ -275,6 +314,18 @@ export default function Home({
                   }}
                 />
               )}
+              {platform === 'mobile' && (
+                <IconButton
+                  onClick={() => setMobileFilterOpen(true)}
+                  sx={{ ml: 'auto' }}
+                >
+                  <CardMedia
+                    component="img"
+                    src="/filter.svg"
+                    sx={{ width: 30, height: 30 }}
+                  />
+                </IconButton>
+              )}
             </Box>
 
             {isLoading && page === 1 && (
@@ -304,6 +355,61 @@ export default function Home({
         </Box>
       </Box>
       <div id="load-more-products" />
+      <Dialog
+        fullScreen
+        open={mobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        TransitionComponent={SlideTransition}
+      >
+        <Box className="flex flex-col h-full bg-white">
+          <Box className="flex items-center justify-between p-4 border-b">
+            <IconButton onClick={() => setMobileFilterOpen(false)}>
+              <ArrowBackIosIcon />
+            </IconButton>
+            <Typography variant="h6" fontWeight={600}>
+              {t('filter') || 'Filter'}
+            </Typography>
+            <Box sx={{ width: 40 }} />
+          </Box>
+          <Box className="flex-1 overflow-auto p-4">
+            <FilterSidebar
+              variant="mobile"
+              categories={categories}
+              selectedCategoryIds={localFilters.categoryIds}
+              selectedBrandIds={localFilters.brandIds}
+              minPrice={localFilters.minPrice}
+              maxPrice={localFilters.maxPrice}
+              sortBy={localFilters.sortBy}
+              onFilterChange={(newFilters) => {
+                setLocalFilters((prev) => ({ ...prev, ...newFilters }));
+              }}
+            />
+          </Box>
+          <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => {
+                setFilters(localFilters);
+                setPage(1);
+                setProducts([]);
+                setMobileFilterOpen(false);
+              }}
+              sx={{
+                bgcolor: '#191919',
+                borderRadius: 2,
+                py: 1.5,
+                fontSize: '16px',
+                fontWeight: 600,
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#000' },
+              }}
+            >
+              {t('apply') || 'Apply'}
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
     </Layout>
   );
 }
