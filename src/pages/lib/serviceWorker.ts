@@ -241,7 +241,9 @@ export function showNotificationViaAPI(notification: {
       event.preventDefault();
       window.focus();
       if (window.location.pathname !== '/chat') {
-        window.location.href = `/chat?sessionId=${notification.sessionId}`;
+        window.location.href = '/';
+        // TODO: uncomment after when /chat page is implemented
+        // window.location.href = `/chat?sessionId=${notification.sessionId}`;
       }
       browserNotification.close();
     };
