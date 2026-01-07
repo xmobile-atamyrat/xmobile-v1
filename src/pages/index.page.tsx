@@ -1,6 +1,8 @@
 import dbClient from '@/lib/dbClient';
 import { SearchBar } from '@/pages/components/Appbar';
 import Layout from '@/pages/components/Layout';
+import NotificationBadge from '@/pages/components/NotificationBadge';
+import NotificationMenu from '@/pages/components/NotificationMenu';
 import ProductCard from '@/pages/components/ProductCard';
 import { fetchNewProducts } from '@/pages/lib/apis';
 import {
@@ -9,6 +11,7 @@ import {
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
@@ -114,11 +117,14 @@ export default function Home({
   const router = useRouter();
   const platform = usePlatform();
   const t = useTranslations();
+  const { user } = useUserContext();
   const { searchKeyword, setSearchKeyword } = useProductContext();
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newPage, setNewPage] = useState(1);
   const [newHasMore, setHasNewMore] = useState(true);
+  const [notificationAnchorEl, setNotificationAnchorEl] =
+    useState<null | HTMLElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -200,13 +206,20 @@ export default function Home({
             src="/xmobile-processed-logo.png"
             className="w-auto h-[40px]"
           />
-          <Box className="w-[36px] h-[36px] rounded-full bg-[#f5f5f5] justify-center items-center flex">
-            <CardMedia
-              component="img"
-              src="/bell.png"
-              className="w-[20px] h-[20px]"
-            />
-          </Box>
+          {user && (
+            <Box className="w-[18px] h-[18px] rounded-full bg-[#f5f5f5] justify-center items-center flex mr-6">
+              <NotificationBadge
+                onClick={(e: React.MouseEvent<HTMLElement>) =>
+                  setNotificationAnchorEl(e.currentTarget)
+                }
+              />
+              <NotificationMenu
+                anchorEl={notificationAnchorEl}
+                open={Boolean(notificationAnchorEl)}
+                onClose={() => setNotificationAnchorEl(null)}
+              />
+            </Box>
+          )}
         </Box>
         {SearchBar({
           searchKeyword,
