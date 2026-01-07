@@ -8,7 +8,13 @@ import {
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
 import { ChatMessage } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
-import { sendMessage, verifySessionParticipant } from '@/ws-server/lib/utils';
+import {
+  createNotificationsForSession,
+  getUnreadNotificationsForUser,
+  sendMessage,
+  sendNotificationsToUser,
+  verifySessionParticipant,
+} from '@/ws-server/lib/utils';
 import { UserRole } from '@prisma/client';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
@@ -254,6 +260,31 @@ const handleMessage = async (
         sendMessage(conn, outgoingMessage);
       });
     });
+
+    // Create notifications for all participants except sender
+    try {
+      const notifications = await createNotificationsForSession(
+        sessionId,
+        senderId,
+        content,
+      );
+
+      // Send notifications to users who are currently connected
+      notifications.forEach((notification) => {
+        if (notification.userId !== senderId) {
+          sendNotificationsToUser(connections, notification.userId, [
+            notification,
+          ]);
+        }
+      });
+    } catch (notificationError) {
+      // Don't block message sending if notification creation fails
+      console.error(
+        filepath,
+        'Failed to create/send notifications:',
+        notificationError,
+      );
+    }
   } catch (error) {
     if (error instanceof ZodError) {
       console.error(
@@ -365,6 +396,82 @@ const handleSessionRelay = async (
   }
 };
 
+const MarkNotificationReadSchema = z.object({
+  type: z.literal('mark_notification_read'),
+  notificationIds: z.array(z.string()),
+});
+
+const handleMarkNotificationRead = async (
+  incomingMessage: RawData,
+  safeConnection: AuthenticatedConnection,
+) => {
+  try {
+    const parsed = JSON.parse(incomingMessage.toString());
+    const { notificationIds } = MarkNotificationReadSchema.parse(parsed);
+    const userId = safeConnection.userId;
+
+    // Verify all notifications belong to this user
+    const notifications = await dbClient.inAppNotification.findMany({
+      where: {
+        id: { in: notificationIds },
+        userId,
+      },
+    });
+
+    if (notifications.length !== notificationIds.length) {
+      console.error(
+        filepath,
+        `Some notifications not found or don't belong to user ${userId}`,
+      );
+      sendMessage(safeConnection, {
+        type: 'mark_notification_read_ack',
+        notificationIds,
+        success: false,
+      });
+      return;
+    }
+
+    // Mark notifications as read
+    await dbClient.inAppNotification.updateMany({
+      where: {
+        id: { in: notificationIds },
+        userId,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    sendMessage(safeConnection, {
+      type: 'mark_notification_read_ack',
+      notificationIds,
+      success: true,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      console.error(
+        filepath,
+        'Invalid mark_notification_read message:',
+        error.errors,
+      );
+    } else {
+      console.error(filepath, 'Error marking notifications as read:', error);
+    }
+
+    try {
+      const parsed = JSON.parse(incomingMessage.toString());
+      sendMessage(safeConnection, {
+        type: 'mark_notification_read_ack',
+        notificationIds: parsed.notificationIds || [],
+        success: false,
+      });
+    } catch (err) {
+      console.error(filepath, 'Failed to send error ack:', err);
+    }
+  }
+};
+
 wsServer.on('connection', async (connection, request) => {
   try {
     const { safeConnection, accessToken, refreshToken } =
@@ -388,6 +495,34 @@ wsServer.on('connection', async (connection, request) => {
         }
       }
 
+      // Send unread notifications on connect
+      try {
+        const unreadNotifications = await getUnreadNotificationsForUser(
+          safeConnection.userId,
+          50,
+        );
+        const unreadCount = await dbClient.inAppNotification.count({
+          where: {
+            userId: safeConnection.userId,
+            isRead: false,
+          },
+        });
+
+        if (unreadNotifications.length > 0) {
+          sendMessage(safeConnection, {
+            type: 'notifications',
+            notifications: unreadNotifications,
+            unreadCount,
+          });
+        }
+      } catch (error) {
+        console.error(
+          filepath,
+          'Failed to send unread notifications on connect:',
+          error,
+        );
+      }
+
       safeConnection.on('message', (message: RawData) => {
         try {
           const parsed = JSON.parse(message.toString());
@@ -396,6 +531,8 @@ wsServer.on('connection', async (connection, request) => {
             handleGetMessages(message, safeConnection);
           } else if (parsed.type === 'message') {
             handleMessage(message, safeConnection);
+          } else if (parsed.type === 'mark_notification_read') {
+            handleMarkNotificationRead(message, safeConnection);
           } else if (parsed.sessionId) {
             handleSessionRelay(message, safeConnection);
           } else {
