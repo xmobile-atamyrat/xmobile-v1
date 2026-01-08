@@ -52,5 +52,4 @@ backup/
 backup-data.sh
 ssl_keys
 fcm
-ssl_keyspackage-lock.json
 package-lock.json
