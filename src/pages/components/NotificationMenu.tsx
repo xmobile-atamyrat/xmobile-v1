@@ -51,10 +51,7 @@ export default function NotificationMenu({
         notification.type === 'CHAT_MESSAGE' &&
         notification.sessionId
       ) {
-        // Keep routing to '/' for now as requested
-        router.push('/');
-        // TODO: enable after chat page is implemented
-        // router.push(`/chat?sessionId=${notification.sessionId}`);
+        router.push(`/chat?sessionId=${notification.sessionId}`);
       } else {
         router.push('/');
       }
