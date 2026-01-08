@@ -2,11 +2,11 @@ export const profileClasses = {
   boxes: {
     main: {
       web: 'w-full',
-      mobile: 'w-full h-full flex my-auto',
+      mobile: 'w-full h-full flex my-auto justify-center items-center',
     },
     loggedOutMain: {
       web: 'flex flex-col w-[594px] mx-auto my-[150px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
-      mobile: 'w-[88.78vw] h-full flex flex-col mt-[30vh]',
+      mobile: 'w-[85%] h-full flex flex-col',
     },
     loggedOutOptions: {
       web: 'flex flex-col w-[75%] justify-between',
