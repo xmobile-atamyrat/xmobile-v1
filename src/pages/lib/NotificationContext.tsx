@@ -220,6 +220,7 @@ export const NotificationContextProvider = ({
               content: notification.content,
               id: notification.id,
               sessionId: notification.sessionId,
+              orderId: notification.orderId,
             }).catch((error) => {
               console.error('Failed to show notification:', error);
             });
