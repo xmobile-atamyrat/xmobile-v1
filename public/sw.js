@@ -88,10 +88,7 @@ self.addEventListener('notificationclick', (event) => {
         if (orderId) {
           url = `/orders/${orderId}`;
         } else if (sessionId) {
-          // Keep routing to '/' for chat messages as requested
-          url = '/';
-          // TODO: uncomment after when /chat page is implemented
-          // url = `/chat?sessionId=${sessionId}`;
+          url = `/chat?sessionId=${sessionId}`;
         }
 
         // If there's an open window, focus it and navigate if needed
@@ -100,9 +97,10 @@ self.addEventListener('notificationclick', (event) => {
           if (client.url && 'focus' in client) {
             // Check if we need to navigate to a different page
             const needsNavigation =
-              orderId && !client.url.includes(`/orders/${orderId}`);
-            // For chat, keep current behavior (just focus)
-            const isChatNotification = sessionId && !orderId;
+              (orderId && !client.url.includes(`/orders/${orderId}`)) ||
+              (sessionId &&
+                !orderId &&
+                !client.url.includes(`/chat?sessionId=${sessionId}`));
 
             if (needsNavigation) {
               // Try to navigate if supported (some browsers don't support navigate)
@@ -113,10 +111,6 @@ self.addEventListener('notificationclick', (event) => {
                 return client.navigate(url).then(() => client.focus());
               }
               // Fallback: just focus the existing window
-              return client.focus();
-            }
-            if (isChatNotification) {
-              // For chat notifications, just focus (routing to '/' as requested)
               return client.focus();
             }
             // Already on the correct page, just focus

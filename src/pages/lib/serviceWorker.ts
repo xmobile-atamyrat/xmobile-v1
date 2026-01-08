@@ -277,10 +277,7 @@ export function showNotificationViaAPI(notification: {
       if (notification.orderId) {
         window.location.href = `/orders/${notification.orderId}`;
       } else if (notification.sessionId) {
-        // Keep routing to '/' for chat messages as requested
-        window.location.href = '/';
-        // TODO: uncomment after when /chat page is implemented
-        // window.location.href = `/chat?sessionId=${notification.sessionId}`;
+        window.location.href = `/chat?sessionId=${notification.sessionId}`;
       } else {
         window.location.href = '/';
       }
