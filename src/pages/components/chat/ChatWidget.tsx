@@ -6,6 +6,7 @@ import { chatClasses } from '@/styles/classMaps/components/chat';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
+import SettingsOverscanIcon from '@mui/icons-material/SettingsOverscan';
 import {
   Alert,
   Box,
@@ -82,7 +83,7 @@ const ChatWidget = () => {
 
   const handleToggle = () => {
     if (!user) {
-      router.push('/user/profile');
+      router.push('/user/sign_in_up');
       return;
     }
     setIsOpen((prev) => !prev);
@@ -115,6 +116,14 @@ const ChatWidget = () => {
     // eslint-disable-next-line no-alert
     if (window.confirm(t('chatConfirmEndSession'))) {
       await endSession(currentSession.id);
+    }
+  };
+
+  const handleExpand = () => {
+    if (currentSession) {
+      router.push(`/chat?sessionId=${currentSession.id}`);
+    } else {
+      router.push('/chat');
     }
   };
 
@@ -151,7 +160,15 @@ const ChatWidget = () => {
               {title}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={handleExpand}
+              sx={{ color: 'white' }}
+              title="Expand to full screen"
+            >
+              <SettingsOverscanIcon fontSize="small" />
+            </IconButton>
             {isAdmin && (
               <Button
                 size="small"
