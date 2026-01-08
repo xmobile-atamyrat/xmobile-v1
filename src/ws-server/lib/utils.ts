@@ -1,7 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import { ChatMessageProps, InAppNotification } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, UserOrderStatus } from '@prisma/client';
 import { WebSocket } from 'ws';
 
 export function sendMessage(
@@ -159,6 +159,13 @@ export async function getUnreadNotificationsForUser(
             updatedAt: true,
           },
         },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -168,5 +175,176 @@ export async function getUnreadNotificationsForUser(
   } catch (error) {
     console.error('getUnreadNotificationsForUser error:', error);
     return [];
+  }
+}
+
+/**
+ * Gets all admin and superuser user IDs
+ */
+export async function getAllAdminUsers(): Promise<string[]> {
+  try {
+    const admins = await dbClient.user.findMany({
+      where: {
+        grade: {
+          in: ['ADMIN', 'SUPERUSER'],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return admins.map((admin) => admin.id);
+  } catch (error) {
+    console.error('getAllAdminUsers error:', error);
+    return [];
+  }
+}
+
+/**
+ * Creates a notification for order status update (to order owner)
+ */
+export async function createNotificationForOrderStatusUpdate(
+  orderId: string,
+  userId: string,
+  orderNumber: string,
+  newStatus: UserOrderStatus,
+  previousStatus: UserOrderStatus,
+): Promise<InAppNotification | null> {
+  try {
+    // Get status labels for better notification content (in Russian)
+    const statusLabels: Record<UserOrderStatus, string> = {
+      PENDING: 'Ожидает',
+      IN_PROGRESS: 'В процессе',
+      COMPLETED: 'Завершен',
+      USER_CANCELLED: 'Отменен',
+      ADMIN_CANCELLED: 'Отменен',
+    };
+
+    const newStatusLabel = statusLabels[newStatus] || newStatus;
+    const previousStatusLabel = statusLabels[previousStatus] || previousStatus;
+
+    const notification = await dbClient.inAppNotification.create({
+      data: {
+        userId,
+        orderId,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Статус заказа обновлен',
+        content: `Статус вашего заказа #${orderNumber} изменен с "${previousStatusLabel}" на "${newStatusLabel}"`,
+        isRead: false,
+      },
+    });
+
+    return notification as InAppNotification;
+  } catch (error) {
+    console.error('createNotificationForOrderStatusUpdate error:', error);
+    return null;
+  }
+}
+
+/**
+ * Creates notifications for all admins (for new orders or cancellations)
+ */
+export async function createNotificationsForAdmins(
+  orderId: string,
+  orderNumber: string,
+  notificationType: 'NEW_ORDER' | 'ORDER_CANCELLED',
+  userName?: string,
+): Promise<InAppNotification[]> {
+  try {
+    const adminUserIds = await getAllAdminUsers();
+
+    if (adminUserIds.length === 0) {
+      return [];
+    }
+
+    // Determine notification content based on type (in Russian)
+    let title: string;
+    let content: string;
+
+    if (notificationType === 'NEW_ORDER') {
+      title = 'Новый заказ';
+      content = userName
+        ? `Новый заказ #${orderNumber} от ${userName}`
+        : `Новый заказ #${orderNumber}`;
+    } else {
+      // ORDER_CANCELLED
+      title = 'Заказ отменен';
+      content = userName
+        ? `Заказ #${orderNumber} отменен пользователем ${userName}`
+        : `Заказ #${orderNumber} отменен пользователем`;
+    }
+
+    // Create notifications in batch using transaction with parallel execution
+    const createdNotifications = await dbClient.$transaction(async (tx) => {
+      // Create all notifications in parallel
+      const notificationPromises = adminUserIds.map((adminId) =>
+        tx.inAppNotification.create({
+          data: {
+            userId: adminId,
+            orderId,
+            type: NotificationType.ORDER_STATUS_UPDATE,
+            title,
+            content,
+            isRead: false,
+          },
+        }),
+      );
+      return Promise.all(notificationPromises);
+    });
+
+    return createdNotifications as InAppNotification[];
+  } catch (error) {
+    console.error('createNotificationsForAdmins error:', error);
+    return [];
+  }
+}
+
+/**
+ * Sends notifications to WebSocket server via HTTP endpoint
+ * This is used when calling from API routes (which run in a different process)
+ */
+/**
+ * Sends notifications to WebSocket server via HTTP endpoint
+ * This is used when calling from API routes (which run in a different process)
+ */
+export async function sendNotificationToWebSocketServer(
+  userId: string,
+  notifications: InAppNotification[],
+): Promise<boolean> {
+  try {
+    const wsPort = process.env.NEXT_PUBLIC_WEBSOCKET_PORT || '4000';
+    // In production, the WebSocket server is on the same host
+    // In development, it's on localhost
+    const wsHost =
+      process.env.NODE_ENV === 'production'
+        ? 'localhost'
+        : process.env.NEXT_PUBLIC_WS_HOST || 'localhost';
+    const protocol = 'http'; // WebSocket server HTTP endpoint is always HTTP
+    const wsUrl = `${protocol}://${wsHost}:${wsPort}/notify`;
+
+    const response = await fetch(wsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        notifications,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `Failed to send notification to WebSocket server: ${response.status} ${response.statusText}`,
+      );
+      return false;
+    }
+
+    const result = await response.json();
+    return result.success === true;
+  } catch (error) {
+    console.error('Error sending notification to WebSocket server:', error);
+    return false;
   }
 }
