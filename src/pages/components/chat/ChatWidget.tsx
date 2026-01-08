@@ -82,7 +82,7 @@ const ChatWidget = () => {
 
   const handleToggle = () => {
     if (!user) {
-      router.push('/user/profile');
+      router.push('/user/sign_in_up');
       return;
     }
     setIsOpen((prev) => !prev);
