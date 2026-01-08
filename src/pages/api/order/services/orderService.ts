@@ -1,10 +1,9 @@
 import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
-import { connections } from '@/ws-server/index';
 import {
   createNotificationForOrderStatusUpdate,
   createNotificationsForAdmins,
-  sendNotificationsToUser,
+  sendNotificationToWebSocketServer,
 } from '@/ws-server/lib/utils';
 import { Prisma, UserOrder, UserOrderStatus } from '@prisma/client';
 import { calculateTotalPrice, generateOrderNumber } from '../utils/orderUtils';
@@ -145,11 +144,16 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     order.userName || undefined,
   )
     .then((notifications) => {
-      // Send notifications to connected admins via WebSocket
+      // Send notifications to connected admins via WebSocket server
       notifications.forEach((notification) => {
-        sendNotificationsToUser(connections, notification.userId, [
+        sendNotificationToWebSocketServer(notification.userId, [
           notification,
-        ]);
+        ]).catch((error) => {
+          console.error(
+            `[OrderService] Failed to send notification to user ${notification.userId}:`,
+            error,
+          );
+        });
       });
     })
     .catch((error) => {
@@ -321,11 +325,16 @@ export async function cancelOrderByUser(
     updatedOrder.userName || undefined,
   )
     .then((notifications) => {
-      // Send notifications to connected admins via WebSocket
+      // Send notifications to connected admins via WebSocket server
       notifications.forEach((notification) => {
-        sendNotificationsToUser(connections, notification.userId, [
+        sendNotificationToWebSocketServer(notification.userId, [
           notification,
-        ]);
+        ]).catch((error) => {
+          console.error(
+            `[OrderService] Failed to send notification to user ${notification.userId}:`,
+            error,
+          );
+        });
       });
     })
     .catch((error) => {
@@ -397,10 +406,15 @@ export async function updateOrderStatus(
     )
       .then((notification) => {
         if (notification) {
-          // Send notification to connected user via WebSocket
-          sendNotificationsToUser(connections, notification.userId, [
+          // Send notification to connected user via WebSocket server
+          sendNotificationToWebSocketServer(notification.userId, [
             notification,
-          ]);
+          ]).catch((error) => {
+            console.error(
+              `[OrderService] Failed to send notification to user ${notification.userId}:`,
+              error,
+            );
+          });
         }
       })
       .catch((error) => {

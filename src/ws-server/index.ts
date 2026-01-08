@@ -472,6 +472,58 @@ const handleMarkNotificationRead = async (
   }
 };
 
+// HTTP endpoint for sending notifications from API routes
+// Must be set up before WebSocket upgrade handler
+server.on('request', (req, res) => {
+  // Skip WebSocket upgrade requests
+  if (req.headers.upgrade === 'websocket') {
+    return;
+  }
+
+  // Only handle POST requests to /notify
+  if (req.method === 'POST' && req.url === '/notify') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        const { userId, notifications } = data;
+
+        if (!userId || !notifications || !Array.isArray(notifications)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({ success: false, message: 'Invalid request' }),
+          );
+          return;
+        }
+
+        // Send notifications to the user via WebSocket
+        const sentCount = sendNotificationsToUser(
+          connections,
+          userId,
+          notifications,
+        );
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, sentCount }));
+      } catch (error) {
+        console.error(filepath, 'Error handling /notify request:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ success: false, message: 'Internal server error' }),
+        );
+      }
+    });
+  } else {
+    // For other requests, return 404
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: false, message: 'Not found' }));
+  }
+});
+
 wsServer.on('connection', async (connection, request) => {
   try {
     const { safeConnection, accessToken, refreshToken } =
