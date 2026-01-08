@@ -1,4 +1,5 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
 import { interClassname } from '@/styles/theme';
 import CloseIcon from '@mui/icons-material/Close';
@@ -15,38 +16,49 @@ export default function NotificationPermissionBanner() {
   const t = useTranslations();
   const [dismissed, setDismissed] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(
-    typeof window !== 'undefined' ? Notification.permission : null,
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
+      : null,
   );
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
 
   const requestPermission = useCallback(async () => {
-    if (!('Notification' in window)) {
+    if (
+      typeof window === 'undefined' ||
+      !('Notification' in window) ||
+      typeof Notification === 'undefined'
+    ) {
       console.warn('This browser does not support notifications');
       return;
     }
 
-    // Always try to request permission (browser may allow it even if previously denied)
-    const result = await Notification.requestPermission();
-    setPermission(result);
+    try {
+      // Always try to request permission (browser may allow it even if previously denied)
+      const result = await Notification.requestPermission();
+      setPermission(result);
 
-    if (result === 'granted') {
-      setDismissed(true);
-      // Show a test notification to confirm it works
-      try {
-        const testNotification = new Notification('Notifications enabled', {
-          body: 'You will receive notifications for new messages',
-          icon: '/xm-logo.png',
-          tag: 'test-notification',
-        });
-        setTimeout(() => testNotification.close(), 3000);
-      } catch (error) {
-        console.error('Failed to show test notification:', error);
+      if (result === 'granted') {
+        setDismissed(true);
+        // Show a test notification to confirm it works
+        try {
+          const testNotification = new Notification('Notifications enabled', {
+            body: 'You will receive notifications for new messages',
+            icon: '/xm-logo.png',
+            tag: 'test-notification',
+          });
+          setTimeout(() => testNotification.close(), 3000);
+        } catch (error) {
+          console.error('Failed to show test notification:', error);
+        }
+      } else if (result === 'denied') {
+        // Permission was denied, show snackbar
+        setSnackbarMessage(t('notificationsDenied'));
+        setSnackbarOpen(true);
       }
-    } else if (result === 'denied') {
-      // Permission was denied, show snackbar
-      setSnackbarMessage(t('notificationsDenied'));
-      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Failed to request notification permission:', error);
+      // Don't show error to user, just fail silently
     }
   }, [t]);
 
@@ -54,12 +66,14 @@ export default function NotificationPermissionBanner() {
   // - Already dismissed
   // - Permission already granted or denied
   // - Notifications not supported
+  // - Running in WebView (native app handles notifications)
   if (
     dismissed ||
     permission === 'granted' ||
     permission === 'denied' ||
     typeof window === 'undefined' ||
-    !('Notification' in window)
+    !('Notification' in window) ||
+    isWebView()
   ) {
     return null;
   }
