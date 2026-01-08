@@ -53,8 +53,9 @@ export interface HistoryResponseMessage {
 export interface InAppNotification {
   id: string;
   userId: string;
-  sessionId: string;
-  type: 'CHAT_MESSAGE';
+  sessionId?: string | null; // Optional - only for CHAT_MESSAGE type
+  orderId?: string | null; // Optional - only for ORDER_STATUS_UPDATE type
+  type: 'CHAT_MESSAGE' | 'ORDER_STATUS_UPDATE';
   title?: string | null;
   content: string;
   isRead: boolean;
@@ -62,6 +63,11 @@ export interface InAppNotification {
   updatedAt: Date | string;
   readAt?: Date | string | null;
   session?: ChatSession; // Optional, when included in API response
+  order?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+  }; // Optional, when included in API response
 }
 
 export type ChatEvent =

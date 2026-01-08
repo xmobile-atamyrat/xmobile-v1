@@ -1,5 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
+import { connections } from '@/ws-server/index';
+import {
+  createNotificationForOrderStatusUpdate,
+  createNotificationsForAdmins,
+  sendNotificationsToUser,
+} from '@/ws-server/lib/utils';
 import { Prisma, UserOrder, UserOrderStatus } from '@prisma/client';
 import { calculateTotalPrice, generateOrderNumber } from '../utils/orderUtils';
 import {
@@ -130,6 +136,28 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
       error,
     );
   });
+
+  // Create and send in-app notifications to admins (fire and forget)
+  createNotificationsForAdmins(
+    order.id,
+    order.orderNumber,
+    'NEW_ORDER',
+    order.userName || undefined,
+  )
+    .then((notifications) => {
+      // Send notifications to connected admins via WebSocket
+      notifications.forEach((notification) => {
+        sendNotificationsToUser(connections, notification.userId, [
+          notification,
+        ]);
+      });
+    })
+    .catch((error) => {
+      console.error(
+        '[OrderService] Failed to create/send admin notifications for new order:',
+        error,
+      );
+    });
 
   return order;
 }
@@ -285,6 +313,28 @@ export async function cancelOrderByUser(
     );
   });
 
+  // Create and send in-app notifications to admins (fire and forget)
+  createNotificationsForAdmins(
+    updatedOrder.id,
+    updatedOrder.orderNumber,
+    'ORDER_CANCELLED',
+    updatedOrder.userName || undefined,
+  )
+    .then((notifications) => {
+      // Send notifications to connected admins via WebSocket
+      notifications.forEach((notification) => {
+        sendNotificationsToUser(connections, notification.userId, [
+          notification,
+        ]);
+      });
+    })
+    .catch((error) => {
+      console.error(
+        '[OrderService] Failed to create/send admin notifications for order cancellation:',
+        error,
+      );
+    });
+
   return updatedOrder;
 }
 
@@ -335,6 +385,31 @@ export async function updateOrderStatus(
       error,
     );
   });
+
+  // Create and send in-app notification to order owner if status changed (fire and forget)
+  if (previousStatus !== updatedOrder.status && updatedOrder.userId) {
+    createNotificationForOrderStatusUpdate(
+      updatedOrder.id,
+      updatedOrder.userId,
+      updatedOrder.orderNumber,
+      updatedOrder.status,
+      previousStatus,
+    )
+      .then((notification) => {
+        if (notification) {
+          // Send notification to connected user via WebSocket
+          sendNotificationsToUser(connections, notification.userId, [
+            notification,
+          ]);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          '[OrderService] Failed to create/send notification for order status update:',
+          error,
+        );
+      });
+  }
 
   return updatedOrder;
 }
