@@ -299,3 +299,52 @@ export async function createNotificationsForAdmins(
     return [];
   }
 }
+
+/**
+ * Sends notifications to WebSocket server via HTTP endpoint
+ * This is used when calling from API routes (which run in a different process)
+ */
+/**
+ * Sends notifications to WebSocket server via HTTP endpoint
+ * This is used when calling from API routes (which run in a different process)
+ */
+export async function sendNotificationToWebSocketServer(
+  userId: string,
+  notifications: InAppNotification[],
+): Promise<boolean> {
+  try {
+    const wsPort = process.env.NEXT_PUBLIC_WEBSOCKET_PORT || '4000';
+    // In production, the WebSocket server is on the same host
+    // In development, it's on localhost
+    const wsHost =
+      process.env.NODE_ENV === 'production'
+        ? 'localhost'
+        : process.env.NEXT_PUBLIC_WS_HOST || 'localhost';
+    const protocol = 'http'; // WebSocket server HTTP endpoint is always HTTP
+    const wsUrl = `${protocol}://${wsHost}:${wsPort}/notify`;
+
+    const response = await fetch(wsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        notifications,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `Failed to send notification to WebSocket server: ${response.status} ${response.statusText}`,
+      );
+      return false;
+    }
+
+    const result = await response.json();
+    return result.success === true;
+  } catch (error) {
+    console.error('Error sending notification to WebSocket server:', error);
+    return false;
+  }
+}
