@@ -43,9 +43,21 @@ export default function NotificationMenu({
         await markAsRead([notification.id]);
       }
       onClose();
-      router.push('/');
-      // TODO: enable after chat page is implemented
-      // router.push(`/chat?sessionId=${notification.sessionId}`);
+
+      // Route based on notification type
+      if (notification.type === 'ORDER_STATUS_UPDATE' && notification.orderId) {
+        router.push(`/orders/${notification.orderId}`);
+      } else if (
+        notification.type === 'CHAT_MESSAGE' &&
+        notification.sessionId
+      ) {
+        // Keep routing to '/' for now as requested
+        router.push('/');
+        // TODO: enable after chat page is implemented
+        // router.push(`/chat?sessionId=${notification.sessionId}`);
+      } else {
+        router.push('/');
+      }
     },
     [markAsRead, onClose, router],
   );

@@ -161,7 +161,8 @@ export async function showNotificationViaServiceWorker(notification: {
   title?: string | null;
   content: string;
   id: string;
-  sessionId: string;
+  sessionId?: string | null;
+  orderId?: string | null;
   icon?: string;
   badge?: string;
 }): Promise<boolean> {
@@ -192,11 +193,13 @@ export async function showNotificationViaServiceWorker(notification: {
           body: notification.content,
           id: notification.id,
           sessionId: notification.sessionId,
+          orderId: notification.orderId,
           icon: notification.icon || '/xm-logo.png',
           badge: notification.badge || '/xm-logo.png',
           tag: notification.id,
           data: {
             sessionId: notification.sessionId,
+            orderId: notification.orderId,
             notificationId: notification.id,
           },
         },
@@ -214,6 +217,7 @@ export async function showNotificationViaServiceWorker(notification: {
       tag: notification.id,
       data: {
         sessionId: notification.sessionId,
+        orderId: notification.orderId,
         notificationId: notification.id,
       },
       requireInteraction: false,
@@ -234,7 +238,8 @@ export function showNotificationViaAPI(notification: {
   title?: string | null;
   content: string;
   id: string;
-  sessionId: string;
+  sessionId?: string | null;
+  orderId?: string | null;
   icon?: string;
   badge?: string;
 }): boolean {
@@ -256,6 +261,7 @@ export function showNotificationViaAPI(notification: {
         tag: notification.id,
         data: {
           sessionId: notification.sessionId,
+          orderId: notification.orderId,
           notificationId: notification.id,
         },
         requireInteraction: false,
@@ -267,10 +273,16 @@ export function showNotificationViaAPI(notification: {
     browserNotification.onclick = (event) => {
       event.preventDefault();
       window.focus();
-      if (window.location.pathname !== '/chat') {
+      // Route based on notification type
+      if (notification.orderId) {
+        window.location.href = `/orders/${notification.orderId}`;
+      } else if (notification.sessionId) {
+        // Keep routing to '/' for chat messages as requested
         window.location.href = '/';
         // TODO: uncomment after when /chat page is implemented
         // window.location.href = `/chat?sessionId=${notification.sessionId}`;
+      } else {
+        window.location.href = '/';
       }
       browserNotification.close();
     };
@@ -298,7 +310,8 @@ export async function showNotification(notification: {
   title?: string | null;
   content: string;
   id: string;
-  sessionId: string;
+  sessionId?: string | null;
+  orderId?: string | null;
   icon?: string;
   badge?: string;
 }): Promise<boolean> {
