@@ -28,7 +28,7 @@ export const addToCartClasses = {
       mobile: 'w-full fixed bottom-0 left-0 right-0 z-10',
     },
     bg: {
-      web: '',
+      web: 'w-full flex',
       mobile:
         'bg-white rounded-t-[40px] px-6 pt-6 pb-[88px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
     },
