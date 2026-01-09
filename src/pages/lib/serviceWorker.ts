@@ -194,8 +194,12 @@ export async function showNotificationViaServiceWorker(notification: {
           id: notification.id,
           sessionId: notification.sessionId,
           orderId: notification.orderId,
-          icon: notification.icon || '/xm-logo.png',
-          badge: notification.badge || '/xm-logo.png',
+          icon:
+            notification.icon ||
+            `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+          badge:
+            notification.badge ||
+            `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
           tag: notification.id,
           data: {
             sessionId: notification.sessionId,
@@ -256,8 +260,12 @@ export function showNotificationViaAPI(notification: {
       notification.title || 'New message',
       {
         body: notification.content,
-        icon: notification.icon || '/xm-logo.png',
-        badge: notification.badge || '/xm-logo.png',
+        icon:
+          notification.icon ||
+          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+        badge:
+          notification.badge ||
+          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
         tag: notification.id,
         data: {
           sessionId: notification.sessionId,
