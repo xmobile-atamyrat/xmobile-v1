@@ -9,6 +9,10 @@ export const productIndexPageClasses = {
       web: 'flex justify-start',
       mobile: 'flex w-full justify-center',
     },
+    products: {
+      web: 'flex flex-col w-full h-full',
+      mobile: 'flex flex-col w-full h-full px-[24px]',
+    },
   },
   categoryName: {
     mobile:
