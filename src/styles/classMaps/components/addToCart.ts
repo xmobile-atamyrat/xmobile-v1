@@ -25,7 +25,12 @@ export const addToCartClasses = {
   detail: {
     box: {
       web: 'flex flex-row min-w-[30.78vw] h-[3.5vw] mt-[7.5vw]',
-      mobile: 'flex w-[88.7vw] mx-auto mb-[30px]',
+      mobile: 'w-full fixed bottom-0 left-0 right-0 z-10',
+    },
+    bg: {
+      web: '',
+      mobile:
+        'bg-white rounded-t-[40px] px-6 pt-6 pb-[88px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
     },
     addToCart: {
       web: 'max-w-[300px] h-[3.5vw] bg-[#ff624c] gap-[10px] rounded-[10px] py-[16px] px-[40px] ml-[5.41vw] items-center hover:bg-[#ec4d38]',
