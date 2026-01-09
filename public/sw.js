@@ -2,8 +2,23 @@
 // Supports iOS Safari, Android Chrome, and other major browsers
 
 const CACHE_NAME = 'xmobile-notifications-v1';
-const NOTIFICATION_ICON = '/xm-logo.png';
-const NOTIFICATION_BADGE = '/xm-logo.png';
+// Use absolute URL for notification icons (required for mobile)
+// Get the origin from the registration scope
+const getNotificationIcon = () => {
+  try {
+    // Try to get origin from registration scope or location
+    const origin =
+      (self.registration && self.registration.scope
+        ? new URL(self.registration.scope).origin
+        : null) || self.location.origin;
+    return `${origin}/xm-logo.png`;
+  } catch (e) {
+    // Fallback to relative path if origin can't be determined
+    return '/xm-logo.png';
+  }
+};
+const NOTIFICATION_ICON = getNotificationIcon();
+const NOTIFICATION_BADGE = getNotificationIcon();
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
