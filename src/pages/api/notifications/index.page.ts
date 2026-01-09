@@ -42,6 +42,15 @@ async function handler(
             select: {
               id: true,
               status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
             },
           },
         },
