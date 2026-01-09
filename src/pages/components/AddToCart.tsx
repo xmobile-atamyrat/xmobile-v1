@@ -310,6 +310,7 @@ export default function AddToCart({
               <IconButton
                 className={addToCartClasses.detail.addToCart[platform]}
                 onClick={addCartItems}
+                disableRipple
               >
                 <Typography
                   className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
