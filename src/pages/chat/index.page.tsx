@@ -45,6 +45,7 @@ export default function ChatPage() {
     loadMessages,
     sessions,
     joinSession,
+    messages,
   } = useChatContext();
 
   const [loading, setLoading] = useState(false);
@@ -53,6 +54,7 @@ export default function ChatPage() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const initializedSessionIdRef = useRef<string | null>(null);
+  const messagesLoadedRef = useRef<string | null>(null);
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
@@ -104,11 +106,17 @@ export default function ChatPage() {
           if (currentSession?.id !== sessionId) {
             try {
               initializedSessionIdRef.current = sessionId;
+              // Reset messages loaded ref so we can load messages when WebSocket connects
+              messagesLoadedRef.current = null;
               const success = await joinSession(sessionId);
               if (!success) {
                 setShowTakenAlert(true);
                 setSessionError('chatSessionTakenByOther');
                 initializedSessionIdRef.current = null;
+              } else if (!isConnected) {
+                // If WebSocket isn't connected, messages weren't loaded
+                // They will be loaded when WebSocket connects via the useEffect
+                messagesLoadedRef.current = null;
               }
             } catch (error) {
               console.error('Failed to join session:', error);
@@ -118,6 +126,10 @@ export default function ChatPage() {
           } else {
             // Already in the correct session
             initializedSessionIdRef.current = sessionId;
+            // If we're already in the session but have no messages, try to load them
+            if (messages.length === 0 && isConnected) {
+              messagesLoadedRef.current = null; // Reset to allow loading
+            }
           }
         } else {
           // Session not found in loaded sessions
@@ -175,6 +187,36 @@ export default function ChatPage() {
       }
     }
   }, [currentSession, isAdmin]);
+
+  // Load messages when WebSocket connects and we have a session but no messages
+  useEffect(() => {
+    if (
+      isConnected &&
+      currentSession &&
+      currentSession.id &&
+      messages.length === 0 &&
+      !isInitializing &&
+      messagesLoadedRef.current !== currentSession.id
+    ) {
+      // WebSocket just connected and we have a session but no messages loaded
+      messagesLoadedRef.current = currentSession.id;
+      loadMessages(currentSession.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isConnected,
+    currentSession?.id,
+    messages.length,
+    isInitializing,
+    loadMessages,
+  ]);
+
+  // Reset messages loaded ref when session changes
+  useEffect(() => {
+    if (currentSession?.id !== messagesLoadedRef.current) {
+      messagesLoadedRef.current = null;
+    }
+  }, [currentSession?.id]);
 
   const handleStartChatUser = async () => {
     setLoading(true);
