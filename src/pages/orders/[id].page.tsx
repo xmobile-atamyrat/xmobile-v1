@@ -108,11 +108,19 @@ export default function OrderDetailPage() {
       return;
     }
 
+    // Redirect admins to admin order detail page
+    if (user.grade === 'ADMIN' || user.grade === 'SUPERUSER') {
+      if (id && typeof id === 'string') {
+        router.push(`/orders/admin/${id}`);
+      }
+      return;
+    }
+
     if (id) {
       fetchOrder();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, accessToken, id]);
+  }, [user, accessToken, id, router]);
 
   const handleCancelOrder = async (cancellationReason?: string) => {
     if (!accessToken || !id || typeof id !== 'string') return;

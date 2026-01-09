@@ -22,11 +22,11 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
         sx={{
           '& .MuiBadge-badge': {
             backgroundColor: '#ff624c',
-            fontSize: '11px',
+            fontSize: platform === 'web' ? '11px' : '9px',
             fontWeight: 600,
-            minWidth: '18px',
-            height: '18px',
-            padding: '0 4px',
+            minWidth: platform === 'web' ? '18px' : '16px',
+            height: platform === 'web' ? '18px' : '16px',
+            padding: platform === 'web' ? '0 4px' : '0 4px',
           },
         }}
       >
