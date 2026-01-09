@@ -27,7 +27,7 @@ export const detailPageClasses = {
     detail: {
       web: 'w-[79vw] h-auto flex flex-col justify-center items-center mb-[90px] m-auto p-0 gap-0',
       mobile:
-        'min-w-[88.78vw] h-auto flex p-0 gap-0 justify-start items-start mx-auto mt-[-30px] mb-[30px]',
+        'min-w-[88.78vw] h-auto flex p-0 gap-0 justify-start items-start mx-auto mt-[-30px] mb-[100px]',
     },
     detailSide: {
       web: 'w-[30vw] h-auto flex flex-col',

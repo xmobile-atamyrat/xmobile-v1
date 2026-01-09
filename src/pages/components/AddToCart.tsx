@@ -266,56 +266,58 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
-            <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between">
-              {/* removeButton */}
-              <IconButton
-                onClick={handleProductQuantity('quantityRemove')}
-                className={addToCartClasses.iconButton[platform]}
-              >
-                <RemoveIcon
-                  className={addToCartClasses.detail.quantityButton}
+            <Box className={addToCartClasses.detail.bg[platform]}>
+              <Box className="flex flex-row w-[15.3vw] h-[2.9vw] justify-between">
+                {/* removeButton */}
+                <IconButton
+                  onClick={handleProductQuantity('quantityRemove')}
+                  className={addToCartClasses.iconButton[platform]}
+                >
+                  <RemoveIcon
+                    className={addToCartClasses.detail.quantityButton}
+                  />
+                </IconButton>
+
+                {/* quantityInput */}
+                <Input
+                  name="quantity"
+                  inputProps={{ min: 1 }}
+                  className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
+                  value={quantity}
+                  disableUnderline
+                  onChange={(e) => {
+                    const newQuantity = Number(e.target.value);
+                    setQuantity(newQuantity);
+                    setTotalPrice(
+                      (cur) =>
+                        cur -
+                        quantity * Number(price) +
+                        newQuantity * Number(price),
+                    );
+                  }}
                 />
-              </IconButton>
 
-              {/* quantityInput */}
-              <Input
-                name="quantity"
-                inputProps={{ min: 1 }}
-                className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
-                value={quantity}
-                disableUnderline
-                onChange={(e) => {
-                  const newQuantity = Number(e.target.value);
-                  setQuantity(newQuantity);
-                  setTotalPrice(
-                    (cur) =>
-                      cur -
-                      quantity * Number(price) +
-                      newQuantity * Number(price),
-                  );
-                }}
-              />
+                {/* addButton */}
+                <IconButton
+                  onClick={handleProductQuantity('quantityAdd')}
+                  className={addToCartClasses.iconButton[platform]}
+                >
+                  <AddIcon className={addToCartClasses.detail.quantityButton} />
+                </IconButton>
+              </Box>
 
-              {/* addButton */}
+              {/* addCart */}
               <IconButton
-                onClick={handleProductQuantity('quantityAdd')}
-                className={addToCartClasses.iconButton[platform]}
+                className={addToCartClasses.detail.addToCart[platform]}
+                onClick={addCartItems}
               >
-                <AddIcon className={addToCartClasses.detail.quantityButton} />
+                <Typography
+                  className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
+                >
+                  {t('addToCart')}
+                </Typography>
               </IconButton>
             </Box>
-
-            {/* addCart */}
-            <IconButton
-              className={addToCartClasses.detail.addToCart[platform]}
-              onClick={addCartItems}
-            >
-              <Typography
-                className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
-              >
-                {t('addToCart')}
-              </Typography>
-            </IconButton>
           </Box>
         )}
       </Suspense>
