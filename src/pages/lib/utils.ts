@@ -9,12 +9,60 @@ import {
   AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
+  FetchWithCredsType,
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, InputProps, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
+
+export async function addEditBrand({
+  id,
+  name,
+  type,
+  accessToken,
+  fetchWithCreds,
+}: {
+  id?: string;
+  name: string;
+  type: 'add' | 'edit';
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi> {
+  const path = '/api/brand';
+  const method = type === 'add' ? 'POST' : 'PUT';
+  const body = type === 'add' ? { name } : { id, name };
+
+  try {
+    return await fetchWithCreds({
+      accessToken,
+      path,
+      method,
+      body,
+    });
+  } catch (error) {
+    console.error('Error saving brand', error);
+    return { success: false, message: 'Network error' };
+  }
+}
+
+export async function deleteBrand(
+  id: string,
+  accessToken: string,
+  fetchWithCreds: FetchWithCredsType,
+): Promise<ResponseApi> {
+  try {
+    return await fetchWithCreds({
+      accessToken,
+      path: `/api/brand?id=${id}`,
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Error deleting brand', error);
+    return { success: false, message: 'Network error' };
+  }
+}
 
 export const theme = createTheme({
   palette: {
@@ -194,11 +242,13 @@ export async function addEditProduct({
   tags,
   videoUrls,
   selectedProductId,
+  brandId,
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
   productNameRequiredError: string;
   categoryId: string;
+  brandId?: string;
   productImageUrls: string[];
   productImageFiles: File[];
   deleteImageUrls: string[];
@@ -255,6 +305,7 @@ export async function addEditProduct({
 
   newFormData.append('name', JSON.stringify(productNames));
   newFormData.append('categoryId', categoryId);
+  if (brandId) newFormData.append('brandId', brandId);
 
   if (Object.keys(productDescriptions).length > 0)
     newFormData.append('description', JSON.stringify(productDescriptions));
@@ -305,7 +356,7 @@ export async function addEditProduct({
   }
 
   const prods = await fetchProducts({
-    categoryId,
+    categoryIds: [categoryId],
   });
   setProducts(prods as Product[]);
   setPrevProducts(prods as Product[]);
