@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
 import { ChatMessage, ChatSession } from '@/pages/lib/types';
 import {
   createContext,
@@ -20,8 +21,6 @@ interface ChatContextProps {
   sessions: ChatSession[];
   currentSession: ChatSession | undefined;
   isSendingMessage: boolean;
-  connect: () => void;
-  disconnect: () => void;
   sendMessage: (content: string) => void;
   joinSession: (sessionId: string) => Promise<boolean>;
   loadMessages: (sessionId: string, cursorId?: string) => Promise<void>;
@@ -41,8 +40,6 @@ const ChatContext = createContext<ChatContextProps>({
   sessions: [],
   currentSession: undefined,
   isSendingMessage: false,
-  connect: () => {},
-  disconnect: () => {},
   sendMessage: () => {},
   joinSession: async () => false,
   loadMessages: async () => {},
@@ -58,35 +55,17 @@ export const useChatContext = () => useContext(ChatContext);
 
 export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const { user, accessToken } = useUserContext();
-  const [isConnected, setIsConnected] = useState(false);
+  const { isConnected, send, subscribe } = useWebSocketContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
-  const ws = useRef<WebSocket | null>(null);
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     sessionRef.current = currentSession;
   }, [currentSession]);
-
-  useEffect(() => {
-    if (user && accessToken && !isConnected) {
-      connect();
-    }
-  }, [user, accessToken, isConnected]);
-
-  useEffect(() => {
-    if (!user || !accessToken) {
-      clearTimeout(reconnectTimeoutRef.current);
-      disconnect();
-    }
-    return () => {
-      clearTimeout(reconnectTimeoutRef.current);
-    };
-  }, [user, accessToken]);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -105,167 +84,130 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
   const loadMessages = useCallback(
     async (sessionId: string, cursorId?: string) => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        ws.current.send(
-          JSON.stringify({
-            type: 'get_messages',
-            sessionId,
-            cursorId,
-          }),
-        );
+      if (isConnected) {
+        send({
+          type: 'get_messages',
+          sessionId,
+          cursorId,
+        });
       } else {
-        console.warn('WS not connected, cannot load messages');
+        console.warn('WebSocket not connected, cannot load messages');
       }
     },
-    [],
+    [isConnected, send],
   );
 
-  const handleIncomingMessage = useCallback(
-    (data: any) => {
-      if (data.type === 'ack') {
-        setIsSendingMessage(false);
-        if (!data.success) {
-          setMessages([]);
-          if (data.error === 'closed_session') {
-            console.warn('Session closed error');
-            setCurrentSession(undefined);
-          } else if (data.error === 'wrong_session') {
-            console.warn('Not a participant error');
-            setCurrentSession(undefined);
-          }
+  // Subscribe to WebSocket messages for chat
+  useEffect(() => {
+    if (!isConnected) {
+      return undefined;
+    }
+
+    const unsubscribeAck = subscribe('ack', (data) => {
+      setIsSendingMessage(false);
+      if (!data.success) {
+        setMessages([]);
+        if (data.error === 'closed_session') {
+          console.warn('Session closed error');
+          setCurrentSession(undefined);
+        } else if (data.error === 'wrong_session') {
+          console.warn('Not a participant error');
+          setCurrentSession(undefined);
         }
-        return;
       }
+    });
 
-      if (data.type === 'history') {
-        const activeSession = sessionRef.current;
-        if (activeSession && data.sessionId === activeSession.id) {
-          setMessages((prev) => {
-            const incomingMessages = data.messages.map((msg: any) => ({
-              ...msg,
-              type: 'message',
-              messageId: msg.id,
-            }));
+    const unsubscribeHistory = subscribe('history', (data) => {
+      const activeSession = sessionRef.current;
+      if (activeSession && data.sessionId === activeSession.id) {
+        setMessages((prev) => {
+          const incomingMessages = data.messages.map((msg: any) => ({
+            ...msg,
+            type: 'message',
+            messageId: msg.id,
+          }));
 
-            // Deduplicate by messageId
-            const existingIds = new Set(
-              prev
-                .filter((m) => m.type === 'message' && m.messageId)
-                .map((m: any) => m.messageId),
-            );
+          // Deduplicate by messageId
+          const existingIds = new Set(
+            prev
+              .filter((m) => m.type === 'message' && m.messageId)
+              .map((m: any) => m.messageId),
+          );
 
-            const uniqueNewMessages = incomingMessages.filter(
-              (msg: any) => !existingIds.has(msg.messageId),
-            );
+          const uniqueNewMessages = incomingMessages.filter(
+            (msg: any) => !existingIds.has(msg.messageId),
+          );
 
-            // Combine and Sort by time
-            return [...prev, ...uniqueNewMessages].sort((a: any, b: any) => {
-              const timeA = new Date(a.date || a.createdAt).getTime();
-              const timeB = new Date(b.date || b.createdAt).getTime();
-              return timeA - timeB;
-            });
+          // Combine and Sort by time
+          return [...prev, ...uniqueNewMessages].sort((a: any, b: any) => {
+            const timeA = new Date(a.date || a.createdAt).getTime();
+            const timeB = new Date(b.date || b.createdAt).getTime();
+            return timeA - timeB;
           });
-        }
-        return;
+        });
       }
+    });
 
-      if (data.type === 'message') {
-        const activeSession = sessionRef.current;
-        if (activeSession && data.sessionId === activeSession.id) {
-          setMessages((prev) => {
-            if (
-              prev.some(
-                (m) => m.type === 'message' && m.messageId === data.messageId,
-              )
+    const unsubscribeMessage = subscribe('message', (data) => {
+      const activeSession = sessionRef.current;
+      if (activeSession && data.sessionId === activeSession.id) {
+        setMessages((prev) => {
+          if (
+            prev.some(
+              (m) => m.type === 'message' && m.messageId === data.messageId,
             )
-              return prev;
-            return [...prev, data];
-          });
+          )
+            return prev;
+          return [...prev, data];
+        });
+      }
+    });
+
+    const unsubscribeSessionUpdate = subscribe('session_update', (data) => {
+      const activeSession = sessionRef.current;
+
+      if (activeSession?.id === data.sessionId) {
+        if (data.status === 'CLOSED') {
+          setCurrentSession((prev) =>
+            prev ? { ...prev, status: 'CLOSED' } : undefined,
+          );
+          setMessages([]);
+        } else {
+          setCurrentSession((prev) =>
+            prev ? { ...prev, status: data.status } : undefined,
+          );
         }
       }
 
-      if (data.type === 'session_update') {
-        const activeSession = sessionRef.current;
+      loadSessions();
+    });
 
-        if (activeSession?.id === data.sessionId) {
-          if (data.status === 'CLOSED') {
-            setCurrentSession((prev) =>
-              prev ? { ...prev, status: 'CLOSED' } : undefined,
-            );
-            setMessages([]);
-          } else {
-            setCurrentSession((prev) =>
-              prev ? { ...prev, status: data.status } : undefined,
-            );
-          }
-        }
-
-        loadSessions();
-      }
-    },
-    [user, loadSessions],
-  );
-
-  const connect = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) return;
-    if (!accessToken) return;
-
-    const wsBase =
-      process.env.NODE_ENV === 'production'
-        ? `wss://xmobile.com.tm`
-        : process.env.NEXT_PUBLIC_WS_URL;
-    const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
-    ws.current = new WebSocket(wsUrl);
-
-    ws.current.onopen = () => {
-      setIsConnected(true);
+    return () => {
+      unsubscribeAck();
+      unsubscribeHistory();
+      unsubscribeMessage();
+      unsubscribeSessionUpdate();
     };
-
-    ws.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleIncomingMessage(data);
-      } catch (err) {
-        console.error('Failed to parse WS message:', err);
-      }
-    };
-
-    ws.current.onclose = () => {
-      setIsConnected(false);
-
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (user && accessToken) {
-          connect();
-        }
-      }, 2000);
-    };
-  }, [accessToken, handleIncomingMessage, user]);
-
-  const disconnect = useCallback(() => {
-    ws.current?.close();
-    ws.current = null;
-    setIsConnected(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, subscribe, loadSessions]);
 
   const sendMessage = useCallback(
     (content: string) => {
-      if (!ws.current || !isConnected || !currentSession || !user) return;
+      if (!isConnected || !currentSession || !user) return;
 
       setIsSendingMessage(true);
 
-      ws.current.send(
-        JSON.stringify({
-          type: 'message',
-          tempId: uuidv4(),
-          content,
-          sessionId: currentSession.id,
-          senderId: user.id,
-          senderRole: user.grade,
-          timestamp: new Date().toISOString(),
-        }),
-      );
+      send({
+        type: 'message',
+        tempId: uuidv4(),
+        content,
+        sessionId: currentSession.id,
+        senderId: user.id,
+        senderRole: user.grade,
+        timestamp: new Date().toISOString(),
+      });
     },
-    [isConnected, currentSession, user],
+    [isConnected, currentSession, user, send],
   );
 
   const joinSession = useCallback(
@@ -296,15 +238,13 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
           if (data.success && data.data) {
             setCurrentSession(data.data);
 
-            if (ws.current?.readyState === WebSocket.OPEN) {
-              ws.current.send(
-                JSON.stringify({
-                  type: 'session_update',
-                  sessionId,
-                  status: 'ACTIVE',
-                  adminId: user.id,
-                }),
-              );
+            if (isConnected) {
+              send({
+                type: 'session_update',
+                sessionId,
+                status: 'ACTIVE',
+                adminId: user.id,
+              });
             }
           } else {
             throw new Error(data.message || 'Failed to claim session');
@@ -325,7 +265,15 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       loadSessions();
       return true;
     },
-    [sessions, user, accessToken, isConnected, loadMessages, loadSessions],
+    [
+      sessions,
+      user,
+      accessToken,
+      isConnected,
+      loadMessages,
+      loadSessions,
+      send,
+    ],
   );
 
   const createSession = useCallback(async () => {
@@ -365,14 +313,12 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         const data = await res.json();
 
         if (data.success) {
-          if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(
-              JSON.stringify({
-                type: 'session_update',
-                sessionId,
-                status: 'CLOSED',
-              }),
-            );
+          if (isConnected) {
+            send({
+              type: 'session_update',
+              sessionId,
+              status: 'CLOSED',
+            });
           }
 
           if (currentSession?.id === sessionId) {
@@ -393,7 +339,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
         console.error(err);
       }
     },
-    [accessToken, currentSession, user, loadSessions],
+    [accessToken, currentSession, user, loadSessions, isConnected, send],
   );
 
   const contextValue = useMemo(
@@ -403,8 +349,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
-      connect,
-      disconnect,
       sendMessage,
       joinSession,
       loadMessages,
@@ -421,8 +365,6 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
-      connect,
-      disconnect,
       sendMessage,
       joinSession,
       loadMessages,

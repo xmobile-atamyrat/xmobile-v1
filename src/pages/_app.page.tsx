@@ -16,6 +16,7 @@ import {
 } from '@/pages/lib/serviceWorker';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
+import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
@@ -60,33 +61,35 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
-            <FCMProvider>
-              <NotificationContextProvider>
-                <ChatContextProvider>
-                  <CategoryContextProvider>
-                    <ProductContextProvider>
-                      <PrevProductContextProvider>
-                        <DollarRateContextProvider>
-                          <PlatformContextProvider>
-                            <NextIntlClientProvider
-                              locale={router.locale}
-                              timeZone="Asia/Ashgabat"
-                              messages={pageProps.messages}
-                            >
-                              {isLoading ? (
-                                <Loader />
-                              ) : (
-                                <Component {...pageProps} />
-                              )}
-                            </NextIntlClientProvider>
-                          </PlatformContextProvider>
-                        </DollarRateContextProvider>
-                      </PrevProductContextProvider>
-                    </ProductContextProvider>
-                  </CategoryContextProvider>
-                </ChatContextProvider>
-              </NotificationContextProvider>
-            </FCMProvider>
+            <WebSocketContextProvider>
+              <FCMProvider>
+                <NotificationContextProvider>
+                  <ChatContextProvider>
+                    <CategoryContextProvider>
+                      <ProductContextProvider>
+                        <PrevProductContextProvider>
+                          <DollarRateContextProvider>
+                            <PlatformContextProvider>
+                              <NextIntlClientProvider
+                                locale={router.locale}
+                                timeZone="Asia/Ashgabat"
+                                messages={pageProps.messages}
+                              >
+                                {isLoading ? (
+                                  <Loader />
+                                ) : (
+                                  <Component {...pageProps} />
+                                )}
+                              </NextIntlClientProvider>
+                            </PlatformContextProvider>
+                          </DollarRateContextProvider>
+                        </PrevProductContextProvider>
+                      </ProductContextProvider>
+                    </CategoryContextProvider>
+                  </ChatContextProvider>
+                </NotificationContextProvider>
+              </FCMProvider>
+            </WebSocketContextProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>
       </NetworkContextProvider>
