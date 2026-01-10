@@ -1,6 +1,6 @@
 export const cartIndexClasses = {
   box: {
-    web: 'w-full h-full flex flex-col mt-[64px] px-[10vw]',
+    web: 'w-full h-full flex flex-col mt-[64px]',
     mobile: 'w-full h-full flex flex-col my-[36px]',
   },
   cartHeader: {
@@ -8,8 +8,8 @@ export const cartIndexClasses = {
     mobile: 'flex w-full justify-center',
   },
   prodCart: {
-    web: 'flex flex-wrap gap-4 w-full justify-center',
-    mobile: 'flex flex-wrap gap-4 w-full justify-center pb-[100px]',
+    web: 'flex flex-wrap gap-4 w-full pb-[5vw]',
+    mobile: 'flex flex-wrap gap-4 w-full px-[24px] pb-[50px]',
   },
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
