@@ -298,5 +298,6 @@
   "minutesAgo": "m ago",
   "hoursAgo": "h ago",
   "daysAgo": "d ago",
-  "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings to receive notifications."
+  "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings to receive notifications.",
+  "serverLogs": "Server Logs"
 }
