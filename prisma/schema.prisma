@@ -21,6 +21,7 @@ model User {
   chatSessions    ChatSession[]
   orders          UserOrder[]
   inAppNotifications  InAppNotification[]
+  fcmTokens       FCMToken[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -190,6 +191,32 @@ model InAppNotification {
   @@index([userId, createdAt])
   @@index([sessionId])
   @@index([orderId])
+}
+
+model FCMToken {
+  id              String      @id @default(uuid())
+  
+  user            User        @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId          String
+  
+  token           String      @unique
+  
+  deviceInfo      String?
+  
+  // Token status
+  isActive        Boolean     @default(true)
+  
+  // Usage tracking
+  lastUsedAt      DateTime?
+  lastFailedAt    DateTime?
+  failureCount    Int         @default(0)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([lastUsedAt])
 }
 
 model ProcurementSupplier {
