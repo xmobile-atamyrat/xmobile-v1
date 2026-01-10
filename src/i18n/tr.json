@@ -309,7 +309,7 @@
   "brandName": "Marka Adı",
   "priceLowToHigh": "Fiyat Artan",
   "priceHighToLow": "Fiyat Azalan",
-  "new": "Yeni",
+  "newest": "Yeni",
   "aToZ": "A'dan Z'ye",
   "sortBy": "Sırala",
   "brandDeleteConfirm": "\"{name}\" markasını silmek istediğinizden emin misiniz? Ürünlerin bağlantısı kaldırılacak.",

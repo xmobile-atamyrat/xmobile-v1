@@ -112,6 +112,13 @@ export default function Products() {
     if (filters.categoryIds.length > 0) {
       return filters.categoryIds;
     }
+
+    if (router.query.categoryIds) {
+      return Array.isArray(router.query.categoryIds)
+        ? router.query.categoryIds
+        : [router.query.categoryIds];
+    }
+    // // Fallback/Legacy Landing Mode
     if (router.query.categoryId) {
       return [router.query.categoryId as string];
     }
@@ -173,7 +180,7 @@ export default function Products() {
         setIsLoading(false);
       }
     })();
-  }, [filters, searchKeyword, router.isReady]);
+  }, [filters, searchKeyword, router.isReady, effectiveCategoryIds]);
 
   const loadMoreProducts = useCallback(async () => {
     if (isLoading || !hasMore) return;
@@ -346,19 +353,17 @@ export default function Products() {
 
           <Box className="flex flex-row gap-6 w-full">
             {platform === 'web' && (
-              <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
-                <FilterSidebar
-                  categories={allCategories}
-                  selectedCategoryIds={filters.categoryIds}
-                  selectedBrandIds={filters.brandIds}
-                  minPrice={filters.minPrice}
-                  maxPrice={filters.maxPrice}
-                  onFilterChange={(newFilters) => {
-                    setFilters(newFilters);
-                  }}
-                  hideSections={hideSections}
-                />
-              </Box>
+              <FilterSidebar
+                categories={allCategories}
+                selectedCategoryIds={filters.categoryIds}
+                selectedBrandIds={filters.brandIds}
+                minPrice={filters.minPrice}
+                maxPrice={filters.maxPrice}
+                onFilterChange={(newFilters) => {
+                  setFilters(newFilters);
+                }}
+                hideSections={hideSections}
+              />
             )}
 
             <Box className="flex flex-col w-full">
