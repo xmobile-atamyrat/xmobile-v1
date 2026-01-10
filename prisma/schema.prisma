@@ -196,14 +196,11 @@ model InAppNotification {
 model FCMToken {
   id              String      @id @default(uuid())
   
-  // User who owns this token
   user            User        @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId          String
   
-  // FCM token value (unique per token)
   token           String      @unique
   
-  // Optional device/browser information for debugging
   deviceInfo      String?
   
   // Token status

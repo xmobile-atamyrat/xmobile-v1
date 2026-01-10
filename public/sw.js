@@ -1,5 +1,14 @@
 // Service Worker for handling push notifications
 // Supports iOS Safari, Android Chrome, and other major browsers
+// Also handles Firebase Cloud Messaging (FCM) background messages
+
+// Import Firebase Messaging scripts
+importScripts(
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+);
+importScripts(
+  'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js',
+);
 
 const CACHE_NAME = 'xmobile-notifications-v1';
 // Use absolute URL for notification icons (required for mobile)
@@ -54,7 +63,63 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim(); // Take control of all pages immediately
 });
 
-// Handle push notifications
+// Initialize Firebase for FCM (if not already initialized)
+let firebaseInitialized = false;
+try {
+  const firebaseConfig = {
+    apiKey: 'AIzaSyB6uDU2Mwzj-pbl1EEs2iOTvKHbznRurYI',
+    authDomain: 'xmobile-54bc9.firebaseapp.com',
+    projectId: 'xmobile-54bc9',
+    storageBucket: 'xmobile-54bc9.firebasestorage.app',
+    messagingSenderId: '872118016510',
+    appId: '1:872118016510:web:fe45e3367c39bceecf08af',
+    measurementId: 'G-0FBC3LXD1Z',
+  };
+
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    // Handle FCM background messages
+    messaging.onBackgroundMessage((payload) => {
+      console.log('[sw.js] Received FCM background message:', payload);
+
+      const notificationTitle =
+        payload.notification?.title || payload.data?.title || 'Уведомление';
+      const notificationBody =
+        payload.notification?.body ||
+        payload.data?.body ||
+        payload.data?.content ||
+        'Новое уведомление';
+
+      const notificationData = {
+        notificationId: payload.data?.notificationId || payload.data?.id,
+        type: payload.data?.type,
+        sessionId: payload.data?.sessionId,
+        orderId: payload.data?.orderId,
+        click_action: payload.data?.click_action,
+        ...payload.data,
+      };
+
+      return self.registration.showNotification(notificationTitle, {
+        body: notificationBody,
+        icon: payload.notification?.icon || NOTIFICATION_ICON,
+        badge: payload.notification?.badge || NOTIFICATION_BADGE,
+        tag: notificationData.notificationId || 'fcm-notification',
+        data: notificationData,
+        requireInteraction: false,
+        silent: false,
+        vibrate: [200, 100, 200],
+      });
+    });
+
+    firebaseInitialized = true;
+  }
+} catch (error) {
+  console.error('[sw.js] Failed to initialize Firebase:', error);
+}
+
+// Handle push notifications (legacy/fallback)
 self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'New message',
