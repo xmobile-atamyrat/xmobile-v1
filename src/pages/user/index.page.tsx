@@ -15,6 +15,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import {
   Box,
   Button,
@@ -211,6 +212,26 @@ export default function Profile() {
                     className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('serverLogs')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={() => router.push('/monitoring')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <MonitorHeartIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    System Monitoring
                   </Typography>
                   <ArrowForwardIos className={profileClasses.icons[platform]} />
                 </Button>
