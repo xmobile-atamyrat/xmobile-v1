@@ -7,7 +7,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { checkAdmin } from '../order/utils/checkAdmin';
 import { readLogFile } from './utils/logUtils';
 
-const filepath = 'src/pages/api/logs/[filename].page.ts';
+const filepath = 'src/pages/api/server-logs/[filename].page.ts';
 
 async function handler(
   req: NextApiRequest,
@@ -43,9 +43,6 @@ async function handler(
         },
       });
     } catch (error: any) {
-      console.error(filepath, error);
-
-      // Handle specific error cases
       if (
         error.message.includes('Invalid log filename') ||
         error.message.includes('Path traversal')
