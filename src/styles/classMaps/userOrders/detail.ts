@@ -1,6 +1,6 @@
 export const userOrdersDetailClasses = {
   box: {
-    web: 'w-full min-h-screen px-[10.31vw] py-8',
+    web: 'w-full min-h-screen py-8',
     mobile: 'w-full min-h-screen px-4 py-4',
   },
   header: {

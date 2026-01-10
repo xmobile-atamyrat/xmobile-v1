@@ -1,7 +1,7 @@
 export const detailPageClasses = {
   boxes: {
     main: {
-      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 pt-[50px]',
+      web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 overflow-hidden',
       mobile:
         'w-full h-full flex flex-col px-4 gap-4 pb-10 justify-center items-center mx-auto',
     },
@@ -16,7 +16,7 @@ export const detailPageClasses = {
       mobile: 'flex w-full justify-center flex-row mx-auto',
     },
     sideInfo: {
-      web: 'flex flex-col ml-[88px]',
+      web: 'flex flex-col ml-[4.5vw]',
       mobile:
         'flex flex-col min-w-[88.78vw] min-h-[11.7vw] p-0 justify-start items-center my-[20px]',
     },
@@ -30,7 +30,7 @@ export const detailPageClasses = {
         'min-w-[88.78vw] h-auto flex p-0 gap-0 justify-start items-start mx-auto mt-[-30px] mb-[30px]',
     },
     detailSide: {
-      web: 'w-[35vw] h-auto flex flex-col',
+      web: 'w-[30vw] h-auto flex flex-col',
       mobile: 'hidden',
     },
     info: {
@@ -38,7 +38,7 @@ export const detailPageClasses = {
       mobile: 'flex flex-row justify-between items-center w-full',
     },
     tag: {
-      web: 'flex flex-row gap-4',
+      web: 'flex flex-row gap-[0.5vw] w-[25vw]',
       mobile: 'flex flex-row gap-2 justify-between',
     },
   },
@@ -57,7 +57,7 @@ export const detailPageClasses = {
         'font-bold text-[clamp(13px,_4.2vw,_25px)] flex items-center capitalize',
     },
     font: {
-      web: 'text-[clamp(13px,_1.05vw,_20px)]',
+      web: 'text-[clamp(12px,_1.05vw,_20px)] max-w-[17vw]',
       mobile: 'text-[clamp(2vw,_4vw,_15px)]',
     },
     font2: {
@@ -76,7 +76,7 @@ export const detailPageClasses = {
     mobile: 'px-3 pb-3 flex items-center flex-col',
   },
   productName: {
-    web: 'font-[600] text-[1.8vw] tracking-[0] leading-[46px]',
+    web: 'font-[600] text-[1.8vw] tracking-normal leading-[46px]',
     mobile:
       'text-[#1c1b1b] font-medium text-[clamp(3vw,_4.67vw,_20px)] leading-[25px] tracking-normal gap-[2px] text-left',
   },
@@ -126,14 +126,14 @@ export const detailPageClasses = {
       mobile: 'min-w-[30vw] max-w-[60vw] ml-[1vw]',
     },
     name: {
-      web: 'flex flex-row w-[40vw]',
+      web: 'flex flex-row w-[30vw]',
       mobile: 'w-[50vw] h-auto justify-start gap-[2.3vw]',
     },
   },
   detailSide: {
-    part: 'w-[35vw] flex flex-row my-[0.4vw]',
+    part: 'w-[30vw] flex flex-row my-[0.4vw]',
     head: 'w-[10vw]',
-    val: 'flex flex-col w-[25vw]',
+    val: 'flex flex-col w-[18vw]',
     desc: 'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-semibold text-[#303030]',
     font2:
       'text-[clamp(13px,_1.05vw,_20px)] leading-[30px] font-regular tarcking-normal text-[#303030]',

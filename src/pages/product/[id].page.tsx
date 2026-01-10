@@ -442,7 +442,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                             {beginning}
                           </Typography>
                           <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[50px] text-end ${interClassname.className}`}
+                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[2vw] text-end ${interClassname.className}`}
                             color={colors.mainWebMobile[platform]}
                           >
                             {end}
