@@ -10,26 +10,38 @@ export interface FirebaseConfig {
 
 /**
  * Get Firebase configuration from environment variables
- * Falls back to hardcoded values if env vars are not set
+ * All values are required - no fallbacks
  */
 export function getFirebaseConfig(): FirebaseConfig {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  const messagingSenderId =
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+  const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
+
+  if (
+    !apiKey ||
+    !authDomain ||
+    !projectId ||
+    !storageBucket ||
+    !messagingSenderId ||
+    !appId
+  ) {
+    throw new Error(
+      'Missing required Firebase configuration. Please set all NEXT_PUBLIC_FIREBASE_* environment variables.',
+    );
+  }
+
   return {
-    apiKey:
-      process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
-      'AIzaSyB6uDU2Mwzj-pbl1EEs2iOTvKHbznRurYI',
-    authDomain:
-      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-      'xmobile-54bc9.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'xmobile-54bc9',
-    storageBucket:
-      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-      'xmobile-54bc9.firebasestorage.app',
-    messagingSenderId:
-      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '872118016510',
-    appId:
-      process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
-      '1:872118016510:web:fe45e3367c39bceecf08af',
-    measurementId:
-      process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-0FBC3LXD1Z',
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket,
+    messagingSenderId,
+    appId,
+    ...(measurementId && { measurementId }),
   };
 }

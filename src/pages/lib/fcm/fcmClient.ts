@@ -13,6 +13,25 @@ let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 
 /**
+ * Send Firebase config to service worker
+ * Service workers can't access environment variables directly
+ */
+async function sendConfigToServiceWorker(): Promise<void> {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    if (registration.active) {
+      const config = getFirebaseConfig();
+      registration.active.postMessage({
+        type: 'FIREBASE_CONFIG',
+        config,
+      });
+    }
+  } catch (error) {
+    console.error('[FCM] Failed to send config to service worker:', error);
+  }
+}
+
+/**
  * Initialize Firebase app (singleton)
  */
 export function initializeFirebaseApp(): FirebaseApp {
@@ -54,6 +73,9 @@ export async function initializeMessaging(): Promise<Messaging | null> {
       console.warn('[FCM] Notifications not supported in this environment');
       return null;
     }
+
+    // Send config to service worker
+    await sendConfigToServiceWorker();
 
     messaging = getMessaging(app);
     return messaging;
@@ -115,7 +137,7 @@ export async function getFCMToken(): Promise<string | null> {
 export async function registerFCMToken(
   token: string,
   accessToken: string,
-  deviceInfo?: string,
+  deviceInfo: string,
 ): Promise<boolean> {
   try {
     const response = await fetch('/api/fcm/token', {
@@ -126,7 +148,7 @@ export async function registerFCMToken(
       },
       body: JSON.stringify({
         token,
-        deviceInfo: deviceInfo || navigator.userAgent,
+        deviceInfo,
       }),
     });
 
@@ -159,6 +181,29 @@ export async function unregisterFCMToken(
     return data.success === true;
   } catch (error) {
     console.error('[FCM] Failed to unregister token:', error);
+    return false;
+  }
+}
+
+/**
+ * Deactivate all FCM tokens for the current user (soft delete on logout)
+ */
+export async function deactivateAllTokens(
+  accessToken: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch('/api/fcm/token', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error('[FCM] Failed to deactivate tokens:', error);
     return false;
   }
 }
