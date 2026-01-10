@@ -11,7 +11,7 @@ const filepath = 'src/pages/api/fcm/token.page.ts';
 
 const RegisterTokenSchema = z.object({
   token: z.string().min(1, 'Token is required'),
-  deviceInfo: z.string().optional(),
+  deviceInfo: z.string().min(1, 'Device info is required'),
 });
 
 const DeleteTokenSchema = z.object({
@@ -37,11 +37,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       if (existingToken) {
         // Update existing token if it belongs to this user, or if it's inactive
         if (existingToken.userId === userId || !existingToken.isActive) {
+          // Deactivate all other tokens for this device and user
+          await dbClient.fCMToken.updateMany({
+            where: {
+              userId,
+              deviceInfo,
+              id: { not: existingToken.id },
+            },
+            data: {
+              isActive: false,
+            },
+          });
+
           await dbClient.fCMToken.update({
             where: { token },
             data: {
               userId,
-              deviceInfo: deviceInfo || existingToken.deviceInfo,
+              deviceInfo,
               isActive: true,
               lastUsedAt: new Date(),
               failureCount: 0,
@@ -59,6 +71,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           message: 'Token already registered to another user',
         });
       }
+
+      // Deactivate all other tokens for this device and user (ensure one token per device)
+      await dbClient.fCMToken.updateMany({
+        where: {
+          userId,
+          deviceInfo,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
       // Create new token
       await dbClient.fCMToken.create({
         data: {
@@ -132,6 +156,27 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       return res.status(500).json({
         success: false,
         message: error.message || 'Failed to unregister token',
+      });
+    }
+  } else if (method === 'PATCH') {
+    // Deactivate all tokens for user (soft delete on logout)
+    try {
+      await dbClient.fCMToken.updateMany({
+        where: { userId },
+        data: {
+          isActive: false,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'All tokens deactivated successfully',
+      });
+    } catch (error: any) {
+      console.error(filepath, 'Error deactivating tokens:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to deactivate tokens',
       });
     }
   } else if (method === 'GET') {

@@ -15,6 +15,17 @@ function initializeFirebase(): admin.app.App {
     return firebaseApp;
   }
 
+  // Check if app already exists
+  try {
+    const existingApp = admin.app();
+    if (existingApp) {
+      firebaseApp = existingApp;
+      return firebaseApp;
+    }
+  } catch (error) {
+    // App doesn't exist, continue to initialize
+  }
+
   const credentialsPath =
     process.env.FIREBASE_ADMIN_SDK_PATH ||
     path.join(
@@ -33,7 +44,22 @@ function initializeFirebase(): admin.app.App {
 
     console.log('[FCM Service] Firebase Admin SDK initialized successfully');
     return firebaseApp;
-  } catch (error) {
+  } catch (error: any) {
+    // If app already exists error, try to get existing app
+    if (
+      error?.code === 'app/invalid-app-options' ||
+      error?.code === 'app/duplicate-app'
+    ) {
+      try {
+        firebaseApp = admin.app();
+        return firebaseApp;
+      } catch (getAppError) {
+        console.error(
+          '[FCM Service] Failed to get existing Firebase app:',
+          getAppError,
+        );
+      }
+    }
     console.error(
       '[FCM Service] Failed to initialize Firebase Admin SDK:',
       error,
