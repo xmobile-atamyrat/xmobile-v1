@@ -13,6 +13,7 @@ import {
   getUnreadNotificationsForUser,
   sendMessage,
   sendNotificationsToUser,
+  sendNotificationWithFCMFallback,
   verifySessionParticipant,
 } from '@/ws-server/lib/utils';
 import { UserRole } from '@prisma/client';
@@ -269,12 +270,20 @@ const handleMessage = async (
         content,
       );
 
-      // Send notifications to users who are currently connected
+      // Send notifications with FCM first, fallback to WebSocket
       notifications.forEach((notification) => {
         if (notification.userId !== senderId) {
-          sendNotificationsToUser(connections, notification.userId, [
+          sendNotificationWithFCMFallback(
+            connections,
+            notification.userId,
             notification,
-          ]);
+          ).catch((error) => {
+            console.error(
+              filepath,
+              `Failed to send notification ${notification.id} to user ${notification.userId}:`,
+              error,
+            );
+          });
         }
       });
     } catch (notificationError) {

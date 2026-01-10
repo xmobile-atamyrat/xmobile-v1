@@ -47,9 +47,10 @@ ssh_keys
 certificates
 categories.yaml
 *.xlsx
-*.env
+.env
+.env.local
 db_backup.sql
 backup/
 backup-data.sh
 ssl_keys
-fcm
+fcm-configs

@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { sendNotificationWithFCMFallback } from '@/lib/fcm/fcmService';
 import { getPrice } from '@/pages/api/prices/index.page';
 import {
   createNotificationForOrderStatusUpdate,
@@ -144,11 +145,13 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     order.userName || undefined,
   )
     .then((notifications) => {
-      // Send notifications to connected admins via WebSocket server
+      // Send notifications with FCM first, fallback to WebSocket
       notifications.forEach((notification) => {
-        sendNotificationToWebSocketServer(notification.userId, [
+        sendNotificationWithFCMFallback(
+          notification.userId,
           notification,
-        ]).catch((error) => {
+          sendNotificationToWebSocketServer,
+        ).catch((error) => {
           console.error(
             `[OrderService] Failed to send notification to user ${notification.userId}:`,
             error,
@@ -325,11 +328,13 @@ export async function cancelOrderByUser(
     updatedOrder.userName || undefined,
   )
     .then((notifications) => {
-      // Send notifications to connected admins via WebSocket server
+      // Send notifications with FCM first, fallback to WebSocket
       notifications.forEach((notification) => {
-        sendNotificationToWebSocketServer(notification.userId, [
+        sendNotificationWithFCMFallback(
+          notification.userId,
           notification,
-        ]).catch((error) => {
+          sendNotificationToWebSocketServer,
+        ).catch((error) => {
           console.error(
             `[OrderService] Failed to send notification to user ${notification.userId}:`,
             error,
@@ -406,10 +411,12 @@ export async function updateOrderStatus(
     )
       .then((notification) => {
         if (notification) {
-          // Send notification to connected user via WebSocket server
-          sendNotificationToWebSocketServer(notification.userId, [
+          // Send notification with FCM first, fallback to WebSocket
+          sendNotificationWithFCMFallback(
+            notification.userId,
             notification,
-          ]).catch((error) => {
+            sendNotificationToWebSocketServer,
+          ).catch((error) => {
             console.error(
               `[OrderService] Failed to send notification to user ${notification.userId}:`,
               error,
