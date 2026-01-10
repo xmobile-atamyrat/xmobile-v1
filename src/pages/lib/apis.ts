@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { ResponseApi, BrandProps } from '@/pages/lib/types';
+import { BrandProps, ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
 export const fetchProducts = async ({
@@ -31,19 +31,18 @@ export const fetchProducts = async ({
     if (val) url += `&${key}=${val}`;
   };
 
-  if (categoryIds && categoryIds.length > 0) {
-    categoryIds.forEach((cid) => appendParam('categoryId', cid));
-  }
-
-  appendParam('searchKeyword', searchKeyword);
-  appendParam('productId', productId);
-
   if (brandIds && brandIds.length > 0) {
     brandIds.forEach((bid) => appendParam('brandIds', bid));
   }
 
-  appendParam('minPrice', minPrice);
+  if (categoryIds && categoryIds.length > 0) {
+    categoryIds.forEach((cid) => appendParam('categoryIds', cid));
+  }
+
   appendParam('maxPrice', maxPrice);
+  appendParam('minPrice', minPrice);
+  appendParam('productId', productId);
+  appendParam('searchKeyword', searchKeyword);
   appendParam('sortBy', sortBy);
 
   const { success, data, message }: ResponseApi<Product[]> = await (

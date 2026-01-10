@@ -272,22 +272,20 @@ export default function Home({
           width: '100%',
         })}
       </Box>
-      <Box className="flex flex-row gap-6 w-full px-[10.31vw]">
+      <Box className="flex flex-row gap-6 w-full">
         {platform === 'web' && (
-          <Box sx={{ minWidth: 250, display: { xs: 'none', md: 'block' } }}>
-            <FilterSidebar
-              categories={categories}
-              selectedCategoryIds={filters.categoryIds}
-              selectedBrandIds={filters.brandIds}
-              minPrice={filters.minPrice}
-              maxPrice={filters.maxPrice}
-              onFilterChange={(newFilters) => {
-                setFilters(newFilters);
-                setPage(1);
-                setProducts([]);
-              }}
-            />
-          </Box>
+          <FilterSidebar
+            categories={categories}
+            selectedCategoryIds={filters.categoryIds}
+            selectedBrandIds={filters.brandIds}
+            minPrice={filters.minPrice}
+            maxPrice={filters.maxPrice}
+            onFilterChange={(newFilters) => {
+              setFilters(newFilters);
+              setPage(1);
+              setProducts([]);
+            }}
+          />
         )}
 
         <Box className={homePageClasses.main[platform]}>

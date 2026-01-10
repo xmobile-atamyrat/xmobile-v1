@@ -9,12 +9,60 @@ import {
   AddEditProductProps,
   EditCategoriesProps,
   ExtendedCategory,
+  FetchWithCredsType,
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, InputProps, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import { Dispatch, SetStateAction } from 'react';
+
+export async function addEditBrand({
+  id,
+  name,
+  type,
+  accessToken,
+  fetchWithCreds,
+}: {
+  id?: string;
+  name: string;
+  type: 'add' | 'edit';
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<ResponseApi> {
+  const path = '/api/brand';
+  const method = type === 'add' ? 'POST' : 'PUT';
+  const body = type === 'add' ? { name } : { id, name };
+
+  try {
+    return await fetchWithCreds({
+      accessToken,
+      path,
+      method,
+      body,
+    });
+  } catch (error) {
+    console.error('Error saving brand', error);
+    return { success: false, message: 'Network error' };
+  }
+}
+
+export async function deleteBrand(
+  id: string,
+  accessToken: string,
+  fetchWithCreds: FetchWithCredsType,
+): Promise<ResponseApi> {
+  try {
+    return await fetchWithCreds({
+      accessToken,
+      path: `/api/brand?id=${id}`,
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Error deleting brand', error);
+    return { success: false, message: 'Network error' };
+  }
+}
 
 export const theme = createTheme({
   palette: {
@@ -315,44 +363,6 @@ export async function addEditProduct({
   setPrevCategory(categoryId);
 
   return product;
-}
-
-export async function addEditBrand({
-  id,
-  name,
-  type,
-}: {
-  id?: string;
-  name: string;
-  type: 'add' | 'edit';
-}): Promise<ResponseApi> {
-  const url = `${BASE_URL}/api/brand`;
-  const method = type === 'add' ? 'POST' : 'PUT';
-  const body = type === 'add' ? { name } : { id, name };
-
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    return await res.json();
-  } catch (error) {
-    console.error('Error saving brand', error);
-    return { success: false, message: 'Network error' };
-  }
-}
-
-export async function deleteBrand(id: string): Promise<ResponseApi> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/brand?id=${id}`, {
-      method: 'DELETE',
-    });
-    return await res.json();
-  } catch (error) {
-    console.error('Error deleting brand', error);
-    return { success: false, message: 'Network error' };
-  }
 }
 
 export function isNumeric(value: string): boolean {
