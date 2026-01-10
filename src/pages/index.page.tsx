@@ -228,7 +228,7 @@ export default function Home({
           width: '100%',
         })}
       </Box>
-      <Box className="px-[10.31vw]">
+      <Box className={homePageClasses.main[platform]}>
         {!searchKeyword && (
           <Typography
             className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}

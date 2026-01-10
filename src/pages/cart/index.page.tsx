@@ -188,7 +188,7 @@ export default function CartPage() {
               </Suspense>
             </Box>
           ) : (
-            <Box className="text-center flex flex-col">
+            <Box className="w-full flex flex-col items-center">
               <CardMedia
                 component="img"
                 src="/emptyCart.png"

@@ -1,9 +1,9 @@
-import { userOrdersDetailClasses } from './detail';
 import { userOrdersComponentClasses } from './components';
+import { userOrdersDetailClasses } from './detail';
 
 export const userOrdersIndexClasses = {
   box: {
-    web: 'w-full min-h-screen px-[10.31vw] py-8',
+    web: 'w-full min-h-screen py-8',
     mobile: 'w-full min-h-screen px-4 py-4',
   },
   header: {
@@ -36,4 +36,4 @@ export const userOrdersIndexClasses = {
   },
 };
 
-export { userOrdersDetailClasses, userOrdersComponentClasses };
+export { userOrdersComponentClasses, userOrdersDetailClasses };
