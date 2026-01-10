@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Xmobile</string>
+    <string name="title_activity_main">Xmobile</string>
+    <string name="package_name">tm.com.xmobile</string>
+    <string name="custom_url_scheme">tm.com.xmobile</string>
+</resources>

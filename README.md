@@ -76,3 +76,40 @@ exit
 ./scripts/backup-production-data.sh
 ./scripts/apply-backup.sh all # Note: apply-backup options are 'db', 'images', 'all'
 ```
+
+## Mobile App Build (Android)
+
+To build the Android App Bundle (.aab) or APK (.apk) using Capacitor:
+
+### Prerequisites
+
+1.  **Android Studio**: Installed and configured.
+2.  **Java 17+**: Ensure Java is in your PATH.
+3.  **Capacitor CLI**: Handled via `npx cap`.
+
+### Build Steps
+
+1.  **Sync Capacitor**:
+    Ensure the web assets and plugins are synced with the Android project.
+    ```bash
+    npx cap sync
+    ```
+
+2.  **Open in Android Studio**:
+    ```bash
+    npx cap open android
+    ```
+
+3.  **Generate Bundle/APK**:
+    - In Android Studio, go to **Build > Generate Signed Bundle / APK...**
+    - Select **Android App Bundle** or **APK**.
+    - Follow the prompts to sign the application with your keystore.
+
+4.  **Build via Command Line (Optional)**:
+    If you have the environment variables set up, you can build directly:
+    ```bash
+    cd android
+    ./gradlew bundleRelease  # For AAB
+    ./gradlew assembleRelease # For APK
+    ```
+
