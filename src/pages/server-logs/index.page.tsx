@@ -33,7 +33,7 @@ interface LogFile {
 
 export default function LogsPage() {
   const router = useRouter();
-  const { user, accessToken } = useUserContext();
+  const { user, accessToken, isLoading } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
 
@@ -45,6 +45,13 @@ export default function LogsPage() {
   const [error, setError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+
+  // Redirect to sign in if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/user/sign_in_up');
+    }
+  }, [user, isLoading, router]);
 
   // Check admin permissions
   useEffect(() => {
@@ -67,7 +74,7 @@ export default function LogsPage() {
       try {
         const response = await fetchWithCreds<string[]>({
           accessToken: accessToken!,
-          path: '/api/logs',
+          path: '/api/server-logs',
           method: 'GET',
         });
 
@@ -107,7 +114,7 @@ export default function LogsPage() {
       try {
         const response = await fetchWithCreds<LogFile>({
           accessToken: accessToken!,
-          path: `/api/logs/${selectedLogFile}`,
+          path: `/api/server-logs/${selectedLogFile}`,
           method: 'GET',
         });
 
@@ -136,6 +143,10 @@ export default function LogsPage() {
     fetchLogContent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLogFile, accessToken]);
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!user || !['ADMIN', 'SUPERUSER'].includes(user.grade)) {
     return null;

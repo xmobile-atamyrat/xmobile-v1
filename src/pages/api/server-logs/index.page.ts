@@ -7,7 +7,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { checkAdmin } from '../order/utils/checkAdmin';
 import { listLogFiles } from './utils/logUtils';
 
-const filepath = 'src/pages/api/logs/index.page.ts';
+const filepath = 'src/pages/api/server-logs/index.page.ts';
 
 async function handler(
   req: NextApiRequest,
