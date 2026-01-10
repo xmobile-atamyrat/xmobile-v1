@@ -1,5 +1,9 @@
 import dbClient from '@/lib/dbClient';
 import { ChatMessageProps, InAppNotification } from '@/pages/lib/types';
+import {
+  createFCMNotificationPayload,
+  sendFCMNotificationToUser,
+} from '@/ws-server/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import { NotificationType, UserOrderStatus } from '@prisma/client';
 import { WebSocket } from 'ws';
@@ -135,6 +139,64 @@ export function sendNotificationsToUser(
   });
 
   return uniqueNotificationsSent;
+}
+
+/**
+ * Sends notification with FCM first, then falls back to WebSocket if FCM fails and user is connected
+ * @param connectionsMap - The connections map from the WebSocket server
+ * @param userId - User ID to send notification to
+ * @param notification - Notification to send
+ * @returns true if notification was sent (via FCM or WebSocket), false otherwise
+ */
+export async function sendNotificationWithFCMFallback(
+  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+  userId: string,
+  notification: InAppNotification,
+): Promise<boolean> {
+  try {
+    // Try FCM first
+    const fcmPayload = createFCMNotificationPayload(notification);
+    const fcmResult = await sendFCMNotificationToUser(userId, fcmPayload);
+
+    if (fcmResult.success && fcmResult.tokensSent > 0) {
+      // FCM succeeded, notification sent
+      return true;
+    }
+
+    // FCM failed or no tokens, try WebSocket fallback if user is connected
+    const userConnections = connectionsMap.get(userId);
+    if (userConnections && userConnections.size > 0) {
+      // User is connected, send via WebSocket
+      let sentToAtLeastOne = false;
+      userConnections.forEach((conn) => {
+        try {
+          sendMessage(conn, {
+            type: 'notification',
+            notification,
+          });
+          sentToAtLeastOne = true;
+        } catch (error) {
+          console.error(
+            `Failed to send notification ${notification.id} to user ${userId} via WebSocket:`,
+            error,
+          );
+        }
+      });
+
+      if (sentToAtLeastOne) {
+        return true;
+      }
+    }
+
+    // Both FCM and WebSocket failed, notification remains in DB for next connection
+    return false;
+  } catch (error) {
+    console.error(
+      `Error sending notification ${notification.id} to user ${userId}:`,
+      error,
+    );
+    return false;
+  }
 }
 
 /**
