@@ -2,6 +2,7 @@ import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  deactivateAllTokens,
   getDeviceInfo,
   getFCMToken,
   getNotificationPermission,
@@ -38,13 +39,80 @@ export function useFCM(): UseFCMReturn {
   const [token, setToken] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const registrationInProgressRef = useRef(false);
+  const previousUserRef = useRef<typeof user>(user);
+  const previousAccessTokenRef = useRef<typeof accessToken>(accessToken);
 
-  // Check permission status
+  // Check permission status and watch for changes
   useEffect(() => {
-    const status = getNotificationPermission();
-    setPermissionStatus(status);
-    setHasPermission(hasNotificationPermission());
-  }, []);
+    const updatePermission = () => {
+      const status = getNotificationPermission();
+      const hasPerm = hasNotificationPermission();
+      setPermissionStatus(status);
+      setHasPermission(hasPerm);
+
+      // If permission just changed to granted and user is logged in, get token immediately
+      if (
+        hasPerm &&
+        status === 'granted' &&
+        user &&
+        accessToken &&
+        !token &&
+        isInitialized
+      ) {
+        const fetchToken = async () => {
+          const newToken = await getFCMToken();
+          if (newToken) {
+            setToken(newToken);
+            localStorage.setItem(FCM_TOKEN_STORAGE_KEY, newToken);
+
+            const deviceInfo = getDeviceInfo();
+            const registered = await registerFCMToken(
+              newToken,
+              accessToken,
+              deviceInfo,
+            );
+
+            if (registered) {
+              localStorage.setItem(FCM_TOKEN_REGISTERED_KEY, 'true');
+            }
+          }
+        };
+
+        fetchToken().catch(console.error);
+      }
+    };
+
+    // Initial check
+    updatePermission();
+
+    // Watch for permission changes (some browsers support this)
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      // Poll for permission changes (Notification API doesn't have change events)
+      // Use a reasonable interval - check every 2 seconds
+      const interval = setInterval(updatePermission, 2000);
+
+      return () => clearInterval(interval);
+    }
+
+    return undefined;
+  }, [user, accessToken, token, isInitialized]);
+
+  // Handle logout - deactivate tokens when user logs out
+  useEffect(() => {
+    // Check if user just logged out
+    if (
+      previousUserRef.current &&
+      previousAccessTokenRef.current &&
+      (!user || !accessToken)
+    ) {
+      // User logged out - deactivate all tokens
+      deactivateAllTokens(previousAccessTokenRef.current).catch(console.error);
+    }
+
+    // Update refs
+    previousUserRef.current = user;
+    previousAccessTokenRef.current = accessToken;
+  }, [user, accessToken]);
 
   // Initialize FCM when user is logged in
   useEffect(() => {
@@ -54,6 +122,11 @@ export function useFCM(): UseFCMReturn {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+
+      // Clear local storage on logout
+      localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+      localStorage.removeItem(FCM_TOKEN_REGISTERED_KEY);
+      setToken(null);
       setIsInitialized(false);
       return;
     }
@@ -76,14 +149,12 @@ export function useFCM(): UseFCMReturn {
           unsubscribeRef.current = unsubscribe;
         }
 
-        // Check if we have a stored token
-        const storedToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
-        const isRegistered = localStorage.getItem(FCM_TOKEN_REGISTERED_KEY);
+        // Check current permission status
+        const currentPermission = hasNotificationPermission();
+        setHasPermission(currentPermission);
 
-        if (storedToken && isRegistered === 'true') {
-          setToken(storedToken);
-        } else if (hasNotificationPermission()) {
-          // Get new token if we have permission
+        if (currentPermission) {
+          // Get token if we have permission
           const newToken = await getFCMToken();
           if (newToken) {
             setToken(newToken);
@@ -101,6 +172,12 @@ export function useFCM(): UseFCMReturn {
               localStorage.setItem(FCM_TOKEN_REGISTERED_KEY, 'true');
             }
           }
+        } else {
+          // Check if we have a stored token (from previous session)
+          const storedToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+          if (storedToken) {
+            setToken(storedToken);
+          }
         }
 
         setIsInitialized(true);
@@ -112,6 +189,39 @@ export function useFCM(): UseFCMReturn {
 
     initialize();
   }, [user, accessToken, refreshUnreadCount]);
+
+  // Watch for permission changes and get token when permission is granted
+  useEffect(() => {
+    if (!user || !accessToken) {
+      return undefined;
+    }
+
+    // If permission just changed to granted, get token immediately
+    if (hasPermission && permissionStatus === 'granted' && !token) {
+      const fetchToken = async () => {
+        const newToken = await getFCMToken();
+        if (newToken) {
+          setToken(newToken);
+          localStorage.setItem(FCM_TOKEN_STORAGE_KEY, newToken);
+
+          const deviceInfo = getDeviceInfo();
+          const registered = await registerFCMToken(
+            newToken,
+            accessToken,
+            deviceInfo,
+          );
+
+          if (registered) {
+            localStorage.setItem(FCM_TOKEN_REGISTERED_KEY, 'true');
+          }
+        }
+      };
+
+      fetchToken().catch(console.error);
+    }
+
+    return undefined;
+  }, [user, accessToken, hasPermission, permissionStatus, token]);
 
   // Handle token refresh
   useEffect(() => {
@@ -243,6 +353,7 @@ export function useFCM(): UseFCMReturn {
     }
 
     try {
+      // Deactivate token
       const unregistered = await unregisterFCMToken(token, accessToken);
       if (unregistered) {
         localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
