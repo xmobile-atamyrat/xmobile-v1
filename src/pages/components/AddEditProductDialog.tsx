@@ -9,11 +9,14 @@ import {
   defaultProductDescTk,
   defaultProductDescTr,
 } from '@/pages/lib/constants';
+
+import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddEditProductProps, ExtendedCategory } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import {
   addEditBrand,
   addEditProduct,
@@ -84,6 +87,8 @@ export default function AddEditProductDialog({
   const { categories, selectedCategoryId } = useCategoryContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
   const { network } = useNetworkContext();
+  const { accessToken } = useUserContext();
+  const fetchWithCreds = useFetchWithCreds();
 
   const t = useTranslations();
   const router = useRouter();
@@ -131,9 +136,10 @@ export default function AddEditProductDialog({
   }, []);
 
   const handleCreateBrand = async () => {
-    if (!brandSearch.trim()) return;
+    const trimmedBrandSearch = brandSearch.trim();
+    if (!trimmedBrandSearch) return;
     const existing = brands.find(
-      (b) => b.name.toLowerCase() === brandSearch.toLowerCase(),
+      (b) => b.name.toLowerCase() === trimmedBrandSearch.toLowerCase(),
     );
     if (existing) {
       setBrandId(existing.id);
@@ -141,8 +147,18 @@ export default function AddEditProductDialog({
       return;
     }
 
+    if (!accessToken) {
+      snackbarErrorHandler?.('Authentication required');
+      return;
+    }
+
     setLoading(true);
-    const res = await addEditBrand({ type: 'add', name: brandSearch });
+    const res = await addEditBrand({
+      type: 'add',
+      name: trimmedBrandSearch,
+      accessToken,
+      fetchWithCreds,
+    });
     setLoading(false);
 
     if (res.success && res.data) {
@@ -154,13 +170,20 @@ export default function AddEditProductDialog({
     }
   };
 
-  const handleUpdateBrand = async (bId: string) => {
-    if (!editBrandName.trim()) return;
+  const handleUpdateBrand = async (brandIdToUpdate: string) => {
+    const trimmedEditBrandName = editBrandName.trim();
+    if (!trimmedEditBrandName) return;
+    if (!accessToken) {
+      snackbarErrorHandler?.('Authentication required');
+      return;
+    }
     setLoading(true);
     const res = await addEditBrand({
       type: 'edit',
-      id: bId,
-      name: editBrandName,
+      id: brandIdToUpdate,
+      name: trimmedEditBrandName,
+      accessToken,
+      fetchWithCreds,
     });
     setLoading(false);
 
@@ -176,8 +199,12 @@ export default function AddEditProductDialog({
   const handleDeleteBrand = async (brand: { id: string; name: string }) => {
     // eslint-disable-next-line no-alert
     if (!window.confirm(t('brandDeleteConfirm', { name: brand.name }))) return;
+    if (!accessToken) {
+      snackbarErrorHandler?.('Authentication required');
+      return;
+    }
     setLoading(true);
-    const res = await deleteBrand(brand.id);
+    const res = await deleteBrand(brand.id, accessToken, fetchWithCreds);
     setLoading(false);
     if (res.success) {
       if (brandId === brand.id) setBrandId('');
@@ -501,16 +528,16 @@ export default function AddEditProductDialog({
                     {t('noBrands')}
                   </Typography>
                 )}
-                {filteredBrands.map((b) => (
+                {filteredBrands.map((brand) => (
                   <Box
-                    key={b.id}
+                    key={brand.id}
                     display="flex"
                     alignItems="center"
                     justifyContent="space-between"
                     p={1}
                     sx={{
                       bgcolor:
-                        brandId === b.id
+                        brandId === brand.id
                           ? 'rgba(25, 118, 210, 0.08)'
                           : 'transparent',
                       '&:hover': {
@@ -518,7 +545,7 @@ export default function AddEditProductDialog({
                       },
                     }}
                   >
-                    {editingBrandId === b.id ? (
+                    {editingBrandId === brand.id ? (
                       // Edit Mode
                       <Box display="flex" alignItems="center" gap={1} flex={1}>
                         <TextField
@@ -529,11 +556,11 @@ export default function AddEditProductDialog({
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              handleUpdateBrand(b.id);
+                              handleUpdateBrand(brand.id);
                             }
                           }}
                         />
-                        <IconButton onClick={() => handleUpdateBrand(b.id)}>
+                        <IconButton onClick={() => handleUpdateBrand(brand.id)}>
                           <Check color="primary" />
                         </IconButton>
                         <IconButton onClick={() => setEditingBrandId(null)}>
@@ -548,10 +575,10 @@ export default function AddEditProductDialog({
                           alignItems="center"
                           gap={1}
                           flex={1}
-                          onClick={() => setBrandId(b.id)}
+                          onClick={() => setBrandId(brand.id)}
                           sx={{ cursor: 'pointer' }}
                         >
-                          {brandId === b.id ? (
+                          {brandId === brand.id ? (
                             <RadioButtonCheckedIcon
                               color="primary"
                               fontSize="small"
@@ -562,15 +589,15 @@ export default function AddEditProductDialog({
                               fontSize="small"
                             />
                           )}
-                          <Typography>{b.name}</Typography>
+                          <Typography>{brand.name}</Typography>
                         </Box>
                         <Box>
                           <IconButton
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setEditingBrandId(b.id);
-                              setEditBrandName(b.name);
+                              setEditingBrandId(brand.id);
+                              setEditBrandName(brand.name);
                             }}
                           >
                             <Edit fontSize="small" />
@@ -579,7 +606,7 @@ export default function AddEditProductDialog({
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteBrand(b);
+                              handleDeleteBrand(brand);
                             }}
                           >
                             <DeleteOutlined fontSize="small" color="error" />
@@ -814,14 +841,12 @@ export default function AddEditProductDialog({
           </Box>
         </DialogContent>
         <DialogActions>
-          <DialogActions>
-            <Button variant="contained" color="error" onClick={handleClose}>
-              {t('cancel')}
-            </Button>
-            <LoadingButton loading={loading} variant="contained" type="submit">
-              {t('submit')}
-            </LoadingButton>
-          </DialogActions>
+          <Button variant="contained" color="error" onClick={handleClose}>
+            {t('cancel')}
+          </Button>
+          <LoadingButton loading={loading} variant="contained" type="submit">
+            {t('submit')}
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </>

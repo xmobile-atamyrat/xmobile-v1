@@ -110,3 +110,7 @@ export const SORT_OPTIONS = {
   NEWEST: 'newest',
   A_Z: 'a_z',
 } as const;
+
+export const FILTER_DEFAULT_MIN_PRICE = 0;
+export const FILTER_DEFAULT_MAX_PRICE = 50000;
+export const FILTER_MAX_PRICE = 100000;
