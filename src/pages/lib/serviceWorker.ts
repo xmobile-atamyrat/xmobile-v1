@@ -199,6 +199,7 @@ export async function showNotificationViaServiceWorker(notification: {
             `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
           badge:
             notification.badge ||
+            `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo-badge.png` ||
             `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
           tag: notification.id,
           data: {
@@ -265,6 +266,7 @@ export function showNotificationViaAPI(notification: {
           `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
         badge:
           notification.badge ||
+          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo-badge.png` ||
           `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
         tag: notification.id,
         data: {

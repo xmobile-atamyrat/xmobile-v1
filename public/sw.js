@@ -17,8 +17,23 @@ const getNotificationIcon = () => {
     return '/xm-logo.png';
   }
 };
+// Badge icon for status bar - needs to be monochrome (white/transparent)
+// For now, use the same icon but ideally should be a simplified monochrome version
+const getBadgeIcon = () => {
+  try {
+    const origin =
+      (self.registration && self.registration.scope
+        ? new URL(self.registration.scope).origin
+        : null) || self.location.origin;
+    // Try to use a simplified badge icon, fallback to main icon
+    return `${origin}/xm-logo-badge.png`;
+  } catch (e) {
+    // Fallback: use main icon if badge icon doesn't exist
+    return getNotificationIcon();
+  }
+};
 const NOTIFICATION_ICON = getNotificationIcon();
-const NOTIFICATION_BADGE = getNotificationIcon();
+const NOTIFICATION_BADGE = getBadgeIcon();
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
