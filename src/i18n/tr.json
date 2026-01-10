@@ -298,5 +298,6 @@
   "minutesAgo": "dk önce",
   "hoursAgo": "sa önce",
   "daysAgo": "gün önce",
-  "notificationsDenied": "Bildirim izni reddedildi. Bildirimleri almak için lütfen tarayıcı ayarlarınızdan etkinleştirin."
+  "notificationsDenied": "Bildirim izni reddedildi. Bildirimleri almak için lütfen tarayıcı ayarlarınızdan etkinleştirin.",
+  "serverLogs": "Sunucu Günlükleri"
 }
