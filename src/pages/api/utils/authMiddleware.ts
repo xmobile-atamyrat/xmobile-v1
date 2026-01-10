@@ -27,7 +27,7 @@ export interface AuthenticatedRequest extends NextApiRequest {
   grade?: UserRole;
 }
 
-const BYPASS_AUTH_PATHS = ['/api/prices/rate', '/api/prices'];
+const BYPASS_AUTH_PATHS = ['/api/prices/rate', '/api/prices', '/api/brand'];
 const BYPASS_AUTH_METHODS = ['GET'];
 
 const withAuth = (
