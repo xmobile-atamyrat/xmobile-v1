@@ -1,7 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const LOGS_DIRECTORY = '/home/ubuntu/scripts';
+const LOGS_DIRECTORY =
+  process.env.NODE_ENV === 'production' ? '/home/ubuntu/scripts' : './logs';
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB in bytes
 
 /**
@@ -66,7 +67,7 @@ export async function readLogFile(filename: string): Promise<string> {
   try {
     await fs.access(filePath);
   } catch (error) {
-    throw new Error('Log file not found');
+    throw new Error();
   }
 
   // Check file size
