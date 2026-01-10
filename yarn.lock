@@ -4678,6 +4678,11 @@ synckit@^0.8.6:
     "@pkgr/core" "^0.1.0"
     tslib "^2.6.2"
 
+systeminformation@^5.30.2:
+  version "5.30.2"
+  resolved "https://registry.yarnpkg.com/systeminformation/-/systeminformation-5.30.2.tgz#8944354f86a6a37660817fa478086903ed2db727"
+  integrity sha512-Rrt5oFTWluUVuPlbtn3o9ja+nvjdF3Um4DG0KxqfYvpzcx7Q9plZBTjJiJy9mAouua4+OI7IUGBaG9Zyt9NgxA==
+
 tailwindcss@^3.4.1:
   version "3.4.4"
   resolved "https://registry.npmjs.org/tailwindcss/-/tailwindcss-3.4.4.tgz"
