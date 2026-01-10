@@ -33,6 +33,7 @@ export default function AddToCart({
   price,
   onDelete,
   setTotalPrice,
+  selectedTag,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const { user, accessToken } = useUserContext();
@@ -65,6 +66,7 @@ export default function AddToCart({
             userId,
             productId,
             quantity,
+            selectedTag,
           },
         });
 

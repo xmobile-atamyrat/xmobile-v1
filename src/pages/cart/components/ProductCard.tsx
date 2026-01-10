@@ -21,11 +21,13 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  variantName?: string;
 }
 
 export default function CartProductCard({
   product,
   cartProps,
+  variantName,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -125,6 +127,15 @@ export default function CartProductCard({
                     24,
                   )}
                 </Typography>
+                {variantName && (
+                  <Typography
+                    className={`${interClassname.className} ${cartProductCardClasses.variant[platform]}`}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {variantName}
+                  </Typography>
+                )}
               </Box>
               {product?.price?.includes('[') ? (
                 <CircularProgress

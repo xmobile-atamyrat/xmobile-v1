@@ -74,7 +74,16 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     const orderItemsData = await Promise.all(
       cartItems.map(async (item) => {
         let productPrice = '0';
-        if (item.product.price) {
+        if (item.selectedTag) {
+          const tagMatch = item.selectedTag.match(squareBracketRegex);
+          if (tagMatch) {
+            const priceId = tagMatch[1];
+            const price = await getPrice(priceId);
+            if (price && price.priceInTmt) {
+              productPrice = price.priceInTmt;
+            }
+          }
+        } else if (item.product.price) {
           const priceMatch = item.product.price.match(squareBracketRegex);
           if (priceMatch) {
             const priceId = priceMatch[1];
@@ -89,6 +98,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
           productName: item.product.name,
           productPrice,
           productId: item.productId,
+          selectedTag: item.selectedTag,
         };
       }),
     );
