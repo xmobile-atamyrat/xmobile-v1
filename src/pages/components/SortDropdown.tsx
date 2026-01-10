@@ -77,15 +77,15 @@ export default function SortDropdown({
     return (
       <Box>
         <Box display="flex" flexWrap="wrap" gap={1}>
-          {sortOptions.map((opt) => (
+          {sortOptions.map((sortOption) => (
             <SortChip
-              key={opt.value}
-              label={opt.label}
+              key={sortOption.value}
+              label={sortOption.label}
               isActive={
-                value === opt.value ||
-                (!value && opt.value === SORT_OPTIONS.NEWEST)
+                value === sortOption.value ||
+                (!value && sortOption.value === SORT_OPTIONS.NEWEST)
               }
-              onClick={() => onChange(opt.value)}
+              onClick={() => onChange(sortOption.value)}
             />
           ))}
         </Box>
@@ -155,9 +155,9 @@ export default function SortDropdown({
             },
           }}
         >
-          {sortOptions.map((opt) => (
-            <MenuItem key={opt.value} value={opt.value}>
-              {opt.label}
+          {sortOptions.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
             </MenuItem>
           ))}
         </Select>
