@@ -98,6 +98,19 @@ export async function createCompressedImg(
   }
 }
 
+async function updateBrandProductCount(brandId: string) {
+  if (!brandId) return;
+
+  const count = await dbClient.product.count({
+    where: { brandId },
+  });
+
+  await dbClient.brand.update({
+    where: { id: brandId },
+    data: { productCount: count },
+  });
+}
+
 async function createProduct(
   req: NextApiRequest,
 ): Promise<CreateProductReturnType> {
@@ -121,7 +134,7 @@ async function createProduct(
       });
 
       const cachedPrice = parseFloat(
-        (await getPrice(fields.price?.[0]))?.price || '0',
+        (await getPrice(fields.price?.[0]))?.price ?? '0',
       );
       const product = await dbClient.product.create({
         data: {
@@ -139,6 +152,10 @@ async function createProduct(
           cachedPrice,
         },
       });
+
+      if (product.brandId) {
+        await updateBrandProductCount(product.brandId);
+      }
       resolve({ success: true, data: product, status: 200 });
     });
   });
@@ -176,14 +193,12 @@ async function getRecursiveCategoryIds(
   if (!category) return [];
   const ids = [rootId];
   if (category.successorCategories) {
-    if (category.successorCategories) {
-      const nestedIds = await Promise.all(
-        category.successorCategories.map((sub) =>
-          getRecursiveCategoryIds(sub.id, visited),
-        ),
-      );
-      ids.push(...nestedIds.flat());
-    }
+    const nestedIds = await Promise.all(
+      category.successorCategories.map((sub) =>
+        getRecursiveCategoryIds(sub.id, visited),
+      ),
+    );
+    ids.push(...nestedIds.flat());
   }
   return ids;
 }
@@ -191,6 +206,7 @@ async function getRecursiveCategoryIds(
 async function handleGetProduct(query: {
   searchKeyword?: string;
   categoryId?: string | string[];
+  categoryIds?: string | string[];
   brandIds?: string | string[];
   productId?: string;
   page?: string;
@@ -202,6 +218,7 @@ async function handleGetProduct(query: {
     searchKeyword,
     productId,
     categoryId,
+    categoryIds,
     brandIds,
     page,
     minPrice,
@@ -229,19 +246,30 @@ async function handleGetProduct(query: {
   }
 
   const where: Prisma.ProductWhereInput = {};
+
+  const categories: string[] = [];
   if (categoryId) {
-    const cats = Array.isArray(categoryId) ? categoryId : [categoryId];
+    if (Array.isArray(categoryId)) categories.push(...categoryId);
+    else categories.push(categoryId);
+  }
+  if (categoryIds) {
+    if (Array.isArray(categoryIds)) categories.push(...categoryIds);
+    else categories.push(categoryIds);
+  }
+
+  if (categories.length > 0) {
     const ids: string[] = [];
     const recursiveIds = await Promise.all(
-      cats.map((cid) => getRecursiveCategoryIds(cid)),
+      categories.map((catId) => getRecursiveCategoryIds(catId)),
     );
     ids.push(...recursiveIds.flat());
     where.categoryId = { in: ids };
   }
 
   if (brandIds) {
-    const bIds = Array.isArray(brandIds) ? brandIds : [brandIds];
-    where.brandId = { in: bIds };
+    where.brandId = {
+      in: Array.isArray(brandIds) ? brandIds : [brandIds],
+    };
   }
 
   if (searchKeyword) {
@@ -333,29 +361,30 @@ async function handleEditProduct(
       }
 
       const data: Partial<Product> = { imgUrls: [] };
-      if (fields.categoryId?.length > 0 && fields.categoryId[0] !== '') {
+      if (fields.categoryId?.[0]) {
         data.categoryId = fields.categoryId[0];
       }
-      if (fields.name?.length > 0) data.name = fields.name[0];
-      if (fields.description?.length > 0)
+      if (fields.name?.length > 0) {
+        data.name = fields.name[0];
+      }
+      if (fields.description?.length > 0) {
         data.description = fields.description[0];
+      }
       if (fields.price?.length > 0) {
         data.price = fields.price[0];
         data.cachedPrice = parseFloat(
-          (await getPrice(fields.price[0]))?.price || '0',
+          (await getPrice(fields.price[0]))?.price ?? '0',
         );
       }
-
       if (fields.brandId?.length > 0) {
-        data.brandId = fields.brandId[0];
-        if (data.brandId === '') {
-          data.brandId = null;
-        }
+        data.brandId = fields.brandId[0] || null;
       }
-
-      if (fields.tags?.length > 0) data.tags = JSON.parse(fields.tags[0]);
-      if (fields.videoUrls?.length > 0)
+      if (fields.tags?.length > 0) {
+        data.tags = JSON.parse(fields.tags[0]);
+      }
+      if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
+      }
 
       const currProduct = await dbClient.product.findUnique({
         where: {
@@ -412,6 +441,14 @@ async function handleEditProduct(
         },
         data,
       });
+
+      if (currProduct.brandId) {
+        await updateBrandProductCount(currProduct.brandId);
+      }
+      if (product.brandId && product.brandId !== currProduct.brandId) {
+        await updateBrandProductCount(product.brandId);
+      }
+
       resolve({ success: true, data: product, status: 200 });
     });
   });
@@ -484,6 +521,10 @@ export default async function handler(
         if (fs.existsSync(lightlyCompressedImgUrl))
           fs.unlinkSync(lightlyCompressedImgUrl);
       });
+
+      if (product.brandId) {
+        await updateBrandProductCount(product.brandId);
+      }
 
       return res.status(200).json({ success: true });
     } catch (error) {

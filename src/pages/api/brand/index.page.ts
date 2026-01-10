@@ -1,34 +1,32 @@
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
 import { BrandProps, ResponseApi } from '@/pages/lib/types';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { UserRole } from '@prisma/client';
+import { NextApiResponse } from 'next';
 
-export default async function handle(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi<BrandProps[] | any>>,
 ) {
+  addCors(res);
   try {
     const { method, body, query } = req;
+    const { grade } = req;
 
     if (method === 'GET') {
-      const brands = await dbClient.brand.findMany({
-        orderBy: { name: 'asc' },
-        include: {
-          _count: {
-            select: { products: true },
-          },
-        },
+      const brands = await dbClient.brand.findMany();
+
+      return res.status(200).json({ success: true, data: brands });
+    }
+
+    if (grade !== UserRole.ADMIN && grade !== UserRole.SUPERUSER) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
       });
-
-      // Flatten the _count to make it easier for frontend
-      const data: BrandProps[] = brands.map((b) => ({
-        id: b.id,
-        name: b.name,
-        // eslint-disable-next-line no-underscore-dangle
-        productCount: b._count.products,
-        createdAt: b.createdAt,
-      }));
-
-      return res.status(200).json({ success: true, data });
     }
 
     if (method === 'POST') {
@@ -94,3 +92,5 @@ export default async function handle(
       .json({ success: false, message: error.message || 'Internal Error' });
   }
 }
+
+export default withAuth(handler);
