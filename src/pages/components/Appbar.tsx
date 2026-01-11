@@ -4,6 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import {
   appBarHeight,
   HIGHEST_LEVEL_CATEGORY_ID,
+  LANGUAGES,
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
 import { getCookie, setCookie } from '@/pages/lib/utils';
@@ -112,13 +113,6 @@ export default function CustomAppBar({
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
-  const languages = [
-    { val: 'ru', name: 'Русский', img: '/Russia.png' },
-    { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
-    { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
-    { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
-    { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
-  ];
   const [menuStatus, setMenuStatus] = useState(false);
   const { categories, setSelectedCategoryId } = useCategoryContext();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -207,7 +201,7 @@ export default function CustomAppBar({
                   });
                 }}
               >
-                {languages.map((lang) => (
+                {LANGUAGES.map((lang) => (
                   <MenuItem
                     key={lang.val}
                     value={lang.val}
@@ -384,7 +378,7 @@ export default function CustomAppBar({
               )}
             </Box>
             <IconButton
-              onClick={() => router.push(user ? '/user' : '/user/sign_in_up')}
+              onClick={() => router.push(user ? '/user' : '/user')}
               className="rounded-none"
             >
               <CardMedia

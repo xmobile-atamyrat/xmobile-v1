@@ -45,7 +45,7 @@ export default function AddToCart({
 
   const addCartItems = async () => {
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user');
     }
     const userId = user?.id;
 
