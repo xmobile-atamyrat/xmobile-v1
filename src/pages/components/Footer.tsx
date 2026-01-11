@@ -1,4 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { PHONE_NUMBERS } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
@@ -28,8 +29,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     },
   };
 };
-
-const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
 
 export default function Footer() {
   const t = useTranslations();
@@ -130,11 +129,11 @@ export default function Footer() {
                 <Box className={`${footerClasses.flexDirections.col} ml-[5px]`}>
                   {[0, 1, 2].map((number) => (
                     <Typography
-                      key={phoneNumbers[number]}
+                      key={PHONE_NUMBERS[number]}
                       className={`${footerClasses.typos.contact} ${interClassname.className}`}
                     >
-                      <a href={`tel:${phoneNumbers[number]}`}>
-                        {phoneNumbers[number]}
+                      <a href={`tel:${PHONE_NUMBERS[number]}`}>
+                        {PHONE_NUMBERS[number]}
                       </a>
                     </Typography>
                   ))}
