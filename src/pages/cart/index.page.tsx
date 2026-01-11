@@ -51,7 +51,7 @@ export default function CartPage() {
       return;
     }
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user');
     }
   }, [user, isLoading, router]);
 

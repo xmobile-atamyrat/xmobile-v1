@@ -49,7 +49,7 @@ export default function LogsPage() {
   // Redirect to sign in if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/user/sign_in_up');
+      router.push('/user');
     }
   }, [user, isLoading, router]);
 
