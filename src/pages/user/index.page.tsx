@@ -2,6 +2,7 @@ import Layout from '@/pages/components/Layout';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
+  PHONE_NUMBERS,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -22,6 +23,7 @@ import {
   CircularProgress,
   Dialog,
   Divider,
+  Link,
   List,
   ListItemButton,
   Typography,
@@ -60,15 +62,6 @@ export default function Profile() {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
   }, []);
 
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-    if (!user) {
-      router.push('/user/sign_in_up');
-    }
-  }, [user, isLoading, router]);
-
   const handleToggleLang = () => {
     setOpenLang(!openLang);
   };
@@ -80,6 +73,10 @@ export default function Profile() {
   const handleToggleMyOrders = () => {
     const route = isAdmin ? '/orders/admin' : '/orders';
     router.push(route);
+  };
+
+  const handleContactClick = () => {
+    window.location.href = `tel:${PHONE_NUMBERS[0]}`;
   };
 
   if (isLoading) {
@@ -96,309 +93,504 @@ export default function Profile() {
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      <Box className={profileClasses.boxes.loggedInMain}>
-        <Box className={profileClasses.accountTitle[platform]}>
-          <Typography
-            className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
-          >
-            {t('account')}
-          </Typography>
-        </Box>
-        <Box className={profileClasses.boxes.sectionBox[platform]}>
-          <Box className={profileClasses.boxes.accountMain[platform]}>
-            <CardMedia
-              component="img"
-              src="/defaultProfile.jpg"
-              className={profileClasses.profileImg[platform]}
-            />
-            <Box className={profileClasses.boxes.account}>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
-              >
-                {`${t('hello')} ${
-                  user?.name && user.name.trim() !== ''
-                    ? user.name.trim().split(' ')[0]
-                    : ''
-                }`}
-              </Typography>
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.email}`}
-              >
-                {user?.email}
-              </Typography>
-            </Box>
-          </Box>
-          <Box className={profileClasses.boxes.divider[platform]}></Box>
-          <Box className="w-[90%] flex flex-col items-center mx-auto">
-            <Button
-              className={profileClasses.boxes.sectionLang[platform]}
-              disableRipple
-              onClick={handleToggleLang}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <CardMedia
-                component="img"
-                src="/language.png"
-                className={profileClasses.sectionIcon[platform]}
-              />
-
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {t('appLanguage')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
-            {isAdmin && (
-              <Box className="w-full">
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/product/update-prices')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <DriveFolderUploadIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('updatePrices')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/analytics')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <AnalyticsIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('analytics')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/server-logs')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <DescriptionIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('serverLogs')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                {user?.grade === 'SUPERUSER' && (
-                  <Box>
-                    <Button
-                      className={profileClasses.boxes.sectionOrders[platform]}
-                      disableRipple
-                      onClick={() => router.push('/procurement')}
-                      variant={platform === 'web' ? 'outlined' : 'text'}
-                      sx={{
-                        '&:hover': { backgroundColor: colors.lightRed },
-                      }}
-                    >
-                      <LocalShippingOutlinedIcon
-                        className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                      />
-                      <Typography
-                        className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                      >
-                        {t('procurement')}
-                      </Typography>
-                      <ArrowForwardIos
-                        className={profileClasses.icons[platform]}
-                      />
-                    </Button>
-                    <Divider className={profileClasses.divider[platform]} />
-                  </Box>
-                )}
-              </Box>
-            )}
-            <Button
-              className={profileClasses.boxes.sectionOrders[platform]}
-              disableRipple
-              onClick={handleToggleMyOrders}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <CardMedia
-                component="img"
-                src="/orders/my_order_icon.svg"
-                className={profileClasses.sectionIcon[platform]}
-              />
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {isAdmin ? t('userOrders') : t('myOrders')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
-            <Button
-              className={profileClasses.boxes.sectionLogOut[platform]}
-              onClick={handleToggle}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              disableRipple
-            >
-              <MeetingRoomOutlinedIcon
-                className={profileClasses.sectionIcon[platform]}
-              />
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
-              >
-                {t('signout')}
-              </Typography>
-              <ArrowForwardIos
-                className={profileClasses.iconLogOut[platform]}
-              />
-            </Button>
-          </Box>
-        </Box>
-        <Dialog
-          open={open}
-          onClose={handleToggle}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          PaperProps={{
-            className: profileClasses.dialog.main[platform],
-          }}
-        >
-          <Typography
-            id="alert-dialog-title"
-            className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
-          >
-            {t('signout').toUpperCase()}
-          </Typography>
-          <Box className={profileClasses.boxes.verifyTxt}>
+      {!user && platform === 'mobile' ? (
+        // Mobile view for unauthenticated users
+        <Box className={profileClasses.boxes.loggedInMain}>
+          <Box className={profileClasses.accountTitle[platform]}>
             <Typography
-              className={`${profileClasses.typos.verifyTxt} ${interClassname.className}`}
+              className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
             >
-              {t('signOutVerify')}
+              {t('account')}
             </Typography>
           </Box>
-          <Box className={profileClasses.boxes.verify}>
-            <Button onClick={handleToggle} disableRipple>
-              <Box
-                className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+          <Box className={profileClasses.boxes.sectionBox[platform]}>
+            {/* Sign in/up prompt */}
+            <Box className={profileClasses.boxes.accountMain[platform]}>
+              <CardMedia
+                component="img"
+                src="/defaultProfile.jpg"
+                className={profileClasses.profileImg[platform]}
+              />
+              <Box className={profileClasses.boxes.account}>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
+                >
+                  {t('guest')}
+                </Typography>
+                <Box className="flex gap-2 mt-1">
+                  <Link
+                    href="/user/signin"
+                    className="text-[#ff624c] text-sm underline"
+                  >
+                    {t('signin')}
+                  </Link>
+                  <Typography className="text-sm">/</Typography>
+                  <Link
+                    href="/user/signup"
+                    className="text-[#ff624c] text-sm underline"
+                  >
+                    {t('signup')}
+                  </Link>
+                </Box>
+              </Box>
+            </Box>
+            <Box className={profileClasses.boxes.divider[platform]}></Box>
+
+            {/* Menu items available for unauthenticated users */}
+            <Box className="w-[90%] flex flex-col items-center mx-auto">
+              {/* Contact Us */}
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleContactClick}
+                variant="text"
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/contact.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('contact')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+
+              {/* App Language */}
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleToggleLang}
+                variant="text"
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/language.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('appLanguage')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Language Dialog */}
+          <Dialog
+            open={openLang}
+            onClose={handleToggleLang}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            PaperProps={{
+              className: `${profileClasses.dialog.main[platform]} h-[300px]`,
+            }}
+          >
+            <Typography
+              id="alert-dialog-title"
+              className={`${profileClasses.typos.language} ${interClassname.className}`}
+            >
+              {'Language'}
+            </Typography>
+            <List className={profileClasses.boxes.langList}>
+              {lang.map((language) => (
+                <ListItemButton
+                  className={profileClasses.boxes.langListitemButton}
+                  key={language.val}
+                  selected={selectedLocale === language.val}
+                  onClick={() => {
+                    const newLocale = language.val;
+                    setSelectedLocale(newLocale);
+                    setCookie(LOCALE_COOKIE_NAME, newLocale);
+                    router.push(router.pathname, router.asPath, {
+                      locale: newLocale,
+                    });
+                    handleToggleLang();
+                  }}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: colors.paperBackground.web,
+                    },
+                  }}
+                >
+                  <Box className={profileClasses.boxes.langOption}>
+                    <CardMedia
+                      component="img"
+                      src={language.img}
+                      className={profileClasses.langImg}
+                    />
+                    <Typography
+                      className={`${profileClasses.typos.langOption} ${interClassname.className}`}
+                    >
+                      {language.name}
+                    </Typography>
+                  </Box>
+                </ListItemButton>
+              ))}
+            </List>
+          </Dialog>
+        </Box>
+      ) : null}
+
+      {!user && platform === 'web' ? (
+        // Web view for unauthenticated users
+        <Box className={profileClasses.boxes.main[platform]}>
+          <Box className={profileClasses.boxes.loggedOutMain[platform]}>
+            <CardMedia
+              component="img"
+              src="/xmobile-processed-logo.png"
+              className={profileClasses.logo}
+            />
+            <Box className={profileClasses.boxes.loggedOutOptions[platform]}>
+              <Link
+                className={`${profileClasses.logInOptionsLink[platform]} bg-[#ff624c]`}
+                href="/user/signin"
               >
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
-                  color={colors.black}
-                >
-                  {t('no')}
-                </Typography>
-              </Box>
-            </Button>
-            <Button
-              disableRipple
-              onClick={() => {
-                (async () => {
-                  try {
-                    handleToggle();
-                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
-                    setUser(undefined);
-                    setAccessToken(undefined);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                })();
-              }}
-            >
-              <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
-                <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
                   color={colors.white}
                 >
-                  {t('yes')}
+                  {t('signin')}
+                </Typography>
+              </Link>
+              <Link
+                className={`${profileClasses.logInOptionsLink[platform]} bg-[#fff] border-[1px] border-[#ff624c] mb-[20px]`}
+                href="/user/signup"
+              >
+                <Typography
+                  className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
+                  color={colors.main}
+                >
+                  {t('signup')}
+                </Typography>
+              </Link>
+            </Box>
+          </Box>
+        </Box>
+      ) : null}
+
+      {user ? (
+        <Box className={profileClasses.boxes.loggedInMain}>
+          <Box className={profileClasses.accountTitle[platform]}>
+            <Typography
+              className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
+            >
+              {t('account')}
+            </Typography>
+          </Box>
+          <Box className={profileClasses.boxes.sectionBox[platform]}>
+            <Box className={profileClasses.boxes.accountMain[platform]}>
+              <CardMedia
+                component="img"
+                src="/defaultProfile.jpg"
+                className={profileClasses.profileImg[platform]}
+              />
+              <Box className={profileClasses.boxes.account}>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
+                >
+                  {`${t('hello')} ${
+                    user?.name && user.name.trim() !== ''
+                      ? user.name.trim().split(' ')[0]
+                      : ''
+                  }`}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.email}`}
+                >
+                  {user?.email}
                 </Typography>
               </Box>
-            </Button>
-          </Box>
-        </Dialog>
-        <Dialog
-          open={openLang}
-          onClose={handleToggleLang}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          PaperProps={{
-            className: `${profileClasses.dialog.main[platform]} h-[300px]`,
-          }}
-        >
-          <Typography
-            id="alert-dialog-title"
-            className={`${profileClasses.typos.language} ${interClassname.className}`}
-          >
-            {'Language'}
-          </Typography>
-          <List className={profileClasses.boxes.langList}>
-            {lang.map((language) => (
-              <ListItemButton
-                className={profileClasses.boxes.langListitemButton}
-                key={language.val}
-                selected={selectedLocale === language.val}
-                onClick={() => {
-                  const newLocale = language.val;
-                  setSelectedLocale(newLocale);
-                  setCookie(LOCALE_COOKIE_NAME, newLocale);
-                  router.push(router.pathname, router.asPath, {
-                    locale: newLocale,
-                  });
-                  handleToggleLang();
-                }}
+            </Box>
+            <Box className={profileClasses.boxes.divider[platform]}></Box>
+            <Box className="w-[90%] flex flex-col items-center mx-auto">
+              <Button
+                className={profileClasses.boxes.sectionLang[platform]}
+                disableRipple
+                onClick={handleToggleLang}
+                variant={platform === 'web' ? 'outlined' : 'text'}
                 sx={{
-                  '&.Mui-selected': {
-                    backgroundColor: colors.paperBackground.web,
-                  },
+                  '&:hover': { backgroundColor: colors.lightRed },
                 }}
               >
-                <Box className={profileClasses.boxes.langOption}>
-                  <CardMedia
-                    component="img"
-                    src={language.img}
-                    className={profileClasses.langImg}
-                  />
-                  <Typography
-                    className={`${profileClasses.typos.langOption} ${interClassname.className}`}
+                <CardMedia
+                  component="img"
+                  src="/language.png"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {t('appLanguage')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+              {isAdmin && (
+                <Box className="w-full">
+                  <Button
+                    className={profileClasses.boxes.sectionOrders[platform]}
+                    disableRipple
+                    onClick={() => router.push('/product/update-prices')}
+                    variant={platform === 'web' ? 'outlined' : 'text'}
+                    sx={{
+                      '&:hover': { backgroundColor: colors.lightRed },
+                    }}
                   >
-                    {language.name}
+                    <DriveFolderUploadIcon
+                      className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    >
+                      {t('updatePrices')}
+                    </Typography>
+                    <ArrowForwardIos
+                      className={profileClasses.icons[platform]}
+                    />
+                  </Button>
+                  <Divider className={profileClasses.divider[platform]} />
+                  <Button
+                    className={profileClasses.boxes.sectionOrders[platform]}
+                    disableRipple
+                    onClick={() => router.push('/analytics')}
+                    variant={platform === 'web' ? 'outlined' : 'text'}
+                    sx={{
+                      '&:hover': { backgroundColor: colors.lightRed },
+                    }}
+                  >
+                    <AnalyticsIcon
+                      className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    >
+                      {t('analytics')}
+                    </Typography>
+                    <ArrowForwardIos
+                      className={profileClasses.icons[platform]}
+                    />
+                  </Button>
+                  <Divider className={profileClasses.divider[platform]} />
+                  <Button
+                    className={profileClasses.boxes.sectionOrders[platform]}
+                    disableRipple
+                    onClick={() => router.push('/server-logs')}
+                    variant={platform === 'web' ? 'outlined' : 'text'}
+                    sx={{
+                      '&:hover': { backgroundColor: colors.lightRed },
+                    }}
+                  >
+                    <DescriptionIcon
+                      className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    >
+                      {t('serverLogs')}
+                    </Typography>
+                    <ArrowForwardIos
+                      className={profileClasses.icons[platform]}
+                    />
+                  </Button>
+                  <Divider className={profileClasses.divider[platform]} />
+                  {user?.grade === 'SUPERUSER' && (
+                    <Box>
+                      <Button
+                        className={profileClasses.boxes.sectionOrders[platform]}
+                        disableRipple
+                        onClick={() => router.push('/procurement')}
+                        variant={platform === 'web' ? 'outlined' : 'text'}
+                        sx={{
+                          '&:hover': { backgroundColor: colors.lightRed },
+                        }}
+                      >
+                        <LocalShippingOutlinedIcon
+                          className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                        />
+                        <Typography
+                          className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                        >
+                          {t('procurement')}
+                        </Typography>
+                        <ArrowForwardIos
+                          className={profileClasses.icons[platform]}
+                        />
+                      </Button>
+                      <Divider className={profileClasses.divider[platform]} />
+                    </Box>
+                  )}
+                </Box>
+              )}
+              <Button
+                className={profileClasses.boxes.sectionOrders[platform]}
+                disableRipple
+                onClick={handleToggleMyOrders}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/orders/my_order_icon.svg"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                >
+                  {isAdmin ? t('userOrders') : t('myOrders')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+              <Button
+                className={profileClasses.boxes.sectionLogOut[platform]}
+                onClick={handleToggle}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                disableRipple
+              >
+                <MeetingRoomOutlinedIcon
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                >
+                  {t('signout')}
+                </Typography>
+                <ArrowForwardIos
+                  className={profileClasses.iconLogOut[platform]}
+                />
+              </Button>
+            </Box>
+          </Box>
+          <Dialog
+            open={open}
+            onClose={handleToggle}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            PaperProps={{
+              className: profileClasses.dialog.main[platform],
+            }}
+          >
+            <Typography
+              id="alert-dialog-title"
+              className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
+            >
+              {t('signout').toUpperCase()}
+            </Typography>
+            <Box className={profileClasses.boxes.verifyTxt}>
+              <Typography
+                className={`${profileClasses.typos.verifyTxt} ${interClassname.className}`}
+              >
+                {t('signOutVerify')}
+              </Typography>
+            </Box>
+            <Box className={profileClasses.boxes.verify}>
+              <Button onClick={handleToggle} disableRipple>
+                <Box
+                  className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+                >
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.option}`}
+                    color={colors.black}
+                  >
+                    {t('no')}
                   </Typography>
                 </Box>
-              </ListItemButton>
-            ))}
-          </List>
-        </Dialog>
-      </Box>
+              </Button>
+              <Button
+                disableRipple
+                onClick={() => {
+                  (async () => {
+                    try {
+                      handleToggle();
+                      deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+                      setUser(undefined);
+                      setAccessToken(undefined);
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  })();
+                }}
+              >
+                <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.option}`}
+                    color={colors.white}
+                  >
+                    {t('yes')}
+                  </Typography>
+                </Box>
+              </Button>
+            </Box>
+          </Dialog>
+          <Dialog
+            open={openLang}
+            onClose={handleToggleLang}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            PaperProps={{
+              className: `${profileClasses.dialog.main[platform]} h-[300px]`,
+            }}
+          >
+            <Typography
+              id="alert-dialog-title"
+              className={`${profileClasses.typos.language} ${interClassname.className}`}
+            >
+              {'Language'}
+            </Typography>
+            <List className={profileClasses.boxes.langList}>
+              {lang.map((language) => (
+                <ListItemButton
+                  className={profileClasses.boxes.langListitemButton}
+                  key={language.val}
+                  selected={selectedLocale === language.val}
+                  onClick={() => {
+                    const newLocale = language.val;
+                    setSelectedLocale(newLocale);
+                    setCookie(LOCALE_COOKIE_NAME, newLocale);
+                    router.push(router.pathname, router.asPath, {
+                      locale: newLocale,
+                    });
+                    handleToggleLang();
+                  }}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: colors.paperBackground.web,
+                    },
+                  }}
+                >
+                  <Box className={profileClasses.boxes.langOption}>
+                    <CardMedia
+                      component="img"
+                      src={language.img}
+                      className={profileClasses.langImg}
+                    />
+                    <Typography
+                      className={`${profileClasses.typos.langOption} ${interClassname.className}`}
+                    >
+                      {language.name}
+                    </Typography>
+                  </Box>
+                </ListItemButton>
+              ))}
+            </List>
+          </Dialog>
+        </Box>
+      ) : null}
     </Layout>
   );
 }
