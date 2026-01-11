@@ -103,4 +103,12 @@ export const DUMMY_DUBAI_IP = '94.200.200.200';
 export const DUMMY_TR_IP = '88.240.128.0';
 
 export const ALL_PRODUCTS_CATEGORY_CARD = 'ALL_PRODUCTS_CATEGORY_CARD';
+export const LANGUAGES = [
+  { val: 'ru', name: 'Русский', img: '/Russia.png' },
+  { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
+  { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
+  { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
+  { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
+];
+
 export const PHONE_NUMBERS = ['+99361004933', '+99371211717', '+99342230620'];
