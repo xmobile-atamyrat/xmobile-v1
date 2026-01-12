@@ -1,9 +1,5 @@
 import { fetchBrands } from '@/pages/lib/apis';
-import {
-  FILTER_DEFAULT_MAX_PRICE,
-  FILTER_MAX_PRICE,
-  SORT_OPTIONS,
-} from '@/pages/lib/constants';
+import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import CheckIcon from '@mui/icons-material/Check';
@@ -149,12 +145,12 @@ export default function FilterSidebar({
 
   const [localPriceRange, setLocalPriceRange] = useState<number[]>([
     0,
-    FILTER_DEFAULT_MAX_PRICE,
+    FILTER_MAX_PRICE,
   ]);
 
   useEffect(() => {
     const min = minPrice ? parseFloat(minPrice) : 0;
-    const max = maxPrice ? parseFloat(maxPrice) : FILTER_DEFAULT_MAX_PRICE;
+    const max = maxPrice ? parseFloat(maxPrice) : FILTER_MAX_PRICE;
     setLocalPriceRange([min, max]);
   }, [minPrice, maxPrice]);
 
@@ -474,7 +470,7 @@ export default function FilterSidebar({
                 size="small"
                 value={maxPrice}
                 onChange={handleMaxInputChange}
-                placeholder={FILTER_DEFAULT_MAX_PRICE.toString()}
+                placeholder={FILTER_MAX_PRICE.toString()}
                 sx={{
                   bgcolor: '#f4f4f4',
                   borderRadius: '10px',

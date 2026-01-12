@@ -294,6 +294,15 @@ export default function Home({
               display="flex"
               justifyContent="space-between"
               alignItems="center"
+              mb={2}
+              sx={{
+                position: platform === 'web' ? 'sticky' : 'static',
+                top: platform === 'web' ? '0px' : 'auto',
+                zIndex: 10,
+                backgroundColor: '#fff',
+                paddingTop: '20px',
+                paddingBottom: '8px',
+              }}
             >
               {!searchKeyword && (
                 <Typography
