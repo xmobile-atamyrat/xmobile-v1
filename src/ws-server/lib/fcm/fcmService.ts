@@ -10,7 +10,7 @@ let firebaseApp: admin.app.App | null = null;
 /**
  * Initialize Firebase Admin SDK
  */
-function initializeFirebase(): admin.app.App {
+function initializeOrGetFirebaseApp(): admin.app.App {
   if (firebaseApp) {
     return firebaseApp;
   }
@@ -175,7 +175,7 @@ export async function sendFCMNotificationToUser(
   notification: FCMNotificationPayload,
 ): Promise<FCMSendResult> {
   try {
-    const app = initializeFirebase();
+    const app = initializeOrGetFirebaseApp();
     const messaging = admin.messaging(app);
 
     // Get active tokens for user
