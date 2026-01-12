@@ -65,7 +65,7 @@ export async function createNotificationsForSession(
     });
 
     const notificationTitle =
-      title || (sender ? `${sender.name}` : 'New message');
+      title || (sender ? `${sender.name}` : 'Новое сообщение');
 
     // Filter out sender from participants
     const recipients = session.users.filter((user) => user.id !== senderId);

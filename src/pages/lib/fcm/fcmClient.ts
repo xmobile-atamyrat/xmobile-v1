@@ -34,7 +34,7 @@ async function sendConfigToServiceWorker(): Promise<void> {
 /**
  * Initialize Firebase app (singleton)
  */
-export function initializeFirebaseApp(): FirebaseApp {
+export function initializeOrGetFirebaseApp(): FirebaseApp {
   if (firebaseApp) {
     return firebaseApp;
   }
@@ -54,7 +54,7 @@ export function initializeFirebaseApp(): FirebaseApp {
  * Initialize Firebase Messaging (singleton)
  * Returns null if not supported (WebView, etc.)
  */
-export async function initializeMessaging(): Promise<Messaging | null> {
+export async function initializeOrGetMessaging(): Promise<Messaging | null> {
   // Don't initialize in WebView
   if (isWebView()) {
     console.log('[FCM] Skipping initialization in WebView');
@@ -66,7 +66,7 @@ export async function initializeMessaging(): Promise<Messaging | null> {
   }
 
   try {
-    const app = initializeFirebaseApp();
+    const app = initializeOrGetFirebaseApp();
 
     // Check if messaging is supported
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -90,7 +90,7 @@ export async function initializeMessaging(): Promise<Messaging | null> {
  */
 export async function getFCMToken(): Promise<string | null> {
   try {
-    const messagingInstance = await initializeMessaging();
+    const messagingInstance = await initializeOrGetMessaging();
     if (!messagingInstance) {
       return null;
     }
@@ -139,6 +139,7 @@ export async function registerFCMToken(
   accessToken: string,
   deviceInfo: string,
 ): Promise<boolean> {
+  console.trace('[FCM] registerFCMToken called from:');
   try {
     const response = await fetch('/api/fcm/token', {
       method: 'POST',
@@ -260,7 +261,7 @@ export function onForegroundMessage(
 
   let unsubscribe: (() => void) | null = null;
 
-  initializeMessaging()
+  initializeOrGetMessaging()
     .then((messagingInstance) => {
       if (messagingInstance) {
         unsubscribe = onMessage(messagingInstance, callback);

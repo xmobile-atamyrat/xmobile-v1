@@ -3,6 +3,10 @@ import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
+import {
+  FCM_TOKEN_REGISTERED_KEY,
+  FCM_TOKEN_STORAGE_KEY,
+} from '@/pages/lib/fcm/useFCM';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
@@ -329,6 +333,8 @@ export default function Profile() {
                     deleteCookie(AUTH_REFRESH_COOKIE_NAME);
                     setUser(undefined);
                     setAccessToken(undefined);
+                    localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+                    localStorage.removeItem(FCM_TOKEN_REGISTERED_KEY);
                   } catch (error) {
                     console.error(error);
                   }
