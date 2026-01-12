@@ -200,23 +200,12 @@ model FCMToken {
   userId          String
   
   token           String      @unique
-  
-  deviceInfo      String?
-  
-  // Token status
-  isActive        Boolean     @default(true)
-  
-  // Usage tracking
-  lastUsedAt      DateTime?
-  lastFailedAt    DateTime?
-  failureCount    Int         @default(0)
+  deviceInfo      String      @unique
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   
   @@index([userId])
-  @@index([userId, isActive])
-  @@index([lastUsedAt])
 }
 
 model ProcurementSupplier {
