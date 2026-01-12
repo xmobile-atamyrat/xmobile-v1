@@ -25,39 +25,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
   if (method === 'POST') {
     // Register or update FCM token
+    // Handles 8 scenarios based on token/deviceInfo/user combinations
     try {
       const validated = RegisterTokenSchema.parse(body);
       const { token, deviceInfo } = validated;
 
-      // Check if token already exists
-      const existingToken = await dbClient.fCMToken.findUnique({
-        where: { token },
+      // SCENARIO CHECK 1: Check if deviceInfo exists for current user
+      const existingDeviceForUser = await dbClient.fCMToken.findUnique({
+        where: { deviceInfo },
       });
 
-      if (existingToken) {
-        // Update existing token if it belongs to this user, or if it's inactive
-        if (existingToken.userId === userId || !existingToken.isActive) {
-          // Deactivate all other tokens for this device and user
-          await dbClient.fCMToken.updateMany({
-            where: {
-              userId,
-              deviceInfo,
-              id: { not: existingToken.id },
-            },
-            data: {
-              isActive: false,
-            },
-          });
-
+      if (existingDeviceForUser) {
+        // DeviceInfo exists - check ownership
+        if (existingDeviceForUser.userId === userId) {
+          // Scenario 1.a: Token exists, DeviceInfo exists, User matches → UPDATE
+          // Scenario 1.b: Token doesn't exist, DeviceInfo exists, User matches → UPDATE
+          // Update the token for this device (token refresh/expiration)
           await dbClient.fCMToken.update({
-            where: { token },
-            data: {
-              userId,
-              deviceInfo,
-              isActive: true,
-              lastUsedAt: new Date(),
-              failureCount: 0,
-            },
+            where: { deviceInfo },
+            data: { token },
           });
 
           return res.status(200).json({
@@ -65,32 +51,40 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             message: 'Token updated successfully',
           });
         }
-        // Token belongs to another user
+        // Scenario 2 & 6: DeviceInfo exists but belongs to another user → REJECT
         return res.status(400).json({
           success: false,
-          message: 'Token already registered to another user',
+          message: 'Device already registered to another user',
         });
       }
 
-      // Deactivate all other tokens for this device and user (ensure one token per device)
-      await dbClient.fCMToken.updateMany({
-        where: {
-          userId,
-          deviceInfo,
-        },
-        data: {
-          isActive: false,
-        },
+      // SCENARIO CHECK 2: DeviceInfo doesn't exist - check if token belongs to another user
+      // Scenarios: DeviceInfo is new, need to check token ownership
+      const existingToken = await dbClient.fCMToken.findUnique({
+        where: { token },
       });
 
-      // Create new token
+      if (existingToken) {
+        // Token exists - check ownership
+        if (existingToken.userId !== userId) {
+          // Scenario 2.a: Token exists, DeviceInfo doesn't exist, User doesn't match → REJECT
+          return res.status(400).json({
+            success: false,
+            message: 'Token already registered to another user',
+          });
+        }
+        // Scenario 2.b: Token exists, DeviceInfo doesn't exist, User matches → CREATE
+        // This is valid - user is adding a new device with an existing token
+        // (unlikely but possible if token was reused)
+      }
+
+      // SCENARIO 3: Token doesn't exist, DeviceInfo doesn't exist → CREATE
+      // Create new token record (first-time registration)
       await dbClient.fCMToken.create({
         data: {
           userId,
           token,
           deviceInfo,
-          isActive: true,
-          lastUsedAt: new Date(),
         },
       });
 
@@ -134,11 +128,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         });
       }
 
-      await dbClient.fCMToken.update({
+      await dbClient.fCMToken.delete({
         where: { token: validated.token },
-        data: {
-          isActive: false,
-        },
       });
 
       return res.status(200).json({
@@ -158,27 +149,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         message: error.message || 'Failed to unregister token',
       });
     }
-  } else if (method === 'PATCH') {
-    // Deactivate all tokens for user (soft delete on logout)
-    try {
-      await dbClient.fCMToken.updateMany({
-        where: { userId },
-        data: {
-          isActive: false,
-        },
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: 'All tokens deactivated successfully',
-      });
-    } catch (error: any) {
-      console.error(filepath, 'Error deactivating tokens:', error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Failed to deactivate tokens',
-      });
-    }
   } else if (method === 'GET') {
     // Get user's tokens (for debugging)
     try {
@@ -188,8 +158,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           id: true,
           token: true,
           deviceInfo: true,
-          isActive: true,
-          lastUsedAt: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
