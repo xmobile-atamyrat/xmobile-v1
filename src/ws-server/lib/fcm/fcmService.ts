@@ -78,7 +78,6 @@ export async function getActiveFCMTokensForUser(
     const tokens = await dbClient.fCMToken.findMany({
       where: {
         userId,
-        isActive: true,
       },
       select: {
         id: true,
@@ -93,77 +92,6 @@ export async function getActiveFCMTokensForUser(
       error,
     );
     return [];
-  }
-}
-
-/**
- * Mark FCM token as inactive
- */
-export async function markFCMTokenInactive(
-  tokenId: string,
-  reason: string,
-): Promise<void> {
-  try {
-    await dbClient.fCMToken.update({
-      where: { id: tokenId },
-      data: {
-        isActive: false,
-        lastFailedAt: new Date(),
-      },
-    });
-    console.log(
-      `[WS FCM Service] Marked token ${tokenId} as inactive. Reason: ${reason}`,
-    );
-  } catch (error) {
-    console.error(
-      `[WS FCM Service] Failed to mark token ${tokenId} as inactive:`,
-      error,
-    );
-  }
-}
-
-/**
- * Update FCM token usage statistics
- */
-export async function updateFCMTokenUsage(
-  tokenId: string,
-  success: boolean,
-): Promise<void> {
-  try {
-    if (success) {
-      await dbClient.fCMToken.update({
-        where: { id: tokenId },
-        data: {
-          lastUsedAt: new Date(),
-          failureCount: 0,
-        },
-      });
-    } else {
-      const token = await dbClient.fCMToken.findUnique({
-        where: { id: tokenId },
-        select: { failureCount: true },
-      });
-
-      const newFailureCount = (token?.failureCount || 0) + 1;
-      const failureThreshold = parseInt(
-        process.env.FCM_FAILURE_THRESHOLD || '3',
-        10,
-      );
-
-      await dbClient.fCMToken.update({
-        where: { id: tokenId },
-        data: {
-          lastFailedAt: new Date(),
-          failureCount: newFailureCount,
-          isActive: newFailureCount < failureThreshold,
-        },
-      });
-    }
-  } catch (error) {
-    console.error(
-      `[WS FCM Service] Failed to update token usage for ${tokenId}:`,
-      error,
-    );
   }
 }
 
@@ -221,27 +149,16 @@ export async function sendFCMNotificationToUser(
     let tokensFailed = 0;
 
     response.responses.forEach((resp, idx) => {
-      const tokenId = tokens[idx].id;
       const token = tokenStrings[idx];
 
       if (resp.success) {
         tokensSent += 1;
-        updateFCMTokenUsage(tokenId, true).catch(console.error);
+        console.log(
+          `[WS FCM Service] Sent message to token ${token.substring(0, 20)}...`,
+        );
       } else {
         tokensFailed += 1;
         const error = resp.error;
-
-        // Handle specific FCM errors
-        if (
-          error?.code === 'messaging/invalid-registration-token' ||
-          error?.code === 'messaging/registration-token-not-registered'
-        ) {
-          markFCMTokenInactive(tokenId, error.code).catch(console.error);
-          failedTokenIds.push(tokenId);
-        } else {
-          updateFCMTokenUsage(tokenId, false).catch(console.error);
-          failedTokenIds.push(tokenId);
-        }
 
         console.error(
           `[WS FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,

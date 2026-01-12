@@ -187,29 +187,6 @@ export async function unregisterFCMToken(
 }
 
 /**
- * Deactivate all FCM tokens for the current user (soft delete on logout)
- */
-export async function deactivateAllTokens(
-  accessToken: string,
-): Promise<boolean> {
-  try {
-    const response = await fetch('/api/fcm/token', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const data = await response.json();
-    return data.success === true;
-  } catch (error) {
-    console.error('[FCM] Failed to deactivate tokens:', error);
-    return false;
-  }
-}
-
-/**
  * Request notification permission
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
