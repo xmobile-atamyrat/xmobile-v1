@@ -1,33 +1,49 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { ResponseApi } from '@/pages/lib/types';
+import { BrandProps, ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
 export const fetchProducts = async ({
-  categoryId,
+  categoryIds,
+  brandIds,
+  minPrice,
+  maxPrice,
+  sortBy,
   searchKeyword,
   productId,
   page,
 }: {
-  categoryId?: string;
+  categoryIds?: string[];
+  brandIds?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: string;
   searchKeyword?: string;
   productId?: string;
   page?: number;
 }): Promise<Product[]> => {
-  if (categoryId == null && searchKeyword == null && productId == null)
+  if (categoryIds == null && searchKeyword == null && productId == null)
     return [];
 
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
-  if (categoryId) {
-    url += `&categoryId=${categoryId}`;
-    if (searchKeyword) {
-      url += `&searchKeyword=${searchKeyword}`;
-    }
-  } else if (productId) {
-    url += `&productId=${productId}`;
-  } else {
-    console.error('Neither categoryId nor productId is provided');
-    return [];
+
+  // Helper to append params
+  const appendParam = (key: string, val: any) => {
+    if (val) url += `&${key}=${val}`;
+  };
+
+  if (brandIds && brandIds.length > 0) {
+    brandIds.forEach((bid) => appendParam('brandIds', bid));
   }
+
+  if (categoryIds && categoryIds.length > 0) {
+    categoryIds.forEach((cid) => appendParam('categoryIds', cid));
+  }
+
+  appendParam('maxPrice', maxPrice);
+  appendParam('minPrice', minPrice);
+  appendParam('productId', productId);
+  appendParam('searchKeyword', searchKeyword);
+  appendParam('sortBy', sortBy);
 
   const { success, data, message }: ResponseApi<Product[]> = await (
     await fetch(url)
@@ -38,6 +54,7 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
+// todo: legacy func, fetchProducts applies default sortBy=newest parameter
 export const fetchNewProducts = async ({
   searchKeyword,
   page,
@@ -57,4 +74,16 @@ export const fetchNewProducts = async ({
     throw new Error(message);
   }
   return Array.isArray(data) ? data : [];
+};
+
+export const fetchBrands = async (): Promise<BrandProps[]> => {
+  const { success, data, message }: ResponseApi<any[]> = await (
+    await fetch(`${BASE_URL}/api/brand`)
+  ).json();
+
+  if (!success || data == null) {
+    console.error('Failed to fetch brands:', message);
+    return [];
+  }
+  return data;
 };

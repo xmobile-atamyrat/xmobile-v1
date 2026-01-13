@@ -299,5 +299,26 @@
   "hoursAgo": "h ago",
   "daysAgo": "d ago",
   "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings to receive notifications.",
-  "serverLogs": "Server Logs"
+  "serverLogs": "Server Logs",
+  "brands": "Brands",
+  "noBrands": "No brands found",
+  "moreBrands": "More Brands",
+  "lessBrands": "Less Brands",
+  "addNewBrand": "Add Brand",
+  "editBrand": "Edit Brand",
+  "brandName": "Brand Name",
+  "priceLowToHigh": "Price Low-to-High",
+  "priceHighToLow": "Price High-to-Low",
+  "newest": "New",
+  "aToZ": "A to Z",
+  "sortBy": "Sort by",
+  "brandDeleteConfirm": "Are you sure you want to delete brand \"{name}\"? Products will be unlinked.",
+  "createBrandError": "Failed to create brand",
+  "updateBrandError": "Failed to update brand",
+  "deleteBrandError": "Failed to delete brand",
+  "brand": "Brand",
+  "brandSearchPlaceholder": "Search or add brand...",
+  "filter": "Filter",
+  "apply": "Apply"
 }
+

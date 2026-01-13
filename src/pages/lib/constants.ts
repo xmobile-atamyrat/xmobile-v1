@@ -103,3 +103,12 @@ export const DUMMY_DUBAI_IP = '94.200.200.200';
 export const DUMMY_TR_IP = '88.240.128.0';
 
 export const ALL_PRODUCTS_CATEGORY_CARD = 'ALL_PRODUCTS_CATEGORY_CARD';
+
+export const SORT_OPTIONS = {
+  PRICE_ASC: 'price_asc',
+  PRICE_DESC: 'price_desc',
+  NEWEST: 'newest',
+  A_Z: 'a_z',
+} as const;
+
+export const FILTER_MAX_PRICE = 100000;
