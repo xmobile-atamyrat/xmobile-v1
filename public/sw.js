@@ -77,6 +77,23 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Store push events that arrive before Firebase is initialized
+let pendingPushEvents = [];
+
+// Process pending push events after Firebase is initialized
+function processPendingPushEvents() {
+  if (pendingPushEvents.length > 0 && firebaseInitialized) {
+    console.log(
+      `[sw.js] Processing ${pendingPushEvents.length} pending push events`,
+    );
+    pendingPushEvents.forEach((event) => {
+      // These will be handled by onBackgroundMessage if it's set up
+      // Otherwise they'll fall through to the push event handler
+    });
+    pendingPushEvents = [];
+  }
+}
+
 function initializeFirebaseMessaging() {
   if (firebaseInitialized || !firebaseConfig) {
     return;
@@ -96,10 +113,35 @@ function initializeFirebaseMessaging() {
       messagingInstance = firebase.messaging();
 
       // Handle FCM background messages
-      // This only fires when app is in background/closed
-      // When app is in foreground, onMessage in main thread handles it
+      // This fires when app is in background/closed
+      // NOTE: Some browsers (like Yandex) may route messages here even in foreground
+      // So we also notify the main thread for foreground handling
       messagingInstance.onBackgroundMessage((payload) => {
         console.log('[sw.js] Received FCM background message:', payload);
+
+        // Check if app is in foreground by checking for active clients
+        // If in foreground, also send message to main thread for onMessage handler
+        self.clients
+          .matchAll({ type: 'window', includeUncontrolled: true })
+          .then((clientList) => {
+            if (clientList.length > 0) {
+              // App is open, send message to main thread for foreground handling
+              console.log(
+                '[sw.js] App is in foreground, notifying main thread',
+              );
+              clientList.forEach((client) => {
+                if (client && 'postMessage' in client) {
+                  client.postMessage({
+                    type: 'FCM_FOREGROUND_MESSAGE',
+                    payload: payload,
+                  });
+                }
+              });
+            }
+          })
+          .catch((error) => {
+            console.warn('[sw.js] Failed to check clients:', error);
+          });
 
         const notificationTitle =
           payload.notification?.title || payload.data?.title || 'Уведомление';
@@ -136,10 +178,14 @@ function initializeFirebaseMessaging() {
       });
 
       firebaseInitialized = true;
-      console.log('[sw.js] Firebase Messaging initialized');
+      console.log('[sw.js] Firebase Messaging initialized successfully');
+
+      // Process any pending push events
+      processPendingPushEvents();
     }
   } catch (error) {
     console.error('[sw.js] Failed to initialize Firebase:', error);
+    firebaseInitialized = false;
   }
 }
 
@@ -147,19 +193,43 @@ function initializeFirebaseMessaging() {
 // NOTE: This should NOT fire for FCM messages - FCM uses onBackgroundMessage
 // This is only for non-FCM push notifications
 self.addEventListener('push', (event) => {
-  // Skip if this is an FCM message (FCM handles it via onBackgroundMessage)
+  // Check if this is an FCM message
   if (event.data) {
     try {
       const data = event.data.json();
-      // If it has FCM-specific fields, skip it (FCM will handle it)
+      // If it has FCM-specific fields, it's an FCM message
       if (data.from || data.messageId) {
-        console.log(
-          '[sw.js] Skipping push event - FCM will handle via onBackgroundMessage',
-        );
-        return;
+        // If Firebase is initialized, onBackgroundMessage should handle it
+        if (firebaseInitialized && messagingInstance) {
+          console.log(
+            '[sw.js] FCM message detected, onBackgroundMessage should handle it',
+          );
+          // Don't return - let onBackgroundMessage handle it
+          // But also don't fall through to legacy handler
+          return;
+        } else {
+          // Firebase not initialized yet
+          console.log(
+            '[sw.js] FCM message detected but Firebase not initialized yet',
+          );
+          if (firebaseConfig) {
+            // Try to initialize
+            initializeFirebaseMessaging();
+            // Store the event to process after initialization
+            pendingPushEvents.push(event);
+            return;
+          } else {
+            // No config yet - this shouldn't happen, but handle gracefully
+            console.warn(
+              '[sw.js] FCM message received but no Firebase config available',
+            );
+            // Fall through to show a basic notification
+          }
+        }
       }
     } catch (e) {
-      // Not JSON, continue with legacy handling
+      // Not JSON or can't parse, continue with legacy handling
+      console.log('[sw.js] Push event data is not JSON, handling as legacy');
     }
   }
 
