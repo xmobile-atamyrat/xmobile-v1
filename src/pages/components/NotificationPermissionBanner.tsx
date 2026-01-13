@@ -71,8 +71,13 @@ export default function NotificationPermissionBanner() {
       console.log('[FCM Banner] Messaging instance created:', !!messaging);
 
       // Set up foreground message handler
+      // This fires when app is in foreground and message is received
       const unsubscribe = onMessage(messaging, (payload: MessagePayload) => {
         console.log('[FCM Banner] ✅ Foreground message received:', payload);
+        console.log('[FCM Banner] Message payload details:', {
+          notification: payload.notification,
+          data: payload.data,
+        });
         refreshUnreadCount().catch((error) => {
           console.error('[FCM Banner] Failed to refresh unread count:', error);
         });
@@ -86,6 +91,35 @@ export default function NotificationPermissionBanner() {
       } else {
         console.error('[FCM Banner] ❌ Failed to register foreground handler');
         return false;
+      }
+
+      // Also listen for messages from service worker as fallback
+      // Some browsers may route messages to service worker even in foreground
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const messageHandler = (event: MessageEvent) => {
+          if (
+            event.data &&
+            event.data.type === 'FCM_FOREGROUND_MESSAGE' &&
+            event.data.payload
+          ) {
+            console.log(
+              '[FCM Banner] ✅ Received FCM message via service worker:',
+              event.data.payload,
+            );
+            refreshUnreadCount().catch((error) => {
+              console.error(
+                '[FCM Banner] Failed to refresh unread count:',
+                error,
+              );
+            });
+          }
+        };
+
+        navigator.serviceWorker.addEventListener('message', messageHandler);
+        console.log('[FCM Banner] ✅ Service worker message listener added');
+
+        // Store handler for cleanup
+        (unsubscribeRef.current as any).swMessageHandler = messageHandler;
       }
 
       // Get FCM token
@@ -133,7 +167,19 @@ export default function NotificationPermissionBanner() {
     if (!user || !accessToken) {
       // Clean up if user logs out
       if (unsubscribeRef.current) {
-        unsubscribeRef.current();
+        if (typeof unsubscribeRef.current === 'function') {
+          unsubscribeRef.current();
+        }
+        if (
+          'serviceWorker' in navigator &&
+          navigator.serviceWorker.controller &&
+          (unsubscribeRef.current as any).swMessageHandler
+        ) {
+          navigator.serviceWorker.removeEventListener(
+            'message',
+            (unsubscribeRef.current as any).swMessageHandler,
+          );
+        }
         unsubscribeRef.current = null;
       }
       initializedRef.current = false;
@@ -151,7 +197,21 @@ export default function NotificationPermissionBanner() {
     // eslint-disable-next-line consistent-return
     return () => {
       if (unsubscribeRef.current) {
-        unsubscribeRef.current();
+        // Unsubscribe from onMessage
+        if (typeof unsubscribeRef.current === 'function') {
+          unsubscribeRef.current();
+        }
+        // Remove service worker message listener
+        if (
+          'serviceWorker' in navigator &&
+          navigator.serviceWorker.controller &&
+          (unsubscribeRef.current as any).swMessageHandler
+        ) {
+          navigator.serviceWorker.removeEventListener(
+            'message',
+            (unsubscribeRef.current as any).swMessageHandler,
+          );
+        }
         unsubscribeRef.current = null;
       }
     };
