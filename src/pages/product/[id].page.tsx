@@ -31,19 +31,16 @@ import { colors, interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import {
   Alert,
   Box,
+  Button,
   CardMedia,
   Dialog,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
   Snackbar,
   Typography,
 } from '@mui/material';
@@ -157,6 +154,36 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const platform = usePlatform();
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
+  const [selectedTagIndex, setSelectedTagIndex] = useState(0);
+
+  useEffect(() => {
+    if (!router.isReady || !product?.tags) return;
+
+    const { v } = router.query;
+
+    if (v != null) {
+      const index = parseInt(v as string, 10);
+      if (!Number.isNaN(index) && index >= 0 && index < product.tags.length) {
+        setSelectedTagIndex(index);
+        return;
+      }
+    }
+
+    setSelectedTagIndex(0);
+  }, [product?.id, router.isReady]);
+
+  // Update URL when selectedTagIndex changes manually
+  const updateVariantInUrl = (index: number) => {
+    setSelectedTagIndex(index);
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, v: index },
+      },
+      undefined,
+      { shallow: true },
+    );
+  };
 
   const handleDialogClose = () => {
     setDialogStatus(false);
@@ -412,7 +439,20 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               ) : (
                 <Typography
                   className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
-                >{`${product.price} ${t('manat')}`}</Typography>
+                >
+                  {(() => {
+                    if (product.tags && product.tags.length > 0) {
+                      const tag = product.tags[selectedTagIndex];
+                      if (tag) {
+                        const words = tag.split(' ');
+                        const n = words[words.length - 1].length < 1 ? 3 : 2;
+                        const end = words.slice(-n).join(' ');
+                        if (!end.startsWith(' ')) return end;
+                      }
+                    }
+                    return `${product.price} ${t('manat')}`;
+                  })()}
+                </Typography>
               )}
             </Box>
           </Box>
@@ -422,39 +462,44 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               className={detailPageClasses.circProgress[platform]}
             />
           ) : (
-            <List className={detailPageClasses.list[platform]}>
+            <Box className="flex flex-wrap gap-2 my-2 mb-[20px]">
               {product.tags.map((tag, index) => {
                 const words = tag.split(' ');
                 const n = words[words.length - 1].length < 1 ? 3 : 2;
                 const beginning = words.slice(0, -n).join(' ');
-                const end = words.slice(-n).join(' ');
+
                 return (
-                  <ListItem key={index} className="p-0">
-                    <FiberManualRecordIcon
-                      className={detailPageClasses.listItemIcon[platform]}
-                    />
-                    <ListItemText
-                      className={detailPageClasses.listItemText[platform]}
-                      primary={
-                        <Box className={detailPageClasses.boxes.tag[platform]}>
-                          <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
-                          >
-                            {beginning}
-                          </Typography>
-                          <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[2vw] text-end ${interClassname.className}`}
-                            color={colors.mainWebMobile[platform]}
-                          >
-                            {end}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
+                  <Button
+                    key={index}
+                    variant={
+                      selectedTagIndex === index ? 'contained' : 'outlined'
+                    }
+                    onClick={() => updateVariantInUrl(index)}
+                    className={`${interClassname.className} capitalize`}
+                    sx={{
+                      borderColor: colors.mainWebMobile[platform],
+                      color:
+                        selectedTagIndex === index
+                          ? '#fff'
+                          : colors.mainWebMobile[platform],
+                      backgroundColor:
+                        selectedTagIndex === index
+                          ? colors.mainWebMobile[platform]
+                          : 'transparent',
+                      '&:hover': {
+                        backgroundColor:
+                          selectedTagIndex === index
+                            ? colors.mainWebMobile[platform]
+                            : 'rgba(0, 0, 0, 0.04)',
+                        borderColor: colors.mainWebMobile[platform],
+                      },
+                    }}
+                  >
+                    {beginning}
+                  </Button>
                 );
               })}
-            </List>
+            </Box>
           )}
 
           {description && Object.keys(description).length > 0 && (
@@ -491,7 +536,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
           )}
           {platform === 'web' && (
-            <AddToCart productId={product.id} cartAction="detail" />
+            <AddToCart
+              productId={product.id}
+              cartAction="detail"
+              selectedTag={
+                initialProduct?.tags && initialProduct.tags.length > 0
+                  ? initialProduct.tags[selectedTagIndex]
+                  : undefined
+              }
+            />
           )}
         </Box>
       </Box>
@@ -536,7 +589,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         </Box>
       )}
       {platform === 'mobile' && (
-        <AddToCart productId={product.id} cartAction="detail" />
+        <AddToCart
+          productId={product.id}
+          cartAction="detail"
+          selectedTag={
+            initialProduct?.tags && initialProduct.tags.length > 0
+              ? initialProduct.tags[selectedTagIndex]
+              : undefined
+          }
+        />
       )}
       {showDeleteProductDialog?.show && (
         <DeleteDialog
