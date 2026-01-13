@@ -23,7 +23,7 @@ export default function SimpleBreadcrumbs({
 
   return (
     <Box
-      className="w-full flex items-center mb-[32px]"
+      className={simpleBreadcrumbsClasses.mainBox[platform]}
       style={{
         marginTop: router.pathname.includes('product')
           ? units.mt[platform]

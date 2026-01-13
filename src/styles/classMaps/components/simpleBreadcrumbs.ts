@@ -1,4 +1,8 @@
 export const simpleBreadcrumbsClasses = {
+  mainBox: {
+    web: 'w-full flex items-center mb-[32px]',
+    mobile: 'w-full flex items-center',
+  },
   link: 'flex flex-row justify-center items-center gap-1 no-underline mx-2',
   breadcrumbs: {
     web: 'flex flex-row',
