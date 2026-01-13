@@ -13,9 +13,9 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, InputProps, styled } from '@mui/material';
-import { Product } from '@prisma/client';
+import { Product, UserRole } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
-import { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 
 export async function addEditBrand({
   id,
@@ -423,4 +423,40 @@ export const hideTextfieldSpinButtons: InputProps = {
       MozAppearance: 'textfield',
     },
   },
+};
+
+export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.split(urlRegex).map((part, index) => {
+    if (part.match(urlRegex)) {
+      let shouldLinkify = false;
+      if (role !== 'FREE') {
+        shouldLinkify = true;
+      } else {
+        try {
+          const url = new URL(part);
+          if (url.hostname.endsWith('xmobile.com.tm')) {
+            shouldLinkify = true;
+          }
+        } catch (error) {
+          console.error('Invalid URL:', part);
+        }
+      }
+
+      if (shouldLinkify) {
+        return React.createElement(
+          'a',
+          {
+            key: index,
+            href: part,
+            target: '_blank',
+            rel: 'noopener noreferrer', // security
+            style: { textDecoration: 'underline', color: 'inherit' },
+          },
+          part,
+        );
+      }
+    }
+    return part;
+  });
 };
