@@ -1,4 +1,5 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useFCM } from '@/pages/lib/fcm/useFCM';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
 import { interClassname } from '@/styles/theme';
@@ -14,6 +15,7 @@ import { useCallback, useState } from 'react';
 export default function NotificationPermissionBanner() {
   const platform = usePlatform();
   const t = useTranslations();
+  const { createAndRegisterToken } = useFCM();
   const [dismissed, setDismissed] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(
     typeof window !== 'undefined' && 'Notification' in window
@@ -24,6 +26,7 @@ export default function NotificationPermissionBanner() {
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
 
   const requestPermission = useCallback(async () => {
+    if (!t || !createAndRegisterToken) return;
     if (
       typeof window === 'undefined' ||
       !('Notification' in window) ||
@@ -40,10 +43,12 @@ export default function NotificationPermissionBanner() {
 
       if (result === 'granted') {
         setDismissed(true);
+        // Create and register FCM token
+        await createAndRegisterToken();
         // Show a test notification to confirm it works
         try {
           const testNotification = new Notification('Notifications enabled', {
-            body: 'You will receive notifications for new messages',
+            body: 'Вы будете получать уведомления о новых сообщениях.',
             icon: '/xm-logo.png',
             tag: 'test-notification',
           });
@@ -60,7 +65,7 @@ export default function NotificationPermissionBanner() {
       console.error('Failed to request notification permission:', error);
       // Don't show error to user, just fail silently
     }
-  }, [t]);
+  }, [t, createAndRegisterToken]);
 
   // Don't show if:
   // - Already dismissed
