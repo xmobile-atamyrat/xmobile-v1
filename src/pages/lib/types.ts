@@ -52,6 +52,7 @@ export interface ChatMessage {
   messageId?: string;
   date?: Date | string;
   timestamp?: string;
+  updatedAt?: Date | string;
   status?: 'sending' | 'sent' | 'error';
 }
 

@@ -53,7 +53,10 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           sx={{ color: '#9E9E9E' }}
         >
           {new Date(
-            message.timestamp || message.date || Date.now(),
+            message.timestamp ||
+              message.date ||
+              message.updatedAt ||
+              Date.now(),
           ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Typography>
         {isMe && message.status === 'error' && (
