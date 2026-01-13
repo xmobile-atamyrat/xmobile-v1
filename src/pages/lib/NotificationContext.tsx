@@ -253,17 +253,27 @@ export const NotificationContextProvider = ({
       });
       setUnreadCount((prev) => prev + 1);
 
-      // Show notification using Service Worker (mobile) or Notification API (desktop)
-      // Works in both foreground and background on mobile browsers
-      showNotification({
-        title: notification.title,
-        content: notification.content,
-        id: notification.id,
-        sessionId: notification.sessionId,
-        orderId: notification.orderId,
-      }).catch((error) => {
-        console.error('Failed to show notification:', error);
-      });
+      // Only show WebSocket notification if FCM is not available
+      // FCM handles notifications when it's working, WebSocket is only fallback
+      const hasFCMToken = localStorage.getItem('fcm_token');
+      if (!hasFCMToken) {
+        // No FCM token, show WebSocket notification as fallback
+        showNotification({
+          title: notification.title,
+          content: notification.content,
+          id: notification.id,
+          sessionId: notification.sessionId,
+          orderId: notification.orderId,
+        }).catch((error) => {
+          console.error('Failed to show notification:', error);
+        });
+      } else {
+        // FCM is active, don't show duplicate notification
+        // FCM will handle it via background/foreground handlers
+        console.log(
+          '[NotificationContext] Skipping WebSocket notification - FCM is active',
+        );
+      }
     });
 
     const unsubscribeNotifications = subscribe('notifications', (data) => {

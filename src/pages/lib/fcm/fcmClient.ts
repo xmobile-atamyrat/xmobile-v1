@@ -9,6 +9,10 @@ import {
 import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
+// FCM storage keys for localStorage
+export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
+export const FCM_TOKEN_REGISTERED_KEY = 'fcm_token_registered';
+
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 
@@ -74,10 +78,26 @@ export async function initializeOrGetMessaging(): Promise<Messaging | null> {
       return null;
     }
 
+    // CRITICAL FOR FIREFOX/MOBILE: Wait for service worker to be ready
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        console.log(
+          '[FCM] Service worker ready:',
+          registration.active?.state,
+          registration.scope,
+        );
+      } catch (swError) {
+        console.warn('[FCM] Service worker not ready:', swError);
+        // Continue anyway, but might fail on Firefox
+      }
+    }
+
     // Send config to service worker
     await sendConfigToServiceWorker();
 
     messaging = getMessaging(app);
+    console.log('[FCM] Messaging instance created successfully');
     return messaging;
   } catch (error) {
     console.error('[FCM] Failed to initialize messaging:', error);
