@@ -10,9 +10,20 @@ let firebaseApp: admin.app.App | null = null;
 /**
  * Initialize Firebase Admin SDK
  */
-function initializeFirebase(): admin.app.App {
+function initializeOrGetFirebaseApp(): admin.app.App {
   if (firebaseApp) {
     return firebaseApp;
+  }
+
+  // Check if app already exists
+  try {
+    const existingApp = admin.app();
+    if (existingApp) {
+      firebaseApp = existingApp;
+      return firebaseApp;
+    }
+  } catch (error) {
+    // App doesn't exist, continue to initialize
   }
 
   const credentialsPath =
@@ -33,7 +44,22 @@ function initializeFirebase(): admin.app.App {
 
     console.log('[WS FCM Service] Firebase Admin SDK initialized successfully');
     return firebaseApp;
-  } catch (error) {
+  } catch (error: any) {
+    // If app already exists error, try to get existing app
+    if (
+      error?.code === 'app/invalid-app-options' ||
+      error?.code === 'app/duplicate-app'
+    ) {
+      try {
+        firebaseApp = admin.app();
+        return firebaseApp;
+      } catch (getAppError) {
+        console.error(
+          '[WS FCM Service] Failed to get existing Firebase app:',
+          getAppError,
+        );
+      }
+    }
     console.error(
       '[WS FCM Service] Failed to initialize Firebase Admin SDK:',
       error,
@@ -52,7 +78,6 @@ export async function getActiveFCMTokensForUser(
     const tokens = await dbClient.fCMToken.findMany({
       where: {
         userId,
-        isActive: true,
       },
       select: {
         id: true,
@@ -71,77 +96,6 @@ export async function getActiveFCMTokensForUser(
 }
 
 /**
- * Mark FCM token as inactive
- */
-export async function markFCMTokenInactive(
-  tokenId: string,
-  reason: string,
-): Promise<void> {
-  try {
-    await dbClient.fCMToken.update({
-      where: { id: tokenId },
-      data: {
-        isActive: false,
-        lastFailedAt: new Date(),
-      },
-    });
-    console.log(
-      `[WS FCM Service] Marked token ${tokenId} as inactive. Reason: ${reason}`,
-    );
-  } catch (error) {
-    console.error(
-      `[WS FCM Service] Failed to mark token ${tokenId} as inactive:`,
-      error,
-    );
-  }
-}
-
-/**
- * Update FCM token usage statistics
- */
-export async function updateFCMTokenUsage(
-  tokenId: string,
-  success: boolean,
-): Promise<void> {
-  try {
-    if (success) {
-      await dbClient.fCMToken.update({
-        where: { id: tokenId },
-        data: {
-          lastUsedAt: new Date(),
-          failureCount: 0,
-        },
-      });
-    } else {
-      const token = await dbClient.fCMToken.findUnique({
-        where: { id: tokenId },
-        select: { failureCount: true },
-      });
-
-      const newFailureCount = (token?.failureCount || 0) + 1;
-      const failureThreshold = parseInt(
-        process.env.FCM_FAILURE_THRESHOLD || '3',
-        10,
-      );
-
-      await dbClient.fCMToken.update({
-        where: { id: tokenId },
-        data: {
-          lastFailedAt: new Date(),
-          failureCount: newFailureCount,
-          isActive: newFailureCount < failureThreshold,
-        },
-      });
-    }
-  } catch (error) {
-    console.error(
-      `[WS FCM Service] Failed to update token usage for ${tokenId}:`,
-      error,
-    );
-  }
-}
-
-/**
  * Send FCM notification to a user
  */
 export async function sendFCMNotificationToUser(
@@ -149,7 +103,7 @@ export async function sendFCMNotificationToUser(
   notification: FCMNotificationPayload,
 ): Promise<FCMSendResult> {
   try {
-    const app = initializeFirebase();
+    const app = initializeOrGetFirebaseApp();
     const messaging = admin.messaging(app);
 
     // Get active tokens for user
@@ -195,27 +149,16 @@ export async function sendFCMNotificationToUser(
     let tokensFailed = 0;
 
     response.responses.forEach((resp, idx) => {
-      const tokenId = tokens[idx].id;
       const token = tokenStrings[idx];
 
       if (resp.success) {
         tokensSent += 1;
-        updateFCMTokenUsage(tokenId, true).catch(console.error);
+        console.log(
+          `[WS FCM Service] Sent message to token ${token.substring(0, 20)}...`,
+        );
       } else {
         tokensFailed += 1;
         const error = resp.error;
-
-        // Handle specific FCM errors
-        if (
-          error?.code === 'messaging/invalid-registration-token' ||
-          error?.code === 'messaging/registration-token-not-registered'
-        ) {
-          markFCMTokenInactive(tokenId, error.code).catch(console.error);
-          failedTokenIds.push(tokenId);
-        } else {
-          updateFCMTokenUsage(tokenId, false).catch(console.error);
-          failedTokenIds.push(tokenId);
-        }
 
         console.error(
           `[WS FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,

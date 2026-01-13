@@ -13,9 +13,28 @@ let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 
 /**
+ * Send Firebase config to service worker
+ * Service workers can't access environment variables directly
+ */
+async function sendConfigToServiceWorker(): Promise<void> {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    if (registration.active) {
+      const config = getFirebaseConfig();
+      registration.active.postMessage({
+        type: 'FIREBASE_CONFIG',
+        config,
+      });
+    }
+  } catch (error) {
+    console.error('[FCM] Failed to send config to service worker:', error);
+  }
+}
+
+/**
  * Initialize Firebase app (singleton)
  */
-export function initializeFirebaseApp(): FirebaseApp {
+export function initializeOrGetFirebaseApp(): FirebaseApp {
   if (firebaseApp) {
     return firebaseApp;
   }
@@ -35,7 +54,7 @@ export function initializeFirebaseApp(): FirebaseApp {
  * Initialize Firebase Messaging (singleton)
  * Returns null if not supported (WebView, etc.)
  */
-export async function initializeMessaging(): Promise<Messaging | null> {
+export async function initializeOrGetMessaging(): Promise<Messaging | null> {
   // Don't initialize in WebView
   if (isWebView()) {
     console.log('[FCM] Skipping initialization in WebView');
@@ -47,13 +66,16 @@ export async function initializeMessaging(): Promise<Messaging | null> {
   }
 
   try {
-    const app = initializeFirebaseApp();
+    const app = initializeOrGetFirebaseApp();
 
     // Check if messaging is supported
     if (typeof window === 'undefined' || !('Notification' in window)) {
       console.warn('[FCM] Notifications not supported in this environment');
       return null;
     }
+
+    // Send config to service worker
+    await sendConfigToServiceWorker();
 
     messaging = getMessaging(app);
     return messaging;
@@ -68,7 +90,7 @@ export async function initializeMessaging(): Promise<Messaging | null> {
  */
 export async function getFCMToken(): Promise<string | null> {
   try {
-    const messagingInstance = await initializeMessaging();
+    const messagingInstance = await initializeOrGetMessaging();
     if (!messagingInstance) {
       return null;
     }
@@ -115,8 +137,9 @@ export async function getFCMToken(): Promise<string | null> {
 export async function registerFCMToken(
   token: string,
   accessToken: string,
-  deviceInfo?: string,
+  deviceInfo: string,
 ): Promise<boolean> {
+  console.trace('[FCM] registerFCMToken called from:');
   try {
     const response = await fetch('/api/fcm/token', {
       method: 'POST',
@@ -126,7 +149,7 @@ export async function registerFCMToken(
       },
       body: JSON.stringify({
         token,
-        deviceInfo: deviceInfo || navigator.userAgent,
+        deviceInfo,
       }),
     });
 
@@ -215,7 +238,7 @@ export function onForegroundMessage(
 
   let unsubscribe: (() => void) | null = null;
 
-  initializeMessaging()
+  initializeOrGetMessaging()
     .then((messagingInstance) => {
       if (messagingInstance) {
         unsubscribe = onMessage(messagingInstance, callback);

@@ -63,60 +63,77 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim(); // Take control of all pages immediately
 });
 
-// Initialize Firebase for FCM (if not already initialized)
+// Initialize Firebase for FCM
+// Config will be received from main thread via postMessage
 let firebaseInitialized = false;
-try {
-  const firebaseConfig = {
-    apiKey: 'AIzaSyB6uDU2Mwzj-pbl1EEs2iOTvKHbznRurYI',
-    authDomain: 'xmobile-54bc9.firebaseapp.com',
-    projectId: 'xmobile-54bc9',
-    storageBucket: 'xmobile-54bc9.firebasestorage.app',
-    messagingSenderId: '872118016510',
-    appId: '1:872118016510:web:fe45e3367c39bceecf08af',
-    measurementId: 'G-0FBC3LXD1Z',
-  };
+let firebaseConfig = null;
+let messagingInstance = null;
 
-  if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
-    const messaging = firebase.messaging();
-
-    // Handle FCM background messages
-    messaging.onBackgroundMessage((payload) => {
-      console.log('[sw.js] Received FCM background message:', payload);
-
-      const notificationTitle =
-        payload.notification?.title || payload.data?.title || 'Уведомление';
-      const notificationBody =
-        payload.notification?.body ||
-        payload.data?.body ||
-        payload.data?.content ||
-        'Новое уведомление';
-
-      const notificationData = {
-        notificationId: payload.data?.notificationId || payload.data?.id,
-        type: payload.data?.type,
-        sessionId: payload.data?.sessionId,
-        orderId: payload.data?.orderId,
-        click_action: payload.data?.click_action,
-        ...payload.data,
-      };
-
-      return self.registration.showNotification(notificationTitle, {
-        body: notificationBody,
-        icon: payload.notification?.icon || NOTIFICATION_ICON,
-        badge: payload.notification?.badge || NOTIFICATION_BADGE,
-        tag: notificationData.notificationId || 'fcm-notification',
-        data: notificationData,
-        requireInteraction: false,
-        silent: false,
-        vibrate: [200, 100, 200],
-      });
-    });
-
-    firebaseInitialized = true;
+// Listen for Firebase config from main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'FIREBASE_CONFIG') {
+    firebaseConfig = event.data.config;
+    initializeFirebaseMessaging();
   }
-} catch (error) {
-  console.error('[sw.js] Failed to initialize Firebase:', error);
+});
+
+function initializeFirebaseMessaging() {
+  if (firebaseInitialized || !firebaseConfig) {
+    return;
+  }
+
+  try {
+    if (typeof firebase !== 'undefined' && firebaseConfig) {
+      // Check if app already exists
+      let app;
+      try {
+        app = firebase.app();
+      } catch (e) {
+        // App doesn't exist, initialize it
+        app = firebase.initializeApp(firebaseConfig);
+      }
+
+      messagingInstance = firebase.messaging();
+
+      // Handle FCM background messages
+      messagingInstance.onBackgroundMessage((payload) => {
+        console.log('[sw.js] Received FCM background message:', payload);
+
+        const notificationTitle =
+          payload.notification?.title || payload.data?.title || 'Уведомление';
+        const notificationBody =
+          payload.notification?.body ||
+          payload.data?.body ||
+          payload.data?.content ||
+          'Новое уведомление';
+
+        const notificationData = {
+          notificationId: payload.data?.notificationId || payload.data?.id,
+          type: payload.data?.type,
+          sessionId: payload.data?.sessionId,
+          orderId: payload.data?.orderId,
+          click_action: payload.data?.click_action,
+          ...payload.data,
+        };
+
+        return self.registration.showNotification(notificationTitle, {
+          body: notificationBody,
+          icon: payload.notification?.icon || NOTIFICATION_ICON,
+          badge: payload.notification?.badge || NOTIFICATION_BADGE,
+          tag: notificationData.notificationId || 'fcm-notification',
+          data: notificationData,
+          requireInteraction: false,
+          silent: false,
+          vibrate: [200, 100, 200],
+        });
+      });
+
+      firebaseInitialized = true;
+      console.log('[sw.js] Firebase Messaging initialized');
+    }
+  } catch (error) {
+    console.error('[sw.js] Failed to initialize Firebase:', error);
+  }
 }
 
 // Handle push notifications (legacy/fallback)
