@@ -6,7 +6,7 @@ import {
 import {
   FCM_TOKEN_REGISTERED_KEY,
   FCM_TOKEN_STORAGE_KEY,
-} from '@/pages/lib/fcm/useFCM';
+} from '@/pages/lib/fcm/fcmClient';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
