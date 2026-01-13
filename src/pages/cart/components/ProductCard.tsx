@@ -21,11 +21,15 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  variantName?: string;
+  variantIndex?: number;
 }
 
 export default function CartProductCard({
   product,
   cartProps,
+  variantName,
+  variantIndex,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -94,7 +98,12 @@ export default function CartProductCard({
           className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
             setSelectedProduct(product);
-            router.push(`/product/${product.id}`);
+            const query: any = {};
+            if (variantIndex !== undefined) query.v = variantIndex;
+            router.push({
+              pathname: `/product/${product.id}`,
+              query,
+            });
           }}
         >
           {imgUrl != null && (
@@ -125,6 +134,15 @@ export default function CartProductCard({
                     24,
                   )}
                 </Typography>
+                {variantName && (
+                  <Typography
+                    className={`${interClassname.className} ${cartProductCardClasses.variant[platform]}`}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {variantName}
+                  </Typography>
+                )}
               </Box>
               {product?.price?.includes('[') ? (
                 <CircularProgress

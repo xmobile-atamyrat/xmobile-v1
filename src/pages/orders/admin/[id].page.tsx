@@ -21,7 +21,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { UserOrder, UserOrderStatus } from '@prisma/client';
+import { Product, UserOrder, UserOrderStatus } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -57,7 +57,10 @@ export default function UserOrderDetailPage() {
           id: string;
           quantity: number;
           productName: string;
+          productId: string;
           productPrice: string;
+          selectedTag?: string | null;
+          product?: Product;
         }>;
         user?: {
           name: string;
@@ -410,8 +413,35 @@ export default function UserOrderDetailPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography
+                            className={`${interClassname.className} cursor-pointer hover:underline text-blue-600`}
+                            onClick={() => {
+                              const variantIndex = item.selectedTag
+                                ? item.product?.tags.findIndex(
+                                    (tag: string) => tag === item.selectedTag,
+                                  )
+                                : undefined;
+                              router.push({
+                                pathname: `/product/${item.productId}`,
+                                query:
+                                  variantIndex !== undefined &&
+                                  variantIndex !== -1
+                                    ? { v: variantIndex }
+                                    : {},
+                              });
+                            }}
+                          >
                             {parseName(item.productName, router.locale ?? 'tk')}
+                            {item.selectedTag && (
+                              <Typography
+                                component="span"
+                                className={`${interClassname.className} text-sm text-gray-500 ml-2`}
+                              >
+                                {item.selectedTag
+                                  .replace(/\[.*\]|tmt/gi, '')
+                                  .trim()}
+                              </Typography>
+                            )}
                           </Typography>
                         </TableCell>
                         <TableCell>

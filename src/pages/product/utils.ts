@@ -136,6 +136,29 @@ export const computeProductPrice = async ({
   return processedProduct;
 };
 
+export const computeVariantPrice = async ({
+  tag,
+  accessToken,
+  fetchWithCreds,
+}: {
+  tag: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<number | null> => {
+  const tagMatch = tag.match(squareBracketRegex);
+  if (tagMatch) {
+    const priceId = tagMatch[1];
+    const priceStr = await computePrice({
+      priceId,
+      accessToken,
+      fetchWithCreds,
+    });
+    const price = parseFloat(priceStr);
+    return Number.isNaN(price) ? null : price;
+  }
+  return null;
+};
+
 // ProductPriceTags have only [id], value is fetched in computePrice function.
 export const computeProductPriceTags = async ({
   accessToken,

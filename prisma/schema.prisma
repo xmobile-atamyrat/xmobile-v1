@@ -38,10 +38,12 @@ model CartItem {
   product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
+  selectedTag     String?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  @@unique([userId, productId])
+  @@unique([userId, productId, selectedTag])
 }
 
 model Category {
@@ -393,6 +395,7 @@ model UserOrderItem {
   quantity        Int         @default(1)
   productName     String
   productPrice    String
+  selectedTag     String?
   
   order           UserOrder   @relation(references: [id], fields: [orderId], onDelete: Cascade)
   orderId         String
