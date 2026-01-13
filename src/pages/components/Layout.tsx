@@ -117,7 +117,7 @@ export default function Layout({
                 ) {
                   setSelectedCategoryId(updatedCategories[0].id);
                   const prods = await fetchProducts({
-                    categoryId: updatedCategories[0].id,
+                    categoryIds: [updatedCategories[0].id],
                   });
                   setProducts(prods);
                   setPrevProducts(prods);

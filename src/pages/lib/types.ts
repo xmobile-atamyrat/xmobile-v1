@@ -2,11 +2,22 @@ import { Category, DollarRate, Product, User } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
+import { SORT_OPTIONS } from './constants';
+
 export interface ResponseApi<K = any> {
   success: boolean;
   data?: K;
   message?: string;
 }
+
+export interface BrandProps {
+  id: string;
+  name: string;
+  productCount: number;
+  createdAt: string | Date;
+}
+
+export type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS];
 
 export interface ExtendedCategory extends Category {
   products?: Product[];
@@ -189,6 +200,7 @@ export interface AddEditProductProps {
   tags?: string[];
   videoUrls?: string[];
   categoryId?: string;
+  brandId?: string;
 }
 
 export interface DeleteCategoriesProps {
