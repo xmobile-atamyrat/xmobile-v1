@@ -3,7 +3,6 @@ import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
-import { FCMProvider } from '@/pages/lib/fcm/FCMProvider';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
@@ -62,33 +61,31 @@ export default function App({ Component, pageProps }: AppProps) {
         <AbortControllerContextProvider>
           <UserContextProvider>
             <WebSocketContextProvider>
-              <FCMProvider>
-                <NotificationContextProvider>
-                  <ChatContextProvider>
-                    <CategoryContextProvider>
-                      <ProductContextProvider>
-                        <PrevProductContextProvider>
-                          <DollarRateContextProvider>
-                            <PlatformContextProvider>
-                              <NextIntlClientProvider
-                                locale={router.locale}
-                                timeZone="Asia/Ashgabat"
-                                messages={pageProps.messages}
-                              >
-                                {isLoading ? (
-                                  <Loader />
-                                ) : (
-                                  <Component {...pageProps} />
-                                )}
-                              </NextIntlClientProvider>
-                            </PlatformContextProvider>
-                          </DollarRateContextProvider>
-                        </PrevProductContextProvider>
-                      </ProductContextProvider>
-                    </CategoryContextProvider>
-                  </ChatContextProvider>
-                </NotificationContextProvider>
-              </FCMProvider>
+              <NotificationContextProvider>
+                <ChatContextProvider>
+                  <CategoryContextProvider>
+                    <ProductContextProvider>
+                      <PrevProductContextProvider>
+                        <DollarRateContextProvider>
+                          <PlatformContextProvider>
+                            <NextIntlClientProvider
+                              locale={router.locale}
+                              timeZone="Asia/Ashgabat"
+                              messages={pageProps.messages}
+                            >
+                              {isLoading ? (
+                                <Loader />
+                              ) : (
+                                <Component {...pageProps} />
+                              )}
+                            </NextIntlClientProvider>
+                          </PlatformContextProvider>
+                        </DollarRateContextProvider>
+                      </PrevProductContextProvider>
+                    </ProductContextProvider>
+                  </CategoryContextProvider>
+                </ChatContextProvider>
+              </NotificationContextProvider>
             </WebSocketContextProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>

@@ -96,6 +96,8 @@ function initializeFirebaseMessaging() {
       messagingInstance = firebase.messaging();
 
       // Handle FCM background messages
+      // This only fires when app is in background/closed
+      // When app is in foreground, onMessage in main thread handles it
       messagingInstance.onBackgroundMessage((payload) => {
         console.log('[sw.js] Received FCM background message:', payload);
 
@@ -107,8 +109,12 @@ function initializeFirebaseMessaging() {
           payload.data?.content ||
           'Новое уведомление';
 
+        const notificationId =
+          payload.data?.notificationId ||
+          payload.data?.id ||
+          'fcm-notification';
         const notificationData = {
-          notificationId: payload.data?.notificationId || payload.data?.id,
+          notificationId,
           type: payload.data?.type,
           sessionId: payload.data?.sessionId,
           orderId: payload.data?.orderId,
@@ -116,11 +122,12 @@ function initializeFirebaseMessaging() {
           ...payload.data,
         };
 
+        // Use notificationId as tag to prevent duplicate notifications
         return self.registration.showNotification(notificationTitle, {
           body: notificationBody,
           icon: payload.notification?.icon || NOTIFICATION_ICON,
           badge: payload.notification?.badge || NOTIFICATION_BADGE,
-          tag: notificationData.notificationId || 'fcm-notification',
+          tag: notificationId, // Use notification ID as tag to prevent duplicates
           data: notificationData,
           requireInteraction: false,
           silent: false,
@@ -137,7 +144,25 @@ function initializeFirebaseMessaging() {
 }
 
 // Handle push notifications (legacy/fallback)
+// NOTE: This should NOT fire for FCM messages - FCM uses onBackgroundMessage
+// This is only for non-FCM push notifications
 self.addEventListener('push', (event) => {
+  // Skip if this is an FCM message (FCM handles it via onBackgroundMessage)
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      // If it has FCM-specific fields, skip it (FCM will handle it)
+      if (data.from || data.messageId) {
+        console.log(
+          '[sw.js] Skipping push event - FCM will handle via onBackgroundMessage',
+        );
+        return;
+      }
+    } catch (e) {
+      // Not JSON, continue with legacy handling
+    }
+  }
+
   let notificationData = {
     title: 'New message',
     body: 'You have a new notification',
@@ -239,15 +264,20 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // Handle messages from the main thread
+// This is used for WebSocket notifications (fallback when FCM is not available)
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { notification } = event.data;
+    const notificationId =
+      notification.id || notification.tag || 'notification';
+
+    // Use notification ID as tag to prevent duplicates
     event.waitUntil(
       self.registration.showNotification(notification.title || 'New message', {
         body: notification.content || notification.body,
         icon: notification.icon || NOTIFICATION_ICON,
         badge: notification.badge || NOTIFICATION_BADGE,
-        tag: notification.id || notification.tag,
+        tag: notificationId, // Use ID as tag to prevent duplicates
         data: {
           sessionId: notification.sessionId,
           orderId: notification.orderId,
