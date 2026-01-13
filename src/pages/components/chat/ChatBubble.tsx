@@ -1,5 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ChatMessage } from '@/pages/lib/types';
+import { linkify } from '@/pages/lib/utils';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import { Box, Paper, Typography } from '@mui/material';
 
@@ -41,7 +42,7 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           className={chatClasses.bubble.text[platform]}
           sx={{ fontWeight: 400 }}
         >
-          {message.content}
+          {linkify(message.content, message.senderRole)}
         </Typography>
       </Paper>
 
