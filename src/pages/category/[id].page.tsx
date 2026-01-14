@@ -204,27 +204,15 @@ export default function CategoryPage({
               className={appbarClasses.arrowBackIos[platform]}
             />
           </IconButton>
-          {category && (
-            <Typography
-              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
-            >
-              {parseName(category.name, router.locale ?? 'ru')}
-            </Typography>
-          )}
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={`${appbarClasses.backButton[platform]} invisible`}
-            aria-label="open drawer"
-            onClick={() => {
-              router.back();
-            }}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
+          <Box className="flex w-full justify-center">
+            {category && (
+              <Typography
+                className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+              >
+                {parseName(category.name, router.locale ?? 'ru')}
+              </Typography>
+            )}
+          </Box>
         </Box>
         <Box className={homePageClasses.card[platform]}>
           {/* All Products card - show in every category */}
