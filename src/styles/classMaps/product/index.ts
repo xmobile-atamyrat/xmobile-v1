@@ -1,5 +1,10 @@
 export const productIndexPageClasses = {
   boxes: {
+    backButton: {
+      mobile:
+        'flex flex-row items-center h-[30px] px-[24px] justify-between my-[20px] absolute left-2',
+      web: 'hidden',
+    },
     appbar: {
       mobile:
         'flex flex-row items-center h-[30px] px-[24px] justify-between my-[20px]',
