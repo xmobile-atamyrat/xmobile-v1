@@ -3,12 +3,12 @@ export const detailPageClasses = {
     main: {
       web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 overflow-hidden',
       mobile:
-        'w-full h-full flex flex-col px-4 pb-10 justify-center items-center mx-auto',
+        'w-full h-full flex flex-col px-4 pb-10 justify-center items-center mx-auto my-[20px]',
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
       mobile:
-        'flex flex-col gap-2 w-full h-[70vw] mx-auto items-center justify-center',
+        'flex flex-row gap-2 w-full h-[70vw] mx-auto items-center justify-center',
     },
     typo: 'w-full flex flex-row justify-between items-center pb-4',
     img: {
