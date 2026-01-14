@@ -1,3 +1,4 @@
+import { isNative } from '@/lib/runtime';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   createContext,
@@ -89,10 +90,14 @@ export const WebSocketContextProvider = ({
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     if (!accessToken) return;
 
-    const wsBase =
-      process.env.NODE_ENV === 'production'
-        ? `wss://xmobile.com.tm`
-        : process.env.NEXT_PUBLIC_WS_URL;
+    // If running in native mobile app (Capacitor), always use production URL
+    // For web, use production URL in production mode, otherwise use configured WS URL
+    let wsBase: string;
+    if (isNative() || process.env.NODE_ENV === 'production') {
+      wsBase = 'wss://xmobile.com.tm';
+    } else {
+      wsBase = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000';
+    }
     const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
 
     try {
