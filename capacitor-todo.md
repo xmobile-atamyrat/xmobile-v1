@@ -114,11 +114,11 @@
 
 #### 1.2.1 Create Platform Detection Utility
 
-- [ ] Create utility file: `src/lib/platform.ts` or similar
-- [ ] Add function to detect if running in Capacitor: `isCapacitor()`
-- [ ] Add function to detect platform: `getPlatform()` (returns 'web' | 'ios' | 'android')
-- [ ] Use `window.Capacitor` or similar to detect Capacitor environment
-- [ ] Export utilities for use throughout app
+- [x] Create utility file: `src/lib/runtime.ts` (renamed from platform.ts to avoid confusion with PlatformContext)
+- [x] Add function to detect if running in Capacitor: `isCapacitor()`
+- [x] Add function to detect runtime environment: `getRuntime()` (returns 'web' | 'ios' | 'android')
+- [x] Use `window.Capacitor` or similar to detect Capacitor environment
+- [x] Export utilities for use throughout app
 
 **Expected Impact:**
 
@@ -128,52 +128,11 @@
 
 **Testing Checklist:**
 
-- [ ] Utility file created and exports functions correctly
-- [ ] `isCapacitor()` returns `false` in web browser
-- [ ] `getPlatform()` returns `'web'` in web browser
-- [ ] No console errors when importing/using utilities
-- [ ] Functions work in both development and production builds
-
-### 1.3 Environment Variables & API Endpoints
-
-#### 1.3.1 Update BASE_URL Detection
-
-- [ ] Decide on image serving approach:
-  - Option A: Move images to CDN/public storage
-  - Option B: Create separate Express/Fastify image service
-  - Option C: Serve from public folder with Next.js Image component
-- [ ] Update all image fetching code that uses `/api/localImage`
-- [ ] Update `ProductCard.tsx` image loading logic
-- [ ] Update `CategoryCard.tsx` image loading logic
-- [ ] Update any other components using `/api/localImage`
-- [ ] Test images load correctly in web build
-
-**Expected Impact:**
-
-- Images will be served differently (depends on chosen approach)
-- Image loading performance may change
-- If using CDN: images may load faster, but requires migration
-- If using separate service: need to maintain additional service
-- If using public folder: images must be copied/moved to public directory
-- Image compression/optimization behavior may change
-
-**Testing Checklist:**
-
-- [ ] Build completes successfully: `npm run build`
-- [ ] Test product images display correctly:
-  - [ ] Product listing page - all product images load
-  - [ ] Product detail page - product images load
-  - [ ] Product cards in cart - images load
-- [ ] Test category images display correctly:
-  - [ ] Category listing page - category images load
-  - [ ] Category cards - images load
-- [ ] Test image loading performance (check network tab)
-- [ ] Test with slow network - verify images still load or show fallback
-- [ ] Test image compression/quality (if applicable)
-- [ ] Test image lazy loading still works (if implemented)
-- [ ] Test image error handling (broken images show fallback)
-- [ ] Test images in different locales/pages
-- [ ] Verify no broken image links in console
+- [x] Utility file created and exports functions correctly
+- [x] `isCapacitor()` returns `false` in web browser
+- [x] `getRuntime()` returns `'web'` in web browser
+- [x] No console errors when importing/using utilities
+- [x] Functions work in both development and production builds
 
 ### 1.3 Environment Variables & API Endpoints
 
@@ -319,9 +278,9 @@
 - [ ] Test invalid product/category IDs - should show 404 or error
 - [ ] Test product/category links from other pages work
 
-### 1.6 Image Serving Strategy
+### 1.6 WebSocket Connection
 
-#### 1.6.1 Image API Route Migration
+#### 1.6.1 WebSocket URL Configuration
 
 - [ ] Ensure WebSocket connection uses correct URL in mobile (production URL)
 - [ ] Update `src/pages/lib/WebSocketContext.tsx` if needed for mobile
@@ -350,9 +309,71 @@
 - [ ] Test WebSocket connection with authentication
 - [ ] Verify WebSocket URL is correct in network tab
 
-### 1.10 Authentication & Cookies
+### 1.7 Locale Routing Strategy (Must Complete Before Config Changes)
 
-#### 1.10.1 Cookie Handling Review
+#### 1.7.1 Implement Locale Routing
+
+- [ ] Decide on locale routing approach (next-intl routing vs manual routing)
+- [ ] If using next-intl routing: Configure `next-intl` routing in `_app.page.tsx`
+- [ ] If manual routing: Implement locale detection and routing logic
+- [ ] Update all `router.push()` calls to handle locale routing properly
+- [ ] Test locale switching works in web build
+
+**Expected Impact:**
+
+- Locale routing will work differently than Next.js built-in i18n
+- URL structure may change (e.g., query params `?locale=ru` vs path-based `/ru/`)
+- Locale detection may need to be client-side instead of server-side
+- Some navigation may need updates to preserve locale
+- **This must work before removing i18n config in 1.8**
+
+**Testing Checklist:**
+
+- [ ] Test locale switching from language selector works
+- [ ] Test locale persists when navigating between pages
+- [ ] Test direct URL access with different locales works
+- [ ] Test locale cookie/storage is set correctly
+- [ ] Test all pages display correct translations for selected locale
+- [ ] Test locale detection on first visit (if implemented)
+- [ ] Test navigation (product links, category links, etc.) preserves locale
+- [ ] Test browser back/forward buttons work with locale routing
+
+### 1.8 Next.js Configuration Changes (DO THIS LAST - After All Dependencies Fixed)
+
+#### 1.8.1 Update `next.config.mjs` for Static Export
+
+- [ ] Add `output: 'export'` to enable static export
+- [ ] Add `images: { unoptimized: true }` (required for static export)
+- [ ] Remove `i18n` configuration block (Next.js i18n doesn't work with static export)
+- [ ] **Only do this after 1.7 (locale routing) is complete and tested**
+
+**Expected Impact:**
+
+- Build will generate static files in `out/` directory instead of server-rendered pages
+- Images will not be optimized by Next.js (may slightly increase bundle size, but required for static export)
+- Next.js built-in locale routing will stop working - but 1.7 should have replaced it
+- All pages must be statically generatable (no server-side rendering)
+- **This is the final step - everything should be ready for static export**
+
+**Testing Checklist:**
+
+- [ ] Run `npm run build` - should complete without errors and create `out/` directory
+- [ ] Run `npm run start` (or serve `out/` directory) - verify app loads
+- [ ] Test homepage loads correctly
+- [ ] Test navigation between pages works
+- [ ] Test images display correctly (may load slightly slower without optimization)
+- [ ] Test locale switching works (should work from 1.7)
+- [ ] Test API routes still work (they should, as they're separate endpoints)
+- [ ] Test authentication flow still works
+- [ ] Test product pages load correctly
+- [ ] Test category pages load correctly
+- [ ] Test all dynamic routes work correctly
+- [ ] Test WebSocket connection works
+- [ ] Test all features work as expected
+
+### 1.9 Authentication & Cookies
+
+#### 1.9.1 Cookie Handling Review
 
 - [ ] Review cookie usage in authentication flow
 - [ ] Document cookie behavior differences in mobile apps
