@@ -305,7 +305,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         )}
         {/* images */}
         <Box className={detailPageClasses.boxes.images[platform]}>
-          <Box className={productIndexPageClasses.boxes.appbar[platform]}>
+          <Box className={productIndexPageClasses.boxes.backButton[platform]}>
             <IconButton
               size="medium"
               edge="start"

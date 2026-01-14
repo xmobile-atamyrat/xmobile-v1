@@ -27,7 +27,7 @@ export const appbarClasses = {
   toolBar: 'flex items-center justify-between',
   arrowBackIos: {
     web: `w-[28px] h-[28px] text-[#303030] mx-auto`,
-    mobile: `w-[24px] h-[24px] absolute left-4`,
+    mobile: `w-[24px] h-[24px] left-4`,
   },
   menuIcon: {
     web: `w-[34px] h-[34px] text-[#303030]`,
