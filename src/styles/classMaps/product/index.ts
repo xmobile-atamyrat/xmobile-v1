@@ -7,7 +7,7 @@ export const productIndexPageClasses = {
     },
     category: {
       web: 'flex justify-start',
-      mobile: 'flex w-full justify-center',
+      mobile: 'flex w-full justify-center pl-8',
     },
     products: {
       web: 'flex flex-col w-full h-full',
