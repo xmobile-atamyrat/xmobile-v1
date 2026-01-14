@@ -35,12 +35,12 @@ import {
   Typography,
 } from '@mui/material';
 import { TransitionProps } from '@mui/material/transitions';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getStaticProps: GetStaticProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
