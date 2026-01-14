@@ -1,160 +1,85 @@
-import dbClient from '@/lib/dbClient';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
-export const getServerSideProps: GetServerSideProps = (async (context) => {
-  let userCount = 0;
-  let dailyVisitCount = 0;
-  let lastWeekVisitCount = 0;
-  let lastMonthVisitCount = 0;
-  let errorMessage: string | null = null;
-  let balance: number | null = null;
-
-  const telekomUsername = process.env.TELEKOM_USERNAME;
-  const telekomPassword = process.env.TELEKOM_PASSWORD;
-
-  try {
-    userCount = await dbClient.user.count();
-  } catch (error) {
-    console.error(error);
-    errorMessage = (error as Error).message;
-  }
-
-  try {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0); // Set to 00:00:00.000
-
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999); // Set to 23:59:59.999
-    dailyVisitCount = await dbClient.userVisitRecord.count({
-      where: {
-        createdAt: {
-          gte: startOfToday,
-          lte: endOfToday,
-        },
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    errorMessage = (error as Error).message;
-  }
-
-  try {
-    const now = new Date();
-    const startOfWeekAgo = new Date(now);
-    startOfWeekAgo.setDate(now.getDate() - 7);
-
-    lastWeekVisitCount = await dbClient.userVisitRecord.count({
-      where: {
-        createdAt: {
-          gte: startOfWeekAgo,
-          lte: now,
-        },
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    errorMessage = (error as Error).message;
-  }
-
-  try {
-    const now = new Date();
-    const startOfMonthAgo = new Date(now);
-    startOfMonthAgo.setMonth(now.getMonth() - 1);
-
-    lastMonthVisitCount = await dbClient.userVisitRecord.count({
-      where: {
-        createdAt: {
-          gte: startOfMonthAgo,
-          lte: now,
-        },
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    errorMessage = (error as Error).message;
-  }
-
-  if (telekomUsername != null && telekomPassword != null) {
-    try {
-      const loginResponse = await fetch(
-        'https://os.telecom.tm:5000/api/v1/auth/login',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: telekomUsername,
-            password: telekomPassword,
-          }),
-        },
-      );
-
-      if (!loginResponse.ok) {
-        throw new Error('Login request failed');
-      }
-
-      const loginData = await loginResponse.json();
-      const accessToken = loginData.result.accessToken;
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const clientResponse = await fetch(
-        'https://os.telecom.tm:5000/api/v1/clients/self',
-        { headers },
-      );
-      if (!clientResponse.ok) {
-        throw new Error('Client data request failed');
-      }
-      const clientData = await clientResponse.json();
-      balance = Math.floor(clientData.result.client.balance);
-    } catch (error) {
-      console.error(error);
-      errorMessage = (error as Error).message;
-    }
-  }
-
-  return {
-    props: {
-      userCount,
-      dailyVisitCount,
-      lastMonthVisitCount,
-      lastWeekVisitCount,
-      errorMessage,
-      balance,
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
-    },
-  };
-}) satisfies GetServerSideProps<{
+interface AnalyticsStats {
   userCount: number;
   dailyVisitCount: number;
   lastWeekVisitCount: number;
   lastMonthVisitCount: number;
-  errorMessage: string | null;
   balance: number | null;
-}>;
+  errorMessage: string | null;
+}
 
-export default function Analytics({
-  userCount,
-  dailyVisitCount,
-  lastWeekVisitCount,
-  lastMonthVisitCount,
-  balance,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export const getStaticProps: GetStaticProps = async (context) => {
+  let messages = {};
+  try {
+    messages = (await import(`../../i18n/${context.locale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+
+  return {
+    props: {
+      messages,
+    },
+  };
+};
+
+export default function Analytics() {
   const router = useRouter();
   const { user } = useUserContext();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
+
+  const [stats, setStats] = useState<AnalyticsStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await fetch('/api/analytics/stats');
+        const result: ResponseApi<AnalyticsStats> = await response.json();
+
+        if (result.success && result.data) {
+          setStats(result.data);
+        } else {
+          setError(result.message || 'Failed to fetch analytics');
+        }
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+        setError((err as Error).message || 'Failed to fetch analytics');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (['SUPERUSER', 'ADMIN'].includes(user?.grade || '')) {
+      fetchStats();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user?.grade]);
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
         <Box
           sx={{
             mt: isMdUp
@@ -167,30 +92,61 @@ export default function Analytics({
           <Typography fontWeight={600} fontSize={20}>
             {t('analytics')}
           </Typography>
-          {balance && (
-            <Box className="flex flex-row gap-4">
-              <Typography className="w-2/3">{t('telekomBalance')}</Typography>
-              <Typography fontWeight={600}>{`${balance} TMT`}</Typography>
+
+          {isLoading && (
+            <Box className="flex justify-center items-center py-8">
+              <CircularProgress />
             </Box>
           )}
-          <Box className="flex flex-row gap-4">
-            <Typography className="w-2/3">{t('totalUserCount')}</Typography>
-            <Typography fontWeight={600}>{userCount}</Typography>
-          </Box>
-          <Box className="flex flex-row gap-4">
-            <Typography className="w-2/3">{t('dailyVisitCount')}</Typography>
-            <Typography fontWeight={600}>{dailyVisitCount}</Typography>
-          </Box>
-          <Box className="flex flex-row gap-4">
-            <Typography className="w-2/3">{t('lastWeekVisitCount')}</Typography>
-            <Typography fontWeight={600}>{lastWeekVisitCount}</Typography>
-          </Box>
-          <Box className="flex flex-row gap-4">
-            <Typography className="w-2/3">
-              {t('lastMonthVisitCount')}
-            </Typography>
-            <Typography fontWeight={600}>{lastMonthVisitCount}</Typography>
-          </Box>
+
+          {error && (
+            <Box className="flex justify-center items-center py-8">
+              <Typography color="error">{error}</Typography>
+            </Box>
+          )}
+
+          {!isLoading && !error && stats && (
+            <>
+              {stats.balance != null && (
+                <Box className="flex flex-row gap-4">
+                  <Typography className="w-2/3">
+                    {t('telekomBalance')}
+                  </Typography>
+                  <Typography fontWeight={600}>
+                    {`${stats.balance} TMT`}
+                  </Typography>
+                </Box>
+              )}
+              <Box className="flex flex-row gap-4">
+                <Typography className="w-2/3">{t('totalUserCount')}</Typography>
+                <Typography fontWeight={600}>{stats.userCount}</Typography>
+              </Box>
+              <Box className="flex flex-row gap-4">
+                <Typography className="w-2/3">
+                  {t('dailyVisitCount')}
+                </Typography>
+                <Typography fontWeight={600}>
+                  {stats.dailyVisitCount}
+                </Typography>
+              </Box>
+              <Box className="flex flex-row gap-4">
+                <Typography className="w-2/3">
+                  {t('lastWeekVisitCount')}
+                </Typography>
+                <Typography fontWeight={600}>
+                  {stats.lastWeekVisitCount}
+                </Typography>
+              </Box>
+              <Box className="flex flex-row gap-4">
+                <Typography className="w-2/3">
+                  {t('lastMonthVisitCount')}
+                </Typography>
+                <Typography fontWeight={600}>
+                  {stats.lastMonthVisitCount}
+                </Typography>
+              </Box>
+            </>
+          )}
         </Box>
       )}
     </Layout>
