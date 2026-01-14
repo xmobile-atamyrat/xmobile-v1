@@ -60,6 +60,6 @@ export const appbarClasses = {
   },
   backButton: {
     web: 'hidden',
-    mobile: 'flex justify-center ml-[5px]',
+    mobile: 'flex justify-center',
   },
 };
