@@ -7,13 +7,12 @@ export const detailPageClasses = {
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
-      mobile:
-        'flex flex-row gap-2 w-full h-[70vw] mx-auto items-center justify-center',
+      mobile: 'flex flex-row gap-2 w-full h-[70vw] mx-auto justify-center',
     },
     typo: 'w-full flex flex-row justify-between items-center pb-4',
     img: {
       web: 'flex flex-row w-[41.6vw] h-[41.6vw] justify-center items-center',
-      mobile: 'flex w-full justify-center flex-row mx-auto',
+      mobile: 'flex w-full justify-center flex-row',
     },
     sideInfo: {
       web: 'flex flex-col ml-[4.5vw]',

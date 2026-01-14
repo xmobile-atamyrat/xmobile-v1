@@ -306,30 +306,27 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         {/* images */}
         <Box className={detailPageClasses.boxes.images[platform]}>
           <Box className={productIndexPageClasses.boxes.appbar[platform]}>
-            <Box className="w-1/6 flex justify-start">
-              <IconButton
-                size="medium"
-                edge="start"
-                color="inherit"
-                className={appbarClasses.backButton[platform]}
-                aria-label="open drawer"
-                onClick={() => {
-                  if (categoryPath.length > 1) {
-                    // Navigate to the parent category page
-                    const parentCategory =
-                      categoryPath[categoryPath.length - 2];
-                    router.push(`/category/${parentCategory.id}`);
-                  } else {
-                    // If we're at the root category, go to home
-                    router.push('/');
-                  }
-                }}
-              >
-                <ArrowBackIosIcon
-                  className={appbarClasses.arrowBackIos[platform]}
-                />
-              </IconButton>
-            </Box>
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={appbarClasses.backButton[platform]}
+              aria-label="open drawer"
+              onClick={() => {
+                if (categoryPath.length > 1) {
+                  // Navigate to the parent category page
+                  const parentCategory = categoryPath[categoryPath.length - 2];
+                  router.push(`/category/${parentCategory.id}`);
+                } else {
+                  // If we're at the root category, go to home
+                  router.push('/');
+                }
+              }}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
           </Box>
           {imgUrls.length === 1 && (
             <Box className={detailPageClasses.boxes.img[platform]}>
