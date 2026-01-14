@@ -22,7 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
-import { GetServerSideProps } from 'next';
+import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -35,7 +35,16 @@ import {
   updateOrderStatus,
 } from './lib/apiUtils';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getStaticPaths: GetStaticPaths = async () => {
+  // Orders are user-specific and dynamic, so we don't pre-generate paths
+  // Use blocking fallback to generate pages on-demand
+  return {
+    paths: [],
+    fallback: 'blocking',
+  };
+};
+
+export const getStaticProps: GetStaticProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../../i18n/${context.locale}.json`)).default,

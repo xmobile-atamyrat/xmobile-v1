@@ -29,7 +29,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { DollarRate, Prices } from '@prisma/client';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
@@ -42,7 +42,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useEffect, useState } from 'react';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getStaticProps: GetStaticProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../../i18n/${context.locale}.json`)).default,

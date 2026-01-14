@@ -16,12 +16,12 @@ import {
   Paper,
   Typography,
 } from '@mui/material';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getStaticProps: GetStaticProps = async (context) => {
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
