@@ -8,6 +8,7 @@ import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
+import { isNative } from '@/lib/runtime';
 import {
   isServiceWorkerSupported,
   isWebView,
@@ -27,11 +28,12 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Register Service Worker for notifications (skip in WebView)
+  // Register Service Worker for notifications (skip in WebView and Capacitor)
   useEffect(() => {
     if (
       typeof window !== 'undefined' &&
       !isWebView() &&
+      !isNative() &&
       isServiceWorkerSupported()
     ) {
       registerServiceWorker().catch((error) => {
