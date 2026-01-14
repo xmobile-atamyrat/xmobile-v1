@@ -8,13 +8,13 @@
 
 #### 1.1.1 Translation-Only Pages (Simple Conversions)
 
-- [ ] `src/pages/product/index.page.tsx` - Convert to getStaticProps
-- [ ] `src/pages/chat/index.page.tsx` - Convert to getStaticProps
-- [ ] `src/pages/orders/[id].page.tsx` - Convert to getStaticProps
-- [ ] `src/pages/orders/admin/[id].page.tsx` - Convert to getStaticProps
-- [ ] `src/pages/components/Footer.tsx` - Convert to getStaticProps
-- [ ] `src/pages/category/index.page.tsx` - Convert to getStaticProps
-- [ ] `src/pages/product/update-prices/index.page.tsx` - Convert to getStaticProps
+- [x] `src/pages/product/index.page.tsx` - Convert to getStaticProps
+- [x] `src/pages/chat/index.page.tsx` - Convert to getStaticProps
+- [x] `src/pages/orders/[id].page.tsx` - Convert to getStaticProps
+- [x] `src/pages/orders/admin/[id].page.tsx` - Convert to getStaticProps
+- [x] `src/pages/components/Footer.tsx` - Convert to getStaticProps
+- [x] `src/pages/category/index.page.tsx` - Convert to getStaticProps
+- [x] `src/pages/product/update-prices/index.page.tsx` - Convert to getStaticProps
 
 **Expected Impact:**
 
@@ -49,10 +49,9 @@
 - [ ] Create new API route: `/api/analytics/track-visit` for IP tracking
 - [ ] Move IP detection logic to API route
 - [ ] Move user visit record DB writes to API route
-- [ ] Move geo-location detection to client-side (browser API or API route)
-- [ ] Update client to call API route on page load
 - [ ] Convert getServerSideProps to getStaticProps (only translations)
-- [ ] Test analytics tracking still works
+- [ ] Remove geo-location detection (not needed for now)
+- [ ] Note: Client-side API call will be implemented later
 
 **Expected Impact:**
 
