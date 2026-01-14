@@ -1,4 +1,3 @@
-import dbClient from '@/lib/dbClient';
 import { SearchBar } from '@/pages/components/Appbar';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
@@ -8,15 +7,10 @@ import ProductCard from '@/pages/components/ProductCard';
 import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import {
-  LOCALE_COOKIE_NAME,
-  POST_SOVIET_COUNTRIES,
-} from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -32,11 +26,8 @@ import {
 } from '@mui/material';
 import { TransitionProps } from '@mui/material/transitions';
 import { Product } from '@prisma/client';
-import cookie, { serialize } from 'cookie';
-import geoip from 'geoip-lite';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
 const SlideTransition = React.forwardRef(function Transition(
@@ -46,97 +37,22 @@ const SlideTransition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-// getServerSideProps because we want to fetch the categories from the server on every request
-export const getServerSideProps: GetServerSideProps = (async (context) => {
+export const getStaticProps: GetStaticProps = async (context) => {
   let messages = {};
-  let locale =
-    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
-  let ip =
-    context.req.headers['x-real-ip'] ||
-    context.req.headers['x-forwarded-for'] ||
-    context.req.socket.remoteAddress;
-  if (Array.isArray(ip)) {
-    ip = ip[0];
+  try {
+    messages = (await import(`../i18n/${context.locale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
   }
 
-  if (ip && typeof ip === 'string') {
-    try {
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0); // Set to 00:00:00.000
-
-      const endOfToday = new Date();
-      endOfToday.setHours(23, 59, 59, 999); // Set to 23:59:59.999
-      const visitedToday = await dbClient.userVisitRecord.findFirst({
-        where: {
-          ip,
-          createdAt: {
-            gte: startOfToday,
-            lte: endOfToday,
-          },
-        },
-      });
-      if (!visitedToday) {
-        await dbClient.userVisitRecord.create({
-          data: {
-            ip,
-          },
-        });
-      } else {
-        await dbClient.userVisitRecord.update({
-          where: {
-            id: visitedToday.id,
-          },
-          data: {
-            dailyVisitCount: visitedToday.dailyVisitCount + 1,
-          },
-        });
-      }
-    } catch (error) {
-      console.error(error);
-    }
-
-    try {
-      if (locale == null) {
-        const geo = geoip.lookup(ip || '');
-        if (geo) {
-          const { country } = geo;
-          if (country === 'TR') {
-            locale = 'tr';
-          } else if (POST_SOVIET_COUNTRIES.includes(country)) {
-            locale = 'ru';
-          }
-        }
-        if (locale != null) {
-          context.res.setHeader(
-            'Set-Cookie',
-            serialize(LOCALE_COOKIE_NAME, locale, {
-              // session cookie, expires when the browser is closed
-              secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-              path: '/',
-            }),
-          );
-        }
-      }
-
-      messages = (await import(`../i18n/${context.locale}.json`)).default;
-    } catch (error) {
-      console.error(error);
-    }
-  }
   return {
     props: {
-      locale,
       messages,
     },
   };
-}) satisfies GetServerSideProps<{
-  locale: string | null;
-}>;
+};
 
-export default function Home({
-  locale,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const router = useRouter();
+export default function Home() {
   const platform = usePlatform();
   const t = useTranslations();
   const { user } = useUserContext();
@@ -232,14 +148,6 @@ export default function Home({
       observer.disconnect();
     };
   }, [isLoading, hasMore]);
-
-  useEffect(() => {
-    if (locale == null || router.locale === locale) return;
-    router.push(router.pathname, router.asPath, {
-      locale: locale || getCookie(LOCALE_COOKIE_NAME),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale]);
 
   return (
     <Layout>
