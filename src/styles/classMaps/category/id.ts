@@ -6,7 +6,7 @@ export const categoryIdClasses = {
     },
     main: {
       web: 'w-full h-full flex flex-col',
-      mobile: 'flex flex-col w-full h-full',
+      mobile: 'flex flex-col w-full h-full mt-[32px]',
     },
   },
 };
