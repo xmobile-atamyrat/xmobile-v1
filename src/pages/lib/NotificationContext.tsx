@@ -1,4 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
+import { isNative } from '@/lib/runtime';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
 import { showNotification } from '@/pages/lib/serviceWorker';
@@ -252,6 +253,14 @@ export const NotificationContextProvider = ({
         });
       });
       setUnreadCount((prev) => prev + 1);
+
+      // Don't show browser notifications in Capacitor - native push notifications will handle it
+      if (isNative()) {
+        console.log(
+          '[NotificationContext] Skipping browser notification - running in Capacitor (native push will handle)',
+        );
+        return;
+      }
 
       // Only show WebSocket notification if FCM is not available
       // FCM handles notifications when it's working, WebSocket is only fallback
