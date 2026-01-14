@@ -46,12 +46,12 @@
 
 ##### 1.1.2.1 `src/pages/index.page.tsx`
 
-- [ ] Create new API route: `/api/analytics/track-visit` for IP tracking
-- [ ] Move IP detection logic to API route
-- [ ] Move user visit record DB writes to API route
-- [ ] Convert getServerSideProps to getStaticProps (only translations)
-- [ ] Remove geo-location detection (not needed for now)
-- [ ] Note: Client-side API call will be implemented later
+- [x] Create new API route: `/api/analytics/track-visit` for IP tracking
+- [x] Move IP detection logic to API route
+- [x] Move user visit record DB writes to API route
+- [x] Convert getServerSideProps to getStaticProps (only translations)
+- [x] Remove geo-location detection (not needed for now)
+- [x] Note: Client-side API call will be implemented later
 
 **Expected Impact:**
 
@@ -78,12 +78,12 @@
 
 ##### 1.1.2.2 `src/pages/analytics/index.page.tsx`
 
-- [ ] Create new API route: `/api/analytics/stats` for analytics data
-- [ ] Move all DB queries (userCount, dailyVisitCount, etc.) to API route
-- [ ] Move Telekom balance fetching to API route
-- [ ] Update component to fetch data client-side using `useEffect` or SWR
-- [ ] Convert getServerSideProps to getStaticProps (only translations)
-- [ ] Test analytics page displays data correctly
+- [x] Create new API route: `/api/analytics/stats` for analytics data
+- [x] Move all DB queries (userCount, dailyVisitCount, etc.) to API route
+- [x] Move Telekom balance fetching to API route
+- [x] Update component to fetch data client-side using `useEffect` or SWR
+- [x] Convert getServerSideProps to getStaticProps (only translations)
+- [x] Test analytics page displays data correctly
 
 **Expected Impact:**
 
