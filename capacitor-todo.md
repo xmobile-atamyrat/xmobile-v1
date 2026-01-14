@@ -138,11 +138,11 @@
 
 #### 1.3.1 Update BASE_URL Detection
 
-- [ ] Use platform detection utility from 1.2.1 to check if running in Capacitor
-- [ ] Update `src/lib/ApiEndpoints.ts` to detect Capacitor environment
-- [ ] Use production URL (`https://xmobile.com.tm`) when in Capacitor
-- [ ] Keep existing logic for web development
-- [ ] Test API calls work correctly in both web and future mobile builds
+- [x] Use platform detection utility from 1.2.1 to check if running in Capacitor
+- [x] Update `src/lib/ApiEndpoints.ts` to detect Capacitor environment
+- [x] Use production URL (`https://xmobile.com.tm`) when in Capacitor
+- [x] Keep existing logic for web development
+- [x] Test API calls work correctly in both web and future mobile builds
 
 **Expected Impact:**
 
@@ -172,9 +172,9 @@
 
 #### 1.3.2 Environment Variable Configuration
 
-- [ ] Document required environment variables for mobile builds
-- [ ] Ensure all `NEXT_PUBLIC_*` variables are properly set
-- [ ] Create `.env.example` or documentation for mobile build setup
+- [x] Document required environment variables for mobile builds
+- [x] Ensure all `NEXT_PUBLIC_*` variables are properly set
+- [x] Create `.env.example` or documentation for mobile build setup
 
 **Expected Impact:**
 
@@ -193,10 +193,11 @@
 
 #### 1.4.1 Platform Detection for Service Workers
 
-- [ ] Use platform detection utility from 1.2.1 in `_app.page.tsx`
-- [ ] Skip service worker registration when running in Capacitor
-- [ ] Update `src/pages/lib/serviceWorker.ts` to check for Capacitor using utility
-- [ ] Test service worker doesn't register in Capacitor (when implemented)
+- [x] Use platform detection utility from 1.2.1 in `_app.page.tsx`
+- [x] Skip service worker registration when running in Capacitor
+- [x] Update `src/pages/lib/serviceWorker.ts` to check for Capacitor using utility
+- [x] Update `NotificationPermissionBanner.tsx` to skip FCM initialization in Capacitor
+- [x] Update `src/pages/lib/fcm/fcmClient.ts` to skip FCM web initialization in Capacitor
 
 **Expected Impact:**
 
@@ -218,9 +219,10 @@
 
 #### 1.4.2 FCM Client Updates
 
-- [ ] Use platform detection utility from 1.2.1 in `src/pages/lib/fcm/fcmClient.ts`
-- [ ] Skip FCM web initialization when in Capacitor (will use native FCM later)
-- [ ] Update `NotificationContext.tsx` to handle platform differences
+- [x] Use platform detection utility from 1.2.1 in `src/pages/lib/fcm/fcmClient.ts`
+- [x] Skip FCM web initialization when in Capacitor (will use native FCM later)
+- [x] Update `NotificationPermissionBanner.tsx` to skip FCM initialization in Capacitor (done in 1.4.1)
+- [ ] Update `NotificationContext.tsx` to handle platform differences (if needed)
 - [ ] Test FCM doesn't initialize in Capacitor (when implemented)
 
 **Expected Impact:**

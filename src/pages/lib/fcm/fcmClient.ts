@@ -1,3 +1,4 @@
+import { isNative } from '@/lib/runtime';
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import {
   getMessaging,
@@ -56,12 +57,17 @@ export function initializeOrGetFirebaseApp(): FirebaseApp {
 
 /**
  * Initialize Firebase Messaging (singleton)
- * Returns null if not supported (WebView, etc.)
+ * Returns null if not supported (WebView, Capacitor, etc.)
  */
 export async function initializeOrGetMessaging(): Promise<Messaging | null> {
   // Don't initialize in WebView
   if (isWebView()) {
     console.log('[FCM] Skipping initialization in WebView');
+    return null;
+  }
+  // Don't initialize in Capacitor - native apps use native FCM
+  if (isNative()) {
+    console.log('[FCM] Skipping web FCM initialization in Capacitor');
     return null;
   }
 
@@ -252,7 +258,7 @@ export function getNotificationPermission(): NotificationPermission | null {
 export function onForegroundMessage(
   callback: (payload: MessagePayload) => void,
 ): (() => void) | null {
-  if (isWebView()) {
+  if (isWebView() || isNative()) {
     return null;
   }
 

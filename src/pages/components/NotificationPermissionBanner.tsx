@@ -1,3 +1,4 @@
+import { isNative } from '@/lib/runtime';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -41,8 +42,15 @@ export default function NotificationPermissionBanner() {
 
   /**
    * Initialize FCM: messaging, foreground handler, and token registration
+   * Skips initialization in Capacitor (native mobile apps use native FCM)
    */
   const initializeFCM = useCallback(async () => {
+    // Don't initialize FCM web in Capacitor - native apps use native FCM
+    if (isNative()) {
+      console.log('[FCM Banner] Skipping FCM web initialization in Capacitor');
+      return false;
+    }
+
     if (!user || !accessToken) {
       console.warn('[FCM Banner] Cannot initialize: user not logged in');
       return false;
@@ -265,7 +273,7 @@ export default function NotificationPermissionBanner() {
   // - Already dismissed
   // - Permission already granted or denied
   // - Notifications not supported
-  // - Running in WebView (native app handles notifications)
+  // - Running in WebView or Capacitor (native app handles notifications)
   if (
     !user ||
     !accessToken ||
@@ -274,7 +282,8 @@ export default function NotificationPermissionBanner() {
     permission === 'denied' ||
     typeof window === 'undefined' ||
     !('Notification' in window) ||
-    isWebView()
+    isWebView() ||
+    isNative()
   ) {
     return null;
   }

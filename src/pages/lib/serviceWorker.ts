@@ -1,6 +1,8 @@
 // Service Worker registration and management
 // Supports iOS Safari, Android Chrome, and other major browsers
 
+import { isNative } from '@/lib/runtime';
+
 export interface ServiceWorkerRegistrationState {
   registration: ServiceWorkerRegistration | null;
   isSupported: boolean;
@@ -32,7 +34,7 @@ export function isWebView(): boolean {
 
 /**
  * Check if Service Workers are supported
- * Excludes WebView environments where Service Workers don't work
+ * Excludes WebView and Capacitor environments where Service Workers don't work
  */
 export function isServiceWorkerSupported(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -40,6 +42,11 @@ export function isServiceWorkerSupported(): boolean {
   }
   // Don't use Service Workers in WebView
   if (isWebView()) {
+    return false;
+  }
+  // Don't use Service Workers in Capacitor (native mobile apps)
+  // Native apps handle notifications via native push notifications
+  if (isNative()) {
     return false;
   }
   return 'serviceWorker' in navigator && 'Notification' in window;
@@ -311,7 +318,7 @@ export function showNotificationViaAPI(notification: {
 /**
  * Show notification with automatic method selection
  * Prefers Service Worker on mobile, falls back to Notification API
- * Skips notifications in WebView (notifications should be handled by native app)
+ * Skips notifications in WebView and Capacitor (notifications should be handled by native app)
  */
 export async function showNotification(notification: {
   title?: string | null;
@@ -322,9 +329,9 @@ export async function showNotification(notification: {
   icon?: string;
   badge?: string;
 }): Promise<boolean> {
-  // Don't show browser notifications in WebView
+  // Don't show browser notifications in WebView or Capacitor
   // Native app should handle notifications via FCM/push notifications
-  if (isWebView()) {
+  if (isWebView() || isNative()) {
     return false;
   }
 
