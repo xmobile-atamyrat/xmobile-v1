@@ -222,7 +222,7 @@
 - [x] Use platform detection utility from 1.2.1 in `src/pages/lib/fcm/fcmClient.ts`
 - [x] Skip FCM web initialization when in Capacitor (will use native FCM later)
 - [x] Update `NotificationPermissionBanner.tsx` to skip FCM initialization in Capacitor (done in 1.4.1)
-- [ ] Update `NotificationContext.tsx` to handle platform differences (if needed)
+- [x] Update `NotificationContext.tsx` to handle platform differences
 - [ ] Test FCM doesn't initialize in Capacitor (when implemented)
 
 **Expected Impact:**
@@ -249,10 +249,10 @@
 
 #### 1.5.1 getStaticPaths Updates
 
-- [ ] Review `src/pages/product/[id].page.tsx` getStaticPaths configuration
-- [ ] Review `src/pages/category/[id].page.tsx` getStaticPaths configuration
-- [ ] Ensure `fallback: 'blocking'` or `fallback: true` is set for new products/categories
-- [ ] Test dynamic routes work correctly in static export
+- [x] Review `src/pages/product/[id].page.tsx` getStaticPaths configuration
+- [x] Review `src/pages/category/[id].page.tsx` getStaticPaths configuration
+- [x] Ensure `fallback: 'blocking'` or `fallback: true` is set for new products/categories (both already use `fallback: 'blocking'`)
+- [x] Test dynamic routes work correctly in static export (build completed successfully)
 
 **Expected Impact:**
 
@@ -284,8 +284,8 @@
 
 #### 1.6.1 WebSocket URL Configuration
 
-- [ ] Ensure WebSocket connection uses correct URL in mobile (production URL)
-- [ ] Update `src/pages/lib/WebSocketContext.tsx` if needed for mobile
+- [x] Ensure WebSocket connection uses correct URL in mobile (production URL)
+- [x] Update `src/pages/lib/WebSocketContext.tsx` to use runtime detection utility for Capacitor
 - [ ] Test WebSocket connection works (will test when Capacitor is integrated)
 
 **Expected Impact:**
