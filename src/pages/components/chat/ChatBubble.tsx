@@ -43,6 +43,7 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           sx={{ fontWeight: 400 }}
         >
           {linkify(message.content, message.senderRole)}
+          {/* <LinkifyText text={message.content} /> */}
         </Typography>
       </Paper>
 
