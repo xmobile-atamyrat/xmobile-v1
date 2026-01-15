@@ -2,7 +2,7 @@ export const profileClasses = {
   boxes: {
     main: {
       web: 'w-full',
-      mobile: 'w-full h-full flex justify-center',
+      mobile: 'w-full h-full flex justify-center my-auto',
     },
     loggedOutMain: {
       web: 'flex flex-col w-[594px] mx-auto my-[150px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
