@@ -24,11 +24,16 @@ export const addToCartClasses = {
   },
   detail: {
     box: {
-      web: 'flex flex-row w-[28vw] h-[3.5vw] mt-[7.5vw] justify-between',
-      mobile: 'flex w-[88.7vw] mx-auto mb-[30px]',
+      web: 'flex flex-row min-w-[28vw] h-[3.5vw] mt-[7.5vw]',
+      mobile: 'w-full fixed bottom-0 left-0 right-0 z-10',
+    },
+    bg: {
+      web: 'flex w-full h-full',
+      mobile:
+        'bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
     },
     addToCart: {
-      web: 'max-w-[15vw] h-[3.5vw] bg-[#ff624c] gap-[10px] rounded-[10px] py-[16px] px-[2vw] items-center hover:bg-[#ec4d38]',
+      web: 'max-w-[15vw] h-[3.5vw] bg-[#ff624c] gap-[10px] rounded-[10px] py-[16px] px-[2vw] items-center hover:bg-[#ec4d38] ml-[4vw]',
       mobile:
         'w-[88.7vw] bg-[#1C1B1B] text-[#fff] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] gap-[8px] mx-auto',
     },

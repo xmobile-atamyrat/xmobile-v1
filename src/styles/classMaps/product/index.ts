@@ -1,13 +1,18 @@
 export const productIndexPageClasses = {
   boxes: {
+    backButton: {
+      mobile:
+        'flex flex-row items-center h-[30px] px-[24px] justify-between my-[20px] absolute left-2',
+      web: 'hidden',
+    },
     appbar: {
       mobile:
-        'flex flex-row items-center w-full h-[30px] px-[24px] justify-between my-[20px]',
+        'flex flex-row items-center h-[30px] px-[24px] justify-between my-[20px]',
       web: 'hidden',
     },
     category: {
       web: 'flex justify-start',
-      mobile: 'flex w-full justify-center',
+      mobile: 'flex w-full justify-center pl-8',
     },
     products: {
       web: 'flex flex-col w-full h-full',
