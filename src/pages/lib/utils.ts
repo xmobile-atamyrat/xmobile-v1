@@ -469,83 +469,165 @@ export const hideTextfieldSpinButtons: InputProps = {
 // };
 
 export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
-  const notAllowedChars = ' \n\t,;!?()[]{}<>"\'';
-  let buffer = '';
-  const hyperlinkedResult: React.ReactNode[] = [];
+  const NOT_ALLOWED_URL_CHARS = ' \t\n"%<>\\^`{}|';
+  const RARELY_COMMON_URL_CHARS = ",;[]!$'()*+";
+  const DOMAIN_NAME = 'xmobile.com.tm';
+  const result: React.ReactNode[] = [];
+  let buff = '';
 
-  const pushBuffer = (buf: string) => {
-    console.log('Linkify Buffer:', buf);
-    if (!buf) return;
+  const isUrl = (url: string) =>
+    url.startsWith('https://') ||
+    url.startsWith(DOMAIN_NAME) ||
+    url.startsWith('http://');
 
-    let isLink = false;
-    if (
-      buf.startsWith('http://') ||
-      buf.startsWith('https://') ||
-      buf.startsWith('xmobile.com.tm')
-    ) {
-      isLink = true;
+  const canLinkify = (url: string) => {
+    if (role === 'SUPERUSER' || role === 'ADMIN') {
+      return isUrl(url);
     }
+    return (
+      url.startsWith(DOMAIN_NAME) || url.startsWith(`http://${DOMAIN_NAME}`)
+    );
+  };
 
-    let shouldLinkify = false;
-    // FREE - only xmobile.com.tm
-    // SUPERUSER, ADMIN - all links with http/https
-    if (isLink) {
-      if (role && ['SUPERUSER', 'ADMIN'].includes(role)) {
-        shouldLinkify = true;
-      } else if (
-        buf.startsWith('xmobile.com.tm') ||
-        buf.startsWith('https://xmobile.com.tm')
-      ) {
-        shouldLinkify = true;
-      }
-    }
+  const normalizeHref = (url: string) =>
+    url.startsWith(DOMAIN_NAME) ? `https://${url}` : url;
 
-    if (shouldLinkify) {
-      let href = buf;
-      if (buf.startsWith('xmobile.com.tm')) {
-        href = `https://${buf}`;
-      }
-      hyperlinkedResult.push(
+  const pushText = (value: string) => {
+    if (!value) return;
+
+    if (canLinkify(value)) {
+      result.push(
         React.createElement(
           'a',
           {
-            key: hyperlinkedResult.length,
-            href,
+            key: result.length,
+            href: normalizeHref(value),
             target: '_blank',
             rel: 'noopener noreferrer',
             style: { textDecoration: 'underline', color: 'inherit' },
           },
-          buf,
+          value,
         ),
       );
     } else {
-      hyperlinkedResult.push(
-        React.createElement(
-          React.Fragment,
-          { key: hyperlinkedResult.length },
-          buf,
-        ),
+      result.push(
+        React.createElement(React.Fragment, { key: result.length }, value),
       );
     }
   };
 
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
-    if (notAllowedChars.includes(char)) {
-      pushBuffer(buffer);
-      buffer = '';
-      hyperlinkedResult.push(
-        React.createElement(
-          React.Fragment,
-          { key: hyperlinkedResult.length },
-          char,
-        ),
+    if (
+      RARELY_COMMON_URL_CHARS.includes(char) ||
+      NOT_ALLOWED_URL_CHARS.includes(char)
+    ) {
+      pushText(buff);
+      buff = '';
+      result.push(
+        React.createElement(React.Fragment, { key: result.length }, char),
       );
     } else {
-      buffer += char;
+      buff += char;
     }
   }
-  pushBuffer(buffer);
 
-  return hyperlinkedResult;
+  pushText(buff);
+  return result;
+};
+
+export const linkify2 = (text: string, role?: UserRole): React.ReactNode[] => {
+  const result: React.ReactNode[] = [];
+  let buffer = '';
+
+  const flushBuffer = () => {
+    if (buffer) {
+      result.push(
+        React.createElement(React.Fragment, { key: result.length }, buffer),
+      );
+      buffer = '';
+    }
+  };
+
+  const terminators = ' \n\t,;()[]{}<>"\':';
+
+  for (let i = 0; i < text.length; i += 1) {
+    // Check for link start
+    let match = '';
+    if (text.startsWith('https://', i)) match = 'https://';
+    else if (text.startsWith('http://', i)) match = 'http://';
+    else if (text.startsWith('xmobile.com.tm', i)) match = 'xmobile.com.tm';
+
+    if (match) {
+      flushBuffer(); // Flush any preceding text
+
+      // Capture URL
+      let urlEnd = i + match.length;
+      while (urlEnd < text.length) {
+        const char = text[urlEnd];
+        // Stop at whitespace or strict terminators
+        // Note: We allow some punctuation inside, but usually space/newline stops a URL.
+        // For simplicity and matching typical auto-linker behavior, we stop at whitespace or specific delimiters.
+        if (terminators.includes(char)) {
+          break;
+        }
+        urlEnd += 1;
+      }
+
+      let url = text.substring(i, urlEnd);
+
+      // Trim trailing punctuation (like "." or "," or "?") that might have been captured but shouldn't be part of URL
+      // checking chars that are NOT terminators but shouldn't end a URL.
+      const trail = /[.,!?]+$/;
+      const trailMatch = url.match(trail);
+      if (trailMatch) {
+        url = url.substring(0, url.length - trailMatch[0].length);
+        urlEnd -= trailMatch[0].length;
+      }
+
+      // Role Check
+      let shouldLinkify = false;
+      if (role && ['SUPERUSER', 'ADMIN'].includes(role)) {
+        shouldLinkify = true;
+      } else if (
+        url.startsWith('xmobile.com.tm') ||
+        url.startsWith('https://xmobile.com.tm')
+      ) {
+        // FREE: Only allow xmobile.com.tm (with or without protocol)
+        // We check the extracted URL string
+        shouldLinkify = true;
+      }
+
+      if (shouldLinkify) {
+        let href = url;
+        if (!href.startsWith('http://') && !href.startsWith('https://')) {
+          href = `https://${href}`;
+        }
+        result.push(
+          React.createElement(
+            'a',
+            {
+              key: result.length,
+              href,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              style: { textDecoration: 'underline', color: 'inherit' },
+            },
+            url,
+          ),
+        );
+      } else {
+        result.push(
+          React.createElement(React.Fragment, { key: result.length }, url),
+        );
+      }
+
+      i = urlEnd - 1; // logical loop increment will do i+=1
+    } else {
+      buffer += text[i];
+    }
+  }
+  flushBuffer();
+
+  return result;
 };
