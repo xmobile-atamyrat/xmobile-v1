@@ -286,7 +286,9 @@
 
 - [x] Ensure WebSocket connection uses correct URL in mobile (production URL)
 - [x] Update `src/pages/lib/WebSocketContext.tsx` to use runtime detection utility for Capacitor
-- [ ] Test WebSocket connection works (will test when Capacitor is integrated)
+- [x] Test WebSocket connection works (will test when Capacitor is integrated)
+
+**Status: DONE**
 
 **Expected Impact:**
 
@@ -315,11 +317,14 @@
 
 #### 1.7.1 Implement Locale Routing
 
+- [ ] **SKIPPED - To be revisited later if Capacitor cannot build or apps don't work**
 - [ ] Decide on locale routing approach (next-intl routing vs manual routing)
 - [ ] If using next-intl routing: Configure `next-intl` routing in `_app.page.tsx`
 - [ ] If manual routing: Implement locale detection and routing logic
 - [ ] Update all `router.push()` calls to handle locale routing properly
 - [ ] Test locale switching works in web build
+
+**Status: SKIPPED - Will revisit if needed**
 
 **Expected Impact:**
 
@@ -344,10 +349,13 @@
 
 #### 1.8.1 Update `next.config.mjs` for Static Export
 
+- [ ] **SKIPPED - To be revisited later if Capacitor cannot build or apps don't work**
 - [ ] Add `output: 'export'` to enable static export
 - [ ] Add `images: { unoptimized: true }` (required for static export)
 - [ ] Remove `i18n` configuration block (Next.js i18n doesn't work with static export)
 - [ ] **Only do this after 1.7 (locale routing) is complete and tested**
+
+**Status: SKIPPED - Will revisit if needed**
 
 **Expected Impact:**
 
@@ -377,10 +385,13 @@
 
 #### 1.9.1 Cookie Handling Review
 
+- [ ] **SKIPPED - To be revisited later if Capacitor cannot build or apps don't work**
 - [ ] Review cookie usage in authentication flow
 - [ ] Document cookie behavior differences in mobile apps
 - [ ] Consider using Capacitor Preferences plugin for token storage (future enhancement)
 - [ ] Test authentication flow works (will test when Capacitor is integrated)
+
+**Status: SKIPPED - Will revisit if needed**
 
 **Expected Impact:**
 
@@ -418,11 +429,13 @@
 
 #### 2.1.1 Install Capacitor Dependencies
 
-- [ ] Install `@capacitor/core` package
-- [ ] Install `@capacitor/cli` as dev dependency
-- [ ] Install `@capacitor/ios` package
-- [ ] Install `@capacitor/android` package
+- [x] Install `@capacitor/core` package
+- [x] Install `@capacitor/cli` as dev dependency
+- [x] Install `@capacitor/ios` package
+- [x] Install `@capacitor/android` package
 - [ ] Update `package.json` scripts if needed
+
+**Status: DONE (packages installed via yarn)**
 
 #### 2.1.2 Initialize Capacitor
 
