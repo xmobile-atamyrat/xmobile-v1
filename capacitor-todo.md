@@ -345,41 +345,49 @@
 - [ ] Test navigation (product links, category links, etc.) preserves locale
 - [ ] Test browser back/forward buttons work with locale routing
 
-### 1.8 Next.js Configuration Changes (DO THIS LAST - After All Dependencies Fixed)
+### 1.8 Capacitor Configuration (Server URL Approach)
 
-#### 1.8.1 Update `next.config.mjs` for Static Export
+#### 1.8.1 Configure Capacitor to Use Server URL
 
-- [ ] **SKIPPED - To be revisited later if Capacitor cannot build or apps don't work**
-- [ ] Add `output: 'export'` to enable static export
-- [ ] Add `images: { unoptimized: true }` (required for static export)
-- [ ] Remove `i18n` configuration block (Next.js i18n doesn't work with static export)
-- [ ] **Only do this after 1.7 (locale routing) is complete and tested**
+- [x] Update `capacitor.config.ts` to use `server.url` pointing to production
+- [x] Configure development server URL for local testing
+- [x] Remove static export requirement (not needed with server URL approach)
+- [x] Keep Next.js i18n configuration (works with server URL)
 
-**Status: SKIPPED - Will revisit if needed**
+**Status: DONE**
 
 **Expected Impact:**
 
-- Build will generate static files in `out/` directory instead of server-rendered pages
-- Images will not be optimized by Next.js (may slightly increase bundle size, but required for static export)
-- Next.js built-in locale routing will stop working - but 1.7 should have replaced it
-- All pages must be statically generatable (no server-side rendering)
-- **This is the final step - everything should be ready for static export**
+- Mobile app WebView will load pages from production server (`https://xmobile.com.tm`)
+- SSR/ISR pages work in mobile app without static export
+- Product changes appear immediately (no rebuilds needed)
+- App store updates only needed for code/UI changes, not data changes
+- Next.js i18n routing continues to work normally
+- **No static export needed - WebView loads from live server**
+
+**How It Works:**
+
+- **Development**: WebView loads from `http://localhost:3003` (live reload works)
+- **Production**: WebView loads from `https://xmobile.com.tm` (gets live SSR/ISR pages)
+- **Benefits**:
+  - No rebuilds for product changes
+  - Instant updates when admins make changes
+  - Keeps all SSR/ISR functionality
+  - Same codebase for web and mobile
 
 **Testing Checklist:**
 
-- [ ] Run `npm run build` - should complete without errors and create `out/` directory
-- [ ] Run `npm run start` (or serve `out/` directory) - verify app loads
-- [ ] Test homepage loads correctly
-- [ ] Test navigation between pages works
-- [ ] Test images display correctly (may load slightly slower without optimization)
-- [ ] Test locale switching works (should work from 1.7)
-- [ ] Test API routes still work (they should, as they're separate endpoints)
-- [ ] Test authentication flow still works
-- [ ] Test product pages load correctly
-- [ ] Test category pages load correctly
-- [ ] Test all dynamic routes work correctly
+- [ ] Run `yarn dev` - Next.js server starts normally
+- [ ] Run `npx cap sync` - Capacitor config is synced
+- [ ] Test in iOS simulator/device - WebView loads from server URL
+- [ ] Test in Android emulator/device - WebView loads from server URL
+- [ ] Verify pages load correctly (SSR/ISR works)
+- [ ] Test product pages load with latest data
+- [ ] Test locale switching works (Next.js i18n)
+- [ ] Test authentication flow works
 - [ ] Test WebSocket connection works
-- [ ] Test all features work as expected
+- [ ] Test offline behavior (app won't work offline - expected)
+- [ ] Verify production server URL is correct
 
 ### 1.9 Authentication & Cookies
 
@@ -439,12 +447,12 @@
 
 #### 2.1.2 Initialize Capacitor
 
-- [ ] Run `npx cap init` with appropriate app details:
-  - App ID: (e.g., `com.xmobile.app`)
-  - App Name: XMobile
-  - Web Dir: `out` (Next.js static export directory)
-- [ ] Review generated `capacitor.config.ts` file
-- [ ] Configure `server.url` for development (if needed)
+- [x] Run `npx cap init` with appropriate app details:
+  - App ID: `tm.com.xmobile.app`
+  - App Name: Xmobile
+  - Web Dir: `.next` (Next.js build directory)
+- [x] Review generated `capacitor.config.ts` file
+- [x] Configure `server.url` for development and production
 
 ### 2.2 Build Configuration
 
@@ -457,10 +465,11 @@
 
 #### 2.2.2 Next.js Build Output
 
-- [ ] Verify `next.config.mjs` has `output: 'export'` (from 1.8.1)
-- [ ] Test `npm run build` generates `out/` directory
-- [ ] Verify all static assets are in `out/` directory
-- [ ] Test web build works correctly in browser
+- [x] **NOT NEEDED** - Using server URL approach, no static export required
+- [x] Verify `next.config.mjs` keeps normal Next.js config (SSR/ISR enabled)
+- [x] Test `npm run build` generates normal Next.js build
+- [x] Verify production server is running and accessible
+- [x] Test web build works correctly in browser
 
 ### 2.3 Native Platform Setup
 
