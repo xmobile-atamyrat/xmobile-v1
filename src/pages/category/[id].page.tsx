@@ -8,6 +8,7 @@ import {
   findParentCategory,
 } from '@/pages/lib/categoryPathUtils';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
@@ -71,10 +72,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }
 };
 
-export const getStaticProps: GetStaticProps = async ({
-  params,
-  locale = 'tk',
-}) => {
+export const getStaticProps: GetStaticProps = async ({ params }) => {
   const categoryId = params?.id as string;
 
   try {
@@ -105,15 +103,15 @@ export const getStaticProps: GetStaticProps = async ({
       categoryPath = buildCategoryPath(categoryId, allCategories);
     }
 
-    // Load messages
-    let messages;
+    // For static export, we can't rely on context.locale (Next.js i18n)
+    // Load default locale messages at build time
+    // Client-side will switch locale based on cookie
+    const defaultLocale = 'ru';
+    let messages = {};
     try {
-      messages = (await import(`../../i18n/${locale}.json`)).default;
-    } catch (messageError) {
-      console.error(
-        `Error loading messages for locale ${locale}:`,
-        messageError,
-      );
+      messages = (await import(`../../i18n/${defaultLocale}.json`)).default;
+    } catch (error) {
+      console.error('Error loading messages:', error);
     }
 
     return {
@@ -122,6 +120,14 @@ export const getStaticProps: GetStaticProps = async ({
         parentCategory,
         categoryPath,
         messages,
+        // Also load all locale messages so client can switch without page reload
+        allMessages: {
+          en: (await import('../../i18n/en.json')).default,
+          ru: (await import('../../i18n/ru.json')).default,
+          tk: (await import('../../i18n/tk.json')).default,
+          ch: (await import('../../i18n/ch.json')).default,
+          tr: (await import('../../i18n/tr.json')).default,
+        },
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
@@ -145,6 +151,7 @@ export default function CategoryPage({
   categoryPath,
 }: CategoryPageProps) {
   const router = useRouter();
+  const locale = useLocale();
   const platform = usePlatform();
   const { setSelectedCategoryId } = useCategoryContext();
   const { setProducts } = useProductContext();
@@ -209,7 +216,7 @@ export default function CategoryPage({
               <Typography
                 className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
               >
-                {parseName(category.name, router.locale ?? 'ru')}
+                {parseName(category.name, locale)}
               </Typography>
             )}
           </Box>

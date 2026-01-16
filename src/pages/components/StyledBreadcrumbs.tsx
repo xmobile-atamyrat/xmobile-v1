@@ -1,3 +1,4 @@
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -25,6 +26,7 @@ export default function StyledBreadcrumbs({
   categoryPath,
 }: StyledBreadcrumbsProps) {
   const router = useRouter();
+  const locale = useLocale();
   const platform = usePlatform();
 
   if (!categoryPath || categoryPath.length === 0) {
@@ -40,7 +42,7 @@ export default function StyledBreadcrumbs({
         <StyledBreadcrumb
           className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
           component="a"
-          label={parseName(cat.name, router.locale ?? 'ru')}
+          label={parseName(cat.name, locale)}
           key={cat.id}
           onClick={() => {
             router.push(`/category/${cat.id}`);
@@ -50,10 +52,7 @@ export default function StyledBreadcrumbs({
       <StyledBreadcrumb
         className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
         component="span"
-        label={parseName(
-          categoryPath[categoryPath.length - 1].name,
-          router.locale ?? 'ru',
-        )}
+        label={parseName(categoryPath[categoryPath.length - 1].name, locale)}
       />
     </Breadcrumbs>
   );

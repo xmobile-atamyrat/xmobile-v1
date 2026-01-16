@@ -1,3 +1,4 @@
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -18,6 +19,7 @@ export default function SimpleBreadcrumbs({
   categoryPath,
 }: SimpleBreadcrumbsProps) {
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations();
   const platform = usePlatform();
 
@@ -61,7 +63,7 @@ export default function SimpleBreadcrumbs({
                 <Typography
                   className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
                 >
-                  {parseName(cat.name, router.locale ?? 'ru')}
+                  {parseName(cat.name, locale)}
                 </Typography>
               </Link>
             ))
@@ -71,9 +73,9 @@ export default function SimpleBreadcrumbs({
           <Typography
             className={`${interClassname.className} ${simpleBreadcrumbsClasses.productName[platform]} mx-2`}
             aria-current="page"
-            title={parseName(currentProductName, router.locale ?? 'ru')}
+            title={parseName(currentProductName, locale)}
           >
-            {parseName(currentProductName, router.locale ?? 'ru')}
+            {parseName(currentProductName, locale)}
           </Typography>
         ) : (
           ''

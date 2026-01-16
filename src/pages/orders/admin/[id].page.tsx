@@ -1,6 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -44,16 +45,36 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async (context) => {
+export const getStaticProps: GetStaticProps = async () => {
+  // For static export, we can't rely on context.locale (Next.js i18n)
+  // Load default locale messages at build time
+  // Client-side will switch locale based on cookie
+  const defaultLocale = 'ru';
+  let messages = {};
+  try {
+    messages = (await import(`../../../i18n/${defaultLocale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+
   return {
     props: {
-      messages: (await import(`../../../i18n/${context.locale}.json`)).default,
+      messages,
+      // Also load all locale messages so client can switch without page reload
+      allMessages: {
+        en: (await import('../../../i18n/en.json')).default,
+        ru: (await import('../../../i18n/ru.json')).default,
+        tk: (await import('../../../i18n/tk.json')).default,
+        ch: (await import('../../../i18n/ch.json')).default,
+        tr: (await import('../../../i18n/tr.json')).default,
+      },
     },
   };
 };
 
 export default function UserOrderDetailPage() {
   const router = useRouter();
+  const locale = useLocale();
   const { id } = router.query;
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
@@ -420,7 +441,7 @@ export default function UserOrderDetailPage() {
                       <TableRow key={item.id}>
                         <TableCell>
                           <Typography className={interClassname.className}>
-                            {parseName(item.productName, router.locale ?? 'tk')}
+                            {parseName(item.productName, locale)}
                           </Typography>
                         </TableCell>
                         <TableCell>

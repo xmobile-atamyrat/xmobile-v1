@@ -7,6 +7,7 @@
     "dev": "next dev -p 3003 -H 0.0.0.0",
     "build:ws": "tsc --project tsconfig.ws.json && tsc-alias --project tsconfig.ws.json",
     "build": "next build",
+    "build:export": "NEXT_EXPORT=true next build",
     "start:ws": "node --env-file=.env dist/ws-server/index.js",
     "start": "next start",
     "lint": "next lint",

@@ -315,11 +315,14 @@
 
 #### 1.7.1 Implement Locale Routing
 
-- [ ] Decide on locale routing approach (next-intl routing vs manual routing)
-- [ ] If using next-intl routing: Configure `next-intl` routing in `_app.page.tsx`
-- [ ] If manual routing: Implement locale detection and routing logic
-- [ ] Update all `router.push()` calls to handle locale routing properly
-- [ ] Test locale switching works in web build
+- [x] Decide on locale routing approach (cookie-based routing implemented)
+- [x] Implement locale detection and routing logic using cookies
+- [x] Update all pages to use `getStaticProps` with `allMessages` pattern
+- [x] Replace all `router.locale` usage with `useLocale()` hook
+- [x] Update locale switching to use `setLocaleCookie()` with proper path
+- [x] Test locale switching works in web build
+
+**Status: DONE**
 
 **Expected Impact:**
 

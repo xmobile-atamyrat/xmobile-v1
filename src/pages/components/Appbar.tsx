@@ -6,7 +6,7 @@ import {
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
-import { getCookie, setCookie } from '@/pages/lib/utils';
+import { getCookie, setLocaleCookie } from '@/pages/lib/utils';
 
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -201,10 +201,9 @@ export default function CustomAppBar({
                 onChange={(event) => {
                   const newLocale = event.target.value;
                   setSelectedLocale(newLocale);
-                  setCookie(LOCALE_COOKIE_NAME, newLocale);
-                  router.push(router.pathname, router.asPath, {
-                    locale: newLocale,
-                  });
+                  setLocaleCookie(newLocale);
+
+                  window.location.reload();
                 }}
               >
                 {languages.map((lang) => (

@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -29,6 +30,7 @@ export default function CartProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
+  const locale = useLocale();
   const { setSelectedProduct } = useProductContext();
   const [imgUrl, setImgUrl] = useState<string | null>();
   const { network } = useNetworkContext();
@@ -113,17 +115,13 @@ export default function CartProductCard({
                 <Typography
                   className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
                 >
-                  {categoryName &&
-                    parseName(categoryName, router.locale ?? 'tk')}
+                  {categoryName && parseName(categoryName, locale)}
                 </Typography>
                 <Typography
                   gutterBottom
                   className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
                 >
-                  {parseName(product.name, router.locale ?? 'tk').substring(
-                    0,
-                    24,
-                  )}
+                  {parseName(product.name, locale).substring(0, 24)}
                 </Typography>
               </Box>
               {product?.price?.includes('[') ? (

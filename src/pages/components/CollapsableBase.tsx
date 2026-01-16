@@ -1,4 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -45,6 +46,7 @@ export default function CollapsableBase({
   const { user } = useUserContext();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
   const router = useRouter();
+  const locale = useLocale();
   const openEditMenu = Boolean(anchorEl);
   const t = useTranslations();
 
@@ -66,7 +68,7 @@ export default function CollapsableBase({
         }}
       >
         <ListItemText
-          primary={parseName(categoryTitle, router.locale ?? 'tk')}
+          primary={parseName(categoryTitle, locale)}
           className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
         />
         {hasSubcategories && (
