@@ -11,6 +11,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
@@ -85,10 +86,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 // getStaticProps for static generation
-export const getStaticProps: GetStaticProps = async ({
-  params,
-  locale = 'tk',
-}) => {
+export const getStaticProps: GetStaticProps = async ({ params }) => {
   const productId = params?.id as string;
 
   try {
@@ -96,21 +94,29 @@ export const getStaticProps: GetStaticProps = async ({
     const products = await fetchProducts({ productId });
     const product = products && products.length > 0 ? products[0] : null;
 
-    // Load messages with fallback
-    let messages;
+    // For static export, we can't rely on context.locale (Next.js i18n)
+    // Load default locale messages at build time
+    // Client-side will switch locale based on cookie
+    const defaultLocale = 'ru';
+    let messages = {};
     try {
-      messages = (await import(`../../i18n/${locale}.json`)).default;
-    } catch (messageError) {
-      console.error(
-        `Error loading messages for locale ${locale}:`,
-        messageError,
-      );
+      messages = (await import(`../../i18n/${defaultLocale}.json`)).default;
+    } catch (error) {
+      console.error('Error loading messages:', error);
     }
 
     return {
       props: {
         product,
         messages,
+        // Also load all locale messages so client can switch without page reload
+        allMessages: {
+          en: (await import('../../i18n/en.json')).default,
+          ru: (await import('../../i18n/ru.json')).default,
+          tk: (await import('../../i18n/tk.json')).default,
+          ch: (await import('../../i18n/ch.json')).default,
+          tr: (await import('../../i18n/tr.json')).default,
+        },
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
@@ -120,6 +126,13 @@ export const getStaticProps: GetStaticProps = async ({
       props: {
         product: null,
         messages: null,
+        allMessages: {
+          en: {},
+          ru: {},
+          tk: {},
+          ch: {},
+          tr: {},
+        },
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
@@ -133,6 +146,7 @@ interface ProductPageProps {
 export default function Product({ product: initialProduct }: ProductPageProps) {
   const [product, setProduct] = useState<Product | null>();
   const router = useRouter();
+  const locale = useLocale();
   const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user, accessToken } = useUserContext();
@@ -216,7 +230,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, [product, network]);
 
   useEffect(() => {
-    const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
+    const desc = parseName(product?.description ?? '{}', locale);
     if (desc == null || desc === '') return;
 
     const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
@@ -235,7 +249,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     });
 
     setDescription(descObj);
-  }, [product?.description, router.locale]);
+  }, [product?.description, locale]);
 
   useEffect(() => {
     // accessToken is intentionally left out as GET /api/prices and /api/prices/rate is public
@@ -398,7 +412,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 variant="h5"
                 className={`${interClassname.className} ${detailPageClasses.productName[platform]}`}
               >
-                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+                {parseName(product?.name ?? '{}', locale)}
               </Typography>
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />

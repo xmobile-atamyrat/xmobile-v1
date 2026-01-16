@@ -6,6 +6,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
@@ -51,6 +52,7 @@ export default function ProductCard({
     useAbortControllerContext();
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
+  const locale = useLocale();
   const platform = usePlatform();
 
   useEffect(() => {
@@ -128,7 +130,7 @@ export default function ProductCard({
               gutterBottom
               className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
             >
-              {parseName(product.name, router.locale ?? 'tk')}
+              {parseName(product.name, locale)}
             </Typography>
             {product?.price?.includes('[') ? (
               <CircularProgress

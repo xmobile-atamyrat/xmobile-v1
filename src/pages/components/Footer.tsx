@@ -17,14 +17,34 @@ import {
   Typography,
 } from '@mui/material';
 import { GetStaticProps } from 'next';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-export const getStaticProps: GetStaticProps = async (context) => {
+export const getStaticProps: GetStaticProps = async () => {
+  // For static export, we can't rely on context.locale (Next.js i18n)
+  // Load default locale messages at build time
+  // Client-side will switch locale based on cookie
+  const defaultLocale = 'ru';
+  let messages = {};
+  try {
+    messages = (await import(`../../i18n/${defaultLocale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages,
+      // Also load all locale messages so client can switch without page reload
+      allMessages: {
+        en: (await import('../../i18n/en.json')).default,
+        ru: (await import('../../i18n/ru.json')).default,
+        tk: (await import('../../i18n/tk.json')).default,
+        ch: (await import('../../i18n/ch.json')).default,
+        tr: (await import('../../i18n/tr.json')).default,
+      },
     },
   };
 };
@@ -35,6 +55,7 @@ export default function Footer() {
   const t = useTranslations();
   const platform = usePlatform();
   const router = useRouter();
+  const locale = useLocale();
   const { categories: allCategories, setSelectedCategoryId } =
     useCategoryContext();
   const { setProducts } = useProductContext();
@@ -216,7 +237,7 @@ export default function Footer() {
                     }}
                     className={`${interClassname.className} ${footerClasses.typos.categoryNames}`}
                   >
-                    {parseName(category.name, router.locale ?? 'tk')}
+                    {parseName(category.name, locale)}
                   </Typography>
                 );
               })}

@@ -9,7 +9,7 @@ import {
   defaultProductDescTk,
   defaultProductDescTr,
 } from '@/pages/lib/constants';
-
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -55,7 +55,6 @@ import {
 } from '@mui/material';
 import type { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 interface AddEditProductDialogProps {
@@ -91,7 +90,7 @@ export default function AddEditProductDialog({
   const fetchWithCreds = useFetchWithCreds();
 
   const t = useTranslations();
-  const router = useRouter();
+  const locale = useLocale();
   const platform = usePlatform();
 
   // for existing product imageUrls the key is imageUrl
@@ -279,7 +278,7 @@ export default function AddEditProductDialog({
         const currCat = queue.pop();
         flatCats.push({
           id: currCat.id,
-          name: parseName(currCat.name, router.locale),
+          name: parseName(currCat.name, locale),
         });
         currCat.successorCategories?.forEach((succCat) => {
           queue.push(succCat);
@@ -368,7 +367,7 @@ export default function AddEditProductDialog({
                 >
                   {flattenedCats.map((cat) => (
                     <MenuItem value={cat.id} key={cat.id}>
-                      {parseName(cat.name, router.locale)}
+                      {parseName(cat.name, locale)}
                     </MenuItem>
                   ))}
                 </Select>

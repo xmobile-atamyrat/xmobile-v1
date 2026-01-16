@@ -1,5 +1,6 @@
 import { fetchBrands } from '@/pages/lib/apis';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import CheckIcon from '@mui/icons-material/Check';
@@ -16,7 +17,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import SortDropdown from './SortDropdown';
 
@@ -108,8 +108,7 @@ export default function FilterSidebar({
   variant = 'sidebar',
 }: FilterSidebarProps) {
   const t = useTranslations();
-  const router = useRouter();
-  const locale = router.locale || 'en';
+  const locale = useLocale();
 
   const [brands, setBrands] = useState<
     { id: string; name: string; productCount: number }[]

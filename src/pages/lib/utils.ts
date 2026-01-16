@@ -2,6 +2,7 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   HIGHEST_LEVEL_CATEGORY_ID,
+  LOCALE_COOKIE_NAME,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
 } from '@/pages/lib/constants';
@@ -393,6 +394,25 @@ export const deleteCookie = (name: string) => {
       path: '/',
     });
     document.cookie = serializedCookie;
+  }
+};
+
+/**
+ * Sets the locale cookie with proper path to ensure it's available site-wide
+ * Always sets path to '/' to avoid path-specific cookie issues
+ * Also cleans up any existing locale cookies with different paths
+ */
+export const setLocaleCookie = (locale: string) => {
+  if (typeof document !== 'undefined') {
+    // Clean up any existing cookies first
+    deleteCookie(LOCALE_COOKIE_NAME);
+
+    // Set the cookie with root path
+    setCookie(LOCALE_COOKIE_NAME, locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      sameSite: 'lax',
+    });
   }
 };
 

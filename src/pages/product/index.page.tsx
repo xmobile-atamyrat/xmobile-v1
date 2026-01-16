@@ -17,6 +17,7 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { parseName } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -40,10 +41,29 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-export const getStaticProps: GetStaticProps = async (context) => {
+export const getStaticProps: GetStaticProps = async () => {
+  // For static export, we can't rely on context.locale (Next.js i18n)
+  // Load default locale messages at build time
+  // Client-side will switch locale based on cookie
+  const defaultLocale = 'ru';
+  let messages = {};
+  try {
+    messages = (await import(`../../i18n/${defaultLocale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages,
+      // Also load all locale messages so client can switch without page reload
+      allMessages: {
+        en: (await import('../../i18n/en.json')).default,
+        ru: (await import('../../i18n/ru.json')).default,
+        tk: (await import('../../i18n/tk.json')).default,
+        ch: (await import('../../i18n/ch.json')).default,
+        tr: (await import('../../i18n/tr.json')).default,
+      },
     },
   };
 };
@@ -56,6 +76,7 @@ const SlideTransition = React.forwardRef(function Transition(
 });
 
 export default function Products() {
+  const locale = useLocale();
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -275,7 +296,7 @@ export default function Products() {
             <Typography
               className={`${interClassname.className} ${productIndexPageClasses.categoryName[platform]}`}
             >
-              {parseName(category?.name, router.locale ?? 'ru')}
+              {parseName(category?.name, locale)}
             </Typography>
           )}
         </Box>

@@ -1,5 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -27,15 +28,35 @@ import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
 
 // getStaticProps because translations are static
-export const getStaticProps = (async (context) => {
+export const getStaticProps = (async () => {
+  // For static export, we can't rely on context.locale (Next.js i18n)
+  // Load default locale messages at build time
+  // Client-side will switch locale based on cookie
+  const defaultLocale = 'ru';
+  let messages = {};
+  try {
+    messages = (await import(`../../../i18n/${defaultLocale}.json`)).default;
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+
   return {
     props: {
-      messages: (await import(`../../../i18n/${context.locale}.json`)).default,
+      messages,
+      // Also load all locale messages so client can switch without page reload
+      allMessages: {
+        en: (await import('../../../i18n/en.json')).default,
+        ru: (await import('../../../i18n/ru.json')).default,
+        tk: (await import('../../../i18n/tk.json')).default,
+        ch: (await import('../../../i18n/ch.json')).default,
+        tr: (await import('../../../i18n/tr.json')).default,
+      },
     },
   };
 }) satisfies GetStaticProps<object>;
 
 export default function CheckoutPage() {
+  const locale = useLocale();
   const t = useTranslations();
   const platform = usePlatform();
   const router = useRouter();
@@ -507,7 +528,7 @@ export default function CheckoutPage() {
                         <Typography
                           className={`${interClassname.className} ${checkoutDialogClasses.orderItemName.web}`}
                         >
-                          {parseName(item.product.name, router.locale ?? 'tk')}
+                          {parseName(item.product.name, locale)}
                         </Typography>
                         <Typography
                           className={`${interClassname.className} ${checkoutDialogClasses.orderItemQuantity.web}`}

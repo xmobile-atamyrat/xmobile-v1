@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import { useLocale } from '@/pages/lib/hooks/useLocale';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
@@ -9,7 +10,6 @@ import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 interface CategoryCardProps {
@@ -26,7 +26,7 @@ export default function CategoryCard({
   onClick,
 }: CategoryCardProps) {
   const [imgUrl, setImgUrl] = useState<string>();
-  const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations();
   const platform = usePlatform();
 
@@ -76,7 +76,7 @@ export default function CategoryCard({
           <Typography
             className={`${categoryCardClasses.typography2[platform]} ${interClassname.className}`}
           >
-            {parseName(name, router.locale ?? 'tk')}
+            {parseName(name, locale)}
           </Typography>
           <CardMedia
             component="img"
