@@ -210,3 +210,11 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
     }, delay);
   };
 };
+
+export const parseTagParts = (tag: string) => {
+  const words = tag.split(' ');
+  const n = words[words.length - 1].length < 1 ? 3 : 2;
+  const pricePart = words.slice(-n).join(' ');
+  const namePart = words.slice(0, -n).join(' ');
+  return { pricePart, namePart };
+};

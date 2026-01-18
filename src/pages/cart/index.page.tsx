@@ -106,7 +106,10 @@ export default function CartPage() {
                 variantName: item.selectedTag
                   ? item.selectedTag.replace(squareBracketRegex, '').trim()
                   : undefined,
-                variantIndex: variantIndex !== -1 ? variantIndex : undefined,
+                variantIndex:
+                  variantIndex !== -1 && variantIndex !== undefined
+                    ? variantIndex
+                    : undefined,
               };
             }),
           );
