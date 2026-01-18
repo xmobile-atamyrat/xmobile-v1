@@ -1,0 +1,30 @@
+// Gradle init script to set PATH for Node.js before React Native plugins run
+def nodeBinPath = "/opt/homebrew/bin"
+def currentPath = System.getenv("PATH") ?: ""
+
+if (!currentPath.contains(nodeBinPath)) {
+    def newPath = "$nodeBinPath:$currentPath"
+    System.setProperty("PATH", newPath)
+    
+    // Also update the environment for subprocesses
+    def env = System.getenv()
+    def envMap = new java.util.HashMap(env)
+    envMap.put("PATH", newPath)
+    
+    // Use reflection to update the environment (Gradle doesn't provide direct access)
+    try {
+        def processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment")
+        def theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment")
+        theEnvironmentField.setAccessible(true)
+        def envMap2 = theEnvironmentField.get(null)
+        envMap2.putAll(envMap)
+        
+        def theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment")
+        theCaseInsensitiveEnvironmentField.setAccessible(true)
+        def envMap3 = theCaseInsensitiveEnvironmentField.get(null)
+        envMap3.putAll(envMap)
+    } catch (Exception e) {
+        // Fallback: set as system property
+        System.setProperty("PATH", newPath)
+    }
+}
