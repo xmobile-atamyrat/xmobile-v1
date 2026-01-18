@@ -1,0 +1,17 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+
+// Configure environment for React Native to find npx
+def nodeBinPath = "/opt/homebrew/bin"
+def env = System.getenv()
+def currentPath = env.get("PATH") ?: ""
+def newPath = "$nodeBinPath:$currentPath"
+
+// Set PATH as system property for Gradle subprocesses
+System.setProperty("PATH", newPath)
+
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+
+rootProject.name = 'com.xmobile.app'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')
