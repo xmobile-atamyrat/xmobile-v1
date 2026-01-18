@@ -459,20 +459,21 @@ export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
         url = 'http://';
       }
     }
-    if (text.startsWith(`${X_MOBILE_DOMAIN}`, i)) {
-      // XMobile domain is allowed for everyone
-      url = `${X_MOBILE_DOMAIN}`;
-
-      const index = i + X_MOBILE_DOMAIN.length;
-      // check if domain is standalone inside text, ignore [char]xmobile.com.tm[char]
-      if (
-        (i > 0 && !SEPERATORS.includes(text[i - 1])) || // Invalid start
-        (index < text.length &&
-          !SEPERATORS.includes(text[index]) &&
-          text[index] !== '/')
-      ) {
-        // Invalid end
+    if (!url && text.startsWith(X_MOBILE_DOMAIN, i)) {
+      url = X_MOBILE_DOMAIN;
+      // start boundary must be start of text OR preceded by a separator
+      if (i > 0 && !SEPERATORS.includes(text[i - 1])) {
         url = '';
+      }
+      // end boundary must be end of text, a separator, OR a '/'
+      const index = i + X_MOBILE_DOMAIN.length;
+      if (index < text.length) {
+        const nextChar = text[index];
+        const isValidEnd = SEPERATORS.includes(nextChar) || nextChar === '/';
+
+        if (!isValidEnd) {
+          url = ''; // (e.g. xmobile.com.tmm)
+        }
       }
     }
 
