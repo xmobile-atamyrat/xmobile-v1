@@ -36,7 +36,7 @@ export default function CategoryCard({
       if (cacheImgUrl != null) {
         setImgUrl(cacheImgUrl);
       } else {
-        setImgUrl('/xmobile-original-logo.jpeg');
+        setImgUrl('/logo/xmobile-original-logo.jpeg');
         (async () => {
           if (initialImgUrl.startsWith('http')) {
             setImgUrl(initialImgUrl);

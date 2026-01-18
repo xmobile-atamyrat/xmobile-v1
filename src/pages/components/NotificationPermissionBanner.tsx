@@ -242,7 +242,7 @@ export default function NotificationPermissionBanner() {
           try {
             const testNotification = new Notification('Уведомления включены', {
               body: 'Вы будете получать уведомления о новых сообщениях.',
-              icon: '/xm-logo.png',
+              icon: '/logo/xm-logo.png',
               tag: 'Тестовые уведомления',
             });
             setTimeout(() => testNotification.close(), 3000);

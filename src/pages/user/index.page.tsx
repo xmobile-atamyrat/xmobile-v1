@@ -52,11 +52,11 @@ export default function Profile() {
   const t = useTranslations();
   const platform = usePlatform();
   const lang = [
-    { val: 'ru', name: 'Русский', img: '/Russia.png' },
-    { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
-    { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
-    { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
-    { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
+    { val: 'ru', name: 'Русский', img: '/flags/Russia.png' },
+    { val: 'tk', name: 'Türkmençe', img: '/flags/Turkmenistan.png' },
+    { val: 'tr', name: 'Türkce', img: '/flags/Turkey.png' },
+    { val: 'ch', name: 'Çärjowça', img: '/flags/Turkmenistan.png' },
+    { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const isAdmin = user && ['SUPERUSER', 'ADMIN'].includes(user.grade);
 
@@ -112,7 +112,7 @@ export default function Profile() {
           <Box className={profileClasses.boxes.accountMain[platform]}>
             <CardMedia
               component="img"
-              src="/defaultProfile.jpg"
+              src="/profile/defaultProfile.jpg"
               className={profileClasses.profileImg[platform]}
             />
             <Box className={profileClasses.boxes.account}>
@@ -145,7 +145,7 @@ export default function Profile() {
             >
               <CardMedia
                 component="img"
-                src="/language.png"
+                src="/profile/language.png"
                 className={profileClasses.sectionIcon[platform]}
               />
 

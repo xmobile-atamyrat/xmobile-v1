@@ -20,10 +20,10 @@ const getNotificationIcon = () => {
       (self.registration && self.registration.scope
         ? new URL(self.registration.scope).origin
         : null) || self.location.origin;
-    return `${origin}/xm-logo.png`;
+    return `${origin}/logo/xm-logo.png`;
   } catch (e) {
     // Fallback to relative path if origin can't be determined
-    return '/xm-logo.png';
+    return '/logo/xm-logo.png';
   }
 };
 // Badge icon for status bar - needs to be monochrome (white/transparent)

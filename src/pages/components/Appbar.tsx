@@ -113,11 +113,11 @@ export default function CustomAppBar({
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
   const languages = [
-    { val: 'ru', name: 'Русский', img: '/Russia.png' },
-    { val: 'tk', name: 'Türkmençe', img: '/Turkmenistan.png' },
-    { val: 'tr', name: 'Türkce', img: '/Turkey.png' },
-    { val: 'ch', name: 'Çärjowça', img: '/Turkmenistan.png' },
-    { val: 'en', name: 'English', img: '/UnitedKingdom.png' },
+    { val: 'ru', name: 'Русский', img: '/flags/Russia.png' },
+    { val: 'tk', name: 'Türkmençe', img: '/flags/Turkmenistan.png' },
+    { val: 'tr', name: 'Türkce', img: '/flags/Turkey.png' },
+    { val: 'ch', name: 'Çärjowça', img: '/flags/Turkmenistan.png' },
+    { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const [menuStatus, setMenuStatus] = useState(false);
   const { categories, setSelectedCategoryId } = useCategoryContext();
@@ -158,7 +158,7 @@ export default function CustomAppBar({
               <Box className="min-w-[100px] h-auto cursor-pointer">
                 <CardMedia
                   component="img"
-                  src="/xmobile-processed-logo.png"
+                  src="/logo/xmobile-processed-logo.png"
                   className="w-[100px] h-auto"
                   onClick={() => {
                     router.push('/');
@@ -241,7 +241,7 @@ export default function CustomAppBar({
                 >
                   <CardMedia
                     component="img"
-                    src="/tiktok.png"
+                    src="/icons/tiktok.png"
                     className="w-auto h-[16px]"
                   />
                 </IconButton>
@@ -351,7 +351,7 @@ export default function CustomAppBar({
               >
                 <CardMedia
                   component="img"
-                  src="/cartWeb.png"
+                  src="/icons/cart.png"
                   className={appbarClasses.shoppingCCI[platform]}
                 />
                 <Typography
@@ -389,7 +389,7 @@ export default function CustomAppBar({
             >
               <CardMedia
                 component="img"
-                src="/userBlack.png"
+                src="/footer/mobileIcons/profile.png"
                 className={appbarClasses.shoppingCCI[platform]}
               />
               <Box className="flex flex-col items-start justify-center ml-[20px]">
