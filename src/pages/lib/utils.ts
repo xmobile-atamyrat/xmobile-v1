@@ -4,6 +4,7 @@ import {
   HIGHEST_LEVEL_CATEGORY_ID,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
+  X_MOBILE_DOMAIN,
 } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -425,60 +426,79 @@ export const hideTextfieldSpinButtons: InputProps = {
   },
 };
 
-export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
-  const result: React.ReactNode[] = [];
-  let buffer = '';
+const NOT_ALLOWED_URL_CHARS = ' \t\n"%<>\\^`{}|';
+const RARELY_COMMON_URL_CHARS = ",;[]!$'()*+";
+const SEPERATORS = NOT_ALLOWED_URL_CHARS + RARELY_COMMON_URL_CHARS;
 
-  const flushBuffer = () => {
-    if (buffer) {
-      result.push(
-        React.createElement(React.Fragment, { key: result.length }, buffer),
+export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
+  const seperatedTextByUrls: React.ReactNode[] = [];
+  const isAdmin = role === 'SUPERUSER' || role === 'ADMIN';
+
+  const saveTextSegment = (segment: string) => {
+    if (segment) {
+      seperatedTextByUrls.push(
+        // <React.Fragment key={seperatedTextByUrls.length}> {textSegment} </React.Fragment>
+        React.createElement(
+          React.Fragment,
+          { key: seperatedTextByUrls.length },
+          segment,
+        ), // react container to hold textSegment
       );
-      buffer = '';
     }
   };
 
-  const NOT_ALLOWED_URL_CHARS = ' \t\n"%<>\\^`{}|';
-  const RARELY_COMMON_URL_CHARS = ",;[]!$'()*+";
-  const terminators = NOT_ALLOWED_URL_CHARS + RARELY_COMMON_URL_CHARS;
-
+  let textSegment = '';
   for (let i = 0; i < text.length; i += 1) {
-    let match = '';
-    const isAdmin = role === 'SUPERUSER' || role === 'ADMIN';
+    let url = '';
 
-    if (text.startsWith('xmobile.com.tm', i)) {
-      match = 'xmobile.com.tm';
-    } else if (text.startsWith('https://', i)) {
-      if (isAdmin || text.startsWith('https://xmobile.com.tm', i)) {
-        match = 'https://';
+    if (isAdmin) {
+      // http:, https: links only allowed for admins
+      if (text.startsWith('https://', i)) {
+        url = 'https://';
+      } else if (text.startsWith('http://', i)) {
+        url = 'http://';
       }
-    } else if (text.startsWith('http://', i) && isAdmin) {
-      match = 'http://';
+    }
+    if (text.startsWith(`${X_MOBILE_DOMAIN}`, i)) {
+      // XMobile domain is allowed for everyone
+      url = `${X_MOBILE_DOMAIN}`;
+
+      const index = i + X_MOBILE_DOMAIN.length;
+      // check if domain is standalone inside text, ignore [char]xmobile.com.tm[char]
+      if (
+        (i > 0 && !SEPERATORS.includes(text[i - 1])) || // Invalid start
+        (index < text.length &&
+          !SEPERATORS.includes(text[index]) &&
+          text[index] !== '/')
+      ) {
+        // Invalid end
+        url = '';
+      }
     }
 
-    if (match) {
-      flushBuffer();
+    if (url) {
+      saveTextSegment(textSegment);
+      textSegment = '';
 
-      let urlEnd = i + match.length;
-      while (urlEnd < text.length) {
-        if (terminators.includes(text[urlEnd])) {
+      let urlEndIndex = i + url.length;
+      while (urlEndIndex < text.length) {
+        if (SEPERATORS.includes(text[urlEndIndex])) {
           break;
         }
-        urlEnd += 1;
+        url += text[urlEndIndex];
+        urlEndIndex += 1;
       }
 
-      const url = text.substring(i, urlEnd);
-      let href = url;
-      if (url.startsWith('xmobile.com.tm')) {
-        href = `https://${url}`;
+      let secureUrl = url;
+      if (url.startsWith(`${X_MOBILE_DOMAIN}`)) {
+        secureUrl = `https://${url}`;
       }
-
-      result.push(
+      seperatedTextByUrls.push(
         React.createElement(
           'a',
           {
-            key: result.length,
-            href,
+            key: seperatedTextByUrls.length,
+            href: secureUrl,
             target: '_blank',
             rel: 'noopener noreferrer',
             style: { textDecoration: 'underline', color: 'inherit' },
@@ -487,12 +507,12 @@ export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
         ),
       );
 
-      i = urlEnd - 1;
+      i = urlEndIndex - 1;
     } else {
-      buffer += text[i];
+      textSegment += text[i];
     }
   }
 
-  flushBuffer();
-  return result;
+  saveTextSegment(textSegment);
+  return seperatedTextByUrls;
 };
