@@ -446,11 +446,12 @@ export default function OrderDetailPage() {
                           <Typography
                             className={`${interClassname.className} cursor-pointer hover:underline text-blue-600`}
                             onClick={() => {
-                              const variantIndex = item.selectedTag
-                                ? item.product?.tags.findIndex(
-                                    (tag: string) => tag === item.selectedTag,
-                                  )
-                                : undefined;
+                              const variantIndex =
+                                item.selectedTag && item.product
+                                  ? item.product.tags.findIndex(
+                                      (tag: string) => tag === item.selectedTag,
+                                    )
+                                  : undefined;
                               router.push({
                                 pathname: `/product/${item.productId}`,
                                 query:
@@ -678,11 +679,12 @@ export default function OrderDetailPage() {
                           <Typography
                             className={`${interClassname.className} cursor-pointer hover:underline text-blue-600`}
                             onClick={() => {
-                              const variantIndex = item.selectedTag
-                                ? item.product?.tags.findIndex(
-                                    (tag: string) => tag === item.selectedTag,
-                                  )
-                                : undefined;
+                              const variantIndex =
+                                item.selectedTag && item.product
+                                  ? item.product.tags.findIndex(
+                                      (tag: string) => tag === item.selectedTag,
+                                    )
+                                  : undefined;
                               router.push({
                                 pathname: `/product/${item.productId}`,
                                 query:

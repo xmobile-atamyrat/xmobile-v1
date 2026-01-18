@@ -98,7 +98,7 @@ export default function CartProductCard({
           className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
             setSelectedProduct(product);
-            const query: any = {};
+            const query: Record<string, string | number> = {};
             if (variantIndex !== undefined) query.v = variantIndex;
             router.push({
               pathname: `/product/${product.id}`,

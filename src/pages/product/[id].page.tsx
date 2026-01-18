@@ -23,7 +23,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPriceTags } from '@/pages/product/utils';
+import { computeProductPriceTags, parseTagParts } from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
@@ -170,7 +170,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     }
 
     setSelectedTagIndex(0);
-  }, [product?.id, router.isReady]);
+  }, [product?.id, router.isReady, router.query]);
 
   // Update URL when selectedTagIndex changes manually
   const updateVariantInUrl = (index: number) => {
@@ -444,10 +444,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     if (product.tags && product.tags.length > 0) {
                       const tag = product.tags[selectedTagIndex];
                       if (tag) {
-                        const words = tag.split(' ');
-                        const n = words[words.length - 1].length < 1 ? 3 : 2;
-                        const end = words.slice(-n).join(' ');
-                        if (!end.startsWith(' ')) return end;
+                        const { pricePart } = parseTagParts(tag);
+                        if (!pricePart.startsWith(' ')) return pricePart;
                       }
                     }
                     return `${product.price} ${t('manat')}`;
@@ -462,11 +460,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               className={detailPageClasses.circProgress[platform]}
             />
           ) : (
-            <Box className="flex flex-wrap gap-2 my-2 mb-[20px]">
+            <Box className="flex flex-wrap gap-2 my-2 mb-[20px] w-[80%]">
               {product.tags.map((tag, index) => {
-                const words = tag.split(' ');
-                const n = words[words.length - 1].length < 1 ? 3 : 2;
-                const beginning = words.slice(0, -n).join(' ');
+                const { namePart: beginning } = parseTagParts(tag);
 
                 return (
                   <Button
