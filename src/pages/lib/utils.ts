@@ -461,8 +461,8 @@ export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
     }
     if (!url && text.startsWith(X_MOBILE_DOMAIN, i)) {
       url = X_MOBILE_DOMAIN;
-      // start boundary must be start of text OR preceded by a separator
-      if (i > 0 && !SEPERATORS.includes(text[i - 1])) {
+      // start boundary must be start of text OR preceded by a separator, or '/'
+      if (i > 0 && !SEPERATORS.includes(text[i - 1]) && text[i - 1] !== '/') {
         url = '';
       }
       // end boundary must be end of text, a separator, OR a '/'
