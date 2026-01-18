@@ -102,6 +102,8 @@ export const DUMMY_TM_IP = '95.85.96.1';
 export const DUMMY_DUBAI_IP = '94.200.200.200';
 export const DUMMY_TR_IP = '88.240.128.0';
 
+export const X_MOBILE_DOMAIN = 'xmobile.com.tm';
+
 export const ALL_PRODUCTS_CATEGORY_CARD = 'ALL_PRODUCTS_CATEGORY_CARD';
 
 export const SORT_OPTIONS = {
