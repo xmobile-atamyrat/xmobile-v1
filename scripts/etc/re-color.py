@@ -22,4 +22,4 @@ def change_color(image_path, target_color, replacement_color, output_path):
 # change_color('public/logo.jpeg', '#221765', '#1976d2', 'public/logo-recolored.jpeg')
 
 # target color: orange
-change_color('public/logo.jpeg', '#221765', '#ff6f00', 'public/logo-recolored.jpeg')
+change_color('public/logo/logo.jpeg', '#221765', '#ff6f00', 'public/logo/logo-recolored.jpeg')

@@ -57,7 +57,7 @@ export const units = {
 
 export const img = {
   trash: {
-    web: '/deleteIcon.png',
-    mobile: '/deleteIconMobile.png',
+    web: '/cart/icons/deleteIcon.png',
+    mobile: '/cart/icons/deleteIconMobile.png',
   },
 };

@@ -70,7 +70,7 @@ export default function Signup() {
       <Box className={signupClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/xmobile-processed-logo.png"
+          src="/logo/xmobile-processed-logo.png"
           className={signupClasses.boxes.logo[platform]}
         />
         <Box className={signupClasses.boxes.label[platform]}>

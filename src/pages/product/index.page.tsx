@@ -285,7 +285,7 @@ export default function Products() {
           <IconButton onClick={() => setMobileFilterOpen(true)}>
             <CardMedia
               component="img"
-              src="/filter.svg"
+              src="/icons/filter.svg"
               sx={{ width: 30, height: 30 }}
             />
           </IconButton>
