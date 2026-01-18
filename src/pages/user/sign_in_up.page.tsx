@@ -43,7 +43,7 @@ export default function SignInUp() {
         <Box className={profileClasses.boxes.loggedOutMain[platform]}>
           <CardMedia
             component="img"
-            src="/xmobile-processed-logo.png"
+            src="/logo/xmobile-processed-logo.png"
             className={profileClasses.logo}
           />
           <Box className={profileClasses.boxes.loggedOutOptions[platform]}>
