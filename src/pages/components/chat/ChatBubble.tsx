@@ -42,7 +42,7 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           className={chatClasses.bubble.text[platform]}
           sx={{ fontWeight: 400 }}
         >
-          {linkify(message.content, message.senderRole)}
+          {linkify(message.content)}
         </Typography>
       </Paper>
 
