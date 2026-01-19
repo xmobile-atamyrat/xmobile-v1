@@ -11,6 +11,7 @@
     "android:clean": "cd android && ./gradlew clean",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "adb:portforward": "adb reverse tcp:8081 tcp:8081",
     "start": "react-native start",
     "test": "jest"
   },
