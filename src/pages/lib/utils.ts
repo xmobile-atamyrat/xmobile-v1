@@ -14,7 +14,7 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { createTheme, InputProps, styled } from '@mui/material';
-import { Product, UserRole } from '@prisma/client';
+import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
 import React, { Dispatch, SetStateAction } from 'react';
 
@@ -426,94 +426,22 @@ export const hideTextfieldSpinButtons: InputProps = {
   },
 };
 
-const NOT_ALLOWED_URL_CHARS = ' \t\n"%<>\\^`{}|';
-const RARELY_COMMON_URL_CHARS = ",;[]!$'()*+";
-const SEPERATORS = NOT_ALLOWED_URL_CHARS + RARELY_COMMON_URL_CHARS;
-
-export const linkify = (text: string, role?: UserRole): React.ReactNode[] => {
-  const seperatedTextByUrls: React.ReactNode[] = [];
-  const isAdmin = role === 'SUPERUSER' || role === 'ADMIN';
-
-  const saveTextSegment = (segment: string) => {
-    if (segment) {
-      seperatedTextByUrls.push(
-        // <React.Fragment key={seperatedTextByUrls.length}> {textSegment} </React.Fragment>
-        React.createElement(
-          React.Fragment,
-          { key: seperatedTextByUrls.length },
-          segment,
-        ), // react container to hold textSegment
+export const linkify = (text: string): React.ReactNode[] => {
+  return text.split(/(\s+)/).map((part, i) => {
+    // use regex to preserve the spaces, returns ["hello", "", "world"]
+    if (part.startsWith(`https://${X_MOBILE_DOMAIN}/`)) {
+      return React.createElement(
+        'a',
+        {
+          key: i,
+          href: part,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          style: { textDecoration: 'underline', color: 'inherit' },
+        },
+        part,
       );
     }
-  };
-
-  let textSegment = '';
-  for (let i = 0; i < text.length; i += 1) {
-    let url = '';
-
-    if (isAdmin) {
-      // http:, https: links only allowed for admins
-      if (text.startsWith('https://', i)) {
-        url = 'https://';
-      } else if (text.startsWith('http://', i)) {
-        url = 'http://';
-      }
-    }
-    if (!url && text.startsWith(X_MOBILE_DOMAIN, i)) {
-      url = X_MOBILE_DOMAIN;
-      // start boundary must be start of text OR preceded by a separator, or '/'
-      if (i > 0 && !SEPERATORS.includes(text[i - 1]) && text[i - 1] !== '/') {
-        url = '';
-      }
-      // end boundary must be end of text, a separator, OR a '/'
-      const index = i + X_MOBILE_DOMAIN.length;
-      if (index < text.length) {
-        const nextChar = text[index];
-        const isValidEnd = SEPERATORS.includes(nextChar) || nextChar === '/';
-
-        if (!isValidEnd) {
-          url = ''; // (e.g. xmobile.com.tmm)
-        }
-      }
-    }
-
-    if (url) {
-      saveTextSegment(textSegment);
-      textSegment = '';
-
-      let urlEndIndex = i + url.length;
-      while (urlEndIndex < text.length) {
-        if (SEPERATORS.includes(text[urlEndIndex])) {
-          break;
-        }
-        url += text[urlEndIndex];
-        urlEndIndex += 1;
-      }
-
-      let secureUrl = url;
-      if (url.startsWith(`${X_MOBILE_DOMAIN}`)) {
-        secureUrl = `https://${url}`;
-      }
-      seperatedTextByUrls.push(
-        React.createElement(
-          'a',
-          {
-            key: seperatedTextByUrls.length,
-            href: secureUrl,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-            style: { textDecoration: 'underline', color: 'inherit' },
-          },
-          url,
-        ),
-      );
-
-      i = urlEndIndex - 1;
-    } else {
-      textSegment += text[i];
-    }
-  }
-
-  saveTextSegment(textSegment);
-  return seperatedTextByUrls;
+    return React.createElement(React.Fragment, { key: i }, part); // create react container to hold element (<>{part}</>)
+  });
 };
