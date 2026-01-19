@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
@@ -19,7 +19,7 @@ function WebAppScreen() {
       ]}
     >
       <WebView
-        source={{ uri: 'http://192.168.1.231:3003' }}
+        source={{ uri: 'https://xmobile.com.tm' }}
         style={styles.webview}
         startInLoadingState={true}
         renderLoading={() => (
@@ -31,11 +31,11 @@ function WebAppScreen() {
         domStorageEnabled={true}
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
-        onError={(syntheticEvent) => {
+        onError={syntheticEvent => {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView error: ', nativeEvent);
         }}
-        onHttpError={(syntheticEvent) => {
+        onHttpError={syntheticEvent => {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView HTTP error: ', nativeEvent);
         }}
