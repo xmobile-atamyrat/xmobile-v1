@@ -112,6 +112,17 @@ model Prices {
   @@index([price])
 }
 
+model Colors {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  hex             String
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([name])
+}
+
 model UserVisitRecord {
   id              String  @id @default(uuid())
   ip              String

@@ -319,6 +319,24 @@
   "brand": "Marka",
   "brandSearchPlaceholder": "Marka ara veya ekle...",
   "filter": "Filtre",
-  "apply": "Uygula"
+  "apply": "Uygula",
+  "manageColors": "Renkleri Yönet",
+  "selectColor": "Renk Seç",
+  "color": "Renk",
+  "select": "Seç",
+  "colors": "Renkler",
+  "addColor": "Renk Ekle",
+  "colorName": "Renk Adı",
+  "colorCode": "Renk Kodu",
+  "preview": "Önizleme",
+  "deleteColor": "Renk Sil",
+  "confirmDeleteColor": "Bu renk silmek istediğinizden emin misiniz?",
+  "colorDeleteSuccess": "Renk başarıyla silindi",
+  "colorDeleteFailed": "Renk silinemedi",
+  "colorCreateSuccess": "Renk başarıyla eklendi",
+  "colorCreateFailed": "Renk ekleneemedi",
+  "colorsUpdated": "Renkler güncellendi",
+  "updateColorsError": "Renkler güncellenemedi",
+  "fetchColorsError": "Renkler getirilemedi"
 }
 

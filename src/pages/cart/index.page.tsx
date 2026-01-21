@@ -5,7 +5,12 @@ import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { computePrice, computeProductPrice } from '@/pages/product/utils';
+import {
+  computePrice,
+  computeProductPrice,
+  extractColorIdFromTag,
+  computeVariantColor,
+} from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
 import {
@@ -39,6 +44,7 @@ export default function CartPage() {
       product: Product;
       variantName?: string;
       variantIndex?: number;
+      color?: { id: string; name: string; hex: string };
     })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
@@ -100,16 +106,40 @@ export default function CartPage() {
                   )
                 : undefined;
 
+              // Extract color from selectedTag
+              let color;
+              if (item.selectedTag) {
+                const colorId = extractColorIdFromTag(item.selectedTag);
+                if (colorId) {
+                  const colorData = await computeVariantColor({
+                    tag: item.selectedTag,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  if (colorData) {
+                    color = {
+                      id: colorData.id,
+                      name: colorData.name,
+                      hex: colorData.hex,
+                    };
+                  }
+                }
+              }
+
               return {
                 ...item,
                 product: computedProduct,
                 variantName: item.selectedTag
-                  ? item.selectedTag.replace(squareBracketRegex, '').trim()
+                  ? item.selectedTag
+                      .replace(squareBracketRegex, '')
+                      .replace(/\{[^}]+\}/g, '')
+                      .trim()
                   : undefined,
                 variantIndex:
                   variantIndex !== -1 && variantIndex !== undefined
                     ? variantIndex
                     : undefined,
+                color,
               };
             }),
           );
@@ -220,6 +250,7 @@ export default function CartPage() {
                       ?.replace(/tmt/gi, '')
                       .trim()}
                     variantIndex={cartItem?.variantIndex}
+                    color={cartItem?.color}
                   />
                 ))}
               </Suspense>

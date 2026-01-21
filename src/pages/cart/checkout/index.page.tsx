@@ -5,7 +5,9 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import {
   computeProductPrice,
+  computeVariantColor,
   computeVariantPrice,
+  extractColorIdFromTag,
 } from '@/pages/product/utils';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
 import { colors, interClassname, units } from '@/styles/theme';
@@ -46,7 +48,10 @@ export default function CheckoutPage() {
   const fetchWithCreds = useFetchWithCreds();
 
   const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
+    (CartItem & {
+      product: Product;
+      color?: { id: string; name: string; hex: string };
+    })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -73,7 +78,30 @@ export default function CheckoutPage() {
         >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
 
         if (success) {
-          setCartItems(data);
+          const itemsWithColor = await Promise.all(
+            data.map(async (item) => {
+              let color;
+              if (item.selectedTag) {
+                const colorId = extractColorIdFromTag(item.selectedTag);
+                if (colorId) {
+                  const colorData = await computeVariantColor({
+                    tag: item.selectedTag,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  if (colorData) {
+                    color = {
+                      id: colorData.id,
+                      name: colorData.name,
+                      hex: colorData.hex,
+                    };
+                  }
+                }
+              }
+              return { ...item, color };
+            }),
+          );
+          setCartItems(itemsWithColor);
         } else {
           console.error(message);
         }
@@ -125,7 +153,6 @@ export default function CheckoutPage() {
 
           let price = 0;
 
-          // 1. Try to get price from selectedTag
           if (item.selectedTag) {
             const variantPrice = await computeVariantPrice({
               tag: item.selectedTag,
@@ -137,7 +164,6 @@ export default function CheckoutPage() {
             }
           }
 
-          // 2. Fallback to product price if no tag price found
           if (price === 0) {
             const computedProduct = await computeProductPrice({
               product: item.product,
@@ -531,13 +557,27 @@ export default function CheckoutPage() {
                           {parseName(item.product.name, router.locale ?? 'tk')}
                         </Typography>
                         {item.selectedTag && (
-                          <Typography
-                            className={`${interClassname.className} text-xs text-gray-500`}
-                          >
-                            {item.selectedTag
-                              .replace(/\[.*\]|tmt/gi, '')
-                              .trim()}
-                          </Typography>
+                          <Box className="flex flex-row items-center gap-1">
+                            <Typography
+                              className={`${interClassname.className} text-xs text-gray-500`}
+                            >
+                              {item.selectedTag
+                                .replace(/\[[^\]]*\]|\{[^}]*\}|tmt/gi, '')
+                                .trim()}
+                              {item.color && ` (${item.color.name})`}
+                            </Typography>
+                            {item.color && (
+                              <Box
+                                sx={{
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: '50%',
+                                  backgroundColor: item.color.hex,
+                                  border: '1px solid #ddd',
+                                }}
+                              />
+                            )}
+                          </Box>
                         )}
                         <Typography
                           className={`${interClassname.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
