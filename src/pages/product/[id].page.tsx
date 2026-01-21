@@ -9,7 +9,7 @@ import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
-import { squareBracketRegex } from '@/pages/lib/constants';
+import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -23,7 +23,12 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPriceTags, parseTagParts } from '@/pages/product/utils';
+import {
+  computeProductPriceTags,
+  computeVariantColor,
+  extractColorIdFromTag,
+  parseTagParts,
+} from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
@@ -45,12 +50,12 @@ import {
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import type { Product } from '@prisma/client';
+import type { Colors, Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
@@ -155,6 +160,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
   const [selectedTagIndex, setSelectedTagIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<Colors | null>(null);
+  const [availableColors, setAvailableColors] = useState<Colors[]>([]);
 
   useEffect(() => {
     if (!router.isReady || !product?.tags) return;
@@ -268,16 +275,115 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     // accessToken is intentionally left out as GET /api/prices and /api/prices/rate is public
     if (initialProduct == null) return;
     (async () => {
-      setProduct(
-        await computeProductPriceTags({
-          fetchWithCreds,
-          product: initialProduct,
-          accessToken,
-        }),
-      );
+      const computedProduct = await computeProductPriceTags({
+        fetchWithCreds,
+        product: initialProduct,
+        accessToken,
+      });
+      setProduct(computedProduct);
     })();
     // No need to include accessToken as logged out users don't have a token
   }, [initialProduct]);
+
+  const processedTags = useMemo(() => {
+    if (!product?.tags) return [];
+    return product.tags.map((tag, index) => {
+      const colorId = extractColorIdFromTag(tag);
+      let specName = '';
+      let pricePart = '';
+      const tmtIndex = tag.indexOf('TMT');
+
+      if (tmtIndex !== -1) {
+        const partBeforeTmt = tag.substring(0, tmtIndex).trim();
+        const parts = partBeforeTmt.split(' ');
+
+        if (parts.length > 1) {
+          const priceVal = parts.pop();
+          pricePart = `${priceVal} TMT`;
+          specName = parts.join(' ').trim();
+        } else {
+          specName = partBeforeTmt;
+          pricePart = 'TMT';
+        }
+      } else {
+        const parsed = parseTagParts(tag);
+        const nameP = parsed.namePart;
+        specName = nameP.replace(curlyBracketRegex, '').trim();
+        pricePart = parsed.pricePart;
+      }
+
+      specName = specName.replace(curlyBracketRegex, '').trim();
+
+      return { index, originalTag: tag, specName, pricePart, colorId };
+    });
+  }, [product?.tags]);
+
+  const uniqueSpecs = useMemo(() => {
+    const specs = new Set<string>();
+    const result: { specName: string; firstIndex: number }[] = [];
+    processedTags.forEach((tag) => {
+      if (!specs.has(tag.specName)) {
+        specs.add(tag.specName);
+        result.push({ specName: tag.specName, firstIndex: tag.index });
+      }
+    });
+    return result;
+  }, [processedTags]);
+
+  const currentSpecName = useMemo(() => {
+    if (!processedTags[selectedTagIndex]) return '';
+    return processedTags[selectedTagIndex].specName;
+  }, [processedTags, selectedTagIndex]);
+
+  useEffect(() => {
+    if (!product?.tags || !accessToken || !currentSpecName) return;
+
+    const variantsForSpec = processedTags.filter(
+      (tag) => tag.specName === currentSpecName,
+    );
+
+    const colorIds = new Set<string>();
+    variantsForSpec.forEach((v) => {
+      if (v.colorId) colorIds.add(v.colorId);
+    });
+
+    if (colorIds.size > 0) {
+      (async () => {
+        const productColors = await Promise.all(
+          Array.from(colorIds).map((id) =>
+            computeVariantColor({
+              tag: `{${id}}`,
+              accessToken,
+              fetchWithCreds,
+            }),
+          ),
+        );
+        const validColors = productColors.filter(
+          (color) => color !== null,
+        ) as Colors[];
+        setAvailableColors(validColors);
+
+        const currentColorId = processedTags[selectedTagIndex]?.colorId;
+        if (currentColorId) {
+          const currentColor = validColors.find(
+            (color) => color.id === currentColorId,
+          );
+          setSelectedColor(currentColor || null);
+        } else {
+          setSelectedColor(null);
+        }
+      })();
+    } else {
+      setAvailableColors([]);
+      setSelectedColor(null);
+    }
+  }, [
+    product?.tags,
+    currentSpecName,
+    accessToken,
+    processedTags,
+    selectedTagIndex,
+  ]);
 
   return product ? (
     <Layout
@@ -441,14 +547,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
                 >
                   {(() => {
-                    if (product.tags && product.tags.length > 0) {
-                      const tag = product.tags[selectedTagIndex];
-                      if (tag) {
-                        const { pricePart } = parseTagParts(tag);
-                        if (!pricePart.startsWith(' ')) return pricePart;
+                    if (processedTags[selectedTagIndex]) {
+                      const { pricePart } = processedTags[selectedTagIndex];
+                      if (!pricePart.startsWith(' ') && pricePart.length > 0) {
+                        return pricePart.replace(curlyBracketRegex, '').trim();
                       }
                     }
-                    return `${product.price} ${t('manat')}`;
+                    const cleanPrice = product.price
+                      ?.replace(curlyBracketRegex, '')
+                      .trim();
+                    return `${cleanPrice} ${t('manat')}`;
                   })()}
                 </Typography>
               )}
@@ -461,40 +569,102 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             />
           ) : (
             <Box className="flex flex-wrap gap-2 my-2 mb-[20px] w-[80%]">
-              {product.tags.map((tag, index) => {
-                const { namePart: beginning } = parseTagParts(tag);
+              {uniqueSpecs.map((spec, uniqueIndex) => {
+                const isSelected = spec.specName === currentSpecName;
 
                 return (
                   <Button
-                    key={index}
-                    variant={
-                      selectedTagIndex === index ? 'contained' : 'outlined'
-                    }
-                    onClick={() => updateVariantInUrl(index)}
+                    key={uniqueIndex}
+                    variant={isSelected ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      const currentColorId =
+                        processedTags[selectedTagIndex]?.colorId;
+                      const variantsForNewSpec = processedTags.filter(
+                        (tag) => tag.specName === spec.specName,
+                      );
+
+                      let newIndex = variantsForNewSpec[0].index;
+
+                      if (currentColorId) {
+                        const sameColorVariant = variantsForNewSpec.find(
+                          (variant) => variant.colorId === currentColorId,
+                        );
+                        if (sameColorVariant) {
+                          newIndex = sameColorVariant.index;
+                        }
+                      }
+                      updateVariantInUrl(newIndex);
+                    }}
                     className={`${interClassname.className} capitalize`}
                     sx={{
                       borderColor: colors.mainWebMobile[platform],
-                      color:
-                        selectedTagIndex === index
-                          ? '#fff'
-                          : colors.mainWebMobile[platform],
-                      backgroundColor:
-                        selectedTagIndex === index
-                          ? colors.mainWebMobile[platform]
-                          : 'transparent',
+                      color: isSelected
+                        ? '#fff'
+                        : colors.mainWebMobile[platform],
+                      backgroundColor: isSelected
+                        ? colors.mainWebMobile[platform]
+                        : 'transparent',
                       '&:hover': {
-                        backgroundColor:
-                          selectedTagIndex === index
-                            ? colors.mainWebMobile[platform]
-                            : 'rgba(0, 0, 0, 0.04)',
+                        backgroundColor: isSelected
+                          ? colors.mainWebMobile[platform]
+                          : 'rgba(0, 0, 0, 0.04)',
                         borderColor: colors.mainWebMobile[platform],
                       },
                     }}
                   >
-                    {beginning}
+                    {spec.specName}
                   </Button>
                 );
               })}
+            </Box>
+          )}
+
+          {availableColors.length > 0 && (
+            <Box className="flex flex-col gap-2 my-2 mb-[20px] w-[80%]">
+              <Typography
+                className={`${interClassname.className}`}
+                variant="body2"
+                fontWeight={500}
+              >
+                {t('color') || 'Color'}:
+              </Typography>
+              <Box className="flex flex-wrap gap-2">
+                {availableColors.map((color) => {
+                  const isSelected = selectedColor?.id === color.id;
+                  return (
+                    <Box
+                      key={color.id}
+                      onClick={() => {
+                        const variantWithColor = processedTags.find(
+                          (tag) =>
+                            tag.specName === currentSpecName &&
+                            tag.colorId === color.id,
+                        );
+
+                        if (variantWithColor) {
+                          updateVariantInUrl(variantWithColor.index);
+                        }
+                      }}
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: color.hex,
+                        border: isSelected
+                          ? `3px solid ${colors.mainWebMobile[platform]}`
+                          : '2px solid #ccc',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          transform: 'scale(1.1)',
+                          border: `3px solid ${colors.mainWebMobile[platform]}`,
+                        },
+                      }}
+                      title={color.name}
+                    />
+                  );
+                })}
+              </Box>
             </Box>
           )}
 
@@ -535,11 +705,26 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <AddToCart
               productId={product.id}
               cartAction="detail"
-              selectedTag={
-                initialProduct?.tags && initialProduct.tags.length > 0
-                  ? initialProduct.tags[selectedTagIndex]
-                  : undefined
-              }
+              selectedTag={(() => {
+                if (!initialProduct?.tags || initialProduct.tags.length === 0) {
+                  return undefined;
+                }
+                let tag = initialProduct.tags[selectedTagIndex];
+                if (selectedColor) {
+                  const colorId = extractColorIdFromTag(tag);
+                  if (colorId !== selectedColor.id) {
+                    if (colorId) {
+                      tag = tag.replace(
+                        `{${colorId}}`,
+                        `{${selectedColor.id}}`,
+                      );
+                    } else {
+                      tag = `${tag} {${selectedColor.id}}`;
+                    }
+                  }
+                }
+                return tag;
+              })()}
             />
           )}
         </Box>
@@ -588,11 +773,23 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         <AddToCart
           productId={product.id}
           cartAction="detail"
-          selectedTag={
-            initialProduct?.tags && initialProduct.tags.length > 0
-              ? initialProduct.tags[selectedTagIndex]
-              : undefined
-          }
+          selectedTag={(() => {
+            if (!initialProduct?.tags || initialProduct.tags.length === 0) {
+              return undefined;
+            }
+            let tag = initialProduct.tags[selectedTagIndex];
+            if (selectedColor) {
+              const colorId = extractColorIdFromTag(tag);
+              if (colorId !== selectedColor.id) {
+                if (colorId) {
+                  tag = tag.replace(`{${colorId}}`, `{${selectedColor.id}}`);
+                } else {
+                  tag = `${tag} {${selectedColor.id}}`;
+                }
+              }
+            }
+            return tag;
+          })()}
         />
       )}
       {showDeleteProductDialog?.show && (
