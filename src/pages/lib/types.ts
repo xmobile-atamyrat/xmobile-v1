@@ -342,3 +342,110 @@ export interface DollarRateContextProps {
   rates: DollarRate[];
   setRates: Dispatch<SetStateAction<DollarRate[]>>;
 }
+
+// ============================================
+// SEO TYPE DEFINITIONS
+// ============================================
+
+/**
+ * Structured data for Product JSON-LD schema.
+ * Used for Google Shopping and rich results in search.
+ *
+ * This is hidden structured data (not visible to users) that tells
+ * Google about product details like price, brand, images, etc.
+ *
+ * @see https://schema.org/Product
+ */
+export interface ProductJsonLdData {
+  '@context': 'https://schema.org';
+  '@type': 'Product';
+  name: string;
+  description?: string;
+  brand?: {
+    '@type': 'Brand';
+    name: string;
+  };
+  offers: {
+    '@type': 'Offer';
+    price: string;
+    priceCurrency: 'TMT';
+    url: string;
+  };
+  image: string[];
+}
+
+/**
+ * Single breadcrumb item for JSON-LD BreadcrumbList schema.
+ *
+ * Note: This is for Google Search SEO, NOT your UI breadcrumbs.
+ * Your existing SimpleBreadcrumbs component with ExtendedCategory[]
+ * is what users see on the website.
+ *
+ * The 'item' field (URL) is optional because the LAST breadcrumb
+ * (current page) should NOT have a URL according to Schema.org spec.
+ *
+ * Example:
+ * - Home (has item: "https://...")
+ * - Phones (has item: "https://...")
+ * - iPhone 15 (NO item - you're already here!)
+ *
+ * @see https://schema.org/BreadcrumbList
+ */
+export interface BreadcrumbJsonLdItem {
+  '@type': 'ListItem';
+  position: number;
+  name: string;
+  item?: string; // URL - only present for non-current pages
+}
+
+/**
+ * Complete BreadcrumbList schema for JSON-LD.
+ * This generates breadcrumb trails that appear in Google search results.
+ *
+ * @see https://schema.org/BreadcrumbList
+ */
+export interface BreadcrumbListJsonLd {
+  '@context': 'https://schema.org';
+  '@type': 'BreadcrumbList';
+  itemListElement: BreadcrumbJsonLdItem[];
+}
+
+/**
+ * Hreflang link definition for multi-language SEO.
+ * Tells Google about alternate language versions of the same page.
+ *
+ * Example: If you have /ru/product/123, /tk/product/123, /en/product/123
+ * all showing the same product in different languages, hreflang links
+ * tell Google they're translations, not duplicate content.
+ */
+export interface HreflangLink {
+  locale: string; // e.g., 'ru', 'tk', 'en', 'x-default'
+  url: string; // Full URL for that language version
+}
+
+/**
+ * Complete SEO metadata for a page.
+ * This is the main container that holds all SEO data we'll generate.
+ *
+ * Used in Step 11 when we generate SEO data for product pages.
+ */
+export interface PageSeoData {
+  // Basic meta tags
+  title: string;
+  description: string;
+  canonicalUrl: string;
+
+  // Open Graph (social media sharing)
+  ogTitle: string;
+  ogDescription: string;
+  ogImage?: string;
+  ogLocale: string;
+  // Note: ogType is always "product" for product pages, so we hardcode it
+
+  // Multi-language SEO
+  hreflangLinks: HreflangLink[];
+
+  // Structured data (JSON-LD)
+  productJsonLd?: ProductJsonLdData;
+  breadcrumbJsonLd?: BreadcrumbListJsonLd;
+}
