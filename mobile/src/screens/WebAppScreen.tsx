@@ -20,6 +20,9 @@ function WebAppScreen() {
     >
       <WebView
         source={{ uri: 'https://xmobile.com.tm' }}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        domstorageEnabled={true}
         style={styles.webview}
         startInLoadingState={true}
         renderLoading={() => (
