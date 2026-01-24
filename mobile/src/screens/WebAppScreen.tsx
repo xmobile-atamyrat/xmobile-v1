@@ -1,10 +1,26 @@
-import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
+  const webViewRef = React.useRef<WebView>(null);
+
+  useEffect(() => {
+    const backButton = () => {
+      if (webViewRef.current) {
+        webViewRef.current.goBack();
+        return true;
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backButton,
+    );
+    return () => backHandler.remove();
+  });
 
   return (
     <View
@@ -19,10 +35,10 @@ function WebAppScreen() {
       ]}
     >
       <WebView
+        ref={webViewRef}
         source={{ uri: 'https://xmobile.com.tm' }}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
-        domstorageEnabled={true}
         style={styles.webview}
         startInLoadingState={true}
         renderLoading={() => (
