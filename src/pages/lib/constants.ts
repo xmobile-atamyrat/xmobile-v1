@@ -114,3 +114,50 @@ export const SORT_OPTIONS = {
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;
+
+// ============================================
+// SEO CONSTANTS
+// ============================================
+
+/**
+ * Production website URL for canonical URLs and structured data.
+ * Uses environment variable in production, falls back to production URL.
+ *
+ * Note: NEXT_PUBLIC_ prefix required for client-side access in Next.js
+ */
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://xmobile.com.tm';
+
+/**
+ * Mapping of Next.js locales to Open Graph locale codes.
+ * Used for og:locale meta tag in social media sharing.
+ *
+ * Format: language_TERRITORY (e.g., ru_RU for Russian in Russia)
+ */
+export const LOCALE_TO_OG_LOCALE = {
+  ru: 'ru_RU', // Russian
+  tk: 'tk_TM', // Turkmen
+  en: 'en_US', // English
+  ch: 'tk_TM', // Charjov dialect, use Turkmen OG locale
+  tr: 'tr_TR', // Turkish
+} as const;
+
+/**
+ * Business name for SEO titles and branding.
+ * Used in page titles: "Product Name | X-mobile"
+ */
+export const BUSINESS_NAME = 'X-mobile';
+
+/**
+ * Meta description maximum length.
+ * Google typically shows 150-160 characters in search results.
+ * Descriptions longer than this will be truncated.
+ */
+export const META_DESC_MAX_LENGTH = 160;
+
+/**
+ * Page title maximum length.
+ * Google typically shows first 50-60 characters in search results.
+ * Titles longer than this will be truncated.
+ */
+export const TITLE_MAX_LENGTH = 60;
