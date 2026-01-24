@@ -6,6 +6,21 @@ import { WebView } from 'react-native-webview';
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
+  const injectedJavaScript = `
+    (function() {
+      const meta = document.createElement('meta');
+      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      meta.setAttribute('name', 'viewport');
+      document.getElementsByTagName('head')[0].appendChild(meta);
+      
+      document.addEventListener('gesturestart', (e) => e.preventDefault());
+      document.addEventListener('touchmove', (event) => {
+        if (event.scale !== 1) event.preventDefault();
+      }, { passive: false });
+    })();
+    
+    true;
+  `;
 
   useEffect(() => {
     const backButton = () => {
@@ -37,6 +52,7 @@ function WebAppScreen() {
       <WebView
         ref={webViewRef}
         source={{ uri: 'https://xmobile.com.tm' }}
+        injectedJavaScript={injectedJavaScript}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         style={styles.webview}
