@@ -40,7 +40,7 @@ export default function Footer() {
   const { setProducts } = useProductContext();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
-    router.push(newValue);
+    router.push(newValue, newValue, { locale: router.locale });
     setProducts([]);
     setSelectedCategoryId(undefined);
   };

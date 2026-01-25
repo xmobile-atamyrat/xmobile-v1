@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +22,9 @@ function WebAppScreen() {
     
     true;
   `;
+  const [storedToken, setStoredToken] = React.useState<string | null>(null);
+  const [storedLocale, setStoredLocale] = React.useState<string | null>(null);
+  const [isTokenLoaded, setIsTokenLoaded] = React.useState(false);
 
   useEffect(() => {
     const backButton = () => {
@@ -36,6 +40,31 @@ function WebAppScreen() {
     );
     return () => backHandler.remove();
   });
+
+  useEffect(() => {
+    const loadStoredData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('auth_refresh_token');
+        const locale = await AsyncStorage.getItem('NEXT_LOCALE');
+        setStoredToken(token);
+        setStoredLocale(locale);
+      } catch (error) {
+        console.error('Failed to load token:', error);
+      } finally {
+        setIsTokenLoaded(true);
+      }
+    };
+
+    loadStoredData();
+  }, []);
+
+  if (!isTokenLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#d32f2f" />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -56,14 +85,15 @@ function WebAppScreen() {
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         style={styles.webview}
+        cacheEnabled={true}
         startInLoadingState={true}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#d32f2f" />
           </View>
         )}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
         onError={syntheticEvent => {
@@ -74,6 +104,23 @@ function WebAppScreen() {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView HTTP error: ', nativeEvent);
         }}
+        injectedJavaScriptBeforeContentLoaded={
+          storedToken || storedLocale
+            ? `
+        ${
+          storedToken
+            ? `document.cookie = "refreshToken=${storedToken}; path=/; max-age=31536000";`
+            : ''
+        }
+        ${
+          storedLocale
+            ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/; max-age=31536000";`
+            : ''
+        }
+        true;
+      `
+            : undefined
+        }
       />
     </View>
   );
