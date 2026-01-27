@@ -12,6 +12,7 @@ const FormSchema = z.object({
   cartItemId: z.string(),
   productId: z.string(),
   quantity: z.number(),
+  selectedTag: z.string().optional(),
 });
 
 const CreateCartItem = FormSchema.omit({ cartItemId: true });
@@ -25,14 +26,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   if (req.method === 'POST') {
     try {
       // validate the data input
-      const { productId, quantity } = CreateCartItem.parse({
+      const { productId, quantity, selectedTag } = CreateCartItem.parse({
         productId: data.productId,
         quantity: data.quantity,
+        selectedTag: data.selectedTag,
       });
+
+      const queryTag = selectedTag ?? null;
 
       // delete if product and cart has a relation
       const cartItemExist = await dbClient.cartItem.findFirst({
-        where: { userId, productId },
+        where: { userId, productId, selectedTag: queryTag },
       });
 
       if (!cartItemExist) {
@@ -41,6 +45,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             userId,
             productId,
             quantity,
+            selectedTag,
           },
         });
 

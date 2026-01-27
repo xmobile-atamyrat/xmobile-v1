@@ -19,7 +19,7 @@ export const addEditProductDialogClasses = {
   },
   textField: {
     usual: {
-      web: 'my-1 mr-2 w-1/3 min-w-[250px]',
+      web: 'my-1 mr-2 min-w-[750px]',
       mobile: 'my-1 w-full',
     },
     price: {

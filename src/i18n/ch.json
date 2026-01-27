@@ -321,6 +321,24 @@
   "brand": "Brend",
   "brandSearchPlaceholder": "Brend ahtar ýa-da koş...",
   "filter": "Filtr",
-  "apply": "Ulan"
+  "apply": "Ulan",
+  "manageColors": "Reňkleri dolandyr",
+  "selectColor": "Reňk saýla",
+  "color": "Reňk",
+  "select": "Saýla",
+  "colors": "Reňkler",
+  "addColor": "Reňk koş",
+  "colorName": "Reňkiň ady",
+  "colorCode": "Reňkiň kody",
+  "preview": "Görnüşi",
+  "deleteColor": "Reňki öçür",
+  "confirmDeleteColor": "Bu reňki öçürmük isleýändigiňize ynanýarsyňyzmi?",
+  "colorDeleteSuccess": "Reňk üstünlikli öçürildi",
+  "colorDeleteFailed": "Reňki öçürüp bolmady",
+  "colorCreateSuccess": "Reňk üstünlikli koýuldy",
+  "colorCreateFailed": "Reňk koýup bolmady",
+  "colorsUpdated": "Reňkler üstünlikli üýtgedildi",
+  "updateColorsError": "Reňkleri üýtgedip bolmady",
+  "fetchColorsError": "Reňkleri getirip bolmady"
 }
 
