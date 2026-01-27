@@ -1,7 +1,7 @@
 const sharp = require('sharp');
 
 const imagePath =
-  '/Users/intizar/Intizar/xmobile-v1/public/xmobile-original-logo.jpeg';
+  '/Users/intizar/Intizar/xmobile-v1/public/logo/xmobile-original-logo.jpeg';
 
 async function processImage() {
   try {

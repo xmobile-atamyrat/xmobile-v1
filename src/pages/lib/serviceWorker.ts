@@ -196,11 +196,11 @@ export async function showNotificationViaServiceWorker(notification: {
           orderId: notification.orderId,
           icon:
             notification.icon ||
-            `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+            `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
           badge:
             notification.badge ||
             `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo-badge.png` ||
-            `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+            `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
           tag: notification.id,
           data: {
             sessionId: notification.sessionId,
@@ -217,8 +217,8 @@ export async function showNotificationViaServiceWorker(notification: {
     // but TypeScript types don't include it, so we use type assertion
     await registration.showNotification(notification.title || 'New message', {
       body: notification.content,
-      icon: notification.icon || '/xm-logo.png',
-      badge: notification.badge || '/xm-logo.png',
+      icon: notification.icon || '/logo/xm-logo.png',
+      badge: notification.badge || '/logo/xm-logo.png',
       tag: notification.id,
       data: {
         sessionId: notification.sessionId,
@@ -263,11 +263,10 @@ export function showNotificationViaAPI(notification: {
         body: notification.content,
         icon:
           notification.icon ||
-          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+          `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
         badge:
           notification.badge ||
-          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo-badge.png` ||
-          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo.png`,
+          `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
         tag: notification.id,
         data: {
           sessionId: notification.sessionId,
