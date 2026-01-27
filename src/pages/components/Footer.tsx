@@ -67,7 +67,7 @@ export default function Footer() {
             icon={
               <CardMedia
                 component="img"
-                image="/homeBlack.png"
+                image="/footer/mobileIcons/home.png"
                 className={footerClasses.imgs.icons[platform]}
               />
             }
@@ -77,7 +77,7 @@ export default function Footer() {
             icon={
               <CardMedia
                 component="img"
-                image="/categoryBlack.png"
+                image="/footer/mobileIcons/category.png"
                 className={footerClasses.imgs.icons[platform]}
               />
             }
@@ -87,7 +87,7 @@ export default function Footer() {
             icon={
               <CardMedia
                 component="img"
-                image="/cartBlack.png"
+                image="/footer/mobileIcons/cart.png"
                 className={footerClasses.imgs.icons[platform]}
               />
             }
@@ -97,7 +97,7 @@ export default function Footer() {
             icon={
               <CardMedia
                 component="img"
-                image="/userBlack.png"
+                image="/footer/mobileIcons/profile.png"
                 className={footerClasses.imgs.icons[platform]}
               />
             }
@@ -114,7 +114,7 @@ export default function Footer() {
               <Link href="/">
                 <CardMedia
                   component="img"
-                  image="/xmobile-processed-logo.png"
+                  image="/logo/xmobile-processed-logo.png"
                   alt="Logo"
                   className={footerClasses.imgs.logo}
                 />

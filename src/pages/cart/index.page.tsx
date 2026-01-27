@@ -191,7 +191,7 @@ export default function CartPage() {
             <Box className="w-full flex flex-col items-center">
               <CardMedia
                 component="img"
-                src="/emptyCart.png"
+                src="/cart/empty/emptyCart.png"
                 className={cartIndexClasses.emptyCart.img[platform]}
               />
               <Typography

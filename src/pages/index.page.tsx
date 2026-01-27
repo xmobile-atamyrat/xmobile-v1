@@ -247,7 +247,7 @@ export default function Home({
         <Box className={homePageClasses.topLayer}>
           <CardMedia
             component="img"
-            src="/xmobile-processed-logo.png"
+            src="/logo/xmobile-processed-logo.png"
             className="w-auto h-[40px]"
           />
           {user && (
@@ -328,7 +328,7 @@ export default function Home({
                 >
                   <CardMedia
                     component="img"
-                    src="/filter.svg"
+                    src="/icons/filter.svg"
                     sx={{ width: 30, height: 30 }}
                   />
                 </IconButton>

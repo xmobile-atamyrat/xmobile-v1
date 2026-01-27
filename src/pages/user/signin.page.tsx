@@ -59,7 +59,7 @@ export default function Signin() {
       <Box className={signinClasses.boxes.main[platform]}>
         <CardMedia
           component="img"
-          src="/xmobile-processed-logo.png"
+          src="/logo/xmobile-processed-logo.png"
           className={signinClasses.boxes.logo[platform]}
         />
         <Box className={signinClasses.boxes.label[platform]}>
