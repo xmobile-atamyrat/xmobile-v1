@@ -1,5 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ChatMessage } from '@/pages/lib/types';
+import { linkify } from '@/pages/lib/utils';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import { Box, Paper, Typography } from '@mui/material';
 
@@ -41,7 +42,7 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           className={chatClasses.bubble.text[platform]}
           sx={{ fontWeight: 400 }}
         >
-          {message.content}
+          {linkify(message.content)}
         </Typography>
       </Paper>
 
@@ -52,7 +53,10 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
           sx={{ color: '#9E9E9E' }}
         >
           {new Date(
-            message.timestamp || message.date || Date.now(),
+            message.timestamp ||
+              message.date ||
+              message.updatedAt ||
+              Date.now(),
           ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Typography>
         {isMe && message.status === 'error' && (
