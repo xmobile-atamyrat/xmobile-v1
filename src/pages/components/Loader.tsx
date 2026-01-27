@@ -5,7 +5,7 @@ export default function Loader() {
     <Box className="flex justify-center items-center h-full w-full">
       <CardMedia
         component="img"
-        src="/xmobile-original-logo.jpeg"
+        src="/logo/xmobile-original-logo.jpeg"
         className="w-auto h-1/4"
       />
     </Box>

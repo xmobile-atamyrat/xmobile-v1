@@ -62,7 +62,7 @@ export default function CartProductCard({
     (async () => {
       try {
         if (product?.imgUrls[0] != null && network !== 'unknown') {
-          setImgUrl('/xmobile-original-logo.jpeg');
+          setImgUrl('/logo/xmobile-original-logo.jpeg');
           if (product.imgUrls[0].startsWith('http')) {
             setImgUrl(product.imgUrls[0]);
           } else {

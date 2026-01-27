@@ -38,7 +38,7 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
         >
           <CardMedia
             component="img"
-            src="/bell.png"
+            src="/icons/bell.png"
             className={notificationClasses.badge.icon[platform]}
           />
         </IconButton>
