@@ -1,4 +1,4 @@
-import { Category, DollarRate, Product, User } from '@prisma/client';
+import { Category, DollarRate, Product, User, UserRole } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
@@ -44,7 +44,7 @@ export interface ChatMessage {
   type: 'message';
   sessionId: string;
   senderId: string;
-  senderRole: string;
+  senderRole: UserRole;
   content: string;
   tempId?: string;
 
@@ -52,6 +52,7 @@ export interface ChatMessage {
   messageId?: string;
   date?: Date | string;
   timestamp?: string;
+  updatedAt?: Date | string;
   status?: 'sending' | 'sent' | 'error';
 }
 

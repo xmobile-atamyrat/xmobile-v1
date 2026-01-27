@@ -4,6 +4,7 @@ import {
   HIGHEST_LEVEL_CATEGORY_ID,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
+  X_MOBILE_DOMAIN,
 } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -15,7 +16,7 @@ import {
 import { createTheme, InputProps, styled } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { CookieSerializeOptions } from 'cookie';
-import { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 
 export async function addEditBrand({
   id,
@@ -423,4 +424,27 @@ export const hideTextfieldSpinButtons: InputProps = {
       MozAppearance: 'textfield',
     },
   },
+};
+
+export const linkify = (text: string): React.ReactNode[] => {
+  return text.split(/(\s+)/).map((part, i) => {
+    // use regex to preserve the spaces, returns ["hello", "", "world"]
+    if (
+      part === `https://${X_MOBILE_DOMAIN}` ||
+      part.startsWith(`https://${X_MOBILE_DOMAIN}/`)
+    ) {
+      return React.createElement(
+        'a',
+        {
+          key: i,
+          href: part,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          style: { textDecoration: 'underline', color: 'inherit' },
+        },
+        part,
+      );
+    }
+    return React.createElement(React.Fragment, { key: i }, part); // create react container to hold element (<>{part}</>)
+  });
 };
