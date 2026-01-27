@@ -266,7 +266,6 @@ export function showNotificationViaAPI(notification: {
           `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
         badge:
           notification.badge ||
-          `${typeof window !== 'undefined' ? window.location.origin : ''}/xm-logo-badge.png` ||
           `${typeof window !== 'undefined' ? window.location.origin : ''}/logo/xm-logo.png`,
         tag: notification.id,
         data: {
