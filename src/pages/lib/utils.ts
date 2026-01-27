@@ -429,7 +429,10 @@ export const hideTextfieldSpinButtons: InputProps = {
 export const linkify = (text: string): React.ReactNode[] => {
   return text.split(/(\s+)/).map((part, i) => {
     // use regex to preserve the spaces, returns ["hello", "", "world"]
-    if (part.startsWith(`https://${X_MOBILE_DOMAIN}/`)) {
+    if (
+      part === `https://${X_MOBILE_DOMAIN}` ||
+      part.startsWith(`https://${X_MOBILE_DOMAIN}/`)
+    ) {
       return React.createElement(
         'a',
         {
