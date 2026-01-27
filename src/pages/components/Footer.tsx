@@ -229,7 +229,7 @@ export default function Footer() {
           <Typography
             className={`${footerClasses.typos.copyright} ${interClassname.className}`}
           >
-            X-mobile © 2025. All Rights Reserved.
+            X-mobile © {new Date().getFullYear()}. All Rights Reserved.
           </Typography>
         </Box>
       </Box>
