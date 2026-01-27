@@ -13,11 +13,6 @@ function WebAppScreen() {
       meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
       meta.setAttribute('name', 'viewport');
       document.getElementsByTagName('head')[0].appendChild(meta);
-      
-      document.addEventListener('gesturestart', (e) => e.preventDefault());
-      document.addEventListener('touchmove', (event) => {
-        if (event.scale !== 1) event.preventDefault();
-      }, { passive: false });
     })();
     
     true;
@@ -44,7 +39,7 @@ function WebAppScreen() {
   useEffect(() => {
     const loadStoredData = async () => {
       try {
-        const token = await AsyncStorage.getItem('auth_refresh_token');
+        const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
         setStoredToken(token);
         setStoredLocale(locale);
@@ -84,11 +79,12 @@ function WebAppScreen() {
         injectedJavaScript={injectedJavaScript}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
-        style={styles.webview}
         cacheEnabled={true}
+        incognito={false}
+        domStorageEnabled={true}
+        style={styles.webview}
         startInLoadingState={true}
         javaScriptEnabled={true}
-        domStorageEnabled={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#d32f2f" />
@@ -109,7 +105,7 @@ function WebAppScreen() {
             ? `
         ${
           storedToken
-            ? `document.cookie = "refreshToken=${storedToken}; path=/; max-age=31536000";`
+            ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/; max-age=31536000";`
             : ''
         }
         ${
