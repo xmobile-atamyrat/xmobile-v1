@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -7,23 +7,14 @@ import { WebView } from 'react-native-webview';
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
-  const injectedJavaScript = `
-    (function() {
-      const meta = document.createElement('meta');
-      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-      meta.setAttribute('name', 'viewport');
-      document.getElementsByTagName('head')[0].appendChild(meta);
-    })();
-    
-    true;
-  `;
   const [storedToken, setStoredToken] = React.useState<string | null>(null);
   const [storedLocale, setStoredLocale] = React.useState<string | null>(null);
   const [isTokenLoaded, setIsTokenLoaded] = React.useState(false);
+  const [canGoBack, setCanGoBack] = React.useState(false);
 
   useEffect(() => {
     const backButton = () => {
-      if (webViewRef.current) {
+      if (canGoBack && webViewRef.current) {
         webViewRef.current.goBack();
         return true;
       }
@@ -34,7 +25,7 @@ function WebAppScreen() {
       backButton,
     );
     return () => backHandler.remove();
-  });
+  }, [canGoBack]);
 
   useEffect(() => {
     const loadStoredData = async () => {
@@ -53,7 +44,21 @@ function WebAppScreen() {
     loadStoredData();
   }, []);
 
-  if (!isTokenLoaded) {
+  const cookieInjectionJS = useMemo(() => {
+    if (!storedToken) return undefined;
+
+    return `
+      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/; domain=.xmobile.com.tm; max-age=604800; Secure; SameSite=Lax";
+      ${
+        storedLocale
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/; domain=.xmobile.com.tm; max-age=604800; Secure; SameSite=Lax";`
+          : ''
+      }
+      true;
+    `;
+  }, [storedToken, storedLocale]);
+
+  if (storedToken === null && !isTokenLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#d32f2f" />
@@ -76,12 +81,14 @@ function WebAppScreen() {
       <WebView
         ref={webViewRef}
         source={{ uri: 'https://xmobile.com.tm' }}
-        injectedJavaScript={injectedJavaScript}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         cacheEnabled={true}
         incognito={false}
         domStorageEnabled={true}
+        onNavigationStateChange={navState => {
+          setCanGoBack(navState.canGoBack);
+        }}
         style={styles.webview}
         startInLoadingState={true}
         javaScriptEnabled={true}
@@ -100,23 +107,32 @@ function WebAppScreen() {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView HTTP error: ', nativeEvent);
         }}
-        injectedJavaScriptBeforeContentLoaded={
-          storedToken || storedLocale
-            ? `
-        ${
-          storedToken
-            ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/; max-age=31536000";`
-            : ''
-        }
-        ${
-          storedLocale
-            ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/; max-age=31536000";`
-            : ''
-        }
-        true;
-      `
-            : undefined
-        }
+        onMessage={async event => {
+          try {
+            const data = JSON.parse(event.nativeEvent.data);
+            console.log('WebView Message received:', data.type);
+
+            if (data.type === 'AUTH_STATE') {
+              const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
+              if (REFRESH_TOKEN) {
+                await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
+                setStoredToken(REFRESH_TOKEN);
+              }
+              if (NEXT_LOCALE) {
+                await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
+                setStoredLocale(NEXT_LOCALE);
+              }
+            } else if (data.type === 'LOGOUT') {
+              await AsyncStorage.removeItem('REFRESH_TOKEN');
+              await AsyncStorage.removeItem('NEXT_LOCALE');
+              setStoredToken(null);
+              setStoredLocale(null);
+            }
+          } catch (err) {
+            console.error('Failed to parse WebView message:', err);
+          }
+        }}
+        injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
       />
     </View>
   );
