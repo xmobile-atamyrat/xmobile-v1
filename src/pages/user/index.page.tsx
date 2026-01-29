@@ -330,7 +330,14 @@ export default function Profile() {
                 (async () => {
                   try {
                     handleToggle();
+                    // Send immediate logout message to bridge
+                    if (typeof window !== 'undefined') {
+                      (window as any).ReactNativeWebView?.postMessage(
+                        JSON.stringify({ type: 'LOGOUT' }),
+                      );
+                    }
                     deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+                    deleteCookie(LOCALE_COOKIE_NAME);
                     setUser(undefined);
                     setAccessToken(undefined);
                     localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
