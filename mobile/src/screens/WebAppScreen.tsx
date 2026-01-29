@@ -1,10 +1,65 @@
-import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
+  const webViewRef = React.useRef<WebView>(null);
+  const injectedJavaScript = `
+    (function() {
+      const meta = document.createElement('meta');
+      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      meta.setAttribute('name', 'viewport');
+      document.getElementsByTagName('head')[0].appendChild(meta);
+    })();
+    
+    true;
+  `;
+  const [storedToken, setStoredToken] = React.useState<string | null>(null);
+  const [storedLocale, setStoredLocale] = React.useState<string | null>(null);
+  const [isTokenLoaded, setIsTokenLoaded] = React.useState(false);
+
+  useEffect(() => {
+    const backButton = () => {
+      if (webViewRef.current) {
+        webViewRef.current.goBack();
+        return true;
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backButton,
+    );
+    return () => backHandler.remove();
+  });
+
+  useEffect(() => {
+    const loadStoredData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('REFRESH_TOKEN');
+        const locale = await AsyncStorage.getItem('NEXT_LOCALE');
+        setStoredToken(token);
+        setStoredLocale(locale);
+      } catch (error) {
+        console.error('Failed to load token:', error);
+      } finally {
+        setIsTokenLoaded(true);
+      }
+    };
+
+    loadStoredData();
+  }, []);
+
+  if (!isTokenLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#d32f2f" />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -19,16 +74,22 @@ function WebAppScreen() {
       ]}
     >
       <WebView
+        ref={webViewRef}
         source={{ uri: 'https://xmobile.com.tm' }}
+        injectedJavaScript={injectedJavaScript}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        cacheEnabled={true}
+        incognito={false}
+        domStorageEnabled={true}
         style={styles.webview}
         startInLoadingState={true}
+        javaScriptEnabled={true}
         renderLoading={() => (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#d32f2f" />
           </View>
         )}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
         onError={syntheticEvent => {
@@ -39,6 +100,23 @@ function WebAppScreen() {
           const { nativeEvent } = syntheticEvent;
           console.warn('WebView HTTP error: ', nativeEvent);
         }}
+        injectedJavaScriptBeforeContentLoaded={
+          storedToken || storedLocale
+            ? `
+        ${
+          storedToken
+            ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/; max-age=31536000";`
+            : ''
+        }
+        ${
+          storedLocale
+            ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/; max-age=31536000";`
+            : ''
+        }
+        true;
+      `
+            : undefined
+        }
       />
     </View>
   );
