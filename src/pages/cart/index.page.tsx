@@ -1,10 +1,16 @@
 import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
+import { squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { computeProductPrice } from '@/pages/product/utils';
+import {
+  computePrice,
+  computeProductPrice,
+  extractColorIdFromTag,
+  computeVariantColor,
+} from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
 import {
@@ -34,7 +40,12 @@ export const getStaticProps = (async (context) => {
 export default function CartPage() {
   const { user, accessToken, isLoading } = useUserContext();
   const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
+    (CartItem & {
+      product: Product;
+      variantName?: string;
+      variantIndex?: number;
+      color?: { id: string; name: string; hex: string };
+    })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const router = useRouter();
@@ -68,15 +79,67 @@ export default function CartPage() {
 
         if (success) {
           const computedData = await Promise.all(
-            data.map(async (item) => {
-              const computedProduct = await computeProductPrice({
+            data.map(async (item: any) => {
+              let computedProduct = await computeProductPrice({
                 product: item.product,
                 accessToken,
                 fetchWithCreds,
               });
+
+              if (item.selectedTag) {
+                const tagMatch = item.selectedTag.match(squareBracketRegex);
+
+                if (tagMatch != null) {
+                  const priceId = tagMatch[1];
+                  const price = await computePrice({
+                    priceId,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  computedProduct = { ...computedProduct, price };
+                }
+              }
+
+              const variantIndex = item.selectedTag
+                ? item.product.tags.findIndex(
+                    (tag: string) => tag === item.selectedTag,
+                  )
+                : undefined;
+
+              // Extract color from selectedTag
+              let color;
+              if (item.selectedTag) {
+                const colorId = extractColorIdFromTag(item.selectedTag);
+                if (colorId) {
+                  const colorData = await computeVariantColor({
+                    tag: item.selectedTag,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  if (colorData) {
+                    color = {
+                      id: colorData.id,
+                      name: colorData.name,
+                      hex: colorData.hex,
+                    };
+                  }
+                }
+              }
+
               return {
                 ...item,
                 product: computedProduct,
+                variantName: item.selectedTag
+                  ? item.selectedTag
+                      .replace(squareBracketRegex, '')
+                      .replace(/\{[^}]+\}/g, '')
+                      .trim()
+                  : undefined,
+                variantIndex:
+                  variantIndex !== -1 && variantIndex !== undefined
+                    ? variantIndex
+                    : undefined,
+                color,
               };
             }),
           );
@@ -183,6 +246,11 @@ export default function CartPage() {
                       onDelete,
                       setTotalPrice,
                     }}
+                    variantName={cartItem?.variantName
+                      ?.replace(/tmt/gi, '')
+                      .trim()}
+                    variantIndex={cartItem?.variantIndex}
+                    color={cartItem?.color}
                   />
                 ))}
               </Suspense>

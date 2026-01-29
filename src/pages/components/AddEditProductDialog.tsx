@@ -8,6 +8,7 @@ import {
   defaultProductDescRu,
   defaultProductDescTk,
   defaultProductDescTr,
+  curlyBracketRegex,
 } from '@/pages/lib/constants';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
@@ -25,6 +26,7 @@ import {
   parseName,
   VisuallyHiddenInput,
 } from '@/pages/lib/utils';
+import { extractColorIdFromTag } from '@/pages/product/utils';
 import { addEditProductDialogClasses } from '@/styles/classMaps/components/addEditProductDialog';
 import {
   Check,
@@ -49,11 +51,12 @@ import {
   DialogTitle,
   IconButton,
   MenuItem,
+  Popover,
   Select,
   TextField,
   Typography,
 } from '@mui/material';
-import type { Product } from '@prisma/client';
+import type { Colors, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -94,9 +97,6 @@ export default function AddEditProductDialog({
   const router = useRouter();
   const platform = usePlatform();
 
-  // for existing product imageUrls the key is imageUrl
-  // for new product imageUrls the key is number
-  // this is to differentiate between the two when deleting
   const [productImageUrls, setProductImageUrls] = useState<
     { [key: string | number]: string }[]
   >([]);
@@ -125,6 +125,10 @@ export default function AddEditProductDialog({
   const [brandSearch, setBrandSearch] = useState('');
   const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editBrandName, setEditBrandName] = useState('');
+  const [allColors, setAllColors] = useState<Colors[]>([]);
+  const [colorPickerAnchor, setColorPickerAnchor] = useState<{
+    [key: number]: HTMLElement | null;
+  }>({});
 
   const loadBrands = async () => {
     const data = await fetchBrands();
@@ -134,6 +138,21 @@ export default function AddEditProductDialog({
   useEffect(() => {
     loadBrands();
   }, []);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    (async () => {
+      const response = await fetchWithCreds<Colors[]>({
+        accessToken,
+        path: '/api/colors',
+        method: 'GET',
+      });
+      if (response.success && response.data) {
+        setAllColors(response.data);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   const handleCreateBrand = async () => {
     const trimmedBrandSearch = brandSearch.trim();
@@ -484,15 +503,26 @@ export default function AddEditProductDialog({
                 }
               />
             </Box>
-            <TextField
-              label={t('price')}
-              type="text"
-              name="price"
-              className={addEditProductDialogClasses.textField.price[platform]}
-              defaultValue={price ?? ''}
-            />
+            <Box className="flex items-center gap-2">
+              <TextField
+                label={t('price')}
+                type="text"
+                name="price"
+                className={
+                  addEditProductDialogClasses.textField.price[platform]
+                }
+                defaultValue={price ?? ''}
+              />
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => window.open('/product/update-prices', '_blank')}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {t('updatePrices') || 'Update Prices'}
+              </Button>
+            </Box>
 
-            {/* Brand Section */}
             <Box className="w-full" mt={2}>
               <Typography>{t('brand')}</Typography>
               <Box display="flex" gap={1} mb={1}>
@@ -546,7 +576,6 @@ export default function AddEditProductDialog({
                     }}
                   >
                     {editingBrandId === brand.id ? (
-                      // Edit Mode
                       <Box display="flex" alignItems="center" gap={1} flex={1}>
                         <TextField
                           size="small"
@@ -568,7 +597,6 @@ export default function AddEditProductDialog({
                         </IconButton>
                       </Box>
                     ) : (
-                      // Display Mode
                       <>
                         <Box
                           display="flex"
@@ -651,32 +679,200 @@ export default function AddEditProductDialog({
           <Box
             className={addEditProductDialogClasses.box.flex.colGapP[platform]}
           >
-            <Typography>{t('tags')}:</Typography>
-            {tags.map((tag, index) => (
-              <Box
-                className={addEditProductDialogClasses.box.flex.rowGap}
-                key={index}
-              >
-                <TextField
-                  type="text"
-                  name={`tag${index}`}
-                  className={
-                    addEditProductDialogClasses.textField.usual[platform]
+            <Box className="flex justify-between items-center w-full">
+              <Typography>{t('tags')}:</Typography>
+              <Box className="flex gap-2">
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() =>
+                    window.open('/product/update-prices', '_blank')
                   }
-                  value={tag}
-                  onChange={(event) => {
-                    const newTags = [...tags];
-                    newTags[index] = event.currentTarget.value;
-                    setTags(newTags);
-                  }}
-                />
-                <IconButton
-                  onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                  sx={{ whiteSpace: 'nowrap' }}
                 >
-                  <CancelIcon fontSize="medium" color="error" />
-                </IconButton>
+                  {t('updatePrices') || 'Update Prices'}
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() =>
+                    window.open('/product/update-colors', '_blank')
+                  }
+                  sx={{ whiteSpace: 'nowrap' }}
+                >
+                  {t('manageColors') || 'Manage Colors'}
+                </Button>
               </Box>
-            ))}
+            </Box>
+            {tags.map((tag, index) => {
+              const colorId = extractColorIdFromTag(tag);
+              const tagColor = allColors.find((c) => c.id === colorId);
+
+              return (
+                <Box
+                  className={addEditProductDialogClasses.box.flex.rowGap}
+                  key={index}
+                  sx={{ alignItems: 'center' }}
+                >
+                  <TextField
+                    type="text"
+                    name={`tag${index}`}
+                    className={
+                      addEditProductDialogClasses.textField.usual[platform]
+                    }
+                    value={tag}
+                    onChange={(event) => {
+                      const newTags = [...tags];
+                      newTags[index] = event.currentTarget.value;
+                      setTags(newTags);
+                    }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={(e) => {
+                      setColorPickerAnchor({
+                        ...colorPickerAnchor,
+                        [index]: e.currentTarget,
+                      });
+                    }}
+                    sx={{
+                      minWidth: 60,
+                      height: 40,
+                      border: tagColor
+                        ? `2px solid ${tagColor.hex}`
+                        : '1px solid #ccc',
+                      backgroundColor: tagColor ? tagColor.hex : 'transparent',
+                      '&:hover': {
+                        border: tagColor
+                          ? `2px solid ${tagColor.hex}`
+                          : '1px solid #ccc',
+                      },
+                    }}
+                    title={
+                      tagColor
+                        ? tagColor.name
+                        : t('selectColor') || 'Select Color'
+                    }
+                  >
+                    {tagColor ? (
+                      <Box
+                        sx={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          backgroundColor: tagColor.hex,
+                          border: '1px solid #fff',
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="caption">+</Typography>
+                    )}
+                  </Button>
+                  <IconButton
+                    onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                  >
+                    <CancelIcon fontSize="medium" color="error" />
+                  </IconButton>
+                  <Popover
+                    open={Boolean(colorPickerAnchor[index])}
+                    anchorEl={colorPickerAnchor[index]}
+                    onClose={() => {
+                      setColorPickerAnchor({
+                        ...colorPickerAnchor,
+                        [index]: null,
+                      });
+                    }}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    }}
+                  >
+                    <Box sx={{ p: 2, maxWidth: 300 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        {t('selectColor') || 'Select Color'}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          const newTags = [...tags];
+                          const currentTag = newTags[index];
+                          const colorMatch =
+                            currentTag.match(curlyBracketRegex);
+                          if (colorMatch) {
+                            newTags[index] = currentTag
+                              .replace(`{${colorMatch[1]}}`, '')
+                              .trim();
+                          }
+                          setTags(newTags);
+                          setColorPickerAnchor({
+                            ...colorPickerAnchor,
+                            [index]: null,
+                          });
+                        }}
+                        sx={{ mb: 1, width: '100%' }}
+                      >
+                        {t('removeColor') || 'Remove Color'}
+                      </Button>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 1,
+                          maxHeight: 200,
+                          overflowY: 'auto',
+                        }}
+                      >
+                        {allColors.map((color) => (
+                          <Box
+                            key={color.id}
+                            onClick={() => {
+                              const newTags = [...tags];
+                              const currentTag = newTags[index];
+                              const colorMatch =
+                                currentTag.match(curlyBracketRegex);
+                              let updatedTag = currentTag;
+                              if (colorMatch) {
+                                updatedTag = currentTag.replace(
+                                  `{${colorMatch[1]}}`,
+                                  `{${color.id}}`,
+                                );
+                              } else {
+                                updatedTag =
+                                  `${currentTag} {${color.id}}`.trim();
+                              }
+                              newTags[index] = updatedTag;
+                              setTags(newTags);
+                              setColorPickerAnchor({
+                                ...colorPickerAnchor,
+                                [index]: null,
+                              });
+                            }}
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              backgroundColor: color.hex,
+                              border:
+                                colorId === color.id
+                                  ? '3px solid #1976d2'
+                                  : '2px solid #ccc',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                transform: 'scale(1.1)',
+                                border: '3px solid #1976d2',
+                              },
+                            }}
+                            title={color.name}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  </Popover>
+                </Box>
+              );
+            })}
             <Box className={addEditProductDialogClasses.box.flex.rowEnd}>
               <Button variant="outlined" onClick={() => setTags([...tags, ''])}>
                 {t('add')}

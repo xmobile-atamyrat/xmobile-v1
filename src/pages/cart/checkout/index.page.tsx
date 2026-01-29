@@ -3,7 +3,12 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPrice } from '@/pages/product/utils';
+import {
+  computeProductPrice,
+  computeVariantColor,
+  computeVariantPrice,
+  extractColorIdFromTag,
+} from '@/pages/product/utils';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
 import { colors, interClassname, units } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -43,15 +48,19 @@ export default function CheckoutPage() {
   const fetchWithCreds = useFetchWithCreds();
 
   const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
+    (CartItem & {
+      product: Product;
+      color?: { id: string; name: string; hex: string };
+    })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [computedProducts, setComputedProducts] = useState<
-    Record<string, Product>
+  // Computed prices for each cart item (keyed by item.id)
+  const [computedItemPrices, setComputedItemPrices] = useState<
+    Record<string, number>
   >({});
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -69,7 +78,30 @@ export default function CheckoutPage() {
         >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
 
         if (success) {
-          setCartItems(data);
+          const itemsWithColor = await Promise.all(
+            data.map(async (item) => {
+              let color;
+              if (item.selectedTag) {
+                const colorId = extractColorIdFromTag(item.selectedTag);
+                if (colorId) {
+                  const colorData = await computeVariantColor({
+                    tag: item.selectedTag,
+                    accessToken,
+                    fetchWithCreds,
+                  });
+                  if (colorData) {
+                    color = {
+                      id: colorData.id,
+                      name: colorData.name,
+                      hex: colorData.hex,
+                    };
+                  }
+                }
+              }
+              return { ...item, color };
+            }),
+          );
+          setCartItems(itemsWithColor);
         } else {
           console.error(message);
         }
@@ -93,16 +125,19 @@ export default function CheckoutPage() {
   const cartItemsSignature = useMemo(
     () =>
       cartItems
-        .map((item) => `${item.product.id}:${item.quantity}`)
+        .map(
+          (item) =>
+            `${item.id}:${item.product.id}:${item.quantity}:${item.selectedTag || ''}`,
+        )
         .sort()
         .join(','),
     [cartItems],
   );
 
-  // Compute product prices for order summary
+  // Compute prices for each item
   useEffect(() => {
     if (!accessToken || cartItems.length === 0) {
-      setComputedProducts({});
+      setComputedItemPrices({});
       setTotalPrice(0);
       return undefined;
     }
@@ -110,34 +145,54 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     (async () => {
-      const computed: Record<string, Product> = {};
+      const newComputedPrices: Record<string, number> = {};
+
       await Promise.all(
         cartItems.map(async (item) => {
-          if (!cancelled && !computed[item.product.id]) {
+          if (cancelled) return;
+
+          let price = 0;
+
+          if (item.selectedTag) {
+            const variantPrice = await computeVariantPrice({
+              tag: item.selectedTag,
+              accessToken,
+              fetchWithCreds,
+            });
+            if (variantPrice !== null) {
+              price = variantPrice;
+            }
+          }
+
+          if (price === 0) {
             const computedProduct = await computeProductPrice({
               product: item.product,
               accessToken,
               fetchWithCreds,
             });
-            if (!cancelled) {
-              computed[item.product.id] = computedProduct;
+            const priceStr = computedProduct.price;
+            if (priceStr && !priceStr.includes('[')) {
+              const p = parseFloat(priceStr);
+              if (!Number.isNaN(p)) {
+                price = p;
+              }
             }
+          }
+
+          if (!cancelled) {
+            newComputedPrices[item.id] = price;
           }
         }),
       );
+
       if (!cancelled) {
-        setComputedProducts(computed);
+        setComputedItemPrices(newComputedPrices);
+
         // Calculate total price
         let sum = 0;
         cartItems.forEach((item) => {
-          const product = computed[item.product.id] || item.product;
-          const priceStr = product.price;
-          if (priceStr && !priceStr.includes('[')) {
-            const price = parseFloat(priceStr);
-            if (!Number.isNaN(price)) {
-              sum += price * item.quantity;
-            }
-          }
+          const itemPrice = newComputedPrices[item.id] || 0;
+          sum += itemPrice * item.quantity;
         });
         setTotalPrice(sum);
       }
@@ -190,16 +245,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const getProductPrice = (product: Product): number => {
-    const computed = computedProducts[product.id] || product;
-    const priceStr = computed.price;
-    if (priceStr && !priceStr.includes('[')) {
-      const price = parseFloat(priceStr);
-      if (!Number.isNaN(price)) {
-        return price;
-      }
-    }
-    return 0;
+  const getItemPrice = (itemId: string): number => {
+    return computedItemPrices[itemId] || 0;
   };
 
   return (
@@ -499,7 +546,7 @@ export default function CheckoutPage() {
                   {t('orderSummary')}
                 </Typography>
                 {cartItems.map((item, index) => {
-                  const productPrice = getProductPrice(item.product);
+                  const productPrice = getItemPrice(item.id);
                   const itemTotal = productPrice * item.quantity;
                   return (
                     <Box key={item.id}>
@@ -509,6 +556,29 @@ export default function CheckoutPage() {
                         >
                           {parseName(item.product.name, router.locale ?? 'tk')}
                         </Typography>
+                        {item.selectedTag && (
+                          <Box className="flex flex-row items-center gap-1">
+                            <Typography
+                              className={`${interClassname.className} text-xs text-gray-500`}
+                            >
+                              {item.selectedTag
+                                .replace(/\[[^\]]*\]|\{[^}]*\}|tmt/gi, '')
+                                .trim()}
+                              {item.color && ` (${item.color.name})`}
+                            </Typography>
+                            {item.color && (
+                              <Box
+                                sx={{
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: '50%',
+                                  backgroundColor: item.color.hex,
+                                  border: '1px solid #ddd',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        )}
                         <Typography
                           className={`${interClassname.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
                         >
