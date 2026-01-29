@@ -388,11 +388,17 @@ export const setCookie = (
 
 export const deleteCookie = (name: string) => {
   if (typeof document !== 'undefined') {
-    const serializedCookie = cookie.serialize(name, '', {
+    document.cookie = cookie.serialize(name, '', {
       maxAge: 0,
       path: '/',
     });
-    document.cookie = serializedCookie;
+    if (window.location.hostname.endsWith('xmobile.com.tm')) {
+      document.cookie = cookie.serialize(name, '', {
+        maxAge: 0,
+        path: '/',
+        domain: '.xmobile.com.tm',
+      });
+    }
   }
 };
 
