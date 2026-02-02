@@ -38,11 +38,9 @@ export function isServiceWorkerSupported(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return false;
   }
-  // Don't use Service Workers in WebView
-  if (isWebView()) {
-    return false;
-  }
-  return 'serviceWorker' in navigator && 'Notification' in window;
+  // We allow Service Workers in WebView now to enable asset caching (offline-first strategy)
+  // Notifications will be handled separately (disabled in WebView via showNotification)
+  return 'serviceWorker' in navigator;
 }
 
 /**
