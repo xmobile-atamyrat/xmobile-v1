@@ -15,6 +15,7 @@ on:
 env:
   TAR_DIR_ON_VM: /home/ubuntu/tar-file
   APP_DIR_ON_VM: /home/ubuntu/xmobile-v1
+  TAR_FILES_TO_KEEP: 3
 
 jobs:
   build:
@@ -168,3 +169,9 @@ jobs:
             cd $TAR_DIR_ON_VM
             rm -rf app
           "
+
+      - name: Prune old tar files on VM
+        run: |
+          KEEP="${{ env.TAR_FILES_TO_KEEP }}"
+          TAIL_FROM=$((KEEP + 1))
+          ssh deploy-vm "cd ${{ env.TAR_DIR_ON_VM }} && ls -t xmobile-v1-*.tar.gz 2>/dev/null | tail -n +${TAIL_FROM} | xargs -r rm -f"
