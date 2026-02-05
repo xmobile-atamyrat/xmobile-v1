@@ -151,8 +151,6 @@ jobs:
             rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-v1/node_modules .
             echo 'Copying public'
             rm -rf public && mv $TAR_DIR_ON_VM/app/xmobile-v1/public .
-            echo 'Copying nginx'
-            rm -rf nginx && mv $TAR_DIR_ON_VM/app/xmobile-v1/nginx .
             echo 'Copying package.json, yarn.lock, configs'
             mv $TAR_DIR_ON_VM/app/xmobile-v1/package.json .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/yarn.lock .
