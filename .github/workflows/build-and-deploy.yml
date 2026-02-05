@@ -1,6 +1,6 @@
 # Build and deploy Next.js app to VM (Telekom Cloud).
 # Tar files on VM are named by commit hash: xmobile-v1-<short-sha>.tar.gz
-# If the VM already has that tar, only deploy steps run (no upload).
+# Resolve ref to short_sha, then check if that tar exists on VM; if so, skip build and only deploy.
 
 name: Build and Deploy
 
@@ -18,8 +18,8 @@ env:
   TAR_FILES_TO_KEEP: 3
 
 jobs:
-  build:
-    name: Build
+  resolve:
+    name: Resolve ref
     runs-on: ubuntu-latest
     outputs:
       short_sha: ${{ steps.sha.outputs.short_sha }}
@@ -33,16 +33,86 @@ jobs:
         id: sha
         run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: resolve
+    outputs:
+      short_sha: ${{ needs.resolve.outputs.short_sha }}
+      tar_exists: ${{ steps.check.outputs.tar_exists }}
+    steps:
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Check if tar exists on VM
+        id: check
+        run: |
+          SHORT_SHA="${{ needs.resolve.outputs.short_sha }}"
+          TAR_NAME="xmobile-v1-${SHORT_SHA}.tar.gz"
+          if ssh deploy-vm "test -f ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}"; then
+            echo "tar_exists=true" >> $GITHUB_OUTPUT
+            echo "Tar already on VM, skipping build: ${TAR_NAME}"
+          else
+            echo "tar_exists=false" >> $GITHUB_OUTPUT
+            echo "Tar not on VM, will build and upload: ${TAR_NAME}"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.tar_exists != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_ref }}
+
+      - name: Get short SHA
+        if: steps.check.outputs.tar_exists != 'true'
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
+        if: steps.check.outputs.tar_exists != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'yarn'
 
       - name: Install dependencies
+        if: steps.check.outputs.tar_exists != 'true'
         run: yarn install --frozen-lockfile
 
       - name: Create tar layout (app/xmobile-v1/...)
+        if: steps.check.outputs.tar_exists != 'true'
         run: |
           mkdir -p app/xmobile-v1
           for item in src prisma public node_modules package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
@@ -50,15 +120,17 @@ jobs:
           done
 
       - name: Create archive
+        if: steps.check.outputs.tar_exists != 'true'
         run: |
           TAR_NAME="xmobile-v1-${{ steps.sha.outputs.short_sha }}.tar.gz"
           tar -czf "$TAR_NAME" app
           echo "TAR_NAME=$TAR_NAME" >> $GITHUB_ENV
 
       - name: Upload tar artifact
+        if: steps.check.outputs.tar_exists != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: deploy-tar-${{ steps.sha.outputs.short_sha }}
+          name: deploy-tar-${{ needs.resolve.outputs.short_sha }}
           path: ${{ env.TAR_NAME }}
 
   deploy:
@@ -101,32 +173,16 @@ jobs:
           VM_USER: ${{ secrets.VM_USER }}
           VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
 
-      - name: Check if tar exists on VM
-        id: check
-        run: |
-          SHORT_SHA="${{ needs.build.outputs.short_sha }}"
-          TAR_NAME="xmobile-v1-${SHORT_SHA}.tar.gz"
-          if ssh deploy-vm "test -f ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}"; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tar already on VM: ${TAR_NAME}"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tar not on VM, will upload: ${TAR_NAME}"
-          fi
-          echo "tar_name=${TAR_NAME}" >> $GITHUB_OUTPUT
-        env:
-          TAR_DIR_ON_VM: ${{ env.TAR_DIR_ON_VM }}
-
       - name: Download artifact
-        if: steps.check.outputs.exists == 'false'
+        if: needs.build.outputs.tar_exists == 'false'
         uses: actions/download-artifact@v4
         with:
           name: deploy-tar-${{ needs.build.outputs.short_sha }}
 
       - name: Upload tar to VM
-        if: steps.check.outputs.exists == 'false'
+        if: needs.build.outputs.tar_exists == 'false'
         run: |
-          TAR_NAME="${{ steps.check.outputs.tar_name }}"
+          TAR_NAME="xmobile-v1-${{ needs.build.outputs.short_sha }}.tar.gz"
           scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/
 
       - name: Deploy on VM (extract, copy, db, build, restart)
