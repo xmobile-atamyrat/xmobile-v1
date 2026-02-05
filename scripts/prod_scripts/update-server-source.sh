@@ -21,8 +21,8 @@ mv /home/ubuntu/tar-file/app/xmobile-v1/src .
 echo "Copying the 'prisma'"
 rm -rf prisma
 mv /home/ubuntu/tar-file/app/xmobile-v1/prisma .
-yarn db:generate
-yarn db:migrate
+yarn db:generate-prod
+yarn db:migrate-prod
         
 echo "Copying the 'node_modules'"
 rm -rf node_modules
@@ -51,6 +51,9 @@ mv /home/ubuntu/tar-file/app/xmobile-v1/tsconfig.ws.json .
 
 echo "Copying 'tailwind.config.ts'"
 mv /home/ubuntu/tar-file/app/xmobile-v1/tailwind.config.ts .
+
+echo "Copying '.eslintrc.json'"
+mv /home/ubuntu/tar-file/app/xmobile-v1/.eslintrc.json .
 
 rm -rf .next
 yarn build
