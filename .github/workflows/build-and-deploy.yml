@@ -111,11 +111,21 @@ jobs:
         if: steps.check.outputs.tar_exists != 'true'
         run: yarn install --frozen-lockfile
 
+      - name: Generate Prisma client
+        if: steps.check.outputs.tar_exists != 'true'
+        run: npx prisma generate
+
+      - name: Build Next.js and WS server
+        if: steps.check.outputs.tar_exists != 'true'
+        run: |
+          yarn build
+          yarn build:ws
+
       - name: Create tar layout (app/xmobile-v1/...)
         if: steps.check.outputs.tar_exists != 'true'
         run: |
           mkdir -p app/xmobile-v1
-          for item in src prisma public node_modules package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
+          for item in src prisma public node_modules .next dist package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
             cp -a "$item" app/xmobile-v1/
           done
 
@@ -208,6 +218,10 @@ jobs:
             rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-v1/node_modules .
             echo 'Copying public'
             rm -rf public && mv $TAR_DIR_ON_VM/app/xmobile-v1/public .
+            echo 'Copying .next (pre-built)'
+            rm -rf .next && mv $TAR_DIR_ON_VM/app/xmobile-v1/.next .
+            echo 'Copying dist (pre-built ws server)'
+            rm -rf dist && mv $TAR_DIR_ON_VM/app/xmobile-v1/dist .
             echo 'Copying package.json, yarn.lock, configs'
             mv $TAR_DIR_ON_VM/app/xmobile-v1/package.json .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/yarn.lock .
@@ -217,9 +231,6 @@ jobs:
             mv $TAR_DIR_ON_VM/app/xmobile-v1/tailwind.config.ts .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/.eslintrc.json .
 
-            rm -rf .next
-            yarn build
-            yarn build:ws
             /home/ubuntu/scripts/restart-server.sh
 
             cd $TAR_DIR_ON_VM
