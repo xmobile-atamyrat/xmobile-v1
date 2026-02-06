@@ -76,4 +76,4 @@ exit
 ./scripts/backup-production-data.sh
 ./scripts/apply-backup.sh all # Note: apply-backup options are 'db', 'images', 'all'
 ```
-..
+...
