@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "healthcheck-dist",
+    "noEmit": false
+  },
+  "include": ["scripts/healthcheck.ts", "src/lib/slack/**/*.ts", "types.d.ts"]
+}
