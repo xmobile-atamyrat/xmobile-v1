@@ -15,7 +15,7 @@ on:
 env:
   TAR_DIR_ON_VM: /home/ubuntu/tar-file
   APP_DIR_ON_VM: /home/ubuntu/xmobile-v1
-  TAR_FILES_TO_KEEP: 3
+  TAR_FILES_TO_KEEP: 2
 
 jobs:
   resolve:
