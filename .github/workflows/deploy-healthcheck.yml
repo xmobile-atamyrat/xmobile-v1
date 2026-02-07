@@ -68,7 +68,4 @@ jobs:
 
       - name: Restart Healthcheck Service
         run: |
-          ssh deploy-vm "set -e
-            pkill -f 'healthcheck.js' || true
-            cd ${{ env.APP_DIR_ON_VM }}
-          "
+          ssh deploy-vm "/home/ubuntu/scripts/restart-healthcheck.sh"
