@@ -7,13 +7,7 @@ export default function Document(props: DocumentProps) {
 
   return (
     <Html lang={locale} className="notranslate" translate="no">
-      <Head>
-        {/*
-          Static assets and SEO meta tags are now handled in _app.tsx.
-          This ensures all <head> elements are managed in one place and helps avoid
-          duplication or conflicts during client-side navigation.
-        */}
-      </Head>
+      <Head />
       <body>
         <Main />
         <NextScript />
