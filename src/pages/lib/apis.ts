@@ -21,9 +21,6 @@ export const fetchProducts = async ({
   productId?: string;
   page?: number;
 }): Promise<Product[]> => {
-  if (categoryIds == null && searchKeyword == null && productId == null)
-    return [];
-
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
 
   // Helper to append params
