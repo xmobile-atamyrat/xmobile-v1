@@ -20,12 +20,14 @@ import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const seoData = pageProps?.seoData;
 
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {
@@ -57,6 +59,59 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider theme={theme}>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/logo/xm-logo.ico" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#d32f2f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="XMobile" />
+        <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
+
+        <title>{seoData?.title || 'X-mobile'}</title>
+
+        {seoData && (
+          <>
+            <meta name="description" content={seoData.description} />
+            <link rel="canonical" href={seoData.canonicalUrl} />
+
+            {seoData.hreflangLinks?.map((link: any) => (
+              <link
+                key={link.locale}
+                rel="alternate"
+                hrefLang={link.locale}
+                href={link.url}
+              />
+            ))}
+
+            <meta property="og:title" content={seoData.title} />
+            <meta property="og:description" content={seoData.description} />
+            <meta property="og:image" content={seoData.ogImage} />
+            <meta property="og:url" content={seoData.canonicalUrl} />
+            <meta property="og:type" content={seoData.ogType || 'website'} />
+            <meta property="og:locale" content={seoData.ogLocale} />
+
+            {/* Structured Data */}
+            {seoData.productJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.productJsonLd),
+                }}
+              />
+            )}
+            {seoData.breadcrumbJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.breadcrumbJsonLd),
+                }}
+              />
+            )}
+          </>
+        )}
+      </Head>
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
