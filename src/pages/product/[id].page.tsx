@@ -9,7 +9,11 @@ import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
-import { LOCALE_TO_OG_LOCALE, squareBracketRegex } from '@/pages/lib/constants';
+import {
+  curlyBracketRegex,
+  LOCALE_TO_OG_LOCALE,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -121,10 +125,21 @@ export const getStaticProps: GetStaticProps = async ({
 
         // Generate all SEO metadata server-side so it's in the initial HTML
         const productName = parseName(product.name, locale);
-        const priceValue = product.price?.replace(/[^\d.]/g, '');
+
+        // Fix: Extract price from [id]{price} format or use as is. TODO: Refactor price parsing logic, create parsePrice func and apply in fetchProducts func as a transform layer
+        let priceValue = product.price;
+        const priceMatch = product.price?.match(curlyBracketRegex);
+        if (priceMatch) {
+          priceValue = priceMatch[1];
+        }
+        priceValue = priceValue?.replace(/[^\d.]/g, '');
+
         const productPath = `product/${product.id}`;
 
-        const title = generateProductTitle(productName, categoryPath[0].name);
+        const title = generateProductTitle(
+          productName,
+          parseName(categoryPath[0].name, locale),
+        );
         const metaDescription = generateProductMetaDescription(
           productName,
           locale,
