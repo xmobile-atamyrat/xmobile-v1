@@ -69,11 +69,6 @@ jobs:
       - name: Restart Healthcheck Service
         run: |
           ssh deploy-vm "set -e
-            # Kill existing healthcheck process if running (using pkill or finding by name)
-            # We filter for 'healthcheck.js' to be safe
             pkill -f 'healthcheck.js' || true
-
-            # Start the service in background
             cd ${{ env.APP_DIR_ON_VM }}
-            nohup yarn start:healthcheck > /home/ubuntu/scripts/healthcheck.log 2>&1 &
           "
