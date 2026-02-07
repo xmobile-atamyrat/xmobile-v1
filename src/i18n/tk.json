@@ -321,6 +321,24 @@
   "brand": "Brend",
   "brandSearchPlaceholder": "Brend gözle ýa-da goş...",
   "filter": "Filtr",
-  "apply": "Ulan"
+  "apply": "Ulan",
+  "manageColors": "Reňkleri dolandyr.",
+  "selectColor": "Reňk saýla",
+  "color": "Reňk",
+  "select": "Saýla",
+  "colors": "Reňkler",
+  "addColor": "Reňk goş",
+  "colorName": "Reňkiň ady",
+  "colorCode": "Reňkiň kody",
+  "preview": "Görnüşi",
+  "deleteColor": "Reňki poz",
+  "confirmDeleteColor": "Reňki pozmak isleýärsiňizmi?",
+  "colorDeleteSuccess": "Reňk pozuldy!",
+  "colorDeleteFailed": "Reňki pozup bilmedik.",
+  "colorCreateSuccess": "Reňk döredildi!",
+  "colorCreateFailed": "Reňk döredip bilmedik.",
+  "colorsUpdated": "Reňkler üýtgedildi!",
+  "updateColorsError": "Reňkleri üýtgedip bilmedik.",
+  "fetchColorsError": "Reňkleri getirip bilmedik."
 }
 

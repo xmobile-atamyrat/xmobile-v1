@@ -1,6 +1,6 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import { FetchWithCredsType } from '@/pages/lib/types';
-import { Prices, Product } from '@prisma/client';
+import { Colors, Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -101,10 +101,49 @@ export const computePrice = async ({
   });
 
   if (success && data) {
-    sessionStorage.setItem(priceId, data.priceInTmt);
+    try {
+      sessionStorage.setItem(priceId, data.priceInTmt);
+    } catch (e) {
+      console.warn('Failed to save price to sessionStorage', e);
+    }
     return data.priceInTmt;
   }
   return priceId;
+};
+
+export const computeColor = async ({
+  accessToken,
+  fetchWithCreds,
+  colorId,
+}: {
+  colorId: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<Colors | null> => {
+  const cacheColor = sessionStorage.getItem(`color_${colorId}`);
+  if (cacheColor != null) {
+    try {
+      return JSON.parse(cacheColor);
+    } catch {
+      // If parsing fails, fetch from API
+    }
+  }
+
+  const { success, data } = await fetchWithCreds<Colors>({
+    accessToken,
+    path: `/api/colors?id=${colorId}`,
+    method: 'GET',
+  });
+
+  if (success && data) {
+    try {
+      sessionStorage.setItem(`color_${colorId}`, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save color to sessionStorage', e);
+    }
+    return data;
+  }
+  return null;
 };
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
@@ -136,6 +175,29 @@ export const computeProductPrice = async ({
   return processedProduct;
 };
 
+export const computeVariantPrice = async ({
+  tag,
+  accessToken,
+  fetchWithCreds,
+}: {
+  tag: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<number | null> => {
+  const tagMatch = tag.match(squareBracketRegex);
+  if (tagMatch) {
+    const priceId = tagMatch[1];
+    const priceStr = await computePrice({
+      priceId,
+      accessToken,
+      fetchWithCreds,
+    });
+    const price = parseFloat(priceStr);
+    return Number.isNaN(price) ? null : price;
+  }
+  return null;
+};
+
 // ProductPriceTags have only [id], value is fetched in computePrice function.
 export const computeProductPriceTags = async ({
   accessToken,
@@ -155,18 +217,34 @@ export const computeProductPriceTags = async ({
     ...priceComputedTags,
     tags: await Promise.all(
       priceComputedTags.tags.map(async (tag) => {
-        const tagMatch = tag.match(squareBracketRegex);
-        if (tagMatch != null) {
-          const idTag = tagMatch[1];
+        let processedTag = tag;
+
+        const priceMatch = processedTag.match(squareBracketRegex);
+        if (priceMatch != null) {
+          const priceId = priceMatch[1];
           const price = await computePrice({
-            priceId: idTag,
+            priceId,
             accessToken,
             fetchWithCreds,
           });
-
-          return tag.replace(`[${idTag}]`, price);
+          processedTag = processedTag.replace(`[${priceId}]`, price);
         }
-        return tag;
+
+        const colorMatch = processedTag.match(curlyBracketRegex);
+        if (colorMatch != null) {
+          const colorId = colorMatch[1];
+          try {
+            await computeColor({
+              colorId,
+              accessToken,
+              fetchWithCreds,
+            });
+          } catch (error) {
+            console.error(error);
+          }
+        }
+
+        return processedTag;
       }),
     ),
   };
@@ -186,4 +264,38 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
       func(...args);
     }, delay);
   };
+};
+
+export const parseTagParts = (tag: string) => {
+  const words = tag.split(' ');
+  const n = words[words.length - 1].length < 1 ? 3 : 2;
+  const pricePart = words.slice(-n).join(' ');
+  const namePart = words.slice(0, -n).join(' ');
+  return { pricePart, namePart };
+};
+
+export const computeVariantColor = async ({
+  tag,
+  accessToken,
+  fetchWithCreds,
+}: {
+  tag: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<Colors | null> => {
+  const colorMatch = tag.match(curlyBracketRegex);
+  if (colorMatch) {
+    const colorId = colorMatch[1];
+    return computeColor({
+      colorId,
+      accessToken,
+      fetchWithCreds,
+    });
+  }
+  return null;
+};
+
+export const extractColorIdFromTag = (tag: string): string | null => {
+  const colorMatch = tag.match(curlyBracketRegex);
+  return colorMatch ? colorMatch[1] : null;
 };

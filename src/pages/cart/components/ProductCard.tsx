@@ -21,11 +21,17 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  variantName?: string;
+  variantIndex?: number;
+  color?: { id: string; name: string; hex: string };
 }
 
 export default function CartProductCard({
   product,
   cartProps,
+  variantName,
+  variantIndex,
+  color,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -94,7 +100,12 @@ export default function CartProductCard({
           className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
             setSelectedProduct(product);
-            router.push(`/product/${product.id}`);
+            const query: Record<string, string | number> = {};
+            if (variantIndex !== undefined) query.v = variantIndex;
+            router.push({
+              pathname: `/product/${product.id}`,
+              query,
+            });
           }}
         >
           {imgUrl != null && (
@@ -125,6 +136,43 @@ export default function CartProductCard({
                     24,
                   )}
                 </Typography>
+                {variantName && (
+                  <Typography
+                    className={`${interClassname.className} ${cartProductCardClasses.variant[platform]}`}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {variantName}
+                  </Typography>
+                )}
+                {color && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mt: 0.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        backgroundColor: color.hex,
+                        border: '1px solid #ccc',
+                      }}
+                      title={color.name}
+                    />
+                    <Typography
+                      className={`${interClassname.className} ${cartProductCardClasses.variant[platform]}`}
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {color.name}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
               {product?.price?.includes('[') ? (
                 <CircularProgress

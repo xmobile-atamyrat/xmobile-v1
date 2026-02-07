@@ -22,6 +22,10 @@ export const cartProductCardClasses = {
     web: 'text-[clamp(16px,_1.041vw,_20px)] font-semibold leading-[30px] mt-[16px] whitespace-normal break-words',
     mobile: 'text-[14px] font-medium text-[#1b1b1b]',
   },
+  variant: {
+    web: 'text-[14px] font-normal text-[#808080] mt-[4px]',
+    mobile: 'text-[12px] font-normal text-[#808080] mt-[2px]',
+  },
   typo2: {
     web: 'font-regular text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal my-auto w-[13vw]',
     mobile:

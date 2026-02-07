@@ -6,6 +6,10 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { formatDate } from '@/pages/orders/lib/utils';
+import {
+  computeVariantColor,
+  extractColorIdFromTag,
+} from '@/pages/product/utils';
 import { ordersDetailClasses } from '@/styles/classMaps/orders/detail';
 import { interClassname } from '@/styles/theme';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -29,7 +33,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { UserOrder } from '@prisma/client';
+import { Product, UserOrder } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -60,7 +64,11 @@ export default function OrderDetailPage() {
           id: string;
           quantity: number;
           productName: string;
+          productId: string;
           productPrice: string;
+          selectedTag: string | null;
+          product?: Product;
+          color?: { id: string; name: string; hex: string };
         }>;
       })
     | null
@@ -83,7 +91,34 @@ export default function OrderDetailPage() {
       });
 
       if (result.success && result.data) {
-        setOrder(result.data as typeof order);
+        const rawOrder = result.data as typeof order;
+        if (!rawOrder) return;
+
+        const itemsWithColor = await Promise.all(
+          rawOrder.items.map(async (item) => {
+            let color;
+            if (item.selectedTag) {
+              const colorId = extractColorIdFromTag(item.selectedTag);
+              if (colorId) {
+                const colorData = await computeVariantColor({
+                  tag: item.selectedTag,
+                  accessToken,
+                  fetchWithCreds,
+                });
+                if (colorData) {
+                  color = {
+                    id: colorData.id,
+                    name: colorData.name,
+                    hex: colorData.hex,
+                  };
+                }
+              }
+            }
+            return { ...item, color };
+          }),
+        );
+
+        setOrder({ ...rawOrder, items: itemsWithColor });
       } else {
         setSnackbarOpen(true);
         setSnackbarMessage({
@@ -440,8 +475,51 @@ export default function OrderDetailPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography
+                            className={`${interClassname.className} cursor-pointer hover:underline text-blue-600`}
+                            onClick={() => {
+                              const variantIndex =
+                                item.selectedTag && item.product
+                                  ? item.product.tags.findIndex(
+                                      (tag: string) => tag === item.selectedTag,
+                                    )
+                                  : undefined;
+                              router.push({
+                                pathname: `/product/${item.productId}`,
+                                query:
+                                  variantIndex !== undefined &&
+                                  variantIndex !== -1
+                                    ? { v: variantIndex }
+                                    : {},
+                              });
+                            }}
+                          >
                             {parseName(item.productName, router.locale ?? 'tk')}
+                            {item.selectedTag && (
+                              <Box className="flex flex-row items-center gap-1 inline-flex ml-2">
+                                <Typography
+                                  component="span"
+                                  className={`${interClassname.className} text-sm text-gray-500`}
+                                >
+                                  {item.selectedTag
+                                    .replace(/\[[^\]]*\]|\{[^}]*\}|tmt/gi, '')
+                                    .trim()}
+                                  {item.color && ` (${item.color.name})`}
+                                </Typography>
+                                {item.color && (
+                                  <Box
+                                    sx={{
+                                      width: 12,
+                                      height: 12,
+                                      borderRadius: '50%',
+                                      backgroundColor: item.color.hex,
+                                      border: '1px solid #ddd',
+                                      display: 'inline-block',
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                            )}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -645,8 +723,51 @@ export default function OrderDetailPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography
+                            className={`${interClassname.className} cursor-pointer hover:underline text-blue-600`}
+                            onClick={() => {
+                              const variantIndex =
+                                item.selectedTag && item.product
+                                  ? item.product.tags.findIndex(
+                                      (tag: string) => tag === item.selectedTag,
+                                    )
+                                  : undefined;
+                              router.push({
+                                pathname: `/product/${item.productId}`,
+                                query:
+                                  variantIndex !== undefined &&
+                                  variantIndex !== -1
+                                    ? { v: variantIndex }
+                                    : {},
+                              });
+                            }}
+                          >
                             {parseName(item.productName, router.locale ?? 'tk')}
+                            {item.selectedTag && (
+                              <Box className="flex flex-row items-center gap-1 inline-flex ml-2">
+                                <Typography
+                                  component="span"
+                                  className={`${interClassname.className} text-sm text-gray-500`}
+                                >
+                                  {item.selectedTag
+                                    .replace(/\[[^\]]*\]|\{[^}]*\}|tmt/gi, '')
+                                    .trim()}
+                                  {item.color && ` (${item.color.name})`}
+                                </Typography>
+                                {item.color && (
+                                  <Box
+                                    sx={{
+                                      width: 12,
+                                      height: 12,
+                                      borderRadius: '50%',
+                                      backgroundColor: item.color.hex,
+                                      border: '1px solid #ddd',
+                                      display: 'inline-block',
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                            )}
                           </Typography>
                         </TableCell>
                         <TableCell>

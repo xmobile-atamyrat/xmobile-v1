@@ -319,6 +319,24 @@
   "brand": "Brand",
   "brandSearchPlaceholder": "Search or add brand...",
   "filter": "Filter",
-  "apply": "Apply"
+  "apply": "Apply",
+  "manageColors": "Manage Colors",
+  "selectColor": "Select Color",
+  "color": "Color",
+  "select": "Select",
+  "colors": "Colors",
+  "addColor": "Add Color",
+  "colorName": "Color Name",
+  "colorCode": "Color Code",
+  "preview": "Preview",
+  "deleteColor": "Delete Color",
+  "confirmDeleteColor": "Are you sure you want to delete this color?",
+  "colorDeleteSuccess": "Color deleted successfully!",
+  "colorDeleteFailed": "Failed to delete color.",
+  "colorCreateSuccess": "Color created successfully!",
+  "colorCreateFailed": "Failed to create color.",
+  "colorsUpdated": "Colors updated successfully!",
+  "updateColorsError": "Failed to update colors.",
+  "fetchColorsError": "Failed to fetch colors."
 }
 

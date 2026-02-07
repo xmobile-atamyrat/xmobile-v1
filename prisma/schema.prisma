@@ -38,10 +38,12 @@ model CartItem {
   product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
+  selectedTag     String?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  @@unique([userId, productId])
+  @@unique([userId, productId, selectedTag])
 }
 
 model Category {
@@ -108,6 +110,17 @@ model Prices {
   updatedAt       DateTime    @updatedAt
 
   @@index([price])
+}
+
+model Colors {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  hex             String
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([name])
 }
 
 model UserVisitRecord {
@@ -393,6 +406,7 @@ model UserOrderItem {
   quantity        Int         @default(1)
   productName     String
   productPrice    String
+  selectedTag     String?
   
   order           UserOrder   @relation(references: [id], fields: [orderId], onDelete: Cascade)
   orderId         String
