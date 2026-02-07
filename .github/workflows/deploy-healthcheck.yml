@@ -1,0 +1,79 @@
+name: Deploy Healthcheck Service
+
+on:
+  workflow_dispatch:
+
+env:
+  APP_DIR_ON_VM: /home/ubuntu/xmobile-v1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Healthcheck Service
+        run: yarn build:healthcheck
+
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Upload healthcheck-dist to VM
+        run: |
+          # Clean destination and upload new files
+          ssh deploy-vm "rm -rf ${{ env.APP_DIR_ON_VM }}/healthcheck-dist && mkdir -p ${{ env.APP_DIR_ON_VM }}/healthcheck-dist"
+          scp -r healthcheck-dist/* deploy-vm:${{ env.APP_DIR_ON_VM }}/healthcheck-dist/
+
+      - name: Restart Healthcheck Service
+        run: |
+          ssh deploy-vm "set -e
+            # Kill existing healthcheck process if running (using pkill or finding by name)
+            # We filter for 'healthcheck.js' to be safe
+            pkill -f 'healthcheck.js' || true
+
+            # Start the service in background
+            cd ${{ env.APP_DIR_ON_VM }}
+            nohup yarn start:healthcheck > /home/ubuntu/scripts/healthcheck.log 2>&1 &
+          "
