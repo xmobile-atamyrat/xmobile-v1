@@ -55,36 +55,43 @@ export default function AddToCart({
         message: 'userNotFound',
         severity: 'warning',
       });
-    } else {
-      try {
-        const data = await fetchWithCreds({
-          accessToken,
-          path: '/api/cart',
-          method: 'POST',
-          body: {
-            userId,
-            productId,
-            quantity,
-          },
-        });
+      return;
+    }
+    if (price.includes('null')) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'nullPriceCart',
+        severity: 'warning',
+      });
+      return;
+    }
+    try {
+      const data = await fetchWithCreds({
+        accessToken,
+        path: '/api/cart',
+        method: 'POST',
+        body: {
+          userId,
+          productId,
+          quantity,
+        },
+      });
 
-        if (data.success) {
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'addToCartSuccess',
-            severity: 'success',
-          });
-        } else {
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: data.message,
-            severity:
-              data.message === 'cartItemExistError' ? 'warning' : 'error',
-          });
-        }
-      } catch (error) {
-        console.error(t('addToCartFail'));
+      if (data.success) {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'addToCartSuccess',
+          severity: 'success',
+        });
+      } else {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: data.message,
+          severity: data.message === 'cartItemExistError' ? 'warning' : 'error',
+        });
       }
+    } catch (error) {
+      console.error(t('addToCartFail'));
     }
   };
 
@@ -266,6 +273,9 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
+            <Typography className="text-[1.5vw] text-[#000]">
+              {typeof price}
+            </Typography>
             <Box className={addToCartClasses.detail.bg[platform]}>
               <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between items-center">
                 {/* removeButton */}

@@ -319,6 +319,8 @@
   "brand": "Brand",
   "brandSearchPlaceholder": "Search or add brand...",
   "filter": "Filter",
-  "apply": "Apply"
+  "apply": "Apply",
+  "nullPrice": "Price on call",
+  "nullPriceCart": "Please order via phone call."
 }
 

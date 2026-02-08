@@ -410,7 +410,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               ) : (
                 <Typography
                   className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
-                >{`${product.price} ${t('manat')}`}</Typography>
+                >
+                  {product.price.includes('null')
+                    ? t('nullPrice')
+                    : `${product.price} ${t('manat')}`}
+                </Typography>
               )}
             </Box>
           </Box>
@@ -489,7 +493,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
           )}
           {platform === 'web' && (
-            <AddToCart productId={product.id} cartAction="detail" />
+            <AddToCart
+              productId={product.id}
+              cartAction="detail"
+              price={product.price}
+            />
           )}
         </Box>
       </Box>
@@ -534,7 +542,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         </Box>
       )}
       {platform === 'mobile' && (
-        <AddToCart productId={product.id} cartAction="detail" />
+        <AddToCart
+          productId={product.id}
+          cartAction="detail"
+          price={product.price}
+        />
       )}
       {showDeleteProductDialog?.show && (
         <DeleteDialog
