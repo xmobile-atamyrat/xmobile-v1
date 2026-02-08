@@ -1,9 +1,12 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   BUSINESS_NAME,
+  CATEGORY_META_DESC_TEMPLATES,
   localeOptions,
   META_DESC_MAX_LENGTH,
-  META_DESC_TEMPLATES,
+  PRODUCT_META_DESC_TEMPLATES,
+  SEO_LOCATION_SUFFIXES,
+  SEO_SEARCH_TEMPLATES,
   TITLE_MAX_LENGTH,
 } from '@/pages/lib/constants';
 import {
@@ -66,36 +69,20 @@ export function generateHreflangLinks(
 
 /**
  * Generate SEO-optimized product page title.
- * Format: "{Product} | {Category} | X-mobile"
+ * Format: "{Product} - Xmobile"
  *
  * @param productName - Localized product name
- * @param brandName - Optional brand name (currently not used)
  * @returns SEO title, truncated if too long
  *
  * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Product Titles.
  */
-export function generateProductTitle(
-  productName: string,
-  categoryName: string,
-  // brandName?: todo: string, reserved for future use when all products have brands
-): string {
-  let title: string;
+export function generateProductTitle(productName: string): string {
+  const title = `${productName} - ${BUSINESS_NAME}`;
 
-  // TODO: Once brands are added to all products, uncomment this:
-  // if (brandName) {
-  //   title = `${productName} | ${brandName} | ${BUSINESS_NAME}`;
-  // } else {
-  //   title = `${productName} | ${BUSINESS_NAME}`;
-  // }
-  //
-  // For now, keep it simple without brand name
-  title = `${productName} | ${categoryName} | ${BUSINESS_NAME}`;
-
-  // Truncate if too long (Google shows ~60 chars)
   if (title.length > TITLE_MAX_LENGTH) {
-    const availableLength = TITLE_MAX_LENGTH - BUSINESS_NAME.length - 6; // 6 = " | " + "..."
+    const availableLength = TITLE_MAX_LENGTH - BUSINESS_NAME.length - 3; // 3 = " - " + "..."
     const truncated = productName.slice(0, availableLength);
-    title = `${truncated}... | ${categoryName} | ${BUSINESS_NAME}`;
+    return `${truncated}... - ${BUSINESS_NAME}`;
   }
 
   return title;
@@ -118,8 +105,9 @@ export function generateProductMetaDescription(
   price?: string,
 ): string {
   const template =
-    META_DESC_TEMPLATES[locale as keyof typeof META_DESC_TEMPLATES] ||
-    META_DESC_TEMPLATES.ru;
+    PRODUCT_META_DESC_TEMPLATES[
+      locale as keyof typeof PRODUCT_META_DESC_TEMPLATES
+    ] || PRODUCT_META_DESC_TEMPLATES.ru;
 
   const priceText = price ? `${price} TMT` : '';
 
@@ -133,6 +121,67 @@ export function generateProductMetaDescription(
   }
 
   return description;
+}
+
+/**
+ * Generate SEO-optimized category page title.
+ * Format: "{Category} {ParentCategory} in Turkmenistan - {BusinessName}"
+ *
+ * @param categoryName - Localized category name
+ * @param locale - Current locale
+ * @param parentCategoryName - Optional localized parent category name
+ * @returns SEO title
+ */
+export function generateCategoryTitle(
+  categoryName: string,
+  locale: string,
+  rootCategoryName?: string,
+): string {
+  const locationSuffix =
+    SEO_LOCATION_SUFFIXES[locale as keyof typeof SEO_LOCATION_SUFFIXES] ||
+    SEO_LOCATION_SUFFIXES.ru;
+
+  const mainPart = [categoryName, rootCategoryName].filter(Boolean).join(' ');
+
+  return `${mainPart} ${locationSuffix} - ${BUSINESS_NAME}`;
+}
+
+/**
+ * Generate meta description for category page.
+ * Uses CATEGORY_META_DESC_TEMPLATES.
+ *
+ * @param categoryName - Localized category name
+ * @param locale - Current locale
+ * @returns Meta description
+ */
+export function generateCategoryMetaDescription(
+  categoryName: string,
+  locale: string,
+): string {
+  const template =
+    CATEGORY_META_DESC_TEMPLATES[
+      locale as keyof typeof CATEGORY_META_DESC_TEMPLATES
+    ] || CATEGORY_META_DESC_TEMPLATES.ru;
+
+  return template.replace('{category}', categoryName);
+}
+
+/**
+ * Generate title for search results page.
+ * Format examples:
+ * - ru: "Результаты поиска для "{keyword}" | X-Mobile"
+ * - tk: "{keyword}" üçin gözleg netijeleri | X-Mobile"
+ *
+ * @param keyword - User's search term
+ * @param locale - Current locale
+ * @returns SEO title
+ */
+export function generateSearchTitle(keyword: string, locale: string): string {
+  const template =
+    SEO_SEARCH_TEMPLATES[locale as keyof typeof SEO_SEARCH_TEMPLATES] ||
+    SEO_SEARCH_TEMPLATES.ru;
+
+  return `${template.replace('{keyword}', keyword)} - ${BUSINESS_NAME}`;
 }
 
 /**
