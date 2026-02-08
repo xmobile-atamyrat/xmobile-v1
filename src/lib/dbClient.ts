@@ -1,4 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import { initSlackLogger } from './logger';
+
+initSlackLogger();
 
 declare const global: Global & { prisma?: PrismaClient };
 
