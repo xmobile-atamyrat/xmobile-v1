@@ -7,9 +7,19 @@ import {
   buildCategoryPath,
   findParentCategory,
 } from '@/pages/lib/categoryPathUtils';
-import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import {
+  ALL_PRODUCTS_CATEGORY_CARD,
+  LOCALE_TO_OG_LOCALE,
+} from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  generateBreadcrumbJsonLd,
+  generateCategoryMetaDescription,
+  generateCategoryTitle,
+  generateHreflangLinks,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
@@ -116,12 +126,55 @@ export const getStaticProps: GetStaticProps = async ({
       );
     }
 
+    // Generate SEO Data
+    let seoData = null;
+    if (categoryData) {
+      const categoryName = parseName(categoryData.name, locale);
+      const parentName = parentCategory
+        ? parseName(parentCategory.name, locale)
+        : undefined;
+
+      const title = generateCategoryTitle(categoryName, locale, parentName);
+      const description = generateCategoryMetaDescription(categoryName, locale);
+      const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
+      const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
+
+      // Use category image for OG image, or fallback (omitted if null)
+      let ogImage = categoryData.imgUrl;
+      if (ogImage && !ogImage.startsWith('http')) {
+        ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
+      }
+
+      const breadcrumbJsonLd = generateBreadcrumbJsonLd(
+        categoryPath,
+        undefined, // category page doesn't have a categoryProduct name
+        locale,
+      );
+
+      seoData = {
+        title,
+        description,
+        canonicalUrl,
+        hreflangLinks,
+        ogLocale:
+          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+          'ru_RU',
+        // 'website' tells social platforms this is a general page/collection, not a specific product item
+        ogType: 'website',
+        ogTitle: title,
+        ogDescription: description,
+        ogImage,
+        breadcrumbJsonLd,
+      };
+    }
+
     return {
       props: {
         category: categoryData,
         parentCategory,
         categoryPath,
         messages,
+        seoData,
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
