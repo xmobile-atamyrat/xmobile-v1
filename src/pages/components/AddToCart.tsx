@@ -273,9 +273,6 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
-            <Typography className="text-[1.5vw] text-[#000]">
-              {typeof price}
-            </Typography>
             <Box className={addToCartClasses.detail.bg[platform]}>
               <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between items-center">
                 {/* removeButton */}
