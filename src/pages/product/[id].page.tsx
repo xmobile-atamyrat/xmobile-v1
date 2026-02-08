@@ -136,10 +136,7 @@ export const getStaticProps: GetStaticProps = async ({
 
         const productPath = `product/${product.id}`;
 
-        const title = generateProductTitle(
-          productName,
-          parseName(categoryPath[0].name, locale),
-        );
+        const title = generateProductTitle(productName);
         const metaDescription = generateProductMetaDescription(
           productName,
           locale,
