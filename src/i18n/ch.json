@@ -321,6 +321,8 @@
   "brand": "Brend",
   "brandSearchPlaceholder": "Brend ahtar ýa-da koş...",
   "filter": "Filtr",
-  "apply": "Ulan"
+  "apply": "Ulan",
+  "nullPrice": "Bahasy zwonokda",
+  "nullPriceCart": "Bu towary zwonokda zakaz edip bilesiz."
 }
 

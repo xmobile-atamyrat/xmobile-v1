@@ -319,6 +319,8 @@
   "brand": "Marka",
   "brandSearchPlaceholder": "Marka ara veya ekle...",
   "filter": "Filtre",
-  "apply": "Uygula"
+  "apply": "Uygula",
+  "nullPrice": "Fiyat için arayın",
+  "nullPriceCart": "Sipariş için lütfen arayın."
 }
 
