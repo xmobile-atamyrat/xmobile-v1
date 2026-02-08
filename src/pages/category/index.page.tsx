@@ -1,8 +1,10 @@
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { SEO_CATEGORY_INDEX } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { categoryPageClasses } from '@/styles/classMaps/category';
 import { interClassname } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
@@ -11,9 +13,23 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const locale = context.locale || 'ru';
+
+  const { title, description } =
+    SEO_CATEGORY_INDEX[locale as keyof typeof SEO_CATEGORY_INDEX] ||
+    SEO_CATEGORY_INDEX.ru;
+
+  const seoData = {
+    title,
+    description,
+    canonicalUrl: getCanonicalUrl(locale, 'category'),
+    hreflangLinks: generateHreflangLinks('category'),
+  };
+
   return {
     props: {
       messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      seoData,
     },
   };
 };
