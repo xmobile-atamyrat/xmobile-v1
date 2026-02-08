@@ -27,7 +27,7 @@ export async function getPrice(priceId: string): Promise<Prices | null> {
     return price;
   }
 
-  console.error(filepath, 'priceId is null');
+  console.warn(filepath, 'priceId is null');
   return null; // not to crash the website return null;
 }
 

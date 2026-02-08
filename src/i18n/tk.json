@@ -321,6 +321,8 @@
   "brand": "Brend",
   "brandSearchPlaceholder": "Brend gözle ýa-da goş...",
   "filter": "Filtr",
-  "apply": "Ulan"
+  "apply": "Ulan",
+  "nullPrice": "Bahasy jaňda",
+  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz."
 }
 
