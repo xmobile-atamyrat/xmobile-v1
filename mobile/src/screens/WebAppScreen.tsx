@@ -75,23 +75,24 @@ function WebAppScreen() {
   };
 
   const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
-  const cookieDomain = isDevMode ? null : '.xmobile.com.tm'; // localhost cookies usually don't need explicit domain or should match host
+  const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
 
   const cookieInjectionJS = useMemo(() => {
     if (!storedToken) return undefined;
 
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
+    const secureAttr = isDevMode ? '' : '; Secure';
 
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800; Secure; SameSite=Lax";
+      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Lax";
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800; Secure; SameSite=Lax";`
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Lax";`
           : ''
       }
       true;
     `;
-  }, [storedToken, storedLocale, cookieDomain]);
+  }, [storedToken, storedLocale, cookieDomain, isDevMode]);
 
   if (!isTokenLoaded) {
     return (
