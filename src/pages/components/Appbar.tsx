@@ -153,7 +153,7 @@ export default function CustomAppBar({
         elevation={0}
       >
         <Box className="w-full min-h-[64px] flex justify-center items-start">
-          <Box className="w-[78.95vw] h-full justify-between flex flex-row items-center">
+          <Box className="w-full h-full justify-between flex flex-row items-center">
             <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center justify-center">
               <Box className="min-w-[100px] h-auto cursor-pointer">
                 <CardMedia
@@ -257,7 +257,7 @@ export default function CustomAppBar({
           </Box>
         </Box>
         <Divider className="text-[#303030] mt-[-10px]" />
-        <Box className="my-[28px] w-[78.95vw] h-[48px] flex flex-row justify-between mx-auto">
+        <Box className="my-[28px] w-full h-[48px] flex flex-row justify-between mx-auto">
           {/* Back button, Menu, Logo */}
           <Box className={appbarClasses.boxes.toolbar}>
             {handleBackButton && (
