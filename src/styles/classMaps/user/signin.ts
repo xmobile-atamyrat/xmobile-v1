@@ -5,7 +5,7 @@ export const signinClasses = {
       mobile: 'w-full h-full flex flex-col justify-center',
     },
     main: {
-      web: 'w-[594px] h-[691px] flex flex-col mt-[60px] mb-[221px] items-center p-0 justify-center',
+      web: 'w-[clamp(590px,_31vw,_1920px)] h-[691px] flex flex-col mt-[60px] mb-[221px] items-center p-0 justify-center',
       mobile: 'w-full h-[80%] flex flex-col items-center mt-[100px]',
     },
     text: {
@@ -52,11 +52,11 @@ export const signinClasses = {
     mobile: 'font-bold text-[24px] leading-[100%] tracking-[0] mb-[30px]',
   },
   label: {
-    web: 'mb-[22px]  text-[20px]',
+    web: 'mb-[22px] text-[20px] w-full',
     mobile: '',
   },
   textField: {
-    web: 'w-[522px] h-[380px] mt-[12px]',
+    web: 'w-full h-[380px] mt-[12px]',
     mobile: 'mt-[12px]',
   },
   link: {
