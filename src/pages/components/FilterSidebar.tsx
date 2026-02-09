@@ -250,12 +250,10 @@ export default function FilterSidebar({
 
   const FilterItem = ({
     label,
-    count,
     isSelected,
     onClick,
   }: {
     label: string;
-    count?: number;
     isSelected: boolean;
     onClick: () => void;
   }) => (
@@ -288,19 +286,6 @@ export default function FilterSidebar({
             >
               {label}
             </Typography>
-            {count !== undefined && (
-              <Typography
-                variant="body2"
-                fontFamily="Inter, sans-serif"
-                fontSize="16px"
-                fontWeight={400}
-                lineHeight="24px"
-                color="#303030"
-                sx={{ ml: 1 }}
-              >
-                ( {count} )
-              </Typography>
-            )}
           </Box>
         }
       />
@@ -368,7 +353,6 @@ export default function FilterSidebar({
               <FilterItem
                 key={brand.id}
                 label={brand.name}
-                count={brand.productCount}
                 isSelected={selectedBrandIds.includes(brand.id)}
                 onClick={() => handleBrandToggle(brand.id)}
               />
