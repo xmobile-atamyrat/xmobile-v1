@@ -1,16 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useMemo } from 'react';
-import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
-  const [storedToken, setStoredToken] = React.useState<string | null>(null);
-  const [storedLocale, setStoredLocale] = React.useState<string | null>(null);
-  const [isTokenLoaded, setIsTokenLoaded] = React.useState(false);
-  const [canGoBack, setCanGoBack] = React.useState(false);
+  const [storedToken, setStoredToken] = useState<string | null>(null);
+  const [storedLocale, setStoredLocale] = useState<string | null>(null);
+  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  // Dev Mode State
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [devModeTapCount, setDevModeTapCount] = useState(0);
 
   useEffect(() => {
     const backButton = () => {
@@ -32,10 +43,13 @@ function WebAppScreen() {
       try {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
+        const devMode = await AsyncStorage.getItem('DEV_MODE');
+
         setStoredToken(token);
         setStoredLocale(locale);
+        setIsDevMode(devMode === 'true');
       } catch (error) {
-        console.error('Failed to load token:', error);
+        console.error('Failed to load storage data:', error);
       } finally {
         setIsTokenLoaded(true);
       }
@@ -44,21 +58,42 @@ function WebAppScreen() {
     loadStoredData();
   }, []);
 
+  const handleDevModeToggle = async () => {
+    const newCount = devModeTapCount + 1;
+    setDevModeTapCount(newCount);
+
+    if (newCount >= 5) {
+      const newMode = !isDevMode;
+      setIsDevMode(newMode);
+      setDevModeTapCount(0);
+      await AsyncStorage.setItem('DEV_MODE', String(newMode));
+      Alert.alert(
+        'Dev Mode',
+        `Switched to ${newMode ? 'Development (localhost:3003)' : 'Production'}. App will reload.`,
+      );
+    }
+  };
+
+  const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
+  const cookieDomain = isDevMode ? null : '.xmobile.com.tm'; // localhost cookies usually don't need explicit domain or should match host
+
   const cookieInjectionJS = useMemo(() => {
     if (!storedToken) return undefined;
 
+    const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
+
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/; domain=.xmobile.com.tm; max-age=604800; Secure; SameSite=Lax";
+      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800; Secure; SameSite=Lax";
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/; domain=.xmobile.com.tm; max-age=604800; Secure; SameSite=Lax";`
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800; Secure; SameSite=Lax";`
           : ''
       }
       true;
     `;
-  }, [storedToken, storedLocale]);
+  }, [storedToken, storedLocale, cookieDomain]);
 
-  if (storedToken === null && !isTokenLoaded) {
+  if (!isTokenLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#d32f2f" />
@@ -79,8 +114,9 @@ function WebAppScreen() {
       ]}
     >
       <WebView
+        key={isDevMode ? 'dev' : 'prod'} // Force re-render on mode switch
         ref={webViewRef}
-        source={{ uri: 'https://xmobile.com.tm' }}
+        source={{ uri: appUrl }}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         cacheEnabled={true}
@@ -134,6 +170,13 @@ function WebAppScreen() {
         }}
         injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
       />
+
+      {/* Hidden Dev Mode Toggle - Bottom Right Corner */}
+      <TouchableOpacity
+        style={styles.devToggleArea}
+        onPress={handleDevModeToggle}
+        activeOpacity={0.1} // Hint feedback
+      />
     </View>
   );
 }
@@ -155,6 +198,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#ffffff',
+  },
+  devToggleArea: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 60,
+    height: 60,
+    backgroundColor: 'transparent',
+    zIndex: 999, // Ensure it sits on top
   },
 });
 
