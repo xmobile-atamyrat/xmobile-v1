@@ -38,7 +38,7 @@ export const interClassname = Inter({
 
 export const units = {
   inputHeight: {
-    web: '80px',
+    web: '60px',
     mobile: '48px',
   },
   inputFontSize: {
