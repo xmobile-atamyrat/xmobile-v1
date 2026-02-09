@@ -9,19 +9,19 @@ export const signupClasses = {
       mobile: 'w-[230px] mb-[30px] mt-[60px]',
     },
     main: {
-      web: 'w-[594px] h-[1138px] flex flex-col mt-[100px] items-center justify-center',
+      web: 'w-[clamp(590px,_31vw,_1500px)] h-auto flex flex-col mt-[75px] items-center justify-center',
       mobile: 'w-full flex flex-col items-center',
     },
     label: {
-      web: 'flex mb-[80px]',
+      web: 'flex mb-[40px]',
       mobile: 'flex mb-[18px]',
     },
     input: {
-      web: 'w-[522px] h-[122px]',
+      web: 'w-full h-[100px]',
       mobile: 'w-full h-[75px]',
     },
     inputs: {
-      web: 'h-[473px]',
+      web: 'min-h-[473px]',
       mobile: 'flex flex-col w-full justify-center items-center',
     },
     text: {
@@ -31,12 +31,12 @@ export const signupClasses = {
     button:
       'flex flex-col gap-2 relative min-h-[70px] justify-center items-center',
     links: {
-      web: 'w-full flex flex-col mt-[280px]',
+      web: 'w-full flex flex-col mt-[50px] mb-[20px]',
       mobile: 'w-full flex flex-col mt-[40px]',
     },
   },
   paper: {
-    web: `flex flex-col w-full h-[987px] rounded-[25px] px-[36px] pt-[48px] mb-[25px]`,
+    web: `flex flex-col w-full h-auto rounded-[25px] px-[36px] pt-[48px] mb-[25px]`,
     mobile: 'flex flex-col w-[95%] h-[450px] rounded-[16px] p-2 gap-1',
   },
   buttonSubmit: {
@@ -50,7 +50,7 @@ export const signupClasses = {
       'absolute left-4 top-4 font-base font-light text-[24px] no-underline',
   },
   label: {
-    web: 'mb-[22px]  text-[20px] leading-[30px] tracking-[0]',
+    web: 'mb-[22px] text-[20px] leading-[30px] tracking-normal',
     mobile: '',
   },
   h3: {

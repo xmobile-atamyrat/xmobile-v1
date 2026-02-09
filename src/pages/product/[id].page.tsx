@@ -255,7 +255,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   return product ? (
     <Layout
       handleHeaderBackButton={() => {
-        router.push(`/product?categoryId=${categoryIdFromQuery}`);
+        router.back();
       }}
     >
       <SimpleBreadcrumbs
