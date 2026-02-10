@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import CookieManager from '@react-native-cookies/cookies';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +17,7 @@ function WebAppScreen() {
   const webViewRef = React.useRef<WebView>(null);
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [storedLocale, setStoredLocale] = useState<string | null>(null);
-  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
 
   // Dev Mode State
@@ -51,7 +52,7 @@ function WebAppScreen() {
       } catch (error) {
         console.error('Failed to load storage data:', error);
       } finally {
-        setIsTokenLoaded(true);
+        setIsReady(true);
       }
     };
 
@@ -100,7 +101,7 @@ function WebAppScreen() {
     }
   }, [cookieInjectionJS]);
 
-  if (!isTokenLoaded) {
+  if (!isReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#d32f2f" />
@@ -160,7 +161,13 @@ function WebAppScreen() {
               if (REFRESH_TOKEN) {
                 await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
                 setStoredToken(REFRESH_TOKEN);
+              } else {
+                // Token was deleted on web side — clear everything
+                await AsyncStorage.removeItem('REFRESH_TOKEN');
+                await CookieManager.clearAll(true);
+                setStoredToken(null);
               }
+
               if (NEXT_LOCALE) {
                 await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
                 setStoredLocale(NEXT_LOCALE);
@@ -168,6 +175,7 @@ function WebAppScreen() {
             } else if (data.type === 'LOGOUT') {
               await AsyncStorage.removeItem('REFRESH_TOKEN');
               await AsyncStorage.removeItem('NEXT_LOCALE');
+              await CookieManager.clearAll(true);
               setStoredToken(null);
               setStoredLocale(null);
             }
