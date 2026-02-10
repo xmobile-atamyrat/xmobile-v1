@@ -384,6 +384,9 @@ export const setCookie = (
 ) => {
   const serializedCookie = cookie.serialize(name, value, options);
   document.cookie = serializedCookie;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('cookie-change'));
+  }
 };
 
 export const deleteCookie = (name: string) => {
@@ -401,6 +404,9 @@ export const deleteCookie = (name: string) => {
         domain,
       });
     });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cookie-change'));
+    }
   }
 };
 
