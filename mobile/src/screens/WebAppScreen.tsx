@@ -94,6 +94,12 @@ function WebAppScreen() {
     `;
   }, [storedToken, storedLocale, cookieDomain, isDevMode]);
 
+  useEffect(() => {
+    if (cookieInjectionJS && webViewRef.current) {
+      webViewRef.current.injectJavaScript(cookieInjectionJS);
+    }
+  }, [cookieInjectionJS]);
+
   if (!isTokenLoaded) {
     return (
       <View style={styles.loadingContainer}>
