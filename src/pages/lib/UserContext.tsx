@@ -80,8 +80,8 @@ export default function UserContextProvider({
             JSON.stringify({
               type: 'AUTH_STATE',
               payload: {
-                REFRESH_TOKEN: refreshToken,
-                NEXT_LOCALE: nextLocale,
+                REFRESH_TOKEN: refreshToken || null,
+                NEXT_LOCALE: nextLocale || null,
               },
             }),
           );
