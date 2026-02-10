@@ -1,14 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CookieManager from '@react-native-cookies/cookies';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  BackHandler,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -20,9 +13,9 @@ function WebAppScreen() {
   const [isReady, setIsReady] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
 
-  // Dev Mode State
-  const [isDevMode, setIsDevMode] = useState(false);
-  const [devModeTapCount, setDevModeTapCount] = useState(0);
+  // Dev mode is determined automatically by React Native's __DEV__ flag.
+  // __DEV__ = true in debug/Metro builds, false in release/production builds.
+  const isDevMode = __DEV__;
 
   useEffect(() => {
     const backButton = () => {
@@ -44,11 +37,9 @@ function WebAppScreen() {
       try {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
-        const devMode = await AsyncStorage.getItem('DEV_MODE');
 
         setStoredToken(token);
         setStoredLocale(locale);
-        setIsDevMode(devMode === 'true');
       } catch (error) {
         console.error('Failed to load storage data:', error);
       } finally {
@@ -58,22 +49,6 @@ function WebAppScreen() {
 
     loadStoredData();
   }, []);
-
-  const handleDevModeToggle = async () => {
-    const newCount = devModeTapCount + 1;
-    setDevModeTapCount(newCount);
-
-    if (newCount >= 5) {
-      const newMode = !isDevMode;
-      setIsDevMode(newMode);
-      setDevModeTapCount(0);
-      await AsyncStorage.setItem('DEV_MODE', String(newMode));
-      Alert.alert(
-        'Dev Mode',
-        `Switched to ${newMode ? 'Development (localhost:3003)' : 'Production'}. App will reload.`,
-      );
-    }
-  };
 
   const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
   const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
@@ -122,7 +97,7 @@ function WebAppScreen() {
       ]}
     >
       <WebView
-        key={isDevMode ? 'dev' : 'prod'} // Force re-render on mode switch
+        key={isDevMode ? 'dev' : 'prod'}
         ref={webViewRef}
         source={{ uri: appUrl }}
         sharedCookiesEnabled={true}
@@ -185,13 +160,6 @@ function WebAppScreen() {
         }}
         injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
       />
-
-      {/* Hidden Dev Mode Toggle - Bottom Right Corner */}
-      <TouchableOpacity
-        style={styles.devToggleArea}
-        onPress={handleDevModeToggle}
-        activeOpacity={0.1} // Hint feedback
-      />
     </View>
   );
 }
@@ -213,15 +181,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-  },
-  devToggleArea: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 60,
-    height: 60,
-    backgroundColor: 'transparent',
-    zIndex: 999, // Ensure it sits on top
   },
 });
 
