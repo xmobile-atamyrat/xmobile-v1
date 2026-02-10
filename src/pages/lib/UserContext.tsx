@@ -70,29 +70,39 @@ export default function UserContextProvider({
 
   useEffect(() => {
     if (isWebView()) {
-      const refreshToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
-      const nextLocale = getCookie('NEXT_LOCALE');
+      const syncState = () => {
+        const refreshToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
+        const nextLocale = getCookie('NEXT_LOCALE');
 
-      if (user) {
-        wasLoggedIn.current = true;
-        (window as any).ReactNativeWebView?.postMessage(
-          JSON.stringify({
-            type: 'AUTH_STATE',
-            payload: {
-              REFRESH_TOKEN: refreshToken,
-              NEXT_LOCALE: nextLocale,
-            },
-          }),
-        );
-      } else if (wasLoggedIn.current) {
-        wasLoggedIn.current = false;
-        (window as any).ReactNativeWebView?.postMessage(
-          JSON.stringify({
-            type: 'LOGOUT',
-          }),
-        );
-      }
+        if (user) {
+          wasLoggedIn.current = true;
+          (window as any).ReactNativeWebView?.postMessage(
+            JSON.stringify({
+              type: 'AUTH_STATE',
+              payload: {
+                REFRESH_TOKEN: refreshToken,
+                NEXT_LOCALE: nextLocale,
+              },
+            }),
+          );
+        } else if (wasLoggedIn.current) {
+          wasLoggedIn.current = false;
+          (window as any).ReactNativeWebView?.postMessage(
+            JSON.stringify({
+              type: 'LOGOUT',
+            }),
+          );
+        }
+      };
+
+      syncState();
+      window.addEventListener('cookie-change', syncState);
+
+      return () => {
+        window.removeEventListener('cookie-change', syncState);
+      };
     }
+    return undefined;
   }, [user]);
 
   const userContextState = useMemo(() => {
