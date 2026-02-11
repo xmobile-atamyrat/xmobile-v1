@@ -446,7 +446,7 @@ self.addEventListener('message', (event) => {
       self.registration.showNotification(notification.title || 'New message', {
         body: notification.content || notification.body,
         icon: notification.icon || NOTIFICATION_ICON,
-        badge: notification.badge || NOTIFICATION_BADGE,
+        badge: NOTIFICATION_BADGE,
         tag: notificationId,
         data: {
           sessionId: notification.sessionId,

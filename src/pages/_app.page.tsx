@@ -39,9 +39,6 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   useEffect(() => {
-    // Immediate splash dismissal
-    // We still check sessionStorage to avoid re-triggering if logic changes later,
-    // but we remove the artificial 1000ms delay.
     setIsLoading(false);
     sessionStorage.setItem('hasShownSplash', 'true');
   }, []);
