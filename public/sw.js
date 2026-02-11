@@ -10,7 +10,16 @@ importScripts(
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js',
 );
 
-const CACHE_NAME = 'xmobile-v4-cache'; // Bumped version for new paths
+// Cache versioning and separation
+const CACHE_VERSION = 4;
+const CACHE_NAMES = {
+  STATIC: `xmobile-static-v${CACHE_VERSION}`,
+  DYNAMIC: `xmobile-dynamic-v${CACHE_VERSION}`,
+  API: `xmobile-api-v${CACHE_VERSION}`,
+};
+// For backward compatibility
+const CACHE_NAME = CACHE_NAMES.STATIC;
+
 const STATIC_ASSETS = [
   '/logo/xm-logo.png', // Moved to logo folder
   '/manifest.json',
@@ -52,10 +61,39 @@ const getBadgeIcon = () => {
 const NOTIFICATION_ICON = getNotificationIcon();
 const NOTIFICATION_BADGE = getBadgeIcon();
 
+// --------------------------------------------------------------------------
+// UTILITY FUNCTIONS
+// --------------------------------------------------------------------------
+
+// Detect if running in WebView
+const isWebView = () => {
+  const ua = self.navigator.userAgent || '';
+  return /ReactNative|wv|WebView/i.test(ua);
+};
+
+// Trim cache to prevent unbounded growth
+async function trimCache(cacheName, maxItems = 50) {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    if (keys.length > maxItems) {
+      // Remove oldest items (FIFO)
+      for (let i = 0; i < keys.length - maxItems; i++) {
+        await cache.delete(keys[i]);
+      }
+      console.log(
+        `[sw.js] Trimmed ${cacheName} from ${keys.length} to ${maxItems} items`,
+      );
+    }
+  } catch (err) {
+    console.warn(`[sw.js] Failed to trim cache ${cacheName}:`, err);
+  }
+}
+
 // Install event - Pre-cache critical static assets (Robust Version)
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
+    caches.open(CACHE_NAMES.STATIC).then(async (cache) => {
       // console.log('[sw.js] Pre-caching static assets');
 
       // robustness: try caching each one individually so one failure doesn't break all
@@ -74,13 +112,22 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name)),
-      );
-    }),
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => !Object.values(CACHE_NAMES).includes(name))
+            .map((name) => caches.delete(name)),
+        );
+      })
+      .then(() => {
+        // Trim caches after cleanup to prevent unbounded growth
+        return Promise.all([
+          trimCache(CACHE_NAMES.STATIC, 50),
+          trimCache(CACHE_NAMES.DYNAMIC, 100),
+        ]);
+      }),
   );
   return self.clients.claim(); // Take control of all pages immediately
 });
@@ -124,16 +171,41 @@ self.addEventListener('fetch', (event) => {
     return; // Let the browser handle it (Network only)
   }
 
-  // 4a. STRATEGY: Stale-While-Revalidate for JS, CSS, Images, Fonts
+  // 4. STRATEGY: Cache-First for immutable Next.js static assets
+  // These have hash-based names and never change
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.open(CACHE_NAMES.STATIC).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return fetch(event.request)
+            .then((response) => {
+              if (response.ok) {
+                cache.put(event.request, response.clone());
+              }
+              return response;
+            })
+            .catch(() => {
+              // Return placeholder for immutable assets
+              throw new Error(`[sw.js] Failed to load: ${event.request.url}`);
+            });
+        });
+      }),
+    );
+    return;
+  }
+
+  // 5. STRATEGY: Stale-While-Revalidate for JS, CSS, Images, Fonts
   // serve cache immediately, then update cache in background.
   if (
     url.pathname.match(
       /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/,
-    ) ||
-    url.pathname.startsWith('/_next/static/')
+    )
   ) {
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
+      caches.open(CACHE_NAMES.STATIC).then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {
           return staleWhileRevalidate(event, cache, cachedResponse);
         });
@@ -142,20 +214,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4b. STRATEGY: Stale-While-Revalidate for Next.js Data (/_next/data/)
+  // 6. STRATEGY: Dynamic cache for navigation within WebView and Next.js Data
   // This enables offline navigation within the app (SPA transitions)
-  if (url.pathname.startsWith('/_next/data/')) {
+  // Includes /_next/data/ for static generation and WebView navigation
+  if (
+    url.pathname.startsWith('/_next/data/') ||
+    (isWebView() && event.request.mode === 'navigate')
+  ) {
     event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(event.request).then((cachedResponse) => {
-          return staleWhileRevalidate(event, cache, cachedResponse);
-        });
+      caches.open(CACHE_NAMES.DYNAMIC).then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+        // Trim cache if getting too large
+        await trimCache(CACHE_NAMES.DYNAMIC, 100);
+        return staleWhileRevalidate(event, cache, cachedResponse);
       }),
     );
     return;
   }
 
-  // 5. STRATEGY: Network First for HTML (Pages)
+  // 7. STRATEGY: Network First for HTML (Pages) - Standard browsers
   // Try network, if fails (offline), try cache
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -163,21 +240,23 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Clone and cache the updated HTML page
           const resClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
+          caches.open(CACHE_NAMES.DYNAMIC).then((cache) => {
             cache.put(event.request, resClone);
+            // Trim dynamic cache after adding
+            trimCache(CACHE_NAMES.DYNAMIC, 100);
           });
           return response;
         })
         .catch(() => {
           // If offline, serve cached page; if uncached, return a concrete offline response
           return caches.match(event.request).then((cached) => {
-            return (
-              cached ||
-              new Response(
-                '<!DOCTYPE html><html><body><h1>Offline</h1><p>Please check your connection and try again.</p></body></html>',
-                { status: 503, headers: { 'Content-Type': 'text/html' } },
-              )
-            );
+            if (cached) {
+              return cached;
+            }
+            // Return a concrete offline page (create /offline.html or use fallback HTML)
+            return caches
+              .match('/offline.html')
+              .catch(() => new Response('Offline'));
           });
         }),
     );
