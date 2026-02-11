@@ -86,8 +86,29 @@ self.addEventListener('activate', (event) => {
 });
 
 // --------------------------------------------------------------------------
-// CACHING STRATEGY (The "Pro" feature for speed)
+// CACHING STRATEGY
 // --------------------------------------------------------------------------
+
+// Shared Stale-While-Revalidate logic (DRY)
+// Serves cache immediately, updates cache in background.
+// On network failure: returns cached response if available, otherwise rejects
+// so respondWith receives a proper error instead of undefined.
+function staleWhileRevalidate(event, cache, cachedResponse) {
+  const fetchPromise = fetch(event.request)
+    .then((networkResponse) => {
+      if (networkResponse.ok) {
+        cache.put(event.request, networkResponse.clone());
+      }
+      return networkResponse;
+    })
+    .catch(() => {
+      // Network failed — return cache if available, otherwise reject properly
+      if (cachedResponse) return cachedResponse;
+      throw new Error(`[sw.js] Offline and no cache for: ${event.request.url}`);
+    });
+  return cachedResponse || fetchPromise;
+}
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -114,20 +135,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {
-          const fetchPromise = fetch(event.request)
-            .then((networkResponse) => {
-              // If valid response, update cache
-              if (networkResponse.ok) {
-                cache.put(event.request, networkResponse.clone());
-              }
-              return networkResponse;
-            })
-            .catch((err) => {
-              // Network failed, nothing to do
-            });
-
-          // Return cached response if available, otherwise wait for network
-          return cachedResponse || fetchPromise;
+          return staleWhileRevalidate(event, cache, cachedResponse);
         });
       }),
     );
@@ -140,17 +148,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {
-          const fetchPromise = fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse.ok) {
-                cache.put(event.request, networkResponse.clone());
-              }
-              return networkResponse;
-            })
-            .catch((err) => {
-              // Network failed
-            });
-          return cachedResponse || fetchPromise;
+          return staleWhileRevalidate(event, cache, cachedResponse);
         });
       }),
     );
@@ -171,8 +169,16 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // If offline, serve cached page
-          return caches.match(event.request);
+          // If offline, serve cached page; if uncached, return a concrete offline response
+          return caches.match(event.request).then((cached) => {
+            return (
+              cached ||
+              new Response(
+                '<!DOCTYPE html><html><body><h1>Offline</h1><p>Please check your connection and try again.</p></body></html>',
+                { status: 503, headers: { 'Content-Type': 'text/html' } },
+              )
+            );
+          });
         }),
     );
   }
