@@ -15,7 +15,6 @@ const CACHE_VERSION = 4;
 const CACHE_NAMES = {
   STATIC: `xmobile-static-v${CACHE_VERSION}`,
   DYNAMIC: `xmobile-dynamic-v${CACHE_VERSION}`,
-  API: `xmobile-api-v${CACHE_VERSION}`,
 };
 // For backward compatibility
 const CACHE_NAME = CACHE_NAMES.STATIC;
@@ -141,18 +140,22 @@ self.addEventListener('activate', (event) => {
 // On network failure: returns cached response if available, otherwise rejects
 // so respondWith receives a proper error instead of undefined.
 function staleWhileRevalidate(event, cache, cachedResponse) {
-  const fetchPromise = fetch(event.request)
-    .then((networkResponse) => {
-      if (networkResponse.ok) {
-        cache.put(event.request, networkResponse.clone());
-      }
-      return networkResponse;
-    })
-    .catch(() => {
-      // Network failed — return cache if available, otherwise reject properly
-      if (cachedResponse) return cachedResponse;
-      throw new Error(`[sw.js] Offline and no cache for: ${event.request.url}`);
-    });
+  const fetchPromise = event.waitUntil(
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse.ok) {
+          cache.put(event.request, networkResponse.clone());
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Network failed — return cache if available, otherwise reject properly
+        if (cachedResponse) return cachedResponse;
+        throw new Error(
+          `[sw.js] Offline and no cache for: ${event.request.url}`,
+        );
+      }),
+  );
   return cachedResponse || fetchPromise;
 }
 
@@ -223,10 +226,14 @@ self.addEventListener('fetch', (event) => {
   ) {
     event.respondWith(
       caches.open(CACHE_NAMES.DYNAMIC).then(async (cache) => {
-        const cachedResponse = await cache.match(event.request);
-        // Trim cache if getting too large
-        await trimCache(CACHE_NAMES.DYNAMIC, 100);
-        return staleWhileRevalidate(event, cache, cachedResponse);
+        const responsePromise = staleWhileRevalidate(
+          event,
+          cache,
+          cachedResponse,
+        );
+        // Trim cache in the background so it doesn't delay the response
+        event.waitUntil(trimCache(CACHE_NAMES.DYNAMIC, 100));
+        return responsePromise;
       }),
     );
     return;
@@ -240,11 +247,14 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Clone and cache the updated HTML page
           const resClone = response.clone();
-          caches.open(CACHE_NAMES.DYNAMIC).then((cache) => {
-            cache.put(event.request, resClone);
-            // Trim dynamic cache after adding
-            trimCache(CACHE_NAMES.DYNAMIC, 100);
-          });
+          event.waitUntil(
+            caches.open(CACHE_NAMES.DYNAMIC).then((cache) => {
+              return cache.put(event.request, resClone).then(() => {
+                // Trim dynamic cache after adding
+                return trimCache(CACHE_NAMES.DYNAMIC, 100);
+              });
+            }),
+          );
           return response;
         })
         .catch(() => {
@@ -256,7 +266,9 @@ self.addEventListener('fetch', (event) => {
             // Return a concrete offline page (create /offline.html or use fallback HTML)
             return caches
               .match('/offline.html')
-              .catch(() => new Response('Offline'));
+              .then(
+                (offlineResponse) => offlineResponse || new Response('Offline'),
+              );
           });
         }),
     );

@@ -26,9 +26,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Register Service Worker for notifications (skip in WebView)
-  // Register Service Worker for caching (offline-first strategy)
-  // We enable this in WebView too for performance (caching only)
+  // Register Service Worker for caching and notifications
   useEffect(() => {
     if (typeof window !== 'undefined' && isServiceWorkerSupported()) {
       registerServiceWorker().catch((error) => {
