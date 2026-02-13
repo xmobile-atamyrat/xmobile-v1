@@ -142,6 +142,7 @@ async function handlePostCategory(req: NextApiRequest) {
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
       const category = await dbClient.category.create({
         data: {
@@ -173,6 +174,7 @@ async function handleEditCategory(req: NextApiRequest) {
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
       const data: Partial<Category> = {};
       if (fields.name?.length > 0) data.name = fields.name[0];

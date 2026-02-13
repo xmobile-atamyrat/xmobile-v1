@@ -123,6 +123,7 @@ async function createProduct(
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
 
       const fileKeys = Object.keys(files);
@@ -358,6 +359,7 @@ async function handleEditProduct(
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
 
       const data: Partial<Product> = { imgUrls: [] };
@@ -399,6 +401,7 @@ async function handleEditProduct(
           `productId: ${productId}`,
         );
         resolve({ success: false, message: 'Product not found', status: 404 });
+        return;
       }
 
       const deleteImageUrls = fields.deleteImageUrls
