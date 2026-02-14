@@ -60,10 +60,10 @@ function WebAppScreen() {
     const secureAttr = isDevMode ? '' : '; Secure';
 
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Lax";
+      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Strict";
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Lax";`
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
           : ''
       }
       true;
@@ -146,6 +146,9 @@ function WebAppScreen() {
               if (NEXT_LOCALE) {
                 await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
                 setStoredLocale(NEXT_LOCALE);
+              } else {
+                await AsyncStorage.removeItem('NEXT_LOCALE');
+                setStoredLocale(null);
               }
             } else if (data.type === 'LOGOUT') {
               await AsyncStorage.removeItem('REFRESH_TOKEN');

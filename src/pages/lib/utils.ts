@@ -397,15 +397,14 @@ export const deleteCookie = (name: string) => {
     };
     document.cookie = cookie.serialize(name, '', commonOptions);
 
-    const domains = ['xmobile.com.tm', '.xmobile.com.tm'];
-    domains.forEach((domain) => {
-      document.cookie = cookie.serialize(name, '', {
-        ...commonOptions,
-        domain,
+    if (process.env.NODE_ENV === 'production') {
+      const domains = ['xmobile.com.tm', '.xmobile.com.tm'];
+      domains.forEach((domain) => {
+        document.cookie = cookie.serialize(name, '', {
+          ...commonOptions,
+          domain,
+        });
       });
-    });
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('cookie-change'));
     }
   }
 };
