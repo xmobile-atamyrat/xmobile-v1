@@ -34,7 +34,7 @@ export default async function handler(
         where: { id: userId },
       });
       if (!user) {
-        console.error(`${filepath}: User not found`);
+        console.warn(`${filepath}: User not found`);
         return res
           .status(401)
           .json({ success: false, message: 'Unauthorized: User not found' });
