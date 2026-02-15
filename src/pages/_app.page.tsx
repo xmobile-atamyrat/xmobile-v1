@@ -10,7 +10,6 @@ import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import {
   isServiceWorkerSupported,
-  isWebView,
   registerServiceWorker,
 } from '@/pages/lib/serviceWorker';
 import UserContextProvider from '@/pages/lib/UserContext';
@@ -27,13 +26,9 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Register Service Worker for notifications (skip in WebView)
+  // Register Service Worker for caching and notifications
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      !isWebView() &&
-      isServiceWorkerSupported()
-    ) {
+    if (typeof window !== 'undefined' && isServiceWorkerSupported()) {
       registerServiceWorker().catch((error) => {
         // Silently fail - Service Workers are optional
         console.warn('Service Worker registration failed:', error);
@@ -42,18 +37,9 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   useEffect(() => {
-    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
-    if (hasShownSplash) {
-      setIsLoading(false);
-    }
-
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      sessionStorage.setItem('hasShownSplash', 'true');
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  });
+    setIsLoading(false);
+    sessionStorage.setItem('hasShownSplash', 'true');
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
