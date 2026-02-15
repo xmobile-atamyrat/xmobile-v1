@@ -91,10 +91,13 @@ async function trimCache(cacheName, maxItems = 50) {
 
 // Install event - Pre-cache critical static assets (Robust Version)
 self.addEventListener('install', (event) => {
+  // Skip pre-caching if not in WebView
+  if (!isWebView()) {
+    return self.skipWaiting();
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAMES.STATIC).then(async (cache) => {
-      // console.log('[sw.js] Pre-caching static assets');
-
       // robustness: try caching each one individually so one failure doesn't break all
       for (const asset of STATIC_ASSETS) {
         try {
@@ -160,6 +163,10 @@ function staleWhileRevalidate(event, cache, cachedResponse) {
 }
 
 self.addEventListener('fetch', (event) => {
+  // Disable all caching if not running in WebView
+  // Notifications still work, but caching is skipped.
+  if (!isWebView()) return;
+
   const url = new URL(event.request.url);
 
   // 1. Ignore non-GET requests (POST, PUT, DELETE, etc.)
