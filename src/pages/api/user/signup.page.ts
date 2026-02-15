@@ -25,7 +25,7 @@ export default async function handler(
         where: { email },
       });
       if (existingUser) {
-        console.error(
+        console.warn(
           `${filepath}: user already exists. email: ${email}, name: ${name}`,
         );
         return res
