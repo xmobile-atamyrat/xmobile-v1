@@ -11,6 +11,19 @@ let swRegistration: ServiceWorkerRegistration | null = null;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null =
   null;
 
+// Flag to prevent multiple reloads when controller changes
+let refreshing: boolean = false;
+
+// Handle automatic page reload when Service Worker updates
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    console.log('[sw] Controller changed, reloading page for consistency...');
+    window.location.reload();
+  });
+}
+
 /**
  * Detect if running in React Native WebView
  * WebView doesn't support Service Workers and has limited Notification API support
