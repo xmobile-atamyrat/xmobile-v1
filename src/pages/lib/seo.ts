@@ -127,21 +127,29 @@ export function generateProductMetaDescription(
  * Generate SEO-optimized category page title.
  * Format: "{Category} {ParentCategory} in Turkmenistan - {BusinessName}"
  *
- * @param categoryName - Localized category name
+ * @param categoryPath - Full path from root to current category
  * @param locale - Current locale
- * @param parentCategoryName - Optional localized parent category name
  * @returns SEO title
  */
 export function generateCategoryTitle(
-  categoryName: string,
+  categoryPath: ExtendedCategory[],
   locale: string,
-  rootCategoryName?: string,
 ): string {
   const locationSuffix =
     SEO_LOCATION_SUFFIXES[locale as keyof typeof SEO_LOCATION_SUFFIXES] ||
     SEO_LOCATION_SUFFIXES.ru;
 
-  const mainPart = [categoryName, rootCategoryName].filter(Boolean).join(' ');
+  if (!categoryPath || categoryPath.length === 0) {
+    return `${BUSINESS_NAME}`;
+  }
+
+  // Format: Child | Parent | Root
+  // categoryPath is [Root, Parent, Child] -> Reverse it
+  const names = [...categoryPath]
+    .reverse()
+    .map((cat) => parseName(cat.name, locale));
+
+  const mainPart = names.join(' | ');
 
   return `${mainPart} ${locationSuffix} - ${BUSINESS_NAME}`;
 }

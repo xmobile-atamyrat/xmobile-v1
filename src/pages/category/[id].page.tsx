@@ -130,11 +130,7 @@ export const getStaticProps: GetStaticProps = async ({
     let seoData = null;
     if (categoryData) {
       const categoryName = parseName(categoryData.name, locale);
-      const parentName = parentCategory
-        ? parseName(parentCategory.name, locale)
-        : undefined;
-
-      const title = generateCategoryTitle(categoryName, locale, parentName);
+      const title = generateCategoryTitle(categoryPath, locale);
       const description = generateCategoryMetaDescription(categoryName, locale);
       const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
       const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
