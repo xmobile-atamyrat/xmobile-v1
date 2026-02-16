@@ -53,8 +53,6 @@
   "password": "Parol",
   "userAlreadyExists": "Akkaunt eýýäm bar",
   "search": "Gözle...",
-  "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
-  "browseFullRange": "Türkmenistanda smartfonlar, gadgetler we elektronika satyn alyň. Amatly kredit meýilnamalary, iň gowy markalar we bäsdeşlik bahalary.",
   "passwordTooltip1": "• Iň azyndan 8 nyşan",
   "passwordTooltip2": "• Iň azyndan 1 san",
   "passwordTooltip3": "• Iň azyndan 1 baş harp",
@@ -325,6 +323,8 @@
   "filter": "Filtr",
   "apply": "Ulan",
   "nullPrice": "Bahasy jaňda",
-  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz."
+  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz.",
+  "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
+  "productCatalogDescription": "Türkmenistanda smartfonlar, gadgetler we elektronika satyn alyň. Amatly kredit meýilnamalary, iň gowy markalar we bäsdeşlik bahalary."
 }
 

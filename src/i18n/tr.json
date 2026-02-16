@@ -46,8 +46,6 @@
   "phoneNumber": "Telefon numarası",
   "userAlreadyExists": "Kullanıcı zaten var",
   "search": "Ara...",
-  "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
-  "browseFullRange": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar.",
   "emailPlaceholder": "E-postanızı yazın",
   "passwordPlaceholder": "Şifrenizi yazın",
   "passwordConfirmPlaceholder": "Şifrenizi tekrar yazın",
@@ -323,6 +321,8 @@
   "filter": "Filtre",
   "apply": "Uygula",
   "nullPrice": "Fiyat için arayın",
-  "nullPriceCart": "Sipariş için lütfen arayın."
+  "nullPriceCart": "Sipariş için lütfen arayın.",
+  "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
+  "productCatalogDescription": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar."
 }
 
