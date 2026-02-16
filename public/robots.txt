@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /user/
+Disallow: /chat/
+Disallow: /cart/
+Disallow: /orders/
+Disallow: /api/
+Disallow: /analytics/
+Disallow: /procurement/
+Disallow: /server-logs/
+Disallow: /*?searchKeyword=*
+Sitemap: https://xmobile.com.tm/sitemap.xml
