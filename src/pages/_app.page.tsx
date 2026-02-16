@@ -71,6 +71,12 @@ export default function App({ Component, pageProps }: AppProps) {
 
         <title>{seoData?.title || 'X-mobile'}</title>
 
+        {seoData?.noIndex ? (
+          <meta name="robots" content="noindex, follow" />
+        ) : (
+          <meta name="robots" content="index, follow" />
+        )}
+
         {seoData && (
           <>
             <meta name="description" content={seoData.description} />

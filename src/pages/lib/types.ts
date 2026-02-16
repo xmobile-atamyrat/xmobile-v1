@@ -446,6 +446,13 @@ export interface PageSeoData {
   hreflangLinks: HreflangLink[];
 
   // Structured data (JSON-LD)
+  // Structured data (JSON-LD)
   productJsonLd?: ProductJsonLdData;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
+
+  // Search Indexing
+  noIndex?: boolean; // If true, rendering <meta name="robots" content="noindex" />
+
+  // OG
+  ogType?: string;
 }
