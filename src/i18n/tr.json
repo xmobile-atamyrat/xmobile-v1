@@ -46,8 +46,6 @@
   "phoneNumber": "Telefon numarası",
   "userAlreadyExists": "Kullanıcı zaten var",
   "search": "Ara...",
-  "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
-  "browseFullRange": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar.",
   "emailPlaceholder": "E-postanızı yazın",
   "passwordPlaceholder": "Şifrenizi yazın",
   "passwordConfirmPlaceholder": "Şifrenizi tekrar yazın",
@@ -335,5 +333,8 @@
   "hardUpdateDescription": "Bu sürüm artık desteklenmiyor. Lütfen uygulamayı güncelleyerek kullanmaya devam edin.",
   "softUpdateDescription": "Uygulamanın yeni bir sürümü mevcut. İyileştirmeler ve hata düzeltmeleri içerir. Güncellemenizi öneririz.",
   "update": "Güncelle",
-  "remindLater": "Daha Sonra Hatırlat"
+  "remindLater": "Daha Sonra Hatırlat",
+  "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
+  "productCatalogDescription": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar."
 }
+
