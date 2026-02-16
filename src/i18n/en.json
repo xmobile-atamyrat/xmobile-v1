@@ -46,6 +46,8 @@
   "phoneNumber": "Phone number",
   "userAlreadyExists": "User already exists",
   "search": "Search...",
+  "searchResultsFor": "Search results for: \"{keyword}\"",
+  "browseFullRange": "Shop smartphones, gadgets, and electronics in Turkmenistan. Enjoy flexible credit plans, top brands, and competitive prices.",
   "emailPlaceholder": "Text your email",
   "passwordPlaceholder": "Text your password",
   "passwordConfirmPlaceholder": "Text your password again",

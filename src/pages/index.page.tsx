@@ -304,13 +304,13 @@ export default function Home({
                 paddingBottom: '8px',
               }}
             >
-              {!searchKeyword && (
-                <Typography
-                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
-                >
-                  {t('newProducts')}
-                </Typography>
-              )}
+              <Typography
+                className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+              >
+                {searchKeyword
+                  ? `${t('searchResultsFor')}: "${searchKeyword}"`
+                  : t('newProducts')}
+              </Typography>
               {platform === 'web' && (
                 <SortDropdown
                   value={filters.sortBy}
