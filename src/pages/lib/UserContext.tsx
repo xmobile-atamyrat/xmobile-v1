@@ -1,4 +1,5 @@
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { isWebView } from '@/pages/lib/serviceWorker';
 import {
   ProtectedUser,
   ResponseApi,
@@ -12,6 +13,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -33,6 +35,7 @@ export default function UserContextProvider({
   const [user, setUser] = useState<ProtectedUser>();
   const [accessToken, setAccessToken] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
+  const wasLoggedIn = useRef<boolean>(false);
 
   useEffect(() => {
     if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
@@ -64,6 +67,43 @@ export default function UserContextProvider({
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (isWebView()) {
+      const syncState = () => {
+        const refreshToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
+        const nextLocale = getCookie('NEXT_LOCALE');
+
+        if (user) {
+          wasLoggedIn.current = true;
+          (window as any).ReactNativeWebView?.postMessage(
+            JSON.stringify({
+              type: 'AUTH_STATE',
+              payload: {
+                REFRESH_TOKEN: refreshToken || null,
+                NEXT_LOCALE: nextLocale || null,
+              },
+            }),
+          );
+        } else if (wasLoggedIn.current) {
+          wasLoggedIn.current = false;
+          (window as any).ReactNativeWebView?.postMessage(
+            JSON.stringify({
+              type: 'LOGOUT',
+            }),
+          );
+        }
+      };
+
+      syncState();
+      window.addEventListener('cookie-change', syncState);
+
+      return () => {
+        window.removeEventListener('cookie-change', syncState);
+      };
+    }
+    return undefined;
+  }, [user]);
 
   const userContextState = useMemo(() => {
     return {
