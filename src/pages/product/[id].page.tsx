@@ -149,7 +149,7 @@ export const getStaticProps: GetStaticProps = async ({
 
         const title = generateProductTitle(productName);
         const metaDescription = generateProductMetaDescription(
-          messages?.productMetaDescTemplate || '',
+          messages?.productDetailsMetaDescription || '',
           productName,
           priceValue,
         );

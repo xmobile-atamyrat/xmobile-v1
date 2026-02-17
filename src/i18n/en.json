@@ -323,11 +323,13 @@
   "nullPrice": "Price on call",
   "nullPriceCart": "Please order via phone call.",
   "searchResultsFor": "Search results for: \"{keyword}\"",
-  "productCatalogDescription": "Shop smartphones, gadgets, and electronics in Turkmenistan. Enjoy flexible credit plans, top brands, and competitive prices.",
-  "productMetaDescTemplate": "Buy {product} in Turkmenistan for {price}. Official warranty, free delivery. X-mobile.",
-  "categoryMetaDescTemplate": "Buy {category} in Turkmenistan. Wide selection, official warranty and free delivery. X-mobile.",
+  "productIndexDescription": "Buy smartphones, gadgets, and electronics in Turkmenistan at the best prices. Official warranty, fast delivery across the country, and top global brands.",
+  "productDetailsMetaDescription": "Buy {product} in Turkmenistan for {price}. Official warranty, fast delivery across Turkmenistan. Order online today at {businessName}.",
+  "categoryDetailsMetaDescription": "Buy {category} in Turkmenistan at the best prices. Wide selection, official warranty, and fast delivery across Turkmenistan at {businessName}.",
   "seoLocationSuffix": "in Turkmenistan",
-  "categoryIndexTitle": "Categories | X-Mobile",
-  "categoryIndexDescription": "All product categories at X-Mobile."
+  "categoryIndexTitle": "Shop by Category | {businessName} Turkmenistan",
+  "categoryIndexDescription": "Explore all product categories at {businessName}. Smartphones, gadgets, and electronics with official warranty and fast delivery across Turkmenistan.",
+  "homeIndexTitle": "{businessName} | Buy Smartphones & Electronics in Turkmenistan",
+  "homeIndexDescription": "Buy smartphones, gadgets, and electronics at {businessName}. Best prices in Turkmenistan, official warranty, and fast nationwide delivery."
 }
 

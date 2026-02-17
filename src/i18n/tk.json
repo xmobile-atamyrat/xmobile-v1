@@ -325,11 +325,13 @@
   "nullPrice": "Bahasy jaňda",
   "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz.",
   "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
-  "productCatalogDescription": "Türkmenistanda smartfonlar, gadgetler we elektronika satyn alyň. Amatly kredit meýilnamalary, iň gowy markalar we bäsdeşlik bahalary.",
-  "productMetaDescTemplate": "{product} Türkmenistanda {price} bahadan satyn alyň. Resmi kepillik, mugt eltip bermek. X-mobile.",
-  "categoryMetaDescTemplate": "{category} Türkmenistanda satyn alyň. Uly saýlaw, resmi kepillik we mugt eltip bermek. X-mobile.",
+  "productIndexDescription": "Türkmenistanda smartfonlary, gadjetleri we elektronikany iň gowy bahadan satyn alyň. Resmi kepillik, ýurt boýunça çalt eltip bermek we dünýäniň iň gowy brendleri.",
+  "productDetailsMetaDescription": "{product} Türkmenistanda {price} bahadan satyn alyň. Resmi kepillik, Türkmenistanyň islendik ýerine çalt eltip bermek. Şu gün {businessName}-da onlaýn sargyt ediň.",
+  "categoryDetailsMetaDescription": "{category} Türkmenistanda iň gowy bahadan satyn alyň. Uly saýlaw, resmi kepillik we Türkmenistanyň islendik ýerine çalt eltip bermek {businessName}-da.",
   "seoLocationSuffix": "Türkmenistanda",
-  "categoryIndexTitle": "Kategoriýalar | X-Mobile",
-  "categoryIndexDescription": "Ähli haryt kategoriýalary X-Mobile-da."
+  "categoryIndexTitle": "Kategoriýalar boýunça söwda | {businessName} Türkmenistan",
+  "categoryIndexDescription": "{businessName}-da ähli haryt kategoriýalaryny görüň. Smartfonlar, gadjetler we elektronika resmi kepillik we Türkmenistanyň islendik ýerine çalt eltip bermek hyzmaty bilen.",
+  "homeIndexTitle": "{businessName} | Türkmenistanda Smartfonlar we Elektronika Satyn Alyň",
+  "homeIndexDescription": "{businessName}-da smartfonlary, gadjetleri we elektronikany satyn alyň. Türkmenistanda iň gowy bahalar, resmi kepillik we ýurt boýunça çalt eltip bermek."
 }
 

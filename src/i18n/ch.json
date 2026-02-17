@@ -325,11 +325,13 @@
   "nullPrice": "Bahasy zwonokda",
   "nullPriceCart": "Bu towary zwonokda zakaz edip bilesiz.",
   "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
-  "productCatalogDescription": "Türkmenistanda smartfonlar, gadjetlär we elektronika satuv alıňlar. Amatlu kredit planları, meşhur markalar we bäsdeşlik bahaları.",
-  "productMetaDescTemplate": "{product} Türkmenistanda {price} bahadan satyn alyňlar. Ofisialny garantiýa, besplatno dostawka. X-mobile.",
-  "categoryMetaDescTemplate": "{category} Türkmenistanda satyn alyňlar. Wybor köp, ofisialny garantiýa i besplatno dostawka. X-mobile.",
+  "productIndexDescription": "Türkmenistanda smartfonlar, gadjetlär we elektronika iň gowy bahadan satyn alyňlar. Ofisialny garantiýa, ýurt boýunça çalt dostawka we dünýäniň iň gowy brendleri.",
+  "productDetailsMetaDescription": "{product} Türkmenistanda {price} bahadan satyn alyňlar. Ofisialny garantiýa, Türkmenistan boýunça çalt dostawka. Şu gün {businessName}-da onlaýn zakaz ediň.",
+  "categoryDetailsMetaDescription": "{category} Türkmenistanda iň gowy bahadan satyn alyňlar. Wybor köp, ofisialny garantiýa we Türkmenistan boýunça çalt dostawka {businessName}-da.",
   "seoLocationSuffix": "Türkmenistanda",
-  "categoryIndexTitle": "Kategoriýalar | X-Mobile",
-  "categoryIndexDescription": "Ähli haryt kategoriýalary X-Mobile-da."
+  "categoryIndexTitle": "Kategoriýalar boýunça söwda | {businessName} Türkmenistan",
+  "categoryIndexDescription": "{businessName}-da ähli haryt kategoriýalaryny görüň. Smartfonlar, gadjetlär we elektronika ofisialny garantiýa we Türkmenistan boýunça çalt dostawka bilen.",
+  "homeIndexTitle": "{businessName} | Türkmenistanda Smartfonlar we Elektronika Satyn Alyňlar",
+  "homeIndexDescription": "{businessName}-da smartfonlar, gadjetlär we elektronika satyn alyňlar. Türkmenistanda iň gowy bahalar, ofisialny garantiýa we ýurt boýunça çalt dostawka."
 }
 
