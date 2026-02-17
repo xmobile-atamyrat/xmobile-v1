@@ -1,4 +1,3 @@
-// Service Worker registration and management
 // Supports iOS Safari, Android Chrome, and other major browsers
 
 export interface ServiceWorkerRegistrationState {
