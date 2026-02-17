@@ -104,7 +104,8 @@ export function generateProductMetaDescription(
 
   let description = template
     .replace('{product}', productName)
-    .replace('{price}', priceText);
+    .replace('{price}', priceText)
+    .replace('{businessName}', BUSINESS_NAME);
 
   // Truncate if too long
   if (description.length > META_DESC_MAX_LENGTH) {
@@ -154,7 +155,9 @@ export function generateCategoryMetaDescription(
   template: string,
   categoryName: string,
 ): string {
-  return template.replace('{category}', categoryName);
+  return template
+    .replace('{category}', categoryName)
+    .replace('{businessName}', BUSINESS_NAME);
 }
 
 /**

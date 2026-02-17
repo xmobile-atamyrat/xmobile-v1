@@ -9,12 +9,16 @@ import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
+  BUSINESS_NAME,
   LOCALE_COOKIE_NAME,
+  LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
+import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
@@ -35,7 +39,7 @@ import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { useTranslations } from 'next-intl';
+import { AbstractIntlMessages, useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
@@ -123,14 +127,44 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       console.error(error);
     }
   }
+
+  // Generate SEO Data
+  // Note: We cast messages to any because typing the dynamic import is tricky
+  // and we know the structure from the JSON files.
+  const t = messages as Record<string, string>;
+  const businessName = BUSINESS_NAME; // Import this!
+
+  const titleTemplate = t.homeIndexTitle;
+  const descriptionTemplate = t.homeIndexDescription;
+  const title = titleTemplate.replace('{businessName}', businessName);
+  const description = descriptionTemplate.replace(
+    '{businessName}',
+    businessName,
+  );
+
+  const seoData = {
+    title,
+    description,
+    canonicalUrl: getCanonicalUrl(locale || 'ru', ''), // Root path
+    hreflangLinks: generateHreflangLinks(''), // Root path
+    ogTitle: title,
+    ogDescription: description,
+    ogType: 'website',
+    ogLocale:
+      LOCALE_TO_OG_LOCALE[(locale as keyof typeof LOCALE_TO_OG_LOCALE) || 'ru'],
+  };
+
   return {
     props: {
       locale,
       messages,
+      seoData,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
+  messages: AbstractIntlMessages;
+  seoData: PageSeoData;
 }>;
 
 export default function Home({
