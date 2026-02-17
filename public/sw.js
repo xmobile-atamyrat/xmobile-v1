@@ -1,4 +1,4 @@
-// Service Worker for handling push notifications and Offline Caching
+// Service Worker for handling push notifications
 // Supports iOS Safari, Android Chrome, and other major browsers
 // Also handles Firebase Cloud Messaging (FCM) background messages
 
@@ -10,21 +10,7 @@ importScripts(
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js',
 );
 
-// Cache versioning and separation
-const CACHE_VERSION = 4;
-const CACHE_NAMES = {
-  STATIC: `xmobile-static-v${CACHE_VERSION}`,
-  DYNAMIC: `xmobile-dynamic-v${CACHE_VERSION}`,
-};
-// For backward compatibility
-const CACHE_NAME = CACHE_NAMES.STATIC;
-
-const STATIC_ASSETS = [
-  '/logo/xm-logo.png', // Moved to logo folder
-  '/manifest.json',
-  '/logo/xm-logo.ico', // Moved to logo folder
-];
-
+const CACHE_NAME = 'xmobile-notifications-v1';
 // Use absolute URL for notification icons (required for mobile)
 // Get the origin from the registration scope
 const getNotificationIcon = () => {
@@ -34,7 +20,7 @@ const getNotificationIcon = () => {
       (self.registration && self.registration.scope
         ? new URL(self.registration.scope).origin
         : null) || self.location.origin;
-    return `${origin}/logo/xm-logo.png`; // Update path here too
+    return `${origin}/logo/xm-logo.png`;
   } catch (e) {
     // Fallback to relative path if origin can't be determined
     return '/logo/xm-logo.png';
@@ -49,9 +35,7 @@ const getBadgeIcon = () => {
         ? new URL(self.registration.scope).origin
         : null) || self.location.origin;
     // Try to use a simplified badge icon, fallback to main icon
-    // Note: If you have a specific badge icon in /logo/, use that.
-    // Falling back to main logo for now as I didn't see a specific badge in the list.
-    return `${origin}/logo/xm-logo.png`;
+    return `${origin}/xm-logo-badge.png`;
   } catch (e) {
     // Fallback: use main icon if badge icon doesn't exist
     return getNotificationIcon();
@@ -60,231 +44,24 @@ const getBadgeIcon = () => {
 const NOTIFICATION_ICON = getNotificationIcon();
 const NOTIFICATION_BADGE = getBadgeIcon();
 
-// --------------------------------------------------------------------------
-// UTILITY FUNCTIONS
-// --------------------------------------------------------------------------
-
-// Detect if running in WebView
-const isWebView = () => {
-  const ua = self.navigator.userAgent || '';
-  return /ReactNative|wv|WebView/i.test(ua);
-};
-
-// Trim cache to prevent unbounded growth
-async function trimCache(cacheName, maxItems = 50) {
-  try {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    if (keys.length > maxItems) {
-      // Remove oldest items (FIFO)
-      for (let i = 0; i < keys.length - maxItems; i++) {
-        await cache.delete(keys[i]);
-      }
-      console.log(
-        `[sw.js] Trimmed ${cacheName} from ${keys.length} to ${maxItems} items`,
-      );
-    }
-  } catch (err) {
-    console.warn(`[sw.js] Failed to trim cache ${cacheName}:`, err);
-  }
-}
-
-// Install event - Pre-cache critical static assets (Robust Version)
+// Install event - cache resources
 self.addEventListener('install', (event) => {
-  // Skip pre-caching if not in WebView
-  if (!isWebView()) {
-    return self.skipWaiting();
-  }
-
-  event.waitUntil(
-    caches.open(CACHE_NAMES.STATIC).then(async (cache) => {
-      // robustness: try caching each one individually so one failure doesn't break all
-      for (const asset of STATIC_ASSETS) {
-        try {
-          await cache.add(asset);
-        } catch (err) {
-          console.warn(`[sw.js] Failed to cache ${asset}:`, err);
-        }
-      }
-    }),
-  );
   self.skipWaiting(); // Activate immediately
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((name) => !Object.values(CACHE_NAMES).includes(name))
-            .map((name) => caches.delete(name)),
-        );
-      })
-      .then(() => {
-        // Trim caches after cleanup to prevent unbounded growth
-        return Promise.all([
-          trimCache(CACHE_NAMES.STATIC, 50),
-          trimCache(CACHE_NAMES.DYNAMIC, 100),
-        ]);
-      }),
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name)),
+      );
+    }),
   );
   return self.clients.claim(); // Take control of all pages immediately
 });
-
-// --------------------------------------------------------------------------
-// CACHING STRATEGY
-// --------------------------------------------------------------------------
-
-// Shared Stale-While-Revalidate logic (DRY)
-// Serves cache immediately, updates cache in background.
-// On network failure: returns cached response if available, otherwise rejects
-// so respondWith receives a proper error instead of undefined.
-function staleWhileRevalidate(event, cache, cachedResponse) {
-  const fetchPromise = event.waitUntil(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse.ok) {
-          cache.put(event.request, networkResponse.clone());
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Network failed — return cache if available, otherwise reject properly
-        if (cachedResponse) return cachedResponse;
-        throw new Error(
-          `[sw.js] Offline and no cache for: ${event.request.url}`,
-        );
-      }),
-  );
-  return cachedResponse || fetchPromise;
-}
-
-self.addEventListener('fetch', (event) => {
-  // Disable all caching if not running in WebView
-  // Notifications still work, but caching is skipped.
-  if (!isWebView()) return;
-
-  const url = new URL(event.request.url);
-
-  // 1. Ignore non-GET requests (POST, PUT, DELETE, etc.)
-  if (event.request.method !== 'GET') return;
-
-  // 2. Ignore chrome-extension schemes and other non-http protocols
-  if (!url.protocol.startsWith('http')) return;
-
-  // 3. Ignore API calls (Network First / No Cache ideally, but we'll use Network First)
-  // We want real-time data for APIs.
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {
-    return; // Let the browser handle it (Network only)
-  }
-
-  // 4. STRATEGY: Cache-First for immutable Next.js static assets
-  // These have hash-based names and never change
-  if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(
-      caches.open(CACHE_NAMES.STATIC).then((cache) => {
-        return cache.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return fetch(event.request)
-            .then((response) => {
-              if (response.ok) {
-                cache.put(event.request, response.clone());
-              }
-              return response;
-            })
-            .catch(() => {
-              // Return placeholder for immutable assets
-              throw new Error(`[sw.js] Failed to load: ${event.request.url}`);
-            });
-        });
-      }),
-    );
-    return;
-  }
-
-  // 5. STRATEGY: Stale-While-Revalidate for JS, CSS, Images, Fonts
-  // serve cache immediately, then update cache in background.
-  if (
-    url.pathname.match(
-      /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/,
-    )
-  ) {
-    event.respondWith(
-      caches.open(CACHE_NAMES.STATIC).then((cache) => {
-        return cache.match(event.request).then((cachedResponse) => {
-          return staleWhileRevalidate(event, cache, cachedResponse);
-        });
-      }),
-    );
-    return;
-  }
-
-  // 6. STRATEGY: Dynamic cache for navigation within WebView and Next.js Data
-  // This enables offline navigation within the app (SPA transitions)
-  // Includes /_next/data/ for static generation and WebView navigation
-  if (
-    url.pathname.startsWith('/_next/data/') ||
-    (isWebView() && event.request.mode === 'navigate')
-  ) {
-    event.respondWith(
-      caches.open(CACHE_NAMES.DYNAMIC).then(async (cache) => {
-        const responsePromise = staleWhileRevalidate(
-          event,
-          cache,
-          cachedResponse,
-        );
-        // Trim cache in the background so it doesn't delay the response
-        event.waitUntil(trimCache(CACHE_NAMES.DYNAMIC, 100));
-        return responsePromise;
-      }),
-    );
-    return;
-  }
-
-  // 7. STRATEGY: Network First for HTML (Pages) - Standard browsers
-  // Try network, if fails (offline), try cache
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Clone and cache the updated HTML page
-          const resClone = response.clone();
-          event.waitUntil(
-            caches.open(CACHE_NAMES.DYNAMIC).then((cache) => {
-              return cache.put(event.request, resClone).then(() => {
-                // Trim dynamic cache after adding
-                return trimCache(CACHE_NAMES.DYNAMIC, 100);
-              });
-            }),
-          );
-          return response;
-        })
-        .catch(() => {
-          // If offline, serve cached page; if uncached, return a concrete offline response
-          return caches.match(event.request).then((cached) => {
-            if (cached) {
-              return cached;
-            }
-            // Return a concrete offline page (create /offline.html or use fallback HTML)
-            return caches
-              .match('/offline.html')
-              .then(
-                (offlineResponse) => offlineResponse || new Response('Offline'),
-              );
-          });
-        }),
-    );
-  }
-});
-
-// --------------------------------------------------------------------------
-// FIREBASE & NOTIFICATION LOGIC (Preserved from original)
-// --------------------------------------------------------------------------
 
 // Initialize Firebase for FCM
 // Config will be received from main thread via postMessage
@@ -337,15 +114,21 @@ function initializeFirebaseMessaging() {
 
       // Handle FCM background messages
       // This fires when app is in background/closed
+      // NOTE: Some browsers (like Yandex) may route messages here even in foreground
+      // So we also notify the main thread for foreground handling
       messagingInstance.onBackgroundMessage((payload) => {
         console.log('[sw.js] Received FCM background message:', payload);
 
         // Check if app is in foreground by checking for active clients
+        // If in foreground, also send message to main thread for onMessage handler
         self.clients
           .matchAll({ type: 'window', includeUncontrolled: true })
           .then((clientList) => {
             if (clientList.length > 0) {
               // App is open, send message to main thread for foreground handling
+              console.log(
+                '[sw.js] App is in foreground, notifying main thread',
+              );
               clientList.forEach((client) => {
                 if (client && 'postMessage' in client) {
                   client.postMessage({
@@ -408,6 +191,7 @@ function initializeFirebaseMessaging() {
 
 // Handle push notifications (legacy/fallback)
 // NOTE: This should NOT fire for FCM messages - FCM uses onBackgroundMessage
+// This is only for non-FCM push notifications
 self.addEventListener('push', (event) => {
   // Check if this is an FCM message
   if (event.data) {
@@ -417,17 +201,34 @@ self.addEventListener('push', (event) => {
       if (data.from || data.messageId) {
         // If Firebase is initialized, onBackgroundMessage should handle it
         if (firebaseInitialized && messagingInstance) {
+          console.log(
+            '[sw.js] FCM message detected, onBackgroundMessage should handle it',
+          );
+          // Don't return - let onBackgroundMessage handle it
+          // But also don't fall through to legacy handler
           return;
         } else {
           // Firebase not initialized yet
+          console.log(
+            '[sw.js] FCM message detected but Firebase not initialized yet',
+          );
           if (firebaseConfig) {
+            // Try to initialize
             initializeFirebaseMessaging();
+            // Store the event to process after initialization
             pendingPushEvents.push(event);
             return;
+          } else {
+            // No config yet - this shouldn't happen, but handle gracefully
+            console.warn(
+              '[sw.js] FCM message received but no Firebase config available',
+            );
+            // Fall through to show a basic notification
           }
         }
       }
     } catch (e) {
+      // Not JSON or can't parse, continue with legacy handling
       console.log('[sw.js] Push event data is not JSON, handling as legacy');
     }
   }
@@ -469,7 +270,7 @@ self.addEventListener('push', (event) => {
       data: notificationData.data,
       requireInteraction: notificationData.requireInteraction,
       silent: notificationData.silent,
-      vibrate: [200, 100, 200],
+      vibrate: [200, 100, 200], // Vibration pattern for mobile
     }),
   );
 });
@@ -533,19 +334,20 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // Handle messages from the main thread
+// This is used for WebSocket notifications (fallback when FCM is not available)
 self.addEventListener('message', (event) => {
-  // Handle manual show notification request
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { notification } = event.data;
     const notificationId =
       notification.id || notification.tag || 'notification';
 
+    // Use notification ID as tag to prevent duplicates
     event.waitUntil(
       self.registration.showNotification(notification.title || 'New message', {
         body: notification.content || notification.body,
         icon: notification.icon || NOTIFICATION_ICON,
-        badge: NOTIFICATION_BADGE,
-        tag: notificationId,
+        badge: notification.badge || NOTIFICATION_BADGE,
+        tag: notificationId, // Use ID as tag to prevent duplicates
         data: {
           sessionId: notification.sessionId,
           orderId: notification.orderId,

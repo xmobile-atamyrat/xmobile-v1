@@ -1,4 +1,3 @@
-// Service Worker registration and management
 // Supports iOS Safari, Android Chrome, and other major browsers
 
 export interface ServiceWorkerRegistrationState {
@@ -10,19 +9,6 @@ export interface ServiceWorkerRegistrationState {
 let swRegistration: ServiceWorkerRegistration | null = null;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null =
   null;
-
-// Flag to prevent multiple reloads when controller changes
-let refreshing: boolean = false;
-
-// Handle automatic page reload when Service Worker updates
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    console.log('[sw] Controller changed, reloading page for consistency...');
-    window.location.reload();
-  });
-}
 
 /**
  * Detect if running in React Native WebView
@@ -51,7 +37,11 @@ export function isServiceWorkerSupported(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return false;
   }
-  return 'serviceWorker' in navigator;
+  // Don't use Service Workers in WebView
+  if (isWebView()) {
+    return false;
+  }
+  return 'serviceWorker' in navigator && 'Notification' in window;
 }
 
 /**
