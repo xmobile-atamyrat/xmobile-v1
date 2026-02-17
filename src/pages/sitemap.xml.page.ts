@@ -1,8 +1,8 @@
+import BASE_URL from '@/lib/ApiEndpoints';
 import dbClient from '@/lib/dbClient';
-import { X_MOBILE_DOMAIN } from '@/pages/lib/constants';
 import { GetServerSideProps } from 'next';
 
-const EXTERNAL_DATA_URL = `https://${X_MOBILE_DOMAIN}`;
+// const BASE_URL = `https://${BASE_URL}`;
 
 function generateSiteMap(
   products: { id: string; updatedAt: Date }[],
@@ -12,12 +12,12 @@ function generateSiteMap(
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <!-- Static Pages -->
      <url>
-       <loc>${EXTERNAL_DATA_URL}</loc>
+       <loc>${BASE_URL}</loc>
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
      <url>
-       <loc>${EXTERNAL_DATA_URL}/category</loc>
+       <loc>${BASE_URL}/category</loc>
        <changefreq>daily</changefreq>
        <priority>0.8</priority>
      </url>
@@ -27,7 +27,7 @@ function generateSiteMap(
        .map(({ id, updatedAt }) => {
          return `
        <url>
-           <loc>${EXTERNAL_DATA_URL}/category/${id}</loc>
+           <loc>${BASE_URL}/category/${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.8</priority>
@@ -41,7 +41,7 @@ function generateSiteMap(
        .map(({ id, updatedAt }) => {
          return `
        <url>
-           <loc>${EXTERNAL_DATA_URL}/product/${id}</loc>
+           <loc>${BASE_URL}/product/${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>weekly</changefreq>
            <priority>0.9</priority>
