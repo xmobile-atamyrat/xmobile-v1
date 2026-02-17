@@ -115,6 +115,22 @@ export default function App({ Component, pageProps }: AppProps) {
                 }}
               />
             )}
+            {seoData.organizationJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.organizationJsonLd),
+                }}
+              />
+            )}
+            {seoData.localBusinessJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.localBusinessJsonLd),
+                }}
+              />
+            )}
           </>
         )}
       </Head>
