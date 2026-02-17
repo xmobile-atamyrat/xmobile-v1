@@ -104,7 +104,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Multi-category filter: Apply noindex to prevent indexing combinatorial pages
     if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 1) {
       const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
-      const description = messages.productCatalogDescription;
+      const description = messages.productIndexDescription;
       seoData = {
         title,
         description,
@@ -152,7 +152,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
               locale,
             );
             const description = generateCategoryMetaDescription(
-              messages.categoryMetaDescTemplate,
+              messages.categoryDetailsMetaDescription,
               categoryName,
             );
             const canonicalUrl = getCanonicalUrl(
@@ -192,7 +192,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // -- 3. Fallback / Default Shop Page --
     if (!seoData) {
       const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
-      const description = messages.productCatalogDescription;
+      const description = messages.productIndexDescription;
       seoData = {
         title,
         description,

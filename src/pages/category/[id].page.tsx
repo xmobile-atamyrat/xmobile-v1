@@ -136,7 +136,7 @@ export const getStaticProps: GetStaticProps = async ({
         locale,
       );
       const description = generateCategoryMetaDescription(
-        messages?.categoryMetaDescTemplate || '',
+        messages?.categoryDetailsMetaDescription || '',
         categoryName,
       );
       const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
