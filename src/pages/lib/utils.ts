@@ -385,15 +385,28 @@ export const setCookie = (
 ) => {
   const serializedCookie = cookie.serialize(name, value, options);
   document.cookie = serializedCookie;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('cookie-change'));
+  }
 };
 
 export const deleteCookie = (name: string) => {
   if (typeof document !== 'undefined') {
-    const serializedCookie = cookie.serialize(name, '', {
+    const commonOptions = {
       maxAge: 0,
       path: '/',
-    });
-    document.cookie = serializedCookie;
+    };
+    document.cookie = cookie.serialize(name, '', commonOptions);
+
+    if (process.env.NODE_ENV === 'production') {
+      const domains = ['xmobile.com.tm', '.xmobile.com.tm'];
+      domains.forEach((domain) => {
+        document.cookie = cookie.serialize(name, '', {
+          ...commonOptions,
+          domain,
+        });
+      });
+    }
   }
 };
 
