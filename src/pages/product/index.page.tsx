@@ -69,7 +69,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   // -- 1. Search Mode --
   if (searchKeyword && typeof searchKeyword === 'string') {
-    const title = generateSearchTitle(searchKeyword, locale);
+    const title = generateSearchTitle(messages.searchResultsFor, searchKeyword);
     // Important: NoIndex for search results to save crawl budget / prevent thin content
     seoData = {
       title,
@@ -146,10 +146,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
               allCategories,
             );
 
-            const title = generateCategoryTitle(categoryPath, locale);
-            const description = generateCategoryMetaDescription(
-              categoryName,
+            const title = generateCategoryTitle(
+              categoryPath,
+              messages.seoLocationSuffix,
               locale,
+            );
+            const description = generateCategoryMetaDescription(
+              messages.categoryMetaDescTemplate,
+              categoryName,
             );
             const canonicalUrl = getCanonicalUrl(
               locale,
