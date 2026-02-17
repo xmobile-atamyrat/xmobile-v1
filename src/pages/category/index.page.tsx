@@ -1,7 +1,6 @@
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { SEO_CATEGORY_INDEX } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
@@ -15,9 +14,11 @@ import { useRouter } from 'next/router';
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const locale = context.locale || 'ru';
 
-  const { title, description } =
-    SEO_CATEGORY_INDEX[locale as keyof typeof SEO_CATEGORY_INDEX] ||
-    SEO_CATEGORY_INDEX.ru;
+  const messages = (await import(`../../i18n/${context.locale}.json`)).default;
+
+  const title = messages?.categoryIndexTitle || 'Categories | X-Mobile';
+  const description =
+    messages?.categoryIndexDescription || 'All product categories at X-Mobile.';
 
   const seoData = {
     title,
@@ -28,7 +29,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages,
       seoData,
     },
   };

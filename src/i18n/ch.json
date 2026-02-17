@@ -337,6 +337,11 @@
   "update": "Obnowleniýa",
   "remindLater": "Soň ýadyma sal",
   "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
-  "productCatalogDescription": "Türkmenistanda smartfonlar, gadjetlär we elektronika satuv alıňlar. Amatlu kredit planları, meşhur markalar we bäsdeşlik bahaları."
+  "productCatalogDescription": "Türkmenistanda smartfonlar, gadjetlär we elektronika satuv alıňlar. Amatlu kredit planları, meşhur markalar we bäsdeşlik bahaları.",
+  "productMetaDescTemplate": "{product} Türkmenistanda {price} bahadan satyn alyňlar. Ofisialny garantiýa, besplatno dostawka. X-mobile.",
+  "categoryMetaDescTemplate": "{category} Türkmenistanda satyn alyňlar. Wybor köp, ofisialny garantiýa i besplatno dostawka. X-mobile.",
+  "seoLocationSuffix": "Türkmenistanda",
+  "categoryIndexTitle": "Kategoriýalar | X-Mobile",
+  "categoryIndexDescription": "Ähli haryt kategoriýalary X-Mobile-da."
 }
 

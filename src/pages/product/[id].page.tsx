@@ -108,6 +108,17 @@ export const getStaticProps: GetStaticProps = async ({
     const products = await fetchProducts({ productId });
     const product = products && products.length > 0 ? products[0] : null;
 
+    // Load messages first so they can be used for SEO generation
+    let messages;
+    try {
+      messages = (await import(`../../i18n/${locale}.json`)).default;
+    } catch (messageError) {
+      console.error(
+        `Error loading messages for locale ${locale}:`,
+        messageError,
+      );
+    }
+
     let categoryPath: ExtendedCategory[] = [];
     let seoData = null;
 
@@ -138,8 +149,8 @@ export const getStaticProps: GetStaticProps = async ({
 
         const title = generateProductTitle(productName);
         const metaDescription = generateProductMetaDescription(
+          messages?.productMetaDescTemplate || '',
           productName,
-          locale,
           priceValue,
         );
         const canonicalUrl = getCanonicalUrl(locale, productPath);
@@ -182,17 +193,6 @@ export const getStaticProps: GetStaticProps = async ({
       } catch (seoError) {
         console.error('Error generating SEO data:', seoError);
       }
-    }
-
-    // Load messages with fallback
-    let messages;
-    try {
-      messages = (await import(`../../i18n/${locale}.json`)).default;
-    } catch (messageError) {
-      console.error(
-        `Error loading messages for locale ${locale}:`,
-        messageError,
-      );
     }
 
     return {

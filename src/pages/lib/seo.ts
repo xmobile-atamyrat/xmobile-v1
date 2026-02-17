@@ -1,12 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   BUSINESS_NAME,
-  CATEGORY_META_DESC_TEMPLATES,
   localeOptions,
   META_DESC_MAX_LENGTH,
-  PRODUCT_META_DESC_TEMPLATES,
-  SEO_LOCATION_SUFFIXES,
-  SEO_SEARCH_TEMPLATES,
   TITLE_MAX_LENGTH,
 } from '@/pages/lib/constants';
 import {
@@ -92,23 +88,18 @@ export function generateProductTitle(productName: string): string {
  * Generate meta description for product page.
  * Includes product name, price, and localized promotional text.
  *
+ * @param template - Localized template string (e.g., "Buy {product} for {price}...")
  * @param productName - Localized product name
- * @param locale - Current locale (ru, tk, en, ch, tr)
  * @param price - Optional product price (without currency)
  * @returns Meta description, truncated to 160 chars
  *
  * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Meta Descriptions.
  */
 export function generateProductMetaDescription(
+  template: string,
   productName: string,
-  locale: string,
   price?: string,
 ): string {
-  const template =
-    PRODUCT_META_DESC_TEMPLATES[
-      locale as keyof typeof PRODUCT_META_DESC_TEMPLATES
-    ] || PRODUCT_META_DESC_TEMPLATES.ru;
-
   const priceText = price ? `${price} TMT` : '';
 
   let description = template
@@ -128,17 +119,15 @@ export function generateProductMetaDescription(
  * Format: "{Category} {ParentCategory} in Turkmenistan - {BusinessName}"
  *
  * @param categoryPath - Full path from root to current category
- * @param locale - Current locale
+ * @param locationSuffix - Localized location string (e.g. "in Turkmenistan")
+ * @param locale - Current locale (for parsing names)
  * @returns SEO title
  */
 export function generateCategoryTitle(
   categoryPath: ExtendedCategory[],
+  locationSuffix: string,
   locale: string,
 ): string {
-  const locationSuffix =
-    SEO_LOCATION_SUFFIXES[locale as keyof typeof SEO_LOCATION_SUFFIXES] ||
-    SEO_LOCATION_SUFFIXES.ru;
-
   if (!categoryPath || categoryPath.length === 0) {
     return `${BUSINESS_NAME}`;
   }
@@ -156,39 +145,26 @@ export function generateCategoryTitle(
 
 /**
  * Generate meta description for category page.
- * Uses CATEGORY_META_DESC_TEMPLATES.
  *
+ * @param template - Localized template string
  * @param categoryName - Localized category name
- * @param locale - Current locale
  * @returns Meta description
  */
 export function generateCategoryMetaDescription(
+  template: string,
   categoryName: string,
-  locale: string,
 ): string {
-  const template =
-    CATEGORY_META_DESC_TEMPLATES[
-      locale as keyof typeof CATEGORY_META_DESC_TEMPLATES
-    ] || CATEGORY_META_DESC_TEMPLATES.ru;
-
   return template.replace('{category}', categoryName);
 }
 
 /**
  * Generate title for search results page.
- * Format examples:
- * - ru: "Результаты поиска для "{keyword}" | X-Mobile"
- * - tk: "{keyword}" üçin gözleg netijeleri | X-Mobile"
  *
+ * @param template - Localized template string (e.g. "Search results for '{keyword}'")
  * @param keyword - User's search term
- * @param locale - Current locale
  * @returns SEO title
  */
-export function generateSearchTitle(keyword: string, locale: string): string {
-  const template =
-    SEO_SEARCH_TEMPLATES[locale as keyof typeof SEO_SEARCH_TEMPLATES] ||
-    SEO_SEARCH_TEMPLATES.ru;
-
+export function generateSearchTitle(template: string, keyword: string): string {
   return `${template.replace('{keyword}', keyword)} - ${BUSINESS_NAME}`;
 }
 

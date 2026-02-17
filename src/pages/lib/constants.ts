@@ -115,81 +115,16 @@ export const SORT_OPTIONS = {
 
 export const FILTER_MAX_PRICE = 100000;
 
-// SEO CONSTANTS
+export const BUSINESS_NAME = 'Xmobile';
 
-// Mapping: Next.js locale -> Open Graph locale (e.g., ru -> ru_RU)
+export const META_DESC_MAX_LENGTH = 160; // Google standard: ~160 chars
+export const TITLE_MAX_LENGTH = 60; // Google standard: ~60 chars
+
+// Mapping: Next.js locale -> Open Graph locale
 export const LOCALE_TO_OG_LOCALE = {
   ru: 'ru_RU',
   tk: 'tk_TM',
   en: 'en_US',
   ch: 'tk_TM',
   tr: 'tr_TR',
-};
-
-export const BUSINESS_NAME = 'Xmobile';
-
-export const META_DESC_MAX_LENGTH = 160; // Google standard: ~160 chars
-export const TITLE_MAX_LENGTH = 60; // Google standard: ~60 chars
-
-export const PRODUCT_META_DESC_TEMPLATES = {
-  ru: 'Купите {product} в Туркменистане по цене {price}. Официальная гарантия, бесплатная доставка. X-mobile.',
-
-  tk: '{product} Türkmenistanda {price} bahadan satyn alyň. Resmi kepillik, mugt eltip bermek. X-mobile.',
-
-  en: 'Buy {product} in Turkmenistan for {price}. Official warranty, free delivery. X-mobile.',
-
-  ch: '{product} Türkmenistanda {price} bahadan satyn alyňlar. Ofisialny garantiýa, besplatno dostawka. X-mobile.',
-
-  tr: '{product} ürününü Türkmenistan’da {price} fiyatla satın alın. Resmi garanti, ücretsiz teslimat. X-mobile.',
-} as const;
-
-export const CATEGORY_META_DESC_TEMPLATES = {
-  ru: 'Купить {category} в Туркменистане. Большой выбор моделей, официальная гарантия и бесплатная доставка. X-mobile.',
-
-  tk: '{category} Türkmenistanda satyn alyň. Uly saýlaw, resmi kepillik we mugt eltip bermek. X-mobile.',
-
-  en: 'Buy {category} in Turkmenistan. Wide selection, official warranty and free delivery. X-mobile.',
-
-  ch: '{category} Türkmenistanda satyn alyňlar. Wybor köp, ofisialny garantiýa i besplatno dostawka. X-mobile.',
-
-  tr: '{category} ürünlerini Türkmenistan’da satın alın. Geniş ürün yelpazesi, resmi garanti ve ücretsiz teslimat. X-mobile.',
-} as const;
-
-export const SEO_LOCATION_SUFFIXES = {
-  ru: 'в Туркменистане',
-  tk: 'Türkmenistanda',
-  ch: 'Türkmenistanda',
-  tr: "Türkmenistan'da",
-  en: 'in Turkmenistan',
-} as const;
-
-export const SEO_SEARCH_TEMPLATES = {
-  ru: 'Результаты поиска для "{keyword}"',
-  tk: '"{keyword}" üçin gözleg netijeleri',
-  ch: '"{keyword}" üçin gözleg netijeleri',
-  tr: '"{keyword}" için arama sonuçları',
-  en: 'Search results for "{keyword}"',
-} as const;
-
-export const SEO_CATEGORY_INDEX = {
-  ru: {
-    title: 'Категории | X-Mobile',
-    description: 'Все категории товаров на X-Mobile.',
-  },
-  tk: {
-    title: 'Kategoriýalar | X-Mobile',
-    description: 'Ähli haryt kategoriýalary X-Mobile-da.',
-  },
-  ch: {
-    title: 'Kategoriýalar | X-Mobile',
-    description: 'Ähli haryt kategoriýalary X-Mobile-da.',
-  },
-  en: {
-    title: 'Categories | X-Mobile',
-    description: 'All product categories at X-Mobile.',
-  },
-  tr: {
-    title: 'Kategoriler | X-Mobile',
-    description: "X-Mobile'daki tüm ürün kategorileri.",
-  },
 } as const;

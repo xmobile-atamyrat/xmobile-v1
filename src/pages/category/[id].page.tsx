@@ -115,7 +115,7 @@ export const getStaticProps: GetStaticProps = async ({
       categoryPath = buildCategoryPath(categoryId, allCategories);
     }
 
-    // Load messages
+    // Load messages first so they can be used for SEO generation
     let messages;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
@@ -130,8 +130,15 @@ export const getStaticProps: GetStaticProps = async ({
     let seoData = null;
     if (categoryData) {
       const categoryName = parseName(categoryData.name, locale);
-      const title = generateCategoryTitle(categoryPath, locale);
-      const description = generateCategoryMetaDescription(categoryName, locale);
+      const title = generateCategoryTitle(
+        categoryPath,
+        messages?.seoLocationSuffix || '',
+        locale,
+      );
+      const description = generateCategoryMetaDescription(
+        messages?.categoryMetaDescTemplate || '',
+        categoryName,
+      );
       const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
       const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
 
