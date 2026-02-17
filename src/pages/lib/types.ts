@@ -1,4 +1,11 @@
-import { Category, DollarRate, Product, User, UserRole } from '@prisma/client';
+import {
+  Brand,
+  Category,
+  DollarRate,
+  Product,
+  User,
+  UserRole,
+} from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
@@ -22,6 +29,10 @@ export type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS];
 export interface ExtendedCategory extends Category {
   products?: Product[];
   successorCategories?: ExtendedCategory[];
+}
+
+export interface ExtendedProduct extends Product {
+  brand?: Brand | null;
 }
 
 export interface ProtectedUser extends Omit<User, 'password'> {}

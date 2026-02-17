@@ -147,7 +147,7 @@ export const getStaticProps: GetStaticProps = async ({
 
         const productPath = `product/${product.id}`;
 
-        const title = generateProductTitle(productName);
+        const title = generateProductTitle(productName, product.brand?.name);
         const metaDescription = generateProductMetaDescription(
           messages?.productDetailsMetaDescription || '',
           productName,
@@ -169,6 +169,7 @@ export const getStaticProps: GetStaticProps = async ({
           price: priceValue,
           imageUrls,
           description: parseName(product.description ?? '{}', locale),
+          brandName: product.brand?.name,
         });
 
         const breadcrumbJsonLd = generateBreadcrumbJsonLd(
