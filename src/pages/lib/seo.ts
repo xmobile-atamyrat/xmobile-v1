@@ -233,6 +233,121 @@ export function generateProductJsonLd(params: {
   return schema;
 }
 
+// Store Configuration
+interface Store {
+  name: string; // The official name on Google Maps (e.g., 'Xmobile 3nji kwartal')
+  streetAddress: string;
+  addressLocality: string;
+  addressRegion: string;
+  postalCode: string | undefined;
+  addressCountry: string;
+  latitude: number;
+  longitude: number;
+  telephone: string;
+  opens: string;
+  closes: string;
+}
+
+const STORES: Store[] = [
+  {
+    name: 'Xmobile', // Main store
+    streetAddress: 'S.A. Nyyazov St',
+    addressLocality: 'Turkmenabat',
+    addressRegion: 'Lebap',
+    postalCode: '746100',
+    addressCountry: 'TM',
+    latitude: 39.063248043914534,
+    longitude: 63.57906739895904,
+    telephone: '+993-61-00-49-33',
+    opens: '08:00',
+    closes: '20:00',
+  },
+  // Example for future store:
+  // {
+  //   name: 'Xmobile Gok Bazar',
+  //   streetAddress: 'Gok Bazar',
+  //   addressLocality: 'Turkmenabat',
+  //   addressRegion: 'Lebap',
+  //   postalCode: undefined,
+  //   addressCountry: 'TM',
+  //   latitude: 0,
+  //   longitude: 0,
+  //   telephone: '+993-XX-XX-XX-XX',
+  //   opens: '09:00',
+  //   closes: '21:00',
+  // },
+];
+
+/**
+ * Generate Organization Schema (JSON-LD)
+ * Defines the brand identity, social profiles, and connection to the website.
+ */
+export function generateOrganizationSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: BUSINESS_NAME, // Xmobile
+    url: BASE_URL,
+    logo: `${BASE_URL}/logo.png`,
+    sameAs: [
+      'https://www.instagram.com/xmobiletm/',
+      'https://www.tiktok.com/@xmobiletm',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+993-61-00-49-33',
+      contactType: 'customer service',
+      areaServed: 'TM',
+      availableLanguage: ['Turkmen', 'Russian', 'English'],
+    },
+  };
+}
+
+/**
+ * Generate LocalBusiness Schema (JSON-LD)
+ * Defines physical store locations for Google Maps integration.
+ * Supports multiple locations dynamically.
+ */
+export function generateLocalBusinessSchema() {
+  return STORES.map((store) => ({
+    '@context': 'https://schema.org',
+    '@type': 'MobilePhoneStore',
+    name: store.name,
+    image: `${BASE_URL}/logo.png`,
+    '@id': `${BASE_URL}/#store-${store.name.toLowerCase()}`,
+    url: BASE_URL,
+    telephone: store.telephone,
+    priceRange: '$$',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: store.streetAddress,
+      addressLocality: store.addressLocality,
+      addressRegion: store.addressRegion,
+      postalCode: store.postalCode,
+      addressCountry: store.addressCountry,
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: store.latitude,
+      longitude: store.longitude,
+    },
+    openingHoursSpecification: {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ],
+      opens: store.opens,
+      closes: store.closes,
+    },
+  }));
+}
+
 /**
  * Generate BreadcrumbList JSON-LD schema from category path.
  *
