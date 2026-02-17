@@ -1,5 +1,5 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { BrandProps, ResponseApi } from '@/pages/lib/types';
+import { BrandProps, ExtendedProduct, ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
 export const fetchProducts = async ({
@@ -20,7 +20,7 @@ export const fetchProducts = async ({
   searchKeyword?: string;
   productId?: string;
   page?: number;
-}): Promise<Product[]> => {
+}): Promise<ExtendedProduct[]> => {
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
 
   // Helper to append params
@@ -42,7 +42,7 @@ export const fetchProducts = async ({
   appendParam('searchKeyword', searchKeyword);
   appendParam('sortBy', sortBy);
 
-  const { success, data, message }: ResponseApi<Product[]> = await (
+  const { success, data, message }: ResponseApi<ExtendedProduct[]> = await (
     await fetch(url)
   ).json();
   if (!success || data == null) {

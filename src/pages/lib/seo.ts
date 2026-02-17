@@ -65,20 +65,29 @@ export function generateHreflangLinks(
 
 /**
  * Generate SEO-optimized product page title.
- * Format: "{Product} - Xmobile"
+ * Format: "{Product} | {Brand} - {BusinessName}"
  *
  * @param productName - Localized product name
+ * @param brandName - Localized brand name (optional)
  * @returns SEO title, truncated if too long
  *
  * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Product Titles.
  */
-export function generateProductTitle(productName: string): string {
-  const title = `${productName} - ${BUSINESS_NAME}`;
+export function generateProductTitle(
+  productName: string,
+  brandName?: string,
+): string {
+  let brandSuffix = '';
+  if (brandName) {
+    brandSuffix = ` | ${brandName}`;
+  }
+  const title = `${productName}${brandSuffix} - ${BUSINESS_NAME}`;
 
   if (title.length > TITLE_MAX_LENGTH) {
-    const availableLength = TITLE_MAX_LENGTH - BUSINESS_NAME.length - 3; // 3 = " - " + "..."
+    const availableLength =
+      TITLE_MAX_LENGTH - brandSuffix.length - BUSINESS_NAME.length - 3; // 3 = " - " + "..."
     const truncated = productName.slice(0, availableLength);
-    return `${truncated}... - ${BUSINESS_NAME}`;
+    return `${truncated}...${brandSuffix} - ${BUSINESS_NAME}`;
   }
 
   return title;
@@ -193,7 +202,7 @@ export function generateProductJsonLd(params: {
     productUrl,
     price,
     imageUrls,
-    // brandName, todo: brandName reserved for future use when all products have brands
+    brandName, // todo: brandName reserved for future use when all products have brands
     description,
   } = params;
 
@@ -210,17 +219,12 @@ export function generateProductJsonLd(params: {
     },
   };
 
-  // TODO: Uncomment when brands are added to all products
-  // if (brandName) {
-  //   schema.brand = {
-  //     '@type': 'Brand',
-  //     name: brandName,
-  //   };
-  // }
-  //
-  // Note: Brand field commented out until brandId is consistently
-  // populated across all products. This prevents incomplete structured
-  // data which could hurt SEO.
+  if (brandName) {
+    schema.brand = {
+      '@type': 'Brand',
+      name: brandName,
+    };
+  }
 
   if (description) {
     schema.description = description;

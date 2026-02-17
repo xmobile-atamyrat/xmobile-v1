@@ -168,6 +168,7 @@ async function getProduct(productId: string): Promise<Product | null> {
     where: {
       id: productId,
     },
+    include: { brand: true },
   });
 
   // product.price = [id]{value}
