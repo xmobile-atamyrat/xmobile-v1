@@ -60,10 +60,10 @@ function WebAppScreen() {
     const secureAttr = isDevMode ? '' : '; Secure';
 
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Strict";
+      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=604800${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
           : ''
       }
       true;
