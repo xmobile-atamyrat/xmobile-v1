@@ -460,6 +460,8 @@ export interface PageSeoData {
   // Structured data (JSON-LD)
   productJsonLd?: ProductJsonLdData;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
+  organizationJsonLd?: Record<string, any>; // Organization Schema
+  localBusinessJsonLd?: Record<string, any>; // LocalBusiness Schema
 
   // Search Indexing
   noIndex?: boolean; // If true, rendering <meta name="robots" content="noindex" />

@@ -17,7 +17,12 @@ import {
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
+import {
+  generateHreflangLinks,
+  generateLocalBusinessSchema,
+  generateOrganizationSchema,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie } from '@/pages/lib/utils';
@@ -152,6 +157,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     ogType: 'website',
     ogLocale:
       LOCALE_TO_OG_LOCALE[(locale as keyof typeof LOCALE_TO_OG_LOCALE) || 'ru'],
+    organizationJsonLd: generateOrganizationSchema(),
+    localBusinessJsonLd: generateLocalBusinessSchema(),
   };
 
   return {
