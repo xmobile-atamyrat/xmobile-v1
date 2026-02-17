@@ -331,6 +331,7 @@ export default function Profile() {
                   try {
                     handleToggle();
                     deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+                    deleteCookie(LOCALE_COOKIE_NAME);
                     setUser(undefined);
                     setAccessToken(undefined);
                     localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
