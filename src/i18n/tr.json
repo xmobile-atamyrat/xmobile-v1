@@ -323,6 +323,11 @@
   "nullPrice": "Fiyat için arayın",
   "nullPriceCart": "Sipariş için lütfen arayın.",
   "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
-  "productCatalogDescription": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar."
+  "productCatalogDescription": "Türkmenistan'da akıllı telefon, gadget ve elektronik alışverişi yapın. Esnek kredi planları, en iyi markalar ve rekabetçi fiyatlar.",
+  "productMetaDescTemplate": "{product} ürününü Türkmenistan’da {price} fiyatla satın alın. Resmi garanti, ücretsiz teslimat. X-mobile.",
+  "categoryMetaDescTemplate": "{category} ürünlerini Türkmenistan’da satın alın. Geniş ürün yelpazesi, resmi garanti ve ücretsiz teslimat. X-mobile.",
+  "seoLocationSuffix": "Türkmenistan'da",
+  "categoryIndexTitle": "Kategoriler | X-Mobile",
+  "categoryIndexDescription": "X-Mobile'daki tüm ürün kategorileri."
 }
 

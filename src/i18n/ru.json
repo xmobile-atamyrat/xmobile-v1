@@ -326,5 +326,10 @@
   "nullPrice": "Цена по запросу",
   "nullPriceCart": "Пожалуйста, заказывайте по телефону.",
   "searchResultsFor": "Результаты поиска: \"{keyword}\"",
-  "productCatalogDescription": "Смартфоны, гаджеты и электроника в Туркменистане. Гибкие кредитные планы, топовые бренды и конкурентные цены."
+  "productCatalogDescription": "Смартфоны, гаджеты и электроника в Туркменистане. Гибкие кредитные планы, топовые бренды и конкурентные цены.",
+  "productMetaDescTemplate": "Купите {product} в Туркменистане по цене {price}. Официальная гарантия, бесплатная доставка. X-mobile.",
+  "categoryMetaDescTemplate": "Купить {category} в Туркменистане. Большой выбор моделей, официальная гарантия и бесплатная доставка. X-mobile.",
+  "seoLocationSuffix": "в Туркменистане",
+  "categoryIndexTitle": "Категории | X-Mobile",
+  "categoryIndexDescription": "Все категории товаров на X-Mobile."
 }

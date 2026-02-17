@@ -323,6 +323,11 @@
   "nullPrice": "Price on call",
   "nullPriceCart": "Please order via phone call.",
   "searchResultsFor": "Search results for: \"{keyword}\"",
-  "productCatalogDescription": "Shop smartphones, gadgets, and electronics in Turkmenistan. Enjoy flexible credit plans, top brands, and competitive prices."
+  "productCatalogDescription": "Shop smartphones, gadgets, and electronics in Turkmenistan. Enjoy flexible credit plans, top brands, and competitive prices.",
+  "productMetaDescTemplate": "Buy {product} in Turkmenistan for {price}. Official warranty, free delivery. X-mobile.",
+  "categoryMetaDescTemplate": "Buy {category} in Turkmenistan. Wide selection, official warranty and free delivery. X-mobile.",
+  "seoLocationSuffix": "in Turkmenistan",
+  "categoryIndexTitle": "Categories | X-Mobile",
+  "categoryIndexDescription": "All product categories at X-Mobile."
 }
 

@@ -325,6 +325,11 @@
   "nullPrice": "Bahasy jaňda",
   "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz.",
   "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
-  "productCatalogDescription": "Türkmenistanda smartfonlar, gadgetler we elektronika satyn alyň. Amatly kredit meýilnamalary, iň gowy markalar we bäsdeşlik bahalary."
+  "productCatalogDescription": "Türkmenistanda smartfonlar, gadgetler we elektronika satyn alyň. Amatly kredit meýilnamalary, iň gowy markalar we bäsdeşlik bahalary.",
+  "productMetaDescTemplate": "{product} Türkmenistanda {price} bahadan satyn alyň. Resmi kepillik, mugt eltip bermek. X-mobile.",
+  "categoryMetaDescTemplate": "{category} Türkmenistanda satyn alyň. Uly saýlaw, resmi kepillik we mugt eltip bermek. X-mobile.",
+  "seoLocationSuffix": "Türkmenistanda",
+  "categoryIndexTitle": "Kategoriýalar | X-Mobile",
+  "categoryIndexDescription": "Ähli haryt kategoriýalary X-Mobile-da."
 }
 
