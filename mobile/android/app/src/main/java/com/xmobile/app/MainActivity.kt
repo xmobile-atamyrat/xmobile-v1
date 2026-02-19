@@ -19,4 +19,15 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  /**
+   * Route gesture-based back navigation through hardwareBackPress so that
+   * React Native's BackHandler can intercept it on all Android phones
+   *
+   * Without this, a gesture back on Samsung/Xiaomi/etc. skips BackHandler
+   * entirely and pops the activity immediately.
+   */
+  override fun invokeDefaultOnBackPressed() {
+    moveTaskToBack(false)
+  }
 }

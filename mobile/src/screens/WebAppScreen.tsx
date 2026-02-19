@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CookieManager from '@react-native-cookies/cookies';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ function WebAppScreen() {
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [storedLocale, setStoredLocale] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const canGoBackRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
 
   // Dev mode is determined automatically by React Native's __DEV__ flag.
@@ -19,8 +20,12 @@ function WebAppScreen() {
   const isDevMode = __DEV__;
 
   useEffect(() => {
+    canGoBackRef.current = canGoBack;
+  }, [canGoBack]);
+
+  useEffect(() => {
     const backButton = () => {
-      if (canGoBack && webViewRef.current) {
+      if (canGoBackRef.current && webViewRef.current) {
         webViewRef.current.goBack();
         return true;
       }
@@ -31,7 +36,7 @@ function WebAppScreen() {
       backButton,
     );
     return () => backHandler.remove();
-  }, [canGoBack]);
+  }, []);
 
   useEffect(() => {
     const loadStoredData = async () => {
