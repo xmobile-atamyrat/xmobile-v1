@@ -5210,6 +5210,11 @@ react-is@^18.2.0:
   resolved "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
 
+react-native-device-info@^15.0.1:
+  version "15.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-device-info/-/react-native-device-info-15.0.1.tgz#8a2716861bb8e491e0627f326bcc007c77d2e8f6"
+  integrity sha512-U5waZRXtT3l1SgZpZMlIvMKPTkFZPH8W7Ks6GrJhdH723aUIPxjVer7cRSij1mvQdOAAYFJV/9BDzlC8apG89A==
+
 react-slick@^0.30.2:
   version "0.30.2"
   resolved "https://registry.npmjs.org/react-slick/-/react-slick-0.30.2.tgz"
