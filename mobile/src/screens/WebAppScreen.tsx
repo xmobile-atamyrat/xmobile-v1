@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CookieManager from '@react-native-cookies/cookies';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -53,7 +54,23 @@ function WebAppScreen() {
   const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
   const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
 
+  useEffect(() => {
+    const checkAndReload = async () => {
+      const currentVersion = DeviceInfo.getVersion();
+      const lastVersion = await AsyncStorage.getItem('APP_VERSION');
+
+      if (currentVersion !== lastVersion) {
+        await AsyncStorage.setItem('APP_VERSION', currentVersion);
+        if (webViewRef.current) {
+          webViewRef.current.reload();
+        }
+      }
+    };
+    checkAndReload();
+  }, []);
+
   const cookieInjectionJS = useMemo(() => {
+    const appVersion = DeviceInfo.getVersion();
     if (!storedToken) return undefined;
 
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
@@ -65,6 +82,10 @@ function WebAppScreen() {
         storedLocale
           ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
           : ''
+      }
+      // Send app version to web app
+      if(window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' }));
       }
       true;
     `;
