@@ -66,11 +66,10 @@ export default function App({ Component, pageProps }: AppProps) {
               ? JSON.parse(event.data)
               : event.data;
           if (data?.type === 'APP_VERSION' && data.payload) {
-            console.log('App version received from bridge:', data.payload);
             setMobileAppVersion(data.payload);
           }
         } catch (error) {
-          console.error('Failed to handle message from WebView:', error);
+          console.warn('Failed to handle message from WebView:', error);
         }
       };
       window.addEventListener('message', handleMessage);
