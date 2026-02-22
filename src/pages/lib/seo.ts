@@ -357,6 +357,7 @@ export function generateLocalBusinessSchema() {
  * @param categoryPath - Array of categories from root to current
  * @param currentProductName - Optional product name (if on product page)
  * @param locale - Current locale for category names
+ * @param homeLabel - home breadcrumb name in current locale
  * @returns BreadcrumbList JSON-LD schema
  *
  * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Breadcrumb Schema.
@@ -365,14 +366,14 @@ export function generateBreadcrumbJsonLd(
   categoryPath: ExtendedCategory[],
   currentProductName: string | undefined,
   locale: string,
+  homeLabel: string,
 ): BreadcrumbListJsonLd {
   const items: BreadcrumbJsonLdItem[] = [];
 
-  // Start with Home
   items.push({
     '@type': 'ListItem',
     position: 1,
-    name: 'Home',
+    name: homeLabel,
     item: `${BASE_URL}/${locale}`,
   });
 
