@@ -363,7 +363,7 @@ export function generateLocalBusinessSchema() {
  */
 export function generateBreadcrumbJsonLd(
   categoryPath: ExtendedCategory[],
-  currentProductName: string | undefined, // todo: might remove
+  currentProductName: string | undefined,
   locale: string,
 ): BreadcrumbListJsonLd {
   const items: BreadcrumbJsonLdItem[] = [];
@@ -376,7 +376,6 @@ export function generateBreadcrumbJsonLd(
     item: `${BASE_URL}/${locale}`,
   });
 
-  // Add each category in path
   categoryPath.forEach((category, index) => {
     items.push({
       '@type': 'ListItem',
@@ -386,13 +385,12 @@ export function generateBreadcrumbJsonLd(
     });
   });
 
-  // Add product if present (last item has no URL per Schema.org spec)
   if (currentProductName) {
     items.push({
       '@type': 'ListItem',
       position: items.length + 1,
       name: currentProductName,
-      // No 'item' property for last breadcrumb (current page)
+      // no 'item' property for last breadcrumb (current page)
     });
   }
 

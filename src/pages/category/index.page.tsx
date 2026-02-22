@@ -13,18 +13,19 @@ import { useRouter } from 'next/router';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const locale = context.locale || 'ru';
-
-  const messages = (await import(`../../i18n/${context.locale}.json`)).default;
-
-  const title = messages?.categoryIndexTitle || 'Categories | X-Mobile';
-  const description =
-    messages?.categoryIndexDescription || 'All product categories at X-Mobile.';
+  const messages = (await import(`../../i18n/${locale}.json`)).default;
+  const title = messages?.categoryIndexTitle;
+  const description = messages?.categoryIndexDescription;
 
   const seoData = {
     title,
     description,
     canonicalUrl: getCanonicalUrl(locale, 'category'),
     hreflangLinks: generateHreflangLinks('category'),
+    ogTitle: title,
+    ogDescription: description,
+    ogLocale: locale,
+    ogType: 'website',
   };
 
   return {

@@ -54,9 +54,9 @@ This array drives the `LocalBusiness` schema generation. To add a new store, sim
 ### Sitemap Configuration
 - **Contents & Configuration**:
     - **Homepage**: `priority: 1.0`, `changefreq: daily` (Top priority).
-    - **Category Pages (category/[id])**: `priority: 0.7`, `changefreq: weekly` (Medium priority).
-    - **Category Product Lists (product/index)**: `priority: 0.8`, `changefreq: daily` (High priority).
-    - **Product Pages (product/[id])**: `priority: 0.9`, `changefreq: daily` (Product details).
+    - **Category Pages**: `priority: 0.7`, `changefreq: weekly` (Medium priority).
+    - **Category Product Lists**: `priority: 0.8`, `changefreq: daily` (High priority).
+    - **Product Pages**: `priority: 0.9`, `changefreq: daily` (Product details).
 
 ### Future Improvement Recommendation
 - **UUID vs Slugs**: Currently URLs use UUIDs (e.g., `category/123e4...`).
@@ -69,9 +69,10 @@ This array drives the `LocalBusiness` schema generation. To add a new store, sim
 - **Constraint**:
   - We **ONLY** support indexing the `categoryId` parameter.
   - All other parameters (e.g., `sortBy`, `brands`) are ignored for indexing purposes or should self-canonicalize to the clean `categoryId` URL to prevent duplicate content.
-- **Technical Debt**:
+- **Technical Debt & Server-Side Rendering (SSR)**:
   - Relying on query parameters for landing pages is suboptimal.
-  - **Future Plan**: Migrate to a clean URL structure like `/category/[id]/products` to improve SEO signals and URL readability.
+  - Because Next.js `getStaticProps` (SSG) runs at build time and cannot read URL query parameters like `?categoryId=[id]`, we use `getServerSideProps` (SSR) on the main product listing page to intercept the dynamic query parameter and inject the correct category title and metadata. Otherwise, every category filter would serve the exact same "All Products" title to search crawlers.
+  - **Future Plan**: Migrate to a clean URL structure like `/category/[id]/products` to improve SEO signals, URL readability, and allow us to switch to Static Site Generation (SSG) for maximum performance.
 
 
 ### Data Flow
