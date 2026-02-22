@@ -1,175 +1,116 @@
-# SEO Knowledge Base
+# SEO Knowledge and Implementation
 
-This document explains the SEO concepts used in the codebase.
+This document serves as the single source of truth for SEO implementation in the X-Mobile project.
 
-## Translation-Based SEO System
+## 1. Core SEO Concepts & Components
 
-All SEO-related strings (titles, descriptions, templates) are stored in the translation files (`src/i18n/*.json`) to support multiple locales (en, ru, tk, ch, tr). This enables dynamic SEO content that adapts to user language.
+### Meta Tags
+Standard meta tags that appear in the `<head>` of every page.
+*   **Title**: Unique title for each page. Important for click-through rates.
+*   **Description**: Summary of page content. Crucial for search result snippets.
+*   **Canonical URL**: Points to the "master" copy of a page to prevent duplicate content issues.
+*   **Hreflang Tags**: Tells Google about localized versions of a page (ru, tk, en, etc.).
 
-**Key files:**
-- `src/i18n/en.json`, `ru.json`, `tk.json`, `ch.json`, `tr.json` - SEO string storage
-- `src/pages/lib/seo.ts` - SEO generation functions
-- `src/pages/lib/constants.ts` - `BUSINESS_NAME` constant
+### Structured Data (JSON-LD)
+Structured data is code that helps search engines understand the content of the page. It powers Rich Results (e.g., stars, price, stock status in search results).
 
-### Business Name Placeholder
+#### Product Schema
+*   **Purpose**: Display rich product info (Price, Availability, Image) in Google Shopping/Search.
+*   **Properties**: `name`, `image`, `description`, `sku`, `brand`, `offers` (price, currency).
 
-SEO templates use `{businessName}` as a placeholder that gets replaced with the constant `BUSINESS_NAME` (currently "X-mobile"). This allows translators to control the text while keeping the business name centralized.
+#### Breadcrumb Schema
+*   **Purpose**: Shows the page's position in the site hierarchy in search results (e.g., `Home > Phones > Samsung`).
+*   **Properties**: `itemListElement` (list of breadcrumbs).
 
-**Example:**
-```json
-"homeIndexTitle": "{businessName} | Buy Smartphones & Electronics in Turkmenistan"
-```
-becomes: `"Xmobile | Buy Smartphones & Electronics in Turkmenistan"`
+#### Organization & LocalBusiness Schema
+*   **Purpose**: Establishes your brand identity and connects physical stores to the website.
+    *   **Google Knowledge Panel**: Shows your logo, social profiles, and contact info in search.
+    *   **Google Maps**: Officially links your website to your physical store location.
+*   **Properties**: `name`, `url`, `logo`, `contactPoint`, `address`, `geo`, `openingHours`.
+*   **Global Identifier**: We assign a unique `@id` to each store (e.g. main branch `https://xmobile.tm/#store-turkmenabat`). This acts as a global "passport number" for that specific entity, allowing other data (like a product offer) to explicitly reference *that* store location unambiguously across the entire web.
 
-## Homepage SEO
-**Implemented in**: `src/pages/index.page.tsx` → `getServerSideProps`
+### Robots.txt & Sitemap
+*   **Robots.txt**: Instructions for crawlers on what *not* to visit (like cart, profile pages).
+*   **Sitemap.xml**: A map of all indexable pages (products, categories) to help Google discover content.
 
-**Translation keys:**
-- `homeIndexTitle` - Homepage title
-- `homeIndexDescription` - Homepage meta description
+## 2. Implementation Details
 
-**Example (en.json):**
-```json
-"homeIndexTitle": "{businessName} | Buy Smartphones & Electronics in Turkmenistan",
-"homeIndexDescription": "Buy smartphones, gadgets, and electronics at {businessName}. Best prices in Turkmenistan, official warranty, and fast nationwide delivery."
-```
+### File Structure & Logic
+All SEO logic is centralized in [`src/pages/lib/seo.ts`](file:///src/pages/lib/seo.ts).
 
-## Product Pages
+*   `generateProductTitle`: Creates titles like "{Product} | {Brand} - Xmobile".
+*   `generateMetaDescription`: Creates descriptions from templates.
+*   `generateCanonicalUrl`: Handles locale-specific URLs.
+*   `generateHreflangLinks`: Generates alternate links for all supported languages.
+*   **Schema Generators**:
+    *   `generateProductJsonLd`: Returns Product schema object.
+    *   `generateOrganizationSchema`: Returns Organization schema.
+    *   `generateLocalBusinessSchema`: Returns LocalBusiness schema for all stores.
 
-### Product Titles
-**Implemented in**: `generateProductTitle`
+### Store Configuration
+Store locations are defined in the `STORES` constant in `src/pages/lib/seo.ts`.
+This array drives the `LocalBusiness` schema generation. To add a new store, simply add an object to this array.
 
-**Format:** `{ProductName} | {Brand} - X-mobile`
-**Note:** Brands may not appear in all products, as they are not currently added to all products (as of Feb 18,26). 
+### Sitemap Configuration
+- **Contents & Configuration**:
+    - **Homepage**: `priority: 1.0`, `changefreq: daily` (Top priority).
+    - **Category Pages (category/[id])**: `priority: 0.7`, `changefreq: weekly` (Medium priority).
+    - **Category Product Lists (product/index)**: `priority: 0.8`, `changefreq: daily` (High priority).
+    - **Product Pages (product/[id])**: `priority: 0.9`, `changefreq: daily` (Product details).
 
-### Product Meta Descriptions
-**Implemented in**: `generateProductMetaDescription`
+### Future Improvement Recommendation
+- **UUID vs Slugs**: Currently URLs use UUIDs (e.g., `category/123e4...`).
+- **Recommendation**: Switch to keyword-based slugs (e.g., `category/smartphones`) in the future. Semantic URLs significantly improve click-through rates and keyword relevance signals.
 
-Meta descriptions are generated dynamically using localized templates from translation files. Templates include placeholders for product name, price, and business name.
+### Indexing Strategy: Product Listing Pages (PLP)
+- **Primary Category Pages**: `/category/[id]` (e.g., `/category/phones`) shows the *subcategories* grid.
+- **Product Listing Pages**: `/product?categoryId=[id]` is currently the **Landing Page** for viewing products within a specific category.
+- **Decision**: We allow indexing of `product?categoryId=[id]` because the content (title, metadata, product list) changes significantly for each category.
+- **Constraint**:
+  - We **ONLY** support indexing the `categoryId` parameter.
+  - All other parameters (e.g., `sortBy`, `brands`) are ignored for indexing purposes or should self-canonicalize to the clean `categoryId` URL to prevent duplicate content.
+- **Technical Debt**:
+  - Relying on query parameters for landing pages is suboptimal.
+  - **Future Plan**: Migrate to a clean URL structure like `/category/[id]/products` to improve SEO signals and URL readability.
 
-**Translation key:** `productDetailsMetaDescription`
 
-**Example (en.json):**
-```json
-"productDetailsMetaDescription": "Buy {product} in Turkmenistan for {price}. Official warranty, fast delivery across Turkmenistan. Order online today at {businessName}."
-```
+### Data Flow
+1.  **Page Load (`getServerSideProps`)**:
+    *   Fetch data (Product, Category, etc.).
+    *   Call generator functions in `seo.ts`.
+    *   Populate `seoData` object.
+2.  **Rendering (`_app.page.tsx`)**:
+    *   Read `pageProps.seoData`.
+    *   Render `<Head>` meta tags.
+    *   Render JSON-LD scripts securely using `dangerouslySetInnerHTML`.
 
-**Placeholders:**
-- `{product}` - Product name
-- `{price}` - Product price with "TMT" currency
-- `{businessName}` - Replaced with "X-mobile"
+## 3. Design Decisions & Standards
 
-## Product Index Page (Listing)
-**Route:** `/product`
+### Naming Conventions
+*   **Business Name**: "X-Mobile" (defined in `BUSINESS_NAME` constant). used consistently across all meta tags and schemas.
+*   **Store Names**: Kept simple (e.g., "Turkmenabat") in config, used directly in schema as the official name.
 
-**Translation key:** `productIndexDescription`
+### Data Structures & Schemas
+*   **Product JSON-LD (`ProductJsonLdData`)**: Structured data used for Google Shopping and rich results in search. It is hidden structured data (not visible to users) that tells Google about product details like price, brand, images, etc.
+*   **Breadcrumbs JSON-LD (`BreadcrumbJsonLdItem`, `BreadcrumbListJsonLd`)**: Generates breadcrumb trails that appear in Google search results (independent of UI breadcrumbs). The `item` field (URL) is *optional* because the last breadcrumb (the current page) should NOT have a URL according to the Schema.org spec (e.g., Home -> Phones -> iPhone 15, where iPhone 15 has no URL attached).
+*   **Hreflang (`HreflangLink`)**: Tells Google about alternate language versions of the same page. If we have `/ru/product/123` and `/en/product/123`, hreflang links tell Google they're translations, not duplicate content.
 
-**Example (en.json):**
-```json
-"productIndexDescription": "Buy smartphones, gadgets, and electronics in Turkmenistan at the best prices. Official warranty, fast delivery across the country, and top global brands."
-```
+### Open Graph
+*   **og:type**: category pages and index use `website` to signify they are general collection pages, not specific entities, whereas product pages will use `product` as their og:type.
 
-## Category Pages
+### Localization Strategy
+All SEO-related strings (titles, descriptions, templates) are stored in the translation files (`src/i18n/*.json`) to support multiple locales (en, ru, tk, ch, tr).
+*   **URLs**: All URLs include the locale (e.g., `/ru/product/123`).
+*   **Canonical**: Points to itself (the current locale version).
+*   **x-default**: Points to the 'ru' version as the default fallback.
+*   **Schema**: Currently uses main local names (Turkmen) for store addresses to keep schema simple and verifiable by Google Maps.
 
-### Category Titles
-**Implemented in**: `generateCategoryTitle`
+### Why Centralized in `seo.ts`?
+*   **Maintainability**: Single file to update for any SEO logic change.
+*   **Reusability**: Functions can be used in API responses or other contexts if needed.
+*   **Testing**: Pure functions are easier to unit test than React components.
 
-**Format:** `{Child} | {Parent} | ... | {Root} {seoLocationSuffix} - X-mobile`
-
-**Translation key:** `seoLocationSuffix` (e.g., "in Turkmenistan")
-
-### Category Meta Descriptions
-**Implemented in**: `generateCategoryMetaDescription`
-
-**Translation key:** `categoryDetailsMetaDescription`
-
-**Example (en.json):**
-```json
-"categoryDetailsMetaDescription": "Buy {category} in Turkmenistan at the best prices. Wide selection, official warranty, and fast delivery across Turkmenistan at {businessName}."
-```
-
-### Category Index Page
-**Route:** `/category`
-
-**Translation keys:**
-- `categoryIndexTitle` - Category listing page title
-- `categoryIndexDescription` - Category listing page description
-
-**Example (en.json):**
-```json
-"categoryIndexTitle": "Shop by Category | {businessName} Turkmenistan",
-"categoryIndexDescription": "Explore all product categories at {businessName}. Smartphones, gadgets, and electronics with official warranty and fast delivery across Turkmenistan."
-```
-
-## Canonical URLs
-**Implemented in**: `getCanonicalUrl`
-
-Canonical URLs tell Google which URL is the "official" version of a page, preventing duplicate content issues when the same page is accessible via multiple URLs (e.g., with tracking parameters, different domains, etc.)
-
-## Hreflang Tags
-**Implemented in**: `generateHreflangLinks`
-
-Hreflang tags tell Google about alternate language versions of the same page. This prevents duplicate content issues and helps Google show the right language version to users based on their search language.
-
-**IMPORTANT**: The same hreflang list should appear on **ALL** language versions of a page. This creates a bidirectional relationship between translations.
-
-[Learn more about Hreflang](https://developers.google.com/search/docs/specialty/international/localized-versions)
-
-## Structured Data (JSON-LD)
-**Implemented in**: `generateProductJsonLd` and `generateBreadcrumbJsonLd`
-
-### Product Schema
-Enables Google Shopping rich results by providing structured data about the product (eg. name, image,  brand, price, currency).
-
-### Breadcrumb Schema
-Creates breadcrumb trails that appear in Google search results.
-
-**Note**: This is different from the UI `SimpleBreadcrumbs` component. UI breadcrumbs are for users; JSON-LD is for search engines.
-
-### Organization Schema
-**Implemented in**: `generateOrganizationSchema` and `generateLocalBusinessSchema` (in `src/pages/lib/seo.ts`)
-
-**Purpose**: Establishes brand identity and connects physical store locations to the website for Google Maps and Knowledge Panel.
-
-**Key Features:**
-*   **Centralized Config**: Store locations are managed in the `STORES` array in `seo.ts`. new branches can be added easily.
-*   **Dynamic Schema**: `generateLocalBusinessSchema` automatically creates schema for all configured stores.
-*   **Decisions**:
-    *   **Naming**: Uses "Xmobile" consistently. Store names in config are used directly in schema.
-    *   **IDs**: Unique `@id` generated from store URL + name (e.g., `#store-xmobile-turkmenabat`) to serve as a global identifier.
-    *   **Price Range**: Set to `$$` (Standard) to reflect market positioning.
-    *   **Opening Hours**: Structured `opens`/`closes` times for better machine readability.
-
-**Location:** Rendered only on the Homepage (`index.page.tsx`) to avoid site-wide redundancy.
-
-## Robots.txt
-**File**: `public/robots.txt`
-
-This file gives instructions to web robots (search engine crawlers) about which pages on your site to crawl.
-- **Allowed**: `User-agent: *` (All bots are allowed)
-- **Disallowed**: user profiles, carts, orders, chat, APIs, and search results to preserve crawl budget and security.
-- **Sitemap Reference**: Points crawlers to the `sitemap.xml` location.
-
-## Sitemap.xml
-**Implemented in**: `src/pages/sitemap.xml.page.ts`
-
-**Note:** The `.page.ts` extension is required due to the `pageExtensions` configuration in `next.config.mjs` which only recognizes `.page.tsx` and `.page.ts` files as routes.
-
-An XML map of all the pages on the site intended for search engine indexing.
-
-### Design Decisions & Technical Debt
-- **On-the-fly Generation vs Static File**:
-  - *Decision*: The sitemap is generated dynamically using `getServerSideProps` to ensure it always reflects the latest product catalog
-  - *Trade-off*: This adds load to the database on every request.
-  - *Mitigation*: A `Cache-Control` header (1 day) is used to CDN/browser cache the result
-
-- **Fetching All Products**:
-  - *Debt*: The current implementation `dbClient.product.findMany()` fetches ALL products at once.
-  - *Risk*: As the catalog grows (e.g., >10k items), this will hit memory limits and crash the server.
-  - *Future Fix*: Implement cursor-based pagination streams or switch to a static file generation script (ISR) if the catalog becomes too large.
-
-### Implementation Details
-- **Contents**:
-    - Static pages (homepage, category index)
-    - All Category pages (Priority: 0.8, Daily updates)
-    - All Product pages (Priority: 0.9, Weekly updates)
+### Sitemap Strategy
+*   **Dynamic Generation**: sitemap.xml is generated on the fly via `getServerSideProps` to ensure it's always up to date.
+*   **Caching**: We use a 1-day `Cache-Control` header to prevent database overload.
+*   **Future Proofing/Notes**: If product count exceeds 10k, we need to switch to a static file generation script.
