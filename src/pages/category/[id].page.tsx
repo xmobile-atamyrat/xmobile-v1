@@ -151,6 +151,7 @@ export const getStaticProps: GetStaticProps = async ({
         categoryPath,
         undefined, // no productName for category page
         locale,
+        messages?.home as string,
       );
 
       seoData = {

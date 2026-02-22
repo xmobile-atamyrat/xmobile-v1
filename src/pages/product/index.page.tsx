@@ -165,6 +165,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
               categoryPath,
               undefined,
               locale,
+              messages?.home as string,
             );
 
             seoData = {
