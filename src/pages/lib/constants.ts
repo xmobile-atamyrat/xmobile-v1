@@ -118,7 +118,7 @@ export const FILTER_MAX_PRICE = 100000;
 export const BUSINESS_NAME = 'Xmobile';
 
 export const META_DESC_MAX_LENGTH = 160; // Google standard: ~160 chars
-export const TITLE_MAX_LENGTH = 60; // Google standard: ~60 chars
+export const PAGE_TITLE_MAX_LENGTH = 60; // Google standard: ~60 chars
 
 // Mapping: Next.js locale -> Open Graph locale
 export const LOCALE_TO_OG_LOCALE = {
