@@ -13,6 +13,7 @@ import {
   isWebView,
   registerServiceWorker,
 } from '@/pages/lib/serviceWorker';
+import { HreflangLink, PageSeoData } from '@/pages/lib/types';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
@@ -27,7 +28,7 @@ import { useEffect, useState } from 'react';
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const seoData = pageProps?.seoData;
+  const seoData: PageSeoData = pageProps?.seoData;
 
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
         <title>{seoData?.title || 'X-mobile'}</title>
 
-        {seoData?.noIndex ? (
+        {seoData?.noIndex === true ? (
           <meta name="robots" content="noindex, follow" />
         ) : (
           <meta name="robots" content="index, follow" />
@@ -82,7 +83,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <meta name="description" content={seoData.description} />
             <link rel="canonical" href={seoData.canonicalUrl} />
 
-            {seoData.hreflangLinks?.map((link: any) => (
+            {seoData.hreflangLinks?.map((link: HreflangLink) => (
               <link
                 key={link.locale}
                 rel="alternate"
@@ -91,14 +92,22 @@ export default function App({ Component, pageProps }: AppProps) {
               />
             ))}
 
-            <meta property="og:title" content={seoData.title} />
-            <meta property="og:description" content={seoData.description} />
-            <meta property="og:image" content={seoData.ogImage} />
+            <meta
+              property="og:title"
+              content={seoData.ogTitle || seoData.title}
+            />
+            <meta
+              property="og:description"
+              content={seoData.ogDescription || seoData.description}
+            />
+            {seoData.ogImage && (
+              <meta property="og:image" content={seoData.ogImage} />
+            )}
             <meta property="og:url" content={seoData.canonicalUrl} />
             <meta property="og:type" content={seoData.ogType || 'website'} />
             <meta property="og:locale" content={seoData.ogLocale} />
 
-            {/* Structured Data */}
+            {/* Structured Data JSON-LD */}
             {seoData.productJsonLd && (
               <script
                 type="application/ld+json"
