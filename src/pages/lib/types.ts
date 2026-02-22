@@ -359,12 +359,6 @@ export interface DollarRateContextProps {
 // ============================================
 
 /**
- * Structured data for Product JSON-LD schema.
- * Used for Google Shopping and rich results in search.
- *
- * This is hidden structured data (not visible to users) that tells
- * Google about product details like price, brand, images, etc.
- *
  * @see https://schema.org/Product
  */
 export interface ProductJsonLdData {
@@ -386,20 +380,6 @@ export interface ProductJsonLdData {
 }
 
 /**
- * Single breadcrumb item for JSON-LD BreadcrumbList schema.
- *
- * Note: This is for Google Search SEO, NOT your UI breadcrumbs.
- * Your existing SimpleBreadcrumbs component with ExtendedCategory[]
- * is what users see on the website.
- *
- * The 'item' field (URL) is optional because the LAST breadcrumb
- * (current page) should NOT have a URL according to Schema.org spec.
- *
- * Example:
- * - Home (has item: "https://...")
- * - Phones (has item: "https://...")
- * - iPhone 15 (NO item - you're already here!)
- *
  * @see https://schema.org/BreadcrumbList
  */
 export interface BreadcrumbJsonLdItem {
@@ -410,9 +390,6 @@ export interface BreadcrumbJsonLdItem {
 }
 
 /**
- * Complete BreadcrumbList schema for JSON-LD.
- * This generates breadcrumb trails that appear in Google search results.
- *
  * @see https://schema.org/BreadcrumbList
  */
 export interface BreadcrumbListJsonLd {
@@ -421,51 +398,31 @@ export interface BreadcrumbListJsonLd {
   itemListElement: BreadcrumbJsonLdItem[];
 }
 
-/**
- * Hreflang link definition for multi-language SEO.
- * Tells Google about alternate language versions of the same page.
- *
- * Example: If you have /ru/product/123, /tk/product/123, /en/product/123
- * all showing the same product in different languages, hreflang links
- * tell Google they're translations, not duplicate content.
- */
 export interface HreflangLink {
-  locale: string; // e.g., 'ru', 'tk', 'en', 'x-default'
-  url: string; // Full URL for that language version
+  locale: string;
+  url: string;
 }
 
-/**
- * Complete SEO metadata for a page.
- * This is the main container that holds all SEO data we'll generate.
- *
- * Used in Step 11 when we generate SEO data for product pages.
- */
 export interface PageSeoData {
-  // Basic meta tags
+  // meta tags
   title: string;
   description: string;
   canonicalUrl: string;
+  noIndex?: boolean; // If true, rendering <meta name="robots" content="noindex" />
 
-  // Open Graph (social media sharing)
+  // og (social media sharing)
   ogTitle: string;
   ogDescription: string;
   ogImage?: string;
   ogLocale: string;
-  // Note: ogType is always "product" for product pages, so we hardcode it
+  ogType?: string;
 
-  // Multi-language SEO
+  // multilanguage links
   hreflangLinks: HreflangLink[];
 
-  // Structured data (JSON-LD)
-  // Structured data (JSON-LD)
+  // JSON-LD
   productJsonLd?: ProductJsonLdData;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
-  organizationJsonLd?: Record<string, any>; // Organization Schema
-  localBusinessJsonLd?: Record<string, any>; // LocalBusiness Schema
-
-  // Search Indexing
-  noIndex?: boolean; // If true, rendering <meta name="robots" content="noindex" />
-
-  // OG
-  ogType?: string;
+  organizationJsonLd?: Record<string, any>;
+  localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
 }

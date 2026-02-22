@@ -235,7 +235,7 @@ export function generateProductJsonLd(params: {
 
 // Store Configuration
 interface Store {
-  id: string; // Unique identifier for elements
+  id: string;
   name: string; // The official name on Google Maps (e.g., 'Xmobile 3nji kwartal')
   streetAddress: string;
   addressLocality: string;
