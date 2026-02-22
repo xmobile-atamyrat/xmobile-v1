@@ -44,7 +44,7 @@ import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { AbstractIntlMessages, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
@@ -134,10 +134,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   }
 
   // Generate SEO Data
-  // Note: We cast messages to any because typing the dynamic import is tricky
-  // and we know the structure from the JSON files.
   const t = messages as Record<string, string>;
-  const businessName = BUSINESS_NAME; // Import this!
+  const businessName = BUSINESS_NAME;
 
   const titleTemplate = t.homeIndexTitle;
   const descriptionTemplate = t.homeIndexDescription;
@@ -171,7 +169,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
-  messages: AbstractIntlMessages;
   seoData: PageSeoData;
 }>;
 
