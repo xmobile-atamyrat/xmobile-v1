@@ -3,7 +3,7 @@ import {
   BUSINESS_NAME,
   localeOptions,
   META_DESC_MAX_LENGTH,
-  TITLE_MAX_LENGTH,
+  PAGE_TITLE_MAX_LENGTH,
 } from '@/pages/lib/constants';
 import {
   BreadcrumbJsonLdItem,
@@ -83,9 +83,9 @@ export function generateProductTitle(
   }
   const title = `${productName}${brandSuffix} - ${BUSINESS_NAME}`;
 
-  if (title.length > TITLE_MAX_LENGTH) {
+  if (title.length > PAGE_TITLE_MAX_LENGTH) {
     const availableLength =
-      TITLE_MAX_LENGTH - brandSuffix.length - BUSINESS_NAME.length - 3; // 3 = " - " + "..."
+      PAGE_TITLE_MAX_LENGTH - brandSuffix.length - BUSINESS_NAME.length - 3; // 3 = " - " + "..."
     const truncated = productName.slice(0, availableLength);
     return `${truncated}...${brandSuffix} - ${BUSINESS_NAME}`;
   }
@@ -235,6 +235,7 @@ export function generateProductJsonLd(params: {
 
 // Store Configuration
 interface Store {
+  id: string; // Unique identifier for elements
   name: string; // The official name on Google Maps (e.g., 'Xmobile 3nji kwartal')
   streetAddress: string;
   addressLocality: string;
@@ -250,6 +251,7 @@ interface Store {
 
 const STORES: Store[] = [
   {
+    id: 'xmobile-main',
     name: 'Xmobile', // Main store
     streetAddress: 'S.A. Nyyazov St',
     addressLocality: 'Turkmenabat',
@@ -264,7 +266,8 @@ const STORES: Store[] = [
   },
   // Example for future store:
   // {
-  //   name: 'Xmobile Gok Bazar',
+  //   id: 'xmobile-3rd-quarter',
+  //   name: 'Xmobile 3rd Quarter',
   //   streetAddress: 'Gok Bazar',
   //   addressLocality: 'Turkmenabat',
   //   addressRegion: 'Lebap',
@@ -288,7 +291,7 @@ export function generateOrganizationSchema() {
     '@type': 'Organization',
     name: BUSINESS_NAME, // Xmobile
     url: BASE_URL,
-    logo: `${BASE_URL}/logo.png`,
+    logo: `${BASE_URL}/logo/xmobile-processed-logo.png`,
     sameAs: [
       'https://www.instagram.com/xmobiletm/',
       'https://www.tiktok.com/@xmobiletm',
@@ -313,8 +316,8 @@ export function generateLocalBusinessSchema() {
     '@context': 'https://schema.org',
     '@type': 'MobilePhoneStore',
     name: store.name,
-    image: `${BASE_URL}/logo.png`,
-    '@id': `${BASE_URL}/#store-${store.name.toLowerCase()}`,
+    image: `${BASE_URL}/logo/xmobile-processed-logo.png`,
+    '@id': `${BASE_URL}/#store-${store.id}`,
     url: BASE_URL,
     telephone: store.telephone,
     priceRange: '$$',
