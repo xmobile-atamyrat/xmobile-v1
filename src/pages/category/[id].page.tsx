@@ -142,7 +142,6 @@ export const getStaticProps: GetStaticProps = async ({
       const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
       const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
 
-      // Use category image for OG image, or fallback (omitted if null)
       let ogImage = categoryData.imgUrl;
       if (ogImage && !ogImage.startsWith('http')) {
         ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
@@ -150,7 +149,7 @@ export const getStaticProps: GetStaticProps = async ({
 
       const breadcrumbJsonLd = generateBreadcrumbJsonLd(
         categoryPath,
-        undefined, // category page doesn't have a categoryProduct name
+        undefined, // no productName for category page
         locale,
       );
 
@@ -162,7 +161,6 @@ export const getStaticProps: GetStaticProps = async ({
         ogLocale:
           LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
           'ru_RU',
-        // 'website' tells social platforms this is a general page/collection, not a specific product item
         ogType: 'website',
         ogTitle: title,
         ogDescription: description,
