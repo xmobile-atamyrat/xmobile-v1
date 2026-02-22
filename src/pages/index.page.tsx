@@ -156,7 +156,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     ogDescription: description,
     ogType: 'website',
     ogLocale:
-      LOCALE_TO_OG_LOCALE[(locale as keyof typeof LOCALE_TO_OG_LOCALE) || 'ru'],
+      LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+      'ru_RU',
     organizationJsonLd: generateOrganizationSchema(),
     localBusinessJsonLd: generateLocalBusinessSchema(),
   };
