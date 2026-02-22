@@ -124,7 +124,7 @@ export const getStaticProps: GetStaticProps = async ({
 
     if (product) {
       try {
-        const categoriesRes = await fetch(`${BASE_URL}/api/category`); // #todo: its returning all categories with products, double check for optimization
+        const categoriesRes = await fetch(`${BASE_URL}/api/category`);
         const {
           success,
           data: allCategories,
@@ -134,10 +134,8 @@ export const getStaticProps: GetStaticProps = async ({
           categoryPath = buildCategoryPath(product.categoryId, allCategories);
         }
 
-        // Generate all SEO metadata server-side so it's in the initial HTML
         const productName = parseName(product.name, locale);
 
-        // Fix: Extract price from [id]{price} format or use as is. TODO: Refactor price parsing logic, create parsePrice func and apply in fetchProducts func as a transform layer
         let priceValue = product.price;
         const priceMatch = product.price?.match(curlyBracketRegex);
         if (priceMatch) {
