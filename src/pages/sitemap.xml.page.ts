@@ -12,22 +12,36 @@ function generateSiteMap(
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <!-- Static Pages -->
      <url>
-       <loc>${BASE_URL}</loc>
+       <loc>${BASE_URL}/ru</loc>
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
      <url>
-       <loc>${BASE_URL}/category</loc>
+       <loc>${BASE_URL}/ru/category</loc>
        <changefreq>daily</changefreq>
        <priority>0.8</priority>
      </url>
 
-     <!-- Dynamic Categories -->
+     <!-- Categories -->
      ${categories
        .map(({ id, updatedAt }) => {
          return `
        <url>
-           <loc>${BASE_URL}/category/${id}</loc>
+           <loc>${BASE_URL}/ru/category/${id}</loc>
+           <lastmod>${updatedAt.toISOString()}</lastmod>
+           <changefreq>weekly</changefreq>
+           <priority>0.7</priority>
+       </url>
+     `;
+       })
+       .join('')}
+
+     <!-- Category Product Landing Pages -->
+     ${categories
+       .map(({ id, updatedAt }) => {
+         return `
+       <url>
+           <loc>${BASE_URL}/ru/product?categoryId=${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.8</priority>
@@ -36,19 +50,20 @@ function generateSiteMap(
        })
        .join('')}
 
-     <!-- Dynamic Products -->
+     <!-- Products -->
      ${products
        .map(({ id, updatedAt }) => {
          return `
        <url>
-           <loc>${BASE_URL}/product/${id}</loc>
+           <loc>${BASE_URL}/ru/product/${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
-           <changefreq>weekly</changefreq>
+           <changefreq>daily</changefreq>
            <priority>0.9</priority>
        </url>
      `;
        })
        .join('')}
+ 
    </urlset>
  `;
 }
@@ -84,6 +99,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   };
 };
 
-export default function SiteMap() {
+export default function SiteMap(): null {
   // required by Next.js but never rendered (response handled in getServerSideProps).
+  return null;
 }
