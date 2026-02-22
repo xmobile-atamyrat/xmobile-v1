@@ -104,7 +104,7 @@
   "lastWeekVisitCount": "Soňky 1 hepdelik sapar sany",
   "lastMonthVisitCount": "Soňky 1 aýlyk sapar sany",
   "telekomBalance": "Telekom Balans",
-  "allProducts": "Productshli önümler",
+  "allProducts": "Ähli önümler",
   "home": "Öý",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýat,  Türkmenabat şãher , 3-nji kwartal  mikroraýony, S.A. Niýazow şaýoly ,  \"Xmobile\" dükany.",
@@ -323,6 +323,15 @@
   "filter": "Filtr",
   "apply": "Ulan",
   "nullPrice": "Bahasy jaňda",
-  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz."
+  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz.",
+  "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
+  "productIndexDescription": "Türkmenistanda smartfonlary, gadjetleri we elektronikany iň gowy bahadan satyn alyň. Resmi kepillik, ýurt boýunça çalt eltip bermek we dünýäniň iň gowy brendleri.",
+  "productDetailsMetaDescription": "{product} Türkmenistanda {price} bahadan satyn alyň. Resmi kepillik, Türkmenistanyň islendik ýerine çalt eltip bermek. Şu gün {businessName}-da onlaýn sargyt ediň.",
+  "categoryDetailsMetaDescription": "{category} Türkmenistanda iň gowy bahadan satyn alyň. Uly saýlaw, resmi kepillik we Türkmenistanyň islendik ýerine çalt eltip bermek {businessName}-da.",
+  "seoLocationSuffix": "Türkmenistanda",
+  "categoryIndexTitle": "Kategoriýalar boýunça söwda | {businessName} Türkmenistan",
+  "categoryIndexDescription": "{businessName}-da ähli haryt kategoriýalaryny görüň. Smartfonlar, gadjetler we elektronika resmi kepillik we Türkmenistanyň islendik ýerine çalt eltip bermek hyzmaty bilen.",
+  "homeIndexTitle": "{businessName} | Türkmenistanda Smartfonlar we Elektronika Satyn Alyň",
+  "homeIndexDescription": "{businessName}-da smartfonlary, gadjetleri we elektronikany satyn alyň. Türkmenistanda iň gowy bahalar, resmi kepillik we ýurt boýunça çalt eltip bermek."
 }
 
