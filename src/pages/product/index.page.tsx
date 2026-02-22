@@ -62,15 +62,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const locale = context.locale || 'ru';
 
-  // Import translations once and reuse throughout
   const messages = (await import(`../../i18n/${locale}.json`)).default;
 
   let seoData: PageSeoData;
 
-  // -- 1. Search Mode --
+  // search pages
   if (searchKeyword && typeof searchKeyword === 'string') {
     const title = generateSearchTitle(messages.searchResultsFor, searchKeyword);
-    // Important: NoIndex for search results to save crawl budget / prevent thin content
+    // noIndex for search results to save crawl budget / prevent thin content
     seoData = {
       title,
       description: '', // Optional, or generic
@@ -82,10 +81,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       ogLocale:
         LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
         'ru_RU',
-      hreflangLinks: [], // Search results don't need hreflang if noindex
+      hreflangLinks: [], // search results don't need hreflang if noindex
     };
   }
-  // -- 2. Category Mode (Landing or Single Filter) --
+  // product/index page with categoryId
   else {
     // Check if we have a single category context
     let targetCategoryId: string | null = null;
@@ -101,7 +100,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       }
     }
 
-    // Multi-category filter: Apply noindex to prevent indexing combinatorial pages
+    // multi-category filter: apply noindex to prevent indexing combinatorial pages
     if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 1) {
       const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
       const description = messages.productIndexDescription;
@@ -127,7 +126,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     if (targetCategoryId) {
       try {
-        // Breadcrumb Logic: Fetch all categories (server-side) to build full path
+        // breadcrumb logic: fetch all categories (server-side) to build full path
         const res = await fetch(`${BASE_URL}/api/category`);
         const {
           success,
@@ -189,7 +188,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       }
     }
 
-    // -- 3. Fallback / Default Shop Page --
+    // fallback / default product index page
     if (!seoData) {
       const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
       const description = messages.productIndexDescription;
