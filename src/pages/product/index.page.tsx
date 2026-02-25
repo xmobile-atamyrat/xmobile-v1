@@ -1,3 +1,4 @@
+import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
@@ -7,17 +8,29 @@ import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath, findCategory } from '@/pages/lib/categoryPathUtils';
+import { BUSINESS_NAME, LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
+  generateBreadcrumbJsonLd,
+  generateCategoryMetaDescription,
+  generateCategoryTitle,
+  generateHreflangLinks,
+  generateSearchTitle,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
+import {
   AddEditProductProps,
   ExtendedCategory,
+  PageSeoData,
+  ResponseApi,
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { interClassname } from '@/styles/theme';
@@ -41,9 +54,163 @@ import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const {
+    categoryId,
+    categoryIds, // query param from filters
+    searchKeyword,
+  } = context.query;
+
+  const locale = context.locale || 'ru';
+
+  const messages = (await import(`../../i18n/${locale}.json`)).default;
+
+  let seoData: PageSeoData;
+
+  // search pages
+  if (searchKeyword && typeof searchKeyword === 'string') {
+    const title = generateSearchTitle(messages.searchResultsFor, searchKeyword);
+    // noIndex for search results to save crawl budget / prevent thin content
+    seoData = {
+      title,
+      description: '', // Optional, or generic
+      canonicalUrl: getCanonicalUrl(locale, 'product'), // Point to main product page or self
+      noIndex: true,
+      // Required by PageSeoData
+      ogTitle: title,
+      ogDescription: '',
+      ogLocale:
+        LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+        'ru_RU',
+      hreflangLinks: [], // search results don't need hreflang if noindex
+    };
+  }
+  // product/index page with categoryId
+  else {
+    // Check if we have a single category context
+    let targetCategoryId: string | null = null;
+
+    if (categoryId && typeof categoryId === 'string') {
+      targetCategoryId = categoryId;
+    } else if (categoryIds) {
+      // If array, check length. If string, it's single.
+      if (typeof categoryIds === 'string') {
+        targetCategoryId = categoryIds;
+      } else if (Array.isArray(categoryIds) && categoryIds.length === 1) {
+        targetCategoryId = categoryIds[0];
+      }
+    }
+
+    // multi-category filter: apply noindex to prevent indexing combinatorial pages
+    if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 1) {
+      const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
+      const description = messages.productIndexDescription;
+      seoData = {
+        title,
+        description,
+        canonicalUrl: getCanonicalUrl(locale, 'product'),
+        hreflangLinks: generateHreflangLinks('product'),
+        noIndex: true, // Prevent indexing of multi-filter pages
+        ogTitle: title,
+        ogDescription: description,
+        ogLocale:
+          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+          'ru_RU',
+      };
+      return {
+        props: {
+          messages,
+          seoData,
+        },
+      };
+    }
+
+    if (targetCategoryId) {
+      try {
+        // breadcrumb logic: fetch all categories (server-side) to build full path
+        const res = await fetch(`${BASE_URL}/api/category`);
+        const {
+          success,
+          data: allCategories,
+        }: ResponseApi<ExtendedCategory[]> = await res.json();
+
+        if (success && allCategories) {
+          const category = findCategory(allCategories, targetCategoryId);
+
+          if (category) {
+            const categoryName = parseName(category.name, locale);
+
+            // Build full path for SEO Breadcrumb schema
+            const categoryPath = buildCategoryPath(
+              targetCategoryId,
+              allCategories,
+            );
+
+            const title = generateCategoryTitle(
+              categoryPath,
+              messages.seoLocationSuffix,
+              locale,
+            );
+            const description = generateCategoryMetaDescription(
+              messages.categoryDetailsMetaDescription,
+              categoryName,
+            );
+            const canonicalUrl = getCanonicalUrl(
+              locale,
+              `product?categoryId=${targetCategoryId}`,
+            );
+            const hreflangLinks = generateHreflangLinks(
+              `product?categoryId=${targetCategoryId}`,
+            );
+            const breadcrumbJsonLd = generateBreadcrumbJsonLd(
+              categoryPath,
+              undefined,
+              locale,
+              messages?.home as string,
+            );
+
+            seoData = {
+              title,
+              description,
+              canonicalUrl,
+              hreflangLinks,
+              breadcrumbJsonLd,
+              ogTitle: title,
+              ogDescription: description,
+              ogType: 'website',
+              ogLocale:
+                LOCALE_TO_OG_LOCALE[
+                  locale as keyof typeof LOCALE_TO_OG_LOCALE
+                ] || 'ru_RU',
+            };
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching category for SEO:', e);
+      }
+    }
+
+    // fallback / default product index page
+    if (!seoData) {
+      const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
+      const description = messages.productIndexDescription;
+      seoData = {
+        title,
+        description,
+        canonicalUrl: getCanonicalUrl(locale, 'product'),
+        hreflangLinks: generateHreflangLinks('product'),
+        ogTitle: title,
+        ogDescription: description,
+        ogLocale:
+          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+          'ru_RU',
+      };
+    }
+  }
+
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages,
+      seoData,
     },
   };
 };
@@ -381,6 +548,13 @@ export default function Products() {
                   paddingBottom: '8px',
                 }}
               >
+                <Typography
+                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+                >
+                  {category
+                    ? parseName(category.name, router.locale ?? 'ru')
+                    : t('allProducts') || 'All Products'}
+                </Typography>
                 {platform === 'web' && (
                   <Box sx={{ marginLeft: 'auto' }}>
                     <SortDropdown

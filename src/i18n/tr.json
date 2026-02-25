@@ -321,6 +321,15 @@
   "filter": "Filtre",
   "apply": "Uygula",
   "nullPrice": "Fiyat için arayın",
-  "nullPriceCart": "Sipariş için lütfen arayın."
+  "nullPriceCart": "Sipariş için lütfen arayın.",
+  "searchResultsFor": "Arama sonuçları: \"{keyword}\"",
+  "productIndexDescription": "Türkmenistan'da akıllı telefon, gadget ve elektronik ürünlerini en iyi fiyatlarla satın alın. Resmi garanti, ülke genelinde hızlı teslimat ve en iyi küresel markalar.",
+  "productDetailsMetaDescription": "{product} ürününü Türkmenistan’da {price} fiyatla satın alın. Resmi garanti, tüm Türkmenistan'a hızlı teslimat. Bugün {businessName}'da online sipariş verin.",
+  "categoryDetailsMetaDescription": "{category} ürünlerini Türkmenistan’da en iyi fiyatlarla satın alın. Geniş ürün yelpazesi, resmi garanti ve {businessName}'da tüm Türkmenistan'a hızlı teslimat.",
+  "seoLocationSuffix": "Türkmenistan'da",
+  "categoryIndexTitle": "Kategoriye Göre Alışveriş | {businessName} Türkmenistan",
+  "categoryIndexDescription": "{businessName}'daki tüm ürün kategorilerini keşfedin. Resmi garanti ve tüm Türkmenistan'a hızlı teslimat ile akıllı telefonlar, gadget'lar ve elektronik ürünler.",
+  "homeIndexTitle": "{businessName} | Türkmenistan'da Akıllı Telefon ve Elektronik Satın Alın",
+  "homeIndexDescription": "{businessName}'da akıllı telefon, gadget ve elektronik ürünleri satın alın. Türkmenistan'daki en iyi fiyatlar, resmi garanti ve ülke genelinde hızlı teslimat."
 }
 

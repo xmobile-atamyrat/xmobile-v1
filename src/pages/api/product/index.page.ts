@@ -7,7 +7,7 @@ import {
   IMG_COMPRESSION_OPTIONS,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
-import { ResponseApi, SortOption } from '@/pages/lib/types';
+import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -163,11 +163,12 @@ async function createProduct(
   return res;
 }
 
-async function getProduct(productId: string): Promise<Product | null> {
+async function getProduct(productId: string): Promise<ExtendedProduct | null> {
   const product = await dbClient.product.findUnique({
     where: {
       id: productId,
     },
+    include: { brand: true },
   });
 
   // product.price = [id]{value}

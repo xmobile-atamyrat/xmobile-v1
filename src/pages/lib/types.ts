@@ -1,4 +1,11 @@
-import { Category, DollarRate, Product, User, UserRole } from '@prisma/client';
+import {
+  Brand,
+  Category,
+  DollarRate,
+  Product,
+  User,
+  UserRole,
+} from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
 import { Dispatch, ReactElement, SetStateAction } from 'react';
 
@@ -22,6 +29,10 @@ export type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS];
 export interface ExtendedCategory extends Category {
   products?: Product[];
   successorCategories?: ExtendedCategory[];
+}
+
+export interface ExtendedProduct extends Product {
+  brand?: Brand | null;
 }
 
 export interface ProtectedUser extends Omit<User, 'password'> {}
@@ -341,4 +352,77 @@ export type FetchWithCredsType = <K>({
 export interface DollarRateContextProps {
   rates: DollarRate[];
   setRates: Dispatch<SetStateAction<DollarRate[]>>;
+}
+
+// ============================================
+// SEO TYPE DEFINITIONS
+// ============================================
+
+/**
+ * @see https://schema.org/Product
+ */
+export interface ProductJsonLdData {
+  '@context': 'https://schema.org';
+  '@type': 'Product';
+  name: string;
+  description?: string;
+  brand?: {
+    '@type': 'Brand';
+    name: string;
+  };
+  offers: {
+    '@type': 'Offer';
+    price: string;
+    priceCurrency: 'TMT';
+    url: string;
+  };
+  image: string[];
+}
+
+/**
+ * @see https://schema.org/BreadcrumbList
+ */
+export interface BreadcrumbJsonLdItem {
+  '@type': 'ListItem';
+  position: number;
+  name: string;
+  item?: string; // URL - only present for non-current pages
+}
+
+/**
+ * @see https://schema.org/BreadcrumbList
+ */
+export interface BreadcrumbListJsonLd {
+  '@context': 'https://schema.org';
+  '@type': 'BreadcrumbList';
+  itemListElement: BreadcrumbJsonLdItem[];
+}
+
+export interface HreflangLink {
+  locale: string;
+  url: string;
+}
+
+export interface PageSeoData {
+  // meta tags
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  noIndex?: boolean; // If true, rendering <meta name="robots" content="noindex" />
+
+  // og (social media sharing)
+  ogTitle: string;
+  ogDescription: string;
+  ogImage?: string;
+  ogLocale: string;
+  ogType?: string;
+
+  // multilanguage links
+  hreflangLinks: HreflangLink[];
+
+  // JSON-LD
+  productJsonLd?: ProductJsonLdData;
+  breadcrumbJsonLd?: BreadcrumbListJsonLd;
+  organizationJsonLd?: Record<string, any>;
+  localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
 }

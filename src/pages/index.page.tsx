@@ -9,12 +9,21 @@ import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
+  BUSINESS_NAME,
   LOCALE_COOKIE_NAME,
+  LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  generateHreflangLinks,
+  generateLocalBusinessSchema,
+  generateOrganizationSchema,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
+import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
@@ -123,14 +132,44 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       console.error(error);
     }
   }
+
+  // Generate SEO Data
+  const t = messages as Record<string, string>;
+  const businessName = BUSINESS_NAME;
+
+  const titleTemplate = t.homeIndexTitle;
+  const descriptionTemplate = t.homeIndexDescription;
+  const title = titleTemplate.replace('{businessName}', businessName);
+  const description = descriptionTemplate.replace(
+    '{businessName}',
+    businessName,
+  );
+
+  const seoData = {
+    title,
+    description,
+    canonicalUrl: getCanonicalUrl(locale || 'ru', ''), // Root path
+    hreflangLinks: generateHreflangLinks(''), // Root path
+    ogTitle: title,
+    ogDescription: description,
+    ogType: 'website',
+    ogLocale:
+      LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+      'ru_RU',
+    organizationJsonLd: generateOrganizationSchema(),
+    localBusinessJsonLd: generateLocalBusinessSchema(),
+  };
+
   return {
     props: {
       locale,
       messages,
+      seoData,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
+  seoData: PageSeoData;
 }>;
 
 export default function Home({
@@ -304,13 +343,13 @@ export default function Home({
                 paddingBottom: '8px',
               }}
             >
-              {!searchKeyword && (
-                <Typography
-                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
-                >
-                  {t('newProducts')}
-                </Typography>
-              )}
+              <Typography
+                className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+              >
+                {searchKeyword
+                  ? `${t('searchResultsFor')}: "${searchKeyword}"`
+                  : t('newProducts')}
+              </Typography>
               {platform === 'web' && (
                 <SortDropdown
                   value={filters.sortBy}

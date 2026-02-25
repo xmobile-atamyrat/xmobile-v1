@@ -13,6 +13,7 @@ import {
   isWebView,
   registerServiceWorker,
 } from '@/pages/lib/serviceWorker';
+import { HreflangLink, PageSeoData } from '@/pages/lib/types';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
@@ -20,12 +21,14 @@ import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const seoData: PageSeoData = pageProps?.seoData;
 
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {
@@ -57,6 +60,89 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider theme={theme}>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/logo/xm-logo.ico" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#d32f2f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="XMobile" />
+        <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
+
+        <title>{seoData?.title || 'X-mobile'}</title>
+
+        {seoData?.noIndex === true ? (
+          <meta name="robots" content="noindex, follow" />
+        ) : (
+          <meta name="robots" content="index, follow" />
+        )}
+
+        {seoData && (
+          <>
+            <meta name="description" content={seoData.description} />
+            <link rel="canonical" href={seoData.canonicalUrl} />
+
+            {seoData.hreflangLinks?.map((link: HreflangLink) => (
+              <link
+                key={link.locale}
+                rel="alternate"
+                hrefLang={link.locale}
+                href={link.url}
+              />
+            ))}
+
+            <meta
+              property="og:title"
+              content={seoData.ogTitle || seoData.title}
+            />
+            <meta
+              property="og:description"
+              content={seoData.ogDescription || seoData.description}
+            />
+            {seoData.ogImage && (
+              <meta property="og:image" content={seoData.ogImage} />
+            )}
+            <meta property="og:url" content={seoData.canonicalUrl} />
+            <meta property="og:type" content={seoData.ogType || 'website'} />
+            <meta property="og:locale" content={seoData.ogLocale} />
+
+            {/* Structured Data JSON-LD */}
+            {seoData.productJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.productJsonLd),
+                }}
+              />
+            )}
+            {seoData.breadcrumbJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.breadcrumbJsonLd),
+                }}
+              />
+            )}
+            {seoData.organizationJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.organizationJsonLd),
+                }}
+              />
+            )}
+            {seoData.localBusinessJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.localBusinessJsonLd),
+                }}
+              />
+            )}
+          </>
+        )}
+      </Head>
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>

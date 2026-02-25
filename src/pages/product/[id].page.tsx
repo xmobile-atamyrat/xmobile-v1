@@ -9,12 +9,24 @@ import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
-import { squareBracketRegex } from '@/pages/lib/constants';
+import {
+  curlyBracketRegex,
+  LOCALE_TO_OG_LOCALE,
+  squareBracketRegex,
+} from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  generateBreadcrumbJsonLd,
+  generateHreflangLinks,
+  generateProductJsonLd,
+  generateProductMetaDescription,
+  generateProductTitle,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
 import {
   AddEditProductProps,
   ExtendedCategory,
@@ -96,7 +108,7 @@ export const getStaticProps: GetStaticProps = async ({
     const products = await fetchProducts({ productId });
     const product = products && products.length > 0 ? products[0] : null;
 
-    // Load messages with fallback
+    // Load messages first so they can be used for SEO generation
     let messages;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
@@ -107,9 +119,86 @@ export const getStaticProps: GetStaticProps = async ({
       );
     }
 
+    let categoryPath: ExtendedCategory[] = [];
+    let seoData = null;
+
+    if (product) {
+      try {
+        const categoriesRes = await fetch(`${BASE_URL}/api/category`);
+        const {
+          success,
+          data: allCategories,
+        }: ResponseApi<ExtendedCategory[]> = await categoriesRes.json();
+
+        if (success && allCategories && product.categoryId) {
+          categoryPath = buildCategoryPath(product.categoryId, allCategories);
+        }
+
+        const productName = parseName(product.name, locale);
+
+        let priceValue = product.price;
+        const priceMatch = product.price?.match(curlyBracketRegex);
+        if (priceMatch) {
+          priceValue = priceMatch[1];
+        }
+        priceValue = priceValue?.replace(/[^\d.]/g, '');
+
+        const productPath = `product/${product.id}`;
+
+        const title = generateProductTitle(productName, product.brand?.name);
+        const metaDescription = generateProductMetaDescription(
+          messages?.productDetailsMetaDescription || '',
+          productName,
+          priceValue,
+        );
+        const canonicalUrl = getCanonicalUrl(locale, productPath);
+        const hreflangLinks = generateHreflangLinks(productPath);
+
+        // Generate absolute image URLs for og:image and JSON-LD
+        const rawImages = product.imgUrls || [];
+        const imageUrls = rawImages.map((img) => {
+          if (img.startsWith('http')) return img;
+          return `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(img)}`;
+        });
+
+        const productJsonLd = generateProductJsonLd({
+          productName,
+          productUrl: canonicalUrl,
+          price: priceValue,
+          imageUrls,
+          description: parseName(product.description ?? '{}', locale),
+          brandName: product.brand?.name,
+        });
+
+        const breadcrumbJsonLd = generateBreadcrumbJsonLd(
+          categoryPath,
+          productName,
+          locale,
+          messages?.home as string,
+        );
+
+        seoData = {
+          title,
+          description: metaDescription,
+          canonicalUrl,
+          hreflangLinks,
+          ogLocale:
+            LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+            'ru_RU',
+          ogType: 'product',
+          ogImage: imageUrls[0],
+          productJsonLd,
+          breadcrumbJsonLd,
+        };
+      } catch (seoError) {
+        console.error('Error generating SEO data:', seoError);
+      }
+    }
+
     return {
       props: {
         product,
+        seoData,
         messages,
       },
       revalidate: 300, // regenerate static pages every 5 minutes
@@ -119,6 +208,7 @@ export const getStaticProps: GetStaticProps = async ({
     return {
       props: {
         product: null,
+        seoData: null,
         messages: null,
       },
       revalidate: 300, // regenerate static pages every 5 minutes
