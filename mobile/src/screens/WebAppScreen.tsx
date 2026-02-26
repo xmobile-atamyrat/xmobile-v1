@@ -76,22 +76,29 @@ function WebAppScreen() {
 
   const cookieInjectionJS = useMemo(() => {
     const appVersion = DeviceInfo.getVersion();
-    if (!storedToken) return undefined;
 
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isDevMode ? '' : '; Secure';
 
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";
+      ${
+        storedToken
+          ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
+          : ''
+      }
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
           : ''
       }
       // Send app version to web app
-      if(window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' }));
-      }
+      (function() {
+        if (window) {
+          window.dispatchEvent(new MessageEvent('message', {
+            data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
+          }));
+        }
+      })();
       true;
     `;
   }, [storedToken, storedLocale, cookieDomain, isDevMode]);
