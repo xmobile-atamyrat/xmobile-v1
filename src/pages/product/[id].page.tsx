@@ -157,14 +157,57 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const platform = usePlatform();
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
+  const [carouselDialogImageUrl, setCarouselDialogImageUrl] =
+    useState<string>('');
+
+  const cleanupObjectUrl = (url: string) => {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  };
 
   const handleDialogClose = () => {
     setDialogStatus(false);
+    cleanupObjectUrl(carouselDialogImageUrl);
+    setCarouselDialogImageUrl('');
   };
 
-  const handleDialogOpen = (imgUrl: string) => {
+  const handleDialogOpen = async (imgUrl: string, originalImgUrl: string) => {
     setDialogStatus(true);
     setCarouselDialogImage(imgUrl);
+
+    try {
+      if (!originalImgUrl) {
+        throw new Error('Invalid image URL: URL is empty');
+      }
+
+      // Fetch high-quality version for enlarged view
+      // Only fetch from API if it's a local image (not an external URL)
+      if (
+        originalImgUrl &&
+        !originalImgUrl.startsWith('http://') &&
+        !originalImgUrl.startsWith('https://') &&
+        !originalImgUrl.startsWith('blob:')
+      ) {
+        const response = await fetch(
+          `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(originalImgUrl)}&network=fast`,
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch high-quality image: ${response.status}`,
+          );
+        }
+
+        const highQualityBlob = await response.blob();
+        cleanupObjectUrl(carouselDialogImageUrl);
+        const highQualityUrl = URL.createObjectURL(highQualityBlob);
+        setCarouselDialogImageUrl(highQualityUrl);
+        setCarouselDialogImage(highQualityUrl);
+      }
+    } catch (error) {
+      console.error('Failed to load high-quality image:', error);
+    }
   };
 
   // Get categoryId from query params
@@ -335,7 +378,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 image={imgUrls[0]}
                 alt={product?.name}
                 className={detailPageClasses.cardMedia[platform]}
-                onClick={() => handleDialogOpen(imgUrls[0])}
+                onClick={() => handleDialogOpen(imgUrls[0], product.imgUrls[0])}
               />
             </Box>
           )}
@@ -349,7 +392,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     alt={product?.name}
                     className={detailPageClasses.cardMedia[platform]}
                     key={index}
-                    onClick={() => handleDialogOpen(imgUrl)}
+                    onClick={() =>
+                      handleDialogOpen(imgUrl, product.imgUrls[index])
+                    }
                   />
                 ))}
               </Carousel>
