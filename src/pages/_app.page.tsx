@@ -1,4 +1,5 @@
 import Loader from '@/pages/components/Loader';
+import UpdateModal from '@/pages/components/UpdateModal';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
@@ -18,7 +19,6 @@ import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
-import { MobilePlatforms } from '@prisma/client';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
@@ -29,11 +29,10 @@ export default function App({ Component, pageProps }: AppProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [mobileAppVersion, setMobileAppVersion] = useState<string | null>(null);
   const [appVersionInfo, setAppVersionInfo] = useState<{
-    version: string;
-    minSupportedVersion: string;
+    hardMinVersion: string;
+    softMinVersion: string;
   } | null>(null);
-  const [platform, setPlatform] = useState<MobilePlatforms | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showHardUpdateModal, setShowHardUpdateModal] = useState(false);
 
   const isVersionSupported = (current: string, minimum: string) => {
     const currentParts = current.split('.').map(Number);
@@ -42,7 +41,7 @@ export default function App({ Component, pageProps }: AppProps) {
       if ((currentParts[i] || 0) > minimumParts[i]) return true;
       if ((currentParts[i] || 0) < minimumParts[i]) return false;
     }
-    return true; // Versions are equal
+    return true;
   };
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {
@@ -60,33 +59,6 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && isWebView()) {
-      const storedPlatform = sessionStorage.getItem(
-        'mobilePlatform',
-      ) as MobilePlatforms;
-      if (storedPlatform) {
-        setPlatform(storedPlatform);
-      } else {
-        // Fetch platform from backend if not in sessionStorage
-        fetch('/api/platform')
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.platform) {
-              const fetchedPlatform = data.platform as MobilePlatforms;
-              setPlatform(fetchedPlatform);
-              sessionStorage.setItem('mobilePlatform', fetchedPlatform);
-            } else {
-              console.warn('Platform not found in API response');
-            }
-          })
-          .catch((error) => {
-            console.error('Failed to detect mobile platform:', error);
-          });
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && isWebView()) {
       const handleMessage = (event: MessageEvent) => {
         try {
           const data =
@@ -94,10 +66,11 @@ export default function App({ Component, pageProps }: AppProps) {
               ? JSON.parse(event.data)
               : event.data;
           if (data?.type === 'APP_VERSION' && data.payload) {
+            console.log('App version received from bridge:', data.payload);
             setMobileAppVersion(data.payload);
           }
         } catch (error) {
-          console.warn('Failed to handle message from WebView:', error);
+          console.error('Failed to handle message from WebView:', error);
         }
       };
       window.addEventListener('message', handleMessage);
@@ -107,33 +80,29 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   useEffect(() => {
-    if (platform) {
-      fetch(`/api/app-version?platform=${platform}`)
+    if (typeof window !== 'undefined' && isWebView()) {
+      fetch('/api/app-version')
         .then((res) => res.json())
         .then((data) => {
           setAppVersionInfo({
-            version: data.version,
-            minSupportedVersion: data.minSupportedVersion,
+            hardMinVersion: data.hardMinVersion,
+            softMinVersion: data.softMinVersion,
           });
         })
         .catch((error) => {
-          console.warn('Failed to fetch app version info:', error);
+          console.error('Failed to fetch app version info:', error);
         });
     }
-  });
+  }, []);
 
   useEffect(() => {
     if (mobileAppVersion && appVersionInfo) {
-      const isSupported = isVersionSupported(
+      const isHardSupported = isVersionSupported(
         mobileAppVersion,
-        appVersionInfo.minSupportedVersion,
+        appVersionInfo.hardMinVersion,
       );
-      if (!isSupported) {
-        setIsLoading(false);
-        setShowUpdateModal(true);
-      } else {
-        setShowUpdateModal(false);
-      }
+      setShowHardUpdateModal(!isHardSupported);
+      if (!isHardSupported) setIsLoading(false);
     }
   }, [mobileAppVersion, appVersionInfo]);
 
@@ -170,8 +139,10 @@ export default function App({ Component, pageProps }: AppProps) {
                               messages={pageProps.messages}
                             >
                               {isLoading && <Loader />}
-                              {/* uncomment when u implement UpdateModal {showUpdateModal && <UpdateModal />} */}
-                              {!isLoading && !showUpdateModal && (
+                              {showHardUpdateModal && (
+                                <UpdateModal type="hard" />
+                              )}
+                              {!isLoading && !showHardUpdateModal && (
                                 <Component {...pageProps} />
                               )}
                             </NextIntlClientProvider>
