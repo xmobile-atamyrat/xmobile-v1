@@ -323,6 +323,17 @@
   "filter": "Filtr",
   "apply": "Ulan",
   "nullPrice": "Bahasy zwonokda",
-  "nullPriceCart": "Bu towary zwonokda zakaz edip bilesiz."
+  "nullPriceCart": "Bu towary zwonokda zakaz edip bilesiz.",
+  "appVersions": "Priloženiýa wersiýalary",
+  "appVersionHardMin": "Hökmany Minimum Wersiýa",
+  "appVersionSoftMin": "Minimum Wersiýa",
+  "appVersionFormatDesc": "Wersiýa formaty şu şekilde bolmaly: x.y.z",
+  "appVersionSaveSuccess": "Priloženiýa wersiýasy sazlamalary üstünlikli saklandy!",
+  "appVersionSaveError": "Priloženiýa wersiýasy sazlamalary saklap bolmady.",
+  "hardUpdate": "Hökmany Obnowleniýa",
+  "softUpdate": "Obnowleniýa Koýuldy",
+  "hardUpdateDescription": "Bu wersiýa köne. Priloženiýany obnowleniýa edip, ulanmaga dowam ediň.",
+  "softUpdateDescription": "Priloženiýanyň täze wersiýasy bar, gowulaşmalar we düzedişler bilen. Täzeläp görmegi maslahat berýäris.",
+  "update": "Obnowleniýa",
+  "remindLater": "Soň ýadyma sal"
 }
-

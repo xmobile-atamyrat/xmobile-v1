@@ -321,6 +321,17 @@
   "filter": "Filter",
   "apply": "Apply",
   "nullPrice": "Price on call",
-  "nullPriceCart": "Please order via phone call."
+  "nullPriceCart": "Please order via phone call.",
+  "appVersions": "App Versions",
+  "appVersionHardMin": "Hard Minimum Version",
+  "appVersionSoftMin": "Soft Minimum Version",
+  "appVersionFormatDesc": "Version format should be like this: x.y.z",
+  "appVersionSaveSuccess": "App version settings saved successfully!",
+  "appVersionSaveError": "Failed to save app version settings.",
+  "hardUpdate": "Hard Update Required",
+  "softUpdate": "Update Available",
+  "hardUpdateDescription": "This version of the app is no longer supported. Please update the app to continue using.",
+  "softUpdateDescription": "A new version of the app is available with improvements and bug fixes. We recommend updating.",
+  "update": "Update",
+  "remindLater": "Remind Me Later"
 }
-
