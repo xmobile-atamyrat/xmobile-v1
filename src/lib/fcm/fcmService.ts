@@ -150,11 +150,13 @@ export async function sendFCMNotificationToUser(
 
     response.responses.forEach((resp, idx) => {
       const token = tokenStrings[idx];
+      const tokenRecord = tokens[idx];
 
-      if (!resp.success) {
+      if (resp.success) {
         tokensSent += 1;
       } else {
         tokensFailed += 1;
+        if (tokenRecord) failedTokenIds.push(tokenRecord.id);
         const error = resp.error;
 
         console.error(
