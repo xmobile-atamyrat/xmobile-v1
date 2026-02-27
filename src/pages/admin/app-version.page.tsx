@@ -122,7 +122,7 @@ export default function AppVersionAdminPage({
       if (response.success) {
         showSnackbar(t('appVersionSaveSuccess'), 'success');
       } else {
-        showSnackbar(response.message || t('appVersionSaveError'), 'error');
+        showSnackbar(t('appVersionSaveError'), 'error');
       }
     } catch (error) {
       console.error('Failed to save app version:', error);
@@ -168,13 +168,6 @@ export default function AppVersionAdminPage({
           >
             {t('appVersionHardMin')}
           </Typography>
-          <Typography
-            fontSize={isMdUp ? 13 : 12}
-            color="text.secondary"
-            className={interClassname.className}
-          >
-            {t('appVersionHardMinDesc')}
-          </Typography>
           <TextField
             value={hardMin}
             onChange={(e) => setHardMin(e.target.value)}
@@ -194,13 +187,6 @@ export default function AppVersionAdminPage({
             className={interClassname.className}
           >
             {t('appVersionSoftMin')}
-          </Typography>
-          <Typography
-            fontSize={isMdUp ? 13 : 12}
-            color="text.secondary"
-            className={interClassname.className}
-          >
-            {t('appVersionSoftMinDesc')}
           </Typography>
           <TextField
             value={softMin}
