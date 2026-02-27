@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
+import { useTranslations } from 'next-intl';
 
 interface UpdateModalProps {
   type: 'hard' | 'soft';
@@ -17,6 +18,7 @@ const APP_STORE_URL = 'https://apps.apple.com/app/YOUR_APP_ID';
 
 export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
   const isHard = type === 'hard';
+  const t = useTranslations();
 
   const handleUpdate = () => {
     const url = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -44,13 +46,11 @@ export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
           <SystemUpdateAltIcon sx={{ fontSize: 56, color: '#d32f2f' }} />
 
           <Typography variant="h6" fontWeight={700}>
-            {isHard ? 'Обновление обязательно' : 'Доступно обновление'}
+            {isHard ? t('hardUpdate') : t('softUpdate')}
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            {isHard
-              ? 'Эта версия приложения больше не поддерживается. Пожалуйста, обновите приложение, чтобы продолжить использование.'
-              : 'Доступна новая версия приложения с улучшениями и исправлениями. Рекомендуем обновить.'}
+            {isHard ? t('hardUpdateDescription') : t('softUpdateDescription')}
           </Typography>
 
           <Button
@@ -65,7 +65,7 @@ export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
               fontWeight: 600,
             }}
           >
-            Обновить
+            {t('update')}
           </Button>
 
           {!isHard && (
@@ -78,7 +78,7 @@ export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
                 textTransform: 'none',
               }}
             >
-              Напомнить позже
+              {t('remindLater')}
             </Button>
           )}
         </Box>
