@@ -323,6 +323,17 @@
   "filter": "Filtr",
   "apply": "Ulan",
   "nullPrice": "Bahasy jaňda",
-  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz."
+  "nullPriceCart": "Bu harydy jaňda zakaz edip bilersiňiz.",
+  "appVersions": "Programma wersiýalary",
+  "appVersionHardMin": "Hökmany minimum wersiýa",
+  "appVersionSoftMin": "Minimum wersiýa",
+  "appVersionFormatDesc": "Wersiýa formaty şu şekilde bolmaly: x.y.z",
+  "appVersionSaveSuccess": "Programma wersiýasy sazlamalary üstünlikli saklandy!",
+  "appVersionSaveError": "Programma wersiýasy sazlamalary saklap bolmady.",
+  "hardUpdate": "Hökmany obnowleniýa",
+  "softUpdate": "Obnowleniýa Elýeterli",
+  "hardUpdateDescription": "Bu programma wersiýasy indi goldanmaýar. Programma ulanmaga dowam etmek üçin täzeläň.",
+  "softUpdateDescription": "Programmaň täze wersiýasy bar, gowulaşdyryşlar we düzedişler bilen. Täzeläp görmegi maslahat berýäris.",
+  "update": "Täzeläň",
+  "remindLater": "Soňra ýatlat"
 }
-
