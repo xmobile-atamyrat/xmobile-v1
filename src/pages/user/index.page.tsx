@@ -259,7 +259,7 @@ export default function Profile() {
                       <Typography
                         className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                       >
-                        App Version
+                        {t('appVersions')}
                       </Typography>
                       <ArrowForwardIos
                         className={profileClasses.icons[platform]}
