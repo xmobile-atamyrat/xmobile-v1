@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CookieManager from '@react-native-cookies/cookies';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -58,19 +59,46 @@ function WebAppScreen() {
   const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
   const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
 
+  useEffect(() => {
+    const checkAndReload = async () => {
+      const currentVersion = DeviceInfo.getVersion();
+      const lastVersion = await AsyncStorage.getItem('APP_VERSION');
+
+      if (currentVersion !== lastVersion) {
+        await AsyncStorage.setItem('APP_VERSION', currentVersion);
+        if (webViewRef.current) {
+          webViewRef.current.reload();
+        }
+      }
+    };
+    checkAndReload();
+  }, []);
+
   const cookieInjectionJS = useMemo(() => {
-    if (!storedToken) return undefined;
+    const appVersion = DeviceInfo.getVersion();
 
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isDevMode ? '' : '; Secure';
 
     return `
-      document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";
       ${
-        storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";` //Change Strict to Lax when you integrate oAuth
+        storedToken
+          ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
           : ''
       }
+      ${
+        storedLocale
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
+          : ''
+      }
+      // Send app version to web app
+      (function() {
+        if (window) {
+          window.dispatchEvent(new MessageEvent('message', {
+            data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
+          }));
+        }
+      })();
       true;
     `;
   }, [storedToken, storedLocale, cookieDomain, isDevMode]);

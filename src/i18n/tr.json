@@ -321,6 +321,17 @@
   "filter": "Filtre",
   "apply": "Uygula",
   "nullPrice": "Fiyat için arayın",
-  "nullPriceCart": "Sipariş için lütfen arayın."
+  "nullPriceCart": "Sipariş için lütfen arayın.",
+  "appVersions": "Uygulama Sürümleri",
+  "appVersionHardMin": "Minimum Gereken Sürüm",
+  "appVersionSoftMin": "Minimum Önerilen Sürüm",
+  "appVersionFormatDesc": "Sürüm formatı şu şekilde olmalıdır: x.y.z",
+  "appVersionSaveSuccess": "Uygulama sürümü ayarları başarıyla kaydedildi!",
+  "appVersionSaveError": "Uygulama sürümü ayarları kaydedilemedi.",
+  "hardUpdate": "Zorunlu Güncelleme",
+  "softUpdate": "Güncelleme Mevcut",
+  "hardUpdateDescription": "Bu sürüm artık desteklenmiyor. Lütfen uygulamayı güncelleyerek kullanmaya devam edin.",
+  "softUpdateDescription": "Uygulamanın yeni bir sürümü mevcut. İyileştirmeler ve hata düzeltmeleri içerir. Güncellemenizi öneririz.",
+  "update": "Güncelle",
+  "remindLater": "Daha Sonra Hatırlat"
 }
-
