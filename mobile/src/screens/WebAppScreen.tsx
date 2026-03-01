@@ -229,7 +229,7 @@ function WebAppScreen() {
             style={styles.offlineImage}
             resizeMode="contain"
           />
-          <Text style={styles.offlineTitle}>No Internet!</Text>
+          <Text style={styles.offlineTitle}>Baglanyşyk Kesildi</Text>
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.retryButton}
@@ -241,7 +241,7 @@ function WebAppScreen() {
               });
             }}
           >
-            <Text style={styles.retryButtonText}>Check Again</Text>
+            <Text style={styles.retryButtonText}>Täzeden synanyş</Text>
           </TouchableOpacity>
         </View>
       )}
