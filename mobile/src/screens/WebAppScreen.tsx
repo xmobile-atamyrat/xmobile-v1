@@ -99,8 +99,6 @@ function WebAppScreen() {
   }, []);
 
   const cookieInjectionJS = useMemo(() => {
-    const appVersion = DeviceInfo.getVersion();
-
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isDevMode ? '' : '; Secure';
 
@@ -115,14 +113,6 @@ function WebAppScreen() {
           ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
           : ''
       }
-      // Send app version to web app
-      (function() {
-        if (window) {
-          window.dispatchEvent(new MessageEvent('message', {
-            data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
-          }));
-        }
-      })();
       true;
     `;
   }, [storedToken, storedLocale, cookieDomain, isDevMode]);
@@ -190,7 +180,20 @@ function WebAppScreen() {
               const data = JSON.parse(event.nativeEvent.data);
               console.log('WebView Message received:', data.type);
 
-              if (data.type === 'AUTH_STATE') {
+              if (data.type === 'REQUEST_APP_VERSION') {
+                // Web app is ready, now it's safe to send the version
+                const appVersion = DeviceInfo.getVersion();
+                if (webViewRef.current) {
+                  webViewRef.current.injectJavaScript(`
+                    (function() {
+                      window.dispatchEvent(new MessageEvent('message', {
+                        data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
+                      }));
+                    })();
+                    true;
+                  `);
+                }
+              } else if (data.type === 'AUTH_STATE') {
                 const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
                 if (REFRESH_TOKEN) {
                   await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
