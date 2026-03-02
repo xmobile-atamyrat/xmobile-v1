@@ -59,6 +59,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && isWebView()) {
+      (window as any).ReactNativeWebView?.postMessage(
+        JSON.stringify({ type: 'REQUEST_APP_VERSION' }),
+      );
       const handleMessage = (event: MessageEvent) => {
         try {
           const data =
