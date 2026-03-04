@@ -136,7 +136,9 @@ export default function App({ Component, pageProps }: AppProps) {
                         <DollarRateContextProvider>
                           <PlatformContextProvider>
                             <NextIntlClientProvider
-                              locale={router.locale}
+                              locale={
+                                router.locale || router.defaultLocale || 'ru'
+                              }
                               timeZone="Asia/Ashgabat"
                               messages={pageProps.messages}
                             >
