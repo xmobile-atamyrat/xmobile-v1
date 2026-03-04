@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import CookieManager from '@react-native-cookies/cookies';
+import messaging from '@react-native-firebase/messaging';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
   Image,
+  PermissionsAndroid,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,6 +17,35 @@ import {
 import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+
+async function getOrRequestNativeFcmToken() {
+  if (Number(Platform.Version) >= 33) {
+    const hasPermission = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+
+    if (!hasPermission) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (result !== PermissionsAndroid.RESULTS.GRANTED) {
+        return null;
+      }
+    }
+  }
+
+  try {
+    const token = await messaging().getToken();
+    if (token) {
+      return token;
+    }
+    console.error('Failed to get FCM token');
+    return null;
+  } catch (error) {
+    console.error('Failed to get FCM token from native:', error);
+    return null;
+  }
+}
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
@@ -188,6 +220,24 @@ function WebAppScreen() {
                     (function() {
                       window.dispatchEvent(new MessageEvent('message', {
                         data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
+                      }));
+                    })();
+                    true;
+                  `);
+                }
+              } else if (data.type === 'REQUEST_FCM_TOKEN') {
+                const token = await getOrRequestNativeFcmToken();
+
+                if (token && webViewRef.current) {
+                  const payload = JSON.stringify({
+                    type: 'FCM_TOKEN',
+                    payload: { token },
+                  });
+
+                  webViewRef.current.injectJavaScript(`
+                    (function() {
+                      window.dispatchEvent(new MessageEvent('message', {
+                        data: JSON.stringify(${payload})
                       }));
                     })();
                     true;
