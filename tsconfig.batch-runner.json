@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "batch-runner-dist",
+    "noEmit": false
+  },
+  "include": [
+    "scripts/batch-runner/**/*.ts",
+    "src/lib/slack/**/*.ts",
+    "src/lib/telekom.ts",
+    "types.d.ts"
+  ]
+}

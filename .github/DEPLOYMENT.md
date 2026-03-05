@@ -38,3 +38,30 @@ Configure these in **Settings → Secrets and variables → Actions** (only user
 - Restart script: `/home/ubuntu/scripts/restart-server.sh`
 
 Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
+
+---
+
+## Deploy Batch Runner
+
+The workflow **Deploy Batch Runner** (`.github/workflows/deploy-batch-runner.yml`) builds and deploys the central batch/cron runner to the VM. This single process runs:
+
+- **healthcheck** – Pings the app every 5s; sends Slack on down/recovery.
+- **telekom-balance** – Runs daily at 09:00; if balance &lt; `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` (env), sends a Slack alert.
+
+### Flow
+
+1. Checkout, install deps, run `yarn build:batch-runner`.
+2. Upload `batch-runner-dist/` to `$APP_DIR_ON_VM/batch-runner-dist/` on the VM.
+3. Run `/home/ubuntu/scripts/restart-healthcheck.sh` on the VM.
+
+### VM setup
+
+On the VM, the script that restarts the service (e.g. `restart-healthcheck.sh`) should start the batch runner, for example:
+
+```bash
+cd /home/ubuntu/xmobile-v1 && node --env-file=.env batch-runner-dist/scripts/batch-runner/batch-runner.js
+```
+
+Or use `yarn start:batch-runner` if the app dir has `package.json` and `batch-runner-dist/` in place.
+
+Required env (in `.env` on the VM): `SLACK_HEALTH_BOT_WEBHOOK`, and for telekom alerts: `TELEKOM_USERNAME`, `TELEKOM_PASSWORD`, `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` (number in TMT; alert is sent when balance is below this).

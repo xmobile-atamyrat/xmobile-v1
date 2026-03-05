@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { fetchTelekomBalance } from '@/lib/telekom';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -14,9 +15,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   let lastMonthVisitCount = 0;
   let errorMessage: string | null = null;
   let balance: number | null = null;
-
-  const telekomUsername = process.env.TELEKOM_USERNAME;
-  const telekomPassword = process.env.TELEKOM_PASSWORD;
 
   try {
     userCount = await dbClient.user.count();
@@ -80,44 +78,11 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     errorMessage = (error as Error).message;
   }
 
-  if (telekomUsername != null && telekomPassword != null) {
-    try {
-      const loginResponse = await fetch(
-        'https://os.telecom.tm:5000/api/v1/auth/login',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: telekomUsername,
-            password: telekomPassword,
-          }),
-        },
-      );
-
-      if (!loginResponse.ok) {
-        throw new Error('Login request failed');
-      }
-
-      const loginData = await loginResponse.json();
-      const accessToken = loginData.result.accessToken;
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      const clientResponse = await fetch(
-        'https://os.telecom.tm:5000/api/v1/clients/self',
-        { headers },
-      );
-      if (!clientResponse.ok) {
-        throw new Error('Client data request failed');
-      }
-      const clientData = await clientResponse.json();
-      balance = Math.floor(clientData.result.client.balance);
-    } catch (error) {
-      console.error(error);
-      errorMessage = (error as Error).message;
-    }
+  try {
+    balance = await fetchTelekomBalance();
+  } catch (error) {
+    console.error(error);
+    errorMessage = (error as Error).message;
   }
 
   return {

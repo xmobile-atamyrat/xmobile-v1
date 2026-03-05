@@ -1,22 +1,18 @@
-'use strict';
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-Object.defineProperty(exports, '__esModule', { value: true });
-const https_1 = __importDefault(require('https'));
-const slack_1 = require('../src/lib/slack');
-const PING_URL = 'https://xmobile.com.tm/api/ping/asdf';
+import https from 'https';
+import { getSlack } from '../../../src/lib/slack';
+
+const PING_URL = 'https://xmobile.com.tm/api/ping';
 const CHECK_INTERVAL_MS = 5000;
 const TIMEOUT_MS = 10000;
 const FAILURE_THRESHOLD = 3;
-const SLACK_BOT_NAME = 'HEALTH_BOT_WEBHOOK'; // Maps to SLACK_HEALTH_BOT_WEBHOOK
+const SLACK_BOT_NAME = 'HEALTH_BOT_WEBHOOK';
+
 let failureCount = 0;
 let isDown = false;
-async function sendSlackAlert(message) {
+
+async function sendSlackAlert(message: string) {
   try {
-    const slack = (0, slack_1.getSlack)(SLACK_BOT_NAME);
+    const slack = getSlack(SLACK_BOT_NAME);
     if (!slack) {
       console.error(
         `[Healthcheck] Slack client '${SLACK_BOT_NAME}' not found. Check SLACK_HEALTH_BOT_WEBHOOK env var.`,
@@ -29,11 +25,13 @@ async function sendSlackAlert(message) {
     console.error('[Healthcheck] Failed to send Slack alert:', error);
   }
 }
-async function handleFailure(reason) {
+
+async function handleFailure(reason: string) {
   failureCount += 1;
   console.log(
     `[Healthcheck] Ping failed (${failureCount}/${FAILURE_THRESHOLD}): ${reason}`,
   );
+
   if (failureCount >= FAILURE_THRESHOLD && !isDown) {
     console.log(
       '[Healthcheck] Failure threshold reached. Marking server as DOWN.',
@@ -44,6 +42,7 @@ async function handleFailure(reason) {
     );
   }
 }
+
 async function handleSuccess() {
   if (failureCount > 0) {
     console.log(
@@ -51,6 +50,7 @@ async function handleSuccess() {
     );
     failureCount = 0;
   }
+
   if (isDown) {
     console.log('[Healthcheck] Server recovered!');
     isDown = false;
@@ -59,29 +59,36 @@ async function handleSuccess() {
     );
   }
 }
-function checkHealth() {
-  const req = https_1.default.get(PING_URL, { timeout: TIMEOUT_MS }, (res) => {
-    const { statusCode } = res;
-    if (statusCode === 200) {
-      handleSuccess();
-    } else {
-      handleFailure(`Received status code: ${statusCode}`);
-    }
-    // Consume response data to free up memory
-    res.resume();
-  });
-  req.on('error', (err) => {
-    handleFailure(`Request error: ${err.message}`);
-  });
-  req.on('timeout', () => {
-    req.destroy();
-    handleFailure('Request timeout');
+
+function checkHealth(): Promise<void> {
+  return new Promise((resolve) => {
+    const req = https.get(PING_URL, { timeout: TIMEOUT_MS }, (res) => {
+      const { statusCode } = res;
+      if (statusCode === 200) {
+        handleSuccess().then(resolve).catch(resolve);
+      } else {
+        handleFailure(`Received status code: ${statusCode}`)
+          .then(resolve)
+          .catch(resolve);
+      }
+      res.resume();
+    });
+
+    req.on('error', (err) => {
+      handleFailure(`Request error: ${err.message}`)
+        .then(resolve)
+        .catch(resolve);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      handleFailure('Request timeout').then(resolve).catch(resolve);
+    });
   });
 }
-// Start the check loop
-console.log(
-  `[Healthcheck] Starting monitoring for ${PING_URL} every ${CHECK_INTERVAL_MS}ms...`,
-);
-setInterval(checkHealth, CHECK_INTERVAL_MS);
-// Run initial check immediately
-checkHealth();
+
+export const healthcheckJob = {
+  id: 'healthcheck',
+  schedule: { type: 'interval' as const, ms: CHECK_INTERVAL_MS },
+  run: checkHealth,
+};
