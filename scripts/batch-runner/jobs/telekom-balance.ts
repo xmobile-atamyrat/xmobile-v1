@@ -2,8 +2,8 @@ import { getSlack } from '../../../src/lib/slack';
 import { fetchTelekomBalance } from '../../../src/lib/telekom';
 
 const SLACK_BOT_NAME = 'HEALTH_BOT_WEBHOOK';
-// const DEFAULT_CRON = '0 9 * * *'; // 09:00 daily
-const DEFAULT_CRON = '* * * * *'; // for testing: every min
+const DEFAULT_CRON = '0 9 * * *'; // 09:00 daily
+// const DEFAULT_CRON = '* * * * *'; // for testing: every min
 
 function getThresholdTmt(): number | null {
   const raw = process.env.TELEKOM_BALANCE_ALERT_THRESHOLD_TMT;
