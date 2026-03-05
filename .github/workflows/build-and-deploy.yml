@@ -37,7 +37,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: resolve
     outputs:
       short_sha: ${{ needs.resolve.outputs.short_sha }}
@@ -148,7 +148,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: build
     steps:
       - name: Setup SSH key and config
