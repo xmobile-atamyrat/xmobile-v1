@@ -1,4 +1,7 @@
-name: Deploy Healthcheck Service
+# Deploys the central batch runner (healthcheck + telekom-balance + any future cron jobs).
+# On the VM, the restart script should run: node batch-runner-dist/scripts/batch-runner/index.js
+# (or yarn start:batch-runner from app dir). Keep .env with SLACK_*, TELEKOM_*, etc.
+name: Deploy Batch Runner
 
 on:
   workflow_dispatch:
@@ -23,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build Healthcheck Service
-        run: yarn build:healthcheck
+      - name: Build Batch Runner
+        run: yarn build:batch-runner
 
       - name: Setup SSH key and config
         env:
@@ -61,12 +64,11 @@ jobs:
           VM_USER: ${{ secrets.VM_USER }}
           VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
 
-      - name: Upload healthcheck-dist to VM
+      - name: Upload batch-runner-dist to VM
         run: |
-          # Clean destination and upload new files
-          ssh deploy-vm "rm -rf ${{ env.APP_DIR_ON_VM }}/healthcheck-dist && mkdir -p ${{ env.APP_DIR_ON_VM }}/healthcheck-dist"
-          scp -r healthcheck-dist/* deploy-vm:${{ env.APP_DIR_ON_VM }}/healthcheck-dist/
+          ssh deploy-vm "rm -rf ${{ env.APP_DIR_ON_VM }}/batch-runner-dist && mkdir -p ${{ env.APP_DIR_ON_VM }}/batch-runner-dist"
+          scp -r batch-runner-dist/* deploy-vm:${{ env.APP_DIR_ON_VM }}/batch-runner-dist/
 
-      - name: Restart Healthcheck Service
+      - name: Restart Batch Runner
         run: |
           ssh deploy-vm "/home/ubuntu/scripts/restart-healthcheck.sh"
