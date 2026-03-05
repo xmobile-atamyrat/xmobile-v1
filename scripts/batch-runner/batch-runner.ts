@@ -5,10 +5,21 @@
  */
 
 import cron from 'node-cron';
+import { getSlack } from '../../src/lib/slack';
 import { jobs } from './jobs/registry';
 import type { BatchJob, JobSchedule } from './jobs/types';
 
 const LOG_PREFIX = '[BatchRunner]';
+const SLACK_BOT_NAME = 'HEALTH_BOT_WEBHOOK';
+
+async function sendJobFailureAlert(jobId: string, err: unknown): Promise<void> {
+  const slack = getSlack(SLACK_BOT_NAME);
+  if (!slack) return;
+  const message = err instanceof Error ? err.message : String(err);
+  await slack.send(
+    `:x: *Batch job failed*\nJob: \`${jobId}\`\nError: ${message}`,
+  );
+}
 
 function scheduleJob(job: BatchJob): void {
   const { id, schedule, run } = job;
@@ -18,6 +29,9 @@ function scheduleJob(job: BatchJob): void {
       await run();
     } catch (err) {
       console.error(`${LOG_PREFIX} Job "${id}" failed:`, err);
+      await sendJobFailureAlert(id, err).catch((alertErr) => {
+        console.error(`${LOG_PREFIX} Failed to send Slack alert:`, alertErr);
+      });
     }
   };
 

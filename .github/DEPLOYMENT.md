@@ -43,9 +43,9 @@ Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
 
 ## Deploy Batch Runner
 
-The workflow **Deploy Batch Runner** (`.github/workflows/deploy-healthcheck.yml`) builds and deploys the central batch/cron runner to the VM. This single process runs:
+The workflow **Deploy Batch Runner** (`.github/workflows/deploy-batch-runner.yml`) builds and deploys the central batch/cron runner to the VM. This single process runs:
 
-- **healthcheck** – Pings the app every 5s; sends Slack on down/recovery (same behavior as the old standalone healthcheck).
+- **healthcheck** – Pings the app every 5s; sends Slack on down/recovery.
 - **telekom-balance** – Runs daily at 09:00; if balance &lt; `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` (env), sends a Slack alert.
 
 ### Flow
@@ -59,7 +59,7 @@ The workflow **Deploy Batch Runner** (`.github/workflows/deploy-healthcheck.yml`
 On the VM, the script that restarts the service (e.g. `restart-healthcheck.sh`) should start the batch runner, for example:
 
 ```bash
-cd /home/ubuntu/xmobile-v1 && node --env-file=.env batch-runner-dist/scripts/batch-runner/index.js
+cd /home/ubuntu/xmobile-v1 && node --env-file=.env batch-runner-dist/scripts/batch-runner/batch-runner.js
 ```
 
 Or use `yarn start:batch-runner` if the app dir has `package.json` and `batch-runner-dist/` in place.

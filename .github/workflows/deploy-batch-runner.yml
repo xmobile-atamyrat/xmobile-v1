@@ -1,5 +1,5 @@
 # Deploys the central batch runner (healthcheck + telekom-balance + any future cron jobs).
-# On the VM, the restart script should run: node batch-runner-dist/scripts/batch-runner/index.js
+# On the VM, the restart script should run: node batch-runner-dist/scripts/batch-runner/batch-runner.js
 # (or yarn start:batch-runner from app dir). Keep .env with SLACK_*, TELEKOM_*, etc.
 name: Deploy Batch Runner
 
@@ -71,4 +71,4 @@ jobs:
 
       - name: Restart Batch Runner
         run: |
-          ssh deploy-vm "/home/ubuntu/scripts/restart-healthcheck.sh"
+          ssh deploy-vm "/home/ubuntu/scripts/restart-batch-runner.sh"
