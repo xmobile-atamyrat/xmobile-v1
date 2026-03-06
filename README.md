@@ -1,78 +1,88 @@
 # Xmobile
 
-An open-source e-commerce platform based in Turkmenistan, designed to introduce online payment and delivery systems. If you're looking to sharpen your web or mobile app development skills by working on complex systems, you're in the right place! The web is hosted at [xmobile.com.tm](xmobile.com.tm)
+Open-source e-commerce platform (Turkmenistan): online payment and delivery. Web: [xmobile.com.tm](https://xmobile.com.tm).
 
-## To contribute
+**Contributing:** Fork the repo, open a PR. Issues are enabled.
 
-- Fork the repo and make a PR to the source
-- Creating issues is enabled on the repo
+---
+
+## Prerequisites
+
+- **Node.js** ≥ 20
+- **Yarn**
+- **PostgreSQL**
+- **Git**
+
+---
 
 ## Setup
 
+### 1. Clone and install
+
 ```bash
+git clone <repo-url>
+cd xmobile-v1
 yarn install
+```
 
-docker-compose up -d db
-yarn db:generate
-yarn db:migrate
+**Pre-commit hook:** The `prepare` script installs [Husky](https://typicode.github.io/husky/) so each commit runs [lint-staged](https://github.com/okonet/lint-staged) (ESLint, Prettier, and `tsc --noEmit` on staged files). No extra step—just run `yarn install`. If hooks didn’t install (e.g. you had dependencies before adding Husky), run `yarn run prepare`.
 
+### 2. PostgreSQL
+
+Install and start PostgreSQL, then create a database for the app.
+
+**macOS (Homebrew):**
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb xmobile
+```
+
+Default connection (no password):  
+`postgresql://$(whoami)@localhost:5432/xmobile`
+
+**Windows:**
+
+1. Install from [postgresql.org/download/windows](https://www.postgresql.org/download/windows) (or `winget install PostgreSQL.PostgreSQL`).
+2. Start the service (Services app or `pg_ctl`).
+3. Create a database, e.g. in psql or pgAdmin:
+   ```sql
+   CREATE DATABASE xmobile;
+   ```
+4. Use a URL like: `postgresql://postgres:YOUR_PASSWORD@localhost:5432/xmobile`
+
+### 3. Environment
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and set at least:
+
+| Variable               | Example / note                |
+| ---------------------- | ----------------------------- |
+| `DATABASE_URL`         | Your Postgres URL (see above) |
+| `ACCESS_TOKEN_SECRET`  | Any long random string        |
+| `REFRESH_TOKEN_SECRET` | Any long random string        |
+
+Other vars are optional for local run; see [docs/environment.md](docs/environment.md).
+
+### 4. Database migrations
+
+```bash
+yarn db:generate-dev
+yarn db:migrate-dev
+```
+
+### 5. Run the app
+
+```bash
 yarn dev
 ```
 
-### Docker Setup
+App: **http://localhost:3003**
 
-```bash
-psql -U postgres
-create user xmobile with password 'password';
-grant all privileges on database postgres to xmobile;
-alter user xmobile createdb;
-grant all on schema public to xmobile;
-```
+---
 
-## CI/CD (for internal)
-
-1. Get the xmobile ssh public and private keys along with passphrase
-
-2. Compile the app for ubuntu amd64
-
-```bash
-# one time, make scripts/build.sh executable
-chmod +x scripts/build.sh
-
-./scripts/build.sh <SSH_PASSPHRASE>
-```
-
-`build.sh` script installs the packages, compresses the whole repo to a `tar` file and copies it to the Telekom VM to the following directory: `/home/ubuntu/tar-file/xmobile-v1.tar.gz`. It's necessary to install packages on your device since the `npm registry` is blocked by the telekom firewall
-
-3. ssh into the VM, unpack the `tar` file, and copy (overwrite) ONLY the `src` dir to `xmobile-v1`
-
-4. Build and restart the app
-
-```bash
-yarn build
-./restart-server.sh
-```
-
-## Tunnel to Telekom VM (for internal)
-
-```bash
-# SSH to AWS EC2 Instance (Bastion Host)
-ssh -i ~/.ssh/aws_proxy_tunnel.pem -L 2222:216.250.13.115:2222 ubuntu@3.87.187.215
-
-# SSH into the Target VM
-ssh -i ~/.ssh/xmobile -p 2222 ubuntu@localhost
-
-# SCP into the Target VM
-scp -i ~/.ssh/xmobile -P 2222 xmobile-v1.tar.gz ubuntu@localhost:/home/ubuntu/tar-file/xmobile-v1.tar.gz
-```
-
-## Backup data (for internal)
-
-```bash
-ssh xmobile
-./scripts/backup-data.sh
-exit
-
-./scripts/backup-production-data.sh
-./scripts/apply-backup.sh all # Note: apply-backup options are 'db', 'images', 'all'
-```
+For architecture, API, database, and features, see the **[docs](docs/)** folder.
