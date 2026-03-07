@@ -100,30 +100,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       }
     }
 
-    // multi-category filter: apply noindex to prevent indexing combinatorial pages
-    if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 1) {
-      const title = `${messages.allProducts} | ${BUSINESS_NAME}`;
-      const description = messages.productIndexDescription;
-      seoData = {
-        title,
-        description,
-        canonicalUrl: getCanonicalUrl(locale, 'product'),
-        hreflangLinks: generateHreflangLinks('product'),
-        noIndex: true, // Prevent indexing of multi-filter pages
-        ogTitle: title,
-        ogDescription: description,
-        ogLocale:
-          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
-          'ru_RU',
-      };
-      return {
-        props: {
-          messages,
-          seoData,
-        },
-      };
-    }
-
     if (targetCategoryId) {
       try {
         // breadcrumb logic: fetch all categories (server-side) to build full path
@@ -205,6 +181,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           'ru_RU',
       };
     }
+  }
+
+  // If the query contains ANY parameters other than 'categoryId', flag as noIndex for search and filter results.
+  const queryKeys = Object.keys(context.query);
+  const hasExtraFilters = queryKeys.some((key) => key !== 'categoryId');
+
+  if (hasExtraFilters && seoData) {
+    seoData.noIndex = true;
   }
 
   return {
