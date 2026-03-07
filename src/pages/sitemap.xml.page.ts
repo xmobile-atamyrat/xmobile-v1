@@ -1,9 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import dbClient from '@/lib/dbClient';
 import { GetServerSideProps } from 'next';
-
-// const BASE_URL = `https://${BASE_URL}`;
-
 import { localeOptions } from '@/pages/lib/constants';
 
 function generateSiteMap(
