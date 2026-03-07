@@ -104,7 +104,7 @@
   "lastWeekVisitCount": "Soňky 1 hepdelik sapar sany",
   "lastMonthVisitCount": "Soňky 1 aýlyk sapar sany",
   "telekomBalance": "Telekom Balans",
-  "allProducts": "Productshli önümler",
+  "allProducts": "Hämmä towarlar",
   "home": "Öý",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýaty, Türkmenabat şäheri, 3-nji çärýek mikro etrapçasy, S.A.Niýazow şaýoly, \"Xmobile\" dükany.",
@@ -335,5 +335,15 @@
   "hardUpdateDescription": "Bu wersiýa köne. Priloženiýany obnowleniýa edip, ulanmaga dowam ediň.",
   "softUpdateDescription": "Priloženiýanyň täze wersiýasy bar, gowulaşmalar we düzedişler bilen. Täzeläp görmegi maslahat berýäris.",
   "update": "Obnowleniýa",
-  "remindLater": "Soň ýadyma sal"
+  "remindLater": "Soň ýadyma sal",
+  "searchResultsFor": "Gözleg netijeleri: \"{keyword}\"",
+  "productIndexDescription": "Türkmenistanda smartfonlar, gadjetlär we elektronika iň gowy bahadan satyn alyňlar. Ofisialny garantiýa, ýurt boýunça çalt dostawka we dünýäniň iň gowy brendleri.",
+  "productDetailsMetaDescription": "{product} Türkmenistanda {price} bahadan satyn alyňlar. Ofisialny garantiýa, Türkmenistan boýunça çalt dostawka. Şu gün {businessName}-da onlaýn zakaz ediň.",
+  "categoryDetailsMetaDescription": "{category} Türkmenistanda iň gowy bahadan satyn alyňlar. Wybor köp, ofisialny garantiýa we Türkmenistan boýunça çalt dostawka {businessName}-da.",
+  "seoLocationSuffix": "Türkmenistanda",
+  "categoryIndexTitle": "Kategoriýalar boýunça söwda | {businessName} Türkmenistan",
+  "categoryIndexDescription": "{businessName}-da ähli haryt kategoriýalaryny görüň. Smartfonlar, gadjetlär we elektronika ofisialny garantiýa we Türkmenistan boýunça çalt dostawka bilen.",
+  "homeIndexTitle": "{businessName} | Türkmenistanda Smartfonlar we Elektronika Satyn Alyňlar",
+  "homeIndexDescription": "{businessName}-da smartfonlar, gadjetlär we elektronika satyn alyňlar. Türkmenistanda iň gowy bahalar, ofisialny garantiýa we ýurt boýunça çalt dostawka."
 }
+

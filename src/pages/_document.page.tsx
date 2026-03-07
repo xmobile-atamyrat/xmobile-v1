@@ -1,17 +1,17 @@
+import type { DocumentProps } from 'next/document';
 import { Head, Html, Main, NextScript } from 'next/document';
 
-export default function Document() {
+export default function Document(props: DocumentProps) {
+  // eslint-disable-next-line no-underscore-dangle
+  let locale = props.__NEXT_DATA__?.locale || 'ru';
+  if (locale === 'ch') {
+    // ch -> charjov not valid for html lang
+    locale = 'tk';
+  }
+
   return (
-    <Html lang="en" className="notranslate" translate="no">
-      <Head>
-        <link rel="icon" href="/logo/xm-logo.ico" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#d32f2f" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="XMobile" />
-        <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
-      </Head>
+    <Html lang={locale} className="notranslate" translate="no">
+      <Head />
       <body>
         <Main />
         <NextScript />
