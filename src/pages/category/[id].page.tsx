@@ -7,9 +7,19 @@ import {
   buildCategoryPath,
   findParentCategory,
 } from '@/pages/lib/categoryPathUtils';
-import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import {
+  ALL_PRODUCTS_CATEGORY_CARD,
+  LOCALE_TO_OG_LOCALE,
+} from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  generateBreadcrumbJsonLd,
+  generateCategoryMetaDescription,
+  generateCategoryTitle,
+  generateHreflangLinks,
+  getCanonicalUrl,
+} from '@/pages/lib/seo';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
@@ -105,7 +115,7 @@ export const getStaticProps: GetStaticProps = async ({
       categoryPath = buildCategoryPath(categoryId, allCategories);
     }
 
-    // Load messages
+    // Load messages first so they can be used for SEO generation
     let messages;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
@@ -116,12 +126,57 @@ export const getStaticProps: GetStaticProps = async ({
       );
     }
 
+    // Generate SEO Data
+    let seoData = null;
+    if (categoryData) {
+      const categoryName = parseName(categoryData.name, locale);
+      const title = generateCategoryTitle(
+        categoryPath,
+        messages?.seoLocationSuffix || '',
+        locale,
+      );
+      const description = generateCategoryMetaDescription(
+        messages?.categoryDetailsMetaDescription || '',
+        categoryName,
+      );
+      const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
+      const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
+
+      let ogImage = categoryData.imgUrl;
+      if (ogImage && !ogImage.startsWith('http')) {
+        ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
+      }
+
+      const breadcrumbJsonLd = generateBreadcrumbJsonLd(
+        categoryPath,
+        undefined, // no productName for category page
+        locale,
+        messages?.home as string,
+      );
+
+      seoData = {
+        title,
+        description,
+        canonicalUrl,
+        hreflangLinks,
+        ogLocale:
+          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+          'ru_RU',
+        ogType: 'website',
+        ogTitle: title,
+        ogDescription: description,
+        ogImage,
+        breadcrumbJsonLd,
+      };
+    }
+
     return {
       props: {
         category: categoryData,
         parentCategory,
         categoryPath,
         messages,
+        seoData,
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };

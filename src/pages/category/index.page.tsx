@@ -3,6 +3,7 @@ import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { categoryPageClasses } from '@/styles/classMaps/category';
 import { interClassname } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
@@ -11,9 +12,26 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const locale = context.locale || 'ru';
+  const messages = (await import(`../../i18n/${locale}.json`)).default;
+  const title = messages?.categoryIndexTitle;
+  const description = messages?.categoryIndexDescription;
+
+  const seoData = {
+    title,
+    description,
+    canonicalUrl: getCanonicalUrl(locale, 'category'),
+    hreflangLinks: generateHreflangLinks('category'),
+    ogTitle: title,
+    ogDescription: description,
+    ogLocale: locale,
+    ogType: 'website',
+  };
+
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages,
+      seoData,
     },
   };
 };
