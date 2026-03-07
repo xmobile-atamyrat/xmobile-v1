@@ -4,6 +4,8 @@ import { GetServerSideProps } from 'next';
 
 // const BASE_URL = `https://${BASE_URL}`;
 
+import { localeOptions } from '@/pages/lib/constants';
+
 function generateSiteMap(
   products: { id: string; updatedAt: Date }[],
   categories: { id: string; updatedAt: Date }[],
@@ -11,56 +13,70 @@ function generateSiteMap(
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <!-- Static Pages -->
+     ${localeOptions
+       .map((locale) => {
+         return `
      <url>
-       <loc>${BASE_URL}/ru</loc>
+       <loc>${BASE_URL}/${locale}</loc>
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
      <url>
-       <loc>${BASE_URL}/ru/category</loc>
+       <loc>${BASE_URL}/${locale}/category</loc>
        <changefreq>daily</changefreq>
        <priority>0.8</priority>
-     </url>
+     </url>`;
+       })
+       .join('')}
 
      <!-- Categories -->
      ${categories
        .map(({ id, updatedAt }) => {
-         return `
+         return localeOptions
+           .map((locale) => {
+             return `
        <url>
-           <loc>${BASE_URL}/ru/category/${id}</loc>
+           <loc>${BASE_URL}/${locale}/category/${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>weekly</changefreq>
            <priority>0.7</priority>
-       </url>
-     `;
+       </url>`;
+           })
+           .join('');
        })
        .join('')}
 
      <!-- Category Product Landing Pages -->
      ${categories
        .map(({ id, updatedAt }) => {
-         return `
+         return localeOptions
+           .map((locale) => {
+             return `
        <url>
-           <loc>${BASE_URL}/ru/product?categoryId=${id}</loc>
+           <loc>${BASE_URL}/${locale}/product?categoryId=${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.8</priority>
-       </url>
-     `;
+       </url>`;
+           })
+           .join('');
        })
        .join('')}
 
      <!-- Products -->
      ${products
        .map(({ id, updatedAt }) => {
-         return `
+         return localeOptions
+           .map((locale) => {
+             return `
        <url>
-           <loc>${BASE_URL}/ru/product/${id}</loc>
+           <loc>${BASE_URL}/${locale}/product/${id}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.9</priority>
-       </url>
-     `;
+       </url>`;
+           })
+           .join('');
        })
        .join('')}
  
