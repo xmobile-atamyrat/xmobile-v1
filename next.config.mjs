@@ -9,10 +9,6 @@ const nextConfig = {
     defaultLocale: 'ru',
     localeDetection: false,
   },
-  experimental: {
-    workerThreads: false,
-    cpus: 2,
-  },
   staticPageGenerationTimeout: 180
 };
 
