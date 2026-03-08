@@ -136,6 +136,10 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="XMobile" />
+        <meta
+          name="google-site-verification"
+          content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY}
+        />
         <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
 
         <title>{seoData?.title || 'X-mobile'}</title>
