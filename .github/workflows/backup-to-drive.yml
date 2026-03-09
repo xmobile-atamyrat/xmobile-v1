@@ -72,35 +72,35 @@ jobs:
       - name: Configure rclone and upload to Google Drive
         env:
           GDRIVE_SA_JSON: ${{ secrets.GDRIVE_SA_JSON }}
-          GDRIVE_FOLDER: ${{ secrets.GDRIVE_FOLDER }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           mkdir -p ~/.config/rclone
           printf '%s\n' "$GDRIVE_SA_JSON" > /tmp/gdrive-sa.json
           chmod 600 /tmp/gdrive-sa.json
-          cat > ~/.config/rclone/rclone.conf << 'RCLONE'
+          # root_folder_id = folder in YOUR Drive shared with the service account (uses your quota)
+          cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
           type = drive
           scope = drive
           service_account_file = /tmp/gdrive-sa.json
-          RCLONE
+          root_folder_id = ${GDRIVE_FOLDER_ID}
+          EOF
 
           BACKUP_DATE=$(date -u +%Y-%m-%d)
-          REMOTE_PATH="gdrive:${GDRIVE_FOLDER}/${BACKUP_DATE}"
+          REMOTE_PATH="gdrive:${BACKUP_DATE}"
           echo "Uploading to $REMOTE_PATH"
           rclone copy backup/ "$REMOTE_PATH/" -v
 
       - name: Prune old backups (keep 3)
-        env:
-          GDRIVE_FOLDER: ${{ secrets.GDRIVE_FOLDER }}
         run: |
-          FOLDERS=$(rclone lsd "gdrive:${GDRIVE_FOLDER}" --format "p" 2>/dev/null | sort)
+          FOLDERS=$(rclone lsd gdrive: --format "p" 2>/dev/null | sort)
           COUNT=$(echo "$FOLDERS" | grep -c . || true)
           if [ "$COUNT" -gt 3 ]; then
             TO_DELETE=$((COUNT - 3))
             echo "$FOLDERS" | head -n "$TO_DELETE" | while read -r dir; do
               [ -z "$dir" ] && continue
               echo "Removing old backup: $dir"
-              rclone purge "gdrive:${GDRIVE_FOLDER}/${dir}" -v
+              rclone purge "gdrive:${dir}" -v
             done
           else
             echo "Total backup folders: $COUNT (no pruning needed)"

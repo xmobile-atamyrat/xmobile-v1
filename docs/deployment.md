@@ -82,20 +82,25 @@ The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`)
 1. **SSH to VM** – Uses the same VM secrets as Build and Deploy.
 2. **Run backup on VM** – Executes `/home/ubuntu/scripts/backup-data.sh all` on the VM (creates `db_backup.sql` and `images.tar.gz`).
 3. **Copy to runner** – SCP of `images.tar.gz` and `db_backup.sql` from the VM to the runner.
-4. **Upload to Google Drive** – rclone uploads to `gdrive:<GDRIVE_FOLDER>/<YYYY-MM-DD>/` (e.g. `xmobile/backup/2025-03-09/`).
-5. **Prune** – Keeps only the latest 3 backup folders under `GDRIVE_FOLDER`; older date folders are deleted.
+4. **Upload to Google Drive** – rclone uploads to a date-named subfolder (e.g. `2025-03-09/`) inside the folder identified by `GDRIVE_FOLDER_ID`.
+5. **Prune** – Keeps only the latest 3 backup folders; older date folders are deleted.
 
 ### Required repository secrets (in addition to VM secrets)
 
 | Secret | Description |
 |--------|-------------|
-| `GDRIVE_FOLDER` | Path under My Drive, e.g. `xmobile/backup`. Date subfolders (YYYY-MM-DD) are created under this. |
+| `GDRIVE_FOLDER_ID` | Google Drive folder ID (from the folder URL: `drive.google.com/.../folders/<ID>`). Must be a folder in **your** My Drive that you shared with the service account. |
 | `GDRIVE_SA_JSON` | Full contents of the Google Cloud service account JSON key file. |
 
 ### Google Drive setup
 
-- Create a Google Cloud project, enable **Google Drive API**, and create a **service account** with a JSON key.
-- In Google Drive, create the target folder (e.g. `xmobile/backup` under My Drive) and **share it** with the service account email (e.g. `xxx@yyy.iam.gserviceaccount.com`) with **Editor** access so rclone can create folders and upload files.
+Service accounts have no storage quota of their own. Uploads must go into a folder in **your** Drive that you share with the service account.
+
+1. Create a Google Cloud project, enable **Google Drive API**, and create a **service account** with a JSON key.
+2. In Google Drive (your account), create the target folder (e.g. `xmobile/backup` under My Drive).
+3. Open that folder and copy the **folder ID** from the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`.
+4. **Share the folder** with the service account email (e.g. `xxx@yyy.iam.gserviceaccount.com`) with **Editor** access.
+5. Add the folder ID as the `GDRIVE_FOLDER_ID` secret in GitHub. Date subfolders (YYYY-MM-DD) will be created inside this folder.
 
 ### VM requirements
 
