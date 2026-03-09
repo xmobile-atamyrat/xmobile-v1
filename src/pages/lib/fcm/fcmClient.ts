@@ -10,8 +10,13 @@ import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
 // FCM storage keys for localStorage
+// NOTE:
+// - FCM_TOKEN_REGISTERED_KEY is used by existing browser flows (banner, logout)
+// - FCM_TOKEN_REGISTERED_USER_KEY is used only for WebView-native FCM (ties token to accessToken)
 export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
 export const FCM_TOKEN_REGISTERED_KEY = 'fcm_token_registered';
+export const FCM_TOKEN_REGISTERED_USER_KEY =
+  'fcm_token_registered_access_token';
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -290,4 +295,140 @@ export function getDeviceInfo(): string {
   };
 
   return JSON.stringify(info);
+}
+
+let pendingNativeTokenPromise: Promise<string | null> | null = null;
+
+/**
+ * Request native FCM token via React Native WebView bridge (Android only for now)
+ * Used when running inside the mobile app WebView instead of browser FCM.
+ */
+export function getNativeFCMTokenViaBridge(): Promise<string | null> {
+  if (!isWebView()) {
+    return Promise.resolve(null);
+  }
+
+  if (typeof window === 'undefined') {
+    return Promise.resolve(null);
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView || typeof rnWebView.postMessage !== 'function') {
+    console.warn('[FCM] ReactNativeWebView bridge not available');
+    return Promise.resolve(null);
+  }
+
+  if (pendingNativeTokenPromise) {
+    return pendingNativeTokenPromise;
+  }
+
+  pendingNativeTokenPromise = new Promise<string | null>((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const rawData = event.data;
+        const parsed =
+          typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+        if (parsed && parsed.type === 'FCM_TOKEN' && parsed.payload?.token) {
+          window.removeEventListener('message', handler);
+          pendingNativeTokenPromise = null;
+          resolve(parsed.payload.token as string);
+        }
+      } catch (error) {
+        if (
+          typeof event.data === 'string' &&
+          event.data.includes('FCM_TOKEN')
+        ) {
+          console.error(
+            '[FCM] Failed to parse expected FCM message from WebView bridge:',
+            error,
+          );
+        }
+      }
+    }
+
+    window.addEventListener('message', handler);
+
+    // Send request to native layer
+    try {
+      rnWebView.postMessage(
+        JSON.stringify({
+          type: 'REQUEST_FCM_TOKEN',
+        }),
+      );
+    } catch (error) {
+      console.error('[FCM] Failed to post REQUEST_FCM_TOKEN to native:', error);
+      window.removeEventListener('message', handler);
+      pendingNativeTokenPromise = null;
+      resolve(null);
+      return;
+    }
+
+    // Safety timeout: if no response, resolve with null
+    setTimeout(() => {
+      if (pendingNativeTokenPromise) {
+        console.warn('[FCM] Token request from WebView bridge timed out');
+        window.removeEventListener('message', handler);
+        pendingNativeTokenPromise = null;
+        resolve(null);
+      }
+    }, 10000);
+  });
+
+  return pendingNativeTokenPromise;
+}
+
+/**
+ * Ensure native FCM token is registered when running inside WebView.
+ * Reuses existing /api/fcm/token endpoint and storage keys without schema changes.
+ */
+export async function ensureNativeFCMTokenRegisteredInWebView(
+  accessToken: string,
+): Promise<void> {
+  if (!isWebView()) {
+    return;
+  }
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const existingToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+    const registeredAccessToken = localStorage.getItem(
+      FCM_TOKEN_REGISTERED_USER_KEY,
+    );
+
+    const token = await getNativeFCMTokenViaBridge();
+    if (!token) {
+      console.warn('[FCM] No native FCM token received in WebView');
+      return;
+    }
+
+    if (existingToken === token && registeredAccessToken === accessToken) {
+      console.log(
+        '[FCM] Native FCM token already registered for this user (WebView)',
+      );
+      return;
+    }
+
+    const registered = await registerFCMToken(
+      token,
+      accessToken,
+      getDeviceInfo(),
+    );
+
+    if (registered) {
+      localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, accessToken);
+      console.log('[FCM] Native FCM token registered successfully (WebView)');
+    } else {
+      console.error('[FCM] Failed to register native FCM token (WebView)');
+    }
+  } catch (error) {
+    console.error(
+      '[FCM] Error while registering native FCM token in WebView:',
+      error,
+    );
+  }
 }
