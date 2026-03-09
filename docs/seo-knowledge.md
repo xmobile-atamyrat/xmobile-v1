@@ -36,7 +36,7 @@ Structured data is code that helps search engines understand the content of the 
 ## 2. Implementation Details
 
 ### File Structure & Logic
-All SEO logic is centralized in [`src/pages/lib/seo.ts`](file:///src/pages/lib/seo.ts).
+All SEO logic is centralized in [`src/pages/lib/seo.ts`](../src/pages/lib/seo.ts).
 
 *   `generateProductTitle`: Creates titles like "{Product} | {Brand} - Xmobile".
 *   `generateMetaDescription`: Creates descriptions from templates.
@@ -88,7 +88,7 @@ This array drives the `LocalBusiness` schema generation. To add a new store, sim
 ## 3. Design Decisions & Standards
 
 ### Naming Conventions
-*   **Business Name**: "X-Mobile" (defined in `BUSINESS_NAME` constant). used consistently across all meta tags and schemas.
+*   **Business Name**: "X-Mobile" (defined in `BUSINESS_NAME` constant). Used consistently across all meta tags and schemas.
 *   **Store Names**: Kept simple (e.g., "Turkmenabat") in config, used directly in schema as the official name.
 
 ### Data Structures & Schemas

@@ -21,7 +21,7 @@ import { parseName } from '@/pages/lib/utils';
  * @param path - Page path without leading slash, e.g., "product/123"
  * @returns Full canonical URL, e.g., "https://xmobile.com.tm/ru/product/123"
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Canonical URLs.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Canonical URLs.
  */
 export function getCanonicalUrl(locale: string, path: string): string {
   // Remove leading slash if present
@@ -37,7 +37,7 @@ export function getCanonicalUrl(locale: string, path: string): string {
  * @param defaultLocale - Default locale for x-default fallback (usually 'ru')
  * @returns Array of hreflang link objects for all locales + x-default
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Hreflang tags.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Hreflang tags.
  */
 export function generateHreflangLinks(
   path: string,
@@ -71,7 +71,7 @@ export function generateHreflangLinks(
  * @param brandName - Localized brand name (optional)
  * @returns SEO title, truncated if too long
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Product Titles.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Product Titles.
  */
 export function generateProductTitle(
   productName: string,
@@ -102,7 +102,7 @@ export function generateProductTitle(
  * @param price - Optional product price (without currency)
  * @returns Meta description, truncated to 160 chars
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Meta Descriptions.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Meta Descriptions.
  */
 export function generateProductMetaDescription(
   template: string,
@@ -187,7 +187,7 @@ export function generateSearchTitle(template: string, keyword: string): string {
  * @param params - Product data for schema
  * @returns JSON-LD Product schema object
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Structured Data.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Structured Data.
  */
 export function generateProductJsonLd(params: {
   productName: string;
@@ -360,7 +360,7 @@ export function generateLocalBusinessSchema() {
  * @param homeLabel - home breadcrumb name in current locale
  * @returns BreadcrumbList JSON-LD schema
  *
- * @see {@link ../../../docs/SEO_KNOWLEDGE.md} for details on Breadcrumb Schema.
+ * @see {@link ../../../docs/seo-knowledge.md} for details on Breadcrumb Schema.
  */
 export function generateBreadcrumbJsonLd(
   categoryPath: ExtendedCategory[],

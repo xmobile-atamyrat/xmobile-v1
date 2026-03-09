@@ -11,4 +11,6 @@ Concise reference for contributors. Start here, then jump to the topic you need.
 | [**Features**](features.md) | Auth, cart/checkout, orders, admin, procurement, chat, FCM, i18n. |
 | [**Development**](development.md) | Env, running WS/batch-runner, lint, workflow. |
 | [**Environment**](environment.md) | All env vars with short descriptions. |
-| [**FCM setup**](FCM_SETUP.md) | Firebase and VAPID setup for push notifications. |
+| [**FCM setup**](fcm-setup.md) | Firebase and VAPID setup for push notifications. |
+| [**Deployment**](deployment.md) | Build and Deploy, Deploy Batch Runner, Daily Backup to Drive (GitHub Actions). |
+| [**SEO**](seo-knowledge.md) | Meta tags, structured data, sitemap, and SEO implementation. |
