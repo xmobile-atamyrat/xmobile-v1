@@ -31,7 +31,7 @@ Short reference to major features and where they live.
 ## Notifications & FCM
 
 - **In-app:** `api/notifications`, `api/notifications/count`, `mark-read`; models `InAppNotification`, `FCMToken`.
-- **Push:** Firebase Cloud Messaging. Client: `lib/fcm/`; server: `api/fcm/token`, WS server FCM. **Setup:** [FCM_SETUP.md](FCM_SETUP.md).
+- **Push:** Firebase Cloud Messaging. Client: `lib/fcm/`; server: `api/fcm/token`, WS server FCM. **Setup:** [fcm-setup.md](fcm-setup.md).
 
 ## i18n
 

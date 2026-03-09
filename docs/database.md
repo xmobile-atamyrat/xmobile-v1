@@ -25,7 +25,7 @@ Requires `DATABASE_URL` in `.env.local`.
 | **ChatSession** / **ChatMessage** | Chat sessions and messages |
 | **InAppNotification** | In-app notifications (chat, order status) |
 | **FCMToken** | Device FCM tokens per user |
-| **ProcurementSupplier**, **ProcurementProduct**, **ProcurementOrder*** | Procurement (suppliers, products, orders) |
+| **ProcurementSupplier**, **ProcurementProduct**, **ProcurementOrder** | Procurement (suppliers, products, orders) |
 | **AppVersion** | Min app versions per platform (iOS/Android) |
 
 Relations and enums are in the schema. Use Prisma Studio or the schema file for full field lists.

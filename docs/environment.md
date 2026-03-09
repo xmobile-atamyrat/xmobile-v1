@@ -33,4 +33,4 @@ Copy `.env.example` to `.env.local` for local dev. Below: purpose and whether th
 | `FIREBASE_ADMIN_SDK_PATH` | Path to service account JSON (server-side FCM) |
 | `FCM_FAILURE_THRESHOLD` | Optional failure threshold |
 
-See [FCM_SETUP.md](FCM_SETUP.md) for obtaining and setting these.
+See [fcm-setup.md](fcm-setup.md) for obtaining and setting these.
