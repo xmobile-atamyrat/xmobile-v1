@@ -77,6 +77,8 @@ jobs:
           mkdir -p ~/.config/rclone
           printf '%s\n' "$GDRIVE_SA_JSON" > /tmp/gdrive-sa.json
           chmod 600 /tmp/gdrive-sa.json
+          # Trim folder ID (secrets can have trailing newline when pasted)
+          GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
           # root_folder_id = folder in YOUR Drive shared with the service account (uses your quota)
           cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
@@ -85,6 +87,10 @@ jobs:
           service_account_file = /tmp/gdrive-sa.json
           root_folder_id = ${GDRIVE_FOLDER_ID}
           EOF
+
+          # Verify the folder is accessible (fails with clear error if ID wrong or not shared)
+          echo "Checking access to backup folder..."
+          rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and that the folder is shared with the service account (Editor)."; exit 1; }
 
           BACKUP_DATE=$(date -u +%Y-%m-%d)
           REMOTE_PATH="gdrive:${BACKUP_DATE}"
