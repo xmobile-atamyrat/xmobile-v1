@@ -55,12 +55,11 @@ jobs:
           VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
 
       - name: Run backup on VM
-        run: ssh deploy-vm "/home/ubuntu/scripts/backup-data.sh all"
+        run: ssh deploy-vm "/home/ubuntu/scripts/backup-data.sh db"
 
       - name: Copy backup files from VM to runner
         run: |
           mkdir -p backup
-          scp deploy-vm:${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz backup/
           scp deploy-vm:${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql backup/
 
       - name: Install rclone
@@ -109,5 +108,5 @@ jobs:
 
       - name: Delete backup files from VM
         run: |
-          ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz ${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql"
-          echo "Removed images.tar.gz and db_backup.sql from VM"
+          ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql"
+          echo "Removed db_backup.sql from VM"
