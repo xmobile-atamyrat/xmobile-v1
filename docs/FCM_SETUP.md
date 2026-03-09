@@ -31,10 +31,10 @@ The VAPID key is required for web push notifications. To get it:
 
 ### 3. Firebase Admin SDK Credentials
 
-The Admin SDK credentials file should already exist at:
+The Admin SDK credentials file should be placed at:
 
 ```
-fcm/xmobile-54bc9-firebase-adminsdk-fbsvc-d665c5ae1a.json
+fcm-configs/xmobile-54bc9-firebase-adminsdk-fbsvc-d665c5ae1a.json
 ```
 
 If you need to regenerate it:
@@ -43,7 +43,7 @@ If you need to regenerate it:
 2. Go to **Service accounts** tab
 3. Click **Generate new private key**
 4. Download the JSON file
-5. Place it in the `fcm/` directory
+5. Place it in the `fcm-configs/` directory
 6. Update `FIREBASE_ADMIN_SDK_PATH` if using a different path
 
 ## Current Default Values
