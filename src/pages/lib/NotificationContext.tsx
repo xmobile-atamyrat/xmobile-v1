@@ -69,11 +69,12 @@ export const NotificationContextProvider = ({
   }, [accessToken]);
 
   const loadNotifications = useCallback(
-    async (cursorId?: string) => {
+    async (cursorId?: string | null) => {
       if (!accessToken) return;
 
       // Use provided cursorId or the stored nextCursor
-      const actualCursorId = cursorId ?? nextCursorRef.current;
+      const actualCursorId =
+        cursorId === null ? undefined : cursorId ?? nextCursorRef.current;
 
       // If we have a cursor, we're loading more. Otherwise, reset the list
       // But don't reset if WebSocket batch was already received (to preserve unread notifications)
@@ -107,8 +108,7 @@ export const NotificationContextProvider = ({
             let notificationsToAdd: InAppNotification[];
             if (wsBatchReceivedRef.current) {
               notificationsToAdd = newNotifications.filter(
-                (n: InAppNotification) =>
-                  !existingIds.has(n.id) && n.isRead === true,
+                (n: InAppNotification) => !existingIds.has(n.id),
               );
             } else {
               notificationsToAdd = newNotifications.filter(
@@ -225,6 +225,30 @@ export const NotificationContextProvider = ({
     [accessToken, refreshUnreadCount],
   );
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handler = (event: MessageEvent) => {
+      try {
+        const raw = event.data;
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (data?.type === 'FCM_FOREGROUND_MESSAGE') {
+          refreshUnreadCount();
+          if (!isConnected) {
+            loadNotifications(null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to process WebView message:', error);
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [refreshUnreadCount]);
+
   // Subscribe to WebSocket messages for notifications
   useEffect(() => {
     if (!isConnected) {
@@ -338,19 +362,13 @@ export const NotificationContextProvider = ({
       wsBatchReceivedRef.current = false;
       initialLoadDoneRef.current = false;
 
-      // Wait a short time for WebSocket to connect and send batch
-      // If WebSocket doesn't send batch within 2 seconds, load from API
-      const timeoutId = setTimeout(() => {
-        if (!wsBatchReceivedRef.current && !initialLoadDoneRef.current) {
-          loadNotifications();
-        }
-      }, 2000);
+      if (!wsBatchReceivedRef.current && !initialLoadDoneRef.current) {
+        loadNotifications(null);
+      }
 
       refreshUnreadCount();
 
-      return () => {
-        clearTimeout(timeoutId);
-      };
+      return () => {};
     }
     setNotifications([]);
     setUnreadCount(0);
