@@ -71,26 +71,25 @@ jobs:
 
       - name: Configure rclone and upload to Google Drive
         env:
-          GDRIVE_SA_JSON: ${{ secrets.GDRIVE_SA_JSON }}
+          GDRIVE_OAUTH_TOKEN: ${{ secrets.GDRIVE_OAUTH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           mkdir -p ~/.config/rclone
-          printf '%s\n' "$GDRIVE_SA_JSON" > /tmp/gdrive-sa.json
-          chmod 600 /tmp/gdrive-sa.json
           # Trim folder ID (secrets can have trailing newline when pasted)
           GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
-          # root_folder_id = folder in YOUR Drive shared with the service account (uses your quota)
-          cat > ~/.config/rclone/rclone.conf << EOF
-          [gdrive]
-          type = drive
-          scope = drive
-          service_account_file = /tmp/gdrive-sa.json
-          root_folder_id = ${GDRIVE_FOLDER_ID}
-          EOF
+          # OAuth: uploads use your Google account quota (service accounts have no quota for new files in shared folders)
+          {
+            echo '[gdrive]'
+            echo 'type = drive'
+            echo 'scope = drive'
+            printf 'token = %s\n' "$GDRIVE_OAUTH_TOKEN"
+            echo "root_folder_id = $GDRIVE_FOLDER_ID"
+          } > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
 
-          # Verify the folder is accessible (fails with clear error if ID wrong or not shared)
+          # Verify the folder is accessible
           echo "Checking access to backup folder..."
-          rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and that the folder is shared with the service account (Editor)."; exit 1; }
+          rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and GDRIVE_OAUTH_TOKEN."; exit 1; }
 
           BACKUP_DATE=$(date -u +%Y-%m-%d)
           REMOTE_PATH="gdrive:${BACKUP_DATE}"

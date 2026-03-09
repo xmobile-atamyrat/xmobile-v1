@@ -89,18 +89,31 @@ The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`)
 
 | Secret | Description |
 |--------|-------------|
-| `GDRIVE_FOLDER_ID` | Google Drive folder ID (from the folder URL: `drive.google.com/.../folders/<ID>`). Must be a folder in **your** My Drive that you shared with the service account. |
-| `GDRIVE_SA_JSON` | Full contents of the Google Cloud service account JSON key file. |
+| `GDRIVE_FOLDER_ID` | Google Drive folder ID. Open your backup folder in the browser; the ID is in the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`. |
+| `GDRIVE_OAUTH_TOKEN` | rclone OAuth token (JSON). See below to obtain it. |
 
-### Google Drive setup
+### Google Drive setup (OAuth)
 
-Service accounts have no storage quota of their own. Uploads must go into a folder in **your** Drive that you share with the service account.
+The workflow uses **OAuth** (your Google account) so uploads use your Drive quota. Service accounts cannot use quota when creating new files in shared folders.
 
-1. Create a Google Cloud project, enable **Google Drive API**, and create a **service account** with a JSON key.
-2. In Google Drive (your account), create the target folder (e.g. `xmobile/backup` under My Drive).
-3. Open that folder and copy the **folder ID** from the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`.
-4. **Share the folder** with the service account email (e.g. `xxx@yyy.iam.gserviceaccount.com`) with **Editor** access.
-5. Add the folder ID as the `GDRIVE_FOLDER_ID` secret in GitHub. Date subfolders (YYYY-MM-DD) will be created inside this folder.
+1. **Get the folder ID**  
+   In Google Drive, open the folder where backups should go (e.g. `xmobile/backup`). Copy the folder ID from the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`. Add it as the `GDRIVE_FOLDER_ID` secret.
+
+2. **Get the OAuth token**  
+   On your machine, install [rclone](https://rclone.org/), then run:
+   ```bash
+   rclone config
+   ```
+   - Choose **n** (new remote), name it **gdrive**.
+   - Storage: **Google Drive**.
+   - Leave client_id and client_secret blank (use rclone’s defaults).
+   - Scope: **1** (Full access).
+   - Use **auto** config (opens the browser); sign in with the Google account that owns the backup folder.
+   - Finish the wizard, then run:
+   ```bash
+   rclone config show gdrive
+   ```
+   Copy the entire **token** value (the JSON object on one line, e.g. `{"access_token":"...","refresh_token":"..."}`). Add it as the `GDRIVE_OAUTH_TOKEN` secret in GitHub (paste as a single line, no newlines).
 
 ### VM requirements
 
