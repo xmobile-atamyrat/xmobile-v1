@@ -1,5 +1,5 @@
-# Daily backup: run backup on VM, copy db + images to runner, upload to Google Drive.
-# Keeps only the latest 3 backup folders under xmobile/backup.
+# Daily backup: two independent jobs (DB + images) so VM/network issues in one don't block the other.
+# Each job: backup on VM → copy to runner → upload to Google Drive → prune (keep 3) → delete from VM.
 # Schedule: midnight UTC. Manual run: Actions → Daily Backup to Drive → Run workflow.
 name: Daily Backup to Drive
 
@@ -13,8 +13,8 @@ env:
   BACKUP_DIR_ON_VM_IMAGES: /home/ubuntu/tar-file
 
 jobs:
-  backup:
-    name: Backup and upload
+  backup-db:
+    name: Backup DB to Drive
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -54,10 +54,10 @@ jobs:
           VM_USER: ${{ secrets.VM_USER }}
           VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
 
-      - name: Run backup on VM
+      - name: Run DB backup on VM
         run: ssh deploy-vm "/home/ubuntu/scripts/backup-data.sh db"
 
-      - name: Copy backup files from VM to runner
+      - name: Copy DB backup from VM to runner
         run: |
           mkdir -p backup
           scp deploy-vm:${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql backup/
@@ -69,15 +69,13 @@ jobs:
           sudo cp rclone-*-linux-amd64/rclone /usr/local/bin/
           rclone version
 
-      - name: Configure rclone and upload to Google Drive
+      - name: Configure rclone and upload DB to Google Drive
         env:
           GDRIVE_OAUTH_TOKEN: ${{ secrets.GDRIVE_OAUTH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: |
           mkdir -p ~/.config/rclone
-          # Trim folder ID (secrets can have trailing newline when pasted)
           GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
-          # OAuth: uploads use your Google account quota (service accounts have no quota for new files in shared folders)
           {
             echo '[gdrive]'
             echo 'type = drive'
@@ -87,14 +85,13 @@ jobs:
           } > ~/.config/rclone/rclone.conf
           chmod 600 ~/.config/rclone/rclone.conf
 
-          # Verify the folder is accessible
           echo "Checking access to backup folder..."
           rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and GDRIVE_OAUTH_TOKEN."; exit 1; }
 
           BACKUP_DATE=$(date -u +%Y-%m-%d)
           REMOTE_PATH="gdrive:${BACKUP_DATE}"
-          echo "Uploading to $REMOTE_PATH"
-          rclone copy backup/ "$REMOTE_PATH/" -v
+          echo "Uploading db_backup.sql to $REMOTE_PATH"
+          rclone copy backup/db_backup.sql "$REMOTE_PATH/" -v
 
       - name: Prune old backups (keep 3)
         run: |
@@ -111,7 +108,107 @@ jobs:
             echo "Total backup folders: $COUNT (no pruning needed)"
           fi
 
-      - name: Delete backup files from VM
+      - name: Delete DB backup from VM
         run: |
           ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql"
           echo "Removed db_backup.sql from VM"
+
+  backup-images:
+    name: Backup images to Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Run images backup on VM
+        run: ssh deploy-vm "/home/ubuntu/scripts/backup-data.sh images"
+
+      - name: Copy images backup from VM to runner
+        run: |
+          mkdir -p backup
+          scp deploy-vm:${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz backup/
+
+      - name: Install rclone
+        run: |
+          curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip -o rclone-current-linux-amd64.zip
+          sudo cp rclone-*-linux-amd64/rclone /usr/local/bin/
+          rclone version
+
+      - name: Configure rclone and upload images to Google Drive
+        env:
+          GDRIVE_OAUTH_TOKEN: ${{ secrets.GDRIVE_OAUTH_TOKEN }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          mkdir -p ~/.config/rclone
+          GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
+          {
+            echo '[gdrive]'
+            echo 'type = drive'
+            echo 'scope = drive'
+            printf 'token = %s\n' "$GDRIVE_OAUTH_TOKEN"
+            echo "root_folder_id = $GDRIVE_FOLDER_ID"
+          } > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+
+          echo "Checking access to backup folder..."
+          rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and GDRIVE_OAUTH_TOKEN."; exit 1; }
+
+          BACKUP_DATE=$(date -u +%Y-%m-%d)
+          REMOTE_PATH="gdrive:${BACKUP_DATE}"
+          echo "Uploading images.tar.gz to $REMOTE_PATH"
+          rclone copy backup/images.tar.gz "$REMOTE_PATH/" -v
+
+      - name: Prune old backups (keep 3)
+        run: |
+          FOLDERS=$(rclone lsd gdrive: --format "p" 2>/dev/null | sort)
+          COUNT=$(echo "$FOLDERS" | grep -c . || true)
+          if [ "$COUNT" -gt 3 ]; then
+            TO_DELETE=$((COUNT - 3))
+            echo "$FOLDERS" | head -n "$TO_DELETE" | while read -r dir; do
+              [ -z "$dir" ] && continue
+              echo "Removing old backup: $dir"
+              rclone purge "gdrive:${dir}" -v
+            done
+          else
+            echo "Total backup folders: $COUNT (no pruning needed)"
+          fi
+
+      - name: Delete images backup from VM
+        run: |
+          ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz"
+          echo "Removed images.tar.gz from VM"
