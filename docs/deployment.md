@@ -70,20 +70,22 @@ Required env (in `.env` on the VM): `SLACK_HEALTH_BOT_WEBHOOK`, and for telekom 
 
 ## Daily Backup to Drive
 
-The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`) runs a full backup on the VM, copies the dump and images to the runner, uploads them to Google Drive, and prunes old backups.
+The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`) has **two independent jobs** that run in parallel: one for the DB dump and one for images. If one job fails or times out (e.g. VM/network issues), the other can still succeed.
 
 ### Triggers
 
 - **Schedule:** Every day at **00:00 UTC**.
 - **Manual:** **Actions → Daily Backup to Drive → Run workflow**.
 
-### Flow
+### Flow (each job runs in parallel)
 
-1. **SSH to VM** – Uses the same VM secrets as Build and Deploy.
-2. **Run backup on VM** – Executes `/home/ubuntu/scripts/backup-data.sh all` on the VM (creates `db_backup.sql` and `images.tar.gz`).
-3. **Copy to runner** – SCP of `images.tar.gz` and `db_backup.sql` from the VM to the runner.
-4. **Upload to Google Drive** – rclone uploads to a date-named subfolder (e.g. `2025-03-09/`) inside the folder identified by `GDRIVE_FOLDER_ID`.
-5. **Prune** – Keeps only the latest 3 backup folders; older date folders are deleted.
+**Job: Backup DB to Drive**  
+1. SSH to VM → run `backup-data.sh db` → copy `db_backup.sql` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 3) → delete `db_backup.sql` from VM.
+
+**Job: Backup images to Drive**  
+1. SSH to VM → run `backup-data.sh images` → copy `images.tar.gz` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 3) → delete `images.tar.gz` from VM.
+
+Both jobs write to the same date folder (e.g. `2025-03-09/`), so a successful run produces both `db_backup.sql` and `images.tar.gz` in that folder. Each job has its own 45-minute timeout.
 
 ### Required repository secrets (in addition to VM secrets)
 
