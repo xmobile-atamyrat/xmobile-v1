@@ -37,6 +37,11 @@ async function getOrRequestNativeFcmToken() {
   try {
     const token = await messaging().getToken();
     if (token) {
+      console.log(
+        '\n\n==== YOUR DEVICE FCM TOKEN ====\n' +
+          token +
+          '\n===============================\n\n',
+      );
       return token;
     }
     console.error('Failed to get FCM token');
@@ -57,10 +62,124 @@ function WebAppScreen() {
   const [hasWebviewError, setHasWebviewError] = useState(false);
   const canGoBackRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
+  const [pendingClickAction, setPendingClickAction] = useState<string | null>(
+    null,
+  );
+  const [isWebAppReady, setIsWebAppReady] = useState(false);
+  const [foregroundNotification, setForegroundNotification] = useState<{
+    title: string;
+    body: string;
+    data?: { [key: string]: any };
+  } | null>(null);
 
   // Dev mode is determined automatically by React Native's __DEV__ flag.
   // __DEV__ = true in debug/Metro builds, false in release/production builds.
   const isDevMode = __DEV__;
+  const baseUrl = isDevMode
+    ? 'http://localhost:3003'
+    : 'https://xmobile.com.tm';
+
+  const handleNotificationNavigationFromData = (data?: {
+    [key: string]: any;
+  }) => {
+    if (!data) {
+      return;
+    }
+
+    const rawClickAction = data.click_action;
+    const rawOrderId = data.orderId;
+    const rawSessionId = data.sessionId;
+
+    const clickAction =
+      typeof rawClickAction === 'string' ? rawClickAction : undefined;
+    const orderId = typeof rawOrderId === 'string' ? rawOrderId : undefined;
+    const sessionId =
+      typeof rawSessionId === 'string' ? rawSessionId : undefined;
+    let targetPath: string | null = null;
+    if (clickAction) {
+      targetPath = clickAction;
+    } else if (orderId) {
+      targetPath = `/orders/${orderId}`;
+    } else if (sessionId) {
+      targetPath = `/chat?sessionId=${sessionId}`;
+    }
+    if (!targetPath) {
+      return;
+    }
+
+    if (isWebAppReady && webViewRef.current) {
+      const payload = JSON.stringify({
+        type: 'DEEP_LINK',
+        payload: targetPath,
+      });
+      webViewRef.current.injectJavaScript(`
+            (function() {
+                window.dispatchEvent(new MessageEvent('message', {
+                    data: ${payload}
+                }));
+            })();
+            true;
+        `);
+    } else {
+      setPendingClickAction(targetPath);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+      const title = remoteMessage.notification?.title || 'Täze bildiriş';
+      const dataContent = remoteMessage.data?.content;
+      const body =
+        remoteMessage.notification?.body ||
+        (typeof dataContent === 'string' ? dataContent : undefined) ||
+        'Täze bildiriş aldyňyz.';
+
+      setForegroundNotification({
+        title,
+        body,
+        data: remoteMessage.data || {},
+      });
+
+      if (webViewRef.current && remoteMessage.data) {
+        const payload = {
+          type: 'FCM_FOREGROUND_MESSAGE',
+          payload: remoteMessage.data,
+        };
+        webViewRef.current.injectJavaScript(`
+          (function() {
+            window.dispatchEvent(new MessageEvent('message', {
+              data: ${JSON.stringify(payload)}
+            }));
+          })();
+          true;
+        `);
+      }
+    });
+
+    const unsubscribeOpened = messaging().onNotificationOpenedApp(
+      remoteMessage => {
+        if (remoteMessage?.data) {
+          handleNotificationNavigationFromData(remoteMessage.data);
+        }
+      },
+    );
+
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage?.data) {
+          handleNotificationNavigationFromData(remoteMessage.data);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to get initial notification:', error);
+      });
+
+    return () => {
+      unsubscribeOnMessage();
+      unsubscribeOpened();
+    };
+  }, []);
 
   useEffect(() => {
     canGoBackRef.current = canGoBack;
@@ -112,7 +231,6 @@ function WebAppScreen() {
     loadStoredData();
   }, []);
 
-  const appUrl = isDevMode ? 'http://localhost:3003' : 'https://xmobile.com.tm';
   const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
 
   useEffect(() => {
@@ -176,65 +294,111 @@ function WebAppScreen() {
       ]}
     >
       {!isOffline && !hasWebviewError ? (
-        <WebView
-          key={isDevMode ? 'dev' : 'prod'}
-          ref={webViewRef}
-          source={{ uri: appUrl }}
-          sharedCookiesEnabled={true}
-          thirdPartyCookiesEnabled={true}
-          cacheEnabled={true}
-          incognito={false}
-          domStorageEnabled={true}
-          onNavigationStateChange={navState => {
-            setCanGoBack(navState.canGoBack);
-          }}
-          style={styles.webview}
-          startInLoadingState={true}
-          javaScriptEnabled={true}
-          renderLoading={() => (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#d32f2f" />
-            </View>
+        <>
+          {foregroundNotification && (
+            <TouchableOpacity
+              activeOpacity={0.95}
+              style={styles.fcmBanner}
+              onPress={() => {
+                if (foregroundNotification?.data) {
+                  handleNotificationNavigationFromData(
+                    foregroundNotification.data,
+                  );
+                }
+                setForegroundNotification(null);
+              }}
+            >
+              <View style={styles.fcmBannerContent}>
+                <Text style={styles.fcmBannerTitle} numberOfLines={1}>
+                  {foregroundNotification.title}
+                </Text>
+                <Text style={styles.fcmBannerBody} numberOfLines={2}>
+                  {foregroundNotification.body}
+                </Text>
+              </View>
+            </TouchableOpacity>
           )}
-          allowsInlineMediaPlayback={true}
-          mediaPlaybackRequiresUserAction={false}
-          onError={syntheticEvent => {
-            const { nativeEvent } = syntheticEvent;
-            console.warn('WebView error: ', nativeEvent);
-            setHasWebviewError(true);
-          }}
-          onHttpError={syntheticEvent => {
-            const { nativeEvent } = syntheticEvent;
-            console.warn('WebView HTTP error: ', nativeEvent);
-          }}
-          onMessage={async event => {
-            try {
-              const data = JSON.parse(event.nativeEvent.data);
-              console.log('WebView Message received:', data.type);
+          <WebView
+            key={isDevMode ? 'dev' : 'prod'}
+            ref={webViewRef}
+            source={{ uri: baseUrl }}
+            sharedCookiesEnabled={true}
+            thirdPartyCookiesEnabled={true}
+            cacheEnabled={true}
+            incognito={false}
+            domStorageEnabled={true}
+            onNavigationStateChange={navState => {
+              setCanGoBack(navState.canGoBack);
+            }}
+            style={styles.webview}
+            startInLoadingState={true}
+            javaScriptEnabled={true}
+            renderLoading={() => (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#d32f2f" />
+              </View>
+            )}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            onError={syntheticEvent => {
+              const { nativeEvent } = syntheticEvent;
+              console.warn('WebView error: ', nativeEvent);
+              setHasWebviewError(true);
+            }}
+            onHttpError={syntheticEvent => {
+              const { nativeEvent } = syntheticEvent;
+              console.warn('WebView HTTP error: ', nativeEvent);
+            }}
+            onMessage={async event => {
+              try {
+                const data = JSON.parse(event.nativeEvent.data);
+                console.log('WebView Message received:', data.type);
 
-              if (data.type === 'REQUEST_APP_VERSION') {
-                // Web app is ready, now it's safe to send the version
-                const appVersion = DeviceInfo.getVersion();
-                if (webViewRef.current) {
-                  webViewRef.current.injectJavaScript(`
+                if (data.type === 'REQUEST_APP_VERSION') {
+                  // Web app is ready, now it's safe to send the version
+                  setIsWebAppReady(true);
+                  const appVersion = DeviceInfo.getVersion();
+                  if (webViewRef.current) {
+                    const appVersionPayload = {
+                      type: 'APP_VERSION',
+                      payload: appVersion,
+                    };
+                    const scripts: string[] = [
+                      `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
+                        appVersionPayload,
+                      )} }));`,
+                    ];
+
+                    if (pendingClickAction) {
+                      const deepLinkPayload = JSON.stringify({
+                        type: 'DEEP_LINK',
+                        payload: pendingClickAction,
+                      });
+                      scripts.push(`window.dispatchEvent(new MessageEvent('message', {
+                        data: ${deepLinkPayload}
+                    }));`);
+                    }
+
+                    webViewRef.current.injectJavaScript(`
                     (function() {
-                      window.dispatchEvent(new MessageEvent('message', {
-                        data: JSON.stringify({ type: 'APP_VERSION', payload: '${appVersion}' })
-                      }));
+                      ${scripts.join('\n')}
                     })();
                     true;
                   `);
-                }
-              } else if (data.type === 'REQUEST_FCM_TOKEN') {
-                const token = await getOrRequestNativeFcmToken();
+                    if (pendingClickAction) {
+                      setPendingClickAction(null);
+                    }
+                  }
+                } else if (data.type === 'REQUEST_FCM_TOKEN') {
+                  const token = await getOrRequestNativeFcmToken();
 
-                if (token && webViewRef.current) {
-                  const payload = JSON.stringify({
-                    type: 'FCM_TOKEN',
-                    payload: { token },
-                  });
+                  if (token && webViewRef.current) {
+                    const payload = JSON.stringify({
+                      type: 'FCM_TOKEN',
+                      payload: { token },
+                    });
 
-                  webViewRef.current.injectJavaScript(`
+                    webViewRef.current.injectJavaScript(`
                     (function() {
                       window.dispatchEvent(new MessageEvent('message', {
                         data: JSON.stringify(${payload})
@@ -242,39 +406,40 @@ function WebAppScreen() {
                     })();
                     true;
                   `);
-                }
-              } else if (data.type === 'AUTH_STATE') {
-                const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
-                if (REFRESH_TOKEN) {
-                  await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
-                  setStoredToken(REFRESH_TOKEN);
-                } else {
-                  // Token was deleted on web side — clear everything
+                  }
+                } else if (data.type === 'AUTH_STATE') {
+                  const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
+                  if (REFRESH_TOKEN) {
+                    await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
+                    setStoredToken(REFRESH_TOKEN);
+                  } else {
+                    // Token was deleted on web side — clear everything
+                    await AsyncStorage.removeItem('REFRESH_TOKEN');
+                    await CookieManager.clearAll(true);
+                    setStoredToken(null);
+                  }
+
+                  if (NEXT_LOCALE) {
+                    await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
+                    setStoredLocale(NEXT_LOCALE);
+                  } else {
+                    await AsyncStorage.removeItem('NEXT_LOCALE');
+                    setStoredLocale(null);
+                  }
+                } else if (data.type === 'LOGOUT') {
                   await AsyncStorage.removeItem('REFRESH_TOKEN');
+                  await AsyncStorage.removeItem('NEXT_LOCALE');
                   await CookieManager.clearAll(true);
                   setStoredToken(null);
-                }
-
-                if (NEXT_LOCALE) {
-                  await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
-                  setStoredLocale(NEXT_LOCALE);
-                } else {
-                  await AsyncStorage.removeItem('NEXT_LOCALE');
                   setStoredLocale(null);
                 }
-              } else if (data.type === 'LOGOUT') {
-                await AsyncStorage.removeItem('REFRESH_TOKEN');
-                await AsyncStorage.removeItem('NEXT_LOCALE');
-                await CookieManager.clearAll(true);
-                setStoredToken(null);
-                setStoredLocale(null);
+              } catch (err) {
+                console.error('Failed to parse WebView message:', err);
               }
-            } catch (err) {
-              console.error('Failed to parse WebView message:', err);
-            }
-          }}
-          injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
-        />
+            }}
+            injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
+          />
+        </>
       ) : (
         <View style={styles.offlineContainer}>
           <Image
@@ -358,6 +523,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  fcmBanner: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    zIndex: 100,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderLeftWidth: 5,
+    borderLeftColor: '#ff624c',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  fcmBannerContent: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  fcmBannerTitle: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  fcmBannerBody: {
+    color: '#4a4a4a',
+    fontSize: 14,
+    lineHeight: 18,
   },
 });
 
