@@ -106,3 +106,8 @@ jobs:
           else
             echo "Total backup folders: $COUNT (no pruning needed)"
           fi
+
+      - name: Delete backup files from VM
+        run: |
+          ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz ${{ env.BACKUP_DIR_ON_VM_DB }}/db_backup.sql"
+          echo "Removed images.tar.gz and db_backup.sql from VM"
