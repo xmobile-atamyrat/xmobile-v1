@@ -137,6 +137,12 @@ export async function sendFCMNotificationToUser(
           orderId: notification.data.orderId,
         }),
       },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'xmobile_notifications',
+        },
+      },
       tokens: tokenStrings,
     };
 
