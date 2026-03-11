@@ -2,7 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import CookieManager from '@react-native-cookies/cookies';
 import messaging from '@react-native-firebase/messaging';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   BackHandler,
@@ -66,11 +72,27 @@ function WebAppScreen() {
     null,
   );
   const [isWebAppReady, setIsWebAppReady] = useState(false);
-  const [foregroundNotification, setForegroundNotification] = useState<{
+
+  // Notification queue: multiple foreground notifications are queued and shown one at a time
+  type FcmNotification = {
     title: string;
     body: string;
     data?: { [key: string]: any };
-  } | null>(null);
+  };
+  const [notificationQueue, setNotificationQueue] = useState<FcmNotification[]>(
+    [],
+  );
+  const activeNotification = notificationQueue[0] ?? null;
+  const dismissNotification = useCallback(() => {
+    setNotificationQueue(prev => prev.slice(1));
+  }, []);
+
+  // Auto-dismiss the current banner after 4 seconds
+  useEffect(() => {
+    if (!activeNotification) return;
+    const timer = setTimeout(dismissNotification, 4000);
+    return () => clearTimeout(timer);
+  }, [activeNotification, dismissNotification]);
 
   // Dev mode is determined automatically by React Native's __DEV__ flag.
   // __DEV__ = true in debug/Metro builds, false in release/production builds.
@@ -134,11 +156,10 @@ function WebAppScreen() {
         (typeof dataContent === 'string' ? dataContent : undefined) ||
         'Täze bildiriş aldyňyz.';
 
-      setForegroundNotification({
-        title,
-        body,
-        data: remoteMessage.data || {},
-      });
+      setNotificationQueue(prev => [
+        ...prev,
+        { title, body, data: remoteMessage.data || {} },
+      ]);
 
       if (webViewRef.current && remoteMessage.data) {
         const payload = {
@@ -295,7 +316,7 @@ function WebAppScreen() {
     >
       {!isOffline && !hasWebviewError ? (
         <>
-          {foregroundNotification && (
+          {activeNotification && (
             <TouchableOpacity
               activeOpacity={0.95}
               style={[
@@ -307,20 +328,18 @@ function WebAppScreen() {
                 },
               ]}
               onPress={() => {
-                if (foregroundNotification?.data) {
-                  handleNotificationNavigationFromData(
-                    foregroundNotification.data,
-                  );
+                if (activeNotification.data) {
+                  handleNotificationNavigationFromData(activeNotification.data);
                 }
-                setForegroundNotification(null);
+                dismissNotification();
               }}
             >
               <View style={styles.fcmBannerContent}>
                 <Text style={styles.fcmBannerTitle} numberOfLines={1}>
-                  {foregroundNotification.title}
+                  {activeNotification.title}
                 </Text>
                 <Text style={styles.fcmBannerBody} numberOfLines={2}>
-                  {foregroundNotification.body}
+                  {activeNotification.body}
                 </Text>
               </View>
             </TouchableOpacity>
