@@ -298,7 +298,14 @@ function WebAppScreen() {
           {foregroundNotification && (
             <TouchableOpacity
               activeOpacity={0.95}
-              style={styles.fcmBanner}
+              style={[
+                styles.fcmBanner,
+                {
+                  top: insets.top + 12,
+                  left: insets.left + 12,
+                  right: insets.right + 12,
+                },
+              ]}
               onPress={() => {
                 if (foregroundNotification?.data) {
                   handleNotificationNavigationFromData(
@@ -526,9 +533,6 @@ const styles = StyleSheet.create({
   },
   fcmBanner: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
     zIndex: 100,
     backgroundColor: '#ffffff',
     borderRadius: 14,
