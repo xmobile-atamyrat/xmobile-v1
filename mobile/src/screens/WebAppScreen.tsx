@@ -72,6 +72,7 @@ function WebAppScreen() {
     null,
   );
   const [isWebAppReady, setIsWebAppReady] = useState(false);
+  const isWebAppReadyRef = useRef(false);
 
   // Notification queue: multiple foreground notifications are queued and shown one at a time
   type FcmNotification = {
@@ -129,7 +130,7 @@ function WebAppScreen() {
       return;
     }
 
-    if (isWebAppReady && webViewRef.current) {
+    if (isWebAppReadyRef.current && webViewRef.current) {
       const payload = JSON.stringify({
         type: 'DEEP_LINK',
         payload: targetPath,
@@ -201,6 +202,10 @@ function WebAppScreen() {
       unsubscribeOpened();
     };
   }, []);
+
+  useEffect(() => {
+    isWebAppReadyRef.current = isWebAppReady;
+  }, [isWebAppReady]);
 
   useEffect(() => {
     canGoBackRef.current = canGoBack;
