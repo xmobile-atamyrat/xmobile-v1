@@ -11,6 +11,7 @@ on:
 env:
   BACKUP_DIR_ON_VM_DB: /home/ubuntu/db_backup
   BACKUP_DIR_ON_VM_IMAGES: /home/ubuntu/tar-file
+  BACKUP_RETENTION_COUNT: 3
 
 jobs:
   backup-db:
@@ -93,12 +94,12 @@ jobs:
           echo "Uploading db_backup.sql to $REMOTE_PATH"
           rclone copy backup/db_backup.sql "$REMOTE_PATH/" -v
 
-      - name: Prune old backups (keep 3)
+      - name: Prune old backups
         run: |
-          FOLDERS=$(rclone lsd gdrive: --format "p" 2>/dev/null | sort)
+          FOLDERS=$(rclone lsd gdrive: 2>/dev/null | awk '{print $NF}' | sort)
           COUNT=$(echo "$FOLDERS" | grep -c . || true)
-          if [ "$COUNT" -gt 3 ]; then
-            TO_DELETE=$((COUNT - 3))
+          if [ "$COUNT" -gt ${{ env.BACKUP_RETENTION_COUNT }} ]; then
+            TO_DELETE=$((COUNT - ${{ env.BACKUP_RETENTION_COUNT }}))
             echo "$FOLDERS" | head -n "$TO_DELETE" | while read -r dir; do
               [ -z "$dir" ] && continue
               echo "Removing old backup: $dir"
@@ -193,12 +194,12 @@ jobs:
           echo "Uploading images.tar.gz to $REMOTE_PATH"
           rclone copy backup/images.tar.gz "$REMOTE_PATH/" -v
 
-      - name: Prune old backups (keep 3)
+      - name: Prune old backups
         run: |
-          FOLDERS=$(rclone lsd gdrive: --format "p" 2>/dev/null | sort)
+          FOLDERS=$(rclone lsd gdrive: 2>/dev/null | awk '{print $NF}' | sort)
           COUNT=$(echo "$FOLDERS" | grep -c . || true)
-          if [ "$COUNT" -gt 3 ]; then
-            TO_DELETE=$((COUNT - 3))
+          if [ "$COUNT" -gt ${{ env.BACKUP_RETENTION_COUNT }} ]; then
+            TO_DELETE=$((COUNT - ${{ env.BACKUP_RETENTION_COUNT }}))
             echo "$FOLDERS" | head -n "$TO_DELETE" | while read -r dir; do
               [ -z "$dir" ] && continue
               echo "Removing old backup: $dir"
