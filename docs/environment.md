@@ -15,6 +15,7 @@ Copy `.env.example` to `.env.local` for local dev. Below: purpose and whether th
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_HOST`, `NEXT_PUBLIC_PORT` | Host/port for canonical URLs |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY` | Google Search Console ownership verification (meta tag) |
 | `NEXT_PUBLIC_WEBSOCKET_PORT`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_WS_MAX_RECONNECT_ATTEMPTS` | WebSocket server (chat) |
 | `CATEGORY_IMAGES_DIR`, `PRODUCT_IMAGES_DIR` | Paths for category/product images |
 | `COMPRESSED_PRODUCT_IMAGES_DIR` | Compressed product images |
