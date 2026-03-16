@@ -11,7 +11,7 @@ on:
 env:
   BACKUP_DIR_ON_VM_DB: /home/ubuntu/db_backup
   BACKUP_DIR_ON_VM_IMAGES: /home/ubuntu/tar-file
-  BACKUP_RETENTION_COUNT: 3
+  BACKUP_RETENTION_COUNT: 10
 
 jobs:
   backup-db:
