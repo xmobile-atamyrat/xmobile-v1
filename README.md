@@ -85,4 +85,4 @@ App: **http://localhost:3003**
 
 ---
 
-For architecture, API, database, and features, see the **[docs](docs/)** folder.
+For architecture, API, database, SEO and features, see the **[docs](docs/)** folder.
