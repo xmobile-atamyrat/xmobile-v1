@@ -6,6 +6,7 @@ import {
 import {
   FCM_TOKEN_REGISTERED_KEY,
   FCM_TOKEN_STORAGE_KEY,
+  unregisterFCMToken,
 } from '@/pages/lib/fcm/fcmClient';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -45,7 +46,8 @@ export const getStaticProps = (async (context) => {
 }) satisfies GetStaticProps<object>;
 
 export default function Profile() {
-  const { user, setUser, setAccessToken, isLoading } = useUserContext();
+  const { user, setUser, accessToken, setAccessToken, isLoading } =
+    useUserContext();
   const [open, setOpen] = useState(false);
   const [openLang, setOpenLang] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState('ru');
@@ -353,6 +355,20 @@ export default function Profile() {
                 (async () => {
                   try {
                     handleToggle();
+
+                    if (accessToken) {
+                      const fcmToken = localStorage.getItem(
+                        FCM_TOKEN_STORAGE_KEY,
+                      );
+                      if (fcmToken) {
+                        try {
+                          await unregisterFCMToken(fcmToken, accessToken);
+                        } catch (err) {
+                          console.error('Failed to unregister FCM token', err);
+                        }
+                      }
+                    }
+
                     deleteCookie(AUTH_REFRESH_COOKIE_NAME);
                     deleteCookie(LOCALE_COOKIE_NAME);
                     setUser(undefined);
