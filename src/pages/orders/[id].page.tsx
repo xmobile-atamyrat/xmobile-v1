@@ -1,6 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -70,6 +71,7 @@ export default function OrderDetailPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [itemsDialogOpen, setItemsDialogOpen] = useState(false);
+  const { notifications, markAsRead } = useNotificationContext();
 
   const fetchOrder = async () => {
     if (!accessToken || !id || typeof id !== 'string') return;
@@ -121,6 +123,22 @@ export default function OrderDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accessToken, id, router]);
+
+  // Mark order notifications as read when they come from deeplink
+  useEffect(() => {
+    if (id && typeof id === 'string' && notifications.length > 0) {
+      const orderNotifications = notifications.filter(
+        (notification) => notification.orderId === id && !notification.isRead,
+      );
+      if (orderNotifications.length > 0) {
+        markAsRead(
+          orderNotifications.map((notification) => notification.id),
+        ).catch((error) => {
+          console.error('Failed to mark order notifications as read:', error);
+        });
+      }
+    }
+  }, [id, notifications, markAsRead]);
 
   const handleCancelOrder = async (cancellationReason?: string) => {
     if (!accessToken || !id || typeof id !== 'string') return;
