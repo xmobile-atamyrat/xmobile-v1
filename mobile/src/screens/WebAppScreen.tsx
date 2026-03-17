@@ -197,9 +197,27 @@ function WebAppScreen() {
         console.error('Failed to get initial notification:', error);
       });
 
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(token => {
+      if (token && webViewRef.current) {
+        const payload = JSON.stringify({
+          type: 'FCM_TOKEN_REFRESHED',
+          payload: { token },
+        });
+        webViewRef.current.injectJavaScript(`
+          (function() {
+            window.dispatchEvent(new MessageEvent('message', {
+              data: ${JSON.stringify(payload)}
+            }));
+          })();
+          true;
+        `);
+      }
+    });
+
     return () => {
       unsubscribeOnMessage();
       unsubscribeOpened();
+      unsubscribeTokenRefresh();
     };
   }, []);
 
