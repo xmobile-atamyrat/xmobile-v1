@@ -1,10 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { generateTokens } from '@/pages/api/utils/tokenUtils';
-import {
-  AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -43,11 +40,14 @@ export default async function handler(
       });
       delete user.password;
 
-      const { accessToken, refreshToken } = generateTokens(user.id, user.grade);
+      const { accessToken, refreshToken, refreshTokenMaxAge } = generateTokens(
+        user.id,
+        user.grade,
+      );
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${refreshTokenMaxAge}; Path=/`,
       );
 
       return res.status(200).json({
