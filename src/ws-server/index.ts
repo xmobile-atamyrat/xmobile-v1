@@ -91,8 +91,11 @@ const authenticateConnection = async (
           refreshToken,
           REFRESH_SECRET,
         );
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-          generateTokens(userId, grade);
+        const {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          refreshTokenMaxAge,
+        } = generateTokens(userId, grade);
 
         safeConnection.userId = userId;
         safeConnection.userGrade = grade;
@@ -101,6 +104,7 @@ const authenticateConnection = async (
           safeConnection,
           accessToken: newAccessToken,
           refreshToken: newRefreshToken,
+          refreshTokenMaxAge,
         };
       } catch (refreshTokenError) {
         console.error(
@@ -535,7 +539,7 @@ server.on('request', (req, res) => {
 
 wsServer.on('connection', async (connection, request) => {
   try {
-    const { safeConnection, accessToken, refreshToken } =
+    const { safeConnection, accessToken, refreshToken, refreshTokenMaxAge } =
       await authenticateConnection(request, connection);
 
     if (safeConnection?.userId != null) {
@@ -550,6 +554,7 @@ wsServer.on('connection', async (connection, request) => {
             type: 'auth_refresh',
             accessToken,
             refreshToken,
+            refreshTokenMaxAge,
           });
         } catch (error) {
           console.error(filepath, error);

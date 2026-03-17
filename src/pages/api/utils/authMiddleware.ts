@@ -1,8 +1,5 @@
 import { ACCESS_SECRET, generateTokens } from '@/pages/api/utils/tokenUtils';
-import {
-  AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
 import { UserRole } from '@prisma/client';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
@@ -67,8 +64,11 @@ const withAuth = (
             refreshToken,
             process.env.REFRESH_TOKEN_SECRET,
           );
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-            generateTokens(userId, grade);
+          const {
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            refreshTokenMaxAge,
+          } = generateTokens(userId, grade);
 
           req.headers.authorization = `Bearer ${newAccessToken}`;
           (req as AuthenticatedRequest).userId = userId;
@@ -76,7 +76,7 @@ const withAuth = (
 
           res.setHeader(
             'Set-Cookie',
-            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${refreshTokenMaxAge}; Path=/`,
           );
           res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           const originalResponse = await handler(
