@@ -2,7 +2,6 @@ import dbClient from '@/lib/dbClient';
 import { NotificationType } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import fs from 'fs';
-import path from 'path';
 import { FCMNotificationPayload, FCMSendResult } from './types';
 
 let firebaseApp: admin.app.App | null = null;
@@ -26,13 +25,14 @@ function initializeOrGetFirebaseApp(): admin.app.App {
     // App doesn't exist, continue to initialize
   }
 
-  const credentialsPath =
-    process.env.FIREBASE_ADMIN_SDK_PATH ||
-    path.join(
-      process.cwd(),
-      'fcm',
-      'xmobile-54bc9-firebase-adminsdk-fbsvc-d665c5ae1a.json',
+  const credentialsPath = process.env.FIREBASE_ADMIN_SDK_PATH;
+
+  if (!credentialsPath) {
+    console.error(
+      'FIREBASE_ADMIN_SDK_PATH environment variable is not defined',
     );
+    return null;
+  }
 
   try {
     const serviceAccountData = fs.readFileSync(credentialsPath, 'utf8');
@@ -154,6 +154,8 @@ export async function sendFCMNotificationToUser(
     let tokensSent = 0;
     let tokensFailed = 0;
 
+    const tokensToDelete: string[] = [];
+
     response.responses.forEach((resp, idx) => {
       const token = tokenStrings[idx];
       const tokenRecord = tokens[idx];
@@ -165,12 +167,32 @@ export async function sendFCMNotificationToUser(
         if (tokenRecord) failedTokenIds.push(tokenRecord.id);
         const error = resp.error;
 
+        if (
+          error?.code === 'messaging/invalid-registration-token' ||
+          error?.code === 'messaging/registration-token-not-registered'
+        ) {
+          if (tokenRecord) tokensToDelete.push(tokenRecord.token);
+        }
+
         console.error(
           `[FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,
           error?.message || 'Unknown error',
         );
       }
     });
+
+    if (tokensToDelete.length > 0) {
+      dbClient.fCMToken
+        .deleteMany({
+          where: { token: { in: tokensToDelete } },
+        })
+        .catch((dbError) => {
+          console.error(
+            '[FCM Service] Failed to delete stale FCM tokens:',
+            dbError,
+          );
+        });
+    }
 
     return {
       success: tokensSent > 0,
