@@ -140,6 +140,7 @@ export type ChatEvent =
       type: 'auth_refresh';
       accessToken: string;
       refreshToken: string;
+      refreshTokenMaxAge: number;
     }
   | {
       type: 'notification';

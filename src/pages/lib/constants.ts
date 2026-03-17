@@ -6,6 +6,8 @@ export const AUTH_REFRESH_COOKIE_NAME = 'REFRESH_TOKEN';
 export const REFRESH_TOKEN_EXPIRY = '7d';
 export const ACCESS_TOKEN_EXPIRY = '8h';
 export const REFRESH_TOKEN_EXPIRY_COOKIE = 60 * 60 * 24 * 7; // 7 days
+export const REFRESH_TOKEN_EXPIRY_LONG = '10y';
+export const REFRESH_TOKEN_EXPIRY_LONG_COOKIE = 60 * 60 * 24 * 365 * 10; // 10 years
 
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
