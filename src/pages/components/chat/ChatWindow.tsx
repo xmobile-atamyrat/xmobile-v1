@@ -4,6 +4,7 @@ import { useChatContext } from '@/pages/lib/ChatContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
+import { UserRole } from '@prisma/client';
 import { Box, Button, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
@@ -23,6 +24,11 @@ const ChatWindow = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const hasMore = messages.length >= 50;
+
+  // Superadmins observing a session they are not a participant of are view-only
+  const isViewOnly =
+    user?.grade === UserRole.SUPERUSER &&
+    !currentSession?.users?.some((u) => u.id === user.id);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -113,7 +119,7 @@ const ChatWindow = () => {
       {/* Input Area */}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected}
+        disabled={!isConnected || isViewOnly}
         isSending={isSendingMessage}
       />
     </Box>
