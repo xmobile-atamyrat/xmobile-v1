@@ -105,12 +105,12 @@ function WebAppScreen() {
     return `
       ${
         storedToken
-          ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
+          ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
           : ''
       }
       ${
         storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=31536000${secureAttr}; SameSite=Strict";`
+          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
           : ''
       }
       true;
