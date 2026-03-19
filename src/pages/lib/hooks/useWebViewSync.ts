@@ -44,13 +44,15 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
 
   // Effect 2: Purely for FCM Token Registration (fixes the dependency issue)
   useEffect(() => {
-    if (isWebView() && accessToken) {
-      ensureNativeFCMTokenRegisteredInWebView(accessToken).catch((error) => {
-        console.error(
-          '[WebViewSync] Failed to ensure native FCM token registration in WebView:',
-          error,
-        );
-      });
+    if (isWebView() && user && accessToken) {
+      ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
+        (error) => {
+          console.error(
+            '[WebViewSync] Failed to ensure native FCM token registration in WebView:',
+            error,
+          );
+        },
+      );
 
       const handleTokenRefresh = (event: MessageEvent) => {
         try {
@@ -61,7 +63,7 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
 
           if (data && data.type === 'FCM_TOKEN_REFRESHED') {
             console.log('[WebViewSync] Detected native FCM token refresh');
-            ensureNativeFCMTokenRegisteredInWebView(accessToken).catch(
+            ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
               console.error,
             );
           }
@@ -77,5 +79,5 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
       return () => window.removeEventListener('message', handleTokenRefresh);
     }
     return undefined;
-  }, [accessToken]);
+  }, [user, accessToken]);
 }
