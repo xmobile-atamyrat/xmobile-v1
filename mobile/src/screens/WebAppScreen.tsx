@@ -206,7 +206,7 @@ function WebAppScreen() {
         webViewRef.current.injectJavaScript(`
           (function() {
             window.dispatchEvent(new MessageEvent('message', {
-              data: ${JSON.stringify(payload)}
+              data: ${payload}
             }));
           })();
           true;
@@ -450,7 +450,7 @@ function WebAppScreen() {
                     webViewRef.current.injectJavaScript(`
                     (function() {
                       window.dispatchEvent(new MessageEvent('message', {
-                        data: JSON.stringify(${payload})
+                        data: ${payload}
                       }));
                     })();
                     true;
