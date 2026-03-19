@@ -10,4 +10,5 @@ export default function addCors(res: NextApiResponse) {
     'Access-Control-Allow-Headers',
     'X-Requested-With, Content-Type, Accept',
   );
+  res.setHeader('X-Robots-Tag', 'noindex');
 }
