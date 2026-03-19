@@ -2,7 +2,7 @@ import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  FCM_TOKEN_REGISTERED_KEY,
+  FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
   getDeviceInfo,
   getFCMToken,
@@ -37,6 +37,9 @@ export default function NotificationPermissionBanner() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const swMessageHandlerRef = useRef<((event: MessageEvent) => void) | null>(
+    null,
+  );
   const initializedRef = useRef(false);
 
   /**
@@ -119,7 +122,7 @@ export default function NotificationPermissionBanner() {
         console.log('[FCM Banner] ✅ Service worker message listener added');
 
         // Store handler for cleanup
-        (unsubscribeRef.current as any).swMessageHandler = messageHandler;
+        swMessageHandlerRef.current = messageHandler;
       }
 
       // Get FCM token
@@ -142,7 +145,7 @@ export default function NotificationPermissionBanner() {
 
         if (registered) {
           localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-          localStorage.setItem(FCM_TOKEN_REGISTERED_KEY, 'true');
+          localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, user.id);
           console.log('[FCM Banner] ✅ Token registered successfully');
         } else {
           console.error('[FCM Banner] Failed to register token');
@@ -167,20 +170,19 @@ export default function NotificationPermissionBanner() {
     if (!user || !accessToken) {
       // Clean up if user logs out
       if (unsubscribeRef.current) {
-        if (typeof unsubscribeRef.current === 'function') {
-          unsubscribeRef.current();
-        }
-        if (
-          'serviceWorker' in navigator &&
-          navigator.serviceWorker.controller &&
-          (unsubscribeRef.current as any).swMessageHandler
-        ) {
-          navigator.serviceWorker.removeEventListener(
-            'message',
-            (unsubscribeRef.current as any).swMessageHandler,
-          );
-        }
+        unsubscribeRef.current();
         unsubscribeRef.current = null;
+      }
+      if (
+        swMessageHandlerRef.current &&
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.removeEventListener(
+          'message',
+          swMessageHandlerRef.current,
+        );
+        swMessageHandlerRef.current = null;
       }
       initializedRef.current = false;
       return;
@@ -197,22 +199,19 @@ export default function NotificationPermissionBanner() {
     // eslint-disable-next-line consistent-return
     return () => {
       if (unsubscribeRef.current) {
-        // Unsubscribe from onMessage
-        if (typeof unsubscribeRef.current === 'function') {
-          unsubscribeRef.current();
-        }
-        // Remove service worker message listener
-        if (
-          'serviceWorker' in navigator &&
-          navigator.serviceWorker.controller &&
-          (unsubscribeRef.current as any).swMessageHandler
-        ) {
-          navigator.serviceWorker.removeEventListener(
-            'message',
-            (unsubscribeRef.current as any).swMessageHandler,
-          );
-        }
+        unsubscribeRef.current();
         unsubscribeRef.current = null;
+      }
+      if (
+        swMessageHandlerRef.current &&
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.removeEventListener(
+          'message',
+          swMessageHandlerRef.current,
+        );
+        swMessageHandlerRef.current = null;
       }
     };
   }, [user, accessToken, initializeFCM]);

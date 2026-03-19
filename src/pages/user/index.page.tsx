@@ -4,7 +4,7 @@ import {
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
 import {
-  FCM_TOKEN_REGISTERED_KEY,
+  FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
   unregisterFCMToken,
 } from '@/pages/lib/fcm/fcmClient';
@@ -374,7 +374,7 @@ export default function Profile() {
                     setUser(undefined);
                     setAccessToken(undefined);
                     localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-                    localStorage.removeItem(FCM_TOKEN_REGISTERED_KEY);
+                    localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
                   } catch (error) {
                     console.error(error);
                   }
