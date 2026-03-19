@@ -150,6 +150,8 @@ function WebAppScreen() {
 
   useEffect(() => {
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+      console.log('[Native] Foreground FCM message received:', remoteMessage);
+
       const title = remoteMessage.notification?.title || 'Täze bildiriş';
       const dataContent = remoteMessage.data?.content;
       const body =
@@ -157,10 +159,23 @@ function WebAppScreen() {
         (typeof dataContent === 'string' ? dataContent : undefined) ||
         'Täze bildiriş aldyňyz.';
 
-      setNotificationQueue(prev => [
-        ...prev,
-        { title, body, data: remoteMessage.data || {} },
-      ]);
+      // Use notificationId for deduplication in the queue
+      const notificationId =
+        (remoteMessage.data?.notificationId as string) ||
+        remoteMessage.messageId;
+
+      setNotificationQueue(prev => {
+        // Prevent duplicate notifications in the queue
+        if (
+          prev.some(
+            notification =>
+              notification.data?.notificationId === notificationId,
+          )
+        ) {
+          return prev;
+        }
+        return [...prev, { title, body, data: remoteMessage.data || {} }];
+      });
 
       if (webViewRef.current && remoteMessage.data) {
         const payload = {

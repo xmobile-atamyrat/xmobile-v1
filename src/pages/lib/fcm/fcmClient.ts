@@ -350,14 +350,17 @@ export function getNativeFCMTokenViaBridge(): Promise<{
     }
 
     // Safety timeout: if no response, resolve with null
+    // Increased to 60s to account for potentially long user permission prompts or slow Play Services.
     setTimeout(() => {
       if (pendingNativeTokenPromise) {
-        console.warn('[FCM] Token request from WebView bridge timed out');
+        console.warn(
+          '[FCM] Token request from WebView bridge timed out after 60s',
+        );
         window.removeEventListener('message', handler);
         pendingNativeTokenPromise = null;
         resolve(null);
       }
-    }, 10000);
+    }, 60000);
   });
 
   return pendingNativeTokenPromise;

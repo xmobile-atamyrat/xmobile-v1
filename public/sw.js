@@ -235,56 +235,24 @@ self.addEventListener('push', (event) => {
     try {
       const data = event.data.json();
       // If it has FCM-specific fields, it's an FCM message
-      if (data.from || data.messageId) {
-        // If Firebase is initialized, onBackgroundMessage should handle it
+      if (data.from || data.messageId || data.fcmMessageId) {
+        // If Firebase is initialized, onBackgroundMessage will handle this
         if (firebaseInitialized && messagingInstance) {
-          console.log(
-            '[sw.js] FCM message detected, onBackgroundMessage should handle it',
-          );
-          // Don't return - let onBackgroundMessage handle it
-          // But also don't fall through to legacy handler
+          console.log('[sw.js] FCM message handled by onBackgroundMessage');
           return;
-        } else {
-          // Firebase not initialized yet
-          console.log(
-            '[sw.js] FCM message detected but Firebase not initialized yet',
-          );
-          if (firebaseConfig) {
-            // Try to initialize
-            initializeFirebaseMessaging();
-            // Store the event to process after initialization
-            pendingPushEvents.push(event);
-            return;
-          } else {
-            // No config yet — cold start. Show a basic notification so it isn't lost.
-            console.warn(
-              '[sw.js] FCM message received on cold start, showing basic notification',
-            );
-            const title =
-              data.notification?.title || data.data?.title || 'Уведомление';
-            const body =
-              data.notification?.body ||
-              data.data?.body ||
-              data.data?.content ||
-              'Новое уведомление';
-            const notificationId =
-              data.data?.notificationId || data.data?.id || 'fcm-cold-start';
-
-            event.waitUntil(
-              self.registration.showNotification(title, {
-                body: body,
-                icon: NOTIFICATION_ICON,
-                badge: NOTIFICATION_BADGE,
-                tag: notificationId,
-                data: data.data || {},
-                requireInteraction: false,
-                silent: false,
-                vibrate: [200, 100, 200],
-              }),
-            );
-            return;
-          }
         }
+
+        // Firebase not initialized yet - standard cold start behavior
+        if (firebaseConfig) {
+          initializeFirebaseMessaging();
+          pendingPushEvents.push(event);
+          return;
+        }
+
+        // No config available - fall through to basic notification so the user doesn't miss it
+        console.warn(
+          '[sw.js] FCM message received without config, using basic display',
+        );
       }
     } catch (e) {
       // Not JSON or can't parse, continue with legacy handling
