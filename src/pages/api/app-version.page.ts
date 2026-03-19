@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
 import { MobilePlatforms, UserRole } from '@prisma/client';
@@ -10,6 +11,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  addCors(res);
   if (req.method === 'GET') {
     try {
       const appVersion = await dbClient.appVersion.findUnique({
