@@ -440,11 +440,12 @@ function WebAppScreen() {
                   }
                 } else if (data.type === 'REQUEST_FCM_TOKEN') {
                   const token = await getOrRequestNativeFcmToken();
+                  const uniqueId = await DeviceInfo.getUniqueId();
 
                   if (token && webViewRef.current) {
                     const payload = JSON.stringify({
                       type: 'FCM_TOKEN',
-                      payload: { token },
+                      payload: { token, uniqueId },
                     });
 
                     webViewRef.current.injectJavaScript(`

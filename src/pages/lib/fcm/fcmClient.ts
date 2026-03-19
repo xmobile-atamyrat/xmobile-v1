@@ -1,5 +1,6 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import { getMessaging, getToken, Messaging } from 'firebase/messaging';
+import { v4 as uuidv4 } from 'uuid';
 import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
@@ -8,6 +9,8 @@ export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
 // Stores the userId of the user whose FCM token is currently registered.
 // Used by both browser and WebView flows to avoid redundant re-registration.
 export const FCM_TOKEN_REGISTERED_USER_KEY = 'fcm_token_registered_user_id';
+// Key for storing the persistent unique device ID (UUID for web, hardware ID for app)
+export const FCM_DEVICE_ID_KEY = 'fcm_device_id';
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -242,30 +245,44 @@ export function getNotificationPermission(): NotificationPermission | null {
 }
 
 /**
- * Get device info for token registration
+ * Get device info for token registration.
+ * Generates or retrieves a persistent unique ID to prevent collisions.
  */
-export function getDeviceInfo(): string {
-  if (typeof navigator === 'undefined') {
+export function getDeviceInfo(hardwareId?: string): string {
+  if (typeof window === 'undefined') {
     return 'Unknown';
   }
 
-  const info = {
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language,
-    cookieEnabled: navigator.cookieEnabled,
-  };
+  // If hardwareId is provided (from WebView bridge), use it
+  // Check localStorage for existing persistent device ID
+  // Generate a new UUID if not found
+  if (hardwareId) {
+    return `APP:${hardwareId}`;
+  }
 
-  return JSON.stringify(info);
+  let deviceId = localStorage.getItem(FCM_DEVICE_ID_KEY);
+
+  if (!deviceId) {
+    deviceId = uuidv4();
+    localStorage.setItem(FCM_DEVICE_ID_KEY, deviceId);
+  }
+
+  return `WEB:${deviceId}`;
 }
 
-let pendingNativeTokenPromise: Promise<string | null> | null = null;
+let pendingNativeTokenPromise: Promise<{
+  token: string;
+  uniqueId: string;
+} | null> | null = null;
 
 /**
  * Request native FCM token via React Native WebView bridge (Android only for now)
  * Used when running inside the mobile app WebView instead of browser FCM.
  */
-export function getNativeFCMTokenViaBridge(): Promise<string | null> {
+export function getNativeFCMTokenViaBridge(): Promise<{
+  token: string;
+  uniqueId: string;
+} | null> {
   if (!isWebView()) {
     return Promise.resolve(null);
   }
@@ -284,7 +301,10 @@ export function getNativeFCMTokenViaBridge(): Promise<string | null> {
     return pendingNativeTokenPromise;
   }
 
-  pendingNativeTokenPromise = new Promise<string | null>((resolve) => {
+  pendingNativeTokenPromise = new Promise<{
+    token: string;
+    uniqueId: string;
+  } | null>((resolve) => {
     function handler(event: MessageEvent) {
       try {
         const rawData = event.data;
@@ -294,7 +314,10 @@ export function getNativeFCMTokenViaBridge(): Promise<string | null> {
         if (parsed && parsed.type === 'FCM_TOKEN' && parsed.payload?.token) {
           window.removeEventListener('message', handler);
           pendingNativeTokenPromise = null;
-          resolve(parsed.payload.token as string);
+          resolve({
+            token: parsed.payload.token as string,
+            uniqueId: (parsed.payload.uniqueId as string) || '',
+          });
         }
       } catch (error) {
         if (
@@ -362,11 +385,13 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
       FCM_TOKEN_REGISTERED_USER_KEY,
     );
 
-    const token = await getNativeFCMTokenViaBridge();
-    if (!token) {
+    const bridgeData = await getNativeFCMTokenViaBridge();
+    if (!bridgeData || !bridgeData.token) {
       console.warn('[FCM] No native FCM token received in WebView');
       return;
     }
+
+    const { token, uniqueId } = bridgeData;
 
     if (existingToken === token && registeredUserId === userId) {
       console.log(
@@ -378,7 +403,7 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
     const registered = await registerFCMToken(
       token,
       accessToken,
-      getDeviceInfo(),
+      getDeviceInfo(uniqueId),
     );
 
     if (registered) {
