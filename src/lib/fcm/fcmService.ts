@@ -28,10 +28,9 @@ function initializeOrGetFirebaseApp(): admin.app.App {
   const credentialsPath = process.env.FIREBASE_ADMIN_SDK_PATH;
 
   if (!credentialsPath) {
-    console.error(
-      'FIREBASE_ADMIN_SDK_PATH environment variable is not defined',
+    throw new Error(
+      '[FCM Service] FIREBASE_ADMIN_SDK_PATH environment variable is not defined. Cannot initialize Firebase Admin SDK.',
     );
-    return null;
   }
 
   try {
@@ -182,16 +181,19 @@ export async function sendFCMNotificationToUser(
     });
 
     if (tokensToDelete.length > 0) {
-      dbClient.fCMToken
-        .deleteMany({
+      try {
+        await dbClient.fCMToken.deleteMany({
           where: { token: { in: tokensToDelete } },
-        })
-        .catch((dbError) => {
-          console.error(
-            '[FCM Service] Failed to delete stale FCM tokens:',
-            dbError,
-          );
         });
+        console.log(
+          `[FCM Service] Deleted ${tokensToDelete.length} stale FCM token(s)`,
+        );
+      } catch (dbError) {
+        console.error(
+          '[FCM Service] Failed to delete stale FCM tokens:',
+          dbError,
+        );
+      }
     }
 
     return {
@@ -257,7 +259,7 @@ export function createFCMNotificationPayload(
  * Send notification with FCM first, then fallback to WebSocket server if FCM fails
  * This is used from Next.js API routes
  */
-export async function sendNotificationWithFCMFallback(
+export async function sendFCMWithCallbackFallback(
   targetUserId: string,
   notification: {
     id: string;
