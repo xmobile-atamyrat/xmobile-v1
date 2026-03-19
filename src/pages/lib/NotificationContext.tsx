@@ -37,6 +37,17 @@ const NotificationContext = createContext<NotificationContextProps>({
 
 export const useNotificationContext = () => useContext(NotificationContext);
 
+/** Shared sort: unread first, then by createdAt descending */
+function notificationSortComparator(
+  a: InAppNotification,
+  b: InAppNotification,
+): number {
+  if (a.isRead !== b.isRead) {
+    return a.isRead ? 1 : -1;
+  }
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
 export const NotificationContextProvider = ({
   children,
 }: {
@@ -99,43 +110,19 @@ export const NotificationContextProvider = ({
         if (data.success) {
           const newNotifications = data.data.notifications;
           setNotifications((prev) => {
-            // Deduplicate by id
             const existingIds = new Set(prev.map((n) => n.id));
-            // Filter out unread notifications if WebSocket batch already sent them
-            // Only add read notifications if WebSocket batch was received
-            // Filter out unread notifications if WebSocket batch already sent them
-            // Only add read notifications if WebSocket batch was received
-            let notificationsToAdd: InAppNotification[];
-            if (wsBatchReceivedRef.current) {
-              notificationsToAdd = newNotifications.filter(
-                (n: InAppNotification) => !existingIds.has(n.id),
-              );
-            } else {
-              notificationsToAdd = newNotifications.filter(
-                (n: InAppNotification) => !existingIds.has(n.id),
-              );
-            }
+            const notificationsToAdd = newNotifications.filter(
+              (n: InAppNotification) => !existingIds.has(n.id),
+            );
 
             let merged: InAppNotification[];
-            if (actualCursorId) {
-              merged = [...prev, ...notificationsToAdd];
-            } else if (wsBatchReceivedRef.current) {
-              // Preserve WebSocket notifications
+            if (actualCursorId || wsBatchReceivedRef.current) {
               merged = [...prev, ...notificationsToAdd];
             } else {
               merged = notificationsToAdd;
             }
 
-            // Always sort: unread first, then read, both by createdAt desc
-            return merged.sort((a: InAppNotification, b: InAppNotification) => {
-              if (a.isRead !== b.isRead) {
-                return a.isRead ? 1 : -1; // Unread first
-              }
-              // Both same read status, sort by createdAt desc
-              const aDate = new Date(a.createdAt).getTime();
-              const bDate = new Date(b.createdAt).getTime();
-              return bDate - aDate;
-            });
+            return merged.sort(notificationSortComparator);
           });
           nextCursorRef.current = data.data.nextCursor;
           if (!actualCursorId) {
@@ -172,18 +159,7 @@ export const NotificationContextProvider = ({
                 ? { ...n, isRead: true, readAt: new Date() }
                 : n,
             );
-            // Maintain sort order: unread first, then read, both by createdAt desc
-            return updated.sort(
-              (a: InAppNotification, b: InAppNotification) => {
-                if (a.isRead !== b.isRead) {
-                  return a.isRead ? 1 : -1; // Unread first
-                }
-                // Both same read status, sort by createdAt desc
-                const aDate = new Date(a.createdAt).getTime();
-                const bDate = new Date(b.createdAt).getTime();
-                return bDate - aDate;
-              },
-            );
+            return updated.sort(notificationSortComparator);
           });
           await refreshUnreadCount();
         }
@@ -264,16 +240,7 @@ export const NotificationContextProvider = ({
           return prev;
         }
         const merged = [notification, ...prev];
-        // Always sort: unread first, then read, both by createdAt desc
-        return merged.sort((a: InAppNotification, b: InAppNotification) => {
-          if (a.isRead !== b.isRead) {
-            return a.isRead ? 1 : -1; // Unread first
-          }
-          // Both same read status, sort by createdAt desc
-          const aDate = new Date(a.createdAt).getTime();
-          const bDate = new Date(b.createdAt).getTime();
-          return bDate - aDate;
-        });
+        return merged.sort(notificationSortComparator);
       });
       setUnreadCount((prev) => prev + 1);
 
@@ -309,16 +276,7 @@ export const NotificationContextProvider = ({
         // Otherwise, use only WebSocket notifications
         if (prev.length === 0) {
           // No API load yet, use WebSocket notifications only
-          return incomingNotifications.sort(
-            (a: InAppNotification, b: InAppNotification) => {
-              if (a.isRead !== b.isRead) {
-                return a.isRead ? 1 : -1; // Unread first
-              }
-              const aDate = new Date(a.createdAt).getTime();
-              const bDate = new Date(b.createdAt).getTime();
-              return bDate - aDate;
-            },
-          );
+          return incomingNotifications.sort(notificationSortComparator);
         }
         // Merge with existing notifications from API
         const existingIds = new Set(prev.map((n) => n.id));
@@ -327,15 +285,7 @@ export const NotificationContextProvider = ({
         );
         const merged = [...uniqueNew, ...prev];
         // Always sort: unread first, then read, both by createdAt desc
-        return merged.sort((a: InAppNotification, b: InAppNotification) => {
-          if (a.isRead !== b.isRead) {
-            return a.isRead ? 1 : -1; // Unread first
-          }
-          // Both same read status, sort by createdAt desc
-          const aDate = new Date(a.createdAt).getTime();
-          const bDate = new Date(b.createdAt).getTime();
-          return bDate - aDate;
-        });
+        return merged.sort(notificationSortComparator);
       });
       setUnreadCount(data.unreadCount || 0);
 

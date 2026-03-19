@@ -1,22 +1,13 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
-import {
-  getMessaging,
-  getToken,
-  MessagePayload,
-  Messaging,
-  onMessage,
-} from 'firebase/messaging';
+import { getMessaging, getToken, Messaging } from 'firebase/messaging';
 import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
 // FCM storage keys for localStorage
-// NOTE:
-// - FCM_TOKEN_REGISTERED_KEY is used by existing browser flows (banner, logout)
-// - FCM_TOKEN_REGISTERED_USER_KEY is used only for WebView-native FCM (ties token to accessToken)
 export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
-export const FCM_TOKEN_REGISTERED_KEY = 'fcm_token_registered';
-export const FCM_TOKEN_REGISTERED_USER_KEY =
-  'fcm_token_registered_access_token';
+// Stores the userId of the user whose FCM token is currently registered.
+// Used by both browser and WebView flows to avoid redundant re-registration.
+export const FCM_TOKEN_REGISTERED_USER_KEY = 'fcm_token_registered_user_id';
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -164,7 +155,6 @@ export async function registerFCMToken(
   accessToken: string,
   deviceInfo: string,
 ): Promise<boolean> {
-  console.trace('[FCM] registerFCMToken called from:');
   try {
     const response = await fetch('/api/fcm/token', {
       method: 'POST',
@@ -249,34 +239,6 @@ export function getNotificationPermission(): NotificationPermission | null {
     return null;
   }
   return Notification.permission;
-}
-
-/**
- * Set up message handler for foreground notifications
- */
-export function onForegroundMessage(
-  callback: (payload: MessagePayload) => void,
-): (() => void) | null {
-  if (isWebView()) {
-    return null;
-  }
-
-  let unsubscribe: (() => void) | null = null;
-
-  initializeOrGetMessaging()
-    .then((messagingInstance) => {
-      if (messagingInstance) {
-        unsubscribe = onMessage(messagingInstance, callback);
-      }
-    })
-    .catch((error) => {
-      console.error(
-        '[FCM] Failed to set up foreground message handler:',
-        error,
-      );
-    });
-
-  return unsubscribe || null;
 }
 
 /**
@@ -383,6 +345,7 @@ export function getNativeFCMTokenViaBridge(): Promise<string | null> {
  * Reuses existing /api/fcm/token endpoint and storage keys without schema changes.
  */
 export async function ensureNativeFCMTokenRegisteredInWebView(
+  userId: string,
   accessToken: string,
 ): Promise<void> {
   if (!isWebView()) {
@@ -395,7 +358,7 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
 
   try {
     const existingToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
-    const registeredAccessToken = localStorage.getItem(
+    const registeredUserId = localStorage.getItem(
       FCM_TOKEN_REGISTERED_USER_KEY,
     );
 
@@ -405,7 +368,7 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
       return;
     }
 
-    if (existingToken === token && registeredAccessToken === accessToken) {
+    if (existingToken === token && registeredUserId === userId) {
       console.log(
         '[FCM] Native FCM token already registered for this user (WebView)',
       );
@@ -420,7 +383,7 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
 
     if (registered) {
       localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, accessToken);
+      localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
       console.log('[FCM] Native FCM token registered successfully (WebView)');
     } else {
       console.error('[FCM] Failed to register native FCM token (WebView)');
