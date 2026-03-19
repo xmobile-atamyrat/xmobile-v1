@@ -3,12 +3,24 @@
 // Also handles Firebase Cloud Messaging (FCM) background messages
 
 // Import Firebase Messaging scripts
-importScripts(
-  'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
-);
-importScripts(
-  'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js',
-);
+// NOTE: Keep this version in sync with the firebase npm package in package.json
+// If the CDN is unreachable (network issues, regional blocks), FCM features
+// degrade gracefully — the SW continues to work for non-FCM notifications.
+let firebaseLoadError = null;
+try {
+  importScripts(
+    'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+  );
+  importScripts(
+    'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js',
+  );
+} catch (e) {
+  firebaseLoadError = e;
+  console.warn(
+    '[sw.js] Firebase SDK failed to load from CDN. FCM background messages will be handled via basic push handler.',
+    e,
+  );
+}
 
 const CACHE_NAME = 'xmobile-notifications-v1';
 // Use absolute URL for notification icons (required for mobile)
@@ -87,15 +99,40 @@ function processPendingPushEvents() {
       `[sw.js] Processing ${pendingPushEvents.length} pending push events`,
     );
     pendingPushEvents.forEach((event) => {
-      // These will be handled by onBackgroundMessage if it's set up
-      // Otherwise they'll fall through to the push event handler
+      try {
+        const data = event.data ? event.data.json() : null;
+        if (data) {
+          const title =
+            data.notification?.title || data.data?.title || 'Уведомление';
+          const body =
+            data.notification?.body ||
+            data.data?.body ||
+            data.data?.content ||
+            'Новое уведомление';
+          const notificationId =
+            data.data?.notificationId || data.data?.id || 'fcm-pending';
+
+          self.registration.showNotification(title, {
+            body: body,
+            icon: NOTIFICATION_ICON,
+            badge: NOTIFICATION_BADGE,
+            tag: notificationId,
+            data: data.data || {},
+            requireInteraction: false,
+            silent: false,
+            vibrate: [200, 100, 200],
+          });
+        }
+      } catch (e) {
+        console.warn('[sw.js] Failed to process pending push event:', e);
+      }
     });
     pendingPushEvents = [];
   }
 }
 
 function initializeFirebaseMessaging() {
-  if (firebaseInitialized || !firebaseConfig) {
+  if (firebaseInitialized || !firebaseConfig || firebaseLoadError) {
     return;
   }
 
@@ -219,11 +256,33 @@ self.addEventListener('push', (event) => {
             pendingPushEvents.push(event);
             return;
           } else {
-            // No config yet - this shouldn't happen, but handle gracefully
+            // No config yet — cold start. Show a basic notification so it isn't lost.
             console.warn(
-              '[sw.js] FCM message received but no Firebase config available',
+              '[sw.js] FCM message received on cold start, showing basic notification',
             );
-            // Fall through to show a basic notification
+            const title =
+              data.notification?.title || data.data?.title || 'Уведомление';
+            const body =
+              data.notification?.body ||
+              data.data?.body ||
+              data.data?.content ||
+              'Новое уведомление';
+            const notificationId =
+              data.data?.notificationId || data.data?.id || 'fcm-cold-start';
+
+            event.waitUntil(
+              self.registration.showNotification(title, {
+                body: body,
+                icon: NOTIFICATION_ICON,
+                badge: NOTIFICATION_BADGE,
+                tag: notificationId,
+                data: data.data || {},
+                requireInteraction: false,
+                silent: false,
+                vibrate: [200, 100, 200],
+              }),
+            );
+            return;
           }
         }
       }
