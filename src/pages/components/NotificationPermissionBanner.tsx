@@ -2,13 +2,15 @@ import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  FCM_TOKEN_REGISTERED_KEY,
+  FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
   getDeviceInfo,
   getFCMToken,
+  getNativeNotificationPermissionStatus,
   hasNotificationPermission,
   initializeOrGetMessaging,
   registerFCMToken,
+  requestNativeNotificationPermission,
 } from '@/pages/lib/fcm/fcmClient';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
@@ -37,7 +39,11 @@ export default function NotificationPermissionBanner() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const swMessageHandlerRef = useRef<((event: MessageEvent) => void) | null>(
+    null,
+  );
   const initializedRef = useRef(false);
+  const [nativeStatusLoaded, setNativeStatusLoaded] = useState(false);
 
   /**
    * Initialize FCM: messaging, foreground handler, and token registration
@@ -119,7 +125,7 @@ export default function NotificationPermissionBanner() {
         console.log('[FCM Banner] ✅ Service worker message listener added');
 
         // Store handler for cleanup
-        (unsubscribeRef.current as any).swMessageHandler = messageHandler;
+        swMessageHandlerRef.current = messageHandler;
       }
 
       // Get FCM token
@@ -142,7 +148,7 @@ export default function NotificationPermissionBanner() {
 
         if (registered) {
           localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-          localStorage.setItem(FCM_TOKEN_REGISTERED_KEY, 'true');
+          localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, user.id);
           console.log('[FCM Banner] ✅ Token registered successfully');
         } else {
           console.error('[FCM Banner] Failed to register token');
@@ -167,27 +173,28 @@ export default function NotificationPermissionBanner() {
     if (!user || !accessToken) {
       // Clean up if user logs out
       if (unsubscribeRef.current) {
-        if (typeof unsubscribeRef.current === 'function') {
-          unsubscribeRef.current();
-        }
-        if (
-          'serviceWorker' in navigator &&
-          navigator.serviceWorker.controller &&
-          (unsubscribeRef.current as any).swMessageHandler
-        ) {
-          navigator.serviceWorker.removeEventListener(
-            'message',
-            (unsubscribeRef.current as any).swMessageHandler,
-          );
-        }
+        unsubscribeRef.current();
         unsubscribeRef.current = null;
+      }
+      if (
+        swMessageHandlerRef.current &&
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.removeEventListener(
+          'message',
+          swMessageHandlerRef.current,
+        );
+        swMessageHandlerRef.current = null;
       }
       initializedRef.current = false;
       return;
     }
 
-    // Auto-initialize if permission is already granted
-    if (hasNotificationPermission()) {
+    if (
+      hasNotificationPermission() ||
+      (isWebView() && permission === 'granted')
+    ) {
       initializeFCM().catch((error) => {
         console.error('[FCM Banner] Auto-initialization failed:', error);
       });
@@ -197,28 +204,59 @@ export default function NotificationPermissionBanner() {
     // eslint-disable-next-line consistent-return
     return () => {
       if (unsubscribeRef.current) {
-        // Unsubscribe from onMessage
-        if (typeof unsubscribeRef.current === 'function') {
-          unsubscribeRef.current();
-        }
-        // Remove service worker message listener
-        if (
-          'serviceWorker' in navigator &&
-          navigator.serviceWorker.controller &&
-          (unsubscribeRef.current as any).swMessageHandler
-        ) {
-          navigator.serviceWorker.removeEventListener(
-            'message',
-            (unsubscribeRef.current as any).swMessageHandler,
-          );
-        }
+        unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+      if (
+        swMessageHandlerRef.current &&
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.removeEventListener(
+          'message',
+          swMessageHandlerRef.current,
+        );
+        swMessageHandlerRef.current = null;
+      }
     };
-  }, [user, accessToken, initializeFCM]);
+  }, [user, accessToken, initializeFCM, permission]);
+
+  /**
+   * For WebView: Fetch initial permission status from native side
+   */
+  useEffect(() => {
+    if (isWebView() && user) {
+      getNativeNotificationPermissionStatus().then((status) => {
+        if (status === 'GRANTED') {
+          setPermission('granted');
+          initializeFCM();
+        } else if (status === 'DENIED') {
+          setPermission('denied');
+        } else {
+          setPermission('default');
+        }
+        setNativeStatusLoaded(true);
+      });
+    }
+  }, [user, initializeFCM]);
 
   const requestPermission = useCallback(async () => {
     if (!t) return;
+
+    if (isWebView()) {
+      const result = await requestNativeNotificationPermission();
+      if (result === 'GRANTED') {
+        setPermission('granted');
+        setDismissed(true);
+        initializeFCM();
+      } else {
+        setPermission('denied');
+        setSnackbarMessage(t('notificationsDenied'));
+        setSnackbarOpen(true);
+      }
+      return;
+    }
+
     if (
       typeof window === 'undefined' ||
       !('Notification' in window) ||
@@ -272,10 +310,15 @@ export default function NotificationPermissionBanner() {
     dismissed ||
     permission === 'granted' ||
     permission === 'denied' ||
-    typeof window === 'undefined' ||
-    !('Notification' in window) ||
-    isWebView()
+    typeof window === 'undefined'
   ) {
+    return null;
+  }
+
+  if (!isWebView() && !('Notification' in window)) {
+    return null;
+  }
+  if (isWebView() && !nativeStatusLoaded) {
     return null;
   }
 

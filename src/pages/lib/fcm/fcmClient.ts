@@ -1,17 +1,16 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
-import {
-  getMessaging,
-  getToken,
-  MessagePayload,
-  Messaging,
-  onMessage,
-} from 'firebase/messaging';
+import { getMessaging, getToken, Messaging } from 'firebase/messaging';
+import { v4 as uuidv4 } from 'uuid';
 import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
 // FCM storage keys for localStorage
 export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
-export const FCM_TOKEN_REGISTERED_KEY = 'fcm_token_registered';
+// Stores the userId of the user whose FCM token is currently registered.
+// Used by both browser and WebView flows to avoid redundant re-registration.
+export const FCM_TOKEN_REGISTERED_USER_KEY = 'fcm_token_registered_user_id';
+// Key for storing the persistent unique device ID (UUID for web, hardware ID for app)
+export const FCM_DEVICE_ID_KEY = 'fcm_device_id';
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -159,7 +158,6 @@ export async function registerFCMToken(
   accessToken: string,
   deviceInfo: string,
 ): Promise<boolean> {
-  console.trace('[FCM] registerFCMToken called from:');
   try {
     const response = await fetch('/api/fcm/token', {
       method: 'POST',
@@ -247,47 +245,256 @@ export function getNotificationPermission(): NotificationPermission | null {
 }
 
 /**
- * Set up message handler for foreground notifications
+ * Get device info for token registration.
+ * Generates or retrieves a persistent unique ID to prevent collisions.
  */
-export function onForegroundMessage(
-  callback: (payload: MessagePayload) => void,
-): (() => void) | null {
-  if (isWebView()) {
-    return null;
-  }
-
-  let unsubscribe: (() => void) | null = null;
-
-  initializeOrGetMessaging()
-    .then((messagingInstance) => {
-      if (messagingInstance) {
-        unsubscribe = onMessage(messagingInstance, callback);
-      }
-    })
-    .catch((error) => {
-      console.error(
-        '[FCM] Failed to set up foreground message handler:',
-        error,
-      );
-    });
-
-  return unsubscribe || null;
-}
-
-/**
- * Get device info for token registration
- */
-export function getDeviceInfo(): string {
-  if (typeof navigator === 'undefined') {
+export function getDeviceInfo(hardwareId?: string): string {
+  if (typeof window === 'undefined') {
     return 'Unknown';
   }
 
-  const info = {
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language,
-    cookieEnabled: navigator.cookieEnabled,
-  };
+  // If hardwareId is provided (from WebView bridge), use it
+  // Check localStorage for existing persistent device ID
+  // Generate a new UUID if not found
+  if (hardwareId) {
+    return `APP:${hardwareId}`;
+  }
 
-  return JSON.stringify(info);
+  let deviceId = localStorage.getItem(FCM_DEVICE_ID_KEY);
+
+  if (!deviceId) {
+    deviceId = uuidv4();
+    localStorage.setItem(FCM_DEVICE_ID_KEY, deviceId);
+  }
+
+  return `WEB:${deviceId}`;
+}
+
+let pendingNativeTokenPromise: Promise<{
+  token: string;
+  uniqueId: string;
+} | null> | null = null;
+
+/**
+ * Request native FCM token via React Native WebView bridge (Android only for now)
+ * Used when running inside the mobile app WebView instead of browser FCM.
+ */
+export function getNativeFCMTokenViaBridge(): Promise<{
+  token: string;
+  uniqueId: string;
+} | null> {
+  if (!isWebView()) {
+    return Promise.resolve(null);
+  }
+
+  if (typeof window === 'undefined') {
+    return Promise.resolve(null);
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView || typeof rnWebView.postMessage !== 'function') {
+    console.warn('[FCM] ReactNativeWebView bridge not available');
+    return Promise.resolve(null);
+  }
+
+  if (pendingNativeTokenPromise) {
+    return pendingNativeTokenPromise;
+  }
+
+  pendingNativeTokenPromise = new Promise<{
+    token: string;
+    uniqueId: string;
+  } | null>((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const rawData = event.data;
+        const parsed =
+          typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+        if (parsed && parsed.type === 'FCM_TOKEN' && parsed.payload?.token) {
+          window.removeEventListener('message', handler);
+          pendingNativeTokenPromise = null;
+          resolve({
+            token: parsed.payload.token as string,
+            uniqueId: (parsed.payload.uniqueId as string) || '',
+          });
+        }
+      } catch (error) {
+        if (
+          typeof event.data === 'string' &&
+          event.data.includes('FCM_TOKEN')
+        ) {
+          console.error(
+            '[FCM] Failed to parse expected FCM message from WebView bridge:',
+            error,
+          );
+        }
+      }
+    }
+
+    window.addEventListener('message', handler);
+
+    // Send request to native layer
+    try {
+      rnWebView.postMessage(
+        JSON.stringify({
+          type: 'REQUEST_FCM_TOKEN',
+        }),
+      );
+    } catch (error) {
+      console.error('[FCM] Failed to post REQUEST_FCM_TOKEN to native:', error);
+      window.removeEventListener('message', handler);
+      pendingNativeTokenPromise = null;
+      resolve(null);
+      return;
+    }
+
+    // Safety timeout: if no response, resolve with null
+    // Increased to 60s to account for potentially long user permission prompts or slow Play Services.
+    setTimeout(() => {
+      if (pendingNativeTokenPromise) {
+        console.warn(
+          '[FCM] Token request from WebView bridge timed out after 60s',
+        );
+        window.removeEventListener('message', handler);
+        pendingNativeTokenPromise = null;
+        resolve(null);
+      }
+    }, 60000);
+  });
+
+  return pendingNativeTokenPromise;
+}
+export function getNativeNotificationPermissionStatus(): Promise<
+  'GRANTED' | 'NOT_DETERMINED' | 'DENIED'
+> {
+  if (!isWebView() || typeof window === 'undefined') {
+    return Promise.resolve('DENIED');
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView) return Promise.resolve('DENIED');
+
+  return new Promise((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
+          window.removeEventListener('message', handler);
+          resolve(data.payload.status);
+        }
+      } catch (err) {
+        console.warn('Parsing error in notification permission status', err);
+      }
+    }
+    window.addEventListener('message', handler);
+    try {
+      rnWebView.postMessage(JSON.stringify({ type: 'CHECK_PERMISSION' }));
+    } catch (err) {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }
+
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      resolve('NOT_DETERMINED');
+    }, 5000);
+  });
+}
+
+export function requestNativeNotificationPermission(): Promise<
+  'GRANTED' | 'DENIED'
+> {
+  if (!isWebView() || typeof window === 'undefined') {
+    return Promise.resolve('DENIED');
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView) return Promise.resolve('DENIED');
+
+  return new Promise((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
+          window.removeEventListener('message', handler);
+          resolve(data.payload.status === 'GRANTED' ? 'GRANTED' : 'DENIED');
+        }
+      } catch (err) {
+        console.warn('Parsing error in notification permission status', err);
+      }
+    }
+    window.addEventListener('message', handler);
+    try {
+      rnWebView.postMessage(JSON.stringify({ type: 'REQUEST_PERMISSION' }));
+    } catch (err) {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }
+
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }, 60000);
+  });
+}
+
+/**
+ * Ensure native FCM token is registered when running inside WebView.
+ * Reuses existing /api/fcm/token endpoint and storage keys without schema changes.
+ */
+export async function ensureNativeFCMTokenRegisteredInWebView(
+  userId: string,
+  accessToken: string,
+): Promise<void> {
+  if (!isWebView()) {
+    return;
+  }
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const existingToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+    const registeredUserId = localStorage.getItem(
+      FCM_TOKEN_REGISTERED_USER_KEY,
+    );
+
+    const bridgeData = await getNativeFCMTokenViaBridge();
+    if (!bridgeData || !bridgeData.token) {
+      console.warn('[FCM] No native FCM token received in WebView');
+      return;
+    }
+
+    const { token, uniqueId } = bridgeData;
+
+    if (existingToken === token && registeredUserId === userId) {
+      console.log(
+        '[FCM] Native FCM token already registered for this user (WebView)',
+      );
+      return;
+    }
+
+    const registered = await registerFCMToken(
+      token,
+      accessToken,
+      getDeviceInfo(uniqueId),
+    );
+
+    if (registered) {
+      localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
+      console.log('[FCM] Native FCM token registered successfully (WebView)');
+    } else {
+      console.error('[FCM] Failed to register native FCM token (WebView)');
+    }
+  } catch (error) {
+    console.error(
+      '[FCM] Error while registering native FCM token in WebView:',
+      error,
+    );
+  }
 }

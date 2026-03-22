@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
-import { showNotification } from '@/pages/lib/serviceWorker';
+import { isWebView, showNotification } from '@/pages/lib/serviceWorker';
 import { InAppNotification } from '@/pages/lib/types';
 import {
   createContext,
@@ -37,6 +37,17 @@ const NotificationContext = createContext<NotificationContextProps>({
 
 export const useNotificationContext = () => useContext(NotificationContext);
 
+/** Shared sort: unread first, then by createdAt descending */
+function notificationSortComparator(
+  a: InAppNotification,
+  b: InAppNotification,
+): number {
+  if (a.isRead !== b.isRead) {
+    return a.isRead ? 1 : -1;
+  }
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
 export const NotificationContextProvider = ({
   children,
 }: {
@@ -69,11 +80,12 @@ export const NotificationContextProvider = ({
   }, [accessToken]);
 
   const loadNotifications = useCallback(
-    async (cursorId?: string) => {
+    async (cursorId?: string | null) => {
       if (!accessToken) return;
 
       // Use provided cursorId or the stored nextCursor
-      const actualCursorId = cursorId ?? nextCursorRef.current;
+      const actualCursorId =
+        cursorId === null ? undefined : cursorId ?? nextCursorRef.current;
 
       // If we have a cursor, we're loading more. Otherwise, reset the list
       // But don't reset if WebSocket batch was already received (to preserve unread notifications)
@@ -98,44 +110,19 @@ export const NotificationContextProvider = ({
         if (data.success) {
           const newNotifications = data.data.notifications;
           setNotifications((prev) => {
-            // Deduplicate by id
             const existingIds = new Set(prev.map((n) => n.id));
-            // Filter out unread notifications if WebSocket batch already sent them
-            // Only add read notifications if WebSocket batch was received
-            // Filter out unread notifications if WebSocket batch already sent them
-            // Only add read notifications if WebSocket batch was received
-            let notificationsToAdd: InAppNotification[];
-            if (wsBatchReceivedRef.current) {
-              notificationsToAdd = newNotifications.filter(
-                (n: InAppNotification) =>
-                  !existingIds.has(n.id) && n.isRead === true,
-              );
-            } else {
-              notificationsToAdd = newNotifications.filter(
-                (n: InAppNotification) => !existingIds.has(n.id),
-              );
-            }
+            const notificationsToAdd = newNotifications.filter(
+              (n: InAppNotification) => !existingIds.has(n.id),
+            );
 
             let merged: InAppNotification[];
-            if (actualCursorId) {
-              merged = [...prev, ...notificationsToAdd];
-            } else if (wsBatchReceivedRef.current) {
-              // Preserve WebSocket notifications
+            if (actualCursorId || wsBatchReceivedRef.current) {
               merged = [...prev, ...notificationsToAdd];
             } else {
               merged = notificationsToAdd;
             }
 
-            // Always sort: unread first, then read, both by createdAt desc
-            return merged.sort((a: InAppNotification, b: InAppNotification) => {
-              if (a.isRead !== b.isRead) {
-                return a.isRead ? 1 : -1; // Unread first
-              }
-              // Both same read status, sort by createdAt desc
-              const aDate = new Date(a.createdAt).getTime();
-              const bDate = new Date(b.createdAt).getTime();
-              return bDate - aDate;
-            });
+            return merged.sort(notificationSortComparator);
           });
           nextCursorRef.current = data.data.nextCursor;
           if (!actualCursorId) {
@@ -172,18 +159,7 @@ export const NotificationContextProvider = ({
                 ? { ...n, isRead: true, readAt: new Date() }
                 : n,
             );
-            // Maintain sort order: unread first, then read, both by createdAt desc
-            return updated.sort(
-              (a: InAppNotification, b: InAppNotification) => {
-                if (a.isRead !== b.isRead) {
-                  return a.isRead ? 1 : -1; // Unread first
-                }
-                // Both same read status, sort by createdAt desc
-                const aDate = new Date(a.createdAt).getTime();
-                const bDate = new Date(b.createdAt).getTime();
-                return bDate - aDate;
-              },
-            );
+            return updated.sort(notificationSortComparator);
           });
           await refreshUnreadCount();
         }
@@ -225,6 +201,30 @@ export const NotificationContextProvider = ({
     [accessToken, refreshUnreadCount],
   );
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handler = (event: MessageEvent) => {
+      try {
+        const raw = event.data;
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (data?.type === 'FCM_FOREGROUND_MESSAGE') {
+          refreshUnreadCount();
+          if (!isConnected) {
+            loadNotifications(null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to process WebView message:', error);
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [refreshUnreadCount]);
+
   // Subscribe to WebSocket messages for notifications
   useEffect(() => {
     if (!isConnected) {
@@ -240,16 +240,7 @@ export const NotificationContextProvider = ({
           return prev;
         }
         const merged = [notification, ...prev];
-        // Always sort: unread first, then read, both by createdAt desc
-        return merged.sort((a: InAppNotification, b: InAppNotification) => {
-          if (a.isRead !== b.isRead) {
-            return a.isRead ? 1 : -1; // Unread first
-          }
-          // Both same read status, sort by createdAt desc
-          const aDate = new Date(a.createdAt).getTime();
-          const bDate = new Date(b.createdAt).getTime();
-          return bDate - aDate;
-        });
+        return merged.sort(notificationSortComparator);
       });
       setUnreadCount((prev) => prev + 1);
 
@@ -285,16 +276,7 @@ export const NotificationContextProvider = ({
         // Otherwise, use only WebSocket notifications
         if (prev.length === 0) {
           // No API load yet, use WebSocket notifications only
-          return incomingNotifications.sort(
-            (a: InAppNotification, b: InAppNotification) => {
-              if (a.isRead !== b.isRead) {
-                return a.isRead ? 1 : -1; // Unread first
-              }
-              const aDate = new Date(a.createdAt).getTime();
-              const bDate = new Date(b.createdAt).getTime();
-              return bDate - aDate;
-            },
-          );
+          return incomingNotifications.sort(notificationSortComparator);
         }
         // Merge with existing notifications from API
         const existingIds = new Set(prev.map((n) => n.id));
@@ -303,15 +285,7 @@ export const NotificationContextProvider = ({
         );
         const merged = [...uniqueNew, ...prev];
         // Always sort: unread first, then read, both by createdAt desc
-        return merged.sort((a: InAppNotification, b: InAppNotification) => {
-          if (a.isRead !== b.isRead) {
-            return a.isRead ? 1 : -1; // Unread first
-          }
-          // Both same read status, sort by createdAt desc
-          const aDate = new Date(a.createdAt).getTime();
-          const bDate = new Date(b.createdAt).getTime();
-          return bDate - aDate;
-        });
+        return merged.sort(notificationSortComparator);
       });
       setUnreadCount(data.unreadCount || 0);
 
@@ -330,6 +304,38 @@ export const NotificationContextProvider = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, subscribe, loadNotifications]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isWebView()) return undefined;
+
+    const handleForegroundMessage = (event: MessageEvent) => {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+        if (data && data.type === 'FCM_FOREGROUND_MESSAGE') {
+          console.log(
+            '[NotificationContext] Foreground FCM message received (Mobile):',
+            data,
+          );
+          refreshUnreadCount();
+          loadNotifications(null);
+        }
+      } catch (error) {
+        if (typeof event.data === 'string' && event.data.includes('FCM_')) {
+          console.error(
+            '[NotificationContext] Failed to parse foreground message:',
+            error,
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleForegroundMessage);
+    return () => {
+      window.removeEventListener('message', handleForegroundMessage);
+    };
+  }, [refreshUnreadCount, loadNotifications]);
+
   // Load initial notifications and count
   // Wait a bit for WebSocket to connect and send batch first
   useEffect(() => {
@@ -338,19 +344,13 @@ export const NotificationContextProvider = ({
       wsBatchReceivedRef.current = false;
       initialLoadDoneRef.current = false;
 
-      // Wait a short time for WebSocket to connect and send batch
-      // If WebSocket doesn't send batch within 2 seconds, load from API
-      const timeoutId = setTimeout(() => {
-        if (!wsBatchReceivedRef.current && !initialLoadDoneRef.current) {
-          loadNotifications();
-        }
-      }, 2000);
+      if (!wsBatchReceivedRef.current && !initialLoadDoneRef.current) {
+        loadNotifications(null);
+      }
 
       refreshUnreadCount();
 
-      return () => {
-        clearTimeout(timeoutId);
-      };
+      return () => {};
     }
     setNotifications([]);
     setUnreadCount(0);

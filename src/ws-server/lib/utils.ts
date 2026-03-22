@@ -3,7 +3,7 @@ import { ChatMessageProps, InAppNotification } from '@/pages/lib/types';
 import {
   createFCMNotificationPayload,
   sendFCMNotificationToUser,
-} from '@/ws-server/lib/fcm/fcmService';
+} from '@/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import { NotificationType, UserOrderStatus } from '@prisma/client';
 import { WebSocket } from 'ws';
