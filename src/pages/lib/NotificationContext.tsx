@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
-import { showNotification } from '@/pages/lib/serviceWorker';
+import { isWebView, showNotification } from '@/pages/lib/serviceWorker';
 import { InAppNotification } from '@/pages/lib/types';
 import {
   createContext,
@@ -303,6 +303,38 @@ export const NotificationContextProvider = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, subscribe, loadNotifications]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isWebView()) return undefined;
+
+    const handleForegroundMessage = (event: MessageEvent) => {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+        if (data && data.type === 'FCM_FOREGROUND_MESSAGE') {
+          console.log(
+            '[NotificationContext] Foreground FCM message received (Mobile):',
+            data,
+          );
+          refreshUnreadCount();
+          loadNotifications(null);
+        }
+      } catch (error) {
+        if (typeof event.data === 'string' && event.data.includes('FCM_')) {
+          console.error(
+            '[NotificationContext] Failed to parse foreground message:',
+            error,
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleForegroundMessage);
+    return () => {
+      window.removeEventListener('message', handleForegroundMessage);
+    };
+  }, [refreshUnreadCount, loadNotifications]);
 
   // Load initial notifications and count
   // Wait a bit for WebSocket to connect and send batch first

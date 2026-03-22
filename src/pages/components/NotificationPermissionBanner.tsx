@@ -6,9 +6,11 @@ import {
   FCM_TOKEN_STORAGE_KEY,
   getDeviceInfo,
   getFCMToken,
+  getNativeNotificationPermissionStatus,
   hasNotificationPermission,
   initializeOrGetMessaging,
   registerFCMToken,
+  requestNativeNotificationPermission,
 } from '@/pages/lib/fcm/fcmClient';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
@@ -41,6 +43,7 @@ export default function NotificationPermissionBanner() {
     null,
   );
   const initializedRef = useRef(false);
+  const [nativeStatusLoaded, setNativeStatusLoaded] = useState(false);
 
   /**
    * Initialize FCM: messaging, foreground handler, and token registration
@@ -188,8 +191,10 @@ export default function NotificationPermissionBanner() {
       return;
     }
 
-    // Auto-initialize if permission is already granted
-    if (hasNotificationPermission()) {
+    if (
+      hasNotificationPermission() ||
+      (isWebView() && permission === 'granted')
+    ) {
       initializeFCM().catch((error) => {
         console.error('[FCM Banner] Auto-initialization failed:', error);
       });
@@ -214,10 +219,44 @@ export default function NotificationPermissionBanner() {
         swMessageHandlerRef.current = null;
       }
     };
-  }, [user, accessToken, initializeFCM]);
+  }, [user, accessToken, initializeFCM, permission]);
+
+  /**
+   * For WebView: Fetch initial permission status from native side
+   */
+  useEffect(() => {
+    if (isWebView() && user) {
+      getNativeNotificationPermissionStatus().then((status) => {
+        if (status === 'GRANTED') {
+          setPermission('granted');
+          initializeFCM();
+        } else if (status === 'DENIED') {
+          setPermission('denied');
+        } else {
+          setPermission('default');
+        }
+        setNativeStatusLoaded(true);
+      });
+    }
+  }, [user, initializeFCM]);
 
   const requestPermission = useCallback(async () => {
     if (!t) return;
+
+    if (isWebView()) {
+      const result = await requestNativeNotificationPermission();
+      if (result === 'GRANTED') {
+        setPermission('granted');
+        setDismissed(true);
+        initializeFCM();
+      } else {
+        setPermission('denied');
+        setSnackbarMessage(t('notificationsDenied'));
+        setSnackbarOpen(true);
+      }
+      return;
+    }
+
     if (
       typeof window === 'undefined' ||
       !('Notification' in window) ||
@@ -271,10 +310,15 @@ export default function NotificationPermissionBanner() {
     dismissed ||
     permission === 'granted' ||
     permission === 'denied' ||
-    typeof window === 'undefined' ||
-    !('Notification' in window) ||
-    isWebView()
+    typeof window === 'undefined'
   ) {
+    return null;
+  }
+
+  if (!isWebView() && !('Notification' in window)) {
+    return null;
+  }
+  if (isWebView() && !nativeStatusLoaded) {
     return null;
   }
 

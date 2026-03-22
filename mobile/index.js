@@ -3,34 +3,9 @@
  */
 
 import messaging from '@react-native-firebase/messaging';
-import { AppRegistry, Platform } from 'react-native';
+import { AppRegistry } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';
-
-/**
- * Create the notification channel for Android 8+ (API 26+).
- * Without this, notifications may not appear as heads-up / pop-ups.
- * The channelId MUST match the one sent from the server in fcmService.ts
- * and declared in AndroidManifest.xml as default_notification_channel_id.
- */
-if (Platform.OS === 'android') {
-  messaging()
-    .android.createChannel({
-      channelId: 'xmobile_notifications',
-      channelName: 'XMobile Notifications',
-      importance: 4, // HIGH — enables heads-up display
-      vibration: true,
-      sound: 'default',
-    })
-    .then(created => {
-      if (created) {
-        console.log('[FCM] Notification channel created');
-      }
-    })
-    .catch(error => {
-      console.error('[FCM] Failed to create notification channel:', error);
-    });
-}
 
 /**
  * Register background/quit-state message handler.

@@ -24,44 +24,33 @@ import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
-async function getOrRequestNativeFcmToken() {
-  if (Number(Platform.Version) >= 33) {
-    const hasPermission = await PermissionsAndroid.check(
+/**
+ * Permission check for Android 13+ (API 33+).
+ */
+async function checkNotificationPermission() {
+  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+    return await PermissionsAndroid.check(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
     );
-
-    if (!hasPermission) {
-      const result = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      if (result !== PermissionsAndroid.RESULTS.GRANTED) {
-        return null;
-      }
-    }
   }
+  return true;
+}
 
-  try {
-    const token = await messaging().getToken();
-    if (token) {
-      console.log(
-        '\n\n==== YOUR DEVICE FCM TOKEN ====\n' +
-          token +
-          '\n===============================\n\n',
-      );
-      return token;
-    }
-    console.error('Failed to get FCM token');
-    return null;
-  } catch (error) {
-    console.error('Failed to get FCM token from native:', error);
-    return null;
+async function requestNotificationPermission() {
+  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    return result === PermissionsAndroid.RESULTS.GRANTED;
   }
+  return true;
 }
 
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
   const [storedToken, setStoredToken] = useState<string | null>(null);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [storedLocale, setStoredLocale] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -73,6 +62,7 @@ function WebAppScreen() {
   );
   const [isWebAppReady, setIsWebAppReady] = useState(false);
   const isWebAppReadyRef = useRef(false);
+  const fcmTokenFetchedRef = useRef(false);
 
   // Notification queue: multiple foreground notifications are queued and shown one at a time
   type FcmNotification = {
@@ -132,8 +122,8 @@ function WebAppScreen() {
 
     if (isWebAppReadyRef.current && webViewRef.current) {
       const payload = JSON.stringify({
-        type: 'DEEP_LINK',
-        payload: targetPath,
+        type: 'NOTIFICATION_CLICK',
+        payload: { target: targetPath },
       });
       webViewRef.current.injectJavaScript(`
             (function() {
@@ -148,15 +138,58 @@ function WebAppScreen() {
     }
   };
 
+  const fetchAndCacheToken = useCallback(async () => {
+    try {
+      const token = await messaging().getToken();
+      if (token) {
+        setFcmToken(token);
+        await AsyncStorage.setItem('FCM_TOKEN_CACHE', token);
+        console.log('[Native] FCM Token fetched & cached:', token);
+
+        if (isWebAppReadyRef.current && webViewRef.current) {
+          const uniqueId = await DeviceInfo.getUniqueId();
+          const payload = JSON.stringify({
+            type: 'FCM_TOKEN_AVAILABLE',
+            payload: { token, uniqueId },
+          });
+          webViewRef.current.injectJavaScript(`
+            (function() {
+              window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+            })();
+            true;
+          `);
+        }
+      }
+    } catch (error) {
+      console.warn('[Native] Could not fetch FCM token:', error);
+    } finally {
+      fcmTokenFetchedRef.current = true;
+    }
+  }, []);
+
+  // Initial token fetch on app start
+  useEffect(() => {
+    const initToken = async () => {
+      const cached = await AsyncStorage.getItem('FCM_TOKEN_CACHE');
+      if (cached) {
+        setFcmToken(cached);
+      }
+      fetchAndCacheToken();
+    };
+    initToken();
+  }, [fetchAndCacheToken]);
+
   useEffect(() => {
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('[Native] Foreground FCM message received:', remoteMessage);
 
-      const title = remoteMessage.notification?.title || 'Täze bildiriş';
-      const dataContent = remoteMessage.data?.content;
+      const title =
+        remoteMessage.notification?.title ||
+        (remoteMessage.data?.title as string) ||
+        'Täze bildiriş';
       const body =
         remoteMessage.notification?.body ||
-        (typeof dataContent === 'string' ? dataContent : undefined) ||
+        (remoteMessage.data?.body as string) ||
         'Täze bildiriş aldyňyz.';
 
       // Use notificationId for deduplication in the queue
@@ -213,19 +246,23 @@ function WebAppScreen() {
       });
 
     const unsubscribeTokenRefresh = messaging().onTokenRefresh(token => {
-      if (token && webViewRef.current) {
-        const payload = JSON.stringify({
-          type: 'FCM_TOKEN_REFRESHED',
-          payload: { token },
-        });
-        webViewRef.current.injectJavaScript(`
-          (function() {
-            window.dispatchEvent(new MessageEvent('message', {
-              data: ${payload}
-            }));
-          })();
-          true;
-        `);
+      if (token) {
+        setFcmToken(token);
+        AsyncStorage.setItem('FCM_TOKEN_CACHE', token);
+        if (webViewRef.current) {
+          const payload = JSON.stringify({
+            type: 'FCM_TOKEN_AVAILABLE',
+            payload: { token },
+          });
+          webViewRef.current.injectJavaScript(`
+            (function() {
+              window.dispatchEvent(new MessageEvent('message', {
+                data: ${payload}
+              }));
+            })();
+            true;
+          `);
+        }
       }
     });
 
@@ -435,12 +472,23 @@ function WebAppScreen() {
 
                     if (pendingClickAction) {
                       const deepLinkPayload = JSON.stringify({
-                        type: 'DEEP_LINK',
-                        payload: pendingClickAction,
+                        type: 'NOTIFICATION_CLICK',
+                        payload: { target: pendingClickAction },
                       });
                       scripts.push(`window.dispatchEvent(new MessageEvent('message', {
                         data: ${deepLinkPayload}
                     }));`);
+                    }
+
+                    if (fcmToken) {
+                      const uniqueId = DeviceInfo.getUniqueIdSync();
+                      const tokenPayload = JSON.stringify({
+                        type: 'FCM_TOKEN_AVAILABLE',
+                        payload: { token: fcmToken, uniqueId },
+                      });
+                      scripts.push(
+                        `window.dispatchEvent(new MessageEvent('message', { data: ${tokenPayload} }));`,
+                      );
                     }
 
                     webViewRef.current.injectJavaScript(`
@@ -454,13 +502,11 @@ function WebAppScreen() {
                     }
                   }
                 } else if (data.type === 'REQUEST_FCM_TOKEN') {
-                  const token = await getOrRequestNativeFcmToken();
                   const uniqueId = await DeviceInfo.getUniqueId();
-
-                  if (token && webViewRef.current) {
+                  if (fcmToken && webViewRef.current) {
                     const payload = JSON.stringify({
                       type: 'FCM_TOKEN',
-                      payload: { token, uniqueId },
+                      payload: { token: fcmToken, uniqueId },
                     });
 
                     webViewRef.current.injectJavaScript(`
@@ -471,6 +517,37 @@ function WebAppScreen() {
                     })();
                     true;
                   `);
+                  } else {
+                    fetchAndCacheToken();
+                  }
+                } else if (data.type === 'CHECK_PERMISSION') {
+                  const status = await checkNotificationPermission();
+                  if (webViewRef.current) {
+                    const payload = JSON.stringify({
+                      type: 'NOTIFICATION_PERMISSION_STATUS',
+                      payload: {
+                        status: status ? 'GRANTED' : 'NOT_DETERMINED',
+                      },
+                    });
+                    webViewRef.current.injectJavaScript(`
+                        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                        true;
+                       `);
+                  }
+                } else if (data.type === 'REQUEST_PERMISSION') {
+                  const granted = await requestNotificationPermission();
+                  if (granted) {
+                    fetchAndCacheToken();
+                  }
+                  if (webViewRef.current) {
+                    const payload = JSON.stringify({
+                      type: 'NOTIFICATION_PERMISSION_STATUS',
+                      payload: { status: granted ? 'GRANTED' : 'DENIED' },
+                    });
+                    webViewRef.current.injectJavaScript(`
+                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                         true;
+                        `);
                   }
                 } else if (data.type === 'AUTH_STATE') {
                   const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
@@ -480,8 +557,10 @@ function WebAppScreen() {
                   } else {
                     // Token was deleted on web side — clear everything
                     await AsyncStorage.removeItem('REFRESH_TOKEN');
+                    await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
                     await CookieManager.clearAll(true);
                     setStoredToken(null);
+                    setFcmToken(null);
                   }
 
                   if (NEXT_LOCALE) {
@@ -493,10 +572,12 @@ function WebAppScreen() {
                   }
                 } else if (data.type === 'LOGOUT') {
                   await AsyncStorage.removeItem('REFRESH_TOKEN');
+                  await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
                   await AsyncStorage.removeItem('NEXT_LOCALE');
                   await CookieManager.clearAll(true);
                   setStoredToken(null);
                   setStoredLocale(null);
+                  setFcmToken(null);
                 }
               } catch (err) {
                 console.error('Failed to parse WebView message:', err);
