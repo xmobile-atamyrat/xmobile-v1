@@ -129,6 +129,8 @@ export async function sendFCMNotificationToUser(
         notificationId: notification.data.notificationId,
         type: notification.data.type,
         click_action: notification.data.click_action,
+        title: notification.title,
+        body: notification.body,
         ...(notification.data.sessionId && {
           sessionId: notification.data.sessionId,
         }),
@@ -138,6 +140,7 @@ export async function sendFCMNotificationToUser(
       },
       android: {
         priority: 'high',
+        ttl: 24 * 60 * 60 * 1000,
         notification: {
           channelId: 'xmobile_notifications',
         },

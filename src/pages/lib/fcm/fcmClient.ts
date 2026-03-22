@@ -365,6 +365,81 @@ export function getNativeFCMTokenViaBridge(): Promise<{
 
   return pendingNativeTokenPromise;
 }
+export function getNativeNotificationPermissionStatus(): Promise<
+  'GRANTED' | 'NOT_DETERMINED' | 'DENIED'
+> {
+  if (!isWebView() || typeof window === 'undefined') {
+    return Promise.resolve('DENIED');
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView) return Promise.resolve('DENIED');
+
+  return new Promise((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
+          window.removeEventListener('message', handler);
+          resolve(data.payload.status);
+        }
+      } catch (err) {
+        console.warn('Parsing error in notification permission status', err);
+      }
+    }
+    window.addEventListener('message', handler);
+    try {
+      rnWebView.postMessage(JSON.stringify({ type: 'CHECK_PERMISSION' }));
+    } catch (err) {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }
+
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      resolve('NOT_DETERMINED');
+    }, 5000);
+  });
+}
+
+export function requestNativeNotificationPermission(): Promise<
+  'GRANTED' | 'DENIED'
+> {
+  if (!isWebView() || typeof window === 'undefined') {
+    return Promise.resolve('DENIED');
+  }
+
+  const rnWebView = (window as any).ReactNativeWebView;
+  if (!rnWebView) return Promise.resolve('DENIED');
+
+  return new Promise((resolve) => {
+    function handler(event: MessageEvent) {
+      try {
+        const data =
+          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
+          window.removeEventListener('message', handler);
+          resolve(data.payload.status === 'GRANTED' ? 'GRANTED' : 'DENIED');
+        }
+      } catch (err) {
+        console.warn('Parsing error in notification permission status', err);
+      }
+    }
+    window.addEventListener('message', handler);
+    try {
+      rnWebView.postMessage(JSON.stringify({ type: 'REQUEST_PERMISSION' }));
+    } catch (err) {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }
+
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      resolve('DENIED');
+    }, 60000);
+  });
+}
 
 /**
  * Ensure native FCM token is registered when running inside WebView.

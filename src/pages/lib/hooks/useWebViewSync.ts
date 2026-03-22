@@ -54,29 +54,35 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
         },
       );
 
-      const handleTokenRefresh = (event: MessageEvent) => {
+      const handleWebViewMessage = (event: MessageEvent) => {
         try {
           const data =
             typeof event.data === 'string'
               ? JSON.parse(event.data)
               : event.data;
 
-          if (data && data.type === 'FCM_TOKEN_REFRESHED') {
-            console.log('[WebViewSync] Detected native FCM token refresh');
+          if (
+            data &&
+            (data.type === 'FCM_TOKEN_REFRESHED' ||
+              data.type === 'FCM_TOKEN_AVAILABLE')
+          ) {
+            console.log(
+              `[WebViewSync] Detected native FCM token: ${data.type}`,
+            );
             ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
               console.error,
             );
           }
         } catch (error) {
           console.error(
-            '[WebViewSync] Failed to parse message event in token refresh handler:',
+            '[WebViewSync] Failed to parse message event in token refresh/token available handler:',
             error,
           );
         }
       };
 
-      window.addEventListener('message', handleTokenRefresh);
-      return () => window.removeEventListener('message', handleTokenRefresh);
+      window.addEventListener('message', handleWebViewMessage);
+      return () => window.removeEventListener('message', handleWebViewMessage);
     }
     return undefined;
   }, [user, accessToken]);

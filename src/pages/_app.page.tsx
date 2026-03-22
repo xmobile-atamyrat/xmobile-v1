@@ -74,8 +74,18 @@ export default function App({ Component, pageProps }: AppProps) {
               : event.data;
           if (data?.type === 'APP_VERSION' && data.payload) {
             setMobileAppVersion(data.payload);
-          } else if (data?.type === 'DEEP_LINK' && data.payload) {
-            router.push(data.payload);
+          } else if (
+            (data?.type === 'DEEP_LINK' ||
+              data?.type === 'NOTIFICATION_CLICK') &&
+            data.payload
+          ) {
+            const target =
+              typeof data.payload === 'string'
+                ? data.payload
+                : data.payload.target;
+            if (target) {
+              router.push(target);
+            }
           }
         } catch (error) {
           console.warn('Failed to handle message from WebView:', error);
