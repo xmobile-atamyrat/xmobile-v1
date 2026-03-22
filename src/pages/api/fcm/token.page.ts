@@ -51,10 +51,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             message: 'Token updated successfully',
           });
         }
-        // Scenario 2 & 6: DeviceInfo exists but belongs to another user → REJECT
-        return res.status(400).json({
-          success: false,
-          message: 'Device already registered to another user',
+        // Scenario 2 & 6: DeviceInfo exists but belongs to another user → REASSIGN
+        // This happens when a different user logs in on the same device (shared/family device,
+        // or logout→login flow). Reassign the device to the current user.
+        await dbClient.fCMToken.update({
+          where: { deviceInfo },
+          data: { token, userId },
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'Device reassigned to current user',
         });
       }
 
@@ -163,9 +170,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         orderBy: { createdAt: 'desc' },
       });
 
+      // Mask tokens for security - only show first 20 and last 4 characters
+      const maskedTokens = tokens.map((t) => ({
+        ...t,
+        token:
+          t.token.length > 24
+            ? `${t.token.substring(0, 20)}...${t.token.substring(t.token.length - 4)}`
+            : '***masked***',
+      }));
+
       return res.status(200).json({
         success: true,
-        data: tokens,
+        data: maskedTokens,
       });
     } catch (error: any) {
       console.error(filepath, 'Error fetching tokens:', error);

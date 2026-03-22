@@ -1,9 +1,10 @@
 import ChatSessionList from '@/pages/components/chat/ChatSessionList';
 import ChatWindow from '@/pages/components/chat/ChatWindow';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { useUserContext } from '@/pages/lib/UserContext';
 import { ChatSession } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
@@ -47,6 +48,7 @@ export default function ChatPage() {
     joinSession,
     messages,
   } = useChatContext();
+  const { markSessionAsRead } = useNotificationContext();
 
   const [loading, setLoading] = useState(false);
   const [showTakenAlert, setShowTakenAlert] = useState(false);
@@ -187,6 +189,15 @@ export default function ChatPage() {
       }
     }
   }, [currentSession, isAdmin]);
+
+  // Mark session notifications as read when they come from deeplink
+  useEffect(() => {
+    if (currentSession?.id) {
+      markSessionAsRead(currentSession.id).catch((error) => {
+        console.error('Failed to mark session as read:', error);
+      });
+    }
+  }, [currentSession?.id, markSessionAsRead]);
 
   // Load messages when WebSocket connects and we have a session but no messages
   useEffect(() => {

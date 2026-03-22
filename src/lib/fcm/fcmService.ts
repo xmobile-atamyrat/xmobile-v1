@@ -2,7 +2,6 @@ import dbClient from '@/lib/dbClient';
 import { NotificationType } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import fs from 'fs';
-import path from 'path';
 import { FCMNotificationPayload, FCMSendResult } from './types';
 
 let firebaseApp: admin.app.App | null = null;
@@ -26,13 +25,13 @@ function initializeOrGetFirebaseApp(): admin.app.App {
     // App doesn't exist, continue to initialize
   }
 
-  const credentialsPath =
-    process.env.FIREBASE_ADMIN_SDK_PATH ||
-    path.join(
-      process.cwd(),
-      'fcm',
-      'xmobile-54bc9-firebase-adminsdk-fbsvc-d665c5ae1a.json',
+  const credentialsPath = process.env.FIREBASE_ADMIN_SDK_PATH;
+
+  if (!credentialsPath) {
+    throw new Error(
+      '[FCM Service] FIREBASE_ADMIN_SDK_PATH environment variable is not defined. Cannot initialize Firebase Admin SDK.',
     );
+  }
 
   try {
     const serviceAccountData = fs.readFileSync(credentialsPath, 'utf8');
@@ -130,12 +129,21 @@ export async function sendFCMNotificationToUser(
         notificationId: notification.data.notificationId,
         type: notification.data.type,
         click_action: notification.data.click_action,
+        title: notification.title,
+        body: notification.body,
         ...(notification.data.sessionId && {
           sessionId: notification.data.sessionId,
         }),
         ...(notification.data.orderId && {
           orderId: notification.data.orderId,
         }),
+      },
+      android: {
+        priority: 'high',
+        ttl: 24 * 60 * 60 * 1000,
+        notification: {
+          channelId: 'xmobile_notifications',
+        },
       },
       tokens: tokenStrings,
     };
@@ -148,6 +156,8 @@ export async function sendFCMNotificationToUser(
     let tokensSent = 0;
     let tokensFailed = 0;
 
+    const tokensToDelete: string[] = [];
+
     response.responses.forEach((resp, idx) => {
       const token = tokenStrings[idx];
       const tokenRecord = tokens[idx];
@@ -159,12 +169,35 @@ export async function sendFCMNotificationToUser(
         if (tokenRecord) failedTokenIds.push(tokenRecord.id);
         const error = resp.error;
 
+        if (
+          error?.code === 'messaging/invalid-registration-token' ||
+          error?.code === 'messaging/registration-token-not-registered'
+        ) {
+          if (tokenRecord) tokensToDelete.push(tokenRecord.token);
+        }
+
         console.error(
           `[FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,
           error?.message || 'Unknown error',
         );
       }
     });
+
+    if (tokensToDelete.length > 0) {
+      try {
+        await dbClient.fCMToken.deleteMany({
+          where: { token: { in: tokensToDelete } },
+        });
+        console.log(
+          `[FCM Service] Deleted ${tokensToDelete.length} stale FCM token(s)`,
+        );
+      } catch (dbError) {
+        console.error(
+          '[FCM Service] Failed to delete stale FCM tokens:',
+          dbError,
+        );
+      }
+    }
 
     return {
       success: tokensSent > 0,
@@ -229,7 +262,7 @@ export function createFCMNotificationPayload(
  * Send notification with FCM first, then fallback to WebSocket server if FCM fails
  * This is used from Next.js API routes
  */
-export async function sendNotificationWithFCMFallback(
+export async function sendFCMWithCallbackFallback(
   targetUserId: string,
   notification: {
     id: string;

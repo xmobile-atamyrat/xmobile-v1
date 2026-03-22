@@ -1,5 +1,5 @@
 import dbClient from '@/lib/dbClient';
-import { sendNotificationWithFCMFallback } from '@/lib/fcm/fcmService';
+import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 import { getPrice } from '@/pages/api/prices/index.page';
 import {
   createNotificationForOrderStatusUpdate,
@@ -147,7 +147,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     .then((notifications) => {
       // Send notifications with FCM first, fallback to WebSocket
       notifications.forEach((notification) => {
-        sendNotificationWithFCMFallback(
+        sendFCMWithCallbackFallback(
           notification.userId,
           notification,
           sendNotificationToWebSocketServer,
@@ -330,7 +330,7 @@ export async function cancelOrderByUser(
     .then((notifications) => {
       // Send notifications with FCM first, fallback to WebSocket
       notifications.forEach((notification) => {
-        sendNotificationWithFCMFallback(
+        sendFCMWithCallbackFallback(
           notification.userId,
           notification,
           sendNotificationToWebSocketServer,
@@ -412,7 +412,7 @@ export async function updateOrderStatus(
       .then((notification) => {
         if (notification) {
           // Send notification with FCM first, fallback to WebSocket
-          sendNotificationWithFCMFallback(
+          sendFCMWithCallbackFallback(
             notification.userId,
             notification,
             sendNotificationToWebSocketServer,
