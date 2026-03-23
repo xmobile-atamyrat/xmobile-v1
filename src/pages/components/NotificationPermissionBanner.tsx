@@ -328,7 +328,9 @@ export default function NotificationPermissionBanner() {
         <Typography
           className={`${notificationClasses.permissionBanner.text[platform]} ${interClassname.className}`}
         >
-          {t('enableNotifications')}
+          {isWebView()
+            ? t('enableNativeNotifications')
+            : t('enableBrowserNotifications')}
         </Typography>
         <Box className="flex items-center gap-[8px]">
           <Typography
