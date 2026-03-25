@@ -21,6 +21,7 @@ import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
+import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
 import {
   Box,
   Button,
@@ -290,6 +291,26 @@ export default function Profile() {
                 className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
               >
                 {isAdmin ? t('userOrders') : t('myOrders')}
+              </Typography>
+              <ArrowForwardIos className={profileClasses.icons[platform]} />
+            </Button>
+            <Divider className={profileClasses.divider[platform]} />
+            <Button
+              className={profileClasses.boxes.sectionOrders[platform]}
+              disableRipple
+              onClick={() => router.push('/privacy-policy')}
+              variant={platform === 'web' ? 'outlined' : 'text'}
+              sx={{
+                '&:hover': { backgroundColor: colors.lightRed },
+              }}
+            >
+              <PolicyOutlinedIcon
+                className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+              />
+              <Typography
+                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+              >
+                {t('privacyPolicyTitle')}
               </Typography>
               <ArrowForwardIos className={profileClasses.icons[platform]} />
             </Button>
