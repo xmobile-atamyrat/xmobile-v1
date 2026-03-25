@@ -51,47 +51,89 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
+type PolicySection = {
+  title: string;
+  desc?: string;
+  items?: string[];
+  subsections?: { subtitle: string; items: string[] }[];
+};
+
 export default function PrivacyPolicy() {
   const platform = usePlatform();
   const t = useTranslations();
 
-  const sections = [
-    { title: t('privacyPolicyIntroTitle'), desc: t('privacyPolicyIntroDesc') },
+  const sections: PolicySection[] = [
     {
       title: t('privacyPolicyCollectTitle'),
-      desc: t('privacyPolicyCollectDesc'),
+      subsections: [
+        {
+          subtitle: t('privacyPolicyCollectPersonalSubtitle'),
+          items: [
+            t('privacyPolicyCollectPersonal1'),
+            t('privacyPolicyCollectPersonal2'),
+          ],
+        },
+        {
+          subtitle: t('privacyPolicyCollectAutoSubtitle'),
+          items: [
+            t('privacyPolicyCollectAuto1'),
+            t('privacyPolicyCollectAuto2'),
+            t('privacyPolicyCollectAuto3'),
+            t('privacyPolicyCollectAuto4'),
+          ],
+        },
+        {
+          subtitle: t('privacyPolicyCollectPermissionsSubtitle'),
+          items: [t('privacyPolicyCollectPerm1')],
+        },
+      ],
     },
     {
       title: t('privacyPolicyPurposeTitle'),
-      desc: t('privacyPolicyPurposeDesc'),
-    },
-    {
-      title: t('privacyPolicyConsentTitle'),
-      desc: t('privacyPolicyConsentDesc'),
+      items: [
+        t('privacyPolicyPurpose1'),
+        t('privacyPolicyPurpose2'),
+        t('privacyPolicyPurpose3'),
+        t('privacyPolicyPurpose4'),
+        t('privacyPolicyPurpose5'),
+        t('privacyPolicyPurpose6'),
+        t('privacyPolicyPurpose7'),
+      ],
     },
     {
       title: t('privacyPolicySharingTitle'),
       desc: t('privacyPolicySharingDesc'),
+      items: [
+        t('privacyPolicySharing1'),
+        t('privacyPolicySharing2'),
+        t('privacyPolicySharing3'),
+      ],
     },
     {
-      title: t('privacyPolicyTransferTitle'),
-      desc: t('privacyPolicyTransferDesc'),
+      title: t('privacyPolicySecurityTitle'),
+      desc: t('privacyPolicySecurityDesc'),
     },
     {
-      title: t('privacyPolicyStorageTitle'),
-      desc: t('privacyPolicyStorageDesc'),
+      title: t('privacyPolicyRetentionTitle'),
+      desc: t('privacyPolicyRetentionDesc'),
     },
     {
       title: t('privacyPolicyRightsTitle'),
       desc: t('privacyPolicyRightsDesc'),
-    },
-    {
-      title: t('privacyPolicyCookiesTitle'),
-      desc: t('privacyPolicyCookiesDesc'),
+      items: [
+        t('privacyPolicyRights1'),
+        t('privacyPolicyRights2'),
+        t('privacyPolicyRights3'),
+        t('privacyPolicyRights4'),
+      ],
     },
     {
       title: t('privacyPolicyChildrenTitle'),
       desc: t('privacyPolicyChildrenDesc'),
+    },
+    {
+      title: t('privacyPolicyTransferTitle'),
+      desc: t('privacyPolicyTransferDesc'),
     },
     {
       title: t('privacyPolicyChangesTitle'),
@@ -124,15 +166,98 @@ export default function PrivacyPolicy() {
                   component="h2"
                   className={`${interClassname.className} ${privacyPolicyClasses.h2[platform]}`}
                 >
-                  {section.title}
+                  {`${idx + 1}. ${section.title}`}
+                </Typography>
+
+                {section.desc && (
+                  <Typography
+                    className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                  >
+                    {section.desc}
+                  </Typography>
+                )}
+
+                {section.items && section.items.length > 0 && (
+                  <ul className={privacyPolicyClasses.boxes.list[platform]}>
+                    {section.items.map((item, i) => (
+                      <li
+                        key={i}
+                        className={
+                          privacyPolicyClasses.boxes.listItem[platform]
+                        }
+                      >
+                        <Typography
+                          className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                        >
+                          {item}
+                        </Typography>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {section.subsections?.map((sub, si) => (
+                  <div
+                    key={si}
+                    className={privacyPolicyClasses.boxes.subsection[platform]}
+                  >
+                    <Typography
+                      className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                    >
+                      {sub.subtitle}
+                    </Typography>
+                    <ul
+                      className={privacyPolicyClasses.boxes.subList[platform]}
+                    >
+                      {sub.items.map((item, ii) => (
+                        <li
+                          key={ii}
+                          className={
+                            privacyPolicyClasses.boxes.subListItem[platform]
+                          }
+                        >
+                          <Typography
+                            className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                          >
+                            {item}
+                          </Typography>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </Box>
+            ))}
+
+            {/* Account Deletion — /privacy-policy#account-deletion */}
+            <Box
+              id="account-deletion"
+              className={privacyPolicyClasses.boxes.section[platform]}
+            >
+              <Typography
+                component="h2"
+                className={`${interClassname.className} ${privacyPolicyClasses.h2[platform]}`}
+              >
+                {t('privacyPolicyDeletionTitle')}
+              </Typography>
+              <Typography
+                className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+              >
+                {t('privacyPolicyDeletionDesc')}
+              </Typography>
+              <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                >
+                  {t('privacyPolicyDeletionHowTitle')}
                 </Typography>
                 <Typography
                   className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
                 >
-                  {section.desc}
+                  {t('privacyPolicyDeletionHowDesc')}
                 </Typography>
-              </Box>
-            ))}
+              </div>
+            </Box>
           </Box>
         </Box>
       </Box>

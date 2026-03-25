@@ -16,6 +16,31 @@ export const privacyPolicyClasses = {
       web: 'flex flex-col w-full px-[48px] py-[48px] items-center',
       mobile: 'flex flex-col w-full',
     },
+    list: {
+      web: 'pl-[24px] mt-[4px]',
+      mobile: 'pl-[20px] mt-[4px]',
+    },
+    listItem: {
+      web: 'mb-[6px]',
+      mobile: 'mb-[6px]',
+    },
+    subsection: {
+      web: 'mt-[10px]',
+      mobile: 'mt-[10px]',
+    },
+    subList: {
+      web: 'pl-[24px]',
+      mobile: 'pl-[20px]',
+    },
+    subListItem: {
+      web: 'mb-[4px]',
+      mobile: 'mb-[4px]',
+    },
+    deletionBox: {
+      web: 'w-full mt-[8px] p-[20px] rounded-[8px] border border-[#e0e0e0] bg-[#f9f9f9] flex flex-col gap-[10px]',
+      mobile:
+        'w-full mt-[6px] p-[14px] rounded-[8px] border border-[#e0e0e0] bg-[#f9f9f9] flex flex-col gap-[8px]',
+    },
   },
   h1: {
     web: 'font-bold text-[48px] leading-[60px] tracking-[0] mb-[40px] text-center text-[#111]',
@@ -29,5 +54,10 @@ export const privacyPolicyClasses = {
   p: {
     web: 'text-[16px] leading-[1.6] text-[#444] whitespace-pre-line',
     mobile: 'text-[14px] leading-[1.6] text-[#444] whitespace-pre-line',
+  },
+  subtitle: {
+    web: 'text-[16px] leading-[1.6] text-[#444] whitespace-pre-line font-semibold',
+    mobile:
+      'text-[14px] leading-[1.6] text-[#444] whitespace-pre-line font-semibold',
   },
 };
