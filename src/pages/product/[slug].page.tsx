@@ -6,7 +6,7 @@ import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
-import { fetchAllProductIds, fetchProducts } from '@/pages/lib/apis';
+import { fetchAllProductSlugs, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
@@ -75,8 +75,8 @@ const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async (context) => {
   try {
-    const ids = await fetchAllProductIds();
-    const paths = expandDynamicPathsForAllLocales(context, ids);
+    const slugs = await fetchAllProductSlugs();
+    const paths = expandDynamicPathsForAllLocales(context, slugs);
 
     return {
       paths,
@@ -96,11 +96,11 @@ export const getStaticProps: GetStaticProps = async ({
   params,
   locale = 'tk',
 }) => {
-  const productId = params?.id as string;
+  const productSlug = params?.slug as string;
 
   try {
     // Fetch the specific product at build time
-    const products = await fetchProducts({ productId });
+    const products = await fetchProducts({ productSlug });
     const product = products && products.length > 0 ? products[0] : null;
 
     if (!product) {
@@ -201,7 +201,7 @@ export const getStaticProps: GetStaticProps = async ({
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : '';
     if (msg === "Couldn't find the product") {
-      console.warn(`Product not found during build/SSR: ${productId}`);
+      console.warn(`Product not found during build/SSR: ${productSlug}`);
     } else {
       console.error('Error fetching product during build:', error);
     }
