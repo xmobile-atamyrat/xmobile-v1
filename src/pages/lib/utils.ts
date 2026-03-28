@@ -468,3 +468,17 @@ export const linkify = (text: string): React.ReactNode[] => {
     return React.createElement(React.Fragment, { key: i }, part); // create react container to hold element (<>{part}</>)
   });
 };
+
+export const slugify = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD') // Normalize diacritics
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics (eg. ň, ý -> n, y)
+    .replace(/[^\w\s-]/g, '') // Remove non-word characters
+    .trim() // Trim leading/trailing whitespace
+    .replace(/[-\s]+/g, '-') // Replace spaces with hyphens
+    .substring(0, 100) // Cap at 100 characters to prevent DB constraint issues
+    .replace(/-+$/, ''); // Remove trailing hyphens again if length cut off at a hyphen
+};
