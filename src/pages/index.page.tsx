@@ -1,4 +1,3 @@
-import dbClient from '@/lib/dbClient';
 import { SearchBar } from '@/pages/components/Appbar';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
@@ -10,6 +9,7 @@ import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   BUSINESS_NAME,
+  DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
   LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
@@ -70,41 +70,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
   if (ip && typeof ip === 'string') {
     try {
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0); // Set to 00:00:00.000
-
-      const endOfToday = new Date();
-      endOfToday.setHours(23, 59, 59, 999); // Set to 23:59:59.999
-      const visitedToday = await dbClient.userVisitRecord.findFirst({
-        where: {
-          ip,
-          createdAt: {
-            gte: startOfToday,
-            lte: endOfToday,
-          },
-        },
-      });
-      if (!visitedToday) {
-        await dbClient.userVisitRecord.create({
-          data: {
-            ip,
-          },
-        });
-      } else {
-        await dbClient.userVisitRecord.update({
-          where: {
-            id: visitedToday.id,
-          },
-          data: {
-            dailyVisitCount: visitedToday.dailyVisitCount + 1,
-          },
-        });
-      }
-    } catch (error) {
-      console.error(error);
-    }
-
-    try {
       if (locale == null) {
         const geo = geoip.lookup(ip || '');
         if (geo) {
@@ -113,27 +78,37 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
             locale = 'tr';
           } else if (POST_SOVIET_COUNTRIES.includes(country)) {
             locale = 'ru';
+          } else {
+            locale = 'en';
           }
         }
-        if (locale != null) {
-          context.res.setHeader(
-            'Set-Cookie',
-            serialize(LOCALE_COOKIE_NAME, locale, {
-              // session cookie, expires when the browser is closed
-              secure: process.env.NODE_ENV === 'production', // Use secure flag in production
-              path: '/',
-            }),
-          );
+        if (locale == null) {
+          locale = DEFAULT_LOCALE;
         }
+        context.res.setHeader(
+          'Set-Cookie',
+          serialize(LOCALE_COOKIE_NAME, locale, {
+            // session cookie, expires when the browser is closed
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            sameSite: 'lax',
+          }),
+        );
       }
-
-      messages = (await import(`../i18n/${context.locale}.json`)).default;
     } catch (error) {
       console.error(error);
     }
   }
 
-  // Generate SEO Data
+  const routeLocale = context.locale;
+  try {
+    messages = (await import(`../i18n/${routeLocale}.json`)).default;
+  } catch {
+    messages = (await import(`../i18n/${DEFAULT_LOCALE}.json`)).default;
+  }
+
+  // SEO tags follow routeLocale so they match title/description strings from messages.
+  // `locale` (cookie / GeoIP) is still passed to the client to align the URL via router when needed.
   const t = messages as Record<string, string>;
   const businessName = BUSINESS_NAME;
 
@@ -148,13 +123,13 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   const seoData = {
     title,
     description,
-    canonicalUrl: getCanonicalUrl(locale || 'ru', ''), // Root path
+    canonicalUrl: getCanonicalUrl(routeLocale, ''), // Root path
     hreflangLinks: generateHreflangLinks(''), // Root path
     ogTitle: title,
     ogDescription: description,
     ogType: 'website',
     ogLocale:
-      LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+      LOCALE_TO_OG_LOCALE[routeLocale as keyof typeof LOCALE_TO_OG_LOCALE] ||
       'ru_RU',
     organizationJsonLd: generateOrganizationSchema(),
     localBusinessJsonLd: generateLocalBusinessSchema(),

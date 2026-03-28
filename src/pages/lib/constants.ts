@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/prefer-default-export
 
 export const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
+export const DEFAULT_LOCALE = 'ru';
 export const AUTH_REFRESH_COOKIE_NAME = 'REFRESH_TOKEN';
 
 export const REFRESH_TOKEN_EXPIRY = '10y';
