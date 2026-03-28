@@ -33,19 +33,19 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-// Helper function to extract all category IDs recursively
-function extractCategoryIds(categories: ExtendedCategory[]): string[] {
-  const ids: string[] = [];
+// Helper function to extract all category slugs recursively
+function extractCategorySlugs(categories: ExtendedCategory[]): string[] {
+  const slugs: string[] = [];
   function traverse(cats: ExtendedCategory[]) {
     cats.forEach((cat) => {
-      ids.push(cat.id);
+      slugs.push(cat.slug || cat.id);
       if (cat.successorCategories && cat.successorCategories.length > 0) {
         traverse(cat.successorCategories);
       }
     });
   }
   traverse(categories);
-  return ids;
+  return slugs;
 }
 
 export const getStaticPaths: GetStaticPaths = async (context) => {
@@ -62,10 +62,10 @@ export const getStaticPaths: GetStaticPaths = async (context) => {
       };
     }
 
-    // Extract all category IDs recursively
-    const categoryIds = extractCategoryIds(data);
+    // Extract all category slugs recursively
+    const categorySlugs = extractCategorySlugs(data);
 
-    const paths = expandDynamicPathsForAllLocales(context, categoryIds);
+    const paths = expandDynamicPathsForAllLocales(context, categorySlugs);
 
     return {
       paths,
@@ -84,13 +84,13 @@ export const getStaticProps: GetStaticProps = async ({
   params,
   locale = 'tk',
 }) => {
-  const categoryId = params?.id as string;
+  const categorySlug = params?.slug as string;
 
   try {
     // Fetch the specific category
     const { success, data: categoryData }: ResponseApi<ExtendedCategory> =
       await (
-        await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`)
+        await fetch(`${BASE_URL}/api/category?categorySlug=${categorySlug}`)
       ).json();
 
     if (!success || !categoryData) {
@@ -109,9 +109,9 @@ export const getStaticProps: GetStaticProps = async ({
 
     let parentCategory: ExtendedCategory | null = null;
     let categoryPath: ExtendedCategory[] = [];
-    if (allSuccess && allCategories) {
-      parentCategory = findParentCategory(categoryId, allCategories);
-      categoryPath = buildCategoryPath(categoryId, allCategories);
+    if (allSuccess && allCategories && categoryData) {
+      parentCategory = findParentCategory(categoryData.id, allCategories);
+      categoryPath = buildCategoryPath(categoryData.id, allCategories);
     }
 
     // Load messages first so they can be used for SEO generation
@@ -138,8 +138,13 @@ export const getStaticProps: GetStaticProps = async ({
         messages?.categoryDetailsMetaDescription || '',
         categoryName,
       );
-      const canonicalUrl = getCanonicalUrl(locale, `category/${categoryId}`);
-      const hreflangLinks = generateHreflangLinks(`category/${categoryId}`);
+      const canonicalUrl = getCanonicalUrl(
+        locale,
+        `category/${categoryData.slug || categoryData.id}`,
+      );
+      const hreflangLinks = generateHreflangLinks(
+        `category/${categoryData.slug || categoryData.id}`,
+      );
 
       let ogImage = categoryData.imgUrl;
       if (ogImage && !ogImage.startsWith('http')) {
@@ -221,7 +226,7 @@ export default function CategoryPage({
 
   const handleHeaderBackButton = () => {
     if (parentCategory) {
-      router.push(`/category/${parentCategory.id}`);
+      router.push(`/category/${parentCategory.slug || parentCategory.id}`);
     } else {
       router.push('/');
     }
@@ -281,7 +286,7 @@ export default function CategoryPage({
           />
           {/* Subcategories */}
           {category.successorCategories.map((subCategory) => {
-            const { imgUrl, name, id } = subCategory;
+            const { imgUrl, name, id, slug } = subCategory;
             return (
               <CategoryCard
                 id={id}
@@ -289,7 +294,7 @@ export default function CategoryPage({
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
                 onClick={() => {
-                  router.push(`/category/${id}`);
+                  router.push(`/category/${slug || id}`);
                 }}
               />
             );
