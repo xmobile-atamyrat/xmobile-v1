@@ -11,6 +11,7 @@ import {
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
+import { parseName, slugify } from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -136,12 +137,29 @@ async function createProduct(
         return;
       }
 
+      const productEnglishName = parseName(fields.name[0], 'en');
+      const productSlug = slugify(productEnglishName);
+
+      const existingProduct = await dbClient.product.findUnique({
+        where: { slug: productSlug },
+      });
+      if (existingProduct) {
+        resolve({
+          success: false,
+          message:
+            'A product with a similar name creates a duplicate URL. Please try another name.',
+          status: 400,
+        });
+        return;
+      }
+
       const cachedPrice = parseFloat(
         (await getPrice(fields.price?.[0]))?.price ?? '0',
       );
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
+          slug: productSlug,
           categoryId: fields.categoryId[0],
           brandId: fields.brandId?.[0] || null,
           description: fields.description?.[0],
@@ -166,10 +184,16 @@ async function createProduct(
   return res;
 }
 
-async function getProduct(productId: string): Promise<ExtendedProduct | null> {
+async function getProduct(
+  productId?: string,
+  productSlug?: string,
+): Promise<ExtendedProduct | null> {
+  if (!productId && !productSlug) return null;
   const product = await dbClient.product.findFirst({
     where: {
-      id: productId,
+      ...(productSlug
+        ? { slug: productSlug }
+        : { id: productId }),
       deletedAt: null,
     },
     include: { brand: true },
@@ -219,6 +243,7 @@ async function handleGetProduct(query: {
   categoryIds?: string | string[];
   brandIds?: string | string[];
   productId?: string;
+  productSlug?: string;
   page?: string;
   minPrice?: string;
   maxPrice?: string;
@@ -227,6 +252,7 @@ async function handleGetProduct(query: {
   const {
     searchKeyword,
     productId,
+    productSlug,
     categoryId,
     categoryIds,
     brandIds,
@@ -238,15 +264,11 @@ async function handleGetProduct(query: {
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
-  if (productId != null) {
-    if (typeof productId !== 'string' || !/^[a-zA-Z0-9-]+$/.test(productId)) {
-      return {
-        resp: { success: false, message: 'Invalid product ID format' },
-        status: 400,
-      };
-    }
-
-    const product = await getProduct(productId as string);
+  if (productId != null || productSlug != null) {
+    const product = await getProduct(
+      productId as string,
+      productSlug as string,
+    );
     if (product == null) {
       console.error(
         filepath,

@@ -10,6 +10,7 @@ import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import { parseName, slugify } from '@/pages/lib/utils';
 import { Category } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -36,11 +37,15 @@ function parsePopularField(fields: {
 }
 
 export async function getCategory(
-  categoryId: string,
+  categoryId?: string,
+  categorySlug?: string,
 ): Promise<ExtendedCategory | null> {
+  if (!categoryId && !categorySlug) return null;
   const category = await dbClient.category.findFirst({
     where: {
-      id: categoryId,
+      ...(categorySlug
+        ? { slug: categorySlug }
+        : { id: categoryId }),
       deletedAt: null,
     },
     include: {
@@ -53,6 +58,8 @@ export async function getCategory(
       },
     },
   });
+
+  if (!category) return null;
 
   const categoryProductsWithPrices = await Promise.all(
     category.products.map(async (product) => {
@@ -101,8 +108,9 @@ async function recursivelyGetCategories(
 
 async function handleGetCategory(query: {
   categoryId?: string;
+  categorySlug?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
-  if (query.categoryId == null) {
+  if (query.categoryId == null && query.categorySlug == null) {
     const categories = await dbClient.category.findMany({
       where: {
         predecessorId: null,
@@ -113,7 +121,10 @@ async function handleGetCategory(query: {
     const nestedCategories = await recursivelyGetCategories(categories);
     return { resp: { success: true, data: nestedCategories }, status: 200 };
   }
-  const category = await getCategory(query.categoryId as string);
+  const category = await getCategory(
+    query.categoryId as string,
+    query.categorySlug as string,
+  );
   return { resp: { success: true, data: category }, status: 200 };
 }
 
@@ -149,12 +160,29 @@ async function handlePostCategory(req: NextApiRequest) {
         }
       }
 
+      const categoryEnglishName = parseName(fields.name[0], 'en');
+      const categorySlug = slugify(categoryEnglishName);
+
+      const existingCategory = await dbClient.category.findUnique({
+        where: { slug: categorySlug },
+      });
+      if (existingCategory) {
+        resolve({
+          success: false,
+          message:
+            'A category with a similar name creates a duplicate URL. Please try another name.',
+          status: 400,
+        });
+        return;
+      }
+
       const predecessorKey = predId != null && predId !== '' ? predId : null;
       const sortOrder = await nextSiblingSortOrder(predecessorKey);
 
       const category = await dbClient.category.create({
         data: {
           name: fields.name[0],
+          slug: categorySlug,
           predecessorId: predecessorKey,
           sortOrder,
           imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
