@@ -25,7 +25,6 @@ import {
 } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { getCookie } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -82,25 +81,26 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
             locale = 'en';
           }
         }
-        if (locale == null) {
-          locale = DEFAULT_LOCALE;
-        }
-        context.res.setHeader(
-          'Set-Cookie',
-          serialize(LOCALE_COOKIE_NAME, locale, {
-            // session cookie, expires when the browser is closed
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            sameSite: 'lax',
-          }),
-        );
       }
     } catch (error) {
-      console.error(error);
+      console.error('GeoIP lookup failed:', error);
     }
   }
 
   const routeLocale = context.locale;
+
+  // Ensure we have a locale for cookie setting/persistence
+  const finalLocale = locale || routeLocale || DEFAULT_LOCALE;
+
+  context.res.setHeader(
+    'Set-Cookie',
+    serialize(LOCALE_COOKIE_NAME, finalLocale, {
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      sameSite: 'lax',
+    }),
+  );
+
   try {
     messages = (await import(`../i18n/${routeLocale}.json`)).default;
   } catch {
@@ -137,7 +137,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
   return {
     props: {
-      locale,
+      locale:
+        context.locale !== context.defaultLocale ? context.locale : locale,
       messages,
       seoData,
     },
@@ -249,9 +250,7 @@ export default function Home({
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
-    router.push(router.pathname, router.asPath, {
-      locale: locale || getCookie(LOCALE_COOKIE_NAME),
-    });
+    router.push(router.pathname, router.asPath, { locale });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
