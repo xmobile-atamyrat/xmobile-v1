@@ -49,7 +49,11 @@ async function requestNotificationPermission() {
 function LoadingView() {
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#d32f2f" />
+      <ActivityIndicator
+        size="large"
+        color="#ff624c"
+        style={styles.loadingSpinner}
+      />
       <Text style={styles.loadingText}>
         Ilkinji açylyş wagt alyp biler, 5-10 sekunt garaşyň
       </Text>
@@ -625,22 +629,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 20,
+    padding: 30,
+    zIndex: 10,
+  },
+  loadingSpinner: {
+    marginVertical: 32,
   },
   loadingText: {
-    color: '#333333',
     fontSize: 16,
+    color: '#666666',
     textAlign: 'center',
-    marginTop: 20,
     lineHeight: 22,
+    fontWeight: '500',
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,
