@@ -83,12 +83,12 @@ jobs:
         run: |
           SHORT_SHA="${{ needs.resolve.outputs.short_sha }}"
           TAR_NAME="xmobile-v1-${SHORT_SHA}.tar.gz"
-          if ssh deploy-vm "test -f ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}"; then
+          if ssh deploy-vm "test -f ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME} && tar -tzf ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME} >/dev/null 2>&1"; then
             echo "tar_exists=true" >> $GITHUB_OUTPUT
-            echo "Tar already on VM, skipping build: ${TAR_NAME}"
+            echo "Tar already on VM and is valid, skipping build: ${TAR_NAME}"
           else
             echo "tar_exists=false" >> $GITHUB_OUTPUT
-            echo "Tar not on VM, will build and upload: ${TAR_NAME}"
+            echo "Tar not on VM or invalid, will build and upload: ${TAR_NAME}"
           fi
 
       - name: Checkout
@@ -196,7 +196,8 @@ jobs:
         if: needs.build.outputs.tar_exists == 'false'
         run: |
           TAR_NAME="xmobile-v1-${{ needs.build.outputs.short_sha }}.tar.gz"
-          scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/
+          scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}.tmp
+          ssh deploy-vm "mv ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}.tmp ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}"
 
       - name: Deploy on VM (extract, copy, db, build, restart)
         env:
