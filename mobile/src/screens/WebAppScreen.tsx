@@ -46,6 +46,21 @@ async function requestNotificationPermission() {
   return true;
 }
 
+function LoadingView() {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator
+        size="large"
+        color="#ff624c"
+        style={styles.loadingSpinner}
+      />
+      <Text style={styles.loadingText}>
+        Ilkinji açylyş wagt alyp biler, 5-10 sekunt garaşyň
+      </Text>
+    </View>
+  );
+}
+
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
@@ -370,11 +385,7 @@ function WebAppScreen() {
   }, [cookieInjectionJS]);
 
   if (!isReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#d32f2f" />
-      </View>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -434,11 +445,7 @@ function WebAppScreen() {
             style={styles.webview}
             startInLoadingState={true}
             javaScriptEnabled={true}
-            renderLoading={() => (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#d32f2f" />
-              </View>
-            )}
+            renderLoading={() => <LoadingView />}
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
             onError={syntheticEvent => {
@@ -622,14 +629,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    padding: 30,
+    zIndex: 10,
+  },
+  loadingSpinner: {
+    marginVertical: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '500',
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,
