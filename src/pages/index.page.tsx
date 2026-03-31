@@ -263,12 +263,16 @@ export default function Home({
             src="/logo/xmobile-processed-logo.png"
             className="w-auto h-[40px]"
           />
-          {user && (
+          {(user || platform === 'mobile') && (
             <Box className="w-[18px] h-[18px] rounded-full bg-[#f5f5f5] justify-center items-center flex mr-6">
               <NotificationBadge
-                onClick={(e: React.MouseEvent<HTMLElement>) =>
-                  setNotificationAnchorEl(e.currentTarget)
-                }
+                onClick={(e: React.MouseEvent<HTMLElement>) => {
+                  if (user) {
+                    setNotificationAnchorEl(e.currentTarget);
+                  } else {
+                    router.push('/user/sign_in_up');
+                  }
+                }}
               />
               <NotificationMenu
                 anchorEl={notificationAnchorEl}
