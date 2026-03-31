@@ -46,6 +46,17 @@ async function requestNotificationPermission() {
   return true;
 }
 
+function LoadingView() {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#d32f2f" />
+      <Text style={styles.loadingText}>
+        Ilkinji açylyş wagt alyp biler, 5-10 sekunt garaşyň
+      </Text>
+    </View>
+  );
+}
+
 function WebAppScreen() {
   const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
@@ -370,11 +381,7 @@ function WebAppScreen() {
   }, [cookieInjectionJS]);
 
   if (!isReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#d32f2f" />
-      </View>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -434,11 +441,7 @@ function WebAppScreen() {
             style={styles.webview}
             startInLoadingState={true}
             javaScriptEnabled={true}
-            renderLoading={() => (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#d32f2f" />
-              </View>
-            )}
+            renderLoading={() => <LoadingView />}
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
             onError={syntheticEvent => {
@@ -630,6 +633,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    color: '#333333',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+    lineHeight: 22,
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,
