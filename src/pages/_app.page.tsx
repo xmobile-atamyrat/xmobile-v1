@@ -125,9 +125,15 @@ export default function App({ Component, pageProps }: AppProps) {
   }, [mobileAppVersion, appVersionInfo]);
 
   useEffect(() => {
+    if (isWebView()) {
+      setIsLoading(false);
+      return undefined;
+    }
+
     const hasShownSplash = sessionStorage.getItem('hasShownSplash');
     if (hasShownSplash) {
       setIsLoading(false);
+      return undefined;
     }
 
     const timer = setTimeout(() => {
