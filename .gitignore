@@ -38,6 +38,11 @@ next-env.d.ts
 db/
 *dist/
 
+#mobile
+google-services.json
+**/res/mipmap*/
+**/release
+
 
 dummy_db_data/
 !*.tar.gz
@@ -57,4 +62,3 @@ backup/
 backup-data.sh
 ssl_keys
 fcm-configs
-google-services.json
