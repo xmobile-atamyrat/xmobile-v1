@@ -8,6 +8,7 @@
     "build:ws": "tsc --project tsconfig.ws.json && tsc-alias --project tsconfig.ws.json",
     "build:batch-runner": "tsc --project tsconfig.batch-runner.json",
     "build": "next build",
+    "build-dev": "test -f .env.local && rm -rf .next && dotenv -e .env.local -- next build",
     "start:ws": "node --env-file=.env dist/ws-server/index.js",
     "start:batch-runner": "node --env-file=.env batch-runner-dist/scripts/batch-runner/batch-runner.js",
     "start": "next start",

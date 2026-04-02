@@ -51,6 +51,17 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
+/** All product ids for SSG (e.g. getStaticPaths); uses /api/product/ids */
+export const fetchAllProductIds = async (): Promise<string[]> => {
+  const { success, data, message }: ResponseApi<string[]> = await (
+    await fetch(`${BASE_URL}/api/product/ids`)
+  ).json();
+  if (!success || data == null) {
+    throw new Error(message ?? 'Failed to fetch product ids');
+  }
+  return data;
+};
+
 // todo: legacy func, fetchProducts applies default sortBy=newest parameter
 export const fetchNewProducts = async ({
   searchKeyword,

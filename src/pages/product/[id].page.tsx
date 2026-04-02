@@ -6,7 +6,7 @@ import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchAllProductIds, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
@@ -74,21 +74,15 @@ const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
-    // Fetch all products to generate static pages at build time
-    const products = await fetchProducts({});
-
-    // Generate paths for all products
-    const paths =
-      products?.map((product) => ({
-        params: { id: product.id },
-      })) || [];
+    const ids = await fetchAllProductIds();
+    const paths = ids.map((id) => ({ params: { id } }));
 
     return {
       paths,
-      fallback: 'blocking', // Use blocking fallback for better error handling
+      fallback: 'blocking',
     };
   } catch (error) {
-    console.error('Error fetching products for static generation:', error);
+    console.error('Error fetching product ids for static generation:', error);
     return {
       paths: [],
       fallback: 'blocking',
