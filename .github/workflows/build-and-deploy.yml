@@ -196,8 +196,7 @@ jobs:
         if: needs.build.outputs.tar_exists == 'false'
         run: |
           TAR_NAME="xmobile-v1-${{ needs.build.outputs.short_sha }}.tar.gz"
-          scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}.tmp
-          ssh deploy-vm "mv ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}.tmp ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME}"
+          scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/
 
       - name: Deploy on VM (extract, copy, db, build, restart)
         env:
