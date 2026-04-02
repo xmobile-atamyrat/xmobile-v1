@@ -21,7 +21,7 @@ export const config = {
   },
 };
 
-const filepath = 'src/pages/api/product.page.ts';
+const filepath = 'src/pages/api/product/index.page.ts';
 const productsPerPage = 20;
 
 interface CreateProductReturnType {
@@ -230,14 +230,15 @@ async function handleGetProduct(query: {
   const skip = (parsedPage - 1) * productsPerPage;
 
   if (productId != null) {
+    if (typeof productId !== 'string' || !/^[a-zA-Z0-9-]+$/.test(productId)) {
+      return {
+        resp: { success: false, message: "Couldn't find the product" },
+        status: 404,
+      };
+    }
+
     const product = await getProduct(productId as string);
     if (product == null) {
-      console.error(
-        filepath,
-        'Product not found',
-        `Method: GET`,
-        `productId: ${productId}`,
-      );
       return {
         resp: { success: false, message: "Couldn't find the product" },
         status: 404,
