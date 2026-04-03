@@ -197,7 +197,14 @@ export const getStaticProps: GetStaticProps = async ({
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Couldn't find the product") {
+      console.warn(`Product not found during build/SSR: ${productId}`);
+      return {
+        notFound: true,
+        revalidate: 300, // regenerate static pages every 5 minutes
+      };
+    }
     console.error('Error fetching product during build:', error);
     return {
       props: {
