@@ -232,13 +232,19 @@ async function handleGetProduct(query: {
   if (productId != null) {
     if (typeof productId !== 'string' || !/^[a-zA-Z0-9-]+$/.test(productId)) {
       return {
-        resp: { success: false, message: "Couldn't find the product" },
-        status: 404,
+        resp: { success: false, message: 'Invalid product ID format' },
+        status: 400,
       };
     }
 
     const product = await getProduct(productId as string);
     if (product == null) {
+      console.error(
+        filepath,
+        'Product not found',
+        `Method: GET`,
+        `productId: ${productId}`,
+      );
       return {
         resp: { success: false, message: "Couldn't find the product" },
         status: 404,
