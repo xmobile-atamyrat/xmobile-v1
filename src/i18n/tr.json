@@ -400,5 +400,8 @@
   "privacyPolicyDeletionTitle": "Hesap Silme",
   "privacyPolicyDeletionDesc": "Hesabınızın ve tüm ilgili kişisel verilerinizin silinmesini istediğiniz zaman talep etme hakkına sahipsiniz.",
   "privacyPolicyDeletionHowTitle": "Hesap silme talebinde bulunma:",
-  "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine kayıtlı e-posta adresinizi veya telefon numaranızı belirterek 'Account Deletion Request' konusuyla e-posta gönderin. Talebinizi 7–14 iş günü içinde işleme alacağız ve hesabınız ile verileriniz silindikten sonra size e-posta ile bildirim göndereceğiz."
+  "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine kayıtlı e-posta adresinizi veya telefon numaranızı belirterek 'Account Deletion Request' konusuyla e-posta gönderin. Talebinizi 7–14 iş günü içinde işleme alacağız ve hesabınız ile verileriniz silindikten sonra size e-posta ile bildirim göndereceğiz.",
+  "pageNotFound": "Sayfa bulunamadı!",
+  "homepage": "Ana sayfa",
+  "startShopping": "Alışverişe başla"
 }
