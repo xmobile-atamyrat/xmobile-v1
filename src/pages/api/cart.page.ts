@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -36,6 +37,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       });
 
       if (!cartItemExist) {
+        const productOk = await dbClient.product.findFirst({
+          where: { id: productId, ...whereActiveProduct },
+        });
+        if (!productOk) {
+          res.status(404).json({
+            success: false,
+            message: 'Product not found',
+          });
+          return;
+        }
+
         await dbClient.cartItem.create({
           data: {
             userId,
@@ -57,6 +69,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       const cartItems = await dbClient.cartItem.findMany({
         where: {
           userId,
+          product: whereActiveProduct,
         },
         include: { product: true },
       });

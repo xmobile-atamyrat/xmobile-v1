@@ -45,7 +45,10 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
 
   // Get user's cart items with products
   const cartItems = await dbClient.cartItem.findMany({
-    where: { userId },
+    where: {
+      userId,
+      product: { deletedAt: null },
+    },
     include: { product: true },
   });
 

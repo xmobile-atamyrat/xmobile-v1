@@ -73,26 +73,8 @@ export const theme = createTheme({
   },
 });
 
-// check if the image url is a local image or a remote image
-// if it is a local image, delete it from the server
-// if it is a remote image, do nothing
-// delete the category from the server
-export async function deleteCategory(
-  categoryId: string,
-  url: string | null | undefined,
-): Promise<boolean> {
-  try {
-    if (url != null) new URL(url);
-  } catch (_) {
-    const { success: imgSuccess }: ResponseApi = await (
-      await fetch(`${BASE_URL}/api/localImage?imgUrl=${url}`, {
-        method: 'DELETE',
-      })
-    ).json();
-    if (!imgSuccess) {
-      return false;
-    }
-  }
+/** Soft-delete category via API. Image files stay on disk for possible restore. */
+export async function deleteCategory(categoryId: string): Promise<boolean> {
   const { success }: ResponseApi = await (
     await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`, {
       method: 'DELETE',
