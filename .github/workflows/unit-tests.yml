@@ -1,12 +1,9 @@
-# Unit tests (Vitest). Runs on every pull request and push to main.
+# Unit tests (Vitest). Runs on every pull request.
 
 name: Unit tests
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
 
 jobs:
   vitest:
