@@ -149,24 +149,24 @@ export default function CartPage() {
                   onCheckoutClick={() => router.push('/cart/checkout')}
                 />
               </Box>
-              <Box className={cartIndexClasses.infoCol[platform]}>
+              <Box className={cartIndexClasses.infoRow[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[32vw] ml-[2.39vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[38vw] ml-[3vw]`}
                 >
                   {t('product').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[11vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('price').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} w-[8vw]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('quantity').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoColTypo} ml-[80px]`}
+                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('total').toUpperCase()}
                 </Typography>
