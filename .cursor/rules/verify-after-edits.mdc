@@ -1,0 +1,24 @@
+---
+description: After editing code, run TypeScript and ESLint checks before finishing
+alwaysApply: true
+---
+
+# Verify changes (tsc + ESLint)
+
+After modifying TypeScript or TSX files in this repo, **before considering the task done**:
+
+1. **Typecheck** (repo root):
+
+   ```bash
+   yarn tsc --noEmit
+   ```
+
+2. **ESLint** on the files you touched (prefer scoped runs):
+
+   ```bash
+   yarn next lint --file path/to/file1.tsx --file path/to/file2.ts
+   ```
+
+   If many files changed or paths are awkward, `yarn lint` is acceptable.
+
+Fix any reported issues in the same pass. Do not skip these checks when you have made substantive edits.
