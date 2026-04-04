@@ -3,9 +3,22 @@ import { createMocks } from 'node-mocks-http';
 
 export type TestSession = {
   accessToken: string;
+  refreshToken: string;
   userId: string;
   email: string;
 };
+
+function parseRefreshCookie(res: {
+  getHeader: (name: string) => string | string[] | number | undefined;
+}): string {
+  const h = res.getHeader('Set-Cookie');
+  const str = Array.isArray(h) ? h.join(';') : String(h ?? '');
+  const m = str.match(/REFRESH_TOKEN=([^;]+)/);
+  if (!m?.[1]) {
+    throw new Error('Expected REFRESH_TOKEN in Set-Cookie after signup');
+  }
+  return m[1].trim();
+}
 
 export async function signupTestUser(prefix = 'user'): Promise<TestSession> {
   const signup = (await import('@/pages/api/user/signup.page')).default;
@@ -32,6 +45,7 @@ export async function signupTestUser(prefix = 'user'): Promise<TestSession> {
   }
   return {
     accessToken: json.data.accessToken,
+    refreshToken: parseRefreshCookie(res),
     userId: json.data.user.id,
     email,
   };
