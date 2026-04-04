@@ -1,4 +1,6 @@
 import dbClient from '@/lib/dbClient';
+import { syncBrandProductCount } from '@/lib/brandProductCount';
+import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import {
@@ -98,19 +100,6 @@ export async function createCompressedImg(
   }
 }
 
-async function updateBrandProductCount(brandId: string) {
-  if (!brandId) return;
-
-  const count = await dbClient.product.count({
-    where: { brandId },
-  });
-
-  await dbClient.brand.update({
-    where: { id: brandId },
-    data: { productCount: count },
-  });
-}
-
 async function createProduct(
   req: NextApiRequest,
 ): Promise<CreateProductReturnType> {
@@ -123,6 +112,7 @@ async function createProduct(
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
 
       const fileKeys = Object.keys(files);
@@ -132,6 +122,18 @@ async function createProduct(
         await createCompressedImg(imgUrl, 'bad');
         await createCompressedImg(imgUrl, 'good');
       });
+
+      const categoryOk = await dbClient.category.findFirst({
+        where: { id: fields.categoryId[0], deletedAt: null },
+      });
+      if (!categoryOk) {
+        resolve({
+          success: false,
+          message: 'Category not found',
+          status: 404,
+        });
+        return;
+      }
 
       const cachedPrice = parseFloat(
         (await getPrice(fields.price?.[0]))?.price ?? '0',
@@ -154,7 +156,7 @@ async function createProduct(
       });
 
       if (product.brandId) {
-        await updateBrandProductCount(product.brandId);
+        await syncBrandProductCount(product.brandId);
       }
       resolve({ success: true, data: product, status: 200 });
     });
@@ -164,9 +166,10 @@ async function createProduct(
 }
 
 async function getProduct(productId: string): Promise<ExtendedProduct | null> {
-  const product = await dbClient.product.findUnique({
+  const product = await dbClient.product.findFirst({
     where: {
       id: productId,
+      deletedAt: null,
     },
     include: { brand: true },
   });
@@ -187,9 +190,13 @@ async function getRecursiveCategoryIds(
   if (visited.has(rootId)) return [];
   visited.add(rootId);
 
-  const category = await dbClient.category.findUnique({
-    where: { id: rootId },
-    include: { successorCategories: true },
+  const category = await dbClient.category.findFirst({
+    where: { id: rootId, deletedAt: null },
+    include: {
+      successorCategories: {
+        where: { deletedAt: null },
+      },
+    },
   });
   if (!category) return [];
   const ids = [rootId];
@@ -253,7 +260,7 @@ async function handleGetProduct(query: {
     return { resp: { success: true, data: product }, status: 200 };
   }
 
-  const where: Prisma.ProductWhereInput = {};
+  const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
 
   const categories: string[] = [];
   if (categoryId) {
@@ -271,7 +278,11 @@ async function handleGetProduct(query: {
       categories.map((catId) => getRecursiveCategoryIds(catId)),
     );
     ids.push(...recursiveIds.flat());
-    where.categoryId = { in: ids };
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) {
+      return { resp: { success: true, data: [] }, status: 200 };
+    }
+    where.categoryId = { in: uniqueIds };
   }
 
   if (brandIds) {
@@ -394,9 +405,10 @@ async function handleEditProduct(
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
       }
 
-      const currProduct = await dbClient.product.findUnique({
+      const currProduct = await dbClient.product.findFirst({
         where: {
           id: productId as string,
+          deletedAt: null,
         },
       });
       if (currProduct == null) {
@@ -407,6 +419,7 @@ async function handleEditProduct(
           `productId: ${productId}`,
         );
         resolve({ success: false, message: 'Product not found', status: 404 });
+        return;
       }
 
       const deleteImageUrls = fields.deleteImageUrls
@@ -443,6 +456,20 @@ async function handleEditProduct(
         ...(fileKeys.map((key) => files[key][0].path) ?? []),
       ];
 
+      if (data.categoryId) {
+        const catOk = await dbClient.category.findFirst({
+          where: { id: data.categoryId, deletedAt: null },
+        });
+        if (!catOk) {
+          resolve({
+            success: false,
+            message: 'Category not found',
+            status: 404,
+          });
+          return;
+        }
+      }
+
       const product = await dbClient.product.update({
         where: {
           id: productId as string,
@@ -451,10 +478,10 @@ async function handleEditProduct(
       });
 
       if (currProduct.brandId) {
-        await updateBrandProductCount(currProduct.brandId);
+        await syncBrandProductCount(currProduct.brandId);
       }
       if (product.brandId && product.brandId !== currProduct.brandId) {
-        await updateBrandProductCount(product.brandId);
+        await syncBrandProductCount(product.brandId);
       }
 
       resolve({ success: true, data: product, status: 200 });
@@ -501,13 +528,12 @@ export default async function handler(
           .json({ success: false, message: 'No product id provided' });
       }
 
-      const product = await dbClient.product.delete({
-        where: {
-          id: productId as string,
-        },
+      const existing = await dbClient.product.findFirst({
+        where: { id: productId as string, deletedAt: null },
+        select: { id: true, brandId: true },
       });
 
-      if (product == null) {
+      if (!existing) {
         console.error(
           filepath,
           'Product not found',
@@ -519,19 +545,17 @@ export default async function handler(
           .json({ success: false, message: "Couldn't find the product" });
       }
 
-      product.imgUrls.forEach((imgUrl: string) => {
-        const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
-        const lightlyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'good');
+      const now = new Date();
+      await dbClient.$transaction([
+        dbClient.product.update({
+          where: { id: existing.id },
+          data: { deletedAt: now },
+        }),
+        dbClient.cartItem.deleteMany({ where: { productId: existing.id } }),
+      ]);
 
-        if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-        if (fs.existsSync(heavilyCompressedImgUrl))
-          fs.unlinkSync(heavilyCompressedImgUrl);
-        if (fs.existsSync(lightlyCompressedImgUrl))
-          fs.unlinkSync(lightlyCompressedImgUrl);
-      });
-
-      if (product.brandId) {
-        await updateBrandProductCount(product.brandId);
+      if (existing.brandId) {
+        await syncBrandProductCount(existing.brandId);
       }
 
       return res.status(200).json({ success: true });

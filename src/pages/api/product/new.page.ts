@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { ResponseApi } from '@/pages/lib/types';
@@ -19,12 +20,13 @@ async function handleGetNewProducts(query: {
     // Build the where clause for search filtering
     const where = searchKeyword
       ? {
+          ...whereActiveProduct,
           name: {
             contains: searchKeyword,
             mode: 'insensitive' as const,
           },
         }
-      : {};
+      : { ...whereActiveProduct };
 
     // Fetch products with database-level pagination
     const products = await dbClient.product.findMany({

@@ -144,7 +144,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             const val = parseFloat(price.price);
             if (!Number.isNaN(val)) {
               await dbClient.product.updateMany({
-                where: { price: { contains: `[${price.id}]` } },
+                where: {
+                  price: { contains: `[${price.id}]` },
+                  deletedAt: null,
+                },
                 data: { cachedPrice: val },
               });
             }
