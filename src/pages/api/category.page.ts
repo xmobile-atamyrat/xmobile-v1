@@ -1,4 +1,6 @@
 import dbClient from '@/lib/dbClient';
+import { syncBrandProductCount } from '@/lib/brandProductCount';
+import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
@@ -18,13 +20,19 @@ const filepath = 'src/pages/api/category.page.ts';
 export async function getCategory(
   categoryId: string,
 ): Promise<ExtendedCategory | null> {
-  const category = await dbClient.category.findUnique({
+  const category = await dbClient.category.findFirst({
     where: {
       id: categoryId,
+      deletedAt: null,
     },
     include: {
-      products: true,
-      successorCategories: true,
+      products: {
+        where: { deletedAt: null },
+      },
+      successorCategories: {
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'asc' },
+      },
     },
   });
 
@@ -49,10 +57,11 @@ async function recursivelyGetCategories(
   const updatedCategories = await Promise.all(
     categories.map(async (category) => {
       const { successorCategories } =
-        (await dbClient.category.findUnique({
-          where: { id: category.id },
+        (await dbClient.category.findFirst({
+          where: { id: category.id, deletedAt: null },
           include: {
             successorCategories: {
+              where: { deletedAt: null },
               orderBy: {
                 createdAt: 'asc',
               },
@@ -74,38 +83,26 @@ async function recursivelyGetCategories(
   return updatedCategories;
 }
 
-async function recursivelyDeleteCategoryAndProductImages(
-  categoryId: string,
-): Promise<void> {
-  const category = await dbClient.category.findUnique({
-    where: {
-      id: categoryId,
-    },
+/** Active category ids in subtree (root + descendants), excluding already-deleted rows. */
+async function collectActiveSubtreeCategoryIds(
+  rootId: string,
+): Promise<string[]> {
+  const root = await dbClient.category.findFirst({
+    where: { id: rootId, deletedAt: null },
     include: {
-      successorCategories: true,
-      products: true,
+      successorCategories: {
+        where: { deletedAt: null },
+        select: { id: true },
+      },
     },
   });
-
-  if (category == null) return;
-
-  if (category.imgUrl != null && fs.existsSync(category.imgUrl)) {
-    fs.unlinkSync(category.imgUrl);
-  }
-
-  category.products.forEach(({ imgUrls }) => {
-    imgUrls.forEach((imgUrl) => {
-      if (imgUrl != null && fs.existsSync(imgUrl)) {
-        fs.unlinkSync(imgUrl);
-      }
-    });
-  });
-
-  await Promise.all(
-    category.successorCategories.map(async ({ id }) => {
-      await recursivelyDeleteCategoryAndProductImages(id);
-    }),
+  if (!root) return [];
+  const nested = await Promise.all(
+    root.successorCategories.map(({ id }) =>
+      collectActiveSubtreeCategoryIds(id),
+    ),
   );
+  return [root.id, ...nested.flat()];
 }
 
 async function handleGetCategory(query: {
@@ -115,6 +112,7 @@ async function handleGetCategory(query: {
     const categories = await dbClient.category.findMany({
       where: {
         predecessorId: null,
+        ...whereActiveCategory,
       },
       orderBy: {
         createdAt: 'asc',
@@ -142,11 +140,27 @@ async function handlePostCategory(req: NextApiRequest) {
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
+      const predId = fields.predecessorId?.[0];
+      if (predId) {
+        const parent = await dbClient.category.findFirst({
+          where: { id: predId, deletedAt: null },
+        });
+        if (!parent) {
+          resolve({
+            success: false,
+            message: 'Parent category not found',
+            status: 404,
+          });
+          return;
+        }
+      }
+
       const category = await dbClient.category.create({
         data: {
           name: fields.name[0],
-          predecessorId: fields.predecessorId?.[0],
+          predecessorId: predId,
           imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
         },
       });
@@ -173,17 +187,26 @@ async function handleEditCategory(req: NextApiRequest) {
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
+
+      const existingCat = await dbClient.category.findFirst({
+        where: { id: categoryId as string, deletedAt: null },
+      });
+      if (!existingCat) {
+        resolve({
+          success: false,
+          message: 'Category not found',
+          status: 404,
+        });
+        return;
+      }
+
       const data: Partial<Category> = {};
       if (fields.name?.length > 0) data.name = fields.name[0];
       if (files.imageUrl?.length > 0) {
-        const currCat = await dbClient.category.findUnique({
-          where: {
-            id: categoryId as string,
-          },
-        });
-        if (currCat?.imgUrl != null && fs.existsSync(currCat.imgUrl)) {
-          fs.unlinkSync(currCat.imgUrl);
+        if (existingCat.imgUrl != null && fs.existsSync(existingCat.imgUrl)) {
+          fs.unlinkSync(existingCat.imgUrl);
         }
         data.imgUrl = files.imageUrl?.[0].path;
       } else if (fields.imageUrl?.length > 0) data.imgUrl = fields.imageUrl[0];
@@ -259,12 +282,51 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      await recursivelyDeleteCategoryAndProductImages(categoryId as string);
-      await dbClient.category.delete({
+      const subtreeIds = await collectActiveSubtreeCategoryIds(
+        categoryId as string,
+      );
+      if (subtreeIds.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found',
+        });
+      }
+
+      const productsToSoftDelete = await dbClient.product.findMany({
         where: {
-          id: categoryId as string,
+          categoryId: { in: subtreeIds },
+          deletedAt: null,
         },
+        select: { id: true, brandId: true },
       });
+
+      const brandIds = new Set(
+        productsToSoftDelete
+          .map((p) => p.brandId)
+          .filter((id): id is string => id != null),
+      );
+
+      const now = new Date();
+
+      await dbClient.$transaction(async (tx) => {
+        await tx.product.updateMany({
+          where: {
+            categoryId: { in: subtreeIds },
+            deletedAt: null,
+          },
+          data: { deletedAt: now },
+        });
+        await tx.category.updateMany({
+          where: { id: { in: subtreeIds } },
+          data: { deletedAt: now },
+        });
+        await tx.cartItem.deleteMany({
+          where: { productId: { in: productsToSoftDelete.map((p) => p.id) } },
+        });
+      });
+
+      await Promise.all([...brandIds].map((bid) => syncBrandProductCount(bid)));
+
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error(filepath, error);
