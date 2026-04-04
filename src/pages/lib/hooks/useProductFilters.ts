@@ -16,8 +16,10 @@ interface UseProductFiltersReturn {
   updateUrl: (newFilters: FilterState) => void;
 }
 
-// Next.js query params can be string or string[] - normalize to array
-function normalizeArray(value: string | string[] | undefined): string[] {
+/** Next.js query params can be string or string[] — normalize to a string array. */
+export function normalizeQueryStringArray(
+  value: string | string[] | undefined,
+): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
 }
@@ -95,8 +97,8 @@ export function useProductFilters(
     const { categoryIds, brandIds, minPrice, maxPrice, sortBy } = router.query;
 
     setFiltersState({
-      categoryIds: normalizeArray(categoryIds),
-      brandIds: normalizeArray(brandIds),
+      categoryIds: normalizeQueryStringArray(categoryIds),
+      brandIds: normalizeQueryStringArray(brandIds),
       minPrice: (minPrice as string) || '',
       maxPrice: (maxPrice as string) || '',
       sortBy: (sortBy as string) || initialSortBy,
