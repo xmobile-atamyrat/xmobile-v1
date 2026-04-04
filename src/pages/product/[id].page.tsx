@@ -14,6 +14,7 @@ import {
   LOCALE_TO_OG_LOCALE,
   squareBracketRegex,
 } from '@/pages/lib/constants';
+import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -72,10 +73,10 @@ import 'slick-carousel/slick/slick.css';
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 // getStaticPaths for dynamic routes
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = async (context) => {
   try {
     const ids = await fetchAllProductIds();
-    const paths = ids.map((id) => ({ params: { id } }));
+    const paths = expandDynamicPathsForAllLocales(context, ids);
 
     return {
       paths,
