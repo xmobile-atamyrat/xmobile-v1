@@ -16,27 +16,22 @@ import {
   sendNotificationWithFCMFallback,
   verifySessionParticipant,
 } from '@/ws-server/lib/utils';
-import { UserRole } from '@prisma/client';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
 import { parse } from 'url';
+import {
+  GetMessagesSchema,
+  MarkNotificationReadSchema,
+  MessageSchema,
+} from '@/ws-server/messageSchemas';
 import { RawData, WebSocket, WebSocketServer } from 'ws';
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 const filepath = 'src/ws-server/index.ts';
 
 const server = createServer();
 const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
-
-const MessageSchema = z.object({
-  tempId: z.string().optional(),
-  sessionId: z.string(),
-  senderId: z.string(),
-  senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
-  content: z.string().max(5000),
-  timestamp: z.string(),
-});
 
 export const connections = new Map<string, Set<AuthenticatedConnection>>();
 
@@ -315,12 +310,6 @@ const handleMessage = async (
   }
 };
 
-const GetMessagesSchema = z.object({
-  type: z.literal('get_messages'),
-  sessionId: z.string(),
-  cursorId: z.string().optional(),
-});
-
 const handleGetMessages = async (
   incomingMessage: RawData,
   safeConnection: AuthenticatedConnection,
@@ -404,11 +393,6 @@ const handleSessionRelay = async (
     console.error(filepath, 'Error in session relay:', error);
   }
 };
-
-const MarkNotificationReadSchema = z.object({
-  type: z.literal('mark_notification_read'),
-  notificationIds: z.array(z.string()),
-});
 
 const handleMarkNotificationRead = async (
   incomingMessage: RawData,
