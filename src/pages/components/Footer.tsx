@@ -1,6 +1,7 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
 import { interClassname } from '@/styles/theme';
@@ -38,6 +39,7 @@ export default function Footer() {
   const { categories: allCategories, setSelectedCategoryId } =
     useCategoryContext();
   const { setProducts } = useProductContext();
+  const { user } = useUserContext();
 
   const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
     router.push(newValue, newValue, { locale: router.locale });
@@ -83,7 +85,7 @@ export default function Footer() {
             }
           />
           <BottomNavigationAction
-            value="/cart"
+            value={user ? '/cart' : '/user/sign_in_up'}
             icon={
               <CardMedia
                 component="img"
