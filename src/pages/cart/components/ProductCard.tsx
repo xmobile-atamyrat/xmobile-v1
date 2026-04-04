@@ -94,7 +94,7 @@ export default function CartProductCard({
           className={cartProductCardClasses.boxes.main[platform]}
           onClick={() => {
             setSelectedProduct(product);
-            router.push(`/product/${product.slug || product.id}`);
+            router.push(`/product/${product.slug}`);
           }}
         >
           {imgUrl != null && (
