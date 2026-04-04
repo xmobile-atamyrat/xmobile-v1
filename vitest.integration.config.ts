@@ -16,6 +16,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    globalSetup: ['./tests/integration/global-setup.ts'],
+    setupFiles: ['./tests/integration/vitest-integration-mocks.setup.ts'],
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/.git/**'],
     hookTimeout: 120_000,
