@@ -92,14 +92,13 @@ export default function Layout({
             setDeleteCategoriesModal({
               open: false,
               categoryId: undefined,
-              imgUrl: undefined,
             })
           }
           handleDelete={async () => {
             try {
-              const { categoryId, imgUrl } = deleteCategoriesModal;
+              const { categoryId } = deleteCategoriesModal;
               if (categoryId == null) return;
-              await deleteCategory(categoryId, imgUrl);
+              await deleteCategory(categoryId);
 
               const {
                 success: catSuccess,
@@ -133,7 +132,6 @@ export default function Layout({
               setDeleteCategoriesModal({
                 open: false,
                 categoryId: undefined,
-                imgUrl: undefined,
               });
             }
           }}
