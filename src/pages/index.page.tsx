@@ -325,7 +325,7 @@ export default function Home({
                 className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
               >
                 {searchKeyword
-                  ? `${t('searchResultsFor')}: "${searchKeyword}"`
+                  ? t('searchResultsFor', { keyword: searchKeyword })
                   : t('newProducts')}
               </Typography>
               {platform === 'web' && (
