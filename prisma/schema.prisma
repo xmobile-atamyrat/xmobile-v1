@@ -73,8 +73,12 @@ model Category {
 
   imgUrl                          String?
 
+  deletedAt                       DateTime?
+
   createdAt                       DateTime    @default(now())
   updatedAt                       DateTime    @updatedAt
+
+  @@index([deletedAt])
 }
 
 
@@ -98,10 +102,13 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
+  deletedAt       DateTime?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([brandId])
+  @@index([deletedAt])
 }
 
 model Brand {

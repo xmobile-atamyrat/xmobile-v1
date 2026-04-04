@@ -83,6 +83,7 @@ function generateSiteMap(
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   const products = await dbClient.product.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       updatedAt: true,
@@ -90,6 +91,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   });
 
   const categories = await dbClient.category.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       updatedAt: true,

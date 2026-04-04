@@ -102,6 +102,10 @@ export const getStaticProps: GetStaticProps = async ({
     const products = await fetchProducts({ productId });
     const product = products && products.length > 0 ? products[0] : null;
 
+    if (!product) {
+      return { notFound: true, revalidate: 300 };
+    }
+
     // Load messages first so they can be used for SEO generation
     let messages;
     try {
@@ -116,77 +120,73 @@ export const getStaticProps: GetStaticProps = async ({
     let categoryPath: ExtendedCategory[] = [];
     let seoData = null;
 
-    if (product) {
-      try {
-        const categoriesRes = await fetch(`${BASE_URL}/api/category`);
-        const {
-          success,
-          data: allCategories,
-        }: ResponseApi<ExtendedCategory[]> = await categoriesRes.json();
+    try {
+      const categoriesRes = await fetch(`${BASE_URL}/api/category`);
+      const { success, data: allCategories }: ResponseApi<ExtendedCategory[]> =
+        await categoriesRes.json();
 
-        if (success && allCategories && product.categoryId) {
-          categoryPath = buildCategoryPath(product.categoryId, allCategories);
-        }
-
-        const productName = parseName(product.name, locale);
-
-        let priceValue = product.price;
-        const priceMatch = product.price?.match(curlyBracketRegex);
-        if (priceMatch) {
-          priceValue = priceMatch[1];
-        }
-        priceValue = priceValue?.replace(/[^\d.]/g, '');
-
-        const productPath = `product/${product.id}`;
-
-        const title = generateProductTitle(productName, product.brand?.name);
-        const metaDescription = generateProductMetaDescription(
-          messages?.productDetailsMetaDescription || '',
-          productName,
-          priceValue,
-        );
-        const canonicalUrl = getCanonicalUrl(locale, productPath);
-        const hreflangLinks = generateHreflangLinks(productPath);
-
-        // Generate absolute image URLs for og:image and JSON-LD
-        const rawImages = product.imgUrls || [];
-        const imageUrls = rawImages.map((img) => {
-          if (img.startsWith('http')) return img;
-          return `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(img)}`;
-        });
-
-        const productJsonLd = generateProductJsonLd({
-          productName,
-          productUrl: canonicalUrl,
-          price: priceValue,
-          imageUrls,
-          description: parseName(product.description ?? '{}', locale),
-          brandName: product.brand?.name,
-        });
-
-        const breadcrumbJsonLd = generateBreadcrumbJsonLd(
-          categoryPath,
-          productName,
-          locale,
-          messages?.home as string,
-        );
-
-        seoData = {
-          title,
-          description: metaDescription,
-          canonicalUrl,
-          hreflangLinks,
-          ogLocale:
-            LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
-            'ru_RU',
-          ogType: 'product',
-          ogImage: imageUrls[0],
-          productJsonLd,
-          breadcrumbJsonLd,
-        };
-      } catch (seoError) {
-        console.error('Error generating SEO data:', seoError);
+      if (success && allCategories && product.categoryId) {
+        categoryPath = buildCategoryPath(product.categoryId, allCategories);
       }
+
+      const productName = parseName(product.name, locale);
+
+      let priceValue = product.price;
+      const priceMatch = product.price?.match(curlyBracketRegex);
+      if (priceMatch) {
+        priceValue = priceMatch[1];
+      }
+      priceValue = priceValue?.replace(/[^\d.]/g, '');
+
+      const productPath = `product/${product.id}`;
+
+      const title = generateProductTitle(productName, product.brand?.name);
+      const metaDescription = generateProductMetaDescription(
+        messages?.productDetailsMetaDescription || '',
+        productName,
+        priceValue,
+      );
+      const canonicalUrl = getCanonicalUrl(locale, productPath);
+      const hreflangLinks = generateHreflangLinks(productPath);
+
+      // Generate absolute image URLs for og:image and JSON-LD
+      const rawImages = product.imgUrls || [];
+      const imageUrls = rawImages.map((img) => {
+        if (img.startsWith('http')) return img;
+        return `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(img)}`;
+      });
+
+      const productJsonLd = generateProductJsonLd({
+        productName,
+        productUrl: canonicalUrl,
+        price: priceValue,
+        imageUrls,
+        description: parseName(product.description ?? '{}', locale),
+        brandName: product.brand?.name,
+      });
+
+      const breadcrumbJsonLd = generateBreadcrumbJsonLd(
+        categoryPath,
+        productName,
+        locale,
+        messages?.home as string,
+      );
+
+      seoData = {
+        title,
+        description: metaDescription,
+        canonicalUrl,
+        hreflangLinks,
+        ogLocale:
+          LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+          'ru_RU',
+        ogType: 'product',
+        ogImage: imageUrls[0],
+        productJsonLd,
+        breadcrumbJsonLd,
+      };
+    } catch (seoError) {
+      console.error('Error generating SEO data:', seoError);
     }
 
     return {
@@ -197,28 +197,19 @@ export const getStaticProps: GetStaticProps = async ({
       },
       revalidate: 300, // regenerate static pages every 5 minutes
     };
-  } catch (error: any) {
-    if (error.message === "Couldn't find the product") {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg === "Couldn't find the product") {
       console.warn(`Product not found during build/SSR: ${productId}`);
-      return {
-        notFound: true,
-        revalidate: 300, // regenerate static pages every 5 minutes
-      };
+    } else {
+      console.error('Error fetching product during build:', error);
     }
-    console.error('Error fetching product during build:', error);
-    return {
-      props: {
-        product: null,
-        seoData: null,
-        messages: null,
-      },
-      revalidate: 300, // regenerate static pages every 5 minutes
-    };
+    return { notFound: true, revalidate: 300 };
   }
 };
 
 interface ProductPageProps {
-  product?: Product | null;
+  product: Product;
 }
 
 export default function Product({ product: initialProduct }: ProductPageProps) {
@@ -663,12 +654,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 });
                 return;
               }
-              const prods = await fetchProducts({
-                categoryIds: [selectedCategoryId],
-              });
-              setProducts(prods);
-              setPrevCategory(selectedCategoryId);
-              setPrevProducts(prods);
+              const refreshCategoryId =
+                product.categoryId ?? selectedCategoryId ?? undefined;
+              if (refreshCategoryId != null) {
+                const prods = await fetchProducts({
+                  categoryIds: [refreshCategoryId],
+                });
+                setProducts(prods);
+                setPrevCategory(refreshCategoryId);
+                setPrevProducts(prods);
+              }
 
               setSnackbarOpen(true);
               setSnackbarMessage({

@@ -218,7 +218,6 @@ export interface AddEditProductProps {
 export interface DeleteCategoriesProps {
   categoryId?: string;
   open: boolean;
-  imgUrl?: string | null;
 }
 
 export interface ProductContextProps {

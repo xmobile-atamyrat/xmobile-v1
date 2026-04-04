@@ -20,6 +20,7 @@ export default async function handler(
 
   try {
     const rows = await dbClient.product.findMany({
+      where: { deletedAt: null },
       select: { id: true },
       orderBy: { id: 'asc' },
     });
