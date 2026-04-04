@@ -38,7 +38,7 @@ function extractCategorySlugs(categories: ExtendedCategory[]): string[] {
   const slugs: string[] = [];
   function traverse(cats: ExtendedCategory[]) {
     cats.forEach((cat) => {
-      slugs.push(cat.slug || cat.id);
+      slugs.push(cat.slug);
       if (cat.successorCategories && cat.successorCategories.length > 0) {
         traverse(cat.successorCategories);
       }
@@ -140,10 +140,10 @@ export const getStaticProps: GetStaticProps = async ({
       );
       const canonicalUrl = getCanonicalUrl(
         locale,
-        `category/${categoryData.slug || categoryData.id}`,
+        `category/${categoryData.slug}`,
       );
       const hreflangLinks = generateHreflangLinks(
-        `category/${categoryData.slug || categoryData.id}`,
+        `category/${categoryData.slug}`,
       );
 
       let ogImage = categoryData.imgUrl;
@@ -226,7 +226,7 @@ export default function CategoryPage({
 
   const handleHeaderBackButton = () => {
     if (parentCategory) {
-      router.push(`/category/${parentCategory.slug || parentCategory.id}`);
+      router.push(`/category/${parentCategory.slug}`);
     } else {
       router.push('/');
     }
@@ -294,7 +294,7 @@ export default function CategoryPage({
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
                 onClick={() => {
-                  router.push(`/category/${slug || id}`);
+                  router.push(`/category/${slug}`);
                 }}
               />
             );

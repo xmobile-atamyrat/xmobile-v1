@@ -107,11 +107,9 @@ export default function ProductCard({
             setSelectedProduct(initialProduct);
             const categoryId = product.categoryId;
             if (categoryId) {
-              router.push(
-                `/product/${product.slug || product.id}?categoryId=${categoryId}`,
-              );
+              router.push(`/product/${product.slug}?categoryId=${categoryId}`);
             } else {
-              router.push(`/product/${product.slug || product.id}`);
+              router.push(`/product/${product.slug}`);
             }
           }}
         >
