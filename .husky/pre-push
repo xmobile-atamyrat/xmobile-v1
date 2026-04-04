@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Full Vitest suite once per push (not per commit). Skips with: git push --no-verify
+yarn test
