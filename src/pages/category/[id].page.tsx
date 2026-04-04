@@ -11,6 +11,7 @@ import {
   ALL_PRODUCTS_CATEGORY_CARD,
   LOCALE_TO_OG_LOCALE,
 } from '@/pages/lib/constants';
+import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -47,7 +48,7 @@ function extractCategoryIds(categories: ExtendedCategory[]): string[] {
   return ids;
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = async (context) => {
   try {
     // Fetch all categories using the existing API
     const { success, data }: ResponseApi<ExtendedCategory[]> = await (
@@ -64,9 +65,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     // Extract all category IDs recursively
     const categoryIds = extractCategoryIds(data);
 
-    const paths = categoryIds.map((id) => ({
-      params: { id },
-    }));
+    const paths = expandDynamicPathsForAllLocales(context, categoryIds);
 
     return {
       paths,
