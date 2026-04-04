@@ -1,3 +1,5 @@
 dist/
 mobile/
 batch-runner-dist/
+tests/
+vitest.config.ts

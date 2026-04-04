@@ -13,6 +13,8 @@
     "start:batch-runner": "node --env-file=.env batch-runner-dist/scripts/batch-runner/batch-runner.js",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate-prod": "npx prisma migrate dev",
     "db:generate-prod": "npx prisma generate dev",
     "db:studio-prod": "npx prisma studio",
@@ -45,9 +47,9 @@
     "jszip": "^3.10.1",
     "multiparty": "^4.2.3",
     "next": "14.2.1",
-    "node-cron": "^3.0.3",
     "next-connect": "^1.0.0-next.4",
     "next-intl": "^3.14.1",
+    "node-cron": "^3.0.3",
     "papaparse": "^5.4.1",
     "react": "^18",
     "react-dom": "^18",
@@ -97,7 +99,8 @@
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.2"
   },
   "engines": {
     "node": ">=20"
