@@ -120,7 +120,7 @@ export const getStaticProps: GetStaticProps = async ({
     ) {
       return {
         redirect: {
-          destination: `/product-category/${categoryData.slug}`,
+          destination: `/${locale}/product-category/${categoryData.slug}`,
           permanent: false,
         },
       };
