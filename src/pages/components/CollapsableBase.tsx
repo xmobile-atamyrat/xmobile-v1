@@ -73,73 +73,68 @@ export default function CollapsableBase({
           <KeyboardArrowRightIcon className="text-[#30303080] text-[20px]" />
         )}
       </ListItemButton>
-      {['SUPERUSER', 'ADMIN'].includes(user?.grade) &&
-        selectedCategoryId === id && (
-          <Box>
-            <IconButton
-              aria-label="more"
-              id="long-button"
-              aria-controls={openEditMenu ? 'long-menu' : undefined}
-              aria-expanded={openEditMenu ? 'true' : undefined}
-              aria-haspopup="true"
-              onClick={(event) => setAnchorEl(event.currentTarget)}
-              className="px-0"
+      {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+        <Box>
+          <IconButton
+            aria-label="more"
+            id="long-button"
+            aria-controls={openEditMenu ? 'long-menu' : undefined}
+            aria-expanded={openEditMenu ? 'true' : undefined}
+            aria-haspopup="true"
+            onClick={(event) => setAnchorEl(event.currentTarget)}
+            className="px-0"
+          >
+            <MoreVertIcon color="primary" fontSize="small" />
+          </IconButton>
+          <Menu
+            open={openEditMenu}
+            onClose={() => setAnchorEl(undefined)}
+            anchorEl={anchorEl}
+          >
+            <MenuItem
+              onClick={() =>
+                setEditCategoriesModal({
+                  open: true,
+                  dialogType: 'add',
+                  categoryId: id,
+                })
+              }
+              className={collapsableClasses.menuItem}
             >
-              <MoreVertIcon color="primary" fontSize="small" />
-            </IconButton>
-            <Menu
-              open={openEditMenu}
-              onClose={() => setAnchorEl(undefined)}
-              anchorEl={anchorEl}
+              <AddCircleIcon color="primary" fontSize="small" />
+              <Typography className="overflow-x-scroll">{t('add')}</Typography>
+            </MenuItem>
+            <MenuItem
+              onClick={() =>
+                setEditCategoriesModal({
+                  open: true,
+                  dialogType: 'edit',
+                  categoryId: id,
+                  categoryName: categoryTitle,
+                })
+              }
+              className={collapsableClasses.menuItem}
             >
-              <MenuItem
-                onClick={() =>
-                  setEditCategoriesModal({
-                    open: true,
-                    dialogType: 'add',
-                    categoryId: id,
-                  })
-                }
-                className={collapsableClasses.menuItem}
-              >
-                <AddCircleIcon color="primary" fontSize="small" />
-                <Typography className="overflow-x-scroll">
-                  {t('add')}
-                </Typography>
-              </MenuItem>
-              <MenuItem
-                onClick={() =>
-                  setEditCategoriesModal({
-                    open: true,
-                    dialogType: 'edit',
-                    categoryId: id,
-                    categoryName: categoryTitle,
-                  })
-                }
-                className={collapsableClasses.menuItem}
-              >
-                <EditIcon color="primary" fontSize="small" />
-                <Typography className="overflow-x-scroll">
-                  {t('edit')}
-                </Typography>
-              </MenuItem>
-              <MenuItem
-                onClick={() =>
-                  setDeleteCategoriesModal({
-                    categoryId: id,
-                    open: true,
-                  })
-                }
-                className={collapsableClasses.menuItem}
-              >
-                <DeleteIcon color="error" fontSize="small" />
-                <Typography className="overflow-x-scroll">
-                  {t('delete')}
-                </Typography>
-              </MenuItem>
-            </Menu>
-          </Box>
-        )}
+              <EditIcon color="primary" fontSize="small" />
+              <Typography className="overflow-x-scroll">{t('edit')}</Typography>
+            </MenuItem>
+            <MenuItem
+              onClick={() =>
+                setDeleteCategoriesModal({
+                  categoryId: id,
+                  open: true,
+                })
+              }
+              className={collapsableClasses.menuItem}
+            >
+              <DeleteIcon color="error" fontSize="small" />
+              <Typography className="overflow-x-scroll">
+                {t('delete')}
+              </Typography>
+            </MenuItem>
+          </Menu>
+        </Box>
+      )}
     </Box>
   );
 }
