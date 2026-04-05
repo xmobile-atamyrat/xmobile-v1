@@ -1,15 +1,18 @@
+import BASE_URL from '@/lib/ApiEndpoints';
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
+import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { categoryPageClasses } from '@/styles/classMaps/category';
 import { interClassname } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const locale = context.locale || 'ru';
@@ -39,9 +42,33 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function CategoriesPage() {
   const router = useRouter();
   const platform = usePlatform();
-  const { categories: allCategories } = useCategoryContext();
+  const { categories: allCategories, setCategories } = useCategoryContext();
   const { setProducts } = useProductContext();
   const t = useTranslations();
+
+  // Context only loads once on app boot; refetch here so /category shows current order.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { success, data, message }: ResponseApi<ExtendedCategory[]> =
+          await (await fetch(`${BASE_URL}/api/category`)).json();
+        if (cancelled) return;
+        if (success && data != null) {
+          setCategories(data);
+        } else {
+          console.error(message);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error(error);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [setCategories]);
 
   return (
     <Layout>
