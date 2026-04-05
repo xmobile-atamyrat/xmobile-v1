@@ -108,7 +108,7 @@ export const getStaticProps: GetStaticProps = async ({
     }
 
     // Load messages first so they can be used for SEO generation
-    let messages;
+    let messages = null;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
     } catch (messageError) {
@@ -139,7 +139,7 @@ export const getStaticProps: GetStaticProps = async ({
       }
       priceValue = priceValue?.replace(/[^\d.]/g, '');
 
-      const productPath = `product/${product.id}`;
+      const productPath = `product/${product.slug}`;
 
       const title = generateProductTitle(productName, product.brand?.name);
       const metaDescription = generateProductMetaDescription(
@@ -182,7 +182,7 @@ export const getStaticProps: GetStaticProps = async ({
           LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
           'ru_RU',
         ogType: 'product',
-        ogImage: imageUrls[0],
+        ogImage: imageUrls[0] || null,
         productJsonLd,
         breadcrumbJsonLd,
       };
