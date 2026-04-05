@@ -25,6 +25,7 @@ import { Dispatch, SetStateAction, useState } from 'react';
 interface CollapsableBaseProps {
   categoryTitle: string;
   id: string;
+  slug: string;
   categoryImageUrl?: string | null;
   categoryPopular?: boolean;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
@@ -37,6 +38,7 @@ interface CollapsableBaseProps {
 export default function CollapsableBase({
   categoryTitle,
   id,
+  slug,
   categoryImageUrl,
   categoryPopular,
   setEditCategoriesModal,
@@ -66,7 +68,7 @@ export default function CollapsableBase({
         onClick={() => {
           setSelectedCategoryId(id);
           closeDrawer();
-          router.push(`/product?categoryId=${id}`);
+          router.push(`/product-category/${slug}`);
         }}
       >
         <ListItemText

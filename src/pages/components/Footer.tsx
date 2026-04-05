@@ -214,7 +214,7 @@ export default function Footer() {
                     onClick={() => {
                       setProducts([]);
                       setSelectedCategoryId(category.id);
-                      router.push(`/product?categoryId=${category.id}`);
+                      router.push(`/product-category/${category.slug}`);
                     }}
                     className={`${interClassname.className} ${footerClasses.typos.categoryNames}`}
                   >

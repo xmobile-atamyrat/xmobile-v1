@@ -43,7 +43,7 @@ export default function StyledBreadcrumbs({
           label={parseName(cat.name, router.locale ?? 'ru')}
           key={cat.id}
           onClick={() => {
-            router.push(`/category/${cat.id}`);
+            router.push(`/category/${cat.slug}`);
           }}
         />
       ))}

@@ -9,6 +9,7 @@ interface CollapsableProps {
   children: React.ReactNode;
   categoryTitle: string;
   id: string;
+  slug: string;
   categoryImageUrl?: string | null;
   categoryPopular?: boolean;
   collapsable: boolean;
@@ -25,6 +26,7 @@ export default function Collapsable({
   children,
   categoryTitle,
   id,
+  slug,
   categoryImageUrl,
   categoryPopular,
   collapsable,
@@ -92,6 +94,7 @@ export default function Collapsable({
         <CollapsableBase
           categoryTitle={categoryTitle}
           id={id}
+          slug={slug}
           categoryImageUrl={categoryImageUrl}
           categoryPopular={categoryPopular}
           setDeleteCategoriesModal={setDeleteCategoriesModal}
@@ -136,6 +139,7 @@ export default function Collapsable({
       <CollapsableBase
         categoryTitle={categoryTitle}
         id={id}
+        slug={slug}
         categoryImageUrl={categoryImageUrl}
         categoryPopular={categoryPopular}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
