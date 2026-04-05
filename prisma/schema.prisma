@@ -70,6 +70,9 @@ model Category {
   predecessorCategory             Category?   @relation("succCategory", references: [id], fields: [predecessorId], onDelete: Cascade)
   successorCategories             Category[]   @relation("succCategory")
 
+  /// Display order among siblings (same predecessorId). Lower values appear first.
+  sortOrder                       Int         @default(0)
+
   products                        Product[]
 
   imgUrl                          String?
@@ -80,6 +83,7 @@ model Category {
   updatedAt                       DateTime    @updatedAt
 
   @@index([deletedAt])
+  @@index([predecessorId, sortOrder])
 }
 
 

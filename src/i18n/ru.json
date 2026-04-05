@@ -404,6 +404,18 @@
   "privacyPolicyDeletionDesc": "Вы вправе в любое время запросить удаление вашего аккаунта и всех связанных персональных данных.",
   "privacyPolicyDeletionHowTitle": "Как запросить удаление аккаунта:",
   "privacyPolicyDeletionHowDesc": "Отправьте письмо на xmobiletm@gmail.com с указанием вашего зарегистрированного адреса электронной почты или номера телефона и темой письма: «Account Deletion Request». Мы обработаем ваш запрос в течение 7–14 рабочих дней и отправим вам письмо с подтверждением после удаления аккаунта и данных.",
+  "categoryHierarchy": "Иерархия категорий",
+  "categoryHierarchySubtitle": "Меняйте порядок стрелками или перенесите категорию под другого родителя. Подкатегории остаются внутри переносимой ветки.",
+  "categoryHierarchyEmpty": "Категорий пока нет.",
+  "categoryHierarchyLoadError": "Не удалось загрузить категории.",
+  "categoryHierarchyUpdateSuccess": "Категория обновлена.",
+  "categoryHierarchyUpdateError": "Не удалось обновить категорию.",
+  "moveCategoryUp": "Выше среди соседей",
+  "moveCategoryDown": "Ниже среди соседей",
+  "changeCategoryParent": "Сменить родителя",
+  "categoryParent": "Родительская категория",
+  "categoryParentRoot": "Корень (верхний уровень)",
+
   "pageNotFound": "Страница не найдена!",
   "homepage": "Главная",
   "startShopping": "Начать покупки"
