@@ -84,7 +84,7 @@ export const getStaticProps: GetStaticProps = async ({
       categoryPath = buildCategoryPath(categoryData.id, allCategories);
     }
 
-    let messages;
+    let messages = null;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
     } catch (messageError) {
@@ -115,7 +115,7 @@ export const getStaticProps: GetStaticProps = async ({
         `product-category/${categoryData.slug}`,
       );
 
-      let ogImage = categoryData.imgUrl;
+      let ogImage = categoryData.imgUrl || null;
       if (ogImage && !ogImage.startsWith('http')) {
         ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
       }
