@@ -4,8 +4,8 @@ import { GetServerSideProps } from 'next';
 import { localeOptions } from '@/pages/lib/constants';
 
 function generateSiteMap(
-  products: { id: string; updatedAt: Date }[],
-  categories: { id: string; updatedAt: Date }[],
+  products: { id: string; slug: string | null; updatedAt: Date }[],
+  categories: { id: string; slug: string | null; updatedAt: Date }[],
 ) {
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -27,13 +27,13 @@ function generateSiteMap(
        .join('')}
 
      <!-- Categories -->
-     ${categories
-       .map(({ id, updatedAt }) => {
+     ${products
+       .map(({ slug, updatedAt }) => {
          return localeOptions
            .map((locale) => {
              return `
        <url>
-           <loc>${BASE_URL}/${locale}/category/${id}</loc>
+           <loc>${BASE_URL}/${locale}/category/${slug}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>weekly</changefreq>
            <priority>0.7</priority>
@@ -45,12 +45,12 @@ function generateSiteMap(
 
      <!-- Category Product Landing Pages -->
      ${categories
-       .map(({ id, updatedAt }) => {
+       .map(({ slug, updatedAt }) => {
          return localeOptions
            .map((locale) => {
              return `
        <url>
-           <loc>${BASE_URL}/${locale}/product?categoryId=${id}</loc>
+           <loc>${BASE_URL}/${locale}/product-category/${slug}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.8</priority>
@@ -62,12 +62,12 @@ function generateSiteMap(
 
      <!-- Products -->
      ${products
-       .map(({ id, updatedAt }) => {
+       .map(({ slug, updatedAt }) => {
          return localeOptions
            .map((locale) => {
              return `
        <url>
-           <loc>${BASE_URL}/${locale}/product/${id}</loc>
+           <loc>${BASE_URL}/${locale}/product/${slug}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.9</priority>
@@ -86,6 +86,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     where: { deletedAt: null },
     select: {
       id: true,
+      slug: true,
       updatedAt: true,
     },
   });
@@ -94,6 +95,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     where: { deletedAt: null },
     select: {
       id: true,
+      slug: true,
       updatedAt: true,
     },
   });
