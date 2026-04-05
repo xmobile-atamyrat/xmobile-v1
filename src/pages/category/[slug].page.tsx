@@ -28,7 +28,7 @@ import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -112,6 +112,18 @@ export const getStaticProps: GetStaticProps = async ({
     if (allSuccess && allCategories && categoryData) {
       parentCategory = findParentCategory(categoryData.id, allCategories);
       categoryPath = buildCategoryPath(categoryData.id, allCategories);
+    }
+
+    if (
+      !categoryData.successorCategories ||
+      categoryData.successorCategories.length === 0
+    ) {
+      return {
+        redirect: {
+          destination: `/product-category/${categoryData.slug}`,
+          permanent: false,
+        },
+      };
     }
 
     // Load messages first so they can be used for SEO generation
@@ -213,17 +225,6 @@ export default function CategoryPage({
     setSelectedCategoryId(category.id);
   }, [category.id, setSelectedCategoryId]);
 
-  // Redirect to products if no subcategories
-  useEffect(() => {
-    if (
-      !category.successorCategories ||
-      category.successorCategories.length === 0
-    ) {
-      setProducts([]);
-      router.replace(`/product?categoryId=${category.id}`);
-    }
-  }, [category, router, setProducts]);
-
   const handleHeaderBackButton = () => {
     if (parentCategory) {
       router.push(`/category/${parentCategory.slug}`);
@@ -231,20 +232,6 @@ export default function CategoryPage({
       router.push('/');
     }
   };
-
-  // If no subcategories, show loading while redirecting
-  if (
-    !category.successorCategories ||
-    category.successorCategories.length === 0
-  ) {
-    return (
-      <Layout handleHeaderBackButton={handleHeaderBackButton}>
-        <Box className="flex justify-center items-center h-64">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
 
   return (
     <Layout handleHeaderBackButton={handleHeaderBackButton}>
@@ -281,7 +268,7 @@ export default function CategoryPage({
             initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
             onClick={() => {
               setProducts([]);
-              router.push(`/product?categoryId=${category.id}`);
+              router.push(`/product-category/${category.slug}`);
             }}
           />
           {/* Subcategories */}
