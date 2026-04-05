@@ -75,6 +75,7 @@
   "deleteProductError": "Product could not be deleted!",
   "deleteProductSuccess": "Product successfully deleted!",
   "createProductError": "Could not create new product",
+  "duplicateProductError": "Product name already exists. Please use a different name.",
   "editProductError": "Could not update the product",
   "tags": "Product Variations",
   "updatePrices": "Update prices",
