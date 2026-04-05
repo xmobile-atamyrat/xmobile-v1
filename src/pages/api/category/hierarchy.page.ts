@@ -4,6 +4,7 @@ import {
   collectActiveSubtreeCategoryIds,
   nextSiblingSortOrder,
 } from '@/lib/categoryHierarchy';
+import { parseCategoryHierarchyBody } from '@/lib/categoryHierarchyBody';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -14,52 +15,8 @@ import { NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/category/hierarchy.page.ts';
 
-type HierarchyBody =
-  | {
-      action: 'reorderSibling';
-      categoryId: string;
-      direction: 'up' | 'down';
-    }
-  | {
-      action: 'setParent';
-      categoryId: string;
-      newPredecessorId: string | null;
-    };
-
 function isStaff(grade: UserRole | undefined): boolean {
   return grade === UserRole.ADMIN || grade === UserRole.SUPERUSER;
-}
-
-function parseBody(raw: unknown): HierarchyBody | null {
-  if (raw == null || typeof raw !== 'object') return null;
-  const b = raw as Record<string, unknown>;
-  const action = b.action;
-  if (action === 'reorderSibling') {
-    const categoryId = b.categoryId;
-    const direction = b.direction;
-    if (typeof categoryId !== 'string' || categoryId.length === 0) {
-      return null;
-    }
-    if (direction !== 'up' && direction !== 'down') return null;
-    return { action: 'reorderSibling', categoryId, direction };
-  }
-  if (action === 'setParent') {
-    const categoryId = b.categoryId;
-    if (typeof categoryId !== 'string' || categoryId.length === 0) {
-      return null;
-    }
-    const rawParent = b.newPredecessorId;
-    let newPredecessorId: string | null;
-    if (rawParent === null || rawParent === undefined) {
-      newPredecessorId = null;
-    } else if (typeof rawParent === 'string') {
-      newPredecessorId = rawParent;
-    } else {
-      return null;
-    }
-    return { action: 'setParent', categoryId, newPredecessorId };
-  }
-  return null;
 }
 
 async function handleReorderSibling(
@@ -204,7 +161,7 @@ async function handler(
   }
 
   try {
-    const body = parseBody(req.body);
+    const body = parseCategoryHierarchyBody(req.body);
     if (body == null) {
       return res.status(400).json({
         success: false,
