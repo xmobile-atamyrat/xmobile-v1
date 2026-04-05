@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
@@ -195,6 +196,7 @@ async function getRecursiveCategoryIds(
     include: {
       successorCategories: {
         where: { deletedAt: null },
+        orderBy: categorySiblingOrderBy,
       },
     },
   });
