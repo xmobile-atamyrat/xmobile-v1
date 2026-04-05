@@ -1,5 +1,10 @@
 import dbClient from '@/lib/dbClient';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import {
+  categorySiblingOrderBy,
+  collectActiveSubtreeCategoryIds,
+  nextSiblingSortOrder,
+} from '@/lib/categoryHierarchy';
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
@@ -31,7 +36,7 @@ export async function getCategory(
       },
       successorCategories: {
         where: { deletedAt: null },
-        orderBy: { createdAt: 'asc' },
+        orderBy: categorySiblingOrderBy,
       },
     },
   });
@@ -62,9 +67,7 @@ async function recursivelyGetCategories(
           include: {
             successorCategories: {
               where: { deletedAt: null },
-              orderBy: {
-                createdAt: 'asc',
-              },
+              orderBy: categorySiblingOrderBy,
             },
           },
         })) || {};
@@ -83,28 +86,6 @@ async function recursivelyGetCategories(
   return updatedCategories;
 }
 
-/** Active category ids in subtree (root + descendants), excluding already-deleted rows. */
-async function collectActiveSubtreeCategoryIds(
-  rootId: string,
-): Promise<string[]> {
-  const root = await dbClient.category.findFirst({
-    where: { id: rootId, deletedAt: null },
-    include: {
-      successorCategories: {
-        where: { deletedAt: null },
-        select: { id: true },
-      },
-    },
-  });
-  if (!root) return [];
-  const nested = await Promise.all(
-    root.successorCategories.map(({ id }) =>
-      collectActiveSubtreeCategoryIds(id),
-    ),
-  );
-  return [root.id, ...nested.flat()];
-}
-
 async function handleGetCategory(query: {
   categoryId?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
@@ -114,9 +95,7 @@ async function handleGetCategory(query: {
         predecessorId: null,
         ...whereActiveCategory,
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: categorySiblingOrderBy,
     });
     const nestedCategories = await recursivelyGetCategories(categories);
     return { resp: { success: true, data: nestedCategories }, status: 200 };
@@ -157,10 +136,14 @@ async function handlePostCategory(req: NextApiRequest) {
         }
       }
 
+      const predecessorKey = predId != null && predId !== '' ? predId : null;
+      const sortOrder = await nextSiblingSortOrder(predecessorKey);
+
       const category = await dbClient.category.create({
         data: {
           name: fields.name[0],
-          predecessorId: predId,
+          predecessorId: predecessorKey,
+          sortOrder,
           imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
         },
       });
