@@ -250,20 +250,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setCarouselDialogImage(imgUrl);
   };
 
-  // Get categoryId from query params
-  const categoryIdFromQuery =
-    (router.query.categoryId as string) || product?.categoryId;
-
   // Build category path when categoryId is available
   useEffect(() => {
-    if (!categoryIdFromQuery || !allCategories || allCategories.length === 0) {
+    if (!product?.categoryId || !allCategories || allCategories.length === 0) {
       setCategoryPath([]);
       return;
     }
 
-    const path = buildCategoryPath(categoryIdFromQuery, allCategories);
+    const path = buildCategoryPath(product.categoryId, allCategories);
     setCategoryPath(path);
-  }, [categoryIdFromQuery, allCategories]);
+  }, [product?.categoryId, allCategories]);
 
   // Check if user landed directly (no category context)
   useEffect(() => {
