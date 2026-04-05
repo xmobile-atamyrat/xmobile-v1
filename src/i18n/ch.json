@@ -77,6 +77,7 @@
   "deleteProductError": "Önüm öçürilip bilinmedi!",
   "deleteProductSuccess": "Önüm üstünlikli öçürildi!",
   "createProductError": "Täze önüm döredip bolmady",
+  "duplicateProductError": "Önümiň ady eýýäm bar. Başga at ulanyň.",
   "editProductError": "Towary tazalap bolmady",
   "tags": "Towaryn Görnüşläri",
   "updatePrices": "Bahalary täzeläň",

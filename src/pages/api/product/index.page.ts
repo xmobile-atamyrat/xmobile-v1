@@ -146,8 +146,7 @@ async function createProduct(
       if (existingProduct) {
         resolve({
           success: false,
-          message:
-            'A product with a similar name creates a duplicate URL. Please try another name.',
+          message: 'duplicateProductError',
           status: 400,
         });
         return;
@@ -524,7 +523,7 @@ export default async function handler(
   if (method === 'POST') {
     try {
       const retData = await createProduct(req);
-      return res.status(200).json(retData);
+      return res.status(retData.status).json(retData);
     } catch (error) {
       console.error(filepath, error);
       return res
@@ -600,7 +599,7 @@ export default async function handler(
 
     try {
       const retData = await handleEditProduct(req);
-      return res.status(200).json(retData);
+      return res.status(retData.status).json(retData);
     } catch (error) {
       console.error(filepath, error);
       return res

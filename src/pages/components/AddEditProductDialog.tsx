@@ -336,13 +336,14 @@ export default function AddEditProductDialog({
             if (setProduct) {
               setProduct(updatedProduct);
             }
-          } catch (error) {
+          } catch (error: any) {
             setLoading(false);
             if (snackbarErrorHandler) {
               snackbarErrorHandler(
-                dialogType === 'add'
-                  ? 'createProductError'
-                  : 'editProductError',
+                error.message ||
+                  (dialogType === 'add'
+                    ? 'createProductError'
+                    : 'editProductError'),
               );
             }
             return;

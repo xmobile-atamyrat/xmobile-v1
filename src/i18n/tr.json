@@ -75,6 +75,7 @@
   "deleteProductError": "Ürün silinemedi!",
   "deleteProductSuccess": "Ürün başarıyla silindi!",
   "createProductError": "Yeni ürün oluşturulamadı",
+  "duplicateProductError": "Ürün adı zaten mevcut. Lütfen başka bir isim kullanın.",
   "editProductError": "Ürün güncellenemedi",
   "tags": "Ürün Varyasyonları",
   "updatePrices": "Fiyatları güncelle",
