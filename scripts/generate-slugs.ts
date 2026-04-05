@@ -24,7 +24,8 @@ async function backfillSlugs() {
   console.log(`Found ${categories.length} categories. Generating slugs...`);
 
   let categoriesUpdated = 0;
-  categories.forEach(async (cat) => {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const cat of categories) {
     let bareName = cat.name;
     try {
       const parsed = JSON.parse(cat.name);
@@ -48,7 +49,7 @@ async function backfillSlugs() {
       });
       categoriesUpdated += 1;
     }
-  });
+  }
   console.log(
     `✅ ${categoriesUpdated} Categories successfully updated with unique slugs.\n`,
   );
@@ -58,7 +59,8 @@ async function backfillSlugs() {
   console.log(`Found ${products.length} products. Generating slugs...`);
 
   let productsUpdated = 0;
-  products.forEach(async (prod) => {
+  // eslint-disable-next-line no-restricted-syntax
+  for (const prod of products) {
     let bareName = prod.name;
     try {
       const parsed = JSON.parse(prod.name);
@@ -82,7 +84,7 @@ async function backfillSlugs() {
       });
       productsUpdated += 1;
     }
-  });
+  }
   console.log(
     `✅ ${productsUpdated} Products successfully updated with unique slugs.\n`,
   );
