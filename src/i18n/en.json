@@ -401,6 +401,18 @@
   "privacyPolicyDeletionDesc": "You have the right to request deletion of your account and all associated personal data at any time.",
   "privacyPolicyDeletionHowTitle": "How to request account deletion:",
   "privacyPolicyDeletionHowDesc": "Send an email to xmobiletm@gmail.com with your registered email address or phone number in the body and the subject line: 'Account Deletion Request'. We will process your request within 7–14 business days and send you an email confirmation once your account and data have been deleted.",
+  "categoryHierarchy": "Category hierarchy",
+  "categoryHierarchySubtitle": "Reorder categories with the arrows, or move a category under another parent. Subcategories stay with their parent when you move it.",
+  "categoryHierarchyEmpty": "No categories yet.",
+  "categoryHierarchyLoadError": "Could not load categories.",
+  "categoryHierarchyUpdateSuccess": "Category updated.",
+  "categoryHierarchyUpdateError": "Could not update category.",
+  "moveCategoryUp": "Move up among siblings",
+  "moveCategoryDown": "Move down among siblings",
+  "changeCategoryParent": "Change parent",
+  "categoryParent": "Parent category",
+  "categoryParentRoot": "Root (top level)",
+
   "pageNotFound": "Page not found!",
   "homepage": "Homepage",
   "startShopping": "Start Shopping"

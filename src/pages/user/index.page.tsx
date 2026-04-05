@@ -15,6 +15,7 @@ import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
 import { ArrowForwardIos } from '@mui/icons-material';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
@@ -179,6 +180,26 @@ export default function Profile() {
                     className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('updatePrices')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={() => router.push('/user/category-hierarchy')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <AccountTreeIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {t('categoryHierarchy')}
                   </Typography>
                   <ArrowForwardIos className={profileClasses.icons[platform]} />
                 </Button>

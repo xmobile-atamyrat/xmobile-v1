@@ -401,6 +401,18 @@
   "privacyPolicyDeletionDesc": "Hesabınızın ve tüm ilgili kişisel verilerinizin silinmesini istediğiniz zaman talep etme hakkına sahipsiniz.",
   "privacyPolicyDeletionHowTitle": "Hesap silme talebinde bulunma:",
   "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine kayıtlı e-posta adresinizi veya telefon numaranızı belirterek 'Account Deletion Request' konusuyla e-posta gönderin. Talebinizi 7–14 iş günü içinde işleme alacağız ve hesabınız ile verileriniz silindikten sonra size e-posta ile bildirim göndereceğiz.",
+  "categoryHierarchy": "Kategori hiyerarşisi",
+  "categoryHierarchySubtitle": "Oklarla sırayı değiştirin veya kategoriyi başka bir üst kategorinin altına taşıyın. Alt kategoriler birlikte hareket eder.",
+  "categoryHierarchyEmpty": "Henüz kategori yok.",
+  "categoryHierarchyLoadError": "Kategoriler yüklenemedi.",
+  "categoryHierarchyUpdateSuccess": "Kategori güncellendi.",
+  "categoryHierarchyUpdateError": "Kategori güncellenemedi.",
+  "moveCategoryUp": "Üstteki kardeşin üstüne",
+  "moveCategoryDown": "Alttaki kardeşin altına",
+  "changeCategoryParent": "Üst kategoriyi değiştir",
+  "categoryParent": "Üst kategori",
+  "categoryParentRoot": "Kök (üst düzey)",
+
   "pageNotFound": "Sayfa bulunamadı!",
   "homepage": "Ana sayfa",
   "startShopping": "Alışverişe başla"
