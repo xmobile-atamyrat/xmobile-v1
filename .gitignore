@@ -62,3 +62,4 @@ backup/
 backup-data.sh
 ssl_keys
 fcm-configs
+.aider*

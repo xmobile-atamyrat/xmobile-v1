@@ -1,11 +1,16 @@
 import Layout from '@/pages/components/Layout';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { appBarHeight } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { categoryIdClasses } from '@/styles/classMaps/category/id';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { homePageClasses } from '@/styles/classMaps';
 import { colors, interClassname } from '@/styles/theme';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -188,7 +193,11 @@ export default function CategoryHierarchyPage() {
   const router = useRouter();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const platform = usePlatform();
   const t = useTranslations();
+  const handleBackToUser = useCallback(() => {
+    router.push('/user');
+  }, [router]);
   const locale = router.locale ?? 'ru';
   const { user, accessToken, isLoading } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
@@ -334,17 +343,40 @@ export default function CategoryHierarchyPage() {
 
   if (isLoading) {
     return (
-      <Layout handleHeaderBackButton={() => router.push('/user')}>
-        <Box
-          sx={{
-            mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: 200,
-          }}
-        >
-          <CircularProgress />
+      <Layout handleHeaderBackButton={handleBackToUser}>
+        <Box className={categoryIdClasses.boxes.main[platform]}>
+          <Box className={categoryIdClasses.boxes.header[platform]}>
+            <IconButton
+              size="medium"
+              edge="start"
+              color="inherit"
+              className={appbarClasses.backButton[platform]}
+              aria-label="open drawer"
+              onClick={handleBackToUser}
+            >
+              <ArrowBackIosIcon
+                className={appbarClasses.arrowBackIos[platform]}
+              />
+            </IconButton>
+            <Box className="flex w-full justify-center">
+              <Typography
+                className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+              >
+                {t('categoryHierarchy')}
+              </Typography>
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              mt: isMdUp ? `${appBarHeight}px` : 0,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: 200,
+            }}
+          >
+            <CircularProgress />
+          </Box>
         </Box>
       </Layout>
     );
@@ -406,18 +438,38 @@ export default function CategoryHierarchyPage() {
   }
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/user')}>
+    <Layout handleHeaderBackButton={handleBackToUser}>
       <Box
+        className={`${categoryIdClasses.boxes.main[platform]} flex flex-col gap-4 w-full max-w-[720px] mx-auto`}
         sx={{
-          mt: isMdUp
-            ? `${appBarHeight * 1.25}px`
-            : `${mobileAppBarHeight * 1.25}px`,
+          mt: isMdUp ? `${appBarHeight * 1.25}px` : undefined,
           px: isMdUp ? 4 : 2,
           pb: 4,
         }}
-        className="flex flex-col gap-4 w-full max-w-[720px] mx-auto"
       >
-        <Box className="flex flex-row items-center gap-2">
+        <Box className={categoryIdClasses.boxes.header[platform]}>
+          <IconButton
+            size="medium"
+            edge="start"
+            color="inherit"
+            className={appbarClasses.backButton[platform]}
+            aria-label="open drawer"
+            onClick={handleBackToUser}
+          >
+            <ArrowBackIosIcon
+              className={appbarClasses.arrowBackIos[platform]}
+            />
+          </IconButton>
+          <Box className="flex w-full justify-center">
+            <Typography
+              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+            >
+              {t('categoryHierarchy')}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box className="hidden md:flex flex-row items-center gap-2">
           <AccountTreeIcon
             sx={{ fontSize: isMdUp ? 28 : 24, color: colors.main }}
           />
