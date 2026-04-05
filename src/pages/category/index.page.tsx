@@ -82,7 +82,7 @@ export default function CategoriesPage() {
         </Box>
         <Box className={categoryPageClasses.card[platform]}>
           {allCategories?.map((category) => {
-            const { imgUrl, name, id, successorCategories } = category;
+            const { imgUrl, name, id, slug, successorCategories } = category;
             return (
               <CategoryCard
                 id={id}
@@ -96,9 +96,9 @@ export default function CategoriesPage() {
                     successorCategories.length === 0
                   ) {
                     setProducts([]);
-                    router.push(`/product?categoryId=${id}`);
+                    router.push(`/product-category/${slug}`);
                   } else {
-                    router.push(`/category/${id}`);
+                    router.push(`/category/${slug}`);
                   }
                 }}
               />
