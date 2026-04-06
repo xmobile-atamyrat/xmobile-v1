@@ -16,7 +16,10 @@ export default async function globalSetup(project: TestProject) {
   await prisma.$connect();
 
   const cat = await prisma.category.create({
-    data: { name: '{"en":"Integration category"}' },
+    data: {
+      name: '{"en":"Integration category"}',
+      slug: 'integration-category',
+    },
   });
   const price = await prisma.prices.create({
     data: { name: 'Integration price', price: '1', priceInTmt: '99.99' },

@@ -261,6 +261,16 @@ async function handleGetProduct(query: {
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
+  if (
+    productId != null &&
+    (typeof productId !== 'string' || !/^[a-zA-Z0-9-]+$/.test(productId))
+  ) {
+    return {
+      resp: { success: false, message: 'Invalid product ID format' },
+      status: 400,
+    };
+  }
+
   if (productId != null || productSlug != null) {
     const product = await getProduct(
       productId as string,
