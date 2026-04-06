@@ -25,6 +25,8 @@ import { Dispatch, SetStateAction, useState } from 'react';
 interface CollapsableBaseProps {
   categoryTitle: string;
   id: string;
+  categoryImageUrl?: string | null;
+  categoryPopular?: boolean;
   setEditCategoriesModal: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal: Dispatch<SetStateAction<DeleteCategoriesProps>>;
   closeDrawer: () => void;
@@ -35,6 +37,8 @@ interface CollapsableBaseProps {
 export default function CollapsableBase({
   categoryTitle,
   id,
+  categoryImageUrl,
+  categoryPopular,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
   closeDrawer,
@@ -111,6 +115,8 @@ export default function CollapsableBase({
                   dialogType: 'edit',
                   categoryId: id,
                   categoryName: categoryTitle,
+                  imageUrl: categoryImageUrl ?? undefined,
+                  popular: categoryPopular ?? false,
                 })
               }
               className={collapsableClasses.menuItem}

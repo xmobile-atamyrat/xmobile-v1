@@ -60,6 +60,8 @@ export default function CategoryList({
                 id={id}
                 categoryTitle={name}
                 key={name}
+                categoryImageUrl={category.imgUrl}
+                categoryPopular={category.popular}
                 collapsable={hasSubcategories}
                 setEditCategoriesModal={setEditCategoriesModal}
                 setDeleteCategoriesModal={setDeleteCategoriesModal}
