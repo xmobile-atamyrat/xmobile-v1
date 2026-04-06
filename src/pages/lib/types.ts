@@ -199,6 +199,7 @@ export interface EditCategoriesProps {
   categoryId?: string;
   categoryName?: string;
   imageUrl?: string | null;
+  popular?: boolean;
 }
 
 export interface AddEditProductProps {

@@ -11,6 +11,7 @@ import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import {
   DeleteCategoriesProps,
   EditCategoriesProps,
@@ -39,6 +40,7 @@ export default function Layout({
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
   const t = useTranslations();
+  const { accessToken } = useUserContext();
   const { setCategories, setSelectedCategoryId, categories } =
     useCategoryContext();
   const { setProducts } = useProductContext();
@@ -98,7 +100,7 @@ export default function Layout({
             try {
               const { categoryId } = deleteCategoriesModal;
               if (categoryId == null) return;
-              await deleteCategory(categoryId);
+              await deleteCategory(categoryId, accessToken);
 
               const {
                 success: catSuccess,
