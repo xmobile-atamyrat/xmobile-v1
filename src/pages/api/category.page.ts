@@ -8,10 +8,9 @@ import {
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
-import { verifyToken } from '@/pages/api/utils/authMiddleware';
-import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { Category, UserRole } from '@prisma/client';
+import { Category } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -24,10 +23,6 @@ export const config = {
 
 const filepath = 'src/pages/api/category.page.ts';
 
-function isStaff(grade: UserRole | undefined): boolean {
-  return grade === UserRole.ADMIN || grade === UserRole.SUPERUSER;
-}
-
 function parsePopularField(fields: {
   popular?: string[];
 }): boolean | undefined {
@@ -38,30 +33,6 @@ function parsePopularField(fields: {
   if (['true', '1', 'on', 'yes'].includes(v)) return true;
   if (['false', '0', 'off', 'no', ''].includes(v)) return false;
   return undefined;
-}
-
-async function requireStaffForCategoryMutation(
-  req: NextApiRequest,
-  res: NextApiResponse<ResponseApi>,
-): Promise<boolean> {
-  const authHeader = req.headers.authorization;
-  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ success: false, message: 'Unauthorized' });
-    return false;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = await verifyToken(token, ACCESS_SECRET as string);
-    const grade = (decoded as { grade?: UserRole }).grade;
-    if (!isStaff(grade)) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
-      return false;
-    }
-    return true;
-  } catch {
-    res.status(401).json({ success: false, message: 'Unauthorized' });
-    return false;
-  }
 }
 
 export async function getCategory(
@@ -268,7 +239,7 @@ export default async function handler(
         .json({ success: false, message: "Couldn't get categories" });
     }
   } else if (method === 'POST') {
-    if (!(await requireStaffForCategoryMutation(req, res))) {
+    if (!(await requireStaffBearerAuth(req, res))) {
       return undefined;
     }
     try {
@@ -284,7 +255,7 @@ export default async function handler(
         .json({ success: false, message: "Couldn't create a new category" });
     }
   } else if (method === 'PUT') {
-    if (!(await requireStaffForCategoryMutation(req, res))) {
+    if (!(await requireStaffBearerAuth(req, res))) {
       return undefined;
     }
     const { categoryId } = query;
@@ -307,7 +278,7 @@ export default async function handler(
         .json({ success: false, message: "Couldn't edit the category" });
     }
   } else if (method === 'DELETE') {
-    if (!(await requireStaffForCategoryMutation(req, res))) {
+    if (!(await requireStaffBearerAuth(req, res))) {
       return undefined;
     }
     const { categoryId } = query;
