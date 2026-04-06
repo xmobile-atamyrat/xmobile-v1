@@ -11,13 +11,17 @@ import {
 
 describe('Public catalog & health API (integration)', () => {
   let productId: string;
+  let productSlug: string;
   let categoryId: string;
+  let categorySlug: string;
   let priceId: string;
 
   beforeAll(async () => {
     const { catalog } = await prepareIntegrationWorker();
     productId = catalog.productId;
+    productSlug = catalog.productSlug;
     categoryId = catalog.categoryId;
+    categorySlug = catalog.categorySlug;
     priceId = catalog.priceId;
   }, 180_000);
 
@@ -75,6 +79,26 @@ describe('Public catalog & health API (integration)', () => {
     expect(productIds).toContain(productId);
   });
 
+  it('GET /api/category?categorySlug returns single category with products', async () => {
+    const category = (await import('@/pages/api/category.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/category',
+      query: { categorySlug },
+    });
+    await category(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const json = JSON.parse(res._getData() as string);
+    expect(json.data.slug).toBe(categorySlug);
+    const productIds = (json.data.products as { id: string }[]).map(
+      (p) => p.id,
+    );
+    expect(productIds).toContain(productId);
+  });
+
   it('GET /api/product?productId returns product with resolved price suffix', async () => {
     const session = await signupTestUser('shop');
     const product = (await import('@/pages/api/product/index.page')).default;
@@ -92,6 +116,26 @@ describe('Public catalog & health API (integration)', () => {
     const json = JSON.parse(res._getData() as string);
     expect(json.success).toBe(true);
     expect(json.data.id).toBe(productId);
+    expect(String(json.data.price)).toContain('{99.99}');
+  });
+
+  it('GET /api/product?productSlug returns product with resolved price suffix', async () => {
+    const session = await signupTestUser('shop-slug');
+    const product = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      query: { productSlug },
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    await product(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const json = JSON.parse(res._getData() as string);
+    expect(json.success).toBe(true);
+    expect(json.data.slug).toBe(productSlug);
     expect(String(json.data.price)).toContain('{99.99}');
   });
 

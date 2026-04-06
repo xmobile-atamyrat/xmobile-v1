@@ -23,6 +23,7 @@ export default async function globalSetup(project: TestProject) {
   });
   const product = await prisma.product.create({
     data: {
+      slug: 'integration-phone',
       name: '{"en":"Integration phone"}',
       categoryId: cat.id,
       imgUrls: [],
@@ -36,8 +37,10 @@ export default async function globalSetup(project: TestProject) {
 
   const catalog: IntegrationCatalog = {
     categoryId: cat.id,
+    categorySlug: cat.slug!,
     priceId: price.id,
     productId: product.id,
+    productSlug: product.slug!,
   };
 
   project.provide('integrationDatabaseUrl', databaseUrl);
