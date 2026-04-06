@@ -9,10 +9,12 @@ import {
 } from './shared/worker-env';
 
 describe('Product utility endpoints (integration)', () => {
+  let productSlug: string;
   let productId: string;
 
   beforeAll(async () => {
     const { catalog } = await prepareIntegrationWorker();
+    productSlug = catalog.productSlug;
     productId = catalog.productId;
   }, 180_000);
 
@@ -33,14 +35,14 @@ describe('Product utility endpoints (integration)', () => {
     );
     expect(res._getStatusCode()).toBe(200);
     const slugs = JSON.parse(res._getData() as string).data as string[];
-    expect(slugs).toContain(productId);
+    expect(slugs).toContain(productSlug);
   });
 
   it('GET /api/product/slugs returns 405 for POST', async () => {
     const handler = (await import('@/pages/api/product/slugs.page')).default;
     const { req, res } = createMocks({
       method: 'POST',
-      url: '/api/product/ids',
+      url: '/api/product/slugs',
     });
     await handler(
       req as unknown as NextApiRequest,
