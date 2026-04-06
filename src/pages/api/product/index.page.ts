@@ -190,9 +190,7 @@ async function getProduct(
   if (!productId && !productSlug) return null;
   const product = await dbClient.product.findFirst({
     where: {
-      ...(productSlug
-        ? { slug: productSlug }
-        : { id: productId }),
+      ...(productSlug ? { slug: productSlug } : { id: productId }),
       deletedAt: null,
     },
     include: { brand: true },
