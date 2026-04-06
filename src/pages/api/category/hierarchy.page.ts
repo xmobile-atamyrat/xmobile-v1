@@ -9,15 +9,11 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import { isStaff } from '@/pages/api/utils/staffAuth';
 import { ResponseApi } from '@/pages/lib/types';
-import { UserRole } from '@prisma/client';
 import { NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/category/hierarchy.page.ts';
-
-function isStaff(grade: UserRole | undefined): boolean {
-  return grade === UserRole.ADMIN || grade === UserRole.SUPERUSER;
-}
 
 async function handleReorderSibling(
   categoryId: string,

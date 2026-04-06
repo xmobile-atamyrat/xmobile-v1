@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { EditCategoriesProps } from '@/pages/lib/types';
 import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
 import { addEditCategoriesDialogClasses } from '@/styles/classMaps/components/addEditCategoriesDialog';
@@ -10,10 +11,12 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   TextField,
   Typography,
@@ -28,18 +31,32 @@ interface EditCategoriesDialogProps {
 
 export default function AddEditCategoriesDialog({
   handleClose,
-  editCategoriesModal: { categoryName, dialogType, imageUrl },
+  editCategoriesModal: {
+    categoryName,
+    dialogType,
+    imageUrl,
+    popular: initialPopular,
+    categoryId: editCategoryId,
+  },
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
   const { setCategories, selectedCategoryId, setSelectedCategoryId } =
     useCategoryContext();
+  const { accessToken, user } = useUserContext();
   const t = useTranslations();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
   const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
   const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
+  const [popularChecked, setPopularChecked] = useState(initialPopular ?? false);
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
   const platform = usePlatform();
+  const isStaffEditor =
+    user != null && ['SUPERUSER', 'ADMIN'].includes(user.grade);
+
+  useEffect(() => {
+    setPopularChecked(initialPopular ?? false);
+  }, [initialPopular, dialogType]);
 
   useEffect(() => {
     if (imageUrl == null) return;
@@ -63,16 +80,22 @@ export default function AddEditCategoriesDialog({
         setCategories,
         errorMessage: t('categoryNameRequired'),
         selectedCategoryId,
+        categoryIdForEdit: dialogType === 'edit' ? editCategoryId : undefined,
+        popular: dialogType === 'edit' ? popularChecked : undefined,
+        accessToken,
       });
       return firstCatId;
     },
     [
       selectedCategoryId,
+      editCategoryId,
+      popularChecked,
+      dialogType,
+      accessToken,
       t,
       categoryImageFile,
       categoryImageUrl,
       setCategories,
-      dialogType,
     ],
   );
 
@@ -140,6 +163,18 @@ export default function AddEditCategoriesDialog({
               className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
+            {dialogType === 'edit' && isStaffEditor && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={popularChecked}
+                    onChange={(_, checked) => setPopularChecked(checked)}
+                    color="primary"
+                  />
+                }
+                label={t('categoryPopular')}
+              />
+            )}
             {errorMessage && (
               <Typography fontSize={14} color="red">
                 {errorMessage}

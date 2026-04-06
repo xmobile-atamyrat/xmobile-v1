@@ -8,6 +8,7 @@ import {
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { Category } from '@prisma/client';
 import fs from 'fs';
@@ -21,6 +22,18 @@ export const config = {
 };
 
 const filepath = 'src/pages/api/category.page.ts';
+
+function parsePopularField(fields: {
+  popular?: string[];
+}): boolean | undefined {
+  if (fields.popular == null || fields.popular.length === 0) {
+    return undefined;
+  }
+  const v = String(fields.popular[0]).toLowerCase();
+  if (['true', '1', 'on', 'yes'].includes(v)) return true;
+  if (['false', '0', 'off', 'no', ''].includes(v)) return false;
+  return undefined;
+}
 
 export async function getCategory(
   categoryId: string,
@@ -187,6 +200,8 @@ async function handleEditCategory(req: NextApiRequest) {
 
       const data: Partial<Category> = {};
       if (fields.name?.length > 0) data.name = fields.name[0];
+      const popular = parsePopularField(fields);
+      if (popular !== undefined) data.popular = popular;
       if (files.imageUrl?.length > 0) {
         if (existingCat.imgUrl != null && fs.existsSync(existingCat.imgUrl)) {
           fs.unlinkSync(existingCat.imgUrl);
@@ -219,11 +234,14 @@ export default async function handler(
       return res.status(status).json(resp);
     } catch (error) {
       console.error(filepath, error);
-      res
+      return res
         .status(500)
         .json({ success: false, message: "Couldn't get categories" });
     }
   } else if (method === 'POST') {
+    if (!(await requireStaffBearerAuth(req, res))) {
+      return undefined;
+    }
     try {
       const { status, success, data, message } = await handlePostCategory(req);
       const retData: any = { success };
@@ -232,11 +250,14 @@ export default async function handler(
       return res.status(status).json(retData);
     } catch (error) {
       console.error(filepath, error);
-      res
+      return res
         .status(500)
         .json({ success: false, message: "Couldn't create a new category" });
     }
   } else if (method === 'PUT') {
+    if (!(await requireStaffBearerAuth(req, res))) {
+      return undefined;
+    }
     const { categoryId } = query;
     if (categoryId == null) {
       console.error(filepath, `Category ID not provided. Method: ${method}`);
@@ -257,6 +278,9 @@ export default async function handler(
         .json({ success: false, message: "Couldn't edit the category" });
     }
   } else if (method === 'DELETE') {
+    if (!(await requireStaffBearerAuth(req, res))) {
+      return undefined;
+    }
     const { categoryId } = query;
     if (categoryId == null) {
       console.error(filepath, `Category ID not provided. Method: ${method}`);
