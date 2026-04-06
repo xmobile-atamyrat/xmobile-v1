@@ -14,7 +14,6 @@ import {
   LOCALE_TO_OG_LOCALE,
   squareBracketRegex,
 } from '@/pages/lib/constants';
-import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -28,6 +27,7 @@ import {
   generateProductTitle,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
+import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import {
   AddEditProductProps,
   ExtendedCategory,
@@ -395,16 +395,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               color="inherit"
               className={appbarClasses.backButton[platform]}
               aria-label="open drawer"
-              onClick={() => {
-                if (categoryPath.length > 1) {
-                  // Navigate to the parent category page
-                  const parentCategory = categoryPath[categoryPath.length - 2];
-                  router.push(`/category/${parentCategory.id}`);
-                } else {
-                  // If we're at the root category, go to home
-                  router.push('/');
-                }
-              }}
+              onClick={() => router.back()}
             >
               <ArrowBackIosIcon
                 className={appbarClasses.arrowBackIos[platform]}
