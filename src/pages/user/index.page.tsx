@@ -20,9 +20,10 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
-import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
+import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import {
   Box,
   Button,
@@ -68,15 +69,6 @@ export default function Profile() {
   useEffect(() => {
     setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
   }, []);
-
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-    if (!user) {
-      router.push('/user/sign_in_up');
-    }
-  }, [user, isLoading, router]);
 
   const handleToggleLang = () => {
     setOpenLang(!openLang);
@@ -125,9 +117,9 @@ export default function Profile() {
                 className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
               >
                 {`${t('hello')} ${
-                  user?.name && user.name.trim() !== ''
+                  user && user.name.trim() !== ''
                     ? user.name.trim().split(' ')[0]
-                    : ''
+                    : t('guest')
                 }`}
               </Typography>
               <Typography
@@ -139,6 +131,30 @@ export default function Profile() {
           </Box>
           <Box className={profileClasses.boxes.divider[platform]}></Box>
           <Box className="w-[90%] flex flex-col items-center mx-auto">
+            {!user && (
+              <>
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={() => router.push('/user/sign_in_up')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <LoginOutlinedIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {t('signin')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+              </>
+            )}
             <Button
               className={profileClasses.boxes.sectionLang[platform]}
               disableRipple
@@ -294,28 +310,32 @@ export default function Profile() {
                 )}
               </Box>
             )}
-            <Button
-              className={profileClasses.boxes.sectionOrders[platform]}
-              disableRipple
-              onClick={handleToggleMyOrders}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <CardMedia
-                component="img"
-                src="/orders/my_order_icon.svg"
-                className={profileClasses.sectionIcon[platform]}
-              />
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {isAdmin ? t('userOrders') : t('myOrders')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
+            {user && (
+              <>
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={handleToggleMyOrders}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    src="/orders/my_order_icon.svg"
+                    className={profileClasses.sectionIcon[platform]}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {isAdmin ? t('userOrders') : t('myOrders')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+              </>
+            )}
             <Button
               className={profileClasses.boxes.sectionOrders[platform]}
               disableRipple
@@ -336,24 +356,26 @@ export default function Profile() {
               <ArrowForwardIos className={profileClasses.icons[platform]} />
             </Button>
             <Divider className={profileClasses.divider[platform]} />
-            <Button
-              className={profileClasses.boxes.sectionLogOut[platform]}
-              onClick={handleToggle}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              disableRipple
-            >
-              <MeetingRoomOutlinedIcon
-                className={profileClasses.sectionIcon[platform]}
-              />
-              <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+            {user && (
+              <Button
+                className={profileClasses.boxes.sectionLogOut[platform]}
+                onClick={handleToggle}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                disableRipple
               >
-                {t('signout')}
-              </Typography>
-              <ArrowForwardIos
-                className={profileClasses.iconLogOut[platform]}
-              />
-            </Button>
+                <MeetingRoomOutlinedIcon
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                >
+                  {t('signout')}
+                </Typography>
+                <ArrowForwardIos
+                  className={profileClasses.iconLogOut[platform]}
+                />
+              </Button>
+            )}
           </Box>
         </Box>
         <Dialog
