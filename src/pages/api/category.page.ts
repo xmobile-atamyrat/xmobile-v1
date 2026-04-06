@@ -43,9 +43,7 @@ export async function getCategory(
   if (!categoryId && !categorySlug) return null;
   const category = await dbClient.category.findFirst({
     where: {
-      ...(categorySlug
-        ? { slug: categorySlug }
-        : { id: categoryId }),
+      ...(categorySlug ? { slug: categorySlug } : { id: categoryId }),
       deletedAt: null,
     },
     include: {
