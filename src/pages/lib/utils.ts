@@ -74,10 +74,17 @@ export const theme = createTheme({
 });
 
 /** Soft-delete category via API. Image files stay on disk for possible restore. */
-export async function deleteCategory(categoryId: string): Promise<boolean> {
+export async function deleteCategory(
+  categoryId: string,
+  accessToken: string | undefined,
+): Promise<boolean> {
   const { success }: ResponseApi = await (
     await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`, {
       method: 'DELETE',
+      credentials: 'include',
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
     })
   ).json();
   return success;
@@ -137,6 +144,9 @@ export const addEditCategory = async ({
   categoryImageUrl,
   categoryImageFile,
   selectedCategoryId,
+  categoryIdForEdit,
+  popular,
+  accessToken,
   setCategories,
   errorMessage,
 }: {
@@ -145,6 +155,9 @@ export const addEditCategory = async ({
   categoryImageUrl: string | undefined;
   categoryImageFile: File | undefined;
   selectedCategoryId: string | undefined;
+  categoryIdForEdit?: string;
+  popular?: boolean;
+  accessToken: string | undefined;
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   errorMessage: string;
 }): Promise<string | null> => {
@@ -178,6 +191,10 @@ export const addEditCategory = async ({
     newFormData.append('imageUrl', resizedImage);
   }
 
+  const authHeaders = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : undefined;
+
   if (type === 'add') {
     if (
       selectedCategoryId != null &&
@@ -188,11 +205,19 @@ export const addEditCategory = async ({
     await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
       body: newFormData,
+      credentials: 'include',
+      headers: authHeaders,
     });
   } else {
-    await fetch(`${BASE_URL}/api/category?categoryId=${selectedCategoryId}`, {
+    const editId = categoryIdForEdit ?? selectedCategoryId;
+    if (type === 'edit') {
+      newFormData.append('popular', popular === true ? 'true' : 'false');
+    }
+    await fetch(`${BASE_URL}/api/category?categoryId=${editId}`, {
       method: 'PUT',
       body: newFormData,
+      credentials: 'include',
+      headers: authHeaders,
     });
   }
 
