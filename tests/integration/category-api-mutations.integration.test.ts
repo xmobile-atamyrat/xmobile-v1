@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
@@ -36,23 +37,28 @@ async function invokeCategoryApi(options: {
   body?: string;
 }): Promise<{ status: number; json: Record<string, unknown> }> {
   const categoryHandler = (await import('@/pages/api/category.page')).default;
-  const { req, res } = createMocks({
+  const { req: mockReq, res } = createMocks({
     method: options.method,
     url: '/api/category',
     query: options.query ?? {},
     headers: options.headers ?? {},
-    body:
-      options.body != null
-        ? (Buffer.from(
-            options.body,
-            'utf8',
-          ) as unknown as import('node-mocks-http').Body)
-        : undefined,
   });
-  await categoryHandler(
-    req as unknown as NextApiRequest,
-    res as unknown as NextApiResponse,
-  );
+
+  let req: NextApiRequest;
+  if (options.body != null) {
+    const buf = Buffer.from(options.body, 'utf8');
+    const bodyStream = Readable.from(buf);
+    req = Object.assign(bodyStream, {
+      url: '/api/category',
+      method: options.method,
+      headers: { ...mockReq.headers } as NextApiRequest['headers'],
+      query: mockReq.query,
+    }) as unknown as NextApiRequest;
+  } else {
+    req = mockReq as unknown as NextApiRequest;
+  }
+
+  await categoryHandler(req, res as unknown as NextApiResponse);
   const status = res._getStatusCode();
   const raw = res._getData() as string;
   const json = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
