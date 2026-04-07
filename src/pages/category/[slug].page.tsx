@@ -38,8 +38,10 @@ function extractCategorySlugs(categories: ExtendedCategory[]): string[] {
   const slugs: string[] = [];
   function traverse(cats: ExtendedCategory[]) {
     cats.forEach((cat) => {
-      slugs.push(cat.slug);
+      // Only include categories that HAVE subcategories to avoid redirect during build-time prerendering.
+      // Leaf categories will be handled at runtime where the redirect is allowed.
       if (cat.successorCategories && cat.successorCategories.length > 0) {
+        slugs.push(cat.slug);
         traverse(cat.successorCategories);
       }
     });
