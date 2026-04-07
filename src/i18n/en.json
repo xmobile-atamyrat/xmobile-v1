@@ -417,5 +417,7 @@
 
   "pageNotFound": "Page not found!",
   "homepage": "Homepage",
-  "startShopping": "Start Shopping"
+  "startShopping": "Start Shopping",
+  "popularCategories": "Popular Categories",
+  "moreCategories": "Other Categories"
 }
