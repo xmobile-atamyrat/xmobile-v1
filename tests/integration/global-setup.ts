@@ -16,13 +16,17 @@ export default async function globalSetup(project: TestProject) {
   await prisma.$connect();
 
   const cat = await prisma.category.create({
-    data: { name: '{"en":"Integration category"}' },
+    data: {
+      name: '{"en":"Integration category"}',
+      slug: 'integration-category',
+    },
   });
   const price = await prisma.prices.create({
     data: { name: 'Integration price', price: '1', priceInTmt: '99.99' },
   });
   const product = await prisma.product.create({
     data: {
+      slug: 'integration-phone',
       name: '{"en":"Integration phone"}',
       categoryId: cat.id,
       imgUrls: [],
@@ -36,8 +40,10 @@ export default async function globalSetup(project: TestProject) {
 
   const catalog: IntegrationCatalog = {
     categoryId: cat.id,
+    categorySlug: cat.slug!,
     priceId: price.id,
     productId: product.id,
+    productSlug: product.slug!,
   };
 
   project.provide('integrationDatabaseUrl', databaseUrl);

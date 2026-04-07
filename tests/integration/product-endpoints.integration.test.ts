@@ -9,10 +9,12 @@ import {
 } from './shared/worker-env';
 
 describe('Product utility endpoints (integration)', () => {
+  let productSlug: string;
   let productId: string;
 
   beforeAll(async () => {
     const { catalog } = await prepareIntegrationWorker();
+    productSlug = catalog.productSlug;
     productId = catalog.productId;
   }, 180_000);
 
@@ -21,26 +23,26 @@ describe('Product utility endpoints (integration)', () => {
     teardownIntegrationWorker();
   });
 
-  it('GET /api/product/ids returns all active product ids including seed', async () => {
-    const handler = (await import('@/pages/api/product/ids.page')).default;
+  it('GET /api/product/slugs returns all active product slugs including seed', async () => {
+    const handler = (await import('@/pages/api/product/slugs.page')).default;
     const { req, res } = createMocks({
       method: 'GET',
-      url: '/api/product/ids',
+      url: '/api/product/slugs',
     });
     await handler(
       req as unknown as NextApiRequest,
       res as unknown as NextApiResponse,
     );
     expect(res._getStatusCode()).toBe(200);
-    const ids = JSON.parse(res._getData() as string).data as string[];
-    expect(ids).toContain(productId);
+    const slugs = JSON.parse(res._getData() as string).data as string[];
+    expect(slugs).toContain(productSlug);
   });
 
-  it('GET /api/product/ids returns 405 for POST', async () => {
-    const handler = (await import('@/pages/api/product/ids.page')).default;
+  it('GET /api/product/slugs returns 405 for POST', async () => {
+    const handler = (await import('@/pages/api/product/slugs.page')).default;
     const { req, res } = createMocks({
       method: 'POST',
-      url: '/api/product/ids',
+      url: '/api/product/slugs',
     });
     await handler(
       req as unknown as NextApiRequest,

@@ -63,7 +63,7 @@ model CartItem {
 
 model Category {
   id                              String      @id @default(uuid())
-  slug                            String?     @unique
+  slug                            String      @unique
   name                            String
 
   predecessorId                   String?
@@ -91,7 +91,7 @@ model Category {
 
 model Product {
   id              String      @id @default(uuid())
-  slug            String?     @unique
+  slug            String      @unique
   name            String
   description     String?
   imgUrls         String[]

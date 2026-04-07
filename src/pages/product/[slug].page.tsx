@@ -6,7 +6,7 @@ import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
-import { fetchAllProductIds, fetchProducts } from '@/pages/lib/apis';
+import { fetchAllProductSlugs, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
@@ -75,15 +75,15 @@ const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async (context) => {
   try {
-    const ids = await fetchAllProductIds();
-    const paths = expandDynamicPathsForAllLocales(context, ids);
+    const slugs = await fetchAllProductSlugs();
+    const paths = expandDynamicPathsForAllLocales(context, slugs);
 
     return {
       paths,
       fallback: 'blocking',
     };
   } catch (error) {
-    console.error('Error fetching product ids for static generation:', error);
+    console.error('Error fetching product slugs for static generation:', error);
     return {
       paths: [],
       fallback: 'blocking',
@@ -96,11 +96,11 @@ export const getStaticProps: GetStaticProps = async ({
   params,
   locale = 'tk',
 }) => {
-  const productId = params?.id as string;
+  const productSlug = params?.slug as string;
 
   try {
     // Fetch the specific product at build time
-    const products = await fetchProducts({ productId });
+    const products = await fetchProducts({ productSlug });
     const product = products && products.length > 0 ? products[0] : null;
 
     if (!product) {
@@ -108,7 +108,7 @@ export const getStaticProps: GetStaticProps = async ({
     }
 
     // Load messages first so they can be used for SEO generation
-    let messages;
+    let messages = null;
     try {
       messages = (await import(`../../i18n/${locale}.json`)).default;
     } catch (messageError) {
@@ -139,7 +139,7 @@ export const getStaticProps: GetStaticProps = async ({
       }
       priceValue = priceValue?.replace(/[^\d.]/g, '');
 
-      const productPath = `product/${product.id}`;
+      const productPath = `product/${product.slug}`;
 
       const title = generateProductTitle(productName, product.brand?.name);
       const metaDescription = generateProductMetaDescription(
@@ -182,7 +182,7 @@ export const getStaticProps: GetStaticProps = async ({
           LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
           'ru_RU',
         ogType: 'product',
-        ogImage: imageUrls[0],
+        ogImage: imageUrls[0] || null,
         productJsonLd,
         breadcrumbJsonLd,
       };
@@ -201,7 +201,7 @@ export const getStaticProps: GetStaticProps = async ({
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : '';
     if (msg === "Couldn't find the product") {
-      console.warn(`Product not found during build/SSR: ${productId}`);
+      console.warn(`Product not found during build/SSR: ${productSlug}`);
     } else {
       console.error('Error fetching product during build:', error);
     }
@@ -250,20 +250,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setCarouselDialogImage(imgUrl);
   };
 
-  // Get categoryId from query params
-  const categoryIdFromQuery =
-    (router.query.categoryId as string) || product?.categoryId;
-
   // Build category path when categoryId is available
   useEffect(() => {
-    if (!categoryIdFromQuery || !allCategories || allCategories.length === 0) {
+    if (!product?.categoryId || !allCategories || allCategories.length === 0) {
       setCategoryPath([]);
       return;
     }
 
-    const path = buildCategoryPath(categoryIdFromQuery, allCategories);
+    const path = buildCategoryPath(product.categoryId, allCategories);
     setCategoryPath(path);
-  }, [categoryIdFromQuery, allCategories]);
+  }, [product?.categoryId, allCategories]);
 
   // Check if user landed directly (no category context)
   useEffect(() => {

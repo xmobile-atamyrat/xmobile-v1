@@ -4,17 +4,17 @@ import type { GetStaticPathsContext } from 'next';
 const STATIC_PATH_LOCALES = ['en', 'ru', 'tk', 'ch', 'tr'] as const;
 
 /**
- * One `{ params: { id }, locale }` per id × locale so SSG runs for every locale at build time.
+ * One `{ params: { slug }, locale }` per slug × locale so SSG runs for every locale at build time.
  */
 export function expandDynamicPathsForAllLocales(
   context: GetStaticPathsContext,
-  ids: string[],
-): { params: { id: string }; locale: string }[] {
+  slugs: string[],
+): { params: { slug: string }; locale: string }[] {
   const locales =
     context.locales && context.locales.length > 0
       ? context.locales
       : [...STATIC_PATH_LOCALES];
-  return ids.flatMap((id) =>
-    locales.map((locale) => ({ params: { id }, locale })),
+  return slugs.flatMap((slug) =>
+    locales.map((locale) => ({ params: { slug }, locale })),
   );
 }

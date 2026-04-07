@@ -3,7 +3,7 @@ import addCors from '@/pages/api/utils/addCors';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const filepath = 'src/pages/api/product/ids.page.ts';
+const filepath = 'src/pages/api/product/slugs.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,11 +21,11 @@ export default async function handler(
   try {
     const rows = await dbClient.product.findMany({
       where: { deletedAt: null },
-      select: { id: true },
+      select: { slug: true },
       orderBy: { id: 'asc' },
     });
-    const ids = rows.map((r) => r.id);
-    return res.status(200).json({ success: true, data: ids });
+    const slugs = rows.map((r) => r.slug);
+    return res.status(200).json({ success: true, data: slugs });
   } catch (error) {
     console.error(filepath, 'Error listing product ids:', error);
     return res.status(500).json({
