@@ -420,5 +420,7 @@
 
   "pageNotFound": "Страница не найдена!",
   "homepage": "Главная",
-  "startShopping": "Начать покупки"
+  "startShopping": "Начать покупки",
+  "popularCategories": "Популярные категории",
+  "moreCategories": "Другие категории"
 }
