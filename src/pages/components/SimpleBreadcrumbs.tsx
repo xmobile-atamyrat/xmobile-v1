@@ -54,7 +54,7 @@ export default function SimpleBreadcrumbs({
               <Link
                 key={cat.id}
                 onClick={() => {
-                  router.push(`/category/${cat.id}`);
+                  router.push(`/category/${cat.slug}`);
                 }}
                 className={simpleBreadcrumbsClasses.link}
               >

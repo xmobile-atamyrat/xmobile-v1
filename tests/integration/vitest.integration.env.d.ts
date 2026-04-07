@@ -4,8 +4,10 @@ declare module 'vitest' {
     integrationDatabaseUrl: string;
     integrationCatalog: {
       categoryId: string;
+      categorySlug: string;
       priceId: string;
       productId: string;
+      productSlug: string;
     };
   }
 }

@@ -382,7 +382,7 @@ export function generateBreadcrumbJsonLd(
       '@type': 'ListItem',
       position: index + 2,
       name: parseName(category.name, locale),
-      item: `${BASE_URL}/${locale}/category/${category.id}`,
+      item: `${BASE_URL}/${locale}/category/${category.slug}`,
     });
   });
 

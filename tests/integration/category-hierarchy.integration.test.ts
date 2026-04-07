@@ -131,12 +131,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST reorderSibling returns 400 when already first among siblings', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"H parent"}' },
+      data: { name: '{"en":"H parent"}', slug: 'h-parent' },
     });
     trackRoot(parent.id);
     const first = await prisma.category.create({
       data: {
         name: '{"en":"H first"}',
+        slug: 'h-first',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -144,6 +145,7 @@ describe('Category hierarchy API (integration)', () => {
     await prisma.category.create({
       data: {
         name: '{"en":"H second"}',
+        slug: 'h-second',
         predecessorId: parent.id,
         sortOrder: 1,
       },
@@ -160,12 +162,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST reorderSibling returns 400 when already last among siblings', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"L parent"}' },
+      data: { name: '{"en":"L parent"}', slug: 'l-parent' },
     });
     trackRoot(parent.id);
     await prisma.category.create({
       data: {
         name: '{"en":"L first"}',
+        slug: 'l-first',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -173,6 +176,7 @@ describe('Category hierarchy API (integration)', () => {
     const last = await prisma.category.create({
       data: {
         name: '{"en":"L last"}',
+        slug: 'l-last',
         predecessorId: parent.id,
         sortOrder: 1,
       },
@@ -189,12 +193,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST reorderSibling swaps sortOrder between two siblings', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"S parent"}' },
+      data: { name: '{"en":"S parent"}', slug: 's-parent' },
     });
     trackRoot(parent.id);
     const a = await prisma.category.create({
       data: {
         name: '{"en":"S A"}',
+        slug: 's-a',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -202,6 +207,7 @@ describe('Category hierarchy API (integration)', () => {
     const b = await prisma.category.create({
       data: {
         name: '{"en":"S B"}',
+        slug: 's-b',
         predecessorId: parent.id,
         sortOrder: 1,
       },
@@ -224,7 +230,7 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setParent returns 400 when category is its own parent', async () => {
     const cat = await prisma.category.create({
-      data: { name: '{"en":"self"}' },
+      data: { name: '{"en":"self"}', slug: 'self-parent' },
     });
     trackRoot(cat.id);
 
@@ -248,7 +254,7 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setParent returns 404 for unknown parent id', async () => {
     const cat = await prisma.category.create({
-      data: { name: '{"en":"orphan"}' },
+      data: { name: '{"en":"orphan"}', slug: 'orphan' },
     });
     trackRoot(cat.id);
 
@@ -263,12 +269,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setParent returns 400 when new parent is inside moved subtree', async () => {
     const root = await prisma.category.create({
-      data: { name: '{"en":"cycle root"}' },
+      data: { name: '{"en":"cycle root"}', slug: 'cycle-root' },
     });
     trackRoot(root.id);
     const mid = await prisma.category.create({
       data: {
         name: '{"en":"cycle mid"}',
+        slug: 'cycle-mid',
         predecessorId: root.id,
         sortOrder: 0,
       },
@@ -276,6 +283,7 @@ describe('Category hierarchy API (integration)', () => {
     const leaf = await prisma.category.create({
       data: {
         name: '{"en":"cycle leaf"}',
+        slug: 'cycle-leaf',
         predecessorId: mid.id,
         sortOrder: 0,
       },
@@ -294,12 +302,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setParent moves category to root (null predecessor)', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"old parent"}' },
+      data: { name: '{"en":"old parent"}', slug: 'old-parent' },
     });
     trackRoot(parent.id);
     const child = await prisma.category.create({
       data: {
         name: '{"en":"to root"}',
+        slug: 'to-root',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -323,10 +332,10 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setParent moves category under another parent and appends sortOrder', async () => {
     const p1 = await prisma.category.create({
-      data: { name: '{"en":"p1"}' },
+      data: { name: '{"en":"p1"}', slug: 'p1-parent' },
     });
     const p2 = await prisma.category.create({
-      data: { name: '{"en":"p2"}' },
+      data: { name: '{"en":"p2"}', slug: 'p2-parent' },
     });
     trackRoot(p1.id);
     trackRoot(p2.id);
@@ -334,6 +343,7 @@ describe('Category hierarchy API (integration)', () => {
     await prisma.category.create({
       data: {
         name: '{"en":"existing child"}',
+        slug: 'existing-child',
         predecessorId: p2.id,
         sortOrder: 0,
       },
@@ -341,6 +351,7 @@ describe('Category hierarchy API (integration)', () => {
     const moving = await prisma.category.create({
       data: {
         name: '{"en":"moving"}',
+        slug: 'moving',
         predecessorId: p1.id,
         sortOrder: 0,
       },
@@ -362,12 +373,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST succeeds for SUPERUSER same as ADMIN', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"su parent"}' },
+      data: { name: '{"en":"su parent"}', slug: 'su-parent' },
     });
     trackRoot(parent.id);
     const a = await prisma.category.create({
       data: {
         name: '{"en":"su a"}',
+        slug: 'su-a',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -375,6 +387,7 @@ describe('Category hierarchy API (integration)', () => {
     const b = await prisma.category.create({
       data: {
         name: '{"en":"su b"}',
+        slug: 'su-b',
         predecessorId: parent.id,
         sortOrder: 1,
       },
@@ -397,10 +410,10 @@ describe('Category hierarchy API (integration)', () => {
 
   it('GET /api/category orders root categories by sortOrder then createdAt', async () => {
     const rHigh = await prisma.category.create({
-      data: { name: '{"en":"order hi"}', sortOrder: 10 },
+      data: { name: '{"en":"order hi"}', slug: 'order-hi', sortOrder: 10 },
     });
     const rLow = await prisma.category.create({
-      data: { name: '{"en":"order lo"}', sortOrder: 0 },
+      data: { name: '{"en":"order lo"}', slug: 'order-lo', sortOrder: 0 },
     });
     trackRoot(rHigh.id);
     trackRoot(rLow.id);

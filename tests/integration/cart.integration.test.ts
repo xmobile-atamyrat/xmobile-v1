@@ -155,6 +155,7 @@ describe('Cart API (integration)', () => {
     const dead = await prisma.product.create({
       data: {
         name: '{"en":"Soon gone"}',
+        slug: 'soon-gone',
         categoryId,
         imgUrls: [],
         tags: [],

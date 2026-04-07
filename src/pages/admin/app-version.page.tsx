@@ -36,15 +36,21 @@ interface Props {
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const refreshToken = ctx.req.cookies[AUTH_REFRESH_COOKIE_NAME];
   if (!refreshToken || refreshToken === undefined)
-    return { redirect: { destination: '/', permanent: false } };
+    return {
+      redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
+    };
 
   try {
     const decoded = await verifyToken(refreshToken, REFRESH_SECRET);
     if (decoded.grade !== UserRole.SUPERUSER) {
-      return { redirect: { destination: '/', permanent: false } };
+      return {
+        redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
+      };
     }
   } catch {
-    return { redirect: { destination: '/', permanent: false } };
+    return {
+      redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
+    };
   }
 
   const { default: dbClient } = await import('@/lib/dbClient');

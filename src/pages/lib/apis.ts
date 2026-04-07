@@ -10,6 +10,7 @@ export const fetchProducts = async ({
   sortBy,
   searchKeyword,
   productId,
+  productSlug,
   page,
 }: {
   categoryIds?: string[];
@@ -19,6 +20,7 @@ export const fetchProducts = async ({
   sortBy?: string;
   searchKeyword?: string;
   productId?: string;
+  productSlug?: string;
   page?: number;
 }): Promise<ExtendedProduct[]> => {
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
@@ -39,6 +41,7 @@ export const fetchProducts = async ({
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('productId', productId);
+  appendParam('productSlug', productSlug);
   appendParam('searchKeyword', searchKeyword);
   appendParam('sortBy', sortBy);
 
@@ -51,13 +54,13 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
-/** All product ids for SSG (e.g. getStaticPaths); uses /api/product/ids */
-export const fetchAllProductIds = async (): Promise<string[]> => {
+/** All product slugs for SSG (e.g. getStaticPaths); uses /api/product/slugs */
+export const fetchAllProductSlugs = async (): Promise<string[]> => {
   const { success, data, message }: ResponseApi<string[]> = await (
-    await fetch(`${BASE_URL}/api/product/ids`)
+    await fetch(`${BASE_URL}/api/product/slugs`)
   ).json();
   if (!success || data == null) {
-    throw new Error(message ?? 'Failed to fetch product ids');
+    throw new Error(message ?? 'Failed to fetch product slugs');
   }
   return data;
 };

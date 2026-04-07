@@ -105,12 +105,7 @@ export default function ProductCard({
           className={productCardClasses.boxes.main}
           onClick={() => {
             setSelectedProduct(initialProduct);
-            const categoryId = product.categoryId;
-            if (categoryId) {
-              router.push(`/product/${product.id}?categoryId=${categoryId}`);
-            } else {
-              router.push(`/product/${product.id}`);
-            }
+            router.push(`/product/${product.slug}`);
           }}
         >
           {imgUrl != null && (

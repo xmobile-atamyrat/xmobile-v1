@@ -12,10 +12,10 @@ describe('expandDynamicPathsForAllLocales', () => {
     const paths = expandDynamicPathsForAllLocales(context, ['a', 'b']);
 
     expect(paths).toEqual([
-      { params: { id: 'a' }, locale: 'en' },
-      { params: { id: 'a' }, locale: 'ru' },
-      { params: { id: 'b' }, locale: 'en' },
-      { params: { id: 'b' }, locale: 'ru' },
+      { params: { slug: 'a' }, locale: 'en' },
+      { params: { slug: 'a' }, locale: 'ru' },
+      { params: { slug: 'b' }, locale: 'en' },
+      { params: { slug: 'b' }, locale: 'ru' },
     ]);
   });
 
@@ -36,6 +36,6 @@ describe('expandDynamicPathsForAllLocales', () => {
       'tk',
       'tr',
     ]);
-    expect(paths.filter((p) => p.params.id === 'x')).toHaveLength(5);
+    expect(paths.filter((p) => p.params.slug === 'x')).toHaveLength(5);
   });
 });

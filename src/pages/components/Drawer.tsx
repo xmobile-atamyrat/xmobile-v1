@@ -51,13 +51,14 @@ export default function CategoryList({
       {categories.length > 0 && (
         <List component="div" disablePadding className={drawerClasses.list}>
           {categories.map((category) => {
-            const { id, name } = category;
+            const { id, name, slug } = category;
             const hasSubcategories = category.successorCategories.length > 0;
             const isActiveParent = isSelected(category, selectedCategoryId);
 
             return (
               <Collapsable
                 id={id}
+                slug={slug}
                 categoryTitle={name}
                 key={name}
                 categoryImageUrl={category.imgUrl}
