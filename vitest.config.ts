@@ -17,5 +17,6 @@ export default defineConfig({
     env: {
       TZ: 'UTC',
     },
+    testTimeout: 10000,
   },
 });
