@@ -22,26 +22,28 @@ export function getFirebaseConfig(): FirebaseConfig {
   const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
   const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
-  if (
-    !apiKey ||
-    !authDomain ||
-    !projectId ||
-    !storageBucket ||
-    !messagingSenderId ||
-    !appId
-  ) {
+  const missing = [];
+  if (!apiKey) missing.push('NEXT_PUBLIC_FIREBASE_API_KEY');
+  if (!authDomain) missing.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+  if (!projectId) missing.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  if (!storageBucket) missing.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
+  if (!messagingSenderId)
+    missing.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+  if (!appId) missing.push('NEXT_PUBLIC_FIREBASE_APP_ID');
+
+  if (missing.length > 0) {
     throw new Error(
-      'Missing required Firebase configuration. Please set all NEXT_PUBLIC_FIREBASE_* environment variables.',
+      `[Firebase] Missing required configuration variables: ${missing.join(', ')}`,
     );
   }
 
   return {
-    apiKey,
-    authDomain,
-    projectId,
-    storageBucket,
-    messagingSenderId,
-    appId,
+    apiKey: apiKey!,
+    authDomain: authDomain!,
+    projectId: projectId!,
+    storageBucket: storageBucket!,
+    messagingSenderId: messagingSenderId!,
+    appId: appId!,
     ...(measurementId && { measurementId }),
   };
 }
