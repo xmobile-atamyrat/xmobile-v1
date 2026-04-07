@@ -83,7 +83,7 @@ export const getStaticPaths: GetStaticPaths = async (context) => {
       fallback: 'blocking',
     };
   } catch (error) {
-    console.error('Error fetching product ids for static generation:', error);
+    console.error('Error fetching product slugs for static generation:', error);
     return {
       paths: [],
       fallback: 'blocking',
