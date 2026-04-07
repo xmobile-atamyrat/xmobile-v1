@@ -8,6 +8,11 @@ export type CategoryHierarchyBody =
       action: 'setParent';
       categoryId: string;
       newPredecessorId: string | null;
+    }
+  | {
+      action: 'setPopular';
+      categoryId: string;
+      popular: boolean;
     };
 
 /**
@@ -43,6 +48,15 @@ export function parseCategoryHierarchyBody(
       return null;
     }
     return { action: 'setParent', categoryId, newPredecessorId };
+  }
+  if (action === 'setPopular') {
+    const categoryId = b.categoryId;
+    if (typeof categoryId !== 'string' || categoryId.length === 0) {
+      return null;
+    }
+    const rawPopular = b.popular;
+    if (typeof rawPopular !== 'boolean') return null;
+    return { action: 'setPopular', categoryId, popular: rawPopular };
   }
   return null;
 }

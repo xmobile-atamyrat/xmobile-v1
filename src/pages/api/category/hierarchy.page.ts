@@ -137,6 +137,38 @@ async function handleSetParent(
   return { status: 200, resp: { success: true } };
 }
 
+async function handleSetPopular(
+  categoryId: string,
+  popular: boolean,
+): Promise<{ status: number; resp: ResponseApi }> {
+  const cat = await dbClient.category.findFirst({
+    where: { id: categoryId, deletedAt: null },
+    select: { id: true, predecessorId: true },
+  });
+  if (!cat) {
+    return {
+      status: 404,
+      resp: { success: false, message: 'Category not found' },
+    };
+  }
+  if (cat.predecessorId != null) {
+    return {
+      status: 400,
+      resp: {
+        success: false,
+        message: 'Popular applies only to top-level categories',
+      },
+    };
+  }
+
+  await dbClient.category.update({
+    where: { id: categoryId },
+    data: { popular },
+  });
+
+  return { status: 200, resp: { success: true } };
+}
+
 async function handler(
   req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi>,
@@ -162,15 +194,17 @@ async function handler(
       return res.status(400).json({
         success: false,
         message:
-          'Invalid body: expected { action: "reorderSibling", categoryId, direction } or { action: "setParent", categoryId, newPredecessorId }',
+          'Invalid body: expected hierarchy action (reorderSibling, setParent, or setPopular)',
       });
     }
 
     let result: { status: number; resp: ResponseApi };
     if (body.action === 'reorderSibling') {
       result = await handleReorderSibling(body.categoryId, body.direction);
-    } else {
+    } else if (body.action === 'setParent') {
       result = await handleSetParent(body.categoryId, body.newPredecessorId);
+    } else {
+      result = await handleSetPopular(body.categoryId, body.popular);
     }
 
     return res.status(result.status).json(result.resp);
