@@ -292,7 +292,7 @@ async function handleGetProduct(query: {
     );
 
     if (product == null) {
-      console.error(
+      console.warn(
         filepath,
         'Product not found',
         `Method: GET`,
