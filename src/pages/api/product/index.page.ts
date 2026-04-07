@@ -276,6 +276,7 @@ async function handleGetProduct(query: {
       productId as string,
       productSlug as string,
     );
+
     if (product == null) {
       console.error(
         filepath,
@@ -288,6 +289,7 @@ async function handleGetProduct(query: {
         status: 404,
       };
     }
+
     return { resp: { success: true, data: product }, status: 200 };
   }
 
