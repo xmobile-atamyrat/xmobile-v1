@@ -14,6 +14,8 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import {
   Alert,
   Box,
@@ -96,6 +98,7 @@ interface CategoryTreeRowProps {
   busy: boolean;
   onMove: (categoryId: string, direction: 'up' | 'down') => void;
   onOpenParentDialog: (category: ExtendedCategory) => void;
+  onTogglePopular: (categoryId: string, popular: boolean) => void;
 }
 
 function CategoryTreeRow({
@@ -107,12 +110,14 @@ function CategoryTreeRow({
   busy,
   onMove,
   onOpenParentDialog,
+  onTogglePopular,
 }: CategoryTreeRowProps) {
   const t = useTranslations();
   const title = parseName(category.name, locale);
   const subs = category.successorCategories ?? [];
   const canUp = siblingIndex > 0;
   const canDown = siblingIndex < siblingCount - 1;
+  const isPopular = category.popular === true;
 
   return (
     <Box>
@@ -135,6 +140,28 @@ function CategoryTreeRow({
         >
           {title}
         </Typography>
+        {depth === 0 && (
+          <Tooltip title={t('categoryPopular')}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={busy}
+                onClick={() => onTogglePopular(category.id, !isPopular)}
+                aria-label={t('categoryPopular')}
+                aria-pressed={isPopular}
+                sx={{
+                  color: isPopular ? colors.main : 'text.secondary',
+                }}
+              >
+                {isPopular ? (
+                  <StarIcon fontSize="small" />
+                ) : (
+                  <StarBorderIcon fontSize="small" />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
         <Tooltip title={t('moveCategoryUp')}>
           <span>
             <IconButton
@@ -183,6 +210,7 @@ function CategoryTreeRow({
           busy={busy}
           onMove={onMove}
           onOpenParentDialog={onOpenParentDialog}
+          onTogglePopular={onTogglePopular}
         />
       ))}
     </Box>
@@ -324,6 +352,17 @@ export default function CategoryHierarchyPage() {
     [runHierarchyMutation],
   );
 
+  const handleTogglePopular = useCallback(
+    (categoryId: string, popular: boolean) => {
+      runHierarchyMutation({
+        action: 'setPopular',
+        categoryId,
+        popular,
+      }).catch(() => {});
+    },
+    [runHierarchyMutation],
+  );
+
   const handleApplyParent = useCallback(async () => {
     if (!parentDialogCat) return;
     const newPredecessorId =
@@ -430,6 +469,7 @@ export default function CategoryHierarchyPage() {
               busy={busy}
               onMove={handleMove}
               onOpenParentDialog={openParentDialog}
+              onTogglePopular={handleTogglePopular}
             />
           ))
         )}
