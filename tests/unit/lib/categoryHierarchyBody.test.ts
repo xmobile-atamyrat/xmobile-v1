@@ -153,4 +153,54 @@ describe('parseCategoryHierarchyBody', () => {
       ).toBeNull();
     });
   });
+
+  describe('setPopular', () => {
+    it('parses valid categoryId and boolean popular', () => {
+      expect(
+        parseCategoryHierarchyBody({
+          action: 'setPopular',
+          categoryId: 'root-1',
+          popular: true,
+        }),
+      ).toEqual({
+        action: 'setPopular',
+        categoryId: 'root-1',
+        popular: true,
+      });
+      expect(
+        parseCategoryHierarchyBody({
+          action: 'setPopular',
+          categoryId: 'root-2',
+          popular: false,
+        }),
+      ).toEqual({
+        action: 'setPopular',
+        categoryId: 'root-2',
+        popular: false,
+      });
+    });
+
+    it('rejects empty categoryId or non-boolean popular', () => {
+      expect(
+        parseCategoryHierarchyBody({
+          action: 'setPopular',
+          categoryId: '',
+          popular: true,
+        }),
+      ).toBeNull();
+      expect(
+        parseCategoryHierarchyBody({
+          action: 'setPopular',
+          categoryId: 'a',
+          popular: 'true',
+        }),
+      ).toBeNull();
+      expect(
+        parseCategoryHierarchyBody({
+          action: 'setPopular',
+          categoryId: 'a',
+        }),
+      ).toBeNull();
+    });
+  });
 });
