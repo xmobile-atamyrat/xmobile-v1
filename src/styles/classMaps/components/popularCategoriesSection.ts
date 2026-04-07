@@ -13,6 +13,9 @@ export const popularCategoriesSectionClasses = {
   fullWidthImage: 'w-[52px] h-[52px] object-contain',
   fullWidthName: 'flex-1 font-medium text-[14px] leading-[18px] text-[#1c1b1b]',
   chevron: 'text-[#b8b8b8] text-[18px] ml-auto shrink-0',
+  /** Full-width "More" tile (same row height as fullWidthCard, styled like moreTile) */
+  fullWidthMoreCard:
+    'w-full flex flex-row items-center bg-[#f7f7f7] rounded-[16px] px-[16px] py-[14px] gap-[14px] cursor-pointer active:bg-[#efefef]',
   halfWidthRow: 'w-full flex flex-row gap-[10px]',
   halfWidthCard: halfWidthTileBase,
   halfWidthImageBox:

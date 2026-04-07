@@ -3,6 +3,7 @@ import {
   ALL_PRODUCTS_CATEGORY_CARD,
   DEFAULT_LOCALE,
 } from '@/pages/lib/constants';
+import { buildPopularCategoriesSectionModel } from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { blobToBase64, parseName } from '@/pages/lib/utils';
 import { popularCategoriesSectionClasses as cls } from '@/styles/classMaps/components/popularCategoriesSection';
@@ -13,8 +14,6 @@ import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
-
-const MAX_CATEGORIES = 7;
 
 interface CategoryImageProps {
   initialImgUrl?: string | null;
@@ -63,11 +62,6 @@ interface PopularCategoriesSectionProps {
   categories: ExtendedCategory[];
 }
 
-type HalfPair = {
-  left: ExtendedCategory;
-  right: ExtendedCategory | 'more';
-};
-
 export default function PopularCategoriesSection({
   categories,
 }: PopularCategoriesSectionProps) {
@@ -86,41 +80,10 @@ export default function PopularCategoriesSection({
     router.push('/category');
   }, [router]);
 
-  const topLevel = categories.filter(
-    (cat) => cat.predecessorId == null && cat.deletedAt == null,
-  );
+  const { shouldRender, fullWidthItems, showFullWidthMore, halfPairs } =
+    buildPopularCategoriesSectionModel(categories);
 
-  const popularOnes = topLevel.filter((cat) => cat.popular);
-  const regularOnes = topLevel.filter((cat) => !cat.popular);
-
-  const displayCats = [...popularOnes, ...regularOnes].slice(0, MAX_CATEGORIES);
-
-  if (displayCats.length === 0) return null;
-
-  const fullWidthItems = displayCats.filter((cat) => cat.popular);
-  const halfWidthItems = displayCats.filter((cat) => !cat.popular);
-
-  // Ensure (usedCount + 1 for 'more') is always even → usedCount must be odd.
-  // If halfWidthItems.length is even (and > 0), drop the last to make it odd.
-  const usedHalfWidthItems =
-    halfWidthItems.length > 0 && halfWidthItems.length % 2 === 0
-      ? halfWidthItems.slice(0, halfWidthItems.length - 1)
-      : halfWidthItems;
-
-  const halfPairs: HalfPair[] = [];
-  for (let i = 0; i + 1 < usedHalfWidthItems.length; i += 2) {
-    halfPairs.push({
-      left: usedHalfWidthItems[i],
-      right: usedHalfWidthItems[i + 1],
-    });
-  }
-  // Last item (always a real category) paired with 'more'
-  if (usedHalfWidthItems.length > 0) {
-    halfPairs.push({
-      left: usedHalfWidthItems[usedHalfWidthItems.length - 1],
-      right: 'more',
-    });
-  }
+  if (!shouldRender) return null;
 
   return (
     <Box className={cls.section}>
@@ -149,6 +112,21 @@ export default function PopularCategoriesSection({
             <ChevronRightIcon className={cls.chevron} />
           </Box>
         ))}
+
+        {showFullWidthMore && (
+          <Box className={cls.fullWidthMoreCard} onClick={handleMore}>
+            <Box className={cls.moreDotsBox}>
+              <Typography className={cls.moreDotsText}>···</Typography>
+            </Box>
+            <Typography
+              className={`${interClassname.className} ${cls.fullWidthName}`}
+              sx={{ color: 'text.secondary' }}
+            >
+              {t('moreCategories')}
+            </Typography>
+            <ChevronRightIcon className={cls.chevron} />
+          </Box>
+        )}
 
         {halfPairs.map((pair) => {
           const { left, right } = pair;

@@ -10,6 +10,10 @@ import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
 import { isStaff } from '@/pages/api/utils/staffAuth';
+import {
+  POPULAR_CATEGORIES_SECTION_MAX,
+  POPULAR_ROOT_LIMIT_CODE,
+} from '@/pages/lib/popularCategoriesLayout';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiResponse } from 'next';
 
@@ -143,7 +147,7 @@ async function handleSetPopular(
 ): Promise<{ status: number; resp: ResponseApi }> {
   const cat = await dbClient.category.findFirst({
     where: { id: categoryId, deletedAt: null },
-    select: { id: true, predecessorId: true },
+    select: { id: true, predecessorId: true, popular: true },
   });
   if (!cat) {
     return {
@@ -159,6 +163,25 @@ async function handleSetPopular(
         message: 'Popular applies only to top-level categories',
       },
     };
+  }
+
+  if (popular === true && !cat.popular) {
+    const popularRootCount = await dbClient.category.count({
+      where: {
+        predecessorId: null,
+        deletedAt: null,
+        popular: true,
+      },
+    });
+    if (popularRootCount >= POPULAR_CATEGORIES_SECTION_MAX) {
+      return {
+        status: 400,
+        resp: {
+          success: false,
+          message: POPULAR_ROOT_LIMIT_CODE,
+        },
+      };
+    }
   }
 
   await dbClient.category.update({
