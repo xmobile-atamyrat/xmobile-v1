@@ -139,6 +139,14 @@ async function createProduct(
 
       const productEnglishName = parseName(fields.name[0], 'en');
       const productSlug = slugify(productEnglishName);
+      if (!productSlug) {
+        resolve({
+          success: false,
+          message: 'Invalid product slug format',
+          status: 400,
+        });
+        return;
+      }
 
       const existingProduct = await dbClient.product.findUnique({
         where: { slug: productSlug },
@@ -267,6 +275,12 @@ async function handleGetProduct(query: {
   ) {
     return {
       resp: { success: false, message: 'Invalid product ID format' },
+      status: 400,
+    };
+  }
+  if (productSlug != null && typeof productSlug !== 'string') {
+    return {
+      resp: { success: false, message: 'Invalid product slug format' },
       status: 400,
     };
   }

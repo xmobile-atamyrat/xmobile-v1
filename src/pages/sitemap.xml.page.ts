@@ -27,17 +27,18 @@ function generateSiteMap(
        .join('')}
 
      <!-- Categories -->
-     ${products
+     ${categories
+       .filter(({ slug }) => slug != null)
        .map(({ slug, updatedAt }) => {
          return localeOptions
            .map((locale) => {
              return `
-       <url>
-           <loc>${BASE_URL}/${locale}/category/${slug}</loc>
-           <lastmod>${updatedAt.toISOString()}</lastmod>
-           <changefreq>weekly</changefreq>
-           <priority>0.7</priority>
-       </url>`;
+        <url>
+            <loc>${BASE_URL}/${locale}/category/${slug}</loc>
+            <lastmod>${updatedAt.toISOString()}</lastmod>
+            <changefreq>weekly</changefreq>
+            <priority>0.7</priority>
+        </url>`;
            })
            .join('');
        })
@@ -62,16 +63,17 @@ function generateSiteMap(
 
      <!-- Products -->
      ${products
+       .filter(({ slug }) => slug != null)
        .map(({ slug, updatedAt }) => {
          return localeOptions
            .map((locale) => {
              return `
-       <url>
-           <loc>${BASE_URL}/${locale}/product/${slug}</loc>
-           <lastmod>${updatedAt.toISOString()}</lastmod>
-           <changefreq>daily</changefreq>
-           <priority>0.9</priority>
-       </url>`;
+        <url>
+            <loc>${BASE_URL}/${locale}/product/${slug}</loc>
+            <lastmod>${updatedAt.toISOString()}</lastmod>
+            <changefreq>daily</changefreq>
+            <priority>0.9</priority>
+        </url>`;
            })
            .join('');
        })
