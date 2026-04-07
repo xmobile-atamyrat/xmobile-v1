@@ -2,6 +2,10 @@ import Layout from '@/pages/components/Layout';
 import { appBarHeight } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import {
+  POPULAR_CATEGORIES_SECTION_MAX,
+  POPULAR_ROOT_LIMIT_CODE,
+} from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -99,6 +103,7 @@ interface CategoryTreeRowProps {
   onMove: (categoryId: string, direction: 'up' | 'down') => void;
   onOpenParentDialog: (category: ExtendedCategory) => void;
   onTogglePopular: (categoryId: string, popular: boolean) => void;
+  canSetPopular: boolean;
 }
 
 function CategoryTreeRow({
@@ -111,6 +116,7 @@ function CategoryTreeRow({
   onMove,
   onOpenParentDialog,
   onTogglePopular,
+  canSetPopular,
 }: CategoryTreeRowProps) {
   const t = useTranslations();
   const title = parseName(category.name, locale);
@@ -141,11 +147,17 @@ function CategoryTreeRow({
           {title}
         </Typography>
         {depth === 0 && (
-          <Tooltip title={t('categoryPopular')}>
+          <Tooltip
+            title={
+              canSetPopular
+                ? t('categoryPopular')
+                : t('categoryPopularLimitTooltip')
+            }
+          >
             <span>
               <IconButton
                 size="small"
-                disabled={busy}
+                disabled={busy || !canSetPopular}
                 onClick={() => onTogglePopular(category.id, !isPopular)}
                 aria-label={t('categoryPopular')}
                 aria-pressed={isPopular}
@@ -211,6 +223,7 @@ function CategoryTreeRow({
           onMove={onMove}
           onOpenParentDialog={onOpenParentDialog}
           onTogglePopular={onTogglePopular}
+          canSetPopular={depth === 0 ? canSetPopular : true}
         />
       ))}
     </Box>
@@ -242,12 +255,12 @@ export default function CategoryHierarchyPage() {
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>(
-    'success',
-  );
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    'success' | 'error' | 'warning'
+  >('success');
 
   const showSnackbar = useCallback(
-    (message: string, severity: 'success' | 'error') => {
+    (message: string, severity: 'success' | 'error' | 'warning') => {
       setSnackbarMessage(message);
       setSnackbarSeverity(severity);
       setSnackbarOpen(true);
@@ -255,7 +268,9 @@ export default function CategoryHierarchyPage() {
     [],
   );
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (): Promise<
+    ExtendedCategory[] | null
+  > => {
     setLoadingTree(true);
     setLoadError(null);
     try {
@@ -265,11 +280,13 @@ export default function CategoryHierarchyPage() {
       );
       if (res.success && res.data) {
         setCategories(res.data);
-      } else {
-        setLoadError(res.message ?? t('categoryHierarchyLoadError'));
+        return res.data;
       }
+      setLoadError(res.message ?? t('categoryHierarchyLoadError'));
+      return null;
     } catch {
       setLoadError(t('categoryHierarchyLoadError'));
+      return null;
     } finally {
       setLoadingTree(false);
     }
@@ -296,6 +313,13 @@ export default function CategoryHierarchyPage() {
     const exclude = collectSubtreeIds(parentDialogCat);
     return flattenForParentSelect(categories, locale, exclude);
   }, [parentDialogCat, categories, locale]);
+
+  const popularRootCount = useMemo(
+    () =>
+      categories.filter((c) => c.predecessorId == null && c.popular === true)
+        .length,
+    [categories],
+  );
 
   const openParentDialog = useCallback((cat: ExtendedCategory) => {
     setParentDialogCat(cat);
@@ -325,9 +349,33 @@ export default function CategoryHierarchyPage() {
           body,
         });
         if (res.success) {
-          await loadCategories();
+          const next = await loadCategories();
+          const action =
+            body && typeof body === 'object' && 'action' in body
+              ? (body as { action?: string }).action
+              : undefined;
+          const popularFlag =
+            body && typeof body === 'object' && 'popular' in body
+              ? (body as { popular?: boolean }).popular
+              : undefined;
+          if (next && action === 'setPopular' && popularFlag === true) {
+            const n = next.filter(
+              (c) => c.predecessorId == null && c.popular === true,
+            ).length;
+            if (n >= POPULAR_CATEGORIES_SECTION_MAX) {
+              showSnackbar(
+                t('categoryHierarchyUpdateSuccessPopularFull'),
+                'success',
+              );
+              return true;
+            }
+          }
           showSnackbar(t('categoryHierarchyUpdateSuccess'), 'success');
           return true;
+        }
+        if (res.message === POPULAR_ROOT_LIMIT_CODE) {
+          showSnackbar(t('categoryHierarchyPopularLimitReached'), 'warning');
+          return false;
         }
         showSnackbar(res.message ?? t('categoryHierarchyUpdateError'), 'error');
         return false;
@@ -470,6 +518,10 @@ export default function CategoryHierarchyPage() {
               onMove={handleMove}
               onOpenParentDialog={openParentDialog}
               onTogglePopular={handleTogglePopular}
+              canSetPopular={
+                popularRootCount < POPULAR_CATEGORIES_SECTION_MAX ||
+                cat.popular === true
+              }
             />
           ))
         )}
