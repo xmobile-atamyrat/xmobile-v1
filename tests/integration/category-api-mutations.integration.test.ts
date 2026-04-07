@@ -177,6 +177,7 @@ describe('/api/category mutations (integration)', () => {
     const cat = await prisma.category.create({
       data: {
         name: '{"en":"Popular test"}',
+        slug: 'popular-test',
         sortOrder: 0,
         popular: false,
       },
@@ -214,6 +215,7 @@ describe('/api/category mutations (integration)', () => {
     const cat = await prisma.category.create({
       data: {
         name: '{"en":"To delete"}',
+        slug: 'to-delete',
         sortOrder: 0,
       },
     });
