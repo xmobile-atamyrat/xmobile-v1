@@ -42,6 +42,7 @@ describe('Prisma schema + catalog seed (integration)', () => {
     const dead = await prisma.product.create({
       data: {
         name: '{"en":"Deleted"}',
+        slug: 'deleted-product',
         categoryId,
         imgUrls: [],
         tags: [],
