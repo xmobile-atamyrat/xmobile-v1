@@ -53,9 +53,14 @@ const withAuth = (
         .json({ message: 'Unauthorized: Missing or invalid token format' });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
 
     try {
+      if (!token) {
+        const error = new Error('Missing access token');
+        error.name = 'TokenExpiredError';
+        throw error;
+      }
       const { userId, grade } = await verifyToken(token, ACCESS_SECRET);
       (req as AuthenticatedRequest).userId = userId;
       (req as AuthenticatedRequest).grade = grade;
