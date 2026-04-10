@@ -3,6 +3,7 @@ import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
+import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
@@ -288,6 +289,9 @@ export default function Home({
           setSearchKeyword,
           width: '100%',
         })}
+        {platform === 'mobile' && (
+          <PopularCategoriesSection categories={categories} />
+        )}
       </Box>
       <Box className="flex flex-row gap-6 w-full">
         {platform === 'web' && (

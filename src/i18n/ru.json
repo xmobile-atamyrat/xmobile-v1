@@ -411,6 +411,9 @@
   "categoryHierarchyEmpty": "Категорий пока нет.",
   "categoryHierarchyLoadError": "Не удалось загрузить категории.",
   "categoryHierarchyUpdateSuccess": "Категория обновлена.",
+  "categoryHierarchyUpdateSuccessPopularFull": "Категория обновлена. На главной до 7 популярных категорий и полноширинная кнопка «Ещё».",
+  "categoryHierarchyPopularLimitReached": "Популярными могут быть не более 7 категорий верхнего уровня. Снимите отметку с одной, чтобы добавить другую.",
+  "categoryPopularLimitTooltip": "На главной не более 7 популярных категорий.",
   "categoryHierarchyUpdateError": "Не удалось обновить категорию.",
   "moveCategoryUp": "Выше среди соседей",
   "moveCategoryDown": "Ниже среди соседей",
@@ -420,5 +423,7 @@
 
   "pageNotFound": "Страница не найдена!",
   "homepage": "Главная",
-  "startShopping": "Начать покупки"
+  "startShopping": "Начать покупки",
+  "popularCategories": "Популярные категории",
+  "moreCategories": "Другие категории"
 }

@@ -408,6 +408,9 @@
   "categoryHierarchyEmpty": "No categories yet.",
   "categoryHierarchyLoadError": "Could not load categories.",
   "categoryHierarchyUpdateSuccess": "Category updated.",
+  "categoryHierarchyUpdateSuccessPopularFull": "Category updated. The home screen lists up to 7 popular categories and a full-width “More” row.",
+  "categoryHierarchyPopularLimitReached": "You can mark at most 7 top-level categories as popular. Turn one off to add another.",
+  "categoryPopularLimitTooltip": "Maximum 7 popular categories on the home screen.",
   "categoryHierarchyUpdateError": "Could not update category.",
   "moveCategoryUp": "Move up among siblings",
   "moveCategoryDown": "Move down among siblings",
@@ -417,5 +420,7 @@
 
   "pageNotFound": "Page not found!",
   "homepage": "Homepage",
-  "startShopping": "Start Shopping"
+  "startShopping": "Start Shopping",
+  "popularCategories": "Popular Categories",
+  "moreCategories": "Other Categories"
 }
