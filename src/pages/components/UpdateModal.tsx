@@ -13,7 +13,7 @@ interface UpdateModalProps {
 
 // Replace when published on stores
 const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=YOUR_PACKAGE_NAME';
+  'https://play.google.com/store/apps/details?id=com.xmobile.app';
 const APP_STORE_URL = 'https://apps.apple.com/app/YOUR_APP_ID';
 
 export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
