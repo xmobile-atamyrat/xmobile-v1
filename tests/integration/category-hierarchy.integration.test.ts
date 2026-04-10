@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { POPULAR_ROOT_LIMIT_CODE } from '@/pages/lib/popularCategoriesLayout';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
@@ -117,6 +118,89 @@ describe('Category hierarchy API (integration)', () => {
     });
     expect(status).toBe(400);
     expect(json.success).toBe(false);
+  });
+
+  it('POST setPopular returns 404 for unknown category', async () => {
+    const { status, json } = await postHierarchy(adminToken, {
+      action: 'setPopular',
+      categoryId: randomUUID(),
+      popular: true,
+    });
+    expect(status).toBe(404);
+    expect(json.message).toBe('Category not found');
+  });
+
+  it('POST setPopular returns 400 for non-root category', async () => {
+    const parent = await prisma.category.create({
+      data: { name: '{"en":"pop parent"}', slug: 'pop-parent' },
+    });
+    trackRoot(parent.id);
+    const child = await prisma.category.create({
+      data: {
+        name: '{"en":"pop child"}',
+        slug: 'pop-child',
+        predecessorId: parent.id,
+        sortOrder: 0,
+      },
+    });
+
+    const { status, json } = await postHierarchy(adminToken, {
+      action: 'setPopular',
+      categoryId: child.id,
+      popular: true,
+    });
+    expect(status).toBe(400);
+    expect(json.message).toBe('Popular applies only to top-level categories');
+  });
+
+  it('POST setPopular updates root category flag', async () => {
+    const root = await prisma.category.create({
+      data: { name: '{"en":"pop root"}', slug: 'pop-root', popular: false },
+    });
+    trackRoot(root.id);
+
+    const { status } = await postHierarchy(adminToken, {
+      action: 'setPopular',
+      categoryId: root.id,
+      popular: true,
+    });
+    expect(status).toBe(200);
+
+    const updated = await prisma.category.findUnique({
+      where: { id: root.id },
+    });
+    expect(updated?.popular).toBe(true);
+  });
+
+  it('POST setPopular returns 400 when 7 popular roots already exist', async () => {
+    for (let i = 0; i < 7; i += 1) {
+      const r = await prisma.category.create({
+        data: {
+          name: `{"en":"lim ${i}"}`,
+          slug: `lim-${i}`,
+          popular: true,
+          sortOrder: i,
+        },
+      });
+      trackRoot(r.id);
+    }
+    const eighth = await prisma.category.create({
+      data: {
+        name: '{"en":"eighth"}',
+        slug: 'eighth',
+        popular: false,
+        sortOrder: 99,
+      },
+    });
+    trackRoot(eighth.id);
+
+    const { status, json } = await postHierarchy(adminToken, {
+      action: 'setPopular',
+      categoryId: eighth.id,
+      popular: true,
+    });
+    expect(status).toBe(400);
+    expect(json.message).toBe(POPULAR_ROOT_LIMIT_CODE);
   });
 
   it('POST reorderSibling returns 404 for unknown category', async () => {

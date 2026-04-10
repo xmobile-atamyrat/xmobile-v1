@@ -408,6 +408,9 @@
   "categoryHierarchyEmpty": "Henüz kategori yok.",
   "categoryHierarchyLoadError": "Kategoriler yüklenemedi.",
   "categoryHierarchyUpdateSuccess": "Kategori güncellendi.",
+  "categoryHierarchyUpdateSuccessPopularFull": "Kategori güncellendi. Ana sayfada en fazla 7 popüler kategori ve tam genişlikte bir “Daha fazla” satırı gösterilir.",
+  "categoryHierarchyPopularLimitReached": "En fazla 7 üst düzey kategori popüler olabilir. Başka eklemek için birinin işaretini kaldırın.",
+  "categoryPopularLimitTooltip": "Ana sayfada en fazla 7 popüler kategori.",
   "categoryHierarchyUpdateError": "Kategori güncellenemedi.",
   "moveCategoryUp": "Üstteki kardeşin üstüne",
   "moveCategoryDown": "Alttaki kardeşin altına",
@@ -417,5 +420,7 @@
 
   "pageNotFound": "Sayfa bulunamadı!",
   "homepage": "Ana sayfa",
-  "startShopping": "Alışverişe başla"
+  "startShopping": "Alışverişe başla",
+  "popularCategories": "Popüler Kategoriler",
+  "moreCategories": "Diğer Kategoriler"
 }
