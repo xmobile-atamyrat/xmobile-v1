@@ -80,7 +80,7 @@ export default function PopularCategoriesSection({
     router.push('/category');
   }, [router]);
 
-  const { shouldRender, fullWidthItems, showFullWidthMore, halfPairs } =
+  const { shouldRender, fullWidthItems, showFullWidthMore } =
     buildPopularCategoriesSectionModel(categories);
 
   if (!shouldRender) return null;
@@ -127,64 +127,6 @@ export default function PopularCategoriesSection({
             <ChevronRightIcon className={cls.chevron} />
           </Box>
         )}
-
-        {halfPairs.map((pair) => {
-          const { left, right } = pair;
-          const rowKey =
-            right === 'more' ? `${left.id}-more` : `${left.id}-${right.id}`;
-          return (
-            <Box key={rowKey} className={cls.halfWidthRow}>
-              <Box
-                className={cls.halfWidthCard}
-                onClick={() => handleNavigate(left.id)}
-              >
-                <Box className={cls.halfWidthImageBox}>
-                  <CategoryImage
-                    initialImgUrl={left.imgUrl}
-                    className={cls.halfWidthImage}
-                  />
-                </Box>
-                <Typography
-                  className={`${interClassname.className} ${cls.halfWidthName}`}
-                >
-                  {parseName(left.name, locale)}
-                </Typography>
-                <ChevronRightIcon className={cls.halfWidthChevron} />
-              </Box>
-
-              {right === 'more' ? (
-                <Box className={cls.moreTile} onClick={handleMore}>
-                  <Box className={cls.moreDotsBox}>
-                    <Typography className={cls.moreDotsText}>···</Typography>
-                  </Box>
-                  <Typography
-                    className={`${interClassname.className} ${cls.moreTileText}`}
-                  >
-                    {t('moreCategories')}
-                  </Typography>
-                </Box>
-              ) : (
-                <Box
-                  className={cls.halfWidthCard}
-                  onClick={() => handleNavigate(right.id)}
-                >
-                  <Box className={cls.halfWidthImageBox}>
-                    <CategoryImage
-                      initialImgUrl={right.imgUrl}
-                      className={cls.halfWidthImage}
-                    />
-                  </Box>
-                  <Typography
-                    className={`${interClassname.className} ${cls.halfWidthName}`}
-                  >
-                    {parseName(right.name, locale)}
-                  </Typography>
-                  <ChevronRightIcon className={cls.halfWidthChevron} />
-                </Box>
-              )}
-            </Box>
-          );
-        })}
       </Box>
     </Box>
   );
