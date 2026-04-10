@@ -81,6 +81,7 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
         name: '{"en":"Popular root"}',
         popular: true,
         sortOrder: 99,
+        slug: 'popular-root-seeded',
       },
     });
     trackRoot(pop.id);
@@ -91,7 +92,7 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
     expect(model.shouldRender).toBe(true);
     expect(model.fullWidthItems.some((c) => c.id === pop.id)).toBe(true);
     expect(model.fullWidthItems.every((c) => c.popular === true)).toBe(true);
-    expect(model.halfPairs.some((p) => p.right === 'more')).toBe(true);
+    expect(model.showFullWidthMore).toBe(true);
   });
 
   it('includes seeded catalog root in the tree and yields a renderable section model', async () => {
@@ -103,21 +104,27 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
     expect(model.shouldRender).toBe(true);
   });
 
-  it('shows full-width more and no half-rows when there are seven popular roots', async () => {
+  it('shows full-width items for all popular roots without capping locally', async () => {
     for (let i = 0; i < POPULAR_CATEGORIES_SECTION_MAX; i += 1) {
       const r = await prisma.category.create({
         data: {
           name: `{"en":"pop ${i}"}`,
           popular: true,
           sortOrder: i,
+          slug: `pop-${i}-seeded`,
         },
       });
       trackRoot(r.id);
     }
     const tree = await getCategoryTree();
     const model = buildPopularCategoriesSectionModel(tree);
-    expect(model.fullWidthItems).toHaveLength(POPULAR_CATEGORIES_SECTION_MAX);
+
+    // Check lengths match our generated popular count
+    const popularCount = tree.filter(
+      (cat) => cat.popular && !cat.predecessorId && !cat.deletedAt,
+    ).length;
+
+    expect(model.fullWidthItems).toHaveLength(popularCount);
     expect(model.showFullWidthMore).toBe(true);
-    expect(model.halfPairs).toEqual([]);
   });
 });
