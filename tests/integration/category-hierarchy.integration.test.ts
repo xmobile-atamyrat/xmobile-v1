@@ -132,12 +132,13 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setPopular returns 400 for non-root category', async () => {
     const parent = await prisma.category.create({
-      data: { name: '{"en":"pop parent"}' },
+      data: { name: '{"en":"pop parent"}', slug: 'pop-parent' },
     });
     trackRoot(parent.id);
     const child = await prisma.category.create({
       data: {
         name: '{"en":"pop child"}',
+        slug: 'pop-child',
         predecessorId: parent.id,
         sortOrder: 0,
       },
@@ -154,7 +155,7 @@ describe('Category hierarchy API (integration)', () => {
 
   it('POST setPopular updates root category flag', async () => {
     const root = await prisma.category.create({
-      data: { name: '{"en":"pop root"}', popular: false },
+      data: { name: '{"en":"pop root"}', slug: 'pop-root', popular: false },
     });
     trackRoot(root.id);
 
@@ -176,6 +177,7 @@ describe('Category hierarchy API (integration)', () => {
       const r = await prisma.category.create({
         data: {
           name: `{"en":"lim ${i}"}`,
+          slug: `lim-${i}`,
           popular: true,
           sortOrder: i,
         },
@@ -183,7 +185,12 @@ describe('Category hierarchy API (integration)', () => {
       trackRoot(r.id);
     }
     const eighth = await prisma.category.create({
-      data: { name: '{"en":"eighth"}', popular: false, sortOrder: 99 },
+      data: {
+        name: '{"en":"eighth"}',
+        slug: 'eighth',
+        popular: false,
+        sortOrder: 99,
+      },
     });
     trackRoot(eighth.id);
 
