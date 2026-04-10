@@ -8,6 +8,12 @@ Short reference to major features and where they live.
 - **Session:** JWT access + refresh token (cookie). `withAuth` in API; `UserContext` on the client.
 - **Roles:** `UserRole` in Prisma (e.g. FREE, ADMIN); admin routes check `grade`.
 
+## Catalog & Storefront
+
+- **Categories:** Tree structure (hierarchy). Includes `slug` for SEO-friendly URLs and a `popular` flag (managed in Admin UI) to control display on the homepage.
+- **Popular Categories:** A prominent homepage section that automatically fetches and displays high-priority categories.
+- **Products:** Core product data including prices, brands, dimensions, and tags.
+
 ## Cart & checkout
 
 - **Cart:** `api/cart` (CRUD); cart state/UI in `pages/cart/`, `components/AddToCart`.

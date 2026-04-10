@@ -14,3 +14,4 @@ Concise reference for contributors. Start here, then jump to the topic you need.
 | [**FCM setup**](fcm-setup.md) | Firebase and VAPID setup for push notifications. |
 | [**Deployment**](deployment.md) | Build and Deploy, Deploy Batch Runner, Daily Backup to Drive (GitHub Actions). |
 | [**SEO**](seo-knowledge.md) | Meta tags, structured data, sitemap, and SEO implementation. |
+| [**Mobile App**](mobile/README.md) | React Native WebView wrapper for Android and iOS. |
