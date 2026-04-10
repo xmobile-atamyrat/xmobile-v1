@@ -16,7 +16,7 @@ Requires `DATABASE_URL` in `.env.local`.
 |-------|--------|
 | **User** | Auth; roles (`UserRole`); cart, orders, chat, FCM tokens |
 | **CartItem** | User cart: product + quantity |
-| **Category** | Tree (predecessor/successor); has products |
+| **Category** | Tree (predecessor/successor); has products; UI metadata (`slug`, `popular`) |
 | **Product** | Name, description, images, price, category, brand, tags |
 | **Brand** | Brand name; products |
 | **UserOrder** / **UserOrderItem** | Customer orders and line items |
