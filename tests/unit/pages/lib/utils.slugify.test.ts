@@ -10,14 +10,12 @@ describe('slugify', () => {
   });
 
   it('normalises Turkmen diacritics via NFD (no manual map needed)', () => {
-    // Turkmen characters are Latin + combining mark, so NFD strips the mark
     expect(slugify('Ýetir')).toBe('yetir');
     expect(slugify('şöhle')).toBe('sohle');
     expect(slugify('Ň Ä Ö Ü Ç Ž')).toBe('n-a-o-u-c-z');
   });
 
   it('strips Cyrillic characters (no mapping: they are not Latin)', () => {
-    // Cyrillic has no Latin decomposition; it gets stripped entirely
     expect(slugify('Телефон')).toBe('');
     expect(slugify('Телефон 123')).toBe('123');
   });
@@ -48,9 +46,9 @@ describe('slugify', () => {
     expect(result).not.toMatch(/-$/);
   });
 
-  it('caps output at 100 characters', () => {
-    expect(slugify('a'.repeat(150))).toHaveLength(100);
-    expect(slugify('a '.repeat(60))).toHaveLength(100);
+  it('does NOT truncate slugs (truncation should be handled by validation)', () => {
+    const longInput = 'a'.repeat(150);
+    expect(slugify(longInput)).toHaveLength(150);
   });
 
   it('respects empty / falsy input', () => {
