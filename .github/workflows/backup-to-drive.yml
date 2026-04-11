@@ -1,5 +1,5 @@
-# Daily backup: two independent jobs (DB + images) so VM/network issues in one don't block the other.
-# Each job: backup on VM → copy to runner → upload to Google Drive → prune (keep 3) → delete from VM.
+# Daily backup: independent jobs (DB, images, script logs) so VM/network issues in one don't block the others.
+# Each job: backup on VM → copy to runner → upload to Google Drive → prune → VM cleanup (DB/images: delete artifact; logs: truncate nginx logs).
 # Schedule: midnight UTC. Manual run: Actions → Daily Backup to Drive → Run workflow.
 name: Daily Backup to Drive
 
@@ -213,3 +213,100 @@ jobs:
         run: |
           ssh deploy-vm "rm -f ${{ env.BACKUP_DIR_ON_VM_IMAGES }}/images.tar.gz"
           echo "Removed images.tar.gz from VM"
+
+  backup-logs:
+    name: Backup script logs to Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Copy script logs from VM to runner
+        run: |
+          mkdir -p backup/logs
+          rsync -avz --include='*.log' --exclude='*' deploy-vm:/home/ubuntu/scripts/ backup/logs/
+
+      - name: Install rclone
+        run: |
+          curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          unzip -o rclone-current-linux-amd64.zip
+          sudo cp rclone-*-linux-amd64/rclone /usr/local/bin/
+          rclone version
+
+      - name: Configure rclone and upload logs to Google Drive
+        env:
+          GDRIVE_OAUTH_TOKEN: ${{ secrets.GDRIVE_OAUTH_TOKEN }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: |
+          mkdir -p ~/.config/rclone
+          GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
+          {
+            echo '[gdrive]'
+            echo 'type = drive'
+            echo 'scope = drive'
+            printf 'token = %s\n' "$GDRIVE_OAUTH_TOKEN"
+            echo "root_folder_id = $GDRIVE_FOLDER_ID"
+          } > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+
+          echo "Checking access to backup folder..."
+          rclone lsd gdrive: || { echo "Cannot list folder. Check GDRIVE_FOLDER_ID and GDRIVE_OAUTH_TOKEN."; exit 1; }
+
+          BACKUP_DATE=$(date -u +%Y-%m-%d)
+          REMOTE_PATH="gdrive:${BACKUP_DATE}"
+          echo "Uploading /home/ubuntu/scripts/*.log to $REMOTE_PATH"
+          rclone copy backup/logs/ "$REMOTE_PATH/" -v
+
+      - name: Truncate nginx logs on VM (post-upload)
+        run: |
+          ssh deploy-vm "truncate -s 0 /home/ubuntu/scripts/nginx.access.log /home/ubuntu/scripts/nginx.error.log"
+          echo "Truncated nginx.access.log and nginx.error.log on VM"
+
+      - name: Prune old backups
+        run: |
+          FOLDERS=$(rclone lsd gdrive: 2>/dev/null | awk '{print $NF}' | sort)
+          COUNT=$(echo "$FOLDERS" | grep -c . || true)
+          if [ "$COUNT" -gt ${{ env.BACKUP_RETENTION_COUNT }} ]; then
+            TO_DELETE=$((COUNT - ${{ env.BACKUP_RETENTION_COUNT }}))
+            echo "$FOLDERS" | head -n "$TO_DELETE" | while read -r dir; do
+              [ -z "$dir" ] && continue
+              echo "Removing old backup: $dir"
+              rclone purge "gdrive:${dir}" -v
+            done
+          else
+            echo "Total backup folders: $COUNT (no pruning needed)"
+          fi
