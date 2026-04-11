@@ -1,5 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Full Vitest suite once per push (not per commit). Skips with: git push --no-verify
-yarn test
+# All suites under tests/: Vitest (unit, client, integration) + Playwright (e2e).
+# Requires Docker (Testcontainers) and Playwright browsers (`yarn test:e2e:install` once).
+# Skips with: git push --no-verify
+yarn test:all

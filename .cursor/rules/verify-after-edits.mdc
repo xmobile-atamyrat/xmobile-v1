@@ -3,22 +3,28 @@ description: After editing code, run TypeScript and ESLint checks before finishi
 alwaysApply: true
 ---
 
-# Verify changes (tsc + ESLint)
+# Verify changes (match pre-commit / lint-staged)
 
-After modifying TypeScript or TSX files in this repo, **before considering the task done**:
+**Before considering the task done**, run the same checks from the repo root:
 
-1. **Typecheck** (repo root):
+1. **ESLint** (same as lint-staged; fixes auto-fixable issues):
+
+   ```bash
+   npx eslint --fix .
+   ```
+
+2. **Typecheck** (same intent as lint-staged; this repo uses `yarn` to invoke `tsc`):
 
    ```bash
    yarn tsc --noEmit
    ```
 
-2. **ESLint** on the files you touched (prefer scoped runs):
+3. **Optional** (lint-staged also formats staged files with Prettier — run if you touched formatting-sensitive files):
 
    ```bash
-   yarn next lint --file path/to/file1.tsx --file path/to/file2.ts
+   npx prettier --write --ignore-unknown path/to/file1.ts path/to/file2.tsx
    ```
 
-   If many files changed or paths are awkward, `yarn lint` is acceptable.
+If you only changed a few files and want a faster loop, you may run ESLint on those paths instead of `.`, but **`npx eslint --fix .`** is what pre-commit applies and is the sure match.
 
 Fix any reported issues in the same pass. Do not skip these checks when you have made substantive edits.

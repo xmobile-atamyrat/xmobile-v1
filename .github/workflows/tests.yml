@@ -1,6 +1,4 @@
-# Unit tests (Vitest). Runs on every pull request.
-
-name: Unit tests
+name: Tests
 
 on:
   pull_request:
@@ -8,7 +6,7 @@ on:
 jobs:
   vitest:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,3 +25,9 @@ jobs:
 
       - name: Run tests (unit + integration)
         run: yarn test
+
+      - name: Install Playwright (Chromium only)
+        run: yarn test:e2e:install
+
+      - name: Run E2E tests (Docker + Next + browser)
+        run: yarn test:e2e
