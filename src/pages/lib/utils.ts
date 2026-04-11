@@ -148,7 +148,6 @@ export const addEditCategory = async ({
   popular,
   accessToken,
   setCategories,
-  errorMessage,
   predecessorId,
 }: {
   type: EditCategoriesProps['dialogType'];
@@ -160,7 +159,6 @@ export const addEditCategory = async ({
   popular?: boolean;
   accessToken: string | undefined;
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
-  errorMessage: string;
   predecessorId?: string;
 }): Promise<string | null> => {
   const newFormData = new FormData();
@@ -171,13 +169,8 @@ export const addEditCategory = async ({
     categoryNameInEnglish,
   } = formJson;
 
-  if (
-    categoryNameInCharjov === '' &&
-    categoryNameInEnglish === '' &&
-    categoryNameInRussian === '' &&
-    categoryNameInTurkmen === ''
-  ) {
-    throw new Error(errorMessage);
+  if (categoryNameInEnglish === '') {
+    throw new Error('englishNameRequired');
   }
   const categoryNames: any = {};
   if (categoryNameInTurkmen !== '') categoryNames.tk = categoryNameInTurkmen;
@@ -263,7 +256,6 @@ export const addEditCategory = async ({
 export async function addEditProduct({
   type,
   formJson,
-  productNameRequiredError,
   categoryId,
   setProducts,
   setPrevProducts,
@@ -278,7 +270,6 @@ export async function addEditProduct({
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
-  productNameRequiredError: string;
   categoryId: string;
   brandId?: string;
   productImageUrls: string[];
@@ -304,14 +295,8 @@ export async function addEditProduct({
     productDescriptionInTurkish,
     price,
   } = formJson;
-  if (
-    productNameInCharjov === '' &&
-    productNameInEnglish === '' &&
-    productNameInRussian === '' &&
-    productNameInTurkmen === '' &&
-    productNameInTurkish === ''
-  ) {
-    throw new Error(productNameRequiredError);
+  if (productNameInEnglish === '') {
+    throw new Error('englishNameRequired');
   }
 
   const productNames: any = {};
@@ -498,11 +483,11 @@ export const slugify = (text: string): string => {
   return text
     .toString()
     .toLowerCase()
-    .normalize('NFD') // Normalize diacritics
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics (eg. ň, ý -> n, y)
+    .normalize('NFD') // Normalize diacritics (e.g. ň, ý -> n, y)
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
     .replace(/[^\w\s-]/g, '') // Remove non-word characters
     .trim() // Trim leading/trailing whitespace
-    .replace(/[-\s]+/g, '-') // Replace spaces with hyphens
+    .replace(/[-\s]+/g, '-') // Replace spaces and hyphens with single hyphen
     .substring(0, 100) // Cap at 100 characters to prevent DB constraint issues
-    .replace(/-+$/, ''); // Remove trailing hyphens again if length cut off at a hyphen
+    .replace(/-+$/, ''); // Remove trailing hyphens if length cut off at a hyphen
 };
