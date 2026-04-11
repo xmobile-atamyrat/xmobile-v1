@@ -1,22 +1,12 @@
-import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
-const rootDir = path.resolve(__dirname);
-
+/**
+ * Unit + client UI tests. Integration tests use `vitest.integration.config.ts`.
+ * @see vitest.unit.config.ts
+ * @see vitest.client.config.ts
+ */
 export default defineConfig({
-  root: rootDir,
-  resolve: {
-    alias: {
-      '@': path.resolve(rootDir, './src'),
-    },
-  },
   test: {
-    environment: 'node',
-    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
-    passWithNoTests: false,
-    env: {
-      TZ: 'UTC',
-    },
-    testTimeout: 10000,
+    projects: ['./vitest.unit.config.ts', './vitest.client.config.ts'],
   },
 });
