@@ -26,8 +26,9 @@ const ChatInput = ({ onSendMessage, disabled, isSending }: ChatInputProps) => {
   }, [shouldFocus, disabled, isSending]);
 
   const handleSend = () => {
-    if (message.trim()) {
-      onSendMessage(message);
+    const trimmed = message.trim();
+    if (trimmed) {
+      onSendMessage(trimmed);
       setMessage('');
       setShouldFocus(true);
     }
