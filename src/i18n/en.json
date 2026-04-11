@@ -19,6 +19,7 @@
   "categoryNameRequired": "Please provide category name at least in one language",
   "englishNameRequired": "English name is required. It is used to generate the URL.",
   "invalidSlugError": "The English name provided does not produce a valid URL. Please use standard English letters.",
+  "slugTooLongError": "The generated URL is too long (max 80 characters). Please shorten the English name.",
   "addNewProduct": "Add new product",
   "signout": "Sign out",
   "signin": "Sign in",

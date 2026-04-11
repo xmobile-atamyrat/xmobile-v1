@@ -184,6 +184,15 @@ async function handlePostCategory(req: NextApiRequest) {
         return;
       }
 
+      if (categorySlug.length > 80) {
+        resolve({
+          success: false,
+          message: 'slugTooLongError',
+          status: 400,
+        });
+        return;
+      }
+
       const existingCategory = await dbClient.category.findUnique({
         where: { slug: categorySlug },
       });

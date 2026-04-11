@@ -159,6 +159,15 @@ async function createProduct(
         return;
       }
 
+      if (productSlug.length > 80) {
+        resolve({
+          success: false,
+          message: 'slugTooLongError',
+          status: 400,
+        });
+        return;
+      }
+
       const existingProduct = await dbClient.product.findUnique({
         where: { slug: productSlug },
       });
