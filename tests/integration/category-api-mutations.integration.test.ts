@@ -360,4 +360,24 @@ describe('/api/category mutations (integration)', () => {
     expect(data.slug).toBe('accessories');
     await prisma.category.delete({ where: { id: data.id } });
   });
+
+  it('POST returns 400 when generated slug is too long (> 80 chars)', async () => {
+    const boundary = 'slugtest7';
+    const longName = 'a'.repeat(81);
+    const body = multipartBody(
+      { name: JSON.stringify({ en: longName }) },
+      boundary,
+    );
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('slugTooLongError');
+  });
 });

@@ -239,4 +239,28 @@ describe('/api/product slug validation (integration)', () => {
     expect(data.slug).toBe('yetir-sohle');
     await prisma.product.delete({ where: { id: data.id } });
   });
+
+  it('POST returns 400 when generated slug is too long (> 80 chars)', async () => {
+    const boundary = 'prodslug7';
+    const longName = 'a'.repeat(81);
+    const body = multipartBody(
+      {
+        name: JSON.stringify({ en: longName }),
+        categoryId,
+        price: '100',
+      },
+      boundary,
+    );
+    const { status, json } = await invokeProductApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('slugTooLongError');
+  });
 });
