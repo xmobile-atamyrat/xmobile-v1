@@ -1,5 +1,8 @@
 dist/
 mobile/
 batch-runner-dist/
-tests/
+tests/integration/
+tests/unit/
 vitest.config.ts
+vitest.unit.config.ts
+vitest.client.config.ts
