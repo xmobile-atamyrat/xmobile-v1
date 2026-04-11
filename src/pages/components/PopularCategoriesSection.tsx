@@ -70,8 +70,8 @@ export default function PopularCategoriesSection({
   const locale = router.locale ?? DEFAULT_LOCALE;
 
   const handleNavigate = useCallback(
-    (categoryId: string) => {
-      router.push(`/category/${categoryId}`);
+    (categorySlug: string) => {
+      router.push(`/category/${categorySlug}`);
     },
     [router],
   );
@@ -96,7 +96,7 @@ export default function PopularCategoriesSection({
           <Box
             key={cat.id}
             className={cls.fullWidthCard}
-            onClick={() => handleNavigate(cat.id)}
+            onClick={() => handleNavigate(cat.slug)}
           >
             <Box className={cls.fullWidthImageBox}>
               <CategoryImage
