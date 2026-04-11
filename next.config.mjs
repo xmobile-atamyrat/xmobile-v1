@@ -9,7 +9,7 @@ const nextConfig = {
     defaultLocale: 'ru',
     localeDetection: false,
   },
-  staticPageGenerationTimeout: 180
+  staticPageGenerationTimeout: 180,
 };
 
 export default nextConfig;
