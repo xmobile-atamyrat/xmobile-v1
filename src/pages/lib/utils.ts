@@ -488,6 +488,5 @@ export const slugify = (text: string): string => {
     .replace(/[^\w\s-]/g, '') // Remove non-word characters
     .trim() // Trim leading/trailing whitespace
     .replace(/[-\s]+/g, '-') // Replace spaces and hyphens with single hyphen
-    .substring(0, 100) // Cap at 100 characters to prevent DB constraint issues
-    .replace(/-+$/, ''); // Remove trailing hyphens if length cut off at a hyphen
+    .replace(/-+$/, ''); // Remove trailing hyphens
 };

@@ -21,6 +21,7 @@
   "categoryNameRequired": "Iň azyndan bir dilde kategoriýa adyny bermegiňizi haýyş edýäris",
   "englishNameRequired": "Iňlisçe at hökmanydyr. Bu URL döretmek üçin ulanylýar.",
   "invalidSlugError": "Berlen iňlisçe at dogry URL-i döredip bilmeýär. Ýönekeý iňlisçe harplaryny ulanyň.",
+  "slugTooLongError": "Döredilen URL gaty uzyn (maks 80 simwol). Iňlisçe adyny gysgaldyň.",
   "addNewProduct": "Täze önüm goşuň",
   "signout": "Akkauntdan çyk",
   "signin": "Akkaunda gir",
