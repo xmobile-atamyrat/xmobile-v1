@@ -80,19 +80,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             message: 'Token already registered to another user',
           });
         }
-        // Scenario 2.b: Token exists, DeviceInfo doesn't exist, User matches → CREATE
-        // This is valid - user is adding a new device with an existing token
-        // (unlikely but possible if token was reused)
+        // Scenario 2.b: Token exists, DeviceInfo doesn't exist, User matches → already registered
+        // The token is valid and belongs to this user, nothing to do.
+        return res.status(200).json({
+          success: true,
+          message: 'Token already registered',
+        });
       }
 
       // SCENARIO 3: Token doesn't exist, DeviceInfo doesn't exist → CREATE
-      // Create new token record (first-time registration)
-      await dbClient.fCMToken.create({
-        data: {
-          userId,
-          token,
-          deviceInfo,
-        },
+      // Use upsert on token to safely handle concurrent requests (TOCTOU race condition)
+      await dbClient.fCMToken.upsert({
+        where: { token },
+        update: { deviceInfo, userId },
+        create: { userId, token, deviceInfo },
       });
 
       return res.status(201).json({
