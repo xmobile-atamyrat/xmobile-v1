@@ -7,6 +7,7 @@ import {
   flattenCategories,
 } from '@/pages/lib/categoryPathUtils';
 import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
+import { POPULAR_ROOT_LIMIT_CODE } from '@/pages/lib/popularCategoriesLayout';
 import { EditCategoriesProps } from '@/pages/lib/types';
 import {
   VisuallyHiddenInput,
@@ -18,6 +19,7 @@ import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -28,6 +30,7 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -59,7 +62,6 @@ export default function AddEditCategoriesDialog({
   } = useCategoryContext();
   const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [errorMessage, setErrorMessage] = useState<string>();
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
   const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
   const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
@@ -67,6 +69,23 @@ export default function AddEditCategoriesDialog({
   const [predecessorId, setPredecessorId] = useState<string>(
     HIGHEST_LEVEL_CATEGORY_ID,
   );
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error',
+  });
+
+  const showSnackbar = useCallback(
+    (message: string, severity: 'error' | 'warning') => {
+      setSnackbar({ open: true, message, severity });
+    },
+    [],
+  );
+
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
   const router = useRouter();
   const platform = usePlatform();
@@ -107,7 +126,7 @@ export default function AddEditCategoriesDialog({
         errorMessage: t('categoryNameRequired'),
         selectedCategoryId,
         categoryIdForEdit: dialogType === 'edit' ? editCategoryId : undefined,
-        popular: dialogType === 'edit' ? popularChecked : undefined,
+        popular: popularChecked,
         accessToken,
         predecessorId,
       });
@@ -151,7 +170,6 @@ export default function AddEditCategoriesDialog({
       onSubmit={async (event) => {
         event.preventDefault();
         setLoading(true);
-        setErrorMessage(undefined);
 
         const formData = new FormData(
           event.currentTarget as unknown as HTMLFormElement,
@@ -164,7 +182,12 @@ export default function AddEditCategoriesDialog({
           }
         } catch (error) {
           setLoading(false);
-          setErrorMessage((error as Error).message);
+          const msg = (error as Error).message;
+          if (msg === POPULAR_ROOT_LIMIT_CODE) {
+            showSnackbar(t('categoryHierarchyPopularLimitReached'), 'warning');
+          } else {
+            showSnackbar(msg, 'error');
+          }
           return;
         }
 
@@ -230,20 +253,17 @@ export default function AddEditCategoriesDialog({
               className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={popularChecked}
-                  onChange={(_, checked) => setPopularChecked(checked)}
-                  color="primary"
-                />
-              }
-              label={t('categoryPopular')}
-            />
-            {errorMessage && (
-              <Typography fontSize={14} color="red">
-                {errorMessage}
-              </Typography>
+            {predecessorId === HIGHEST_LEVEL_CATEGORY_ID && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={popularChecked}
+                    onChange={(_, checked) => setPopularChecked(checked)}
+                    color="primary"
+                  />
+                }
+                label={t('categoryPopular')}
+              />
             )}
           </Box>
           <Box className={addEditCategoriesDialogClasses.box.flex.gapFull}>
@@ -346,6 +366,19 @@ export default function AddEditCategoriesDialog({
           {t('submit')}
         </LoadingButton>
       </DialogActions>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }
