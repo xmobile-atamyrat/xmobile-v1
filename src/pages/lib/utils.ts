@@ -198,6 +198,11 @@ export const addEditCategory = async ({
     : undefined;
 
   if (type === 'add') {
+    if (popular === true) {
+      newFormData.append('popular', 'true');
+    }
+    // For add: omitting popular means false (server defaults to false)
+    // For edit: always send popular to explicitly set the value
     if (predecessorId != null && predecessorId !== '') {
       const pId =
         predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
