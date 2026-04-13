@@ -2,13 +2,20 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { flattenCategories } from '@/pages/lib/categoryPathUtils';
+import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { EditCategoriesProps } from '@/pages/lib/types';
-import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
+import {
+  VisuallyHiddenInput,
+  addEditCategory,
+  parseName,
+} from '@/pages/lib/utils';
 import { addEditCategoriesDialogClasses } from '@/styles/classMaps/components/addEditCategoriesDialog';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
+  Autocomplete,
   Box,
   Button,
   Checkbox,
@@ -22,7 +29,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
@@ -40,8 +48,12 @@ export default function AddEditCategoriesDialog({
   },
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories, selectedCategoryId, setSelectedCategoryId } =
-    useCategoryContext();
+  const {
+    categories,
+    setCategories,
+    selectedCategoryId,
+    setSelectedCategoryId,
+  } = useCategoryContext();
   const { accessToken, user } = useUserContext();
   const t = useTranslations();
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -49,7 +61,11 @@ export default function AddEditCategoriesDialog({
   const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
   const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
   const [popularChecked, setPopularChecked] = useState(initialPopular ?? false);
+  const [predecessorId, setPredecessorId] = useState<string>(
+    HIGHEST_LEVEL_CATEGORY_ID,
+  );
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
+  const router = useRouter();
   const platform = usePlatform();
   const isStaffEditor =
     user != null && ['SUPERUSER', 'ADMIN'].includes(user.grade);
@@ -83,6 +99,7 @@ export default function AddEditCategoriesDialog({
         categoryIdForEdit: dialogType === 'edit' ? editCategoryId : undefined,
         popular: dialogType === 'edit' ? popularChecked : undefined,
         accessToken,
+        predecessorId,
       });
       return firstCatId;
     },
@@ -96,8 +113,24 @@ export default function AddEditCategoriesDialog({
       categoryImageFile,
       categoryImageUrl,
       setCategories,
+      predecessorId,
     ],
   );
+
+  const flattenedCats = useMemo(() => {
+    const flat = flattenCategories(categories);
+    return [
+      {
+        id: HIGHEST_LEVEL_CATEGORY_ID,
+        name: t('categoryParentRoot'),
+        level: 0,
+      },
+      ...flat.map((cat) => ({
+        ...cat,
+        name: parseName(cat.name, router.locale ?? 'tk'),
+      })),
+    ];
+  }, [categories, t, router.locale]);
 
   return (
     <Dialog
@@ -139,6 +172,34 @@ export default function AddEditCategoriesDialog({
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
             </Typography>
+            {dialogType === 'add' && isStaffEditor && (
+              <Autocomplete
+                options={flattenedCats}
+                getOptionLabel={(option) => {
+                  const prefix = '-'.repeat(option.level * 2);
+                  return `${prefix} ${option.name}`;
+                }}
+                value={
+                  flattenedCats.find((cat) => cat.id === predecessorId) ||
+                  flattenedCats[0]
+                }
+                onChange={(_, newValue) => {
+                  if (newValue) {
+                    setPredecessorId(newValue.id);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t('categoryParent')}
+                    className={
+                      addEditCategoriesDialogClasses.textField[platform]
+                    }
+                  />
+                )}
+                disableClearable
+              />
+            )}
             <TextField
               label={t('inTurkmen')}
               name="categoryNameInTurkmen"

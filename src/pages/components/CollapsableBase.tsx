@@ -4,7 +4,6 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import { interClassname } from '@/styles/theme';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -97,19 +96,6 @@ export default function CollapsableBase({
             onClose={() => setAnchorEl(undefined)}
             anchorEl={anchorEl}
           >
-            <MenuItem
-              onClick={() =>
-                setEditCategoriesModal({
-                  open: true,
-                  dialogType: 'add',
-                  categoryId: id,
-                })
-              }
-              className={collapsableClasses.menuItem}
-            >
-              <AddCircleIcon color="primary" fontSize="small" />
-              <Typography className="overflow-x-scroll">{t('add')}</Typography>
-            </MenuItem>
             <MenuItem
               onClick={() =>
                 setEditCategoriesModal({

@@ -1,7 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
   X_MOBILE_DOMAIN,
@@ -149,6 +148,7 @@ export const addEditCategory = async ({
   accessToken,
   setCategories,
   errorMessage,
+  predecessorId,
 }: {
   type: EditCategoriesProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
@@ -160,6 +160,7 @@ export const addEditCategory = async ({
   accessToken: string | undefined;
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   errorMessage: string;
+  predecessorId?: string;
 }): Promise<string | null> => {
   const newFormData = new FormData();
   const {
@@ -196,11 +197,8 @@ export const addEditCategory = async ({
     : undefined;
 
   if (type === 'add') {
-    if (
-      selectedCategoryId != null &&
-      selectedCategoryId !== HIGHEST_LEVEL_CATEGORY_ID
-    ) {
-      newFormData.append('predecessorId', selectedCategoryId);
+    if (predecessorId != null) {
+      newFormData.append('predecessorId', predecessorId);
     }
     await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
