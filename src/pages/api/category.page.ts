@@ -228,6 +228,16 @@ async function handleEditCategory(req: NextApiRequest) {
       if (fields.name?.length > 0) data.name = fields.name[0];
       const popular = parsePopularField(fields);
       if (popular !== undefined) data.popular = popular;
+
+      const predId = fields.predecessorId?.[0];
+      if (predId !== undefined) {
+        const predecessorKey = predId !== '' ? predId : null;
+        if (predecessorKey !== existingCat.predecessorId) {
+          data.predecessorId = predecessorKey;
+          data.sortOrder = await nextSiblingSortOrder(predecessorKey);
+        }
+      }
+
       if (files.imageUrl?.length > 0) {
         if (existingCat.imgUrl != null && fs.existsSync(existingCat.imgUrl)) {
           fs.unlinkSync(existingCat.imgUrl);

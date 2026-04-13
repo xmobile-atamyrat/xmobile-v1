@@ -2,7 +2,10 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { flattenCategories } from '@/pages/lib/categoryPathUtils';
+import {
+  findParentCategory,
+  flattenCategories,
+} from '@/pages/lib/categoryPathUtils';
 import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
 import { EditCategoriesProps } from '@/pages/lib/types';
 import {
@@ -54,7 +57,7 @@ export default function AddEditCategoriesDialog({
     selectedCategoryId,
     setSelectedCategoryId,
   } = useCategoryContext();
-  const { accessToken, user } = useUserContext();
+  const { accessToken } = useUserContext();
   const t = useTranslations();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
@@ -67,12 +70,19 @@ export default function AddEditCategoriesDialog({
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
   const router = useRouter();
   const platform = usePlatform();
-  const isStaffEditor =
-    user != null && ['SUPERUSER', 'ADMIN'].includes(user.grade);
+
+  useEffect(() => {
+    if (dialogType === 'edit' && editCategoryId) {
+      const parent = findParentCategory(editCategoryId, categories);
+      setPredecessorId(parent?.id ?? HIGHEST_LEVEL_CATEGORY_ID);
+    } else {
+      setPredecessorId(HIGHEST_LEVEL_CATEGORY_ID);
+    }
+  }, [dialogType, editCategoryId, categories]);
 
   useEffect(() => {
     setPopularChecked(initialPopular ?? false);
-  }, [initialPopular, dialogType]);
+  }, [initialPopular]);
 
   useEffect(() => {
     if (imageUrl == null) return;
@@ -129,8 +139,8 @@ export default function AddEditCategoriesDialog({
         ...cat,
         name: parseName(cat.name, router.locale ?? 'tk'),
       })),
-    ];
-  }, [categories, t, router.locale]);
+    ].filter((cat) => cat.id !== editCategoryId);
+  }, [categories, router.locale, editCategoryId]);
 
   return (
     <Dialog
@@ -172,34 +182,30 @@ export default function AddEditCategoriesDialog({
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
             </Typography>
-            {dialogType === 'add' && isStaffEditor && (
-              <Autocomplete
-                options={flattenedCats}
-                getOptionLabel={(option) => {
-                  const prefix = '-'.repeat(option.level * 2);
-                  return `${prefix} ${option.name}`;
-                }}
-                value={
-                  flattenedCats.find((cat) => cat.id === predecessorId) ||
-                  flattenedCats[0]
+            <Autocomplete
+              options={flattenedCats}
+              getOptionLabel={(option) => {
+                const prefix = '-'.repeat(option.level * 2);
+                return `${prefix} ${option.name}`;
+              }}
+              value={
+                flattenedCats.find((cat) => cat.id === predecessorId) ||
+                flattenedCats[0]
+              }
+              onChange={(_, newValue) => {
+                if (newValue) {
+                  setPredecessorId(newValue.id);
                 }
-                onChange={(_, newValue) => {
-                  if (newValue) {
-                    setPredecessorId(newValue.id);
-                  }
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label={t('categoryParent')}
-                    className={
-                      addEditCategoriesDialogClasses.textField[platform]
-                    }
-                  />
-                )}
-                disableClearable
-              />
-            )}
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('categoryParent')}
+                  className={addEditCategoriesDialogClasses.textField[platform]}
+                />
+              )}
+              disableClearable
+            />
             <TextField
               label={t('inTurkmen')}
               name="categoryNameInTurkmen"
@@ -224,18 +230,16 @@ export default function AddEditCategoriesDialog({
               className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
-            {dialogType === 'edit' && isStaffEditor && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={popularChecked}
-                    onChange={(_, checked) => setPopularChecked(checked)}
-                    color="primary"
-                  />
-                }
-                label={t('categoryPopular')}
-              />
-            )}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={popularChecked}
+                  onChange={(_, checked) => setPopularChecked(checked)}
+                  color="primary"
+                />
+              }
+              label={t('categoryPopular')}
+            />
             {errorMessage && (
               <Typography fontSize={14} color="red">
                 {errorMessage}

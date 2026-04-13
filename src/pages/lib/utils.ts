@@ -4,6 +4,7 @@ import {
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
   X_MOBILE_DOMAIN,
+  HIGHEST_LEVEL_CATEGORY_ID,
 } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -197,8 +198,10 @@ export const addEditCategory = async ({
     : undefined;
 
   if (type === 'add') {
-    if (predecessorId != null) {
-      newFormData.append('predecessorId', predecessorId);
+    if (predecessorId != null && predecessorId !== '') {
+      const pId =
+        predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
+      newFormData.append('predecessorId', pId);
     }
     await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
@@ -210,6 +213,11 @@ export const addEditCategory = async ({
     const editId = categoryIdForEdit ?? selectedCategoryId;
     if (type === 'edit') {
       newFormData.append('popular', popular === true ? 'true' : 'false');
+    }
+    if (predecessorId != null && predecessorId !== '') {
+      const pId =
+        predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
+      newFormData.append('predecessorId', pId);
     }
     await fetch(`${BASE_URL}/api/category?categoryId=${editId}`, {
       method: 'PUT',
