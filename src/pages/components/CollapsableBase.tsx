@@ -56,11 +56,7 @@ export default function CollapsableBase({
   return (
     <Box
       className={`
-        ${
-          selectedCategoryId === id || isActiveParent
-            ? 'bg-[#f4f4f4] h-[48px]'
-            : ''
-        }
+        ${selectedCategoryId === id || isActiveParent ? 'bg-[#f4f4f4]' : ''}
         ${collapsableClasses.baseBox}`}
     >
       <ListItemButton

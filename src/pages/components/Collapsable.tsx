@@ -1,5 +1,4 @@
 import CollapsableBase from '@/pages/components/CollapsableBase';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
 import { Box, Menu } from '@mui/material';
@@ -38,7 +37,6 @@ export default function Collapsable({
   isActiveParent,
   hasSubcategories,
 }: CollapsableProps) {
-  const { selectedCategoryId } = useCategoryContext();
   const open = isOpen ?? false;
   const timeoutRef = useRef<any>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -85,9 +83,7 @@ export default function Collapsable({
   return collapsable ? (
     <Box className="w-full">
       <Box
-        className={`
-          ${selectedCategoryId === id ? 'bg-slate-200' : ''}
-          ${collapsableClasses.box}`}
+        className={collapsableClasses.box}
         onMouseEnter={handleMenuOpen}
         onMouseLeave={handleMenuClose}
       >
