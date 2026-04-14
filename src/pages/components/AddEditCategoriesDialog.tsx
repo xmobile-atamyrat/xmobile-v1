@@ -19,7 +19,6 @@ import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
-  Alert,
   Autocomplete,
   Box,
   Button,
@@ -30,7 +29,6 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
-  Snackbar,
   TextField,
   Typography,
 } from '@mui/material';
@@ -38,9 +36,12 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+type SnackbarSeverity = 'error' | 'warning' | 'success';
+
 interface EditCategoriesDialogProps {
   handleClose: () => void;
   editCategoriesModal: EditCategoriesProps;
+  onSuccess: (message: string, severity?: SnackbarSeverity) => void;
 }
 
 export default function AddEditCategoriesDialog({
@@ -52,6 +53,7 @@ export default function AddEditCategoriesDialog({
     popular: initialPopular,
     categoryId: editCategoryId,
   },
+  onSuccess,
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
   const {
@@ -68,22 +70,6 @@ export default function AddEditCategoriesDialog({
   const [popularChecked, setPopularChecked] = useState(initialPopular ?? false);
   const [predecessorId, setPredecessorId] = useState<string>(
     HIGHEST_LEVEL_CATEGORY_ID,
-  );
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'error' | 'warning';
-  }>({
-    open: false,
-    message: '',
-    severity: 'error',
-  });
-
-  const showSnackbar = useCallback(
-    (message: string, severity: 'error' | 'warning') => {
-      setSnackbar({ open: true, message, severity });
-    },
-    [],
   );
 
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
@@ -180,13 +166,17 @@ export default function AddEditCategoriesDialog({
           if (selectedCategoryId == null && firstCatId != null) {
             setSelectedCategoryId(firstCatId);
           }
+          onSuccess(
+            dialogType === 'add' ? t('categoryCreated') : t('categoryUpdated'),
+            'success',
+          );
         } catch (error) {
           setLoading(false);
           const msg = (error as Error).message;
           if (msg === POPULAR_ROOT_LIMIT_CODE) {
-            showSnackbar(t('categoryHierarchyPopularLimitReached'), 'warning');
+            onSuccess(t('categoryHierarchyPopularLimitReached'), 'warning');
           } else {
-            showSnackbar(msg, 'error');
+            onSuccess(msg, 'error');
           }
           return;
         }
@@ -366,19 +356,6 @@ export default function AddEditCategoriesDialog({
           {t('submit')}
         </LoadingButton>
       </DialogActions>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Dialog>
   );
 }
