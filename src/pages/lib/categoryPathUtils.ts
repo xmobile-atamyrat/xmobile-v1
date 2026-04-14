@@ -77,3 +77,19 @@ export function buildCategoryPath(
   buildPath(categoryId);
   return path;
 }
+
+export function flattenCategories(
+  cats: ExtendedCategory[],
+  level = 0,
+): { id: string; name: string; level: number }[] {
+  let result: { id: string; name: string; level: number }[] = [];
+  cats.forEach((cat) => {
+    result.push({ id: cat.id, name: cat.name, level });
+    if (cat.successorCategories && cat.successorCategories.length > 0) {
+      result = result.concat(
+        flattenCategories(cat.successorCategories, level + 1),
+      );
+    }
+  });
+  return result;
+}

@@ -11,18 +11,20 @@ import { MAIN_BG_COLOR } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { useUserContext } from '@/pages/lib/UserContext';
 import {
   DeleteCategoriesProps,
   EditCategoriesProps,
   ExtendedCategory,
   ResponseApi,
 } from '@/pages/lib/types';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { layoutClasses } from '@/styles/classMaps/components/layout';
-import { Box } from '@mui/material';
+import { Alert, Box, Snackbar } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
+
+type SnackbarSeverity = 'success' | 'error' | 'warning';
 
 interface LayoutProps {
   children: ReactNode;
@@ -39,6 +41,11 @@ export default function Layout({
     useState<EditCategoriesProps>({ open: false });
   const [deleteCategoriesModal, setDeleteCategoriesModal] =
     useState<DeleteCategoriesProps>({ open: false });
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: SnackbarSeverity;
+  }>({ open: false, message: '', severity: 'success' });
   const t = useTranslations();
   const { accessToken } = useUserContext();
   const { setCategories, setSelectedCategoryId, categories } =
@@ -81,6 +88,9 @@ export default function Layout({
           editCategoriesModal={editCategoriesModal}
           handleClose={() =>
             setEditCategoriesModal({ open: false, dialogType: undefined })
+          }
+          onSuccess={(message, severity = 'success') =>
+            setSnackbar({ open: true, message, severity })
           }
         />
       )}
@@ -131,6 +141,11 @@ export default function Layout({
             } catch (error) {
               console.error(error);
             } finally {
+              setSnackbar({
+                open: true,
+                message: t('categoryDeleted'),
+                severity: 'success',
+              });
               setDeleteCategoriesModal({
                 open: false,
                 categoryId: undefined,
@@ -139,6 +154,19 @@ export default function Layout({
           }}
         />
       )}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
       <ChatWidget />
     </Box>
   );

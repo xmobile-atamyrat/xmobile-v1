@@ -2,13 +2,24 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import {
+  findParentCategory,
+  flattenCategories,
+} from '@/pages/lib/categoryPathUtils';
+import { HIGHEST_LEVEL_CATEGORY_ID } from '@/pages/lib/constants';
+import { POPULAR_ROOT_LIMIT_CODE } from '@/pages/lib/popularCategoriesLayout';
 import { EditCategoriesProps } from '@/pages/lib/types';
-import { VisuallyHiddenInput, addEditCategory } from '@/pages/lib/utils';
+import {
+  VisuallyHiddenInput,
+  addEditCategory,
+  parseName,
+} from '@/pages/lib/utils';
 import { addEditCategoriesDialogClasses } from '@/styles/classMaps/components/addEditCategoriesDialog';
 import { DeleteOutlined } from '@mui/icons-material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
+  Autocomplete,
   Box,
   Button,
   Checkbox,
@@ -22,11 +33,15 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+type SnackbarSeverity = 'error' | 'warning' | 'success';
 
 interface EditCategoriesDialogProps {
   handleClose: () => void;
   editCategoriesModal: EditCategoriesProps;
+  onSuccess: (message: string, severity?: SnackbarSeverity) => void;
 }
 
 export default function AddEditCategoriesDialog({
@@ -38,25 +53,41 @@ export default function AddEditCategoriesDialog({
     popular: initialPopular,
     categoryId: editCategoryId,
   },
+  onSuccess,
 }: EditCategoriesDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { setCategories, selectedCategoryId, setSelectedCategoryId } =
-    useCategoryContext();
-  const { accessToken, user } = useUserContext();
+  const {
+    categories,
+    setCategories,
+    selectedCategoryId,
+    setSelectedCategoryId,
+  } = useCategoryContext();
+  const { accessToken } = useUserContext();
   const t = useTranslations();
-  const [errorMessage, setErrorMessage] = useState<string>();
   const [categoryImageFile, setCategoryImageFile] = useState<File>();
   const [categoryLogoUrl, setCategoryLogoUrl] = useState<string>();
   const [categoryImageUrl, setCategoryImageUrl] = useState<string>();
   const [popularChecked, setPopularChecked] = useState(initialPopular ?? false);
+  const [predecessorId, setPredecessorId] = useState<string>(
+    HIGHEST_LEVEL_CATEGORY_ID,
+  );
+
   const parsedCategoryName = JSON.parse(categoryName ?? '{}');
+  const router = useRouter();
   const platform = usePlatform();
-  const isStaffEditor =
-    user != null && ['SUPERUSER', 'ADMIN'].includes(user.grade);
+
+  useEffect(() => {
+    if (dialogType === 'edit' && editCategoryId) {
+      const parent = findParentCategory(editCategoryId, categories);
+      setPredecessorId(parent?.id ?? HIGHEST_LEVEL_CATEGORY_ID);
+    } else {
+      setPredecessorId(HIGHEST_LEVEL_CATEGORY_ID);
+    }
+  }, [dialogType, editCategoryId, categories]);
 
   useEffect(() => {
     setPopularChecked(initialPopular ?? false);
-  }, [initialPopular, dialogType]);
+  }, [initialPopular]);
 
   useEffect(() => {
     if (imageUrl == null) return;
@@ -81,8 +112,9 @@ export default function AddEditCategoriesDialog({
         errorMessage: t('categoryNameRequired'),
         selectedCategoryId,
         categoryIdForEdit: dialogType === 'edit' ? editCategoryId : undefined,
-        popular: dialogType === 'edit' ? popularChecked : undefined,
+        popular: popularChecked,
         accessToken,
+        predecessorId,
       });
       return firstCatId;
     },
@@ -96,8 +128,24 @@ export default function AddEditCategoriesDialog({
       categoryImageFile,
       categoryImageUrl,
       setCategories,
+      predecessorId,
     ],
   );
+
+  const flattenedCats = useMemo(() => {
+    const flat = flattenCategories(categories);
+    return [
+      {
+        id: HIGHEST_LEVEL_CATEGORY_ID,
+        name: t('categoryParentRoot'),
+        level: 0,
+      },
+      ...flat.map((cat) => ({
+        ...cat,
+        name: parseName(cat.name, router.locale ?? 'tk'),
+      })),
+    ].filter((cat) => cat.id !== editCategoryId);
+  }, [categories, router.locale, editCategoryId]);
 
   return (
     <Dialog
@@ -108,7 +156,6 @@ export default function AddEditCategoriesDialog({
       onSubmit={async (event) => {
         event.preventDefault();
         setLoading(true);
-        setErrorMessage(undefined);
 
         const formData = new FormData(
           event.currentTarget as unknown as HTMLFormElement,
@@ -119,9 +166,18 @@ export default function AddEditCategoriesDialog({
           if (selectedCategoryId == null && firstCatId != null) {
             setSelectedCategoryId(firstCatId);
           }
+          onSuccess(
+            dialogType === 'add' ? t('categoryCreated') : t('categoryUpdated'),
+            'success',
+          );
         } catch (error) {
           setLoading(false);
-          setErrorMessage((error as Error).message);
+          const msg = (error as Error).message;
+          if (msg === POPULAR_ROOT_LIMIT_CODE) {
+            onSuccess(t('categoryHierarchyPopularLimitReached'), 'warning');
+          } else {
+            onSuccess(msg, 'error');
+          }
           return;
         }
 
@@ -139,6 +195,30 @@ export default function AddEditCategoriesDialog({
               {t('categoryName')}
               <span style={{ color: 'red' }}>*</span>
             </Typography>
+            <Autocomplete
+              options={flattenedCats}
+              getOptionLabel={(option) => {
+                const prefix = '-'.repeat(option.level * 2);
+                return `${prefix} ${option.name}`;
+              }}
+              value={
+                flattenedCats.find((cat) => cat.id === predecessorId) ||
+                flattenedCats[0]
+              }
+              onChange={(_, newValue) => {
+                if (newValue) {
+                  setPredecessorId(newValue.id);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('categoryParent')}
+                  className={addEditCategoriesDialogClasses.textField[platform]}
+                />
+              )}
+              disableClearable
+            />
             <TextField
               label={t('inTurkmen')}
               name="categoryNameInTurkmen"
@@ -163,7 +243,7 @@ export default function AddEditCategoriesDialog({
               className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
-            {dialogType === 'edit' && isStaffEditor && (
+            {predecessorId === HIGHEST_LEVEL_CATEGORY_ID && (
               <FormControlLabel
                 control={
                   <Checkbox
@@ -174,11 +254,6 @@ export default function AddEditCategoriesDialog({
                 }
                 label={t('categoryPopular')}
               />
-            )}
-            {errorMessage && (
-              <Typography fontSize={14} color="red">
-                {errorMessage}
-              </Typography>
             )}
           </Box>
           <Box className={addEditCategoriesDialogClasses.box.flex.gapFull}>
