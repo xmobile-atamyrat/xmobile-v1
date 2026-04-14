@@ -1,10 +1,10 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
-  HIGHEST_LEVEL_CATEGORY_ID,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
   X_MOBILE_DOMAIN,
+  HIGHEST_LEVEL_CATEGORY_ID,
 } from '@/pages/lib/constants';
 import {
   AddEditProductProps,
@@ -149,6 +149,7 @@ export const addEditCategory = async ({
   accessToken,
   setCategories,
   errorMessage,
+  predecessorId,
 }: {
   type: EditCategoriesProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
@@ -160,6 +161,7 @@ export const addEditCategory = async ({
   accessToken: string | undefined;
   setCategories: Dispatch<SetStateAction<ExtendedCategory[]>>;
   errorMessage: string;
+  predecessorId?: string;
 }): Promise<string | null> => {
   const newFormData = new FormData();
   const {
@@ -196,29 +198,51 @@ export const addEditCategory = async ({
     : undefined;
 
   if (type === 'add') {
-    if (
-      selectedCategoryId != null &&
-      selectedCategoryId !== HIGHEST_LEVEL_CATEGORY_ID
-    ) {
-      newFormData.append('predecessorId', selectedCategoryId);
+    if (popular === true) {
+      newFormData.append('popular', 'true');
     }
-    await fetch(`${BASE_URL}/api/category`, {
+    // For add: omitting popular means false (server defaults to false)
+    // For edit: always send popular to explicitly set the value
+    if (predecessorId != null && predecessorId !== '') {
+      const pId =
+        predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
+      newFormData.append('predecessorId', pId);
+    }
+    const response = await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
       body: newFormData,
       credentials: 'include',
       headers: authHeaders,
     });
+
+    if (!response.ok) {
+      const { message } = await response.json();
+      throw new Error(message || 'Failed to add category');
+    }
   } else {
     const editId = categoryIdForEdit ?? selectedCategoryId;
     if (type === 'edit') {
       newFormData.append('popular', popular === true ? 'true' : 'false');
     }
-    await fetch(`${BASE_URL}/api/category?categoryId=${editId}`, {
-      method: 'PUT',
-      body: newFormData,
-      credentials: 'include',
-      headers: authHeaders,
-    });
+    if (predecessorId != null && predecessorId !== '') {
+      const pId =
+        predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
+      newFormData.append('predecessorId', pId);
+    }
+    const response = await fetch(
+      `${BASE_URL}/api/category?categoryId=${editId}`,
+      {
+        method: 'PUT',
+        body: newFormData,
+        credentials: 'include',
+        headers: authHeaders,
+      },
+    );
+
+    if (!response.ok) {
+      const { message } = await response.json();
+      throw new Error(message || 'Failed to edit category');
+    }
   }
 
   const {

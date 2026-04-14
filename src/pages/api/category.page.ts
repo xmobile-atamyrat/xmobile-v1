@@ -1,14 +1,18 @@
-import dbClient from '@/lib/dbClient';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import {
   categorySiblingOrderBy,
   collectActiveSubtreeCategoryIds,
   nextSiblingSortOrder,
 } from '@/lib/categoryHierarchy';
+import dbClient from '@/lib/dbClient';
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  POPULAR_CATEGORIES_SECTION_MAX,
+  POPULAR_ROOT_LIMIT_CODE,
+} from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName, slugify } from '@/pages/lib/utils';
 import { Category } from '@prisma/client';
@@ -175,6 +179,26 @@ async function handlePostCategory(req: NextApiRequest) {
       }
 
       const predecessorKey = predId != null && predId !== '' ? predId : null;
+      const popular = parsePopularField(fields);
+
+      if (predecessorKey === null && popular === true) {
+        const count = await dbClient.category.count({
+          where: {
+            predecessorId: null,
+            deletedAt: null,
+            popular: true,
+          },
+        });
+        if (count >= POPULAR_CATEGORIES_SECTION_MAX) {
+          resolve({
+            success: false,
+            message: POPULAR_ROOT_LIMIT_CODE,
+            status: 400,
+          });
+          return;
+        }
+      }
+
       const sortOrder = await nextSiblingSortOrder(predecessorKey);
 
       const category = await dbClient.category.create({
@@ -184,6 +208,7 @@ async function handlePostCategory(req: NextApiRequest) {
           predecessorId: predecessorKey,
           sortOrder,
           imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
+          popular: popular ?? false,
         },
       });
       resolve({ success: true, data: category, status: 200 });
@@ -224,10 +249,51 @@ async function handleEditCategory(req: NextApiRequest) {
         return;
       }
 
+      const popular = parsePopularField(fields);
+      const predId = fields.predecessorId?.[0];
+
+      let isBecomingPopularAtRoot = false;
+      if (popular === true) {
+        const willBeAtRoot =
+          predId !== undefined
+            ? predId === ''
+            : existingCat.predecessorId === null;
+        if (willBeAtRoot) {
+          isBecomingPopularAtRoot = popular === true;
+        }
+      }
+
+      if (isBecomingPopularAtRoot) {
+        const count = await dbClient.category.count({
+          where: {
+            predecessorId: null,
+            deletedAt: null,
+            popular: true,
+            NOT: { id: categoryId as string },
+          },
+        });
+        if (count >= POPULAR_CATEGORIES_SECTION_MAX) {
+          resolve({
+            success: false,
+            message: POPULAR_ROOT_LIMIT_CODE,
+            status: 400,
+          });
+          return;
+        }
+      }
+
       const data: Partial<Category> = {};
       if (fields.name?.length > 0) data.name = fields.name[0];
-      const popular = parsePopularField(fields);
       if (popular !== undefined) data.popular = popular;
+
+      if (predId !== undefined) {
+        const predecessorKey = predId !== '' ? predId : null;
+        if (predecessorKey !== existingCat.predecessorId) {
+          data.predecessorId = predecessorKey;
+          data.sortOrder = await nextSiblingSortOrder(predecessorKey);
+        }
+      }
+
       if (files.imageUrl?.length > 0) {
         if (existingCat.imgUrl != null && fs.existsSync(existingCat.imgUrl)) {
           fs.unlinkSync(existingCat.imgUrl);
