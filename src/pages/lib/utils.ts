@@ -208,12 +208,17 @@ export const addEditCategory = async ({
         predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
       newFormData.append('predecessorId', pId);
     }
-    await fetch(`${BASE_URL}/api/category`, {
+    const response = await fetch(`${BASE_URL}/api/category`, {
       method: 'POST',
       body: newFormData,
       credentials: 'include',
       headers: authHeaders,
     });
+
+    if (!response.ok) {
+      const { message } = await response.json();
+      throw new Error(message || 'Failed to add category');
+    }
   } else {
     const editId = categoryIdForEdit ?? selectedCategoryId;
     if (type === 'edit') {
@@ -224,12 +229,20 @@ export const addEditCategory = async ({
         predecessorId === HIGHEST_LEVEL_CATEGORY_ID ? '' : predecessorId;
       newFormData.append('predecessorId', pId);
     }
-    await fetch(`${BASE_URL}/api/category?categoryId=${editId}`, {
-      method: 'PUT',
-      body: newFormData,
-      credentials: 'include',
-      headers: authHeaders,
-    });
+    const response = await fetch(
+      `${BASE_URL}/api/category?categoryId=${editId}`,
+      {
+        method: 'PUT',
+        body: newFormData,
+        credentials: 'include',
+        headers: authHeaders,
+      },
+    );
+
+    if (!response.ok) {
+      const { message } = await response.json();
+      throw new Error(message || 'Failed to edit category');
+    }
   }
 
   const {
