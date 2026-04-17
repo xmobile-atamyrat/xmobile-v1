@@ -109,7 +109,6 @@ export default function AddEditCategoriesDialog({
         categoryImageUrl,
         formJson,
         setCategories,
-        errorMessage: t('categoryNameRequired'),
         selectedCategoryId,
         categoryIdForEdit: dialogType === 'edit' ? editCategoryId : undefined,
         popular: popularChecked,
@@ -238,8 +237,9 @@ export default function AddEditCategoriesDialog({
               defaultValue={parsedCategoryName.ru ?? ''}
             />
             <TextField
-              label={t('inEnglish')}
+              label={`${t('inEnglish')} *`}
               name="categoryNameInEnglish"
+              required
               className={addEditCategoriesDialogClasses.textField[platform]}
               defaultValue={parsedCategoryName.en ?? ''}
             />
