@@ -185,6 +185,7 @@ export const getStaticProps: GetStaticProps = async ({
         ogDescription: description,
         ogImage,
         breadcrumbJsonLd,
+        noIndex: true,
       };
     }
 
