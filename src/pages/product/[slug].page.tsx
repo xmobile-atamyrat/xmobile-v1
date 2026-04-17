@@ -35,7 +35,7 @@ import {
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
+import { isUUID, parseName } from '@/pages/lib/utils';
 import { computeProductPriceTags } from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -99,6 +99,22 @@ export const getStaticProps: GetStaticProps = async ({
   const productSlug = params?.slug as string;
 
   try {
+    // If the slug is actually a legacy fixed UUID, redirect to the friendly slug
+    if (isUUID(productSlug)) {
+      const productsById = await fetchProducts({ productId: productSlug });
+      const productById =
+        productsById && productsById.length > 0 ? productsById[0] : null;
+
+      if (productById && productById.slug) {
+        return {
+          redirect: {
+            destination: `/${locale}/product/${productById.slug}`,
+            permanent: true,
+          },
+        };
+      }
+    }
+
     // Fetch the specific product at build time
     const products = await fetchProducts({ productSlug });
     const product = products && products.length > 0 ? products[0] : null;
