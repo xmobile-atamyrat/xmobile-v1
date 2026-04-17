@@ -22,7 +22,7 @@ import {
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { parseName } from '@/pages/lib/utils';
+import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
@@ -89,6 +89,25 @@ export const getStaticProps: GetStaticProps = async ({
   const categorySlug = params?.slug as string;
 
   try {
+    // If the slug is actually a legacy fixed UUID, redirect to the friendly slug
+    if (isUUID(categorySlug)) {
+      const {
+        success: idSuccess,
+        data: categoryById,
+      }: ResponseApi<ExtendedCategory> = await (
+        await fetch(`${BASE_URL}/api/category?categoryId=${categorySlug}`)
+      ).json();
+
+      if (idSuccess && categoryById && categoryById.slug) {
+        return {
+          redirect: {
+            destination: `/${locale}/category/${categoryById.slug}`,
+            permanent: true,
+          },
+        };
+      }
+    }
+
     // Fetch the specific category
     const { success, data: categoryData }: ResponseApi<ExtendedCategory> =
       await (
@@ -185,6 +204,7 @@ export const getStaticProps: GetStaticProps = async ({
         ogDescription: description,
         ogImage,
         breadcrumbJsonLd,
+        noIndex: true,
       };
     }
 

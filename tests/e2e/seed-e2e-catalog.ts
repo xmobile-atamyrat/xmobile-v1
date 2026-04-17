@@ -17,6 +17,7 @@ const name = (label: string) =>
 export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
   const root = await prisma.category.create({
     data: {
+      id: E2E_CATALOG.rootUuid,
       name: name(E2E_CATALOG.rootName),
       slug: E2E_CATALOG.rootSlug,
       sortOrder: 0,
@@ -26,6 +27,7 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
 
   const sub = await prisma.category.create({
     data: {
+      id: E2E_CATALOG.subUuid,
       name: name(E2E_CATALOG.subName),
       slug: E2E_CATALOG.subSlug,
       predecessorId: root.id,
@@ -43,6 +45,7 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
 
   await prisma.product.create({
     data: {
+      id: E2E_CATALOG.productUuid,
       slug: E2E_CATALOG.productSlug,
       name: name(E2E_CATALOG.productName),
       categoryId: sub.id,

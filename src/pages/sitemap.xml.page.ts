@@ -18,31 +18,11 @@ function generateSiteMap(
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
-     <url>
-       <loc>${BASE_URL}/${locale}/category</loc>
-       <changefreq>daily</changefreq>
-       <priority>0.8</priority>
-     </url>`;
+`;
        })
        .join('')}
 
-     <!-- Categories -->
-     ${categories
-       .filter(({ slug }) => slug != null)
-       .map(({ slug, updatedAt }) => {
-         return localeOptions
-           .map((locale) => {
-             return `
-        <url>
-            <loc>${BASE_URL}/${locale}/category/${slug}</loc>
-            <lastmod>${updatedAt.toISOString()}</lastmod>
-            <changefreq>weekly</changefreq>
-            <priority>0.7</priority>
-        </url>`;
-           })
-           .join('');
-       })
-       .join('')}
+
 
      <!-- Category Product Landing Pages -->
      ${categories
