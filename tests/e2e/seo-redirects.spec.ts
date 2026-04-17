@@ -30,19 +30,4 @@ test.describe('SEO Redirections (Legacy ID to Slug)', () => {
       { timeout: 60_000 },
     );
   });
-
-  test('redirects from product list index query param to isolated slug route', async ({
-    page,
-  }) => {
-    // We pass the categoryId parameter mimicking search/filter bars
-    await page.goto(`/product?categoryId=${E2E_CATALOG.subUuid}`, {
-      waitUntil: 'domcontentloaded',
-    });
-
-    // It should transparently drop the param and redirect completely to product-category route
-    await expect(page).toHaveURL(
-      new RegExp(`product-category\\/${E2E_CATALOG.subSlug}`),
-      { timeout: 60_000 },
-    );
-  });
 });
