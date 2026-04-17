@@ -1,6 +1,4 @@
-import { isUUID } from '@/pages/lib/utils';
-import { ExtendedCategory, PageSeoData, ResponseApi } from '@/pages/lib/types';
-import BASE_URL from '@/lib/ApiEndpoints';
+import { PageSeoData } from '@/pages/lib/types';
 import ProductGridContent from '@/pages/components/ProductGridContent';
 import { BUSINESS_NAME, LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
 import {
@@ -11,34 +9,8 @@ import {
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { searchKeyword, categoryId } = context.query;
+  const { searchKeyword } = context.query;
   const locale = context.locale || 'ru';
-
-  // If we have a legacy categoryId UUID, redirect to the new product-category/[slug]
-  if (categoryId && typeof categoryId === 'string' && isUUID(categoryId)) {
-    try {
-      const { success, data: category }: ResponseApi<ExtendedCategory> = await (
-        await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`)
-      ).json();
-
-      if (success && category && category.slug) {
-        // Build the new URL, preserving any other query params except categoryId
-        const query = { ...context.query };
-        delete query.categoryId;
-        const queryString = new URLSearchParams(query as any).toString();
-        const destination = `/${locale}/product-category/${category.slug}${queryString ? `?${queryString}` : ''}`;
-
-        return {
-          redirect: {
-            destination,
-            permanent: true,
-          },
-        };
-      }
-    } catch (error) {
-      console.error('Error during categoryId redirect lookup:', error);
-    }
-  }
 
   const messages = (await import(`../../i18n/${locale}.json`)).default;
 
