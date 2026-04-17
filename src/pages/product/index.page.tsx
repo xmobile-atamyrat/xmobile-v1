@@ -1,3 +1,4 @@
+import { PageSeoData } from '@/pages/lib/types';
 import ProductGridContent from '@/pages/components/ProductGridContent';
 import { BUSINESS_NAME, LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
 import {
@@ -5,12 +6,10 @@ import {
   generateSearchTitle,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
-import { PageSeoData } from '@/pages/lib/types';
 import { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { searchKeyword } = context.query;
-
   const locale = context.locale || 'ru';
 
   const messages = (await import(`../../i18n/${locale}.json`)).default;

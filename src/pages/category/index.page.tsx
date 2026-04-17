@@ -29,6 +29,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     ogDescription: description,
     ogLocale: locale,
     ogType: 'website',
+    noIndex: true,
   };
 
   return {

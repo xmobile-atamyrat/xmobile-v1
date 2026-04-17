@@ -386,6 +386,12 @@ export function isNumeric(value: string): boolean {
   return !Number.isNaN(+value);
 }
 
+export function isUUID(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export const getCookie = (name: string): string | undefined => {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return undefined;
