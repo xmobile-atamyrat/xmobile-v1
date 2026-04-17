@@ -313,7 +313,6 @@ export default function AddEditProductDialog({
 
             const updatedProduct = await addEditProduct({
               formJson: Object.fromEntries(formData.entries()),
-              productNameRequiredError: t('productNameRequired'),
               categoryId,
               brandId: brandId || undefined,
               setProducts,
@@ -414,8 +413,9 @@ export default function AddEditProductDialog({
                 defaultValue={parsedProductName.ch ?? ''}
               />
               <TextField
-                label={t('inEnglish')}
+                label={`${t('inEnglish')} *`}
                 name="productNameInEnglish"
+                required
                 className={
                   addEditProductDialogClasses.textField.usual[platform]
                 }

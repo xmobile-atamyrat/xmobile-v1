@@ -11,7 +11,7 @@ import {
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
-import { parseName, slugify } from '@/pages/lib/utils';
+import { slugify } from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -137,12 +137,32 @@ async function createProduct(
         return;
       }
 
-      const productEnglishName = parseName(fields.name[0], 'en');
+      const parsedName = JSON.parse(fields.name?.[0] ?? '{}');
+      const productEnglishName = parsedName?.en;
+
+      if (!productEnglishName || productEnglishName.trim() === '') {
+        resolve({
+          success: false,
+          message: 'englishNameRequired',
+          status: 400,
+        });
+        return;
+      }
+
       const productSlug = slugify(productEnglishName);
       if (!productSlug) {
         resolve({
           success: false,
-          message: 'Invalid product slug format',
+          message: 'invalidSlugError',
+          status: 400,
+        });
+        return;
+      }
+
+      if (productSlug.length > 80) {
+        resolve({
+          success: false,
+          message: 'slugTooLongError',
           status: 400,
         });
         return;

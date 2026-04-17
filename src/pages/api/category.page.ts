@@ -14,7 +14,7 @@ import {
   POPULAR_ROOT_LIMIT_CODE,
 } from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { parseName, slugify } from '@/pages/lib/utils';
+import { slugify } from '@/pages/lib/utils';
 import { Category } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -162,8 +162,36 @@ async function handlePostCategory(req: NextApiRequest) {
         }
       }
 
-      const categoryEnglishName = parseName(fields.name[0], 'en');
+      const parsedName = JSON.parse(fields.name?.[0] ?? '{}');
+      const categoryEnglishName = parsedName?.en;
+
+      if (!categoryEnglishName || categoryEnglishName.trim() === '') {
+        resolve({
+          success: false,
+          message: 'englishNameRequired',
+          status: 400,
+        });
+        return;
+      }
+
       const categorySlug = slugify(categoryEnglishName);
+      if (!categorySlug) {
+        resolve({
+          success: false,
+          message: 'invalidSlugError',
+          status: 400,
+        });
+        return;
+      }
+
+      if (categorySlug.length > 80) {
+        resolve({
+          success: false,
+          message: 'slugTooLongError',
+          status: 400,
+        });
+        return;
+      }
 
       const existingCategory = await dbClient.category.findUnique({
         where: { slug: categorySlug },

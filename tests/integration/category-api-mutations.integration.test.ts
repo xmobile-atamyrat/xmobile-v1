@@ -250,4 +250,134 @@ describe('/api/category mutations (integration)', () => {
     expect(row?.name).toContain('New root');
     await prisma.category.delete({ where: { id: data.id } });
   });
+
+  // ── Slug validation tests ──────────────────────────────────────────────────
+
+  it('POST returns 400 when English name is missing entirely', async () => {
+    const boundary = 'slugtest1';
+    // Only Turkmen name provided, no English
+    const body = multipartBody({ name: '{"tk":"Kategoriýa"}' }, boundary);
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('englishNameRequired');
+  });
+
+  it('POST returns 400 when English name is empty string', async () => {
+    const boundary = 'slugtest2';
+    const body = multipartBody({ name: '{"en":"","ru":"Тест"}' }, boundary);
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('englishNameRequired');
+  });
+
+  it('POST returns 400 when English name contains only whitespace', async () => {
+    const boundary = 'slugtest3';
+    const body = multipartBody({ name: '{"en":"   "}' }, boundary);
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('englishNameRequired');
+  });
+
+  it('POST returns 400 when English name slugifies to empty (symbols only)', async () => {
+    const boundary = 'slugtest4';
+    // Symbols that all get stripped by slugify
+    const body = multipartBody({ name: '{"en":"!!! @@@"}' }, boundary);
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('invalidSlugError');
+  });
+
+  it('POST creates category successfully with valid English name', async () => {
+    const boundary = 'slugtest5';
+    const body = multipartBody(
+      { name: '{"en":"Smartphones","ru":"Смартфоны"}' },
+      boundary,
+    );
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(200);
+    expect(json.success).toBe(true);
+    const data = json.data as { id: string; slug: string };
+    expect(data.slug).toBe('smartphones');
+    await prisma.category.delete({ where: { id: data.id } });
+  });
+
+  it('POST slug is generated from English name even when Russian also provided', async () => {
+    const boundary = 'slugtest6';
+    const body = multipartBody(
+      { name: '{"en":"Accessories","ru":"Аксессуары"}' },
+      boundary,
+    );
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(200);
+    const data = json.data as { id: string; slug: string };
+    // Slug must come from English, not from Russian
+    expect(data.slug).toBe('accessories');
+    await prisma.category.delete({ where: { id: data.id } });
+  });
+
+  it('POST returns 400 when generated slug is too long (> 80 chars)', async () => {
+    const boundary = 'slugtest7';
+    const longName = 'a'.repeat(81);
+    const body = multipartBody(
+      { name: JSON.stringify({ en: longName }) },
+      boundary,
+    );
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('slugTooLongError');
+  });
 });
