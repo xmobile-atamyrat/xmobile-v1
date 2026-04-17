@@ -137,8 +137,8 @@ async function createProduct(
         return;
       }
 
-      const parsedName = JSON.parse(fields.name[0]);
-      const productEnglishName = parsedName.en;
+      const parsedName = JSON.parse(fields.name?.[0] ?? '{}');
+      const productEnglishName = parsedName?.en;
 
       if (!productEnglishName || productEnglishName.trim() === '') {
         resolve({

@@ -162,8 +162,8 @@ async function handlePostCategory(req: NextApiRequest) {
         }
       }
 
-      const parsedName = JSON.parse(fields.name[0]);
-      const categoryEnglishName = parsedName.en;
+      const parsedName = JSON.parse(fields.name?.[0] ?? '{}');
+      const categoryEnglishName = parsedName?.en;
 
       if (!categoryEnglishName || categoryEnglishName.trim() === '') {
         resolve({
