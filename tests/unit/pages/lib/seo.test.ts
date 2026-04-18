@@ -76,4 +76,19 @@ describe('generateHreflangLinks', () => {
     const links = generateHreflangLinks('product/42', 'ru');
     expect(links.some((l) => l.locale === 'ch')).toBe(false);
   });
+
+  it('generates breadcrumbs for ch locale pointing to tk master URLs', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { generateBreadcrumbJsonLd } = await import('@/pages/lib/seo');
+    const breadcrumbs = generateBreadcrumbJsonLd(
+      [],
+      undefined,
+      'ch',
+      'Bash sahypa',
+    );
+
+    expect(breadcrumbs.itemListElement[0].item).toBe(
+      'https://xmobile.com.tm/tk',
+    );
+  });
 });

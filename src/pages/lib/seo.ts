@@ -376,12 +376,13 @@ export function generateBreadcrumbJsonLd(
   homeLabel: string,
 ): BreadcrumbListJsonLd {
   const items: BreadcrumbJsonLdItem[] = [];
+  const targetLocale = locale === 'ch' ? 'tk' : locale;
 
   items.push({
     '@type': 'ListItem',
     position: 1,
     name: homeLabel,
-    item: `${BASE_URL}/${locale}`,
+    item: getCanonicalUrl(targetLocale, ''),
   });
 
   categoryPath.forEach((category, index) => {
@@ -389,7 +390,7 @@ export function generateBreadcrumbJsonLd(
       '@type': 'ListItem',
       position: index + 2,
       name: parseName(category.name, locale),
-      item: `${BASE_URL}/${locale}/category/${category.slug}`,
+      item: getCanonicalUrl(targetLocale, `category/${category.slug}`),
     });
   });
 
