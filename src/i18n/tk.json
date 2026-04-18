@@ -362,6 +362,10 @@
   "privacyPolicyCollectAuto4": "Ýalňyşlyk hasabatlary we öndürijilik diagnostikasy",
   "privacyPolicyCollectPermissionsSubtitle": "Soralan rugsat bermeler (diňe rugsadyňyz bilen):",
   "privacyPolicyCollectPerm1": "Bildirişler",
+  "privacyPolicyCollectChatSubtitle": "Çat hatlary we goldaw ýazışmalary:",
+  "privacyPolicyCollectChat1": "Çat hatlary (mazmuny, wagt ştampalary)",
+  "privacyPolicyCollectChat2": "Goldaw sessiýalarynyň taryhy",
+  "privacyPolicyCollectChat3": "Operator/müşderi wekili habarlaşmalar",
 
   "privacyPolicyPurposeTitle": "Maglumatlaryňyzy Nähili Ulanýarys",
   "privacyPolicyPurpose1": "Programmanyň esasy işini üpjün etmek we gowulandyrmak",
@@ -371,38 +375,27 @@
   "privacyPolicyPurpose5": "Analitika, şahsylaşdyrmak we önümi gowulandyrmak",
   "privacyPolicyPurpose6": "Galplygy öňüni almak we howpsuzlygy üpjün etmek",
   "privacyPolicyPurpose7": "Kanuny borçlary ýerine ýetirmek",
-
   "privacyPolicySharingTitle": "Maglumatlaryňyzy Paýlaşmak",
   "privacyPolicySharingDesc": "Şahsy maglumatlaryňyzy satmaýarys. Maglumatlary şular bilen paýlaşyp bileris:",
   "privacyPolicySharing1": "Hyzmat üpjün edijiler (hosting, analitika, ýalňyşlyk hasabatlary) — maglumatlaryňyzy goramaga şertnama boýunça borçly",
   "privacyPolicySharing2": "Analitika (Google Firebase, Google Analytics we ş.m.) — jikme-jiklikler üçin olaryň gizlinlik syýasatlaryna serediň",
   "privacyPolicySharing3": "Kanunyň talap etmegi bilen döwlet edaralary",
-
   "privacyPolicySecurityTitle": "Maglumatlaryň Howpsuzlygy",
   "privacyPolicySecurityDesc": "Maglumatlaryňyzy goramak üçin makul tehniki we guramaçylyk çärelerini (geçiş wagtynda şifrleme, howpsuz serwer, giriş gözegçiligi) ulanýarys. Ýöne hiç bir ulgam 100% howpsuz däldir.",
-
   "privacyPolicyRetentionTitle": "Maglumatlary Saklamak",
   "privacyPolicyRetentionDesc": "Maglumatlaryňyzy diňe bellenilen maksatlar üçin zerur wagty ýa-da kanunuň talap etdigiçe saklaýarys. Islendik wagt hasabyňyzyň we degişli maglumatlaryň pozulmagyny haýyş edip bilersiňiz.",
-
   "privacyPolicyRightsTitle": "Siziň Hukuklaryňyz",
   "privacyPolicyRightsDesc": "Ýerleşiş ýeriňize baglylykda aşakdaky hukuklaryňyz bolup biler:",
   "privacyPolicyRights1": "Şahsy maglumatlaryňyza girmek, düzetmek ýa-da pozmak",
   "privacyPolicyRights2": "Işlenmegine garşy çykmak ýa-da çäklendirmek",
   "privacyPolicyRights3": "Maglumatlaryň göçürilmegi",
   "privacyPolicyRights4": "Razylygy yzyna almak",
-
   "privacyPolicyChildrenTitle": "Çagalaryň Gizlinligi",
   "privacyPolicyChildrenDesc": "Programma 13 ýaşdan kiçi çagalara (ýa-da ýurduňyzdaky degişli ýaş çäklerine) gönükdirilmedik. Biz çagalaryň maglumatlaryny bilip-bilmezden ýygnamaýarys. Şeýle ýagdaý ýüze çyksa, maglumatlary derhal pozarys.",
-
   "privacyPolicyTransferTitle": "Halkara Maglumat Geçirimleri",
   "privacyPolicyTransferDesc": "Maglumatlaryňyz biziň hyzmat üpjün edijilerimiz ýerleşen Türkmenistandan daşarky ýurtlara (ABŞ goşmak bilen) geçirilip, şol ýerde işlenip biliner. Degişli gorag çäreleriň bardygyny üpjün edýäris.",
-
-  "privacyPolicyChangesTitle": "Bu Syýasatdaky Üýtgeşmeler",
-  "privacyPolicyChangesDesc": "Gizlinlik syýasatymyzy wagtal-wagtal täzeläp bileris. Möhüm üýtgeşmeler barada täzelenen «Soňky täzelenme» senesi bilen täze wersiýany çap edip we zerur ýagdaýda programma bildirişi arkaly habar bereris.",
-
   "privacyPolicyContactTitle": "Biz Bilen Habarlaşyň",
   "privacyPolicyContactDesc": "Bu Gizlinlik syýasaty barada soraglaryňyz bar bolsa, biziň bilen habarlaşyň:\nEmail: xmobiletm@gmail.com\nSalgy: Lebap welaýaty, Türkmenabat şäheri, 3-nji mikroraýon, S.A. Nyýazow şaýoly, Xmobile dükany.",
-
   "privacyPolicyDeletionTitle": "Hasaby Pozmak",
   "privacyPolicyDeletionDesc": "Islendik wagt hasabyňyzyň we ähli degişli şahsy maglumatlaryňyzyň pozulmagyny haýyş etmek hukugyňyz bar.",
   "privacyPolicyDeletionHowTitle": "Hasaby pozmak üçin nädip haýyş etmeli:",
@@ -424,7 +417,6 @@
   "changeCategoryParent": "Eýesini üýtget",
   "categoryParent": "Eýe kategoriýa",
   "categoryParentRoot": "Kök (ýokary dereje)",
-
   "pageNotFound": "Sahypa tapylmady!",
   "homepage": "Baş sahypa",
   "startShopping": "Söwda başla",
