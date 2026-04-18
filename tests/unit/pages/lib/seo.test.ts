@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { localeOptions } from '@/pages/lib/constants';
+import { INDEXABLE_LOCALES } from '@/pages/lib/constants';
 
 describe('getCanonicalUrl', () => {
   afterEach(() => {
@@ -33,6 +33,20 @@ describe('getCanonicalUrl', () => {
       'http://127.0.0.1:3003/en/about',
     );
   });
+
+  it('canonicalizes ch locale to tk', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { getCanonicalUrl } = await import('@/pages/lib/seo');
+    expect(getCanonicalUrl('ch', 'product/1')).toBe(
+      'https://xmobile.com.tm/tk/product/1',
+    );
+  });
+
+  it('generates root path without trailing slash', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { getCanonicalUrl } = await import('@/pages/lib/seo');
+    expect(getCanonicalUrl('ru', '')).toBe('https://xmobile.com.tm/ru');
+  });
 });
 
 describe('generateHreflangLinks', () => {
@@ -46,7 +60,7 @@ describe('generateHreflangLinks', () => {
     const { generateHreflangLinks } = await import('@/pages/lib/seo');
     const links = generateHreflangLinks('product/42', 'ru');
 
-    expect(links).toHaveLength(localeOptions.length + 1);
+    expect(links).toHaveLength(INDEXABLE_LOCALES.length + 1);
     expect(links.some((l) => l.locale === 'x-default')).toBe(true);
     expect(links.find((l) => l.locale === 'ru')?.url).toBe(
       'https://xmobile.com.tm/ru/product/42',
@@ -54,5 +68,12 @@ describe('generateHreflangLinks', () => {
     expect(links.find((l) => l.locale === 'x-default')?.url).toBe(
       'https://xmobile.com.tm/ru/product/42',
     );
+  });
+
+  it('excludes ch from hreflang links', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { generateHreflangLinks } = await import('@/pages/lib/seo');
+    const links = generateHreflangLinks('product/42', 'ru');
+    expect(links.some((l) => l.locale === 'ch')).toBe(false);
   });
 });
