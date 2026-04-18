@@ -16,6 +16,13 @@ export const mobileAppBarHeight = 56;
 
 export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
+/**
+ * Locales that should be indexed by search engines.
+ * Charjew (ch) is excluded because its content overlaps with Turkmen (tk).
+ * Pages on /ch/ still work for users but point their canonical to /tk/.
+ */
+export const INDEXABLE_LOCALES = localeOptions.filter((l) => l !== 'ch');
+
 export const drawerPaddingTopOffset = 2;
 
 export const MAIN_BG_COLOR = '#FFF';

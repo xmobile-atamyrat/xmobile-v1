@@ -1,7 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   BUSINESS_NAME,
-  localeOptions,
+  DEFAULT_LOCALE,
+  INDEXABLE_LOCALES,
   META_DESC_MAX_LENGTH,
   PAGE_TITLE_MAX_LENGTH,
 } from '@/pages/lib/constants';
@@ -24,10 +25,12 @@ import { parseName } from '@/pages/lib/utils';
  * @see {@link ../../../docs/seo-knowledge.md} for details on Canonical URLs.
  */
 export function getCanonicalUrl(locale: string, path: string): string {
-  // Remove leading slash if present
+  // Normalize path by removing leading slash
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
-  return `${BASE_URL}/${locale}/${cleanPath}`;
+  const targetLocale = locale === 'ch' ? 'tk' : locale;
+
+  return `${BASE_URL}/${targetLocale}/${cleanPath}`;
 }
 
 /**
@@ -35,26 +38,30 @@ export function getCanonicalUrl(locale: string, path: string): string {
  *
  * @param path - Page path without locale, e.g., "product/123"
  * @param defaultLocale - Default locale for x-default fallback (usually 'ru')
- * @returns Array of hreflang link objects for all locales + x-default
+ * @returns Array of hreflang link objects for all canonical locales + x-default
  *
+ * SEO notes:
+ * - Only canonical URLs should be included in hreflang.
+ * - The 'ch' locale is excluded because it is consolidated into 'tk'
+ *   and should not appear as a separate alternate.
+ * - Each hreflang entry must correspond to a self-canonical page.
+ * - x-default is used as a fallback for unspecified languages/regions.
  * @see {@link ../../../docs/seo-knowledge.md} for details on Hreflang tags.
  */
 export function generateHreflangLinks(
   path: string,
-  defaultLocale: string = 'ru',
+  defaultLocale: string = DEFAULT_LOCALE,
 ): HreflangLink[] {
   const links: HreflangLink[] = [];
 
-  // Generate link for each supported locale
-  localeOptions.forEach((locale) => {
+  INDEXABLE_LOCALES.forEach((locale) => {
     links.push({
       locale,
       url: getCanonicalUrl(locale, path),
     });
   });
 
-  // Add x-default (fallback for unknown locales/regions),
-  // shown when Google can't determine user's language preference
+  // Add x-default (fallback page)
   links.push({
     locale: 'x-default',
     url: getCanonicalUrl(defaultLocale, path),
