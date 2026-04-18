@@ -360,6 +360,10 @@
   "privacyPolicyCollectAuto4": "Hata raporları ve performans teşhisi",
   "privacyPolicyCollectPermissionsSubtitle": "İstenen izinler (sadece izninizle):",
   "privacyPolicyCollectPerm1": "Bildirimler",
+  "privacyPolicyCollectChatSubtitle": "Sohbet mesajları ve destek yazışmaları:",
+  "privacyPolicyCollectChat1": "Sohbet mesajları (içerik, zaman damgaları)",
+  "privacyPolicyCollectChat2": "Destek oturumları geçmişi",
+  "privacyPolicyCollectChat3": "Operatör/müşteri temsilcisi iletişimleri",
 
   "privacyPolicyPurposeTitle": "Bilgilerinizi Nasıl Kullanıyoruz",
   "privacyPolicyPurpose1": "Uygulamanın temel işlevselliğini sağlamak ve iyileştirmek",
@@ -369,38 +373,27 @@
   "privacyPolicyPurpose5": "Analitik, kişiselleştirme ve ürün iyileştirmesi için",
   "privacyPolicyPurpose6": "Dolandırıcılığı önlemek ve güvenliği sağlamak",
   "privacyPolicyPurpose7": "Yasal yükümlülüklere uymak",
-
   "privacyPolicySharingTitle": "Bilgilerinizi Paylaşma",
   "privacyPolicySharingDesc": "Kişisel bilgilerinizi satmıyoruz. Verilerinizi aşağıdaki taraflarla paylaşabiliriz:",
   "privacyPolicySharing1": "Hizmet sağlayıcılar (barındırma, analitik, hata raporlama) — verilerinizi korumakla sözleşmeyle yükümlüdürler",
   "privacyPolicySharing2": "Analitik hizmetleri (Google Firebase, Google Analytics vb.) — detaylar için onların gizlilik politikalarına bakın",
   "privacyPolicySharing3": "Yasa gereği devlet kurumları",
-
   "privacyPolicySecurityTitle": "Veri Güvenliği",
   "privacyPolicySecurityDesc": "Bilgilerinizi korumak için uygun teknik ve organizasyonel önlemler (aktarım sırasında şifreleme, güvenli sunucular, erişim kontrolleri) kullanıyoruz. Ancak hiçbir sistem %100 güvenli değildir.",
-
   "privacyPolicyRetentionTitle": "Veri Saklama",
   "privacyPolicyRetentionDesc": "Bilgilerinizi yalnızca belirtilen amaçlar için gerekli süre boyunca veya yasa gerektirdiği sürece saklıyoruz. Hesabınızın ve ilgili verilerin silinmesini istediğiniz zaman talep edebilirsiniz.",
-
   "privacyPolicyRightsTitle": "Haklarınız",
   "privacyPolicyRightsDesc": "Bulunduğunuz yere bağlı olarak aşağıdaki haklara sahip olabilirsiniz:",
   "privacyPolicyRights1": "Kişisel bilgilerinize erişmek, düzeltmek veya silmek",
   "privacyPolicyRights2": "İşlenmesine itiraz etmek veya kısıtlamak",
   "privacyPolicyRights3": "Veri taşınabilirliği",
   "privacyPolicyRights4": "Onayı geri çekmek",
-
   "privacyPolicyChildrenTitle": "Çocukların Gizliliği",
   "privacyPolicyChildrenDesc": "Uygulama 13 yaşın altındaki çocuklara (veya ülkenizdeki ilgili yaş sınırına) yönelik değildir. Çocukların verilerini bilerek toplamıyoruz. Böyle bir veri tespit edilirse, derhal sileceğiz.",
-
   "privacyPolicyTransferTitle": "Uluslararası Veri Transferleri",
   "privacyPolicyTransferDesc": "Verileriniz Türkmenistan dışındaki ülkelerde (ABD dahil) bulunan hizmet sağlayıcılarımıza aktarılabilir ve orada işlenebilir. Uygun koruma önlemlerinin alındığından emin oluyoruz.",
-
-  "privacyPolicyChangesTitle": "Bu Politikadaki Değişiklikler",
-  "privacyPolicyChangesDesc": "Gizlilik politikamızı zaman zaman güncelleyebiliriz. Önemli değişiklikler olursa, güncellenmiş «Son Güncelleme» tarihiyle yeni sürümü yayınlayacak ve gerekirse uygulama içi bildirimle sizi haberdar edeceğiz.",
-
   "privacyPolicyContactTitle": "Bizimle İletişime Geçin",
   "privacyPolicyContactDesc": "Bu Gizlilik Politikası hakkında sorularınız varsa, bizimle iletişime geçin:\nE-posta: xmobiletm@gmail.com\nAdres: Lebap vilayeti, Türkmenabat şehri, 3. Mikrorayon, S.A. Nyýazow Caddesi, Xmobile Mağazası.",
-
   "privacyPolicyDeletionTitle": "Hesap Silme",
   "privacyPolicyDeletionDesc": "Hesabınızın ve tüm ilgili kişisel verilerinizin silinmesini istediğiniz zaman talep etme hakkına sahipsiniz.",
   "privacyPolicyDeletionHowTitle": "Hesap silme talebinde bulunma:",
@@ -422,7 +415,6 @@
   "changeCategoryParent": "Üst kategoriyi değiştir",
   "categoryParent": "Üst kategori",
   "categoryParentRoot": "Kök (üst düzey)",
-
   "pageNotFound": "Sayfa bulunamadı!",
   "homepage": "Ana sayfa",
   "startShopping": "Alışverişe başla",

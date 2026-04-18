@@ -86,6 +86,14 @@ export default function PrivacyPolicy() {
           subtitle: t('privacyPolicyCollectPermissionsSubtitle'),
           items: [t('privacyPolicyCollectPerm1')],
         },
+        {
+          subtitle: t('privacyPolicyCollectChatSubtitle'),
+          items: [
+            t('privacyPolicyCollectChat1'),
+            t('privacyPolicyCollectChat2'),
+            t('privacyPolicyCollectChat3'),
+          ],
+        },
       ],
     },
     {
@@ -134,10 +142,6 @@ export default function PrivacyPolicy() {
     {
       title: t('privacyPolicyTransferTitle'),
       desc: t('privacyPolicyTransferDesc'),
-    },
-    {
-      title: t('privacyPolicyChangesTitle'),
-      desc: t('privacyPolicyChangesDesc'),
     },
     {
       title: t('privacyPolicyContactTitle'),
