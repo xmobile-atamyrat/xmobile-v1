@@ -34,11 +34,11 @@ export function getCanonicalUrl(locale: string, path: string): string {
 }
 
 /**
- * Generate hreflang links for all supported locales.
+ * Generate hreflang links for indexable/canonical locales.
  *
  * @param path - Page path without locale, e.g., "product/123"
  * @param defaultLocale - Default locale for x-default fallback (usually 'ru')
- * @returns Array of hreflang link objects for all canonical locales + x-default
+ * @returns Array of hreflang link objects for canonical locales + x-default
  *
  * SEO notes:
  * - Only canonical URLs should be included in hreflang.
