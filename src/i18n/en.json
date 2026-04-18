@@ -360,7 +360,10 @@
   "privacyPolicyCollectAuto4": "Error reports and performance diagnostics",
   "privacyPolicyCollectPermissionsSubtitle": "Requested permissions (only with your consent):",
   "privacyPolicyCollectPerm1": "Notifications",
-
+  "privacyPolicyCollectChatSubtitle": "Chat messages and support correspondence:",
+  "privacyPolicyCollectChat1": "Chat messages (content, timestamps)",
+  "privacyPolicyCollectChat2": "Support session history",
+  "privacyPolicyCollectChat3": "Operator/customer representative communications",
   "privacyPolicyPurposeTitle": "How We Use Your Information",
   "privacyPolicyPurpose1": "To provide and improve the core functionality of the app",
   "privacyPolicyPurpose2": "To create and manage your account",
@@ -369,38 +372,27 @@
   "privacyPolicyPurpose5": "For analytics, personalization, and product improvement",
   "privacyPolicyPurpose6": "To prevent fraud and ensure security",
   "privacyPolicyPurpose7": "To comply with legal obligations",
-
   "privacyPolicySharingTitle": "Sharing Your Information",
   "privacyPolicySharingDesc": "We do not sell your personal information. We may share your data with the following parties:",
   "privacyPolicySharing1": "Service providers (hosting, analytics, error reporting) — contractually obligated to protect your data",
   "privacyPolicySharing2": "Analytics services (Google Firebase, Google Analytics, etc.) — please refer to their privacy policies for details",
   "privacyPolicySharing3": "Government authorities when required by law",
-
   "privacyPolicySecurityTitle": "Data Security",
   "privacyPolicySecurityDesc": "We use appropriate technical and organizational measures (encryption in transit, secure servers, access controls) to protect your information. However, no system is 100% secure.",
-
   "privacyPolicyRetentionTitle": "Data Retention",
   "privacyPolicyRetentionDesc": "We retain your information only for as long as necessary to fulfill the purposes outlined or as required by law. You may request the deletion of your account and associated data at any time.",
-
   "privacyPolicyRightsTitle": "Your Rights",
   "privacyPolicyRightsDesc": "Depending on your location, you may have the following rights:",
   "privacyPolicyRights1": "Access, correct, or delete your personal information",
   "privacyPolicyRights2": "Object to or restrict its processing",
   "privacyPolicyRights3": "Data portability",
   "privacyPolicyRights4": "Withdraw consent",
-
   "privacyPolicyChildrenTitle": "Children's Privacy",
   "privacyPolicyChildrenDesc": "The app is not directed at children under 13 years of age (or the relevant age threshold in your country). We do not knowingly collect children's data. If we discover such data has been collected, we will delete it immediately.",
-
   "privacyPolicyTransferTitle": "International Data Transfers",
   "privacyPolicyTransferDesc": "Your data may be transferred to and processed in countries outside of Turkmenistan (including the United States) where our service providers are located. We ensure appropriate safeguards are in place.",
-
-  "privacyPolicyChangesTitle": "Changes to This Policy",
-  "privacyPolicyChangesDesc": "We may update our Privacy Policy from time to time. We will post the new version with an updated “Last Updated” date and, if the changes are material, notify you via an in-app notification.",
-
   "privacyPolicyContactTitle": "Contact Us",
   "privacyPolicyContactDesc": "If you have any questions about this Privacy Policy, please contact us at:\nEmail: xmobiletm@gmail.com\nAddress: Lebap province, Turkmenabat city, 3rd quarter microdistrict, S.A. Niyazov Avenue, Xmobile store.",
-
   "privacyPolicyDeletionTitle": "Account Deletion",
   "privacyPolicyDeletionDesc": "You have the right to request deletion of your account and all associated personal data at any time.",
   "privacyPolicyDeletionHowTitle": "How to request account deletion:",
@@ -422,7 +414,6 @@
   "changeCategoryParent": "Change parent",
   "categoryParent": "Parent category",
   "categoryParentRoot": "Root (top level)",
-
   "pageNotFound": "Page not found!",
   "homepage": "Homepage",
   "startShopping": "Start Shopping",
