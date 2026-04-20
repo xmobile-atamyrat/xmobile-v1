@@ -30,7 +30,9 @@ export function getCanonicalUrl(locale: string, path: string): string {
 
   const targetLocale = locale === 'ch' ? 'tk' : locale;
 
-  return `${BASE_URL}/${targetLocale}/${cleanPath}`;
+  const localePath = cleanPath ? `${targetLocale}/${cleanPath}` : targetLocale;
+
+  return `${BASE_URL}/${localePath}`;
 }
 
 /**
