@@ -104,7 +104,6 @@ All SEO-related strings (titles, descriptions, templates) are stored in the tran
 *   **URLs**: All indexable URLs include the locale (e.g., `/ru/product/123`).
 *   **Canonical**: Points to the current locale version, except for the 'ch' (Charjew) locale which canonicalizes to the 'tk' (Turkmen) version to consolidate duplicate content.
 *   **x-default**: Points to the 'ru' version (at `/ru/...`) as the default fallback.
-*   **Locale Persistence**: The application automatically synchronizes the `NEXT_LOCALE` cookie with the URL path and redirects unprefixed routes to the cached locale.
 *   **Schema**: Currently uses main local names (Turkmen) for store addresses to keep schema simple and verifiable by Google Maps.
 
 ### Why Centralized in `seo.ts`?
