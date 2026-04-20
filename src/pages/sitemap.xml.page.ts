@@ -1,7 +1,7 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import dbClient from '@/lib/dbClient';
 import { GetServerSideProps } from 'next';
-import { localeOptions } from '@/pages/lib/constants';
+import { INDEXABLE_LOCALES } from '@/pages/lib/constants';
+import { getCanonicalUrl } from '@/pages/lib/seo';
 
 function generateSiteMap(
   products: { id: string; slug: string | null; updatedAt: Date }[],
@@ -10,34 +10,28 @@ function generateSiteMap(
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <!-- Static Pages -->
-     ${localeOptions
-       .map((locale) => {
-         return `
+     ${INDEXABLE_LOCALES.map((locale) => {
+       return `
      <url>
-       <loc>${BASE_URL}/${locale}</loc>
+       <loc>${getCanonicalUrl(locale, '')}</loc>
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
 `;
-       })
-       .join('')}
-
-
+     }).join('')}
 
      <!-- Category Product Landing Pages -->
      ${categories
        .map(({ slug, updatedAt }) => {
-         return localeOptions
-           .map((locale) => {
-             return `
+         return INDEXABLE_LOCALES.map((locale) => {
+           return `
        <url>
-           <loc>${BASE_URL}/${locale}/product-category/${slug}</loc>
+           <loc>${getCanonicalUrl(locale, `product-category/${slug}`)}</loc>
            <lastmod>${updatedAt.toISOString()}</lastmod>
            <changefreq>daily</changefreq>
            <priority>0.8</priority>
        </url>`;
-           })
-           .join('');
+         }).join('');
        })
        .join('')}
 
@@ -45,17 +39,15 @@ function generateSiteMap(
      ${products
        .filter(({ slug }) => slug != null)
        .map(({ slug, updatedAt }) => {
-         return localeOptions
-           .map((locale) => {
-             return `
+         return INDEXABLE_LOCALES.map((locale) => {
+           return `
         <url>
-            <loc>${BASE_URL}/${locale}/product/${slug}</loc>
+            <loc>${getCanonicalUrl(locale, `product/${slug}`)}</loc>
             <lastmod>${updatedAt.toISOString()}</lastmod>
             <changefreq>daily</changefreq>
             <priority>0.9</priority>
         </url>`;
-           })
-           .join('');
+         }).join('');
        })
        .join('')}
  
