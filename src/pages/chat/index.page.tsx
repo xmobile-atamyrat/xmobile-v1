@@ -94,10 +94,13 @@ export default function ChatPage() {
           return;
         }
 
-        // If sessions haven't loaded yet, wait for them
+        // If sessions haven't loaded yet, trigger load and wait
         if (sessions.length === 0) {
-          // Sessions are still loading, keep initializing state
-          return;
+          await loadSessions();
+          if (sessions.length === 0) {
+            setIsInitializing(false);
+            return;
+          }
         }
 
         setIsInitializing(true);
