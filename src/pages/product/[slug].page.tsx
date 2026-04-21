@@ -381,6 +381,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   tags: initialProduct.tags,
                   videoUrls: initialProduct.videoUrls,
                   brandId: initialProduct.brandId,
+                  categoryId: initialProduct.categoryId,
                 });
               }}
             >

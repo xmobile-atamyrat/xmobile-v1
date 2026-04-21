@@ -1,3 +1,4 @@
+import dbClient from '@/lib/dbClient';
 import {
   createCompressedImg,
   createCompressedImgUrl,
@@ -61,16 +62,59 @@ export default async function handler(
 
   if (method === 'DELETE') {
     if (fs.existsSync(imgUrl as string)) {
-      fs.unlinkSync(imgUrl as string);
-      return res.status(200).json({ success: true });
+      try {
+        const imgUrlStr = imgUrl as string;
+
+        // Delete files
+        fs.unlinkSync(imgUrlStr);
+        const filename = imgUrlStr.split('/').pop();
+        if (filename) {
+          const baseDir = process.env.COMPRESSED_PRODUCT_IMAGES_DIR;
+          if (baseDir) {
+            ['bad', 'good'].forEach((quality) => {
+              const compressedPath = `${baseDir}/${quality}/${filename}`;
+              if (fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+            });
+          }
+        }
+
+        const [products, categories] = await Promise.all([
+          dbClient.product.findMany({
+            where: { imgUrls: { has: imgUrlStr } },
+            select: { id: true, imgUrls: true },
+          }),
+          dbClient.category.findMany({
+            where: { imgUrl: imgUrlStr },
+            select: { id: true },
+          }),
+        ]);
+
+        await Promise.all([
+          ...products.map((product) =>
+            dbClient.product.update({
+              where: { id: product.id },
+              data: {
+                imgUrls: product.imgUrls.filter((url) => url !== imgUrlStr),
+              },
+            }),
+          ),
+          ...categories.map((category) =>
+            dbClient.category.update({
+              where: { id: category.id },
+              data: { imgUrl: null },
+            }),
+          ),
+        ]);
+
+        return res.status(200).json({ success: true });
+      } catch (error) {
+        console.error(filepath, 'Error deleting image:', error);
+        return res
+          .status(500)
+          .json({ success: false, message: 'Error deleting image' });
+      }
     }
 
-    console.error(
-      filepath,
-      'Image not found',
-      `Method: ${method}`,
-      `imgUrl: ${imgUrl}`,
-    );
     return res.status(404).json({ success: false, message: 'Image not found' });
   }
 
