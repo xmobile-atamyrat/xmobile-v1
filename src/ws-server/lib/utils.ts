@@ -5,7 +5,7 @@ import {
   sendFCMNotificationToUser,
 } from '@/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
-import { NotificationType, UserOrderStatus } from '@prisma/client';
+import { NotificationType, UserOrderStatus, UserRole } from '@prisma/client';
 import { WebSocket } from 'ws';
 
 export function sendMessage(
@@ -22,12 +22,16 @@ export function sendMessage(
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
+  userGrade?: UserRole,
 ) {
+  // Superadmins can observe any session without being a listed participant
+  const where =
+    userGrade === UserRole.SUPERUSER
+      ? { id: sessionId }
+      : { id: sessionId, users: { some: { id: userId } } };
+
   const session = await dbClient.chatSession.findFirst({
-    where: {
-      id: sessionId,
-      users: { some: { id: userId } },
-    },
+    where,
     include: { users: true },
   });
 

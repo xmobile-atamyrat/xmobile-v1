@@ -257,6 +257,18 @@ const handleMessage = async (
       });
     });
 
+    // Also deliver real-time messages to superadmin observers watching this session
+    connections.forEach((userConnections) => {
+      userConnections.forEach((conn) => {
+        if (
+          conn.userGrade === UserRole.SUPERUSER &&
+          conn.subscribedSessionId === sessionId
+        ) {
+          sendMessage(conn, outgoingMessage);
+        }
+      });
+    });
+
     // Create notifications for all participants except sender
     try {
       const notifications = await createNotificationsForSession(
@@ -319,13 +331,24 @@ const handleGetMessages = async (
     const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
     const userId = safeConnection.userId;
 
-    const session = await verifySessionParticipant(sessionId, userId);
+    const session = await verifySessionParticipant(
+      sessionId,
+      userId,
+      safeConnection.userGrade,
+    );
     if (!session) {
       console.error(
         filepath,
         `Unauthorized history request: User ${userId} not in session ${sessionId}`,
       );
       return;
+    }
+
+    // Register superadmin as an observer so they receive real-time messages.
+    // A superadmin views one session at a time; updating subscribedSessionId
+    // effectively "switches" their observation to the new session.
+    if (safeConnection.userGrade === UserRole.SUPERUSER) {
+      safeConnection.subscribedSessionId = sessionId;
     }
 
     // Cursor pagination: take: -50 (backwards), skip: 1 (exclude cursor), orderBy deterministic
@@ -374,6 +397,7 @@ const handleSessionRelay = async (
     const session = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
+      safeConnection.userGrade,
     );
 
     if (!session) {
