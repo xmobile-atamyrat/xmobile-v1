@@ -444,6 +444,7 @@ async function handleEditProduct(
       if (err) {
         console.error(filepath, err);
         resolve({ success: false, message: err.message, status: 500 });
+        return;
       }
 
       const data: Partial<Product> = { imgUrls: [] };
