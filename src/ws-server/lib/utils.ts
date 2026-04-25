@@ -22,14 +22,24 @@ export function sendMessage(
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
+  userGrade?: string,
 ) {
-  const session = await dbClient.chatSession.findFirst({
-    where: {
-      id: sessionId,
-      users: { some: { id: userId } },
-    },
-    include: { users: true },
-  });
+  let session;
+
+  if (userGrade === 'SUPERUSER') {
+    session = await dbClient.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { users: true },
+    });
+  } else {
+    session = await dbClient.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        users: { some: { id: userId } },
+      },
+      include: { users: true },
+    });
+  }
 
   return session;
 }

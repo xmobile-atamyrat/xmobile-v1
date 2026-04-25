@@ -173,6 +173,7 @@ const handleMessage = async (
     const session = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
+      safeConnection.userGrade,
     );
 
     if (!session) {
@@ -319,7 +320,11 @@ const handleGetMessages = async (
     const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
     const userId = safeConnection.userId;
 
-    const session = await verifySessionParticipant(sessionId, userId);
+    const session = await verifySessionParticipant(
+      sessionId,
+      userId,
+      safeConnection.userGrade,
+    );
     if (!session) {
       console.error(
         filepath,
@@ -374,6 +379,7 @@ const handleSessionRelay = async (
     const session = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
+      safeConnection.userGrade,
     );
 
     if (!session) {
