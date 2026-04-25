@@ -418,5 +418,8 @@
   "homepage": "Homepage",
   "startShopping": "Start Shopping",
   "popularCategories": "Popular Categories",
-  "moreCategories": "Other Categories"
+  "moreCategories": "Other Categories",
+  "chatClosedChats": "Closed Chats",
+  "chatNoClosedChats": "No closed chats.",
+  "chatReadOnlyMode": "You are viewing this chat in read-only mode."
 }
