@@ -1,5 +1,6 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useUserContext } from '@/pages/lib/UserContext';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -23,6 +24,7 @@ interface ChatSessionListProps {
 }
 
 const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
+  const { user } = useUserContext();
   const { sessions, loadSessions } = useChatContext();
   const platform = usePlatform();
   const t = useTranslations();
@@ -35,6 +37,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
 
   const pendingSessions = sessions.filter((s) => s.status === 'PENDING');
   const activeSessions = sessions.filter((s) => s.status === 'ACTIVE');
+  const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
+  const isSuperadmin = user?.grade === 'SUPERUSER';
 
   const handleSessionClick = (session: ChatSession) => {
     onSelectSession(session);
@@ -89,9 +93,9 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               </ListItem>
             )}
             {pendingSessions.map((session) => {
-              const user = session.users?.[0];
-              const userInfo = user
-                ? `${user.name} (${user.email}${user.phoneNumber ? `, ${user.phoneNumber}` : ''})`
+              const sessionUser = session.users?.[0];
+              const userInfo = sessionUser
+                ? `${sessionUser.name} (${sessionUser.email}${sessionUser.phoneNumber ? `, ${sessionUser.phoneNumber}` : ''})`
                 : 'Unknown User';
               const lastMessage = (session as any).messages?.[0];
               const hasUnread = lastMessage?.senderRole === 'FREE';
@@ -157,9 +161,11 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               </ListItem>
             )}
             {activeSessions.map((session) => {
-              const user = session.users?.find((u) => u.grade === 'FREE');
-              const userInfo = user
-                ? `${user.name} (${user.email}${user.phoneNumber ? `, ${user.phoneNumber}` : ''})`
+              const sessionUser = session.users?.find(
+                (u) => u.grade === 'FREE',
+              );
+              const userInfo = sessionUser
+                ? `${sessionUser.name} (${sessionUser.email}${sessionUser.phoneNumber ? `, ${sessionUser.phoneNumber}` : ''})`
                 : 'User';
               const lastMessage = (session as any).messages?.[0];
               const hasUnread = lastMessage?.senderRole === 'FREE';
@@ -203,6 +209,65 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
           </List>
         </AccordionDetails>
       </Accordion>
+
+      {/* Closed Chats (Superadmin Only) */}
+      {isSuperadmin && (
+        <Accordion disableGutters elevation={0}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
+              {t('chatClosedChats')}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            <List disablePadding>
+              {closedSessions.length === 0 && (
+                <ListItem>
+                  <ListItemText
+                    secondary={t('chatNoClosedChats')}
+                    secondaryTypographyProps={{
+                      fontSize: '13px',
+                      color: '#838383',
+                    }}
+                  />
+                </ListItem>
+              )}
+              {closedSessions.map((session) => {
+                const sessionUser = session.users?.find(
+                  (u) => u.grade === 'FREE',
+                );
+                const userInfo = sessionUser
+                  ? `${sessionUser.name} (${sessionUser.email}${sessionUser.phoneNumber ? `, ${sessionUser.phoneNumber}` : ''})`
+                  : 'User';
+                return (
+                  <ListItemButton
+                    key={session.id}
+                    className={chatClasses.sessionList.listItem[platform]}
+                    onClick={() => handleSessionClick(session)}
+                    sx={{
+                      '&:hover': { backgroundColor: '#F6F6F6' },
+                    }}
+                  >
+                    <Box sx={{ position: 'relative', flex: 1 }}>
+                      <ListItemText
+                        primary={userInfo}
+                        secondary={`${t('chatLastActive')}: ${new Date(session.updatedAt).toLocaleTimeString()}`}
+                        primaryTypographyProps={{
+                          fontSize: '14px',
+                          fontWeight: 500,
+                        }}
+                        secondaryTypographyProps={{
+                          fontSize: '12px',
+                          color: '#838383',
+                        }}
+                      />
+                    </Box>
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          </AccordionDetails>
+        </Accordion>
+      )}
     </Box>
   );
 };
