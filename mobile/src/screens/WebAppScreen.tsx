@@ -67,6 +67,9 @@ function WebAppScreen() {
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [storedLocale, setStoredLocale] = useState<string | null>(null);
+  const [storedGuestSession, setStoredGuestSession] = useState<string | null>(
+    null,
+  );
   const [isReady, setIsReady] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [hasWebviewError, setHasWebviewError] = useState(false);
@@ -106,6 +109,19 @@ function WebAppScreen() {
   const baseUrl = isDevMode
     ? 'http://localhost:3003'
     : 'https://xmobile.com.tm';
+
+  const persistGuestSessionFromCookie = useCallback(async () => {
+    try {
+      const cookies = await CookieManager.get(baseUrl, true);
+      const guestSession = cookies?.GUEST_SESSION_ID?.value;
+      if (guestSession) {
+        await AsyncStorage.setItem('GUEST_SESSION_ID', guestSession);
+        setStoredGuestSession(guestSession);
+      }
+    } catch (error) {
+      console.warn('Failed to persist guest session cookie:', error);
+    }
+  }, [baseUrl]);
 
   const handleNotificationNavigationFromData = (data?: {
     [key: string]: any;
@@ -329,9 +345,26 @@ function WebAppScreen() {
       try {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
+        const guestSession = await AsyncStorage.getItem('GUEST_SESSION_ID');
 
         setStoredToken(token);
         setStoredLocale(locale);
+        setStoredGuestSession(guestSession);
+
+        if (guestSession) {
+          const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
+          const expiresAt = new Date();
+          expiresAt.setFullYear(expiresAt.getFullYear() + 10);
+          await CookieManager.set(baseUrl, {
+            name: 'GUEST_SESSION_ID',
+            value: guestSession,
+            path: '/',
+            domain,
+            expires: expiresAt.toISOString(),
+            httpOnly: true,
+            secure: !isDevMode,
+          });
+        }
       } catch (error) {
         console.error('Failed to load storage data:', error);
       } finally {
@@ -340,9 +373,32 @@ function WebAppScreen() {
     };
 
     loadStoredData();
-  }, []);
+  }, [baseUrl, isDevMode]);
 
   const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
+
+  useEffect(() => {
+    const syncStoredGuestSessionCookie = async () => {
+      if (!storedGuestSession) return;
+      try {
+        const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
+        const expiresAt = new Date();
+        expiresAt.setFullYear(expiresAt.getFullYear() + 10);
+        await CookieManager.set(baseUrl, {
+          name: 'GUEST_SESSION_ID',
+          value: storedGuestSession,
+          path: '/',
+          domain,
+          expires: expiresAt.toISOString(),
+          httpOnly: true,
+          secure: !isDevMode,
+        });
+      } catch (error) {
+        console.warn('Failed to sync stored guest session cookie:', error);
+      }
+    };
+    syncStoredGuestSessionCookie();
+  }, [storedGuestSession, baseUrl, isDevMode]);
 
   useEffect(() => {
     const checkAndReload = async () => {
@@ -441,6 +497,7 @@ function WebAppScreen() {
             domStorageEnabled={true}
             onNavigationStateChange={navState => {
               setCanGoBack(navState.canGoBack);
+              persistGuestSessionFromCookie();
             }}
             style={styles.webview}
             startInLoadingState={true}
@@ -581,11 +638,14 @@ function WebAppScreen() {
                   await AsyncStorage.removeItem('REFRESH_TOKEN');
                   await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
                   await AsyncStorage.removeItem('NEXT_LOCALE');
+                  await AsyncStorage.removeItem('GUEST_SESSION_ID');
                   await CookieManager.clearAll(true);
                   setStoredToken(null);
                   setStoredLocale(null);
+                  setStoredGuestSession(null);
                   setFcmToken(null);
                 }
+                await persistGuestSessionFromCookie();
               } catch (err) {
                 console.error('Failed to parse WebView message:', err);
               }
