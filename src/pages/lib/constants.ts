@@ -8,7 +8,7 @@ export const GUEST_SESSION_COOKIE_NAME = 'GUEST_SESSION_ID';
 export const REFRESH_TOKEN_EXPIRY = '10y';
 export const ACCESS_TOKEN_EXPIRY = '8h';
 export const REFRESH_TOKEN_EXPIRY_COOKIE = 60 * 60 * 24 * 365 * 10; // 10 years
-export const GUEST_SESSION_EXPIRY_COOKIE = 60 * 60 * 24 * 365; // 1 year
+export const GUEST_SESSION_EXPIRY_COOKIE = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
 
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
