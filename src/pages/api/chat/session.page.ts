@@ -123,29 +123,31 @@ async function handler(
           },
         });
 
-        createNotificationsForSessionRequest(newSession.id)
-          .then((notifications) => {
-            notifications.forEach((notification) => {
-              sendFCMWithCallbackFallback(
-                notification.userId,
-                notification,
-                sendNotificationToWebSocketServer,
-              ).catch((error) => {
-                console.error(
-                  filepath,
-                  `Failed to send notification to user ${notification.userId}:`,
-                  error,
-                );
-              });
-            });
-          })
-          .catch((error) => {
-            console.error(
-              filepath,
-              'Failed to create/send notifications for session request:',
-              error,
-            );
-          });
+        try {
+          const notifications = await createNotificationsForSessionRequest(
+            newSession.id,
+          );
+          const notificationPromises = notifications.map((notification) =>
+            sendFCMWithCallbackFallback(
+              notification.userId,
+              notification,
+              sendNotificationToWebSocketServer,
+            ).catch((error) => {
+              console.error(
+                filepath,
+                `Failed to send notification to user ${notification.userId}:`,
+                error,
+              );
+            }),
+          );
+          await Promise.allSettled(notificationPromises);
+        } catch (error) {
+          console.error(
+            filepath,
+            'Failed to create/send notifications for session request:',
+            error,
+          );
+        }
 
         return res.status(201).json({ success: true, data: newSession });
       }

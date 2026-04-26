@@ -95,9 +95,10 @@ export default function ChatPage() {
         }
 
         // If sessions haven't loaded yet, trigger load and wait
-        if (sessions.length === 0) {
-          await loadSessions();
-          if (sessions.length === 0) {
+        let currentSessions = sessions;
+        if (currentSessions.length === 0) {
+          currentSessions = await loadSessions();
+          if (currentSessions.length === 0) {
             setIsInitializing(false);
             return;
           }
@@ -105,7 +106,7 @@ export default function ChatPage() {
 
         setIsInitializing(true);
         setSessionError(null);
-        const session = sessions.find((s) => s.id === sessionId);
+        const session = currentSessions.find((s) => s.id === sessionId);
         if (session) {
           // Only join if we're not already in this session
           if (currentSession?.id !== sessionId) {
