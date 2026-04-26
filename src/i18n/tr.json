@@ -419,5 +419,6 @@
   "homepage": "Ana sayfa",
   "startShopping": "Alışverişe başla",
   "popularCategories": "Popüler Kategoriler",
-  "moreCategories": "Diğer Kategoriler"
+  "moreCategories": "Diğer Kategoriler",
+  "chatSessionTakenByOther": "Bu oturum başka bir yönetici tarafından yürütülmektedir."
 }
