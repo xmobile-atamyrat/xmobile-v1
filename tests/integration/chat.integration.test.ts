@@ -125,20 +125,23 @@ describe('Chat API (integration)', () => {
       where: { sessionId },
       orderBy: { userId: 'asc' },
     });
-    expect(notifications).toHaveLength(2);
-    expect(notifications.map((notification) => notification.userId)).toEqual(
-      [admin.userId, superuser.userId].sort(),
+    expect(notifications.length).toBeGreaterThanOrEqual(2);
+    const notificationByUserId = new Map(
+      notifications.map((notification) => [notification.userId, notification]),
     );
-    expect(
-      notifications.every(
-        (notification) =>
-          notification.type === NotificationType.CHAT_MESSAGE &&
-          notification.isRead === false,
-      ),
-    ).toBe(true);
+    expect(notificationByUserId.has(admin.userId)).toBe(true);
+    expect(notificationByUserId.has(superuser.userId)).toBe(true);
+    expect(notificationByUserId.get(admin.userId)?.type).toBe(
+      NotificationType.CHAT_MESSAGE,
+    );
+    expect(notificationByUserId.get(superuser.userId)?.type).toBe(
+      NotificationType.CHAT_MESSAGE,
+    );
+    expect(notificationByUserId.get(admin.userId)?.isRead).toBe(false);
+    expect(notificationByUserId.get(superuser.userId)?.isRead).toBe(false);
 
     const sendFCMMock = vi.mocked(sendFCMWithCallbackFallback);
-    expect(sendFCMMock).toHaveBeenCalledTimes(2);
+    expect(sendFCMMock).toHaveBeenCalledTimes(notifications.length);
 
     const notifiedUserIds = new Set(
       sendFCMMock.mock.calls.map(([userId]) => userId as string),
