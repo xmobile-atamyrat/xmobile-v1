@@ -1,7 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { emailCheck, passwordCheck } from '@/pages/user/utils';
+import { emailCheck } from '@/pages/user/utils';
 import { signupClasses } from '@/styles/classMaps/user/signup';
 import { colors, interClassname, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -100,15 +100,16 @@ export default function Signup() {
             const { name, email, password, passwordConfirm, phoneNumber } =
               Object.fromEntries(formData.entries());
             const emailMessage = emailCheck(String(email));
-            const passwordMessage = passwordCheck(String(password));
+            // TEMP: disable password strength checks to allow any password creation.
+            // const passwordMessage = passwordCheck(String(password));
             if (emailMessage) {
               setErrorMessage(emailMessage);
               return;
             }
-            if (passwordMessage) {
-              setErrorMessage(passwordMessage);
-              return;
-            }
+            // if (passwordMessage) {
+            //   setErrorMessage(passwordMessage);
+            //   return;
+            // }
             if (passwordConfirm !== password) {
               setErrorMessage('errorPasswordConfirm');
               return;
