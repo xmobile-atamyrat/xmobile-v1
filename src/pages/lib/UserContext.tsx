@@ -39,19 +39,19 @@ export default function UserContextProvider({
     if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
       (async () => {
         try {
-          const {
-            data: { accessToken: fetchedAccessToken, user: fetchedUser },
-            success,
-          }: ResponseApi<{ accessToken: string; user: User }> = await (
-            await fetch('/api/user', {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-            })
-          ).json();
-          if (success) {
+          const response: ResponseApi<{ accessToken: string; user: User }> =
+            await (
+              await fetch('/api/user', {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+              })
+            ).json();
+          if (response.success && response.data) {
+            const { accessToken: fetchedAccessToken, user: fetchedUser } =
+              response.data;
             setAccessToken(fetchedAccessToken);
             setUser(fetchedUser);
           }

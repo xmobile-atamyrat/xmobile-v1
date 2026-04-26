@@ -142,15 +142,23 @@ export default function OrderDetailPage() {
   }, [id, notifications, markAsRead]);
 
   const handleCancelOrder = async (cancellationReason?: string) => {
-    if (!user || !accessToken || !id || typeof id !== 'string') return;
+    if (!id || typeof id !== 'string') return;
 
     try {
-      const result = await cancelUserOrder({
-        accessToken,
-        orderId: id,
-        cancellationReason,
-        fetchWithCreds,
-      });
+      const result = user
+        ? await cancelUserOrder({
+            accessToken,
+            orderId: id,
+            cancellationReason,
+            fetchWithCreds,
+          })
+        : await fetchWithoutCreds<UserOrder>(
+            `/api/guest/order/${id}?action=cancel`,
+            'PUT',
+            {
+              cancellationReason,
+            },
+          );
 
       if (result.success && result.data) {
         setOrder(result.data as typeof order);
@@ -178,7 +186,6 @@ export default function OrderDetailPage() {
 
   const canCancelOrder = () => {
     if (!order) return false;
-    if (!order.userId) return false;
     return (
       order.status !== 'COMPLETED' &&
       order.status !== 'USER_CANCELLED' &&

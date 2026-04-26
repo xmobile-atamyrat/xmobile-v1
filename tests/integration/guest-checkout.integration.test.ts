@@ -121,6 +121,78 @@ describe('Guest checkout flow (integration)', () => {
     expect(JSON.parse(emptyCart.res._getData() as string).data.length).toBe(0);
   });
 
+  it('allows guest to cancel own order and blocks other guest session', async () => {
+    const guestCartHandler = (await import('@/pages/api/guest/cart.page'))
+      .default;
+    const guestOrderHandler = (
+      await import('@/pages/api/guest/order/index.page')
+    ).default;
+    const guestOrderDetailHandler = (
+      await import('@/pages/api/guest/order/[id].page')
+    ).default;
+
+    const addGuestCart = createMocks({
+      method: 'POST',
+      url: '/api/guest/cart',
+      cookies: { GUEST_SESSION_ID: guestSessionId },
+      body: { productId, quantity: 2 },
+    });
+    await guestCartHandler(
+      addGuestCart.req as unknown as NextApiRequest,
+      addGuestCart.res as unknown as NextApiResponse,
+    );
+    expect(addGuestCart.res._getStatusCode()).toBe(200);
+
+    const createOrder = createMocks({
+      method: 'POST',
+      url: '/api/guest/order',
+      cookies: { GUEST_SESSION_ID: guestSessionId },
+      body: {
+        userName: 'Guest Cancel',
+        deliveryAddress: 'Guest cancel street',
+        deliveryPhone: '+7111',
+      },
+    });
+    await guestOrderHandler(
+      createOrder.req as unknown as NextApiRequest,
+      createOrder.res as unknown as NextApiResponse,
+    );
+    const createdOrder = JSON.parse(createOrder.res._getData() as string).data;
+    const guestOrderId = createdOrder.id as string;
+
+    const cancel = createMocks({
+      method: 'PUT',
+      url: `/api/guest/order/${guestOrderId}?action=cancel`,
+      query: { id: guestOrderId, action: 'cancel' },
+      cookies: { GUEST_SESSION_ID: guestSessionId },
+      body: { cancellationReason: 'changed mind' },
+    });
+    await guestOrderDetailHandler(
+      cancel.req as unknown as NextApiRequest,
+      cancel.res as unknown as NextApiResponse,
+    );
+    expect(cancel.res._getStatusCode()).toBe(200);
+    expect(JSON.parse(cancel.res._getData() as string).data.status).toBe(
+      'USER_CANCELLED',
+    );
+
+    const foreignCancel = createMocks({
+      method: 'PUT',
+      url: `/api/guest/order/${guestOrderId}?action=cancel`,
+      query: { id: guestOrderId, action: 'cancel' },
+      cookies: { GUEST_SESSION_ID: 'some-other-guest-session' },
+      body: { cancellationReason: 'malicious' },
+    });
+    await guestOrderDetailHandler(
+      foreignCancel.req as unknown as NextApiRequest,
+      foreignCancel.res as unknown as NextApiResponse,
+    );
+    expect(foreignCancel.res._getStatusCode()).toBe(400);
+    expect(
+      JSON.parse(foreignCancel.res._getData() as string).message,
+    ).toContain('Unauthorized');
+  });
+
   it('migrates guest cart and guest orders to authenticated user', async () => {
     const guestCartHandler = (await import('@/pages/api/guest/cart.page'))
       .default;
