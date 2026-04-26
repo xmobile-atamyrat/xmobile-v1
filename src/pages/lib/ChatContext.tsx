@@ -24,7 +24,7 @@ interface ChatContextProps {
   sendMessage: (content: string) => void;
   joinSession: (sessionId: string) => Promise<boolean>;
   loadMessages: (sessionId: string, cursorId?: string) => Promise<void>;
-  loadSessions: () => Promise<void>;
+  loadSessions: () => Promise<ChatSession[]>;
   createSession: () => Promise<ChatSession | null>;
   endSession: (sessionId: string) => Promise<void>;
   setSessions: React.Dispatch<React.SetStateAction<ChatSession[]>>;
@@ -43,7 +43,7 @@ const ChatContext = createContext<ChatContextProps>({
   sendMessage: () => {},
   joinSession: async () => false,
   loadMessages: async () => {},
-  loadSessions: async () => {},
+  loadSessions: async () => [],
   createSession: async () => null,
   endSession: async () => {},
   setSessions: () => {},
@@ -76,10 +76,12 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       const data = await res.json();
       if (data.success) {
         setSessions(data.data);
+        return data.data;
       }
     } catch (err) {
       console.error(err);
     }
+    return [];
   }, [accessToken]);
 
   const loadMessages = useCallback(
