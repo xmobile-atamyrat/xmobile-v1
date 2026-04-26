@@ -1,7 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { NotificationType, PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
 import { createStaffPrincipal } from './shared/staff-token';
@@ -10,6 +18,7 @@ import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
 } from './shared/worker-env';
+import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 
 describe('Chat API (integration)', () => {
   let prisma: PrismaClient;
@@ -26,6 +35,10 @@ describe('Chat API (integration)', () => {
     await prisma?.$disconnect();
     await resetPrismaGlobalSingleton();
     teardownIntegrationWorker();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('FREE user lists empty sessions then creates one (201)', async () => {
@@ -88,6 +101,60 @@ describe('Chat API (integration)', () => {
     expect(second.res._getStatusCode()).toBe(409);
 
     await prisma.chatSession.delete({ where: { id: sessionId } });
+  });
+
+  it('FREE session creation creates staff notifications and triggers FCM callback', async () => {
+    const free = await signupTestUser('chat-notify');
+    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const superuser = await createStaffPrincipal(prisma, UserRole.SUPERUSER);
+    const handler = (await import('@/pages/api/chat/session.page')).default;
+
+    const post = createMocks({
+      method: 'POST',
+      url: '/api/chat/session',
+      headers: { authorization: `Bearer ${free.accessToken}` },
+    });
+    await handler(
+      post.req as unknown as NextApiRequest,
+      post.res as unknown as NextApiResponse,
+    );
+    expect(post.res._getStatusCode()).toBe(201);
+    const sessionId = JSON.parse(post.res._getData() as string).data.id;
+
+    const notifications = await prisma.inAppNotification.findMany({
+      where: { sessionId },
+      orderBy: { userId: 'asc' },
+    });
+    expect(notifications).toHaveLength(2);
+    expect(notifications.map((notification) => notification.userId)).toEqual(
+      [admin.userId, superuser.userId].sort(),
+    );
+    expect(
+      notifications.every(
+        (notification) =>
+          notification.type === NotificationType.CHAT_MESSAGE &&
+          notification.isRead === false,
+      ),
+    ).toBe(true);
+
+    const sendFCMMock = vi.mocked(sendFCMWithCallbackFallback);
+    expect(sendFCMMock).toHaveBeenCalledTimes(2);
+
+    const notifiedUserIds = new Set(
+      sendFCMMock.mock.calls.map(([userId]) => userId as string),
+    );
+    expect(notifiedUserIds).toEqual(new Set([admin.userId, superuser.userId]));
+
+    const notifiedIdsFromCalls = new Set(
+      sendFCMMock.mock.calls.map(([, notification]) => notification.id),
+    );
+    expect(notifiedIdsFromCalls).toEqual(
+      new Set(notifications.map((notification) => notification.id)),
+    );
+
+    await prisma.chatSession.delete({ where: { id: sessionId } });
+    await prisma.user.delete({ where: { id: admin.userId } });
+    await prisma.user.delete({ where: { id: superuser.userId } });
   });
 
   it('ADMIN joins PENDING session via sessionActions', async () => {
