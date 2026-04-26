@@ -1,5 +1,5 @@
 import Layout from '@/pages/components/Layout';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { checkoutSuccessClasses } from '@/styles/classMaps/cart/checkoutSuccess';
@@ -35,17 +35,30 @@ export default function CheckoutSuccessPage() {
       }
 
       try {
-        const { success, data } = await fetchWithCreds<{
-          orders: Array<{ orderNumber: string }>;
-          pagination?: unknown;
-        }>({
-          accessToken,
-          path: '/api/order?limit=1', // get the last order
-          method: 'GET',
-        });
+        if (user && accessToken) {
+          const { success, data } = await fetchWithCreds<{
+            orders: Array<{ orderNumber: string }>;
+            pagination?: unknown;
+          }>({
+            accessToken,
+            path: '/api/order?limit=1', // get the last order
+            method: 'GET',
+          });
 
-        if (success && data?.orders && data.orders.length > 0) {
-          setOrderNumber(data.orders[0].orderNumber);
+          if (success && data?.orders && data.orders.length > 0) {
+            setOrderNumber(data.orders[0].orderNumber);
+          }
+        } else {
+          const guestResp = await fetchWithoutCreds<
+            Array<{ orderNumber: string }>
+          >('/api/guest/order', 'GET');
+          if (
+            guestResp.success &&
+            guestResp.data &&
+            guestResp.data.length > 0
+          ) {
+            setOrderNumber(guestResp.data[0].orderNumber);
+          }
         }
       } catch (error) {
         console.error('Error fetching order:', error);
