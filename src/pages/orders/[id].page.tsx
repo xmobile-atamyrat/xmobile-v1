@@ -1,6 +1,6 @@
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -74,15 +74,20 @@ export default function OrderDetailPage() {
   const { notifications, markAsRead } = useNotificationContext();
 
   const fetchOrder = async () => {
-    if (!accessToken || !id || typeof id !== 'string') return;
+    if (!id || typeof id !== 'string') return;
 
     setLoading(true);
     try {
-      const result = await getUserOrderDetail({
-        accessToken,
-        orderId: id,
-        fetchWithCreds,
-      });
+      const result = user
+        ? await getUserOrderDetail({
+            accessToken,
+            orderId: id,
+            fetchWithCreds,
+          })
+        : await fetchWithoutCreds<typeof order>(
+            `/api/guest/order/${id}`,
+            'GET',
+          );
 
       if (result.success && result.data) {
         setOrder(result.data as typeof order);
@@ -106,12 +111,8 @@ export default function OrderDetailPage() {
   };
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
     // Redirect admins to admin order detail page
-    if (user.grade === 'ADMIN' || user.grade === 'SUPERUSER') {
+    if (user && (user.grade === 'ADMIN' || user.grade === 'SUPERUSER')) {
       if (id && typeof id === 'string') {
         router.push(`/orders/admin/${id}`);
       }
@@ -141,7 +142,7 @@ export default function OrderDetailPage() {
   }, [id, notifications, markAsRead]);
 
   const handleCancelOrder = async (cancellationReason?: string) => {
-    if (!accessToken || !id || typeof id !== 'string') return;
+    if (!user || !accessToken || !id || typeof id !== 'string') return;
 
     try {
       const result = await cancelUserOrder({
@@ -177,6 +178,7 @@ export default function OrderDetailPage() {
 
   const canCancelOrder = () => {
     if (!order) return false;
+    if (!order.userId) return false;
     return (
       order.status !== 'COMPLETED' &&
       order.status !== 'USER_CANCELLED' &&

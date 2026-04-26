@@ -27,6 +27,14 @@ export interface CreateOrderData {
   updateAddress?: boolean;
 }
 
+export interface CreateGuestOrderData {
+  guestSessionId: string;
+  deliveryAddress: string;
+  deliveryPhone: string;
+  notes?: string;
+  userName?: string;
+}
+
 export interface GetOrdersFilters {
   userId?: string; // For filtering user's own orders
   searchKeyword?: string;
@@ -35,6 +43,36 @@ export interface GetOrdersFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+async function buildOrderItemsData(
+  cartItems: Array<{
+    quantity: number;
+    productId: string;
+    product: { name: string; price: string | null };
+  }>,
+) {
+  return Promise.all(
+    cartItems.map(async (item) => {
+      let productPrice = '0';
+      if (item.product.price) {
+        const priceMatch = item.product.price.match(squareBracketRegex);
+        if (priceMatch) {
+          const priceId = priceMatch[1];
+          const price = await getPrice(priceId);
+          if (price && price.priceInTmt) {
+            productPrice = price.priceInTmt;
+          }
+        }
+      }
+      return {
+        quantity: item.quantity,
+        productName: item.product.name,
+        productPrice,
+        productId: item.productId,
+      };
+    }),
+  );
 }
 
 /**
@@ -72,31 +110,10 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
   // Generate order number
   const orderNumber = await generateOrderNumber();
 
+  const orderItemsData = await buildOrderItemsData(cartItems);
+
   // Create order with items in a transaction
   const order = await dbClient.$transaction(async (tx) => {
-    // Extract actual price values for order items
-    const orderItemsData = await Promise.all(
-      cartItems.map(async (item) => {
-        let productPrice = '0';
-        if (item.product.price) {
-          const priceMatch = item.product.price.match(squareBracketRegex);
-          if (priceMatch) {
-            const priceId = priceMatch[1];
-            const price = await getPrice(priceId);
-            if (price && price.priceInTmt) {
-              productPrice = price.priceInTmt;
-            }
-          }
-        }
-        return {
-          quantity: item.quantity,
-          productName: item.product.name,
-          productPrice,
-          productId: item.productId,
-        };
-      }),
-    );
-
     // Create the order
     const newOrder = await tx.userOrder.create({
       data: {
@@ -170,6 +187,181 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     });
 
   return order;
+}
+
+export async function createGuestOrder(
+  data: CreateGuestOrderData,
+): Promise<UserOrder> {
+  const { guestSessionId, deliveryAddress, deliveryPhone, notes, userName } =
+    data;
+
+  const cartItems = await dbClient.guestCartItem.findMany({
+    where: {
+      guestSessionId,
+      product: { deletedAt: null },
+    },
+    include: { product: true },
+  });
+
+  if (cartItems.length === 0) {
+    throw new Error('Cart is empty');
+  }
+
+  const totalPrice = await calculateTotalPrice(cartItems);
+  const orderNumber = await generateOrderNumber();
+  const orderItemsData = await buildOrderItemsData(cartItems);
+
+  const order = await dbClient.$transaction(async (tx) => {
+    const newOrder = await tx.userOrder.create({
+      data: {
+        orderNumber,
+        userId: null,
+        guestSessionId,
+        userName,
+        deliveryAddress,
+        deliveryPhone,
+        notes,
+        totalPrice,
+        status: 'PENDING',
+        items: {
+          create: orderItemsData,
+        },
+      },
+      include: { items: true },
+    });
+
+    await tx.guestCartItem.deleteMany({
+      where: { guestSessionId },
+    });
+
+    return newOrder;
+  });
+
+  notifyOrderCreated(order).catch((error) => {
+    console.error(
+      '[OrderService] Failed to send Slack notification for guest order creation:',
+      error,
+    );
+  });
+
+  createNotificationsForAdmins(
+    order.id,
+    order.orderNumber,
+    'NEW_ORDER',
+    order.userName || 'Guest',
+  )
+    .then((notifications) => {
+      notifications.forEach((notification) => {
+        sendFCMWithCallbackFallback(
+          notification.userId,
+          notification,
+          sendNotificationToWebSocketServer,
+        ).catch((error) => {
+          console.error(
+            `[OrderService] Failed to send notification to user ${notification.userId}:`,
+            error,
+          );
+        });
+      });
+    })
+    .catch((error) => {
+      console.error(
+        '[OrderService] Failed to create/send admin notifications for guest order:',
+        error,
+      );
+    });
+
+  return order;
+}
+
+export async function getGuestOrders(guestSessionId: string) {
+  return dbClient.userOrder.findMany({
+    where: { guestSessionId, userId: null },
+    include: {
+      items: {
+        include: { product: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getGuestOrderById(
+  orderId: string,
+  guestSessionId: string,
+) {
+  return dbClient.userOrder.findFirst({
+    where: {
+      id: orderId,
+      guestSessionId,
+      userId: null,
+    },
+    include: {
+      items: {
+        include: { product: true },
+      },
+    },
+  });
+}
+
+export async function migrateGuestDataToUser(
+  userId: string,
+  guestSessionId: string,
+): Promise<void> {
+  const [guestItems, userItems, user] = await Promise.all([
+    dbClient.guestCartItem.findMany({
+      where: { guestSessionId },
+    }),
+    dbClient.cartItem.findMany({
+      where: { userId },
+    }),
+    dbClient.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    }),
+  ]);
+
+  if (!guestItems.length && !user) return;
+
+  const userItemByProduct = new Map(
+    userItems.map((item) => [item.productId, item]),
+  );
+
+  await dbClient.$transaction(async (tx) => {
+    await Promise.all(
+      guestItems.map(async (guestItem) => {
+        const existing = userItemByProduct.get(guestItem.productId);
+        if (existing) {
+          // Requirement: overwrite quantity if product already exists in user cart.
+          await tx.cartItem.update({
+            where: { id: existing.id },
+            data: { quantity: guestItem.quantity },
+          });
+          return;
+        }
+        await tx.cartItem.create({
+          data: {
+            userId,
+            productId: guestItem.productId,
+            quantity: guestItem.quantity,
+          },
+        });
+      }),
+    );
+
+    await tx.userOrder.updateMany({
+      where: { guestSessionId, userId: null },
+      data: {
+        userId,
+        userName: user?.name,
+        userEmail: user?.email,
+      },
+    });
+
+    await tx.guestCartItem.deleteMany({
+      where: { guestSessionId },
+    });
+  });
 }
 
 /**
