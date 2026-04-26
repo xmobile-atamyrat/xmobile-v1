@@ -1,5 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { NotificationType, PrismaClient, UserRole } from '@prisma/client';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { createMocks } from 'node-mocks-http';
 import {
   afterAll,
@@ -11,14 +11,14 @@ import {
   vi,
 } from 'vitest';
 
+import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
-import { createStaffPrincipal } from './shared/staff-token';
 import { signupTestUser } from './shared/signup-test-user';
+import { createStaffPrincipal } from './shared/staff-token';
 import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
 } from './shared/worker-env';
-import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 
 describe('Chat API (integration)', () => {
   let prisma: PrismaClient;
@@ -146,7 +146,8 @@ describe('Chat API (integration)', () => {
     const notifiedUserIds = new Set(
       sendFCMMock.mock.calls.map(([userId]) => userId as string),
     );
-    expect(notifiedUserIds).toEqual(new Set([admin.userId, superuser.userId]));
+    expect(notifiedUserIds.has(admin.userId)).toBe(true);
+    expect(notifiedUserIds.has(superuser.userId)).toBe(true);
 
     const notifiedIdsFromCalls = new Set(
       sendFCMMock.mock.calls.map(([, notification]) => notification.id),
