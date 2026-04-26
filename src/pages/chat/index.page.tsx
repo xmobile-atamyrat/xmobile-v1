@@ -94,15 +94,19 @@ export default function ChatPage() {
           return;
         }
 
-        // If sessions haven't loaded yet, wait for them
-        if (sessions.length === 0) {
-          // Sessions are still loading, keep initializing state
-          return;
+        // If sessions haven't loaded yet, trigger load and wait
+        let currentSessions = sessions;
+        if (currentSessions.length === 0) {
+          currentSessions = await loadSessions();
+          if (currentSessions.length === 0) {
+            setIsInitializing(false);
+            return;
+          }
         }
 
         setIsInitializing(true);
         setSessionError(null);
-        const session = sessions.find((s) => s.id === sessionId);
+        const session = currentSessions.find((s) => s.id === sessionId);
         if (session) {
           // Only join if we're not already in this session
           if (currentSession?.id !== sessionId) {

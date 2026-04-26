@@ -363,6 +363,53 @@ export async function createNotificationsForAdmins(
 }
 
 /**
+ * Creates notifications for all superusers when a new chat session request is created
+ */
+export async function createNotificationsForSessionRequest(
+  sessionId: string,
+): Promise<InAppNotification[]> {
+  try {
+    const adminUserIds = await getAllAdminUsers();
+
+    if (adminUserIds.length === 0) {
+      return [];
+    }
+
+    const session = await dbClient.chatSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        users: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const userName = session?.users?.[0]?.name || 'User';
+
+    const createdNotifications = await dbClient.$transaction(async (tx) => {
+      const notificationPromises = adminUserIds.map((adminId) =>
+        tx.inAppNotification.create({
+          data: {
+            userId: adminId,
+            sessionId,
+            type: NotificationType.CHAT_MESSAGE,
+            title: 'New chat request',
+            content: `${userName} wants to start a chat`,
+            isRead: false,
+          },
+        }),
+      );
+      return Promise.all(notificationPromises);
+    });
+
+    return createdNotifications as InAppNotification[];
+  } catch (error) {
+    console.error('createNotificationsForSessionRequest error:', error);
+    return [];
+  }
+}
+
+/**
  * Sends notifications to WebSocket server via HTTP endpoint
  * This is used when calling from API routes (which run in a different process)
  */
