@@ -547,6 +547,82 @@ export async function cancelOrderByUser(
   return updatedOrder;
 }
 
+export async function cancelGuestOrderByUser(
+  orderId: string,
+  guestSessionId: string,
+  cancellationReason?: string,
+): Promise<UserOrder> {
+  const order = await dbClient.userOrder.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  if (order.userId) {
+    throw new Error('Unauthorized: Not a guest order');
+  }
+
+  if (order.guestSessionId !== guestSessionId) {
+    throw new Error('Unauthorized: Order does not belong to guest session');
+  }
+
+  if (order.status === 'COMPLETED') {
+    throw new Error('Cannot cancel a completed order');
+  }
+
+  if (order.status === 'USER_CANCELLED' || order.status === 'ADMIN_CANCELLED') {
+    throw new Error('Order is already cancelled');
+  }
+
+  const updatedOrder = await dbClient.userOrder.update({
+    where: { id: orderId },
+    data: {
+      status: 'USER_CANCELLED',
+      cancelledAt: new Date(),
+      cancelledBy: guestSessionId,
+      cancellationReason,
+    },
+  });
+
+  notifyOrderCancelledByUser(updatedOrder).catch((error) => {
+    console.error(
+      '[OrderService] Failed to send Slack notification for guest order cancellation:',
+      error,
+    );
+  });
+
+  createNotificationsForAdmins(
+    updatedOrder.id,
+    updatedOrder.orderNumber,
+    'ORDER_CANCELLED',
+    updatedOrder.userName || 'Guest',
+  )
+    .then((notifications) => {
+      notifications.forEach((notification) => {
+        sendFCMWithCallbackFallback(
+          notification.userId,
+          notification,
+          sendNotificationToWebSocketServer,
+        ).catch((error) => {
+          console.error(
+            `[OrderService] Failed to send notification to user ${notification.userId}:`,
+            error,
+          );
+        });
+      });
+    })
+    .catch((error) => {
+      console.error(
+        '[OrderService] Failed to create/send admin notifications for guest order cancellation:',
+        error,
+      );
+    });
+
+  return updatedOrder;
+}
+
 /**
  * Updates order status (admin only)
  */
