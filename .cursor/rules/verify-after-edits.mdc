@@ -28,3 +28,21 @@ alwaysApply: true
 If you only changed a few files and want a faster loop, you may run ESLint on those paths instead of `.`, but **`npx eslint --fix .`** is what pre-commit applies and is the sure match.
 
 Fix any reported issues in the same pass. Do not skip these checks when you have made substantive edits.
+
+## Mobile changes (React Native WebView app)
+
+If you touched anything under `mobile/`, you must also run checks in that directory before marking work done:
+
+1. **Mobile Typecheck**
+
+   ```bash
+   cd mobile && npx tsc --noEmit
+   ```
+
+2. **Mobile ESLint**
+
+   ```bash
+   cd mobile && yarn lint
+   ```
+
+These are required in addition to the root repo checks above whenever `mobile/` files were edited.
