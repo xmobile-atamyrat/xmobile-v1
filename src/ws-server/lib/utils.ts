@@ -10,6 +10,7 @@ import {
   NotificationType,
   User,
   UserOrderStatus,
+  UserRole,
 } from '@prisma/client';
 import { WebSocket } from 'ws';
 
@@ -34,11 +35,11 @@ export function sendMessage(
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
-  userGrade?: string,
+  userGrade?: AuthenticatedConnection['userGrade'],
 ): Promise<SessionVerificationResult> {
   let session: ChatSessionWithUsers | null;
 
-  if (userGrade === 'SUPERUSER') {
+  if (userGrade === UserRole.SUPERUSER) {
     session = (await dbClient.chatSession.findUnique({
       where: { id: sessionId },
       include: { users: true },
