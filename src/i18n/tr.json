@@ -419,5 +419,9 @@
   "homepage": "Ana sayfa",
   "startShopping": "Alışverişe başla",
   "popularCategories": "Popüler Kategoriler",
-  "moreCategories": "Diğer Kategoriler"
+  "moreCategories": "Diğer Kategoriler",
+  "chatClosedChats": "Kapatılan Sohbetler",
+  "chatNoClosedChats": "Kapatılan sohbet yok.",
+  "chatReadOnlyMode": "Bu sohbeti salt okunur modda görüntülüyorsunuz."
 }
+

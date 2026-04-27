@@ -421,5 +421,8 @@
   "homepage": "Baş sahypa",
   "startShopping": "Söwda başla",
   "popularCategories": "Meşhur Kategoriýalar",
-  "moreCategories": "Başga kategoriýalar"
+  "moreCategories": "Başga kategoriýalar",
+  "chatClosedChats": "Ýapyk çatlar",
+  "chatNoClosedChats": "Ýapyk çat ýok.",
+  "chatReadOnlyMode": "Siz bu çaty diňe okamak rejiminde görýärsiňiz."
 }

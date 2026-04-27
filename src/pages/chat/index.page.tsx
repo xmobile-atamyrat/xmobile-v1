@@ -59,6 +59,9 @@ export default function ChatPage() {
   const messagesLoadedRef = useRef<string | null>(null);
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+  const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
+  const canManageSession =
+    isAdmin && isParticipant && currentSession?.status !== 'CLOSED';
 
   // Redirect to sign in if not authenticated
   useEffect(() => {
@@ -327,7 +330,7 @@ export default function ChatPage() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isAdmin && (
+            {canManageSession && (
               <Button
                 size="small"
                 variant="text"
