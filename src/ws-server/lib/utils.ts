@@ -5,8 +5,21 @@ import {
   sendFCMNotificationToUser,
 } from '@/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
-import { NotificationType, UserOrderStatus } from '@prisma/client';
+import {
+  ChatSession,
+  NotificationType,
+  User,
+  UserOrderStatus,
+  UserRole,
+} from '@prisma/client';
 import { WebSocket } from 'ws';
+
+export type ChatSessionWithUsers = ChatSession & { users: User[] };
+
+export interface SessionVerificationResult {
+  session: ChatSessionWithUsers | null;
+  isParticipant: boolean;
+}
 
 export function sendMessage(
   safeConnection: AuthenticatedConnection,
@@ -22,16 +35,29 @@ export function sendMessage(
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
-) {
-  const session = await dbClient.chatSession.findFirst({
-    where: {
-      id: sessionId,
-      users: { some: { id: userId } },
-    },
-    include: { users: true },
-  });
+  userGrade?: AuthenticatedConnection['userGrade'],
+): Promise<SessionVerificationResult> {
+  let session: ChatSessionWithUsers | null;
 
-  return session;
+  if (userGrade === UserRole.SUPERUSER) {
+    session = (await dbClient.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { users: true },
+    })) as ChatSessionWithUsers | null;
+  } else {
+    session = (await dbClient.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        users: { some: { id: userId } },
+      },
+      include: { users: true },
+    })) as ChatSessionWithUsers | null;
+  }
+
+  const isParticipant =
+    session != null && session.users.some((u) => u.id === userId);
+
+  return { session, isParticipant };
 }
 
 /**

@@ -367,7 +367,6 @@
   "privacyPolicyCollectChat1": "Сообщения чата (содержимое, временные метки)",
   "privacyPolicyCollectChat2": "История сессий поддержки",
   "privacyPolicyCollectChat3": "Коммуникации с оператором/представителем службы поддержки",
-
   "privacyPolicyPurposeTitle": "Как мы используем вашу информацию",
   "privacyPolicyPurpose1": "Для обеспечения и улучшения основной функциональности приложения",
   "privacyPolicyPurpose2": "Для создания и управления вашим аккаунтом",
@@ -422,5 +421,8 @@
   "homepage": "Главная",
   "startShopping": "Начать покупки",
   "popularCategories": "Популярные категории",
-  "moreCategories": "Другие категории"
+  "moreCategories": "Другие категории",
+  "chatClosedChats": "Закрытые чаты",
+  "chatNoClosedChats": "Нет закрытых чатов.",
+  "chatReadOnlyMode": "Вы просматриваете этот чат в режиме только для чтения."
 }
