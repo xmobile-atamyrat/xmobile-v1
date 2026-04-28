@@ -420,6 +420,7 @@
   "startShopping": "Alışverişe başla",
   "popularCategories": "Popüler Kategoriler",
   "moreCategories": "Diğer Kategoriler",
+  "chatSessionTakenByOther": "Bu oturum başka bir yönetici tarafından yürütülmektedir.",
   "chatClosedChats": "Kapatılan Sohbetler",
   "chatNoClosedChats": "Kapatılan sohbet yok.",
   "chatReadOnlyMode": "Bu sohbeti salt okunur modda görüntülüyorsunuz."

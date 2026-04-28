@@ -105,6 +105,7 @@ model Product {
   brandId         String?
 
   cartItems       CartItem[]
+  guestCartItems  GuestCartItem[]
   userOrderItems  UserOrderItem[]
 
   tags            String[]
@@ -117,6 +118,21 @@ model Product {
 
   @@index([brandId])
   @@index([deletedAt])
+}
+
+model GuestCartItem {
+  id              String      @id @default(uuid())
+  guestSessionId  String
+  quantity        Int         @default(1)
+
+  product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
+  productId       String
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([guestSessionId, productId])
+  @@index([guestSessionId])
 }
 
 model Brand {
@@ -390,6 +406,7 @@ model UserOrder {
   
   user                User?             @relation(references: [id], fields: [userId], onDelete: SetNull)
   userId              String?
+  guestSessionId      String?
   
   // User snapshot fields for analytics even if user is deleted
   userName            String?
@@ -412,6 +429,7 @@ model UserOrder {
   updatedAt           DateTime          @updatedAt
   
   @@index([userId])
+  @@index([guestSessionId])
   @@index([status])
   @@index([createdAt])
   @@index([userName])

@@ -1,5 +1,5 @@
 import Layout from '@/pages/components/Layout';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -79,10 +79,48 @@ export default function OrdersPage() {
   };
 
   const fetchOrders = async () => {
-    if (!accessToken) return;
-
     setLoading(true);
     try {
+      if (!user) {
+        const guestResp = await fetchWithoutCreds<UserOrder[]>(
+          '/api/guest/order',
+          'GET',
+        );
+        if (!guestResp.success) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: guestResp.message || 'fetchOrdersError',
+            severity: 'error',
+          });
+          return;
+        }
+
+        let guestOrders = guestResp.data || [];
+        if (platform === 'mobile') {
+          if (activeTab === 'ongoing') {
+            guestOrders = guestOrders.filter(
+              (o) => o.status === 'PENDING' || o.status === 'IN_PROGRESS',
+            );
+          } else {
+            guestOrders = guestOrders.filter(
+              (o) =>
+                o.status === 'COMPLETED' ||
+                o.status === 'USER_CANCELLED' ||
+                o.status === 'ADMIN_CANCELLED',
+            );
+          }
+        } else if (status) {
+          guestOrders = guestOrders.filter((o) => o.status === status);
+        }
+
+        setOrders(guestOrders);
+        setTotalPages(1);
+        setTotal(guestOrders.length);
+        return;
+      }
+
+      if (!accessToken) return;
+
       const statusFilter = getStatusFilter();
       const result = await getUserOrdersList({
         accessToken,
@@ -136,20 +174,14 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accessToken, page, limit]);
 
   // Fetch orders when filters/tabs change
   useEffect(() => {
-    if (user && accessToken) {
-      setPage(1);
-      fetchOrders();
-    }
+    setPage(1);
+    fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, status, dateFrom, dateTo]);
 

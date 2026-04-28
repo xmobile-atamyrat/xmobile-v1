@@ -310,32 +310,30 @@ export default function Profile() {
                 )}
               </Box>
             )}
-            {user && (
-              <>
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={handleToggleMyOrders}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
+            <>
+              <Button
+                className={profileClasses.boxes.sectionOrders[platform]}
+                disableRipple
+                onClick={handleToggleMyOrders}
+                variant={platform === 'web' ? 'outlined' : 'text'}
+                sx={{
+                  '&:hover': { backgroundColor: colors.lightRed },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  src="/orders/my_order_icon.svg"
+                  className={profileClasses.sectionIcon[platform]}
+                />
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                 >
-                  <CardMedia
-                    component="img"
-                    src="/orders/my_order_icon.svg"
-                    className={profileClasses.sectionIcon[platform]}
-                  />
-                  <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {isAdmin ? t('userOrders') : t('myOrders')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-              </>
-            )}
+                  {isAdmin ? t('userOrders') : t('myOrders')}
+                </Typography>
+                <ArrowForwardIos className={profileClasses.icons[platform]} />
+              </Button>
+              <Divider className={profileClasses.divider[platform]} />
+            </>
             <Button
               className={profileClasses.boxes.sectionOrders[platform]}
               disableRipple

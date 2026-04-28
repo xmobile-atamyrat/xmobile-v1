@@ -1,7 +1,6 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ShoppingCart } from '@mui/icons-material';
-import LoginIcon from '@mui/icons-material/Login';
 import {
   Alert,
   Box,
@@ -12,10 +11,9 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Suspense, useCallback, useState } from 'react';
 
-import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
@@ -23,7 +21,6 @@ import { img, interClassname } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useRouter } from 'next/router';
 
 export default function AddToCart({
   productId,
@@ -41,22 +38,8 @@ export default function AddToCart({
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
-  const router = useRouter();
 
   const addCartItems = async () => {
-    if (!user) {
-      router.push('/user/sign_in_up');
-    }
-    const userId = user?.id;
-
-    if (userId == null) {
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'userNotFound',
-        severity: 'warning',
-      });
-      return;
-    }
     if (price.includes('null')) {
       setSnackbarOpen(true);
       setSnackbarMessage({
@@ -66,16 +49,21 @@ export default function AddToCart({
       return;
     }
     try {
-      const data = await fetchWithCreds({
-        accessToken,
-        path: '/api/cart',
-        method: 'POST',
-        body: {
-          userId,
-          productId,
-          quantity,
-        },
-      });
+      const data = user
+        ? await fetchWithCreds({
+            accessToken,
+            path: '/api/cart',
+            method: 'POST',
+            body: {
+              userId: user.id,
+              productId,
+              quantity,
+            },
+          })
+        : await fetchWithoutCreds('/api/guest/cart', 'POST', {
+            productId,
+            quantity,
+          });
 
       if (data.success) {
         setSnackbarOpen(true);
@@ -97,14 +85,18 @@ export default function AddToCart({
 
   const deleteCartItems = async (cartId: string) => {
     try {
-      const data = await fetchWithCreds({
-        accessToken,
-        path: '/api/cart',
-        method: 'DELETE',
-        body: {
-          id: cartId,
-        },
-      });
+      const data = user
+        ? await fetchWithCreds({
+            accessToken,
+            path: '/api/cart',
+            method: 'DELETE',
+            body: {
+              id: cartId,
+            },
+          })
+        : await fetchWithoutCreds('/api/guest/cart', 'DELETE', {
+            id: cartId,
+          });
 
       if (data.success) {
         setSnackbarOpen(true);
@@ -128,15 +120,20 @@ export default function AddToCart({
   const editCartItems = useCallback(
     debounce(async (itemQuantity: number) => {
       try {
-        const data = await fetchWithCreds({
-          accessToken,
-          path: '/api/cart',
-          method: 'PUT',
-          body: {
-            id: cartItemId,
-            quantity: itemQuantity,
-          },
-        });
+        const data = user
+          ? await fetchWithCreds({
+              accessToken,
+              path: '/api/cart',
+              method: 'PUT',
+              body: {
+                id: cartItemId,
+                quantity: itemQuantity,
+              },
+            })
+          : await fetchWithoutCreds('/api/guest/cart', 'PUT', {
+              id: cartItemId,
+              quantity: itemQuantity,
+            });
 
         if (data.success) {
           setSnackbarOpen(true);
@@ -348,12 +345,6 @@ export default function AddToCart({
           className="w-100%"
         >
           {snackbarMessage?.message && t(snackbarMessage.message)}
-          {snackbarMessage?.message === 'userNotFound' && (
-            <Link href="/user/signin">
-              {`. ${t('signin')}`}
-              <LoginIcon />
-            </Link>
-          )}
         </Alert>
       </Snackbar>
     </Box>
