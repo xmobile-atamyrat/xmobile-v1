@@ -406,7 +406,7 @@
   "categoryHierarchyLoadError": "Kategoriýalary ýüklemek başa barmady.",
   "categoryHierarchyUpdateSuccess": "Kategoriýa täzelendi.",
   "categoryHierarchyUpdateSuccessPopularFull": "Kategoriýa täzelendi. Baş sahypada 7 çenli meşhur kategoriýa we doly ini «Has köp» hatary görkezilýär.",
-  "categoryHierarchyPopularLimitReached": "Iň köp 7 sany ýokarky derejeli kategoriýany meşhur bellemek mümkin. Birini goşmak üçin birini aýyryň.",
+  "categoryHierarchyPopularLimitReached": "Iň köp 7 sany ýokarky derejeli kategoriýany meşhur bellemek mümkin. Birini aýyrmak üçin bellikden aýyryň.",
   "categoryPopularLimitTooltip": "Baş sahypada iň köp 7 meşhur kategoriýa.",
   "categoryHierarchyUpdateError": "Kategoriýany täzeläp bolmady.",
   "categoryCreated": "Kategoriýa üstünlikli döredildi!",
@@ -421,5 +421,8 @@
   "homepage": "Baş sahypa",
   "startShopping": "Söwda başla",
   "popularCategories": "Meşhur Kategoriýalar",
-  "moreCategories": "Başga kategoriýalar"
+  "moreCategories": "Başga kategoriýalar",
+  "chatClosedChats": "Ýapylan Çatlar",
+  "chatNoClosedChats": "Ýapylan çat ýok.",
+  "chatReadOnlyMode": "Siz bu çaty diňe okamaga rugsatly ýagdaýda görýärsiňiz."
 }

@@ -5,8 +5,21 @@ import {
   sendFCMNotificationToUser,
 } from '@/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
-import { NotificationType, UserOrderStatus } from '@prisma/client';
+import {
+  ChatSession,
+  NotificationType,
+  User,
+  UserOrderStatus,
+  UserRole,
+} from '@prisma/client';
 import { WebSocket } from 'ws';
+
+export type ChatSessionWithUsers = ChatSession & { users: User[] };
+
+export interface SessionVerificationResult {
+  session: ChatSessionWithUsers | null;
+  isParticipant: boolean;
+}
 
 export function sendMessage(
   safeConnection: AuthenticatedConnection,
@@ -22,16 +35,29 @@ export function sendMessage(
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
-) {
-  const session = await dbClient.chatSession.findFirst({
-    where: {
-      id: sessionId,
-      users: { some: { id: userId } },
-    },
-    include: { users: true },
-  });
+  userGrade?: AuthenticatedConnection['userGrade'],
+): Promise<SessionVerificationResult> {
+  let session: ChatSessionWithUsers | null;
 
-  return session;
+  if (userGrade === UserRole.SUPERUSER) {
+    session = (await dbClient.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { users: true },
+    })) as ChatSessionWithUsers | null;
+  } else {
+    session = (await dbClient.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        users: { some: { id: userId } },
+      },
+      include: { users: true },
+    })) as ChatSessionWithUsers | null;
+  }
+
+  const isParticipant =
+    session != null && session.users.some((u) => u.id === userId);
+
+  return { session, isParticipant };
 }
 
 /**
@@ -358,6 +384,53 @@ export async function createNotificationsForAdmins(
     return createdNotifications as InAppNotification[];
   } catch (error) {
     console.error('createNotificationsForAdmins error:', error);
+    return [];
+  }
+}
+
+/**
+ * Creates notifications for all superusers when a new chat session request is created
+ */
+export async function createNotificationsForSessionRequest(
+  sessionId: string,
+): Promise<InAppNotification[]> {
+  try {
+    const adminUserIds = await getAllAdminUsers();
+
+    if (adminUserIds.length === 0) {
+      return [];
+    }
+
+    const session = await dbClient.chatSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        users: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const userName = session?.users?.[0]?.name || 'User';
+
+    const createdNotifications = await dbClient.$transaction(async (tx) => {
+      const notificationPromises = adminUserIds.map((adminId) =>
+        tx.inAppNotification.create({
+          data: {
+            userId: adminId,
+            sessionId,
+            type: NotificationType.CHAT_MESSAGE,
+            title: 'New chat request',
+            content: `${userName} wants to start a chat`,
+            isRead: false,
+          },
+        }),
+      );
+      return Promise.all(notificationPromises);
+    });
+
+    return createdNotifications as InAppNotification[];
+  } catch (error) {
+    console.error('createNotificationsForSessionRequest error:', error);
     return [];
   }
 }
