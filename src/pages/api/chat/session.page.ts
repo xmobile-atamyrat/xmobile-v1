@@ -98,7 +98,7 @@ async function handler(
 
         const newSession = await dbClient.chatSession.create({
           data: {
-            status: 'PENDING',
+            status: 'ACTIVE',
             users: {
               connect: {
                 id: userId,
