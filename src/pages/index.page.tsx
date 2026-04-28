@@ -284,7 +284,7 @@ export default function Home({
           )}
         </Box>
         {SearchBar({
-          searchKeyword,
+          searchKeyword: searchKeyword ?? '',
           searchPlaceholder: t('search'),
           setSearchKeyword,
           width: '100%',

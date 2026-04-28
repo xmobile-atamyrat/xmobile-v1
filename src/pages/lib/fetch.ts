@@ -14,6 +14,7 @@ export const fetchWithoutCreds = async <K>(
         'Content-Type': 'application/json',
       },
       body: method === 'GET' ? null : JSON.stringify(body),
+      credentials: 'include',
     })
   ).json();
   return data;

@@ -144,6 +144,14 @@ export default function Signup() {
               } else if (success && data != null) {
                 setUser(data.user);
                 setAccessToken(data.accessToken);
+                await fetch('/api/guest/migrate', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${data.accessToken}`,
+                  },
+                  credentials: 'include',
+                });
 
                 router.push('/');
               }

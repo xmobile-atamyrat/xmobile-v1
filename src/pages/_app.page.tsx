@@ -160,7 +160,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
         <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
 
-        <title>{seoData?.title || 'X-mobile'}</title>
+        <title>{seoData?.title || 'Xmobile'}</title>
 
         {seoData?.noIndex === true ? (
           <meta name="robots" content="noindex, follow" />

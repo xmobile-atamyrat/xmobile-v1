@@ -346,7 +346,7 @@ export default function CustomAppBar({
           <Box className="flex flex-row w-auto h-full justify-between items-center">
             <Box className="flex flex-row items-center">
               <IconButton
-                onClick={() => router.push(user ? '/cart' : '/user/sign_in_up')}
+                onClick={() => router.push('/cart')}
                 className="rounded-none"
               >
                 <CardMedia
@@ -384,7 +384,7 @@ export default function CustomAppBar({
               )}
             </Box>
             <IconButton
-              onClick={() => router.push(user ? '/user' : '/user/sign_in_up')}
+              onClick={() => router.push('/user')}
               className="rounded-none"
             >
               <CardMedia

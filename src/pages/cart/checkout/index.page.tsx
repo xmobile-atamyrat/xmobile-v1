@@ -1,5 +1,5 @@
 import Layout from '@/pages/components/Layout';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CartItem, Product } from '@prisma/client';
+import { CartItem, Prices, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -59,14 +59,17 @@ export default function CheckoutPage() {
   // Fetch cart items
   useEffect(() => {
     (async () => {
-      if (!user || !accessToken) {
-        return;
-      }
-
       try {
-        const { success, data, message } = await fetchWithCreds<
-          (CartItem & { product: Product })[]
-        >({ accessToken, path: `/api/cart?userId=${user.id}`, method: 'GET' });
+        const { success, data, message } = user
+          ? await fetchWithCreds<(CartItem & { product: Product })[]>({
+              accessToken,
+              path: `/api/cart?userId=${user.id}`,
+              method: 'GET',
+            })
+          : await fetchWithoutCreds<(CartItem & { product: Product })[]>(
+              '/api/guest/cart',
+              'GET',
+            );
 
         if (success) {
           setCartItems(data);
@@ -101,7 +104,7 @@ export default function CheckoutPage() {
 
   // Compute product prices for order summary
   useEffect(() => {
-    if (!accessToken || cartItems.length === 0) {
+    if (cartItems.length === 0) {
       setComputedProducts({});
       setTotalPrice(0);
       return undefined;
@@ -114,11 +117,28 @@ export default function CheckoutPage() {
       await Promise.all(
         cartItems.map(async (item) => {
           if (!cancelled && !computed[item.product.id]) {
-            const computedProduct = await computeProductPrice({
-              product: item.product,
-              accessToken,
-              fetchWithCreds,
-            });
+            let computedProduct = item.product;
+            if (user && accessToken) {
+              computedProduct = await computeProductPrice({
+                product: item.product,
+                accessToken,
+                fetchWithCreds,
+              });
+            } else {
+              const priceMatch = item.product.price?.match(/\[([^\]]+)\]/);
+              if (priceMatch) {
+                const priceResp = await fetchWithoutCreds<Prices>(
+                  `/api/prices?id=${priceMatch[1]}`,
+                  'GET',
+                );
+                if (priceResp.success && priceResp.data?.priceInTmt) {
+                  computedProduct = {
+                    ...item.product,
+                    price: priceResp.data.priceInTmt,
+                  };
+                }
+              }
+            }
             if (!cancelled) {
               computed[item.product.id] = computedProduct;
             }
@@ -147,7 +167,7 @@ export default function CheckoutPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartItemsSignature, accessToken]);
+  }, [cartItemsSignature, accessToken, user]);
 
   const handleOrder = async () => {
     // Validate required fields
@@ -164,16 +184,23 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const { success } = await fetchWithCreds({
-        accessToken,
-        path: '/api/order',
-        method: 'POST',
-        body: {
-          deliveryAddress: address.trim(),
-          deliveryPhone: phoneNumber.trim(),
-          notes: notes.trim() || undefined,
-        },
-      });
+      const { success } = user
+        ? await fetchWithCreds({
+            accessToken,
+            path: '/api/order',
+            method: 'POST',
+            body: {
+              deliveryAddress: address.trim(),
+              deliveryPhone: phoneNumber.trim(),
+              notes: notes.trim() || undefined,
+            },
+          })
+        : await fetchWithoutCreds('/api/guest/order', 'POST', {
+            deliveryAddress: address.trim(),
+            deliveryPhone: phoneNumber.trim(),
+            notes: notes.trim() || undefined,
+            userName: fullName.trim(),
+          });
 
       if (success) {
         // Redirect to success page
