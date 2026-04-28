@@ -170,15 +170,16 @@ const handleMessage = async (
       return;
     }
 
-    const session = await verifySessionParticipant(
+    const { session, isParticipant } = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
+      safeConnection.userGrade,
     );
 
-    if (!session) {
+    if (!session || !isParticipant) {
       console.error(
         filepath,
-        `Message rejected: User ${safeConnection.userId} not in session ${sessionId}`,
+        `Message rejected: User ${safeConnection.userId} not a participant in session ${sessionId}`,
       );
       sendMessage(safeConnection, {
         type: 'ack',
@@ -319,11 +320,15 @@ const handleGetMessages = async (
     const { sessionId, cursorId } = GetMessagesSchema.parse(parsed);
     const userId = safeConnection.userId;
 
-    const session = await verifySessionParticipant(sessionId, userId);
+    const { session } = await verifySessionParticipant(
+      sessionId,
+      userId,
+      safeConnection.userGrade,
+    );
     if (!session) {
       console.error(
         filepath,
-        `Unauthorized history request: User ${userId} not in session ${sessionId}`,
+        `Unauthorized history request: User ${userId} blocked from session ${sessionId}`,
       );
       return;
     }
@@ -371,15 +376,16 @@ const handleSessionRelay = async (
       return;
     }
 
-    const session = await verifySessionParticipant(
+    const { session, isParticipant } = await verifySessionParticipant(
       sessionId,
       safeConnection.userId,
+      safeConnection.userGrade,
     );
 
-    if (!session) {
+    if (!session || !isParticipant) {
       console.error(
         filepath,
-        `Unauthorized relay: User ${safeConnection.userId} not in session ${sessionId}`,
+        `Unauthorized relay: User ${safeConnection.userId} not a participant in session ${sessionId}`,
       );
       return;
     }

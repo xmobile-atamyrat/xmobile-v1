@@ -5,8 +5,13 @@ import withAuth, {
 import { NextApiResponse } from 'next';
 
 import dbClient from '@/lib/dbClient';
+import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 import { ResponseApi } from '@/pages/lib/types';
 import { ChatStatus } from '@prisma/client';
+import {
+  createNotificationsForSessionRequest,
+  sendNotificationToWebSocketServer,
+} from '@/ws-server/lib/utils';
 
 const filepath = 'src/pages/api/chat/session.page.ts';
 
@@ -117,6 +122,32 @@ async function handler(
             },
           },
         });
+
+        try {
+          const notifications = await createNotificationsForSessionRequest(
+            newSession.id,
+          );
+          const notificationPromises = notifications.map((notification) =>
+            sendFCMWithCallbackFallback(
+              notification.userId,
+              notification,
+              sendNotificationToWebSocketServer,
+            ).catch((error) => {
+              console.error(
+                filepath,
+                `Failed to send notification to user ${notification.userId}:`,
+                error,
+              );
+            }),
+          );
+          await Promise.allSettled(notificationPromises);
+        } catch (error) {
+          console.error(
+            filepath,
+            'Failed to create/send notifications for session request:',
+            error,
+          );
+        }
 
         return res.status(201).json({ success: true, data: newSession });
       }

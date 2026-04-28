@@ -24,6 +24,10 @@ const ChatWindow = () => {
 
   const hasMore = messages.length >= 50;
 
+  const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
+  const isReadonly = user?.grade === 'SUPERUSER' && !isParticipant;
+  const isClosed = currentSession?.status === 'CLOSED';
+
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -110,10 +114,43 @@ const ChatWindow = () => {
         )}
       </Box>
 
+      {isClosed && (
+        <Box
+          sx={{
+            p: 1.5,
+            textAlign: 'center',
+            backgroundColor: '#FFF3E0',
+            borderTop: '1px solid #FFE0B2',
+          }}
+        >
+          <Typography
+            sx={{ fontSize: '13px', color: '#E65100', fontWeight: 500 }}
+          >
+            {t('chatSessionClosed')}
+          </Typography>
+        </Box>
+      )}
+      {isReadonly && !isClosed && (
+        <Box
+          sx={{
+            p: 1.5,
+            textAlign: 'center',
+            backgroundColor: '#F5F5F5',
+            borderTop: '1px solid #EEEEEE',
+          }}
+        >
+          <Typography
+            sx={{ fontSize: '13px', color: '#757575', fontWeight: 500 }}
+          >
+            {t('chatReadOnlyMode')}
+          </Typography>
+        </Box>
+      )}
+
       {/* Input Area */}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected}
+        disabled={!isConnected || isReadonly || isClosed}
         isSending={isSendingMessage}
       />
     </Box>

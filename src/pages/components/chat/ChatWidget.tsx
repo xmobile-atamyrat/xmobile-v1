@@ -48,6 +48,9 @@ const ChatWidget = () => {
   const router = useRouter();
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+  const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
+  const canManageSession =
+    isAdmin && isParticipant && currentSession?.status !== 'CLOSED';
 
   useEffect(() => {
     if (isOpen) {
@@ -169,7 +172,7 @@ const ChatWidget = () => {
             >
               <SettingsOverscanIcon fontSize="small" />
             </IconButton>
-            {isAdmin && (
+            {canManageSession && (
               <Button
                 size="small"
                 variant="text"
