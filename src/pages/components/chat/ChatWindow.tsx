@@ -24,8 +24,6 @@ const ChatWindow = () => {
 
   const hasMore = messages.length >= 50;
 
-  const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
-  const isReadonly = user?.grade === 'SUPERUSER' && !isParticipant;
   const isClosed = currentSession?.status === 'CLOSED';
 
   useEffect(() => {
@@ -105,11 +103,33 @@ const ChatWindow = () => {
           </Typography>
         ) : (
           messages.map((msg) => {
-            const isMe = msg.senderId === user.id;
+            const isAdminView =
+              user.grade === 'ADMIN' || user.grade === 'SUPERUSER';
+            const isAdminMessage =
+              msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
+            const isMe = isAdminView
+              ? isAdminMessage
+              : msg.senderId === user.id;
+
+            let senderIndicator;
+            if (isAdminView && isAdminMessage) {
+              senderIndicator =
+                msg.senderId === user.id
+                  ? t('chatYou') || 'You'
+                  : `Admin (${msg.senderId.slice(-4)})`;
+            }
+
             const key =
               msg.messageId || msg.tempId || `msg-${msg.senderId}-${msg.date}`;
 
-            return <ChatBubble key={key} message={msg} isMe={isMe} />;
+            return (
+              <ChatBubble
+                key={key}
+                message={msg}
+                isMe={isMe}
+                senderIndicator={senderIndicator}
+              />
+            );
           })
         )}
       </Box>
@@ -130,27 +150,9 @@ const ChatWindow = () => {
           </Typography>
         </Box>
       )}
-      {isReadonly && !isClosed && (
-        <Box
-          sx={{
-            p: 1.5,
-            textAlign: 'center',
-            backgroundColor: '#F5F5F5',
-            borderTop: '1px solid #EEEEEE',
-          }}
-        >
-          <Typography
-            sx={{ fontSize: '13px', color: '#757575', fontWeight: 500 }}
-          >
-            {t('chatReadOnlyMode')}
-          </Typography>
-        </Box>
-      )}
-
-      {/* Input Area */}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected || isReadonly || isClosed}
+        disabled={!isConnected || isClosed}
         isSending={isSendingMessage}
       />
     </Box>
