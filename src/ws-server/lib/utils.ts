@@ -39,20 +39,23 @@ export async function verifySessionParticipant(
 ): Promise<SessionVerificationResult> {
   let session: ChatSessionWithUsers | null;
 
-  if (userGrade === UserRole.SUPERUSER) {
+  if (userGrade === UserRole.SUPERUSER || userGrade === UserRole.ADMIN) {
     session = (await dbClient.chatSession.findUnique({
       where: { id: sessionId },
       include: { users: true },
     })) as ChatSessionWithUsers | null;
-  } else {
-    session = (await dbClient.chatSession.findFirst({
-      where: {
-        id: sessionId,
-        users: { some: { id: userId } },
-      },
-      include: { users: true },
-    })) as ChatSessionWithUsers | null;
+
+    // Admins and Superusers are participants of all sessions
+    return { session, isParticipant: session != null };
   }
+
+  session = (await dbClient.chatSession.findFirst({
+    where: {
+      id: sessionId,
+      users: { some: { id: userId } },
+    },
+    include: { users: true },
+  })) as ChatSessionWithUsers | null;
 
   const isParticipant =
     session != null && session.users.some((u) => u.id === userId);
