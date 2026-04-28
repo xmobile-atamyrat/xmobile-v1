@@ -7,9 +7,10 @@ import { Box, Paper, Typography } from '@mui/material';
 interface ChatBubbleProps {
   message: ChatMessage;
   isMe: boolean;
+  senderIndicator?: string;
 }
 
-const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
+const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
   const platform = usePlatform();
   const isUserMessage = message.senderRole === 'FREE';
   const backgroundColor = isUserMessage ? '#FF624C' : '#1B1B1B';
@@ -48,6 +49,18 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
 
       {/* Timestamp & Status */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        {senderIndicator && (
+          <Typography
+            sx={{
+              color: '#9E9E9E',
+              fontSize: '0.75rem',
+              mr: 0.5,
+              fontWeight: 500,
+            }}
+          >
+            {senderIndicator} •
+          </Typography>
+        )}
         <Typography
           className={chatClasses.bubble.timestamp}
           sx={{ color: '#9E9E9E' }}
