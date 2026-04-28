@@ -360,7 +360,7 @@ const handleGetMessages = async (
 
 /**
  * Generic session relay - broadcasts any message to all session participants
- * Use for: session_status, typing_indicators, read_receipts, etc.
+ * Use for: session_status, read_receipts, etc.
  * Server just validates sender is in session, then relays message as-is
  */
 const handleSessionRelay = async (
