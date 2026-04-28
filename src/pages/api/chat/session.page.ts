@@ -26,24 +26,8 @@ async function handler(
   if (method === 'GET') {
     try {
       if (grade === 'SUPERUSER' || grade === 'ADMIN') {
-        // Admins: see PENDING or THEIR OWN active chats.
-        // Superusers: see everything.
-        const whereClause =
-          grade === 'SUPERUSER'
-            ? {}
-            : {
-                OR: [
-                  { status: ChatStatus.PENDING },
-                  {
-                    status: ChatStatus.ACTIVE,
-                    users: { some: { id: userId } },
-                  },
-                ],
-              };
-
         const allSessions = await dbClient.chatSession.findMany({
           orderBy: { updatedAt: 'desc' },
-          where: whereClause,
           include: {
             users: {
               select: {
