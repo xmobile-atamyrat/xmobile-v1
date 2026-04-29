@@ -154,28 +154,31 @@ async function handler(
         sessionId,
       }: { chatStatus: ChatStatus; sessionId: string } = req.body;
 
-      // For CLOSED status, use atomic check to prevent conflicts
-      if (chatStatus === 'CLOSED') {
-        const result = await dbClient.chatSession.updateMany({
-          where: {
-            id: sessionId,
-            status: { in: ['PENDING', 'ACTIVE'] },
-          },
-          data: {
-            status: 'CLOSED',
-          },
+      const result = await dbClient.chatSession.updateMany({
+        where: {
+          id: sessionId,
+          ...(grade === 'FREE' ? { users: { some: { id: userId } } } : {}),
+        },
+        data: {
+          status: chatStatus,
+        },
+      });
+
+      if (result.count === 0) {
+        const sessionExists = await dbClient.chatSession.findUnique({
+          where: { id: sessionId },
         });
 
-        if (result.count === 0) {
-          return res.status(409).json({
+        if (!sessionExists) {
+          return res.status(404).json({
             success: false,
-            message: 'Session already closed or not found',
+            message: 'Session not found',
           });
         }
-      } else {
-        await dbClient.chatSession.update({
-          where: { id: sessionId },
-          data: { status: chatStatus },
+
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You are not a participant in this session',
         });
       }
 
