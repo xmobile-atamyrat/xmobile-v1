@@ -222,43 +222,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
       setMessages([]);
 
-      // Only admins can join PENDING sessions
-      const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-
-      if (session.status === 'PENDING' && isAdmin) {
-        try {
-          const res = await fetch(`${BASE_URL}/api/chat/sessionActions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ sessionId }),
-          });
-          const data = await res.json();
-
-          if (data.success && data.data) {
-            setCurrentSession(data.data);
-
-            if (isConnected) {
-              send({
-                type: 'session_update',
-                sessionId,
-                status: 'ACTIVE',
-                adminId: user.id,
-              });
-            }
-          } else {
-            throw new Error(data.message || 'Failed to claim session');
-          }
-        } catch (error) {
-          console.error('Failed to claim session:', error);
-          loadSessions();
-          return false;
-        }
-      } else {
-        setCurrentSession(session);
-      }
+      setCurrentSession(session);
 
       if (isConnected) {
         await loadMessages(sessionId);
