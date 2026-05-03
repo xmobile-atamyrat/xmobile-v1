@@ -15,6 +15,7 @@ import {
   sendNotificationsToUser,
   sendNotificationWithFCMFallback,
   verifySessionParticipant,
+  broadcastToSession,
 } from '@/ws-server/lib/utils';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
@@ -259,11 +260,7 @@ const handleMessage = async (
       date: message.updatedAt,
     };
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, outgoingMessage);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, outgoingMessage);
 
     // Create notifications for all participants except sender
     try {
@@ -397,11 +394,7 @@ const handleSessionRelay = async (
       return;
     }
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, parsed);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, parsed);
   } catch (error) {
     console.error(filepath, 'Error in session relay:', error);
   }

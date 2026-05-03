@@ -32,6 +32,30 @@ export function sendMessage(
   safeConnection.send(JSON.stringify(message));
 }
 
+export function broadcastToSession(
+  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+  adminConnections: Set<AuthenticatedConnection>,
+  session: ChatSessionWithUsers,
+  message: any,
+) {
+  const sentUserIds = new Set<string>();
+
+  // 1. Send to all formal participants in the DB
+  session.users.forEach((sessionUser) => {
+    connectionsMap.get(sessionUser.id)?.forEach((conn) => {
+      sendMessage(conn, message);
+    });
+    sentUserIds.add(sessionUser.id);
+  });
+
+  // 2. Send to all connected Admins and Superusers
+  adminConnections.forEach((conn) => {
+    if (!sentUserIds.has(conn.userId)) {
+      sendMessage(conn, message);
+    }
+  });
+}
+
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,
@@ -64,6 +88,29 @@ export async function verifySessionParticipant(
 }
 
 /**
+ * Gets all admin and superuser user IDs
+ */
+export async function getAllAdminUsers(): Promise<string[]> {
+  try {
+    const admins = await dbClient.user.findMany({
+      where: {
+        grade: {
+          in: ['ADMIN', 'SUPERUSER'],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return admins.map((admin) => admin.id);
+  } catch (error) {
+    console.error('getAllAdminUsers error:', error);
+    return [];
+  }
+}
+
+/**
  * Creates notifications for all session participants except the sender
  */
 export async function createNotificationsForSession(
@@ -87,29 +134,39 @@ export async function createNotificationsForSession(
       return [];
     }
 
-    // Get sender name for notification title
+    // Get sender name and grade for notification title and routing
     const sender = await dbClient.user.findUnique({
       where: { id: senderId },
-      select: { name: true },
+      select: { name: true, grade: true },
     });
 
     const notificationTitle =
       title || (sender ? `${sender.name}` : 'Новое сообщение');
 
-    // Filter out sender from participants
-    const recipients = session.users.filter((user) => user.id !== senderId);
+    let recipientIds: string[] = [];
 
-    if (recipients.length === 0) {
+    if (sender?.grade === 'FREE') {
+      // Message from customer: Notify all admins
+      const adminIds = await getAllAdminUsers();
+      recipientIds = adminIds;
+    } else {
+      // Message from admin/superuser: Notify the customer(s)
+      recipientIds = session.users
+        .filter((u) => u.grade === 'FREE' && u.id !== senderId)
+        .map((u) => u.id);
+    }
+
+    if (recipientIds.length === 0) {
       return [];
     }
 
     // Create notifications in batch using transaction with parallel execution
     const createdNotifications = await dbClient.$transaction(async (tx) => {
       // Create all notifications in parallel
-      const notificationPromises = recipients.map((recipient) =>
+      const notificationPromises = recipientIds.map((recipientId) =>
         tx.inAppNotification.create({
           data: {
-            userId: recipient.id,
+            userId: recipientId,
             sessionId,
             type: NotificationType.CHAT_MESSAGE,
             title: notificationTitle,
@@ -270,29 +327,6 @@ export async function getUnreadNotificationsForUser(
 }
 
 /**
- * Gets all admin and superuser user IDs
- */
-export async function getAllAdminUsers(): Promise<string[]> {
-  try {
-    const admins = await dbClient.user.findMany({
-      where: {
-        grade: {
-          in: ['ADMIN', 'SUPERUSER'],
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    return admins.map((admin) => admin.id);
-  } catch (error) {
-    console.error('getAllAdminUsers error:', error);
-    return [];
-  }
-}
-
-/**
  * Creates a notification for order status update (to order owner)
  */
 export async function createNotificationForOrderStatusUpdate(
@@ -438,10 +472,6 @@ export async function createNotificationsForSessionRequest(
   }
 }
 
-/**
- * Sends notifications to WebSocket server via HTTP endpoint
- * This is used when calling from API routes (which run in a different process)
- */
 /**
  * Sends notifications to WebSocket server via HTTP endpoint
  * This is used when calling from API routes (which run in a different process)
