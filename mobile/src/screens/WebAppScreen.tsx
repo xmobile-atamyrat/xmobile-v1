@@ -25,25 +25,62 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 /**
- * Permission check for Android 13+ (API 33+).
+ * Cross-platform notification permission check.
+ *
+ * - Android 13+ (API 33+): uses PermissionsAndroid.
+ * - iOS: uses the Firebase Messaging SDK which maps to
+ *   UNUserNotificationCenter.getNotificationSettings().
+ * - Older Android: always granted (no runtime permission needed).
  */
-async function checkNotificationPermission() {
-  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-    return await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
+async function checkNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    if (Number(Platform.Version) >= 33) {
+      return await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+    }
+    return true;
   }
-  return true;
+
+  // iOS — AuthorizationStatus values:
+  // AUTHORIZED = 1, PROVISIONAL = 3  → treat as granted
+  // NOT_DETERMINED = 0, DENIED = -1  → treat as not granted
+  const status = await messaging().hasPermission();
+  return (
+    status === messaging.AuthorizationStatus.AUTHORIZED ||
+    status === messaging.AuthorizationStatus.PROVISIONAL
+  );
 }
 
-async function requestNotificationPermission() {
-  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
-    return result === PermissionsAndroid.RESULTS.GRANTED;
+/**
+ * Cross-platform notification permission request.
+ *
+ * On iOS this triggers the native system alert (only shown once by the OS).
+ * On Android 13+ it shows the runtime permission dialog.
+ */
+async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    if (Number(Platform.Version) >= 33) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      return result === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
   }
-  return true;
+
+  // iOS — requestPermission shows the system alert the very first time.
+  // Subsequent calls return the already-stored status without showing the alert.
+  const status = await messaging().requestPermission({
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  });
+  return (
+    status === messaging.AuthorizationStatus.AUTHORIZED ||
+    status === messaging.AuthorizationStatus.PROVISIONAL
+  );
 }
 
 function LoadingView() {
