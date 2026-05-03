@@ -26,6 +26,8 @@ const ChatWindow = () => {
 
   const isClosed = currentSession?.status === 'CLOSED';
 
+  const isAdminView = user?.grade === 'ADMIN' || user?.grade === 'SUPERUSER';
+
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -103,18 +105,16 @@ const ChatWindow = () => {
           </Typography>
         ) : (
           messages.map((msg) => {
-            const isAdminView =
-              user.grade === 'ADMIN' || user.grade === 'SUPERUSER';
             const isAdminMessage =
               msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
             const isMe = isAdminView
               ? isAdminMessage
-              : msg.senderId === user.id;
+              : msg.senderId === user?.id;
 
             let senderIndicator;
             if (isAdminView && isAdminMessage) {
               senderIndicator =
-                msg.senderId === user.id
+                msg.senderId === user?.id
                   ? t('chatYou') || 'You'
                   : `Admin (${msg.senderId.slice(-4)})`;
             }
@@ -146,7 +146,7 @@ const ChatWindow = () => {
           <Typography
             sx={{ fontSize: '13px', color: '#E65100', fontWeight: 500 }}
           >
-            {t('chatSessionClosed')}
+            {isAdminView ? t('chatReadOnlyMode') : t('chatSessionClosed')}
           </Typography>
         </Box>
       )}

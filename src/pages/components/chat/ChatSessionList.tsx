@@ -39,7 +39,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
     (s) => s.status === 'PENDING' || s.status === 'ACTIVE',
   );
   const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
-  const isSuperuser = user?.grade === 'SUPERUSER';
+  const isAdminOrSuperuser =
+    user?.grade === 'SUPERUSER' || user?.grade === 'ADMIN';
 
   const handleSessionClick = (session: ChatSession) => {
     onSelectSession(session);
@@ -143,8 +144,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Closed Chats (Superuser Only) */}
-      {isSuperuser && (
+      {/* Closed Chats */}
+      {isAdminOrSuperuser && (
         <Accordion disableGutters elevation={0}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
