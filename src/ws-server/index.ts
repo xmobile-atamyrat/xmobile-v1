@@ -34,6 +34,7 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 export const connections = new Map<string, Set<AuthenticatedConnection>>();
+export const adminConnections = new Set<AuthenticatedConnection>();
 
 const safeCloseConnection = (
   code: number,
@@ -46,8 +47,14 @@ const safeCloseConnection = (
 
   if ('userId' in connection) {
     const userId = connection?.userId;
-    connections.get(userId)?.delete(connection);
+    connections.get(userId)?.delete(connection as AuthenticatedConnection);
     if (!connections.get(userId)?.size) connections.delete(userId);
+  }
+  if (
+    'userGrade' in connection &&
+    (connection.userGrade === 'ADMIN' || connection.userGrade === 'SUPERUSER')
+  ) {
+    adminConnections.delete(connection as AuthenticatedConnection);
   }
 };
 
@@ -533,6 +540,13 @@ wsServer.on('connection', async (connection, request) => {
         connections.set(safeConnection.userId, new Set());
       }
       connections.get(safeConnection.userId)?.add(safeConnection);
+
+      if (
+        safeConnection.userGrade === 'ADMIN' ||
+        safeConnection.userGrade === 'SUPERUSER'
+      ) {
+        adminConnections.add(safeConnection);
+      }
 
       if (accessToken != null) {
         try {
