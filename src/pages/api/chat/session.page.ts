@@ -154,39 +154,43 @@ async function handler(
         sessionId,
       }: { chatStatus: ChatStatus; sessionId: string } = req.body;
 
-      const result = await dbClient.chatSession.updateMany({
-        where: {
-          id: sessionId,
-          ...(grade === 'FREE' ? { users: { some: { id: userId } } } : {}),
-        },
-        data: {
-          status: chatStatus,
-        },
+      const existingSession = await dbClient.chatSession.findUnique({
+        where: { id: sessionId },
+        include: { users: { select: { id: true } } },
       });
 
-      if (result.count === 0) {
-        const sessionExists = await dbClient.chatSession.findUnique({
-          where: { id: sessionId },
+      if (!existingSession) {
+        return res.status(404).json({
+          success: false,
+          message: 'Session not found',
         });
+      }
 
-        if (!sessionExists) {
-          return res.status(404).json({
-            success: false,
-            message: 'Session not found',
-          });
-        }
-
+      // block FREE users from changing status if they are not participants of the session
+      const isParticipant = existingSession.users.some((u) => u.id === userId);
+      if (grade === 'FREE' && !isParticipant) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: You are not a participant in this session',
         });
       }
 
-      const session = await dbClient.chatSession.findUnique({
+      // if session is CLOSED, only allow setting it to CLOSED (idempotency)
+      if (existingSession.status === 'CLOSED' && chatStatus !== 'CLOSED') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of a closed session',
+        });
+      }
+
+      const updatedSession = await dbClient.chatSession.update({
         where: { id: sessionId },
+        data: {
+          status: chatStatus,
+        },
       });
 
-      return res.status(200).json({ success: true, data: session });
+      return res.status(200).json({ success: true, data: updatedSession });
     } catch (error) {
       console.error(
         filepath,
