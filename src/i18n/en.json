@@ -283,7 +283,7 @@
   "chatPendingRequests": "Pending Requests",
   "chatNoPendingRequests": "No pending requests",
   "chatStarted": "Started",
-  "chatMyActiveChats": "My Active Chats",
+  "chatOpenChats": "Open Chats",
   "chatNoActiveChats": "No active chats",
   "chatLastActive": "Last active",
   "chatTypeMessage": "Type a message...",

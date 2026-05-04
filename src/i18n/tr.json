@@ -199,7 +199,7 @@
   "chatPendingRequests": "Bekleyen İstekler",
   "chatNoPendingRequests": "Bekleyen istek yok",
   "chatStarted": "Başlatıldı",
-  "chatMyActiveChats": "Aktif Sohbetlerim",
+  "chatOpenChats": "Açık Sohbetler",
   "chatNoActiveChats": "Aktif sohbet yok",
   "chatLastActive": "Son aktif",
   "chatTypeMessage": "Bir mesaj yazın...",

@@ -65,7 +65,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
-            {t('chatMyActiveChats')}
+            {t('chatOpenChats')}
           </Typography>
           {openSessions.length > 0 && (
             <Badge
