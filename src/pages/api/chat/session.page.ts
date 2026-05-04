@@ -166,12 +166,10 @@ async function handler(
         });
       }
 
-      // block FREE users from changing status if they are not participants of the session
-      const isParticipant = existingSession.users.some((u) => u.id === userId);
-      if (grade === 'FREE' && !isParticipant) {
+      if (grade === 'FREE') {
         return res.status(403).json({
           success: false,
-          message: 'Unauthorized: You are not a participant in this session',
+          message: 'Unauthorized: Only admins can change session status',
         });
       }
 
