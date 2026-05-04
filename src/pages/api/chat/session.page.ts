@@ -175,19 +175,25 @@ async function handler(
         });
       }
 
-      // if session is CLOSED, only allow setting it to CLOSED (idempotency)
-      if (existingSession.status === 'CLOSED' && chatStatus !== 'CLOSED') {
+      const updateResult = await dbClient.chatSession.updateMany({
+        where:
+          chatStatus === 'CLOSED'
+            ? { id: sessionId } // closing: always allow for UX
+            : { id: sessionId, status: { not: 'CLOSED' } }, // reopening: block if closed
+        data: {
+          status: chatStatus,
+        },
+      });
+
+      if (updateResult.count === 0) {
         return res.status(400).json({
           success: false,
           message: 'Cannot change status of a closed session',
         });
       }
 
-      const updatedSession = await dbClient.chatSession.update({
+      const updatedSession = await dbClient.chatSession.findUnique({
         where: { id: sessionId },
-        data: {
-          status: chatStatus,
-        },
       });
 
       return res.status(200).json({ success: true, data: updatedSession });

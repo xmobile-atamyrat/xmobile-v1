@@ -36,7 +36,7 @@ export function broadcastToSession(
   connectionsMap: Map<string, Set<AuthenticatedConnection>>,
   adminConnections: Set<AuthenticatedConnection>,
   session: ChatSessionWithUsers,
-  message: any,
+  message: ChatMessageProps,
 ) {
   const sentUserIds = new Set<string>();
 
