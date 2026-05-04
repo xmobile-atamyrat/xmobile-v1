@@ -16,6 +16,12 @@ async function handler(
   addCors(res);
 
   const { userId, method } = req;
+
+  // MONITORING: Use error level to ensure Slack/Alerting visibility during deprecation phase
+  console.error(
+    `[DEPRECATION_MONITOR] ${filepath}: Legacy endpoint called by user ${userId}. Actions: verify if this is an old mobile app version.`,
+  );
+
   if (method === 'POST') {
     try {
       const { sessionId }: { sessionId: string } = req.body;

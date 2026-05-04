@@ -15,6 +15,7 @@ import {
   sendNotificationsToUser,
   sendNotificationWithFCMFallback,
   verifySessionParticipant,
+  broadcastToSession,
 } from '@/ws-server/lib/utils';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
@@ -34,6 +35,7 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 export const connections = new Map<string, Set<AuthenticatedConnection>>();
+export const adminConnections = new Set<AuthenticatedConnection>();
 
 const safeCloseConnection = (
   code: number,
@@ -46,8 +48,14 @@ const safeCloseConnection = (
 
   if ('userId' in connection) {
     const userId = connection?.userId;
-    connections.get(userId)?.delete(connection);
+    connections.get(userId)?.delete(connection as AuthenticatedConnection);
     if (!connections.get(userId)?.size) connections.delete(userId);
+  }
+  if (
+    'userGrade' in connection &&
+    (connection.userGrade === 'ADMIN' || connection.userGrade === 'SUPERUSER')
+  ) {
+    adminConnections.delete(connection as AuthenticatedConnection);
   }
 };
 
@@ -252,11 +260,7 @@ const handleMessage = async (
       date: message.updatedAt,
     };
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, outgoingMessage);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, outgoingMessage);
 
     // Create notifications for all participants except sender
     try {
@@ -360,7 +364,7 @@ const handleGetMessages = async (
 
 /**
  * Generic session relay - broadcasts any message to all session participants
- * Use for: session_status, typing_indicators, read_receipts, etc.
+ * Use for: session_status, read_receipts, etc.
  * Server just validates sender is in session, then relays message as-is
  */
 const handleSessionRelay = async (
@@ -390,11 +394,7 @@ const handleSessionRelay = async (
       return;
     }
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, parsed);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, parsed);
   } catch (error) {
     console.error(filepath, 'Error in session relay:', error);
   }
@@ -533,6 +533,13 @@ wsServer.on('connection', async (connection, request) => {
         connections.set(safeConnection.userId, new Set());
       }
       connections.get(safeConnection.userId)?.add(safeConnection);
+
+      if (
+        safeConnection.userGrade === 'ADMIN' ||
+        safeConnection.userGrade === 'SUPERUSER'
+      ) {
+        adminConnections.add(safeConnection);
+      }
 
       if (accessToken != null) {
         try {
