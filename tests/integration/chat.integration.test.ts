@@ -196,12 +196,12 @@ describe('Chat API (integration)', () => {
     await prisma.user.delete({ where: { id: admin.userId } });
   });
 
-  it('PATCH /api/chat/session updates status idempotently and enforces ownership', async () => {
+  it('PATCH /api/chat/session updates status idempotently and only admins can change status', async () => {
     const free = await signupTestUser('chat-patch-owner');
-    const otherFree = await signupTestUser('chat-patch-attacker');
+    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
     const handler = (await import('@/pages/api/chat/session.page')).default;
 
-    // 1. Create a session for the owner
+    // create a session for the owner
     const post = createMocks({
       method: 'POST',
       url: '/api/chat/session',
@@ -213,11 +213,11 @@ describe('Chat API (integration)', () => {
     );
     const sessionId = JSON.parse(post.res._getData() as string).data.id;
 
-    // 2. Attempt to update session status by a different user (should be 403 Forbidden)
+    // attempt to update session status by a FREE user (should be 403 Forbidden)
     const unauthorizedPatch = createMocks({
       method: 'PATCH',
       url: '/api/chat/session',
-      headers: { authorization: `Bearer ${otherFree.accessToken}` },
+      headers: { authorization: `Bearer ${free.accessToken}` },
       body: { chatStatus: 'CLOSED', sessionId },
     });
     await handler(
@@ -226,11 +226,11 @@ describe('Chat API (integration)', () => {
     );
     expect(unauthorizedPatch.res._getStatusCode()).toBe(403);
 
-    // 3. Correct user updates status to CLOSED (should be 200 OK)
+    // admin updates status to CLOSED (should be 200 OK)
     const close = createMocks({
       method: 'PATCH',
       url: '/api/chat/session',
-      headers: { authorization: `Bearer ${free.accessToken}` },
+      headers: { authorization: `Bearer ${admin.accessToken}` },
       body: { chatStatus: 'CLOSED', sessionId },
     });
     await handler(
@@ -246,7 +246,7 @@ describe('Chat API (integration)', () => {
     const again = createMocks({
       method: 'PATCH',
       url: '/api/chat/session',
-      headers: { authorization: `Bearer ${free.accessToken}` },
+      headers: { authorization: `Bearer ${admin.accessToken}` },
       body: { chatStatus: 'CLOSED', sessionId },
     });
     await handler(
@@ -259,6 +259,7 @@ describe('Chat API (integration)', () => {
     );
 
     await prisma.chatSession.delete({ where: { id: sessionId } });
+    await prisma.user.delete({ where: { id: admin.userId } });
   });
 
   it('PATCH /api/chat/session allows ADMIN to close any session', async () => {
