@@ -286,7 +286,7 @@
   "chatPendingRequests": "Ожидающие запросы",
   "chatNoPendingRequests": "Нет ожидающих запросов",
   "chatStarted": "Начато",
-  "chatMyActiveChats": "Мои активные чаты",
+  "chatOpenChats": "Открытые чаты",
   "chatNoActiveChats": "Нет активных чатов",
   "chatLastActive": "Последняя активность",
   "chatTypeMessage": "Введите сообщение...",
