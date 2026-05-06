@@ -378,7 +378,7 @@ const handleGetMessages = async (
         ...message,
         type: 'message',
         messageId: message.id,
-        senderName: staffNameMapping[message.senderId] || message.senderId,
+        senderName: staffNameMapping[message.senderId],
       })),
     });
   } catch (error) {
