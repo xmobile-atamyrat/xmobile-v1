@@ -240,6 +240,16 @@ const handleMessage = async (
       },
     });
 
+    // Only fetch the sender's name if they are staff (Admin/Superuser)
+    let senderName: string | undefined;
+    if (senderRole !== 'FREE') {
+      const staffMember = await dbClient.user.findUnique({
+        where: { id: senderId },
+        select: { name: true },
+      });
+      senderName = staffMember?.name;
+    }
+
     sendMessage(safeConnection, {
       type: 'ack',
       tempId,
@@ -255,6 +265,7 @@ const handleMessage = async (
       sessionId,
       senderId,
       senderRole,
+      senderName,
       content,
       isRead: message.isRead,
       date: message.updatedAt,
@@ -346,13 +357,28 @@ const handleGetMessages = async (
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
 
+    // Fetch all admins and superusers at once to create a complete name mapping for staff
+    const staffMembers = await dbClient.user.findMany({
+      where: { grade: { in: ['ADMIN', 'SUPERUSER'] } },
+      select: { id: true, name: true },
+    });
+
+    const staffNameMapping = staffMembers.reduce(
+      (mapping, staffMember) => {
+        mapping[staffMember.id] = staffMember.name;
+        return mapping;
+      },
+      {} as Record<string, string>,
+    );
+
     sendMessage(safeConnection, {
       type: 'history',
       sessionId,
-      messages: messages.map((msg) => ({
-        ...msg,
-        type: 'message', // Augment for frontend compatibility
-        messageId: msg.id,
+      messages: messages.map((message) => ({
+        ...message,
+        type: 'message',
+        messageId: message.id,
+        senderName: staffNameMapping[message.senderId] || message.senderId,
       })),
     });
   } catch (error) {
