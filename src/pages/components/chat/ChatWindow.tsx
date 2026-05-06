@@ -107,16 +107,14 @@ const ChatWindow = () => {
           messages.map((msg) => {
             const isAdminMessage =
               msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
-            const isMe = isAdminView
-              ? isAdminMessage
-              : msg.senderId === user?.id;
+            const isMe = msg.senderId === user?.id;
 
             let senderIndicator;
-            if (isAdminView && isAdminMessage) {
+            if (isMe) {
+              senderIndicator = t('chatYou') || 'You';
+            } else if (isAdminMessage) {
               senderIndicator =
-                msg.senderId === user?.id
-                  ? t('chatYou') || 'You'
-                  : `Admin (${msg.senderId.slice(-4)})`;
+                msg.senderName || `Admin (${msg.senderId.slice(-4)})`;
             }
 
             const key =

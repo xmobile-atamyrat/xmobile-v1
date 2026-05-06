@@ -56,6 +56,7 @@ export interface ChatMessage {
   sessionId: string;
   senderId: string;
   senderRole: UserRole;
+  senderName?: string;
   content: string;
   tempId?: string;
 
