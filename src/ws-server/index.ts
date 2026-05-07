@@ -15,6 +15,7 @@ import {
   sendNotificationsToUser,
   sendNotificationWithFCMFallback,
   verifySessionParticipant,
+  broadcastToSession,
 } from '@/ws-server/lib/utils';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
@@ -34,6 +35,7 @@ const wsServer = new WebSocketServer({ server });
 const port = process.env.NEXT_PUBLIC_WEBSOCKET_PORT;
 
 export const connections = new Map<string, Set<AuthenticatedConnection>>();
+export const adminConnections = new Set<AuthenticatedConnection>();
 
 const safeCloseConnection = (
   code: number,
@@ -46,8 +48,14 @@ const safeCloseConnection = (
 
   if ('userId' in connection) {
     const userId = connection?.userId;
-    connections.get(userId)?.delete(connection);
+    connections.get(userId)?.delete(connection as AuthenticatedConnection);
     if (!connections.get(userId)?.size) connections.delete(userId);
+  }
+  if (
+    'userGrade' in connection &&
+    (connection.userGrade === 'ADMIN' || connection.userGrade === 'SUPERUSER')
+  ) {
+    adminConnections.delete(connection as AuthenticatedConnection);
   }
 };
 
@@ -232,6 +240,16 @@ const handleMessage = async (
       },
     });
 
+    // Only fetch the sender's name if they are staff (Admin/Superuser)
+    let senderName: string | undefined;
+    if (senderRole !== 'FREE') {
+      const staffMember = await dbClient.user.findUnique({
+        where: { id: senderId },
+        select: { name: true },
+      });
+      senderName = staffMember?.name;
+    }
+
     sendMessage(safeConnection, {
       type: 'ack',
       tempId,
@@ -247,16 +265,13 @@ const handleMessage = async (
       sessionId,
       senderId,
       senderRole,
+      senderName,
       content,
       isRead: message.isRead,
       date: message.updatedAt,
     };
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, outgoingMessage);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, outgoingMessage);
 
     // Create notifications for all participants except sender
     try {
@@ -342,13 +357,28 @@ const handleGetMessages = async (
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
 
+    // Fetch all admins and superusers at once to create a complete name mapping for staff
+    const staffMembers = await dbClient.user.findMany({
+      where: { grade: { in: ['ADMIN', 'SUPERUSER'] } },
+      select: { id: true, name: true },
+    });
+
+    const staffNameMapping = staffMembers.reduce(
+      (mapping, staffMember) => {
+        mapping[staffMember.id] = staffMember.name;
+        return mapping;
+      },
+      {} as Record<string, string>,
+    );
+
     sendMessage(safeConnection, {
       type: 'history',
       sessionId,
-      messages: messages.map((msg) => ({
-        ...msg,
-        type: 'message', // Augment for frontend compatibility
-        messageId: msg.id,
+      messages: messages.map((message) => ({
+        ...message,
+        type: 'message',
+        messageId: message.id,
+        senderName: staffNameMapping[message.senderId],
       })),
     });
   } catch (error) {
@@ -360,7 +390,7 @@ const handleGetMessages = async (
 
 /**
  * Generic session relay - broadcasts any message to all session participants
- * Use for: session_status, typing_indicators, read_receipts, etc.
+ * Use for: session_status, read_receipts, etc.
  * Server just validates sender is in session, then relays message as-is
  */
 const handleSessionRelay = async (
@@ -390,11 +420,7 @@ const handleSessionRelay = async (
       return;
     }
 
-    session.users.forEach((sessionUser) => {
-      connections.get(sessionUser.id)?.forEach((conn) => {
-        sendMessage(conn, parsed);
-      });
-    });
+    broadcastToSession(connections, adminConnections, session, parsed);
   } catch (error) {
     console.error(filepath, 'Error in session relay:', error);
   }
@@ -533,6 +559,13 @@ wsServer.on('connection', async (connection, request) => {
         connections.set(safeConnection.userId, new Set());
       }
       connections.get(safeConnection.userId)?.add(safeConnection);
+
+      if (
+        safeConnection.userGrade === 'ADMIN' ||
+        safeConnection.userGrade === 'SUPERUSER'
+      ) {
+        adminConnections.add(safeConnection);
+      }
 
       if (accessToken != null) {
         try {

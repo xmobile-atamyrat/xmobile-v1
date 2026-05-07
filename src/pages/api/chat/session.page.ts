@@ -26,24 +26,8 @@ async function handler(
   if (method === 'GET') {
     try {
       if (grade === 'SUPERUSER' || grade === 'ADMIN') {
-        // Admins: see PENDING or THEIR OWN active chats.
-        // Superusers: see everything.
-        const whereClause =
-          grade === 'SUPERUSER'
-            ? {}
-            : {
-                OR: [
-                  { status: ChatStatus.PENDING },
-                  {
-                    status: ChatStatus.ACTIVE,
-                    users: { some: { id: userId } },
-                  },
-                ],
-              };
-
         const allSessions = await dbClient.chatSession.findMany({
           orderBy: { updatedAt: 'desc' },
-          where: whereClause,
           include: {
             users: {
               select: {
@@ -114,7 +98,7 @@ async function handler(
 
         const newSession = await dbClient.chatSession.create({
           data: {
-            status: 'PENDING',
+            status: 'ACTIVE',
             users: {
               connect: {
                 id: userId,
@@ -170,36 +154,47 @@ async function handler(
         sessionId,
       }: { chatStatus: ChatStatus; sessionId: string } = req.body;
 
-      // For CLOSED status, use atomic check to prevent conflicts
-      if (chatStatus === 'CLOSED') {
-        const result = await dbClient.chatSession.updateMany({
-          where: {
-            id: sessionId,
-            status: { in: ['PENDING', 'ACTIVE'] },
-          },
-          data: {
-            status: 'CLOSED',
-          },
-        });
+      const existingSession = await dbClient.chatSession.findUnique({
+        where: { id: sessionId },
+        include: { users: { select: { id: true } } },
+      });
 
-        if (result.count === 0) {
-          return res.status(409).json({
-            success: false,
-            message: 'Session already closed or not found',
-          });
-        }
-      } else {
-        await dbClient.chatSession.update({
-          where: { id: sessionId },
-          data: { status: chatStatus },
+      if (!existingSession) {
+        return res.status(404).json({
+          success: false,
+          message: 'Session not found',
         });
       }
 
-      const session = await dbClient.chatSession.findUnique({
+      if (grade === 'FREE') {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: Only admins can change session status',
+        });
+      }
+
+      const updateResult = await dbClient.chatSession.updateMany({
+        where:
+          chatStatus === 'CLOSED'
+            ? { id: sessionId } // closing: always allow for UX
+            : { id: sessionId, status: { not: 'CLOSED' } }, // reopening: block if closed
+        data: {
+          status: chatStatus,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot change status of a closed session',
+        });
+      }
+
+      const updatedSession = await dbClient.chatSession.findUnique({
         where: { id: sessionId },
       });
 
-      return res.status(200).json({ success: true, data: session });
+      return res.status(200).json({ success: true, data: updatedSession });
     } catch (error) {
       console.error(
         filepath,
