@@ -44,8 +44,18 @@ db/
 
 #mobile
 google-services.json
+googleservice-info.plist
 **/res/mipmap*/
 **/release
+# iOS locks and workspace
+mobile/ios/Podfile.lock
+mobile/ios/mobile.xcworkspace
+mobile/Gemfile.lock
+
+# Xcode user data
+*.xcuserstate
+*.xcuserdatad
+mobile/ios/mobile.xcodeproj/xcuserdata/
 
 
 dummy_db_data/
