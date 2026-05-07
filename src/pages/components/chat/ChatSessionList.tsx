@@ -35,10 +35,12 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
     return () => clearInterval(interval);
   }, []);
 
-  const pendingSessions = sessions.filter((s) => s.status === 'PENDING');
-  const activeSessions = sessions.filter((s) => s.status === 'ACTIVE');
+  const openSessions = sessions.filter(
+    (s) => s.status === 'PENDING' || s.status === 'ACTIVE',
+  );
   const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
-  const isSuperuser = user?.grade === 'SUPERUSER';
+  const isAdminOrSuperuser =
+    user?.grade === 'SUPERUSER' || user?.grade === 'ADMIN';
 
   const handleSessionClick = (session: ChatSession) => {
     onSelectSession(session);
@@ -54,7 +56,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
         backgroundColor: '#fff',
       }}
     >
-      {/* Pending Requests */}
+      {/* Open Chats */}
       <Accordion
         defaultExpanded
         disableGutters
@@ -63,11 +65,11 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
-            {t('chatPendingRequests')}
+            {t('chatOpenChats')}
           </Typography>
-          {pendingSessions.length > 0 && (
+          {openSessions.length > 0 && (
             <Badge
-              badgeContent={pendingSessions.length}
+              badgeContent={openSessions.length}
               sx={{
                 ml: 2,
                 '& .MuiBadge-badge': {
@@ -81,75 +83,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
         </AccordionSummary>
         <AccordionDetails sx={{ p: 0 }}>
           <List disablePadding>
-            {pendingSessions.length === 0 && (
-              <ListItem>
-                <ListItemText
-                  secondary={t('chatNoPendingRequests')}
-                  secondaryTypographyProps={{
-                    fontSize: '13px',
-                    color: '#838383',
-                  }}
-                />
-              </ListItem>
-            )}
-            {pendingSessions.map((session) => {
-              const sessionUser = session.users?.[0];
-              const userInfo = sessionUser
-                ? `${sessionUser.name} (${sessionUser.email}${sessionUser.phoneNumber ? `, ${sessionUser.phoneNumber}` : ''})`
-                : 'Unknown User';
-              const lastMessage = (session as any).messages?.[0];
-              const hasUnread = lastMessage?.senderRole === 'FREE';
-              return (
-                <ListItemButton
-                  key={session.id}
-                  className={chatClasses.sessionList.listItem[platform]}
-                  onClick={() => handleSessionClick(session)}
-                  sx={{
-                    '&:hover': { backgroundColor: '#F6F6F6' },
-                  }}
-                >
-                  <Box sx={{ position: 'relative', flex: 1 }}>
-                    <ListItemText
-                      primary={userInfo}
-                      secondary={`${t('chatStarted')}: ${new Date(session.createdAt).toLocaleTimeString()}`}
-                      primaryTypographyProps={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                      }}
-                      secondaryTypographyProps={{
-                        fontSize: '12px',
-                        color: '#838383',
-                      }}
-                    />
-                  </Box>
-                  {hasUnread && (
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#ff624c',
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                </ListItemButton>
-              );
-            })}
-          </List>
-        </AccordionDetails>
-      </Accordion>
-
-      {/* My Active Chats */}
-      <Accordion defaultExpanded disableGutters elevation={0}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
-            {t('chatMyActiveChats')}
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ p: 0 }}>
-          <List disablePadding>
-            {activeSessions.length === 0 && (
+            {openSessions.length === 0 && (
               <ListItem>
                 <ListItemText
                   secondary={t('chatNoActiveChats')}
@@ -160,10 +94,10 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                 />
               </ListItem>
             )}
-            {activeSessions.map((session) => {
-              const sessionUser = session.users?.find(
-                (u) => u.grade === 'FREE',
-              );
+            {openSessions.map((session) => {
+              const sessionUser =
+                session.users?.find((u) => u.grade === 'FREE') ||
+                session.users?.[0]; // Fallback to first user if FREE user not explicitly found
               const userInfo = sessionUser
                 ? `${sessionUser.name} (${sessionUser.email}${sessionUser.phoneNumber ? `, ${sessionUser.phoneNumber}` : ''})`
                 : 'User';
@@ -210,8 +144,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Closed Chats (Superuser Only) */}
-      {isSuperuser && (
+      {/* Closed Chats */}
+      {isAdminOrSuperuser && (
         <Accordion disableGutters elevation={0}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>

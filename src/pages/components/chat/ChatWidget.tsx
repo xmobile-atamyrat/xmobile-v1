@@ -43,14 +43,12 @@ const ChatWidget = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showTakenAlert, setShowTakenAlert] = useState(false);
+
   const [isSessionClosed, setSessionClosed] = useState(false);
   const router = useRouter();
 
   const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-  const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
-  const canManageSession =
-    isAdmin && isParticipant && currentSession?.status !== 'CLOSED';
+  const canManageSession = isAdmin && currentSession?.status !== 'CLOSED';
 
   useEffect(() => {
     if (isOpen) {
@@ -100,10 +98,7 @@ const ChatWidget = () => {
 
   const handleSessionSelect = async (session: ChatSession) => {
     try {
-      const success = await joinSession(session.id);
-      if (!success) {
-        setShowTakenAlert(true);
-      }
+      await joinSession(session.id);
     } catch (error) {
       console.error('Failed to join session', error);
     }
@@ -355,22 +350,6 @@ const ChatWidget = () => {
           sx={{ backgroundColor: '#ff624c', color: '#fff' }}
         >
           {t('chatSessionClosedByAdmin')}
-        </Alert>
-      </Snackbar>
-
-      <Snackbar
-        open={showTakenAlert}
-        autoHideDuration={5000}
-        onClose={() => setShowTakenAlert(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setShowTakenAlert(false)}
-          severity="info"
-          variant="filled"
-          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
-        >
-          {t('chatSessionTakenByOther')}
         </Alert>
       </Snackbar>
     </>
