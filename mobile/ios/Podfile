@@ -8,7 +8,6 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-# Firebase requires static frameworks linkage
 use_frameworks! :linkage => :static
 
 # Suppress the modular-headers warning raised by Firebase pods
@@ -19,11 +18,10 @@ target 'mobile' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Firebase core + Cloud Messaging (FCM)
+  # Firebase
   pod 'Firebase/Core'
   pod 'Firebase/Messaging'
 
@@ -31,8 +29,15 @@ target 'mobile' do
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :mac_catalyst_enabled => false
     )
+    
+    installer.pods_project.targets.each do |target|
+      if target.name == 'fmt'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        end
+      end
+    end
   end
 end
