@@ -1,4 +1,7 @@
-import BASE_URL from '@/lib/ApiEndpoints';
+import {
+  getCategoryMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+} from '@/pages/lib/mediaUrls';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -98,6 +101,14 @@ export default function AddEditCategoriesDialog({
       setCategoryLogoUrl(imageUrl);
     }
   }, [imageUrl]);
+
+  const categoryPreviewSrc = useMemo(() => {
+    if (categoryImageUrl) return categoryImageUrl;
+    if (!categoryLogoUrl) return undefined;
+    if (categoryLogoUrl.startsWith('data:')) return categoryLogoUrl;
+    if (categoryLogoUrl.startsWith('http')) return categoryLogoUrl;
+    return getCategoryMediaUrl(categoryLogoUrl) ?? PRODUCT_IMAGE_FALLBACK;
+  }, [categoryImageUrl, categoryLogoUrl]);
 
   const addEditCategoryCache = useCallback(
     async (formJson: {
@@ -314,22 +325,15 @@ export default function AddEditCategoriesDialog({
                   />
                 </Box>
               </Box>
-              {(categoryLogoUrl != null || categoryImageUrl != null) && (
+              {categoryPreviewSrc != null && (
                 <Box className={addEditCategoriesDialogClasses.box.item}>
                   <img
                     alt="asdf"
-                    src={categoryImageUrl ?? categoryLogoUrl}
+                    src={categoryPreviewSrc}
                     width={200}
-                    onError={async (error) => {
-                      if (categoryLogoUrl == null) return;
+                    onError={(error) => {
                       error.currentTarget.onerror = null;
-                      error.currentTarget.src = URL.createObjectURL(
-                        await (
-                          await fetch(
-                            `${BASE_URL}/api/localImage?imgUrl=${categoryLogoUrl}`,
-                          )
-                        ).blob(),
-                      );
+                      error.currentTarget.src = PRODUCT_IMAGE_FALLBACK;
                     }}
                   />
                   <IconButton

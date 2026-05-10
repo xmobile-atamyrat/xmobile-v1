@@ -1,11 +1,14 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import {
   ALL_PRODUCTS_CATEGORY_CARD,
   DEFAULT_LOCALE,
 } from '@/pages/lib/constants';
+import {
+  getCategoryMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+} from '@/pages/lib/mediaUrls';
 import { buildPopularCategoriesSectionModel } from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { blobToBase64, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
 import { popularCategoriesSectionClasses as cls } from '@/styles/classMaps/components/popularCategoriesSection';
 import { interClassname } from '@/styles/theme';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -13,7 +16,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface CategoryImageProps {
   initialImgUrl?: string | null;
@@ -21,41 +24,32 @@ interface CategoryImageProps {
 }
 
 function CategoryImage({ initialImgUrl, className }: CategoryImageProps) {
-  const [imgUrl, setImgUrl] = useState<string>(
-    '/logo/xmobile-original-logo.jpeg',
-  );
-
-  useEffect(() => {
+  const imgSrc = useMemo(() => {
     if (
       initialImgUrl == null ||
       initialImgUrl === '' ||
       initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD
     ) {
-      return undefined;
+      return PRODUCT_IMAGE_FALLBACK;
     }
-
-    let cancelled = false;
-
-    (async () => {
-      if (initialImgUrl.startsWith('http')) {
-        if (!cancelled) setImgUrl(initialImgUrl);
-        return;
-      }
-      const resp = await fetch(
-        `${BASE_URL}/api/localImage?imgUrl=${initialImgUrl}`,
-      );
-      if (cancelled || !resp.ok) return;
-      const blob = await resp.blob();
-      const base64 = await blobToBase64(blob);
-      if (!cancelled) setImgUrl(base64);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    if (initialImgUrl.startsWith('http')) return initialImgUrl;
+    return getCategoryMediaUrl(initialImgUrl) ?? PRODUCT_IMAGE_FALLBACK;
   }, [initialImgUrl]);
 
-  return <img src={imgUrl} alt="" className={className} />;
+  return (
+    <img
+      src={imgSrc}
+      alt=""
+      className={className}
+      loading="lazy"
+      decoding="async"
+      onError={(e) => {
+        const el = e.currentTarget;
+        el.onerror = null;
+        el.src = PRODUCT_IMAGE_FALLBACK;
+      }}
+    />
+  );
 }
 
 interface PopularCategoriesSectionProps {
