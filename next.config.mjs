@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+
+const localMediaOrigin = process.env.LOCAL_NGINX_MEDIA_ORIGIN?.replace(
+  /\/$/,
+  '',
+);
+
 const nextConfig = {
   reactStrictMode: false,
   swcMinify: true, // Force minification
@@ -11,5 +17,14 @@ const nextConfig = {
   },
   staticPageGenerationTimeout: 180,
 };
+
+if (localMediaOrigin) {
+  nextConfig.rewrites = async () => [
+    {
+      source: '/media/:path*',
+      destination: `${localMediaOrigin}/media/:path*`,
+    },
+  ];
+}
 
 export default nextConfig;
