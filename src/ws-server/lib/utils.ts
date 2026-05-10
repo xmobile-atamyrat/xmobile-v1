@@ -447,7 +447,7 @@ export async function createNotificationsForSessionRequest(
       },
     });
 
-    const userName = session?.users?.[0]?.name || 'User';
+    const userName = session?.users?.[0]?.name || 'Клиент';
 
     const createdNotifications = await dbClient.$transaction(async (tx) => {
       const notificationPromises = adminUserIds.map((adminId) =>
@@ -456,8 +456,8 @@ export async function createNotificationsForSessionRequest(
             userId: adminId,
             sessionId,
             type: NotificationType.CHAT_MESSAGE,
-            title: 'New chat request',
-            content: `${userName} wants to start a chat`,
+            title: 'Новый запрос в чат',
+            content: `${userName} хочет начать чат`,
             isRead: false,
           },
         }),
