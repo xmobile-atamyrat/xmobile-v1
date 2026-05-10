@@ -21,6 +21,7 @@ import {
   generateHreflangLinks,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
+import { getAbsoluteCategoryMediaUrl } from '@/pages/lib/mediaUrls';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
@@ -181,7 +182,9 @@ export const getStaticProps: GetStaticProps = async ({
 
       let ogImage = categoryData.imgUrl;
       if (ogImage && !ogImage.startsWith('http')) {
-        ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
+        ogImage =
+          getAbsoluteCategoryMediaUrl(BASE_URL, ogImage) ??
+          `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
       }
 
       const breadcrumbJsonLd = generateBreadcrumbJsonLd(
@@ -285,7 +288,6 @@ export default function CategoryPage({
         <Box className={homePageClasses.card[platform]}>
           {/* All Products card - show in every category */}
           <CategoryCard
-            id=""
             name=""
             initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
             onClick={() => {
@@ -298,7 +300,6 @@ export default function CategoryPage({
             const { imgUrl, name, id, slug } = subCategory;
             return (
               <CategoryCard
-                id={id}
                 name={name}
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}

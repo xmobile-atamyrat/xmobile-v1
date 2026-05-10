@@ -1,4 +1,3 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { fetchBrands } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -11,7 +10,7 @@ import {
 } from '@/pages/lib/constants';
 
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { getProductMediaUrl } from '@/pages/lib/mediaUrls';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -86,7 +85,6 @@ export default function AddEditProductDialog({
   const { setProducts, setSelectedProduct } = useProductContext();
   const { categories, selectedCategoryId } = useCategoryContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
-  const { network } = useNetworkContext();
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
@@ -221,43 +219,33 @@ export default function AddEditProductDialog({
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
-    (async () => {
-      const initialProductImageUrl: { [key: string]: string }[] =
-        await Promise.all(
-          imageUrls.map(async (imageUrl) => {
-            try {
-              new URL(imageUrl);
-              return { [imageUrl]: imageUrl };
-            } catch (_) {
-              return {
-                [imageUrl]: URL.createObjectURL(
-                  await (
-                    await fetch(
-                      `${BASE_URL}/api/localImage?imgUrl=${imageUrl}&network=${network}`,
-                    )
-                  ).blob(),
-                ),
-              };
-            }
-          }),
-        );
-      setProductImageOrder(
-        initialProductImageUrl
-          .map((obj) => {
-            const [key] = Object.keys(obj);
-            return obj[key];
-          })
-          .reduce(
-            (acc, curr, index) => {
-              acc[index + 1] = curr;
-              return acc;
-            },
-            {} as { [key: number]: string },
-          ),
-      );
-      setProductImageUrls(initialProductImageUrl);
-    })();
-  }, [imageUrls, network]);
+    const initialProductImageUrl: { [key: string]: string }[] = imageUrls.map(
+      (imageUrl) => {
+        try {
+          new URL(imageUrl);
+          return { [imageUrl]: imageUrl };
+        } catch (_) {
+          const display = getProductMediaUrl('original', imageUrl) ?? imageUrl;
+          return { [imageUrl]: display };
+        }
+      },
+    );
+    setProductImageOrder(
+      initialProductImageUrl
+        .map((obj) => {
+          const [key] = Object.keys(obj);
+          return obj[key];
+        })
+        .reduce(
+          (acc, curr, index) => {
+            acc[index + 1] = curr;
+            return acc;
+          },
+          {} as { [key: number]: string },
+        ),
+    );
+    setProductImageUrls(initialProductImageUrl);
+  }, [imageUrls]);
 
   useEffect(() => {
     setTags(initTags ?? []);
