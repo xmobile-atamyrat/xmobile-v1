@@ -1,5 +1,9 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
+import {
+  getProductMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+  tierForProductList,
+} from '@/pages/lib/mediaUrls';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -12,7 +16,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 
 // use lazy() to not to load the same compononets and functions in AddToCart
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
@@ -30,10 +34,7 @@ export default function CartProductCard({
   const t = useTranslations();
   const router = useRouter();
   const { setSelectedProduct } = useProductContext();
-  const [imgUrl, setImgUrl] = useState<string | null>();
   const { network } = useNetworkContext();
-  const { createAbortController, clearAbortController } =
-    useAbortControllerContext();
   const platform = usePlatform();
   const [categoryName, setCategoryName] = useState<string | null>(null);
 
@@ -56,35 +57,12 @@ export default function CartProductCard({
     };
   }, [product?.categoryId]);
 
-  useEffect(() => {
-    const abortController = createAbortController();
-
-    (async () => {
-      try {
-        if (product?.imgUrls[0] != null && network !== 'unknown') {
-          setImgUrl('/logo/xmobile-original-logo.jpeg');
-          if (product.imgUrls[0].startsWith('http')) {
-            setImgUrl(product.imgUrls[0]);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${product.imgUrls[0]}&network=${network}`,
-              { signal: abortController.signal },
-            );
-            const resp = await imgFetcher;
-            if (resp.ok) {
-              setImgUrl(URL.createObjectURL(await resp.blob()));
-            }
-          }
-        }
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error(error);
-        }
-      } finally {
-        clearAbortController(abortController);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cardImageSrc = useMemo(() => {
+    const raw = product?.imgUrls[0];
+    if (raw == null) return undefined;
+    if (raw.startsWith('http')) return raw;
+    const tier = tierForProductList(network);
+    return getProductMediaUrl(tier, raw) ?? PRODUCT_IMAGE_FALLBACK;
   }, [product?.imgUrls, network]);
 
   return (
@@ -97,13 +75,20 @@ export default function CartProductCard({
             router.push(`/product/${product.slug}`);
           }}
         >
-          {imgUrl != null && (
+          {cardImageSrc != null && (
             <Box className={cartProductCardClasses.boxes.img[platform]}>
               <CardMedia
                 component="img"
-                image={imgUrl}
+                image={cardImageSrc}
                 alt={product?.name}
                 className={cartProductCardClasses.cardMedia[platform]}
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  const el = e.currentTarget;
+                  el.onerror = null;
+                  el.src = PRODUCT_IMAGE_FALLBACK;
+                }}
               />
             </Box>
           )}

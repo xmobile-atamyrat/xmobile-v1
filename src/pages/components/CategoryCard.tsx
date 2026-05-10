@@ -1,7 +1,10 @@
-import BASE_URL from '@/lib/ApiEndpoints';
 import { ALL_PRODUCTS_CATEGORY_CARD } from '@/pages/lib/constants';
+import {
+  getCategoryMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+} from '@/pages/lib/mediaUrls';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { blobToBase64, parseName } from '@/pages/lib/utils';
+import { parseName } from '@/pages/lib/utils';
 import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
 import { interClassname } from '@/styles/theme';
 import Box from '@mui/material/Box';
@@ -10,52 +13,34 @@ import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 interface CategoryCardProps {
   name: string;
-  id: string;
   initialImgUrl?: string;
   onClick: () => void;
 }
 
 export default function CategoryCard({
   initialImgUrl,
-  id,
   name,
   onClick,
 }: CategoryCardProps) {
-  const [imgUrl, setImgUrl] = useState<string>();
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
 
-  useEffect(() => {
-    if (initialImgUrl != null && initialImgUrl !== ALL_PRODUCTS_CATEGORY_CARD) {
-      const cacheImgUrl = sessionStorage.getItem(id);
-      if (cacheImgUrl != null) {
-        setImgUrl(cacheImgUrl);
-      } else {
-        setImgUrl('/logo/xmobile-original-logo.jpeg');
-        (async () => {
-          if (initialImgUrl.startsWith('http')) {
-            setImgUrl(initialImgUrl);
-          } else {
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${initialImgUrl}`,
-            );
-            const resp = await imgFetcher;
-            if (resp.ok) {
-              const imgBlob = await resp.blob();
-              const base64 = await blobToBase64(imgBlob);
-              setImgUrl(base64);
-              sessionStorage.setItem(id, base64);
-            }
-          }
-        })();
-      }
+  const imgSrc = useMemo(() => {
+    if (
+      initialImgUrl == null ||
+      initialImgUrl === '' ||
+      initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD
+    ) {
+      return undefined;
     }
-  }, [initialImgUrl, id]);
+    if (initialImgUrl.startsWith('http')) return initialImgUrl;
+    return getCategoryMediaUrl(initialImgUrl) ?? PRODUCT_IMAGE_FALLBACK;
+  }, [initialImgUrl]);
 
   return (
     <Card
@@ -81,8 +66,15 @@ export default function CategoryCard({
           <CardMedia
             component="img"
             className={categoryCardClasses.cardMedia[platform]}
-            image={imgUrl}
+            image={imgSrc ?? PRODUCT_IMAGE_FALLBACK}
             alt="Xmobile"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              const el = e.currentTarget;
+              el.onerror = null;
+              el.src = PRODUCT_IMAGE_FALLBACK;
+            }}
           />
         </Box>
       )}
