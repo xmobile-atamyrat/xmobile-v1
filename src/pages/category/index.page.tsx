@@ -86,7 +86,6 @@ export default function CategoriesPage() {
             const { imgUrl, name, id, slug, successorCategories } = category;
             return (
               <CategoryCard
-                id={id}
                 name={name}
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}

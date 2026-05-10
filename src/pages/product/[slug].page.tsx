@@ -5,7 +5,6 @@ import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
-import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
 import { fetchAllProductSlugs, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
@@ -15,6 +14,12 @@ import {
   squareBracketRegex,
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  getAbsoluteProductMediaUrl,
+  getProductMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+  tierForProductList,
+} from '@/pages/lib/mediaUrls';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
@@ -66,7 +71,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
@@ -170,7 +175,10 @@ export const getStaticProps: GetStaticProps = async ({
       const rawImages = product.imgUrls || [];
       const imageUrls = rawImages.map((img) => {
         if (img.startsWith('http')) return img;
-        return `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(img)}`;
+        return (
+          getAbsoluteProductMediaUrl(BASE_URL, 'good', img) ??
+          `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(img)}`
+        );
       });
 
       const productJsonLd = generateProductJsonLd({
@@ -232,7 +240,6 @@ interface ProductPageProps {
 export default function Product({ product: initialProduct }: ProductPageProps) {
   const [product, setProduct] = useState<Product | null>();
   const router = useRouter();
-  const [imgUrls, setImgUrls] = useState<string[]>([]);
   const t = useTranslations();
   const { user, accessToken } = useUserContext();
   const { setPrevCategory, setPrevProducts } = usePrevProductContext();
@@ -250,8 +257,14 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
   const { network } = useNetworkContext();
-  const { createAbortController, clearAbortController } =
-    useAbortControllerContext();
+
+  const displayImgUrls = useMemo(() => {
+    if (!product?.imgUrls?.length) return [];
+    const tier = tierForProductList(network);
+    return product.imgUrls.map((u) =>
+      u.startsWith('http') ? u : getProductMediaUrl(tier, u) ?? u,
+    );
+  }, [product?.imgUrls, network]);
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
   const [dialogStatus, setDialogStatus] = useState(false);
@@ -261,9 +274,14 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setDialogStatus(false);
   };
 
-  const handleDialogOpen = (imgUrl: string) => {
+  const handleDialogOpen = (index: number) => {
+    if (!product?.imgUrls[index]) return;
+    const raw = product.imgUrls[index];
+    const full = raw.startsWith('http')
+      ? raw
+      : getProductMediaUrl('original', raw) ?? raw;
+    setCarouselDialogImage(full);
     setDialogStatus(true);
-    setCarouselDialogImage(imgUrl);
   };
 
   // Build category path when categoryId is available
@@ -276,39 +294,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     const path = buildCategoryPath(product.categoryId, allCategories);
     setCategoryPath(path);
   }, [product?.categoryId, allCategories]);
-
-  // Check if user landed directly (no category context)
-  useEffect(() => {
-    if (product == null) {
-      return;
-    }
-    const abortController = createAbortController();
-
-    (async () => {
-      try {
-        const initImgUrls: string[] = await Promise.all(
-          product.imgUrls.map(async (imgUrl) => {
-            if (imgUrl.startsWith('http')) {
-              return imgUrl;
-            }
-            const imgFetcher = fetch(
-              `${BASE_URL}/api/localImage?imgUrl=${imgUrl}&network=${network}`,
-              { signal: abortController.signal },
-            );
-            return URL.createObjectURL(await (await imgFetcher).blob());
-          }),
-        );
-        setImgUrls(initImgUrls);
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error(error);
-        }
-      } finally {
-        clearAbortController(abortController);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, network]);
 
   useEffect(() => {
     const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
@@ -415,28 +400,42 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               />
             </IconButton>
           </Box>
-          {imgUrls.length === 1 && (
+          {displayImgUrls.length === 1 && (
             <Box className={detailPageClasses.boxes.img[platform]}>
               <CardMedia
                 component="img"
-                image={imgUrls[0]}
+                image={displayImgUrls[0]}
                 alt={product?.name}
                 className={detailPageClasses.cardMedia[platform]}
-                onClick={() => handleDialogOpen(imgUrls[0])}
+                loading="lazy"
+                decoding="async"
+                onClick={() => handleDialogOpen(0)}
+                onError={(e) => {
+                  const el = e.currentTarget;
+                  el.onerror = null;
+                  el.src = PRODUCT_IMAGE_FALLBACK;
+                }}
               />
             </Box>
           )}
-          {imgUrls.length > 1 && (
+          {displayImgUrls.length > 1 && (
             <Box className={detailPageClasses.boxes.img[platform]}>
               <Carousel>
-                {imgUrls.map((imgUrl, index) => (
+                {displayImgUrls.map((imgUrl, index) => (
                   <CardMedia
                     component="img"
                     image={imgUrl}
                     alt={product?.name}
                     className={detailPageClasses.cardMedia[platform]}
                     key={index}
-                    onClick={() => handleDialogOpen(imgUrl)}
+                    loading="lazy"
+                    decoding="async"
+                    onClick={() => handleDialogOpen(index)}
+                    onError={(e) => {
+                      const el = e.currentTarget;
+                      el.onerror = null;
+                      el.src = PRODUCT_IMAGE_FALLBACK;
+                    }}
                   />
                 ))}
               </Carousel>
@@ -448,6 +447,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               image={carouselDialogImage}
               alt={product?.name}
               className={detailPageClasses.dialogImg[platform]}
+              onError={(e) => {
+                const el = e.currentTarget;
+                el.onerror = null;
+                el.src = PRODUCT_IMAGE_FALLBACK;
+              }}
             />
           </Dialog>
 

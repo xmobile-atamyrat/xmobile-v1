@@ -9,6 +9,7 @@ import {
   generateHreflangLinks,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
+import { getAbsoluteCategoryMediaUrl } from '@/pages/lib/mediaUrls';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { GetStaticPaths, GetStaticProps } from 'next';
@@ -117,7 +118,9 @@ export const getStaticProps: GetStaticProps = async ({
 
       let ogImage = categoryData.imgUrl || null;
       if (ogImage && !ogImage.startsWith('http')) {
-        ogImage = `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
+        ogImage =
+          getAbsoluteCategoryMediaUrl(BASE_URL, ogImage) ??
+          `${BASE_URL}/api/localImage?imgUrl=${encodeURIComponent(ogImage)}`;
       }
 
       const breadcrumbJsonLd = generateBreadcrumbJsonLd(
