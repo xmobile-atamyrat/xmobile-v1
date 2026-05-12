@@ -16,7 +16,7 @@ permissions:
 jobs:
   build:
     name: Build IPA
-    runs-on: macos-14
+    runs-on: macos-26
     timeout-minutes: 120
     environment: ios-appstore-release
     defaults:
@@ -32,13 +32,13 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: '26.2'
 
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
           path: mobile/node_modules
-          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v1
+          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v2
 
       - uses: actions/setup-node@v4
         with:
@@ -58,7 +58,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: mobile/ios/Pods
-          key: ${{ runner.os }}-mobile-pods-${{ hashFiles('mobile/yarn.lock', 'mobile/package.json', 'mobile/ios/Podfile', 'mobile/Gemfile.lock', 'mobile/ios/mobile.xcodeproj/project.pbxproj') }}-v1
+          key: ${{ runner.os }}-mobile-pods-${{ hashFiles('mobile/yarn.lock', 'mobile/package.json', 'mobile/ios/Podfile', 'mobile/Gemfile.lock', 'mobile/ios/mobile.xcodeproj/project.pbxproj') }}-v2
 
       - name: GoogleService-Info.plist
         env:
@@ -180,7 +180,7 @@ jobs:
   upload:
     name: Upload to TestFlight
     needs: build
-    runs-on: macos-14
+    runs-on: macos-26
     timeout-minutes: 30
     environment: ios-appstore-release
 
@@ -189,12 +189,25 @@ jobs:
       FASTLANE_OPT_OUT_USAGE: '1'
 
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: mobile
+
       - uses: actions/download-artifact@v4
         with:
           name: ios-release-ipa
           path: ipa
 
       - name: Upload
+        working-directory: mobile
         env:
           IOS_APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.IOS_APP_STORE_CONNECT_API_KEY_JSON }}
           IOS_APP_STORE_CONNECT_ITC_TEAM_ID: ${{ secrets.IOS_APP_STORE_CONNECT_ITC_TEAM_ID }}
@@ -207,15 +220,14 @@ jobs:
           if [ -n "${IOS_APP_STORE_CONNECT_ITC_TEAM_ID:-}" ]; then
             export FASTLANE_ITC_TEAM_ID="$IOS_APP_STORE_CONNECT_ITC_TEAM_ID"
           fi
-          IPA_PATH=$(find ipa -name '*.ipa' | head -n 1)
+          IPA_PATH=$(find "$GITHUB_WORKSPACE/ipa" -name '*.ipa' | head -n 1)
           if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
-            echo "IPA artifact missing under ipa/"
+            echo "IPA artifact missing (expected $GITHUB_WORKSPACE/ipa/*.ipa)"
             exit 1
           fi
           printf '%s\n' "$IOS_APP_STORE_CONNECT_API_KEY_JSON" > "$RUNNER_TEMP/api_key.json"
           python3 -c "import json,os,pathlib;p=pathlib.Path(os.environ['RUNNER_TEMP'])/'api_key.json';d=json.loads(p.read_text());k=d.get('key') or d.get('private_key');assert k and d.get('key_id') and d.get('issuer_id'),'JSON needs key_id, issuer_id, key (or private_key)';d['key']=k;p.write_text(json.dumps(d))"
-          sudo gem install fastlane -N
-          if ! fastlane pilot upload \
+          if ! bundle exec fastlane pilot upload \
             --app_identifier "$IOS_BUNDLE_ID" \
             --ipa "$IPA_PATH" \
             --api_key_path "$RUNNER_TEMP/api_key.json" \
@@ -225,6 +237,7 @@ jobs:
             echo "  1) Create the app in App Store Connect with bundle ID $IOS_BUNDLE_ID."
             echo "  2) Multi-team: set IOS_APP_STORE_CONNECT_ITC_TEAM_ID (numeric, App Store Connect → your name)."
             echo "  3) API key JSON: key_id, issuer_id, key (PEM)."
+            echo "  4) IPA built with too old an SDK: build job must use Xcode 26+ (see workflow runs-on / setup-xcode)."
             exit 1
           fi
           rm -f "$RUNNER_TEMP/api_key.json"

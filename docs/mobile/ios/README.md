@@ -46,7 +46,9 @@ If **upload** fails but **build** succeeded, open that workflow run → **Re-run
 
 **Prerequisite:** In [App Store Connect](https://appstoreconnect.apple.com) → **My Apps**, create an app with bundle ID **`com.xmobile.app`** (same as Xcode) before the first upload. Pilot cannot create that record for you.
 
-The workflow caches **`mobile/node_modules`**, **`mobile/ios/Pods`**, and Bundler gems (`ruby/setup-ruby` + `mobile/Gemfile.lock`) using keys derived from `yarn.lock`, `package.json`, `Podfile`, `Gemfile.lock`, and `project.pbxproj` so caches invalidate when native deps or Ruby tooling change. If a run ever looks wrong after a tooling upgrade, bump the `-v1` suffix on those cache keys in the workflow file to force a cold restore.
+The workflow caches **`mobile/node_modules`**, **`mobile/ios/Pods`**, and Bundler gems (`ruby/setup-ruby` + `mobile/Gemfile.lock`) using keys derived from `yarn.lock`, `package.json`, `Podfile`, `Gemfile.lock`, and `project.pbxproj` so caches invalidate when native deps or Ruby tooling change. If a run ever looks wrong after a tooling upgrade, bump the `-v2` suffix on those cache keys in the workflow file to force a cold restore.
+
+**Runners / Xcode:** Apple may require a **minimum iOS SDK** for App Store Connect uploads (currently **Xcode 26 / iOS 26 SDK**). The workflow uses **`macos-26`** and pins **`xcode-version: '26.2'`** for build and upload. If `setup-xcode` fails to resolve that version, check [runner-images](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md) for installed Xcode names and adjust the pin.
 
 ### Optional: require approval before the job runs
 
