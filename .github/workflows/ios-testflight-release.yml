@@ -1,4 +1,5 @@
-# Manual TestFlight upload (workflow_dispatch). Secrets: docs/mobile/ios/README.md
+# Manual TestFlight: build job uploads IPA artifact; upload job sends it to ASC.
+# If upload fails: Actions → failed run → Re-run failed jobs (skips rebuild when build succeeded).
 
 name: iOS TestFlight upload
 
@@ -47,6 +48,12 @@ jobs:
         with:
           path: mobile/node_modules
           key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v2
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: mobile/node_modules
+          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v1
 
       - uses: actions/setup-node@v4
         with:
