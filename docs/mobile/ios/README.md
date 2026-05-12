@@ -40,7 +40,13 @@ Alternatively, you can open the workspace file directly in Xcode:
 
 The workflow **iOS TestFlight upload** (`.github/workflows/ios-testflight-release.yml`) runs **only** from **Actions → Run workflow**. It does not run on push or PR.
 
-It builds a **Release** IPA, then **`fastlane pilot upload`** sends it to **App Store Connect**; after processing it appears under **TestFlight**. It does **not** submit for App Review or release to the public App Store.
+It uses two jobs: **Build IPA** (compile, sign, export) and **Upload to TestFlight** (`fastlane pilot`). After processing, the build appears under **TestFlight**. It does **not** submit for App Review or release to the public App Store.
+
+If **upload** fails but **build** succeeded, open that workflow run → **Re-run failed jobs** to retry only upload (GitHub keeps the IPA artifact from the successful build for that run).
+
+**Prerequisite:** In [App Store Connect](https://appstoreconnect.apple.com) → **My Apps**, create an app with bundle ID **`com.xmobile.app`** (same as Xcode) before the first upload. Pilot cannot create that record for you.
+
+The workflow caches **`mobile/node_modules`**, **`mobile/ios/Pods`**, and Bundler gems (`ruby/setup-ruby` + `mobile/Gemfile.lock`) using keys derived from `yarn.lock`, `package.json`, `Podfile`, `Gemfile.lock`, and `project.pbxproj` so caches invalidate when native deps or Ruby tooling change. If a run ever looks wrong after a tooling upgrade, bump the `-v1` suffix on those cache keys in the workflow file to force a cold restore.
 
 ### Optional: require approval before the job runs
 
@@ -49,6 +55,10 @@ The job uses GitHub Environment **`ios-appstore-release`**. To require another m
 1. On GitHub: **Settings** → **Environments** → **New environment** → name **`ios-appstore-release`** (must match exactly).
 2. Under **Deployment protection rules**, enable **Required reviewers** and add trusted people (or a team, on org plans that support it).
 3. Save. The first time the workflow runs, GitHub may create the environment automatically without rules; add reviewers before you rely on this gate.
+
+Because **Build** and **Upload** both use this environment, **required reviewers** may prompt **twice** per run (once per job). To avoid that, move secrets to **repository** secrets, or split environments (e.g. build secrets vs upload-only), or accept two approvals.
+
+If both **Build** and **Upload** use this environment and you use **required reviewers**, GitHub may ask for approval **once per job** in the same run. To avoid a second gate, keep upload-only secrets on this environment and move build/signing secrets to **repository** secrets, or accept two approvals.
 
 ### Repository or environment secrets (Settings → Secrets and variables → Actions)
 
@@ -64,6 +74,7 @@ Create these secrets as **repository** secrets **or** (as you did) under the **`
 | `IOS_PROVISIONING_PROFILE_NAME` | The profile’s **Name** field exactly as shown in the Apple developer portal (used in export options; often not the same as the `.mobileprovision` filename). |
 | `IOS_GOOGLESERVICE_INFO_PLIST_BASE64` | **Base64** of your real `GoogleService-Info.plist` (this file is not committed to the repo). |
 | `IOS_APP_STORE_CONNECT_API_KEY_JSON` | One JSON file used by Fastlane for upload, with keys **`key_id`**, **`issuer_id`**, and **`key`** (the `.p8` private key PEM as a string, including `\\n` for newlines if stored on one line). Create the key under [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **App Store Connect API** → **Team keys** (role must allow uploads, e.g. **App Manager** or **Admin**). |
+| `IOS_APP_STORE_CONNECT_ITC_TEAM_ID` | **Optional.** Numeric **App Store Connect** team ID (shown when you click your name in the top-right of App Store Connect). Set this if Fastlane picks the wrong team or you have multiple teams. Not the same as the 10-character Apple Developer **Team ID**. |
 
 **How to base64 a file (macOS):** `base64 -i YourFile.p12 | pbcopy` then paste into the secret. For the provisioning profile: `base64 -i YourProfile.mobileprovision | pbcopy`. For plist: `base64 -i GoogleService-Info.plist | pbcopy`.
 

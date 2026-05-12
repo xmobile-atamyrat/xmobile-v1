@@ -1,4 +1,5 @@
-# Manual TestFlight upload (workflow_dispatch). Secrets: docs/mobile/ios/README.md
+# Manual TestFlight: build job uploads IPA artifact; upload job sends it to ASC.
+# If upload fails: Actions → failed run → Re-run failed jobs (skips rebuild when build succeeded).
 
 name: iOS TestFlight upload
 
@@ -13,8 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  build-and-upload:
-    name: Build and upload
+  build:
+    name: Build IPA
     runs-on: macos-14
     timeout-minutes: 120
     environment: ios-appstore-release
@@ -33,6 +34,12 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: mobile/node_modules
+          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v1
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -41,7 +48,17 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      - run: bundle install --jobs 4 --retry 3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: mobile
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: ${{ runner.os }}-mobile-pods-${{ hashFiles('mobile/yarn.lock', 'mobile/package.json', 'mobile/ios/Podfile', 'mobile/Gemfile.lock', 'mobile/ios/mobile.xcodeproj/project.pbxproj') }}-v1
 
       - name: GoogleService-Info.plist
         env:
@@ -139,32 +156,75 @@ jobs:
 
       - name: Export IPA
         working-directory: mobile/ios
+        id: export
         run: |
           set -euo pipefail
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/mobile.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist ExportOptions.plist
+          IPA_PATH=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -n 1)
+          if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
+            echo "IPA not found under $RUNNER_TEMP/export"
+            exit 1
+          fi
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
 
-      - run: sudo gem install fastlane -N
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: ${{ steps.export.outputs.ipa_path }}
+          retention-days: 14
+          if-no-files-found: error
+
+  upload:
+    name: Upload to TestFlight
+    needs: build
+    runs-on: macos-14
+    timeout-minutes: 30
+    environment: ios-appstore-release
+
+    env:
+      IOS_BUNDLE_ID: com.xmobile.app
+      FASTLANE_OPT_OUT_USAGE: '1'
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: ipa
 
       - name: Upload
         env:
           IOS_APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.IOS_APP_STORE_CONNECT_API_KEY_JSON }}
+          IOS_APP_STORE_CONNECT_ITC_TEAM_ID: ${{ secrets.IOS_APP_STORE_CONNECT_ITC_TEAM_ID }}
         run: |
           set -euo pipefail
           if [ -z "${IOS_APP_STORE_CONNECT_API_KEY_JSON:-}" ]; then
             echo "Missing secret IOS_APP_STORE_CONNECT_API_KEY_JSON"
             exit 1
           fi
-          IPA_PATH=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -n 1)
+          if [ -n "${IOS_APP_STORE_CONNECT_ITC_TEAM_ID:-}" ]; then
+            export FASTLANE_ITC_TEAM_ID="$IOS_APP_STORE_CONNECT_ITC_TEAM_ID"
+          fi
+          IPA_PATH=$(find ipa -name '*.ipa' | head -n 1)
           if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
-            echo "IPA not found under $RUNNER_TEMP/export"
+            echo "IPA artifact missing under ipa/"
             exit 1
           fi
           printf '%s\n' "$IOS_APP_STORE_CONNECT_API_KEY_JSON" > "$RUNNER_TEMP/api_key.json"
-          fastlane pilot upload \
+          python3 -c "import json,os,pathlib;p=pathlib.Path(os.environ['RUNNER_TEMP'])/'api_key.json';d=json.loads(p.read_text());k=d.get('key') or d.get('private_key');assert k and d.get('key_id') and d.get('issuer_id'),'JSON needs key_id, issuer_id, key (or private_key)';d['key']=k;p.write_text(json.dumps(d))"
+          sudo gem install fastlane -N
+          if ! fastlane pilot upload \
+            --app_identifier "$IOS_BUNDLE_ID" \
             --ipa "$IPA_PATH" \
             --api_key_path "$RUNNER_TEMP/api_key.json" \
-            --skip_waiting_for_build_processing
+            --skip_waiting_for_build_processing; then
+            rm -f "$RUNNER_TEMP/api_key.json"
+            echo "Upload failed. Common causes:"
+            echo "  1) Create the app in App Store Connect with bundle ID $IOS_BUNDLE_ID."
+            echo "  2) Multi-team: set IOS_APP_STORE_CONNECT_ITC_TEAM_ID (numeric, App Store Connect → your name)."
+            echo "  3) API key JSON: key_id, issuer_id, key (PEM)."
+            exit 1
+          fi
           rm -f "$RUNNER_TEMP/api_key.json"
