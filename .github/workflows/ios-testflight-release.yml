@@ -1,14 +1,4 @@
-# Manual iOS archive + upload to App Store Connect for the React Native app under mobile/.
-#
-# Upload uses Fastlane Pilot: the IPA is sent for processing and shows up under TestFlight
-# (internal/external testing). It does NOT submit for App Review or release to the public
-# App Store — that remains a manual step in App Store Connect.
-#
-# Triggers only from the Actions tab (workflow_dispatch). Uses Environment ios-appstore-release
-# (put secrets there or as repository secrets; same names). Add required reviewers on that
-# environment in Repo Settings → Environments if you want approval before the job runs.
-#
-# Secret list: docs/mobile/ios/README.md (CI section).
+# Manual TestFlight upload (workflow_dispatch). Secrets: docs/mobile/ios/README.md
 
 name: iOS TestFlight upload
 
