@@ -38,11 +38,9 @@ Alternatively, you can open the workspace file directly in Xcode:
 
 ## GitHub Actions: manual TestFlight upload
 
-The workflow **iOS TestFlight upload** (`.github/workflows/ios-appstore-release.yml`) runs **only** when triggered from the **Actions** tab (**Run workflow**). It does **not** run on push or pull request.
+The workflow **iOS TestFlight upload** (`.github/workflows/ios-testflight-release.yml`) runs **only** from **Actions → Run workflow**. It does not run on push or PR.
 
-**What it does:** builds a **Release** IPA and, if you choose **yes** for upload, runs **`fastlane pilot upload`**, which sends the build to **App Store Connect**. After Apple finishes processing, the build appears under **TestFlight** for **internal** or **external** testing (testers and groups are configured in App Store Connect).
-
-**What it does *not* do:** it does **not** submit the app for **App Review**, does **not** release to the **public App Store**, and does **not** change pricing or metadata. Shipping to production on the store stays a **manual** step in App Store Connect (unless you add different automation later).
+It builds a **Release** IPA, then **`fastlane pilot upload`** sends it to **App Store Connect**; after processing it appears under **TestFlight**. It does **not** submit for App Review or release to the public App Store.
 
 ### Optional: require approval before the job runs
 
@@ -83,4 +81,4 @@ If your `.p8` uses real newlines, you can paste multi-line JSON into the secret;
 
 ### Run the workflow
 
-**Actions** → **iOS TestFlight upload** → **Run workflow**. Choose branch, then **Upload IPA to App Store Connect**: **yes** (default) or **no** to only build and export without uploading (still needs all signing secrets for the archive/export).
+**Actions** → **iOS TestFlight upload** → **Run workflow** (pick branch if needed).

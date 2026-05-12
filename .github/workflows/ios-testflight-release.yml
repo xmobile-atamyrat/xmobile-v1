@@ -1,30 +1,12 @@
-# Manual iOS archive + upload to App Store Connect for the React Native app under mobile/.
-#
-# Upload uses Fastlane Pilot: the IPA is sent for processing and shows up under TestFlight
-# (internal/external testing). It does NOT submit for App Review or release to the public
-# App Store — that remains a manual step in App Store Connect.
-#
-# Triggers only from the Actions tab (workflow_dispatch). Uses Environment ios-appstore-release
-# (put secrets there or as repository secrets; same names). Add required reviewers on that
-# environment in Repo Settings → Environments if you want approval before the job runs.
-#
-# Secret list: docs/mobile/ios/README.md (CI section).
+# Manual TestFlight upload (workflow_dispatch). Secrets: docs/mobile/ios/README.md
 
 name: iOS TestFlight upload
 
 on:
   workflow_dispatch:
-    inputs:
-      upload_to_app_store:
-        description: 'Upload IPA to App Store Connect after a successful archive'
-        type: choice
-        options:
-          - 'yes'
-          - 'no'
-        default: 'yes'
 
 concurrency:
-  group: ios-appstore-release
+  group: ios-testflight-release
   cancel-in-progress: false
 
 permissions:
@@ -32,7 +14,7 @@ permissions:
 
 jobs:
   build-and-upload:
-    name: Archive, export IPA, optional upload
+    name: Build and upload
     runs-on: macos-14
     timeout-minutes: 120
     environment: ios-appstore-release
@@ -45,28 +27,23 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+      - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: yarn
           cache-dependency-path: mobile/yarn.lock
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
+      - run: yarn install --frozen-lockfile
 
-      - name: Bundle install (CocoaPods)
-        run: bundle install --jobs 4 --retry 3
+      - run: bundle install --jobs 4 --retry 3
 
-      - name: Write GoogleService-Info.plist
+      - name: GoogleService-Info.plist
         env:
           IOS_GOOGLESERVICE_INFO_PLIST_BASE64: ${{ secrets.IOS_GOOGLESERVICE_INFO_PLIST_BASE64 }}
         run: |
@@ -77,17 +54,15 @@ jobs:
           fi
           echo -n "$IOS_GOOGLESERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/mobile/GoogleService-Info.plist
 
-      - name: CocoaPods
-        run: bundle exec pod install --project-directory=ios
+      - run: bundle exec pod install --project-directory=ios
 
-      - name: Import distribution certificate
-        uses: apple-actions/import-codesign-certs@v3
+      - uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_BASE64 }}
           p12-password: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_PASSWORD }}
           keychain-password: ${{ secrets.IOS_CI_KEYCHAIN_PASSWORD }}
 
-      - name: Install App Store provisioning profile
+      - name: Provisioning profile
         env:
           IOS_APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_APPSTORE_PROVISIONING_PROFILE_BASE64 }}
         run: |
@@ -103,7 +78,7 @@ jobs:
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
 
-      - name: Write ExportOptions.plist
+      - name: ExportOptions.plist
         env:
           IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
           IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
@@ -144,7 +119,7 @@ jobs:
           "
           /usr/libexec/PlistBuddy -c 'Print' ios/ExportOptions.plist >/dev/null
 
-      - name: Xcode archive (Release)
+      - name: Archive
         working-directory: mobile/ios
         env:
           IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
@@ -171,18 +146,15 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist ExportOptions.plist
 
-      - name: Install Fastlane (upload only)
-        if: github.event.inputs.upload_to_app_store == 'yes'
-        run: sudo gem install fastlane -N
+      - run: sudo gem install fastlane -N
 
-      - name: Upload to App Store Connect
-        if: github.event.inputs.upload_to_app_store == 'yes'
+      - name: Upload
         env:
           IOS_APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.IOS_APP_STORE_CONNECT_API_KEY_JSON }}
         run: |
           set -euo pipefail
           if [ -z "${IOS_APP_STORE_CONNECT_API_KEY_JSON:-}" ]; then
-            echo "Missing secret IOS_APP_STORE_CONNECT_API_KEY_JSON (or disable upload in workflow inputs)"
+            echo "Missing secret IOS_APP_STORE_CONNECT_API_KEY_JSON"
             exit 1
           fi
           IPA_PATH=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -n 1)
