@@ -38,8 +38,15 @@ target 'mobile' do
     )
     
     installer.pods_project.targets.each do |target|
-      if target.name == 'fmt'
-        target.build_configurations.each do |config|
+      target.build_configurations.each do |config|
+        # Disable code signing for all Pod targets
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        config.build_settings['CODE_SIGN_IDENTITY'] = ''
+        config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ''
+        config.build_settings['CODE_SIGN_STYLE'] = 'Automatic'
+        
+        # Your existing fmt fix
+        if target.name == 'fmt'
           config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
         end
       end
