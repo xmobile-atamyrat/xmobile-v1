@@ -5,6 +5,15 @@ name: iOS TestFlight upload
 
 on:
   workflow_dispatch:
+    inputs:
+      ios_version:
+        description: 'Marketing version (CFBundleShortVersionString), e.g. 1.0.3'
+        required: true
+        type: string
+      ios_build_number:
+        description: 'Build number (CFBundleVersion); must increase each upload. Leave empty to use the workflow run number.'
+        required: false
+        type: string
 
 concurrency:
   group: ios-testflight-release
@@ -136,6 +145,33 @@ jobs:
           "
           /usr/libexec/PlistBuddy -c 'Print' ios/ExportOptions.plist >/dev/null
 
+      - name: Set iOS version for release
+        env:
+          IOS_VERSION_INPUT: ${{ inputs.ios_version }}
+          IOS_BUILD_NUMBER_INPUT: ${{ inputs.ios_build_number }}
+        run: |
+          set -euo pipefail
+          MARKETING_VERSION="${IOS_VERSION_INPUT// /}"
+          BUILD_NUMBER="${IOS_BUILD_NUMBER_INPUT// /}"
+          if [ -z "$MARKETING_VERSION" ]; then
+            echo "ios_version is required"
+            exit 1
+          fi
+          if ! [[ "$MARKETING_VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "ios_version must look like 1, 1.0, or 1.0.3 (got: $MARKETING_VERSION)"
+            exit 1
+          fi
+          if [ -z "$BUILD_NUMBER" ]; then
+            BUILD_NUMBER="${{ github.run_number }}"
+          fi
+          if ! [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "ios_build_number must be a positive integer (got: $BUILD_NUMBER)"
+            exit 1
+          fi
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> "$GITHUB_ENV"
+          echo "CURRENT_PROJECT_VERSION=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "Release version: $MARKETING_VERSION ($BUILD_NUMBER)"
+
       - name: Archive
         working-directory: mobile/ios
         env:
@@ -149,6 +185,8 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/mobile.xcarchive" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$IOS_DEVELOPMENT_TEAM" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
