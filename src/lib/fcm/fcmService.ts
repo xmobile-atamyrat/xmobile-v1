@@ -145,14 +145,6 @@ export async function sendFCMNotificationToUser(
           channelId: 'xmobile_notifications',
         },
       },
-      apns: {
-        payload: {
-          aps: {
-            sound: 'default',
-            badge: 1,
-          },
-        },
-      },
       tokens: tokenStrings,
     };
 
