@@ -51,6 +51,8 @@ googleservice-info.plist
 mobile/ios/Podfile.lock
 mobile/ios/mobile.xcworkspace
 mobile/Gemfile.lock
+# Xcode
+mobile/ios/mobile.xcodeproj/project.xcworkspace/
 
 # Xcode user data
 *.xcuserstate
