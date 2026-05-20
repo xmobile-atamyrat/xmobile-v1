@@ -48,13 +48,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     return true
   }
 
-  // Called when APNs successfully registers — hand the token to the FCM SDK
-  func application(
-    _ application: UIApplication,
-    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-  ) {
-    Messaging.messaging().apnsToken = deviceToken
-  }
 
   // Called when APNs registration fails (simulator, provisioning issues, etc.)
   func application(
