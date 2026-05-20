@@ -54,7 +54,7 @@ export default function NotificationPermissionBanner() {
       return false;
     }
 
-    if (!hasNotificationPermission()) {
+    if (!isWebView() && !hasNotificationPermission()) {
       console.warn('[FCM Banner] Cannot initialize: permission not granted');
       return false;
     }
