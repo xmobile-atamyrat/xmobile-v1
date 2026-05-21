@@ -68,3 +68,4 @@ ssl_keys
 fcm-configs
 .aider*
 nginx/
+docker/nginx-local/images
