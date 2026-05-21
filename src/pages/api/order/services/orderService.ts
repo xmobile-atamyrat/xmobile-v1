@@ -248,7 +248,7 @@ export async function createGuestOrder(
     order.id,
     order.orderNumber,
     'NEW_ORDER',
-    order.userName || 'Guest',
+    order.userName || 'Гость',
   )
     .then((notifications) => {
       notifications.forEach((notification) => {
@@ -597,7 +597,7 @@ export async function cancelGuestOrderByUser(
     updatedOrder.id,
     updatedOrder.orderNumber,
     'ORDER_CANCELLED',
-    updatedOrder.userName || 'Guest',
+    updatedOrder.userName || 'Гость',
   )
     .then((notifications) => {
       notifications.forEach((notification) => {

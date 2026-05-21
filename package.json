@@ -30,7 +30,10 @@
     "db:studio-dev": "test -f .env.local && npx dotenv -e .env.local -- npx prisma studio",
     "db:history-dev": "test -f .env.local && npx dotenv -e .env.local -- npx prisma migrate status",
     "prepare": "husky",
-    "tunnel": "./tunnel-client.sh"
+    "tunnel": "./tunnel-client.sh",
+    "docker:media-up": "docker compose up -d nginx-media",
+    "docker:media-down": "docker compose stop nginx-media",
+    "docker:media-logs": "docker compose logs -f nginx-media"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

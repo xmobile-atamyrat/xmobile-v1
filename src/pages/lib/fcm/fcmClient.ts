@@ -275,26 +275,51 @@ let pendingNativeTokenPromise: Promise<{
   uniqueId: string;
 } | null> | null = null;
 
+function getReactNativeWebView(): Promise<any> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve(null);
+      return;
+    }
+    if ((window as any).ReactNativeWebView) {
+      resolve((window as any).ReactNativeWebView);
+      return;
+    }
+    let count = 0;
+    const interval = setInterval(() => {
+      count += 1;
+      if ((window as any).ReactNativeWebView) {
+        clearInterval(interval);
+        resolve((window as any).ReactNativeWebView);
+      } else if (count > 60) {
+        // 3 seconds timeout
+        clearInterval(interval);
+        resolve(null);
+      }
+    }, 50);
+  });
+}
+
 /**
  * Request native FCM token via React Native WebView bridge (Android only for now)
  * Used when running inside the mobile app WebView instead of browser FCM.
  */
-export function getNativeFCMTokenViaBridge(): Promise<{
+export async function getNativeFCMTokenViaBridge(): Promise<{
   token: string;
   uniqueId: string;
 } | null> {
   if (!isWebView()) {
-    return Promise.resolve(null);
+    return null;
   }
 
   if (typeof window === 'undefined') {
-    return Promise.resolve(null);
+    return null;
   }
 
-  const rnWebView = (window as any).ReactNativeWebView;
+  const rnWebView = await getReactNativeWebView();
   if (!rnWebView || typeof rnWebView.postMessage !== 'function') {
     console.warn('[FCM] ReactNativeWebView bridge not available');
-    return Promise.resolve(null);
+    return null;
   }
 
   if (pendingNativeTokenPromise) {

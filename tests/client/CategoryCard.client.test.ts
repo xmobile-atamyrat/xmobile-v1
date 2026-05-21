@@ -22,7 +22,6 @@ describe('CategoryCard (all products tile)', () => {
 
     renderWithProviders(
       createElement(CategoryCard, {
-        id: 'all-products',
         name: JSON.stringify({ tk: 'Hemme', en: 'All' }),
         initialImgUrl: ALL_PRODUCTS_CATEGORY_CARD,
         onClick,

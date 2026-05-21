@@ -1,27 +1,18 @@
+# Local media serving (same nginx alias layout as production VM).
+#
+# 1. Copy or symlink image dirs into docker/nginx-local/images/... (see prod paths).
+# 2. Copy .env.example entry LOCAL_NGINX_MEDIA_ORIGIN into .env.local
+# 3. docker compose up -d nginx-media
+# 4. yarn dev — Next rewrites /media/* to this container
+
 services:
-  db:
-    image: postgres:latest
-    container_name: db
+  nginx-media:
+    image: nginx:1.24-alpine
     ports:
-      - '5433:5432'
+      - '8080:80'
     volumes:
-      - db:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_NAME=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-
-  build_env:
-    container_name: build_env
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: build_env
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/postgres?schema=public
-    depends_on:
-      - db
-    command: 'tail -f /dev/null'
-
-volumes:
-  db:
+      - ./docker/nginx-local/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx-local/images/products:/home/ubuntu/images/products:ro
+      - ./docker/nginx-local/images/compressed/products/bad:/home/ubuntu/images/compressed/products/bad:ro
+      - ./docker/nginx-local/images/compressed/products/good:/home/ubuntu/images/compressed/products/good:ro
+      - ./docker/nginx-local/images/categories:/home/ubuntu/images/categories:ro

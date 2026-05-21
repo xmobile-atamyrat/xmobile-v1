@@ -1,0 +1,281 @@
+# Manual TestFlight: build job uploads IPA artifact; upload job sends it to ASC.
+# If upload fails: Actions → failed run → Re-run failed jobs (skips rebuild when build succeeded).
+
+name: iOS TestFlight upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      ios_version:
+        description: 'Marketing version (CFBundleShortVersionString), e.g. 1.0.3'
+        required: true
+        type: string
+      ios_build_number:
+        description: 'Build number (CFBundleVersion); must increase each upload. Leave empty to use the workflow run number.'
+        required: false
+        type: string
+
+concurrency:
+  group: ios-testflight-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build IPA
+    runs-on: macos-26
+    timeout-minutes: 120
+    environment: ios-appstore-release
+    defaults:
+      run:
+        working-directory: mobile
+
+    env:
+      IOS_BUNDLE_ID: com.xmobile.app
+      NODE_OPTIONS: --max-old-space-size=8192
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: mobile/node_modules
+          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: yarn
+          cache-dependency-path: mobile/yarn.lock
+
+      - run: yarn install --frozen-lockfile
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: mobile
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: ${{ runner.os }}-mobile-pods-${{ hashFiles('mobile/yarn.lock', 'mobile/package.json', 'mobile/ios/Podfile', 'mobile/Gemfile.lock', 'mobile/ios/mobile.xcodeproj/project.pbxproj') }}-v2
+
+      - name: GoogleService-Info.plist
+        env:
+          IOS_GOOGLESERVICE_INFO_PLIST_BASE64: ${{ secrets.IOS_GOOGLESERVICE_INFO_PLIST_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${IOS_GOOGLESERVICE_INFO_PLIST_BASE64:-}" ]; then
+            echo "Missing secret IOS_GOOGLESERVICE_INFO_PLIST_BASE64"
+            exit 1
+          fi
+          echo -n "$IOS_GOOGLESERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/mobile/GoogleService-Info.plist
+
+      - run: bundle exec pod install --project-directory=ios
+
+      - uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_PASSWORD }}
+          keychain-password: ${{ secrets.IOS_CI_KEYCHAIN_PASSWORD }}
+
+      - name: Provisioning profile
+        env:
+          IOS_APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_APPSTORE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${IOS_APPSTORE_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            echo "Missing secret IOS_APPSTORE_PROVISIONING_PROFILE_BASE64"
+            exit 1
+          fi
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo -n "$IOS_APPSTORE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/profile.plist")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+
+      - name: ExportOptions.plist
+        env:
+          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+          IOS_BUNDLE_ID: com.xmobile.app
+        run: |
+          set -euo pipefail
+          if [ -z "${IOS_DEVELOPMENT_TEAM:-}" ] || [ -z "${IOS_PROVISIONING_PROFILE_NAME:-}" ]; then
+            echo "Missing IOS_DEVELOPMENT_TEAM or IOS_PROVISIONING_PROFILE_NAME"
+            exit 1
+          fi
+          python3 -c "
+          import os, pathlib, textwrap
+          team = os.environ['IOS_DEVELOPMENT_TEAM']
+          prof = os.environ['IOS_PROVISIONING_PROFILE_NAME']
+          bid = os.environ['IOS_BUNDLE_ID']
+          body = textwrap.dedent(f'''\
+          <?xml version=\"1.0\" encoding=\"UTF-8\"?>
+          <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+          <plist version=\"1.0\">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>{team}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>{bid}</key>
+              <string>{prof}</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          ''')
+          pathlib.Path('ios/ExportOptions.plist').write_text(body)
+          "
+          /usr/libexec/PlistBuddy -c 'Print' ios/ExportOptions.plist >/dev/null
+
+      - name: Set iOS version for release
+        env:
+          IOS_VERSION_INPUT: ${{ inputs.ios_version }}
+          IOS_BUILD_NUMBER_INPUT: ${{ inputs.ios_build_number }}
+        run: |
+          set -euo pipefail
+          MARKETING_VERSION="${IOS_VERSION_INPUT// /}"
+          BUILD_NUMBER="${IOS_BUILD_NUMBER_INPUT// /}"
+          if [ -z "$MARKETING_VERSION" ]; then
+            echo "ios_version is required"
+            exit 1
+          fi
+          if ! [[ "$MARKETING_VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "ios_version must look like 1, 1.0, or 1.0.3 (got: $MARKETING_VERSION)"
+            exit 1
+          fi
+          if [ -z "$BUILD_NUMBER" ]; then
+            BUILD_NUMBER="${{ github.run_number }}"
+          fi
+          if ! [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "ios_build_number must be a positive integer (got: $BUILD_NUMBER)"
+            exit 1
+          fi
+          echo "MARKETING_VERSION=$MARKETING_VERSION" >> "$GITHUB_ENV"
+          echo "CURRENT_PROJECT_VERSION=$BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "Release version: $MARKETING_VERSION ($BUILD_NUMBER)"
+
+      - name: Archive
+        working-directory: mobile/ios
+        env:
+          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -workspace mobile.xcworkspace \
+            -scheme mobile \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/mobile.xcarchive" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$IOS_DEVELOPMENT_TEAM" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROVISIONING_PROFILE_NAME"
+
+      - name: Export IPA
+        working-directory: mobile/ios
+        id: export
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/mobile.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ExportOptions.plist
+          IPA_PATH=$(find "$RUNNER_TEMP/export" -name '*.ipa' | head -n 1)
+          if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
+            echo "IPA not found under $RUNNER_TEMP/export"
+            exit 1
+          fi
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: ${{ steps.export.outputs.ipa_path }}
+          retention-days: 14
+          if-no-files-found: error
+
+  upload:
+    name: Upload to TestFlight
+    needs: build
+    runs-on: macos-26
+    timeout-minutes: 30
+    environment: ios-appstore-release
+
+    env:
+      IOS_BUNDLE_ID: com.xmobile.app
+      FASTLANE_OPT_OUT_USAGE: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: mobile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: ipa
+
+      - name: Upload
+        working-directory: mobile
+        env:
+          IOS_APP_STORE_CONNECT_API_KEY_JSON: ${{ secrets.IOS_APP_STORE_CONNECT_API_KEY_JSON }}
+          IOS_APP_STORE_CONNECT_ITC_TEAM_ID: ${{ secrets.IOS_APP_STORE_CONNECT_ITC_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${IOS_APP_STORE_CONNECT_API_KEY_JSON:-}" ]; then
+            echo "Missing secret IOS_APP_STORE_CONNECT_API_KEY_JSON"
+            exit 1
+          fi
+          if [ -n "${IOS_APP_STORE_CONNECT_ITC_TEAM_ID:-}" ]; then
+            export FASTLANE_ITC_TEAM_ID="$IOS_APP_STORE_CONNECT_ITC_TEAM_ID"
+          fi
+          IPA_PATH=$(find "$GITHUB_WORKSPACE/ipa" -name '*.ipa' | head -n 1)
+          if [ -z "$IPA_PATH" ] || [ ! -f "$IPA_PATH" ]; then
+            echo "IPA artifact missing (expected $GITHUB_WORKSPACE/ipa/*.ipa)"
+            exit 1
+          fi
+          printf '%s\n' "$IOS_APP_STORE_CONNECT_API_KEY_JSON" > "$RUNNER_TEMP/api_key.json"
+          python3 -c "import json,os,pathlib;p=pathlib.Path(os.environ['RUNNER_TEMP'])/'api_key.json';d=json.loads(p.read_text());k=d.get('key') or d.get('private_key');assert k and d.get('key_id') and d.get('issuer_id'),'JSON needs key_id, issuer_id, key (or private_key)';d['key']=k;p.write_text(json.dumps(d))"
+          if ! bundle exec fastlane pilot upload \
+            --app_identifier "$IOS_BUNDLE_ID" \
+            --ipa "$IPA_PATH" \
+            --api_key_path "$RUNNER_TEMP/api_key.json" \
+            --skip_waiting_for_build_processing; then
+            rm -f "$RUNNER_TEMP/api_key.json"
+            echo "Upload failed. Common causes:"
+            echo "  1) Create the app in App Store Connect with bundle ID $IOS_BUNDLE_ID."
+            echo "  2) Multi-team: set IOS_APP_STORE_CONNECT_ITC_TEAM_ID (numeric, App Store Connect → your name)."
+            echo "  3) API key JSON: key_id, issuer_id, key (PEM)."
+            echo "  4) IPA built with too old an SDK: build job must use Xcode 26+ (see workflow runs-on / setup-xcode)."
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/api_key.json"

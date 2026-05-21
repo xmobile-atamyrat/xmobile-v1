@@ -79,7 +79,7 @@ export default function Signup() {
             variant="h3"
             className={`${signupClasses.h3[platform]} ${interClassname.className}`}
           >
-            {t('signUp')}
+            {t('signup')}
           </Typography>
         </Box>
         <Paper
@@ -517,7 +517,7 @@ export default function Signup() {
                   },
                 }}
               >
-                {t('signUp')}
+                {t('signup')}
               </Button>
             </Box>
 
@@ -532,7 +532,7 @@ export default function Signup() {
                 sx={{ color: colors.blackText }}
                 onClick={() => router.push('/user/signin')}
               >
-                {t('signIn')}
+                {t('signin')}
               </Button>
             </Box>
           </Box>
