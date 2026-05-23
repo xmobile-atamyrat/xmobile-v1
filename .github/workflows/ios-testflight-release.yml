@@ -49,6 +49,12 @@ jobs:
           path: mobile/node_modules
           key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v2
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: mobile/node_modules
+          key: ${{ runner.os }}-mobile-node-${{ hashFiles('mobile/yarn.lock') }}-v2
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
