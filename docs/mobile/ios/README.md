@@ -1,22 +1,26 @@
 # XMobile iOS App Guide
 
 This document details the iOS-specific configuration, commands, and setup for the XMobile React Native application.
+
 > **Note**: Full iOS support is slated for Phase 2, but the infrastructure is present.
 
 ## Getting Started
 
 1. **Install Dependencies (CocoaPods)**:
    Since iOS uses CocoaPods for native dependencies, you must install them before building:
+
    ```bash
    cd ios
    bundle install
    bundle exec pod install
    cd ..
    ```
-   *You must run `pod install` every time a new native dependency is added to the project.*
+
+   _You must run `pod install` every time a new native dependency is added to the project._
 
 2. **Start Metro Bundler**:
    From the `mobile` directory, start the Metro dev server:
+
    ```bash
    yarn start
    ```
@@ -66,17 +70,17 @@ If both **Build** and **Upload** use this environment and you use **required rev
 
 Create these secrets as **repository** secrets **or** (as you did) under the **`ios-appstore-release`** environment — **same names**. Environment-only secrets are only available when the job uses that environment.
 
-| Secret | What it is |
-|--------|----------------|
-| `IOS_DEVELOPMENT_TEAM` | Your **10-character Apple Team ID** (Membership details in [Apple Developer Account](https://developer.apple.com/account)). |
-| `IOS_DISTRIBUTION_CERT_P12_BASE64` | **Base64** of a **Distribution** certificate + private key exported as **`.p12`** from Keychain Access (or created in the portal and exported). Must match the cert used for App Store builds. |
-| `IOS_DISTRIBUTION_CERT_P12_PASSWORD` | Password you set when exporting that `.p12`. |
-| `IOS_CI_KEYCHAIN_PASSWORD` | Any strong random string; used only to create a temporary keychain on the runner (not your Apple password). |
-| `IOS_APPSTORE_PROVISIONING_PROFILE_BASE64` | **Base64** of the **App Store** provisioning profile for `com.xmobile.app` (download from [Profiles](https://developer.apple.com/account/resources/profiles/list); type **App Store**). |
-| `IOS_PROVISIONING_PROFILE_NAME` | The profile’s **Name** field exactly as shown in the Apple developer portal (used in export options; often not the same as the `.mobileprovision` filename). |
-| `IOS_GOOGLESERVICE_INFO_PLIST_BASE64` | **Base64** of your real `GoogleService-Info.plist` (this file is not committed to the repo). |
-| `IOS_APP_STORE_CONNECT_API_KEY_JSON` | One JSON file used by Fastlane for upload, with keys **`key_id`**, **`issuer_id`**, and **`key`** (the `.p8` private key PEM as a string, including `\\n` for newlines if stored on one line). Create the key under [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **App Store Connect API** → **Team keys** (role must allow uploads, e.g. **App Manager** or **Admin**). |
-| `IOS_APP_STORE_CONNECT_ITC_TEAM_ID` | **Optional.** Numeric **App Store Connect** team ID (shown when you click your name in the top-right of App Store Connect). Set this if Fastlane picks the wrong team or you have multiple teams. Not the same as the 10-character Apple Developer **Team ID**. |
+| Secret                                     | What it is                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `IOS_DEVELOPMENT_TEAM`                     | Your **10-character Apple Team ID** (Membership details in [Apple Developer Account](https://developer.apple.com/account)).                                                                                                                                                                                                                                                                                                    |
+| `IOS_DISTRIBUTION_CERT_P12_BASE64`         | **Base64** of a **Distribution** certificate + private key exported as **`.p12`** from Keychain Access (or created in the portal and exported). Must match the cert used for App Store builds.                                                                                                                                                                                                                                 |
+| `IOS_DISTRIBUTION_CERT_P12_PASSWORD`       | Password you set when exporting that `.p12`.                                                                                                                                                                                                                                                                                                                                                                                   |
+| `IOS_CI_KEYCHAIN_PASSWORD`                 | Any strong random string; used only to create a temporary keychain on the runner (not your Apple password).                                                                                                                                                                                                                                                                                                                    |
+| `IOS_APPSTORE_PROVISIONING_PROFILE_BASE64` | **Base64** of the **App Store** provisioning profile for `com.xmobile.app` (download from [Profiles](https://developer.apple.com/account/resources/profiles/list); type **App Store**).                                                                                                                                                                                                                                        |
+| `IOS_PROVISIONING_PROFILE_NAME`            | The profile’s **Name** field exactly as shown in the Apple developer portal (used in export options; often not the same as the `.mobileprovision` filename).                                                                                                                                                                                                                                                                   |
+| `IOS_GOOGLESERVICE_INFO_PLIST_BASE64`      | **Base64** of your real `GoogleService-Info.plist` (this file is not committed to the repo).                                                                                                                                                                                                                                                                                                                                   |
+| `IOS_APP_STORE_CONNECT_API_KEY_JSON`       | One JSON file used by Fastlane for upload, with keys **`key_id`**, **`issuer_id`**, and **`key`** (the `.p8` private key PEM as a string, including `\\n` for newlines if stored on one line). Create the key under [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **App Store Connect API** → **Team keys** (role must allow uploads, e.g. **App Manager** or **Admin**). |
+| `IOS_APP_STORE_CONNECT_ITC_TEAM_ID`        | **Optional.** Numeric **App Store Connect** team ID (shown when you click your name in the top-right of App Store Connect). Set this if Fastlane picks the wrong team or you have multiple teams. Not the same as the 10-character Apple Developer **Team ID**.                                                                                                                                                                |
 
 **How to base64 a file (macOS):** `base64 -i YourFile.p12 | pbcopy` then paste into the secret. For the provisioning profile: `base64 -i YourProfile.mobileprovision | pbcopy`. For plist: `base64 -i GoogleService-Info.plist | pbcopy`.
 

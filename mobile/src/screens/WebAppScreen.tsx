@@ -25,25 +25,75 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 /**
- * Permission check for Android 13+ (API 33+).
+ * Cross-platform notification permission check.
+ *
+ * - Android 13+ (API 33+): uses PermissionsAndroid.
+ * - iOS: uses the Firebase Messaging SDK which maps to
+ *   UNUserNotificationCenter.getNotificationSettings().
+ * - Older Android: always granted (no runtime permission needed).
  */
-async function checkNotificationPermission() {
-  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-    return await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
+async function checkNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    if (Number(Platform.Version) >= 33) {
+      return await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+    }
+    return true;
   }
-  return true;
+
+  // iOS — AuthorizationStatus values:
+  // AUTHORIZED = 1, PROVISIONAL = 3  → treat as granted
+  // NOT_DETERMINED = 0, DENIED = -1  → treat as not granted
+  const status = await messaging().hasPermission();
+  return (
+    status === messaging.AuthorizationStatus.AUTHORIZED ||
+    status === messaging.AuthorizationStatus.PROVISIONAL
+  );
 }
 
-async function requestNotificationPermission() {
-  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
-    return result === PermissionsAndroid.RESULTS.GRANTED;
+/**
+ * Cross-platform notification permission request.
+ *
+ * On iOS this triggers the native system alert (only shown once by the OS).
+ * On Android 13+ it shows the runtime permission dialog.
+ */
+async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    if (Number(Platform.Version) >= 33) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      return result === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
   }
-  return true;
+
+  // iOS — requestPermission shows the system alert the very first time.
+  // Subsequent calls return the already-stored status without showing the alert.
+  const status = await messaging().requestPermission({
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  });
+  return (
+    status === messaging.AuthorizationStatus.AUTHORIZED ||
+    status === messaging.AuthorizationStatus.PROVISIONAL
+  );
+}
+
+/**
+ * iOS requires explicit remote-message registration before getToken().
+ * APNs must also succeed (Push capability + aps-environment in the signed app).
+ */
+async function ensureIOSRegisteredForRemoteMessages(): Promise<void> {
+  if (Platform.OS !== 'ios') {
+    return;
+  }
+  if (!messaging().isDeviceRegisteredForRemoteMessages) {
+    await messaging().registerDeviceForRemoteMessages();
+  }
 }
 
 function LoadingView() {
@@ -169,8 +219,9 @@ function WebAppScreen() {
     }
   };
 
-  const fetchAndCacheToken = useCallback(async () => {
+  const fetchAndCacheToken = useCallback(async (): Promise<string | null> => {
     try {
+      await ensureIOSRegisteredForRemoteMessages();
       const token = await messaging().getToken();
       if (token) {
         setFcmToken(token);
@@ -190,12 +241,14 @@ function WebAppScreen() {
             true;
           `);
         }
+        return token;
       }
     } catch (error) {
       console.warn('[Native] Could not fetch FCM token:', error);
     } finally {
       fcmTokenFetchedRef.current = true;
     }
+    return null;
   }, []);
 
   // Initial token fetch on app start
@@ -276,14 +329,15 @@ function WebAppScreen() {
         console.error('Failed to get initial notification:', error);
       });
 
-    const unsubscribeTokenRefresh = messaging().onTokenRefresh(token => {
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(async token => {
       if (token) {
         setFcmToken(token);
         AsyncStorage.setItem('FCM_TOKEN_CACHE', token);
         if (webViewRef.current) {
+          const uniqueId = await DeviceInfo.getUniqueId();
           const payload = JSON.stringify({
             type: 'FCM_TOKEN_AVAILABLE',
-            payload: { token },
+            payload: { token, uniqueId },
           });
           webViewRef.current.injectJavaScript(`
             (function() {
@@ -567,10 +621,14 @@ function WebAppScreen() {
                   }
                 } else if (data.type === 'REQUEST_FCM_TOKEN') {
                   const uniqueId = await DeviceInfo.getUniqueId();
-                  if (fcmToken && webViewRef.current) {
+                  let token = fcmToken;
+                  if (!token) {
+                    token = await fetchAndCacheToken();
+                  }
+                  if (token && webViewRef.current) {
                     const payload = JSON.stringify({
                       type: 'FCM_TOKEN',
-                      payload: { token: fcmToken, uniqueId },
+                      payload: { token, uniqueId },
                     });
 
                     webViewRef.current.injectJavaScript(`
@@ -581,8 +639,6 @@ function WebAppScreen() {
                     })();
                     true;
                   `);
-                  } else {
-                    fetchAndCacheToken();
                   }
                 } else if (data.type === 'CHECK_PERMISSION') {
                   const status = await checkNotificationPermission();
