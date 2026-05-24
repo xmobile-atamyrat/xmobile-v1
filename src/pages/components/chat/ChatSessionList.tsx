@@ -17,15 +17,19 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 interface ChatSessionListProps {
   onSelectSession: (session: ChatSession) => void;
 }
 
-const formatLastActiveDate = (dateString: string) => {
+const formatLastActiveDate = (dateString: string, locale: string = 'en') => {
   const date = new Date(dateString);
   const now = new Date();
+
+  // Map 'ch' locale to 'tk' (Turkmen)
+  const activeLocale = locale === 'ch' ? 'tk' : locale;
 
   const isToday =
     date.getDate() === now.getDate() &&
@@ -33,11 +37,19 @@ const formatLastActiveDate = (dateString: string) => {
     date.getFullYear() === now.getFullYear();
 
   if (isToday) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(activeLocale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
   if (date.getFullYear() === now.getFullYear()) {
-    return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+    // Show [Month] [dd] for the current year
+    return date.toLocaleDateString(activeLocale, {
+      month: 'short',
+      day: 'numeric',
+    });
   }
+  // Show dd.mm.yy for previous years
   return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getFullYear()).slice(-2)}`;
 };
 
@@ -46,6 +58,8 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
   const { sessions, loadSessions } = useChatContext();
   const platform = usePlatform();
   const t = useTranslations();
+  const router = useRouter();
+  const locale = router.locale || 'en';
 
   useEffect(() => {
     loadSessions();
@@ -133,7 +147,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                   <Box sx={{ position: 'relative', flex: 1 }}>
                     <ListItemText
                       primary={userInfo}
-                      secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string)}`}
+                      secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string, locale)}`}
                       primaryTypographyProps={{
                         fontSize: '14px',
                         fontWeight: 500,
@@ -202,7 +216,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                     <Box sx={{ position: 'relative', flex: 1 }}>
                       <ListItemText
                         primary={userInfo}
-                        secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string)}`}
+                        secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string, locale)}`}
                         primaryTypographyProps={{
                           fontSize: '14px',
                           fontWeight: 500,
