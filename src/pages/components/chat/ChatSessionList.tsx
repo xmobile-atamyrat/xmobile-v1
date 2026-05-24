@@ -1,6 +1,7 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { TK_MONTHS_SHORT } from '@/pages/lib/constants';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -28,7 +29,7 @@ const formatLastActiveDate = (dateString: string, locale: string = 'en') => {
   const date = new Date(dateString);
   const now = new Date();
 
-  // Map 'ch' locale to 'tk' (Turkmen)
+  // map 'ch' locale to 'tk' (Turkmen)
   const activeLocale = locale === 'ch' ? 'tk' : locale;
 
   const isToday =
@@ -43,14 +44,24 @@ const formatLastActiveDate = (dateString: string, locale: string = 'en') => {
     });
   }
   if (date.getFullYear() === now.getFullYear()) {
-    // Show [Month] [dd] for the current year
+    if (activeLocale === 'tk') {
+      // for Turkmen, use custom short month names
+      const month = TK_MONTHS_SHORT[date.getMonth()];
+      const day = date.getDate();
+      return `${month} ${day}`;
+    }
+
     return date.toLocaleDateString(activeLocale, {
       month: 'short',
       day: 'numeric',
     });
   }
-  // Show dd.mm.yy for previous years
-  return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getFullYear()).slice(-2)}`;
+  // show dd.mm.yy for previous years
+  return date.toLocaleDateString(activeLocale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 };
 
 const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
