@@ -414,13 +414,16 @@ export const setCookie = (
 
 export const deleteCookie = (name: string) => {
   if (typeof document !== 'undefined') {
+    const isProduction = process.env.NODE_ENV === 'production';
     const commonOptions = {
       maxAge: 0,
       path: '/',
+      secure: isProduction,
+      sameSite: 'strict' as const,
     };
     document.cookie = cookie.serialize(name, '', commonOptions);
 
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction) {
       const domains = ['xmobile.com.tm', '.xmobile.com.tm'];
       domains.forEach((domain) => {
         document.cookie = cookie.serialize(name, '', {

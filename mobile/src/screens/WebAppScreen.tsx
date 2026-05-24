@@ -383,8 +383,8 @@ function WebAppScreen() {
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      // isConnected will be false when there's no internet
-      const offline = !(state.isConnected && state.isInternetReachable);
+      // isConnected will be false when there's no internet interface connection
+      const offline = state.isConnected === false;
       setIsOffline(offline);
       // If internet comes back, clear the webview error so it can retry rendering
       if (!offline) {
@@ -473,19 +473,27 @@ function WebAppScreen() {
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isDevMode ? '' : '; Secure';
 
-    return `
-      ${
-        storedToken
-          ? `document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
-          : ''
-      }
-      ${
-        storedLocale
-          ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
-          : ''
-      }
-      true;
-    `;
+    if (storedToken) {
+      return `
+        document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";
+        ${
+          storedLocale
+            ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
+            : ''
+        }
+        true;
+      `;
+    } else {
+      return `
+        document.cookie = "REFRESH_TOKEN=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";
+        ${
+          cookieDomain
+            ? `document.cookie = "REFRESH_TOKEN=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";`
+            : ''
+        }
+        true;
+      `;
+    }
   }, [storedToken, storedLocale, cookieDomain, isDevMode]);
 
   useEffect(() => {
@@ -724,7 +732,7 @@ function WebAppScreen() {
               setHasWebviewError(false);
               // Force NetInfo to fetch current state (NetInfo addEventListener is sometimes lazy on VPNs)
               NetInfo.fetch().then(state => {
-                setIsOffline(!(state.isConnected && state.isInternetReachable));
+                setIsOffline(state.isConnected === false);
               });
             }}
           >
