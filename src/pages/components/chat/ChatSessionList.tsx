@@ -23,6 +23,24 @@ interface ChatSessionListProps {
   onSelectSession: (session: ChatSession) => void;
 }
 
+const formatLastActiveDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+  return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getFullYear()).slice(-2)}`;
+};
+
 const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
   const { user } = useUserContext();
   const { sessions, loadSessions } = useChatContext();
@@ -115,7 +133,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                   <Box sx={{ position: 'relative', flex: 1 }}>
                     <ListItemText
                       primary={userInfo}
-                      secondary={`${t('chatLastActive')}: ${new Date(session.updatedAt).toLocaleTimeString()}`}
+                      secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string)}`}
                       primaryTypographyProps={{
                         fontSize: '14px',
                         fontWeight: 500,
@@ -184,7 +202,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                     <Box sx={{ position: 'relative', flex: 1 }}>
                       <ListItemText
                         primary={userInfo}
-                        secondary={`${t('chatLastActive')}: ${new Date(session.updatedAt).toLocaleTimeString()}`}
+                        secondary={`${t('chatLastActive')}: ${formatLastActiveDate(session.updatedAt as string)}`}
                         primaryTypographyProps={{
                           fontSize: '14px',
                           fontWeight: 500,
