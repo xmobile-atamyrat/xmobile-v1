@@ -138,3 +138,18 @@ export const LOCALE_TO_OG_LOCALE = {
   ch: 'tk_TM',
   tr: 'tr_TR',
 } as const;
+
+export const TK_MONTHS_SHORT = [
+  'Ýan',
+  'Few',
+  'Mar',
+  'Apr',
+  'Maý',
+  'Iýn',
+  'Iýl',
+  'Awg',
+  'Sen',
+  'Okt',
+  'Noý',
+  'Dek',
+];
