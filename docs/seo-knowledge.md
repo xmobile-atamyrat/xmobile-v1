@@ -13,7 +13,7 @@ All pages render standard `<head>` meta tags:
 
 ### Structured Data (JSON-LD)
 JSON-LD powers rich results in search engines:
-- **Product**: Includes `name`, `image`, `description`, `sku`, `brand`, and `offers` (price/currency).
+- **Product**: Includes `name`, `image`, and `offers` (price/currency), with optional `brand` and `description` when available.
 - **Breadcrumb**: Defines the page hierarchy for search engine breadcrumb trails.
 - **Organization & LocalBusiness**: Establishes brand identity and links physical stores to the website via unique `@id` identifiers (e.g., `https://xmobile.tm/#store-turkmenabat`).
 
@@ -26,8 +26,8 @@ JSON-LD powers rich results in search engines:
 ### Centralized Logic (`src/pages/lib/seo.ts`)
 All SEO logic is centralized in pure functions for testing and reusability:
 - `generateProductTitle` / `generateProductMetaDescription`: Template-based generators.
-- `generateCanonicalUrl`: Handles locale-specific URLs.
-- `generateHreflangLinks`: Generates alternate links for all supported languages.
+- `getCanonicalUrl`: Handles locale-specific canonical URLs.
+- `generateHreflangLinks`: Generates alternate links for indexable/canonical locales plus `x-default`.
 - **Schema Generators**: `generateProductJsonLd`, `generateOrganizationSchema`, `generateLocalBusinessSchema`.
 ### Store Configuration
 
