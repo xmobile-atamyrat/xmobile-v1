@@ -33,16 +33,18 @@ All SEO logic is centralized in pure functions for testing and reusability:
 
 Store locations are defined in the `STORES` constant in `src/pages/lib/seo.ts`.
 This array drives the `LocalBusiness` schema generation. To add a new store, simply add an object to this array.
-### Sitemap Configuration
+### Sitemap Configuration (`src/pages/sitemap.xml.page.ts`)
 - **Homepage**: `priority: 1.0`, `changefreq: daily`.
-- **Category Pages (/category/)**: `priority: 0.7`, `changefreq: weekly`.
 - **Product Listing Pages (/product-category/)**: `priority: 0.8`, `changefreq: daily`.
 - **Product Pages (/product/)**: `priority: 0.9`, `changefreq: daily`.
+- **Note**: `/category/[slug]` pages are not indexed and ignored in sitemap generation
 
 ### Indexing Strategy: Product Listing Pages (PLP)
-- **Primary Category Pages**: `/category/[slug]` (subcategories grid).
-- **Product Listing Pages**: `/product-category/[categorySlug]` (product grid for a specific category).
-- **Implementation**: Both use dedicated slug-based routes and Static Site Generation (`getStaticProps`).
+- **Category Navigation Pages**: `/category/[slug]` renders category/subcategory navigation, but these pages are marked `noindex`.
+- **Leaf Category Handling**: When a category is a leaf node, `/category/[slug]` redirects to `/product-category/[categorySlug]`.
+- **Indexable Product Listing Pages**: `/product-category/[categorySlug]` is the crawler-facing product grid route intended for indexing.
+- **Implementation**: Both use dedicated slug-based routes and SSG, but only `/product-category/[categorySlug]` is indexable.
+- **Note**: `/category/` pages are not indexed since they only help users select child categories and provide no meaningful content.
 
 ### Data Flow
 1. **Page Load**: `getStaticProps` or `getServerSideProps` fetches data and populates an `seoData` object via `seo.ts` generators.
