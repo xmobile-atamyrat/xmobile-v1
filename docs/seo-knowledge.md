@@ -15,7 +15,7 @@ All pages render standard `<head>` meta tags:
 JSON-LD powers rich results in search engines:
 - **Product**: Includes `name`, `image`, and `offers` (price/currency), with optional `brand` and `description` when available.
 - **Breadcrumb**: Defines the page hierarchy for search engine breadcrumb trails.
-- **Organization & LocalBusiness**: Establishes brand identity and links physical stores to the website via unique `@id` identifiers (e.g., `https://xmobile.tm/#store-turkmenabat`).
+- **Organization & LocalBusiness**: Establishes brand identity and links physical stores to the website via unique `@id` identifiers (e.g., `https://xmobile.com.tm/#store-xmobile-main`).
 
 ### Robots & Sitemap
 - **Robots.txt**: Restricts crawlers from private or low-value pages (cart, profile).
@@ -31,8 +31,7 @@ All SEO logic is centralized in pure functions for testing and reusability:
 - **Schema Generators**: `generateProductJsonLd`, `generateOrganizationSchema`, `generateLocalBusinessSchema`.
 ### Store Configuration
 
-Store locations are defined in the `STORES` constant in `src/pages/lib/seo.ts`.
-This array drives the `LocalBusiness` schema generation. To add a new store, simply add an object to this array.
+Store locations are defined in the `STORES` constant in `src/pages/lib/seo.ts`. To add a new store, simply add an object to this array.
 ### Sitemap Configuration (`src/pages/sitemap.xml.page.ts`)
 - **Homepage**: `priority: 1.0`, `changefreq: daily`.
 - **Product Listing Pages (/product-category/)**: `priority: 0.8`, `changefreq: daily`.
