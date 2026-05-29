@@ -24,6 +24,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CallIcon from '@mui/icons-material/Call';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import {
   CardMedia,
   Divider,
@@ -192,7 +193,27 @@ export default function CustomAppBar({
                 </Typography>
               </Box>
             </Box>
-            <Box className="gap-[24px] min-w-[214px] flex flex-row">
+            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
+              {platform === 'web' && (
+                <>
+                  <Box
+                    className="flex flex-row items-center cursor-pointer hover:opacity-80"
+                    onClick={() => router.push('/support')}
+                  >
+                    <SupportAgentOutlinedIcon className="h-[18px] text-[#303030] mr-[6px]" />
+                    <Typography
+                      className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                    >
+                      {t('supportTitle')}
+                    </Typography>
+                  </Box>
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    className="text-[#303030] mx-[-15px] h-[30px] my-auto"
+                  />
+                </>
+              )}
               <Select
                 value={selectedLocale}
                 variant="standard"
