@@ -23,6 +23,7 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
+import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import {
   Box,
@@ -334,6 +335,26 @@ export default function Profile() {
               </Button>
               <Divider className={profileClasses.divider[platform]} />
             </>
+            <Button
+              className={profileClasses.boxes.sectionOrders[platform]}
+              disableRipple
+              onClick={() => router.push('/support')}
+              variant={platform === 'web' ? 'outlined' : 'text'}
+              sx={{
+                '&:hover': { backgroundColor: colors.lightRed },
+              }}
+            >
+              <SupportAgentOutlinedIcon
+                className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+              />
+              <Typography
+                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+              >
+                {t('supportTitle')}
+              </Typography>
+              <ArrowForwardIos className={profileClasses.icons[platform]} />
+            </Button>
+            <Divider className={profileClasses.divider[platform]} />
             <Button
               className={profileClasses.boxes.sectionOrders[platform]}
               disableRipple
