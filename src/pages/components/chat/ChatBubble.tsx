@@ -48,7 +48,7 @@ const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
       </Paper>
 
       {/* Timestamp & Status */}
-      <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <Typography
           className={chatClasses.bubble.timestamp}
           sx={{ color: '#9E9E9E' }}

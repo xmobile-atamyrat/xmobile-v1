@@ -56,7 +56,8 @@ const formatLastActiveDate = (dateString: string, locale: string = 'en') => {
       day: 'numeric',
     });
   }
-  // show dd.mm.yy for previous years
+
+  // show full date for previous years
   return date.toLocaleDateString(activeLocale, {
     day: '2-digit',
     month: '2-digit',
