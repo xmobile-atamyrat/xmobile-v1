@@ -22,7 +22,7 @@ REST API lives under **`src/pages/api/`**. File name `*.page.ts` → route by pa
 | Products | `api/product`, `api/product/new`, `api/category` | List, create (admin) |
 | Prices | `api/prices`, `api/prices/rate` | Prices list, rate (rate public) |
 | Brands | `api/brand` | List (auth) |
-| Chat | `api/chat/session`, `sessionActions`, `api/chat/message` | Sessions and messages (auth) |
+| Chat | `api/chat/session`, `api/chat/message` | Sessions and messages (auth) |
 | Notifications | `api/notifications`, `api/notifications/count`, `mark-read` | In-app notifications (auth) |
 | FCM | `api/fcm/token` | Register FCM token (auth) |
 | Procurement | `api/procurement/supplier`, `product`, `api/procurement/order/*` | Suppliers, products, orders (auth) |
