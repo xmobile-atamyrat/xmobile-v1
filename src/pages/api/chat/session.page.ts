@@ -43,6 +43,8 @@ async function handler(
               select: {
                 senderId: true,
                 senderRole: true,
+                content: true,
+                createdAt: true,
               },
             },
           },
