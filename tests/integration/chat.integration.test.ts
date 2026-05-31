@@ -161,41 +161,6 @@ describe('Chat API (integration)', () => {
     await prisma.user.delete({ where: { id: superuser.userId } });
   });
 
-  it.skip('ADMIN joins PENDING session via sessionActions', async () => {
-    const free = await signupTestUser('chat-join');
-    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
-    const sessionHandler = (await import('@/pages/api/chat/session.page'))
-      .default;
-    const actions = (await import('@/pages/api/chat/sessionActions.page'))
-      .default;
-
-    const post = createMocks({
-      method: 'POST',
-      url: '/api/chat/session',
-      headers: { authorization: `Bearer ${free.accessToken}` },
-    });
-    await sessionHandler(
-      post.req as unknown as NextApiRequest,
-      post.res as unknown as NextApiResponse,
-    );
-    const sessionId = JSON.parse(post.res._getData() as string).data.id;
-
-    const join = createMocks({
-      method: 'POST',
-      url: '/api/chat/sessionActions',
-      headers: { authorization: `Bearer ${admin.accessToken}` },
-      body: { sessionId },
-    });
-    await actions(
-      join.req as unknown as NextApiRequest,
-      join.res as unknown as NextApiResponse,
-    );
-    expect(join.res._getStatusCode()).toBe(200);
-
-    await prisma.chatSession.delete({ where: { id: sessionId } });
-    await prisma.user.delete({ where: { id: admin.userId } });
-  });
-
   it('PATCH /api/chat/session updates status idempotently and only admins can change status', async () => {
     const free = await signupTestUser('chat-patch-owner');
     const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
@@ -353,26 +318,6 @@ describe('Chat API (integration)', () => {
     expect(reopen.res._getStatusCode()).toBe(400);
 
     await prisma.chatSession.delete({ where: { id: session.id } });
-    await prisma.user.delete({ where: { id: admin.userId } });
-  });
-
-  it.skip('sessionActions returns 400 when session is not claimable', async () => {
-    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
-    const actions = (await import('@/pages/api/chat/sessionActions.page'))
-      .default;
-
-    const join = createMocks({
-      method: 'POST',
-      url: '/api/chat/sessionActions',
-      headers: { authorization: `Bearer ${admin.accessToken}` },
-      body: { sessionId: '00000000-0000-4000-8000-000000000099' },
-    });
-    await actions(
-      join.req as unknown as NextApiRequest,
-      join.res as unknown as NextApiResponse,
-    );
-    expect(join.res._getStatusCode()).toBe(400);
-
     await prisma.user.delete({ where: { id: admin.userId } });
   });
 
