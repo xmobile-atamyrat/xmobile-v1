@@ -104,31 +104,68 @@ const ChatWindow = () => {
             {t('chatStartConversation')}
           </Typography>
         ) : (
-          messages.map((msg) => {
-            const isAdminMessage =
-              msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
-            const isMe = msg.senderId === user?.id;
+          (() => {
+            const elements: JSX.Element[] = [];
+            let lastDateKey: string | null = null;
 
-            let senderIndicator;
-            if (isMe) {
-              senderIndicator = t('chatYou') || 'You';
-            } else if (isAdminMessage) {
-              senderIndicator =
-                msg.senderName || `Admin (${msg.senderId.slice(-4)})`;
-            }
+            messages.forEach((msg) => {
+              const date = new Date(
+                msg.date || msg.createdAt || msg.timestamp || Date.now(),
+              );
+              const dateKey = date.toDateString();
 
-            const key =
-              msg.messageId || msg.tempId || `msg-${msg.senderId}-${msg.date}`;
+              if (dateKey !== lastDateKey) {
+                elements.push(
+                  <Box
+                    key={`d-${dateKey}`}
+                    sx={{ display: 'flex', justifyContent: 'center', my: 1 }}
+                  >
+                    <Typography
+                      sx={{
+                        px: 2,
+                        py: 0.4,
+                        bgcolor: 'grey.300',
+                        color: 'text.secondary',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {date.toLocaleDateString()}
+                    </Typography>
+                  </Box>,
+                );
+                lastDateKey = dateKey;
+              }
 
-            return (
-              <ChatBubble
-                key={key}
-                message={msg}
-                isMe={isMe}
-                senderIndicator={senderIndicator}
-              />
-            );
-          })
+              const isAdminMessage =
+                msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
+              const isMe = msg.senderId === user?.id;
+
+              let senderIndicator;
+              if (isMe) {
+                senderIndicator = t('chatYou') || 'You';
+              } else if (isAdminMessage) {
+                senderIndicator =
+                  msg.senderName || `Admin (${msg.senderId.slice(-4)})`;
+              }
+
+              const key =
+                msg.messageId ||
+                msg.tempId ||
+                `msg-${msg.senderId}-${msg.date}`;
+
+              elements.push(
+                <ChatBubble
+                  key={key}
+                  message={msg}
+                  isMe={isMe}
+                  senderIndicator={senderIndicator}
+                />,
+              );
+            });
+
+            return elements;
+          })()
         )}
       </Box>
 
