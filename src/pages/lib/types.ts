@@ -37,20 +37,6 @@ export interface ExtendedProduct extends Product {
 
 export interface ProtectedUser extends Omit<User, 'password'> {}
 
-export interface ChatSession {
-  id: string;
-  status: 'PENDING' | 'ACTIVE' | 'CLOSED';
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  users?: ProtectedUser[];
-}
-
-export interface GetMessagesRequest {
-  type: 'get_messages';
-  sessionId: string;
-  cursorId?: string;
-}
-
 export interface ChatMessage {
   type: 'message';
   sessionId: string;
@@ -65,7 +51,17 @@ export interface ChatMessage {
   date?: Date | string;
   timestamp?: string;
   updatedAt?: Date | string;
+  createdAt?: Date | string;
   status?: 'sending' | 'sent' | 'error';
+}
+
+export interface ChatSession {
+  id: string;
+  status: 'PENDING' | 'ACTIVE' | 'CLOSED';
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  users?: ProtectedUser[];
+  messages?: Partial<ChatMessage>[];
 }
 
 export interface HistoryResponseMessage {
