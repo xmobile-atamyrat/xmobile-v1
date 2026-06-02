@@ -10,12 +10,12 @@ const filepath = 'src/pages/api/guest/cart.page.ts';
 
 const createSchema = z.object({
   productId: z.string(),
-  quantity: z.number().int().min(1),
+  quantity: z.coerce.number().int().min(1),
 });
 
 const updateSchema = z.object({
   id: z.string(),
-  quantity: z.number().int().min(1),
+  quantity: z.coerce.number().int().min(1),
 });
 
 const deleteSchema = z.object({
