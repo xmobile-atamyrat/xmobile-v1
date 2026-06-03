@@ -25,14 +25,16 @@ const SUPPORT_PHONES = ['+99361004933', '+99371211717', '+99342230620'];
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   let messages = {};
-  let locale =
-    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
+  const cookieLocale = cookie.parse(context.req.headers.cookie ?? '')[
+    LOCALE_COOKIE_NAME
+  ];
+  const locale =
+    context.locale !== context.defaultLocale
+      ? context.locale!
+      : cookieLocale ?? context.locale ?? 'ru';
 
   try {
-    if (locale == null) {
-      locale = 'ru';
-    }
-    messages = (await import(`../i18n/${context.locale}.json`)).default;
+    messages = (await import(`../i18n/${locale}.json`)).default;
   } catch (error) {
     console.error(error);
   }

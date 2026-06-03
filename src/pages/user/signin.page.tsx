@@ -11,11 +11,11 @@ import {
   CardMedia,
   IconButton,
   InputAdornment,
-  Link,
   Paper,
   TextField,
   Typography,
 } from '@mui/material';
+import Link from 'next/link';
 import { User } from '@prisma/client';
 import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import cookie from 'cookie';
@@ -25,10 +25,13 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const cookieLocale = cookie.parse(context.req.headers.cookie ?? '')[
+    LOCALE_COOKIE_NAME
+  ];
   const locale =
-    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ??
-    context.locale ??
-    'ru';
+    context.locale !== context.defaultLocale
+      ? context.locale!
+      : cookieLocale ?? context.locale ?? 'ru';
   const messages = (await import(`../../i18n/${locale}.json`)).default;
   return { props: { messages } };
 };
