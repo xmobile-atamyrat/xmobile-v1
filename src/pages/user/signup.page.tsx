@@ -18,20 +18,22 @@ import {
   Typography,
 } from '@mui/material';
 import { User } from '@prisma/client';
-import { GetStaticProps } from 'next';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import cookie from 'cookie';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-// getStaticProps because translations are static
-export const getStaticProps = (async (context) => {
-  return {
-    props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
-    },
-  };
-}) satisfies GetStaticProps<object>;
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const locale =
+    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ??
+    context.locale ??
+    'ru';
+  const messages = (await import(`../../i18n/${locale}.json`)).default;
+  return { props: { messages } };
+};
 
 export default function Signup() {
   const { user, setUser, setAccessToken, isLoading } = useUserContext();
