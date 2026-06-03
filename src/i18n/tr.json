@@ -45,6 +45,7 @@
   "confirmPassword": "Şifreyi Onayla",
   "name": "Ad",
   "phoneNumber": "Telefon numarası",
+  "optional": "isteğe bağlı",
   "userAlreadyExists": "Kullanıcı zaten var",
   "search": "Ara...",
   "emailPlaceholder": "E-postanızı yazın",

@@ -47,6 +47,7 @@
   "confirmPassword": "Повторите пароль",
   "name": "Имя",
   "phoneNumber": "Номер телефона",
+  "optional": "необязательно",
   "emailPlaceholder": "Адрес электронной почты",
   "passwordPlaceholder": "Пароль",
   "passwordConfirmPlaceholder": "Введите пароль еще раз",
