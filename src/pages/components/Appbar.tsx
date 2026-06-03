@@ -132,8 +132,14 @@ export default function CustomAppBar({
   };
 
   useEffect(() => {
-    setSelectedLocale((prev) => getCookie(LOCALE_COOKIE_NAME) || prev);
-  }, []);
+    if (router.locale && router.locale !== router.defaultLocale) {
+      setSelectedLocale(router.locale);
+    } else {
+      setSelectedLocale(
+        getCookie(LOCALE_COOKIE_NAME) || router.defaultLocale || 'ru',
+      );
+    }
+  }, [router.locale, router.defaultLocale]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

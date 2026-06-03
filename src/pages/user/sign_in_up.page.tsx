@@ -3,19 +3,26 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
-import { Box, CardMedia, Link, Typography } from '@mui/material';
-import { GetStaticProps } from 'next';
+import { Box, CardMedia, Typography } from '@mui/material';
+import Link from 'next/link';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import cookie from 'cookie';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-// getStaticProps because translations are static
-export const getStaticProps = (async (context) => {
-  return {
-    props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
-    },
-  };
-}) satisfies GetStaticProps<object>;
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const cookieLocale = cookie.parse(context.req.headers.cookie ?? '')[
+    LOCALE_COOKIE_NAME
+  ];
+  const locale =
+    context.locale !== context.defaultLocale
+      ? context.locale!
+      : cookieLocale ?? context.locale ?? 'ru';
+  const messages = (await import(`../../i18n/${locale}.json`)).default;
+  return { props: { messages } };
+};
 
 export default function SignInUp() {
   const router = useRouter();
