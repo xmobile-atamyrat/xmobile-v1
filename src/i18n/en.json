@@ -45,6 +45,7 @@
   "confirmPassword": "Confirm Password",
   "name": "Name",
   "phoneNumber": "Phone number",
+  "optional": "optional",
   "userAlreadyExists": "User already exists",
   "search": "Search...",
   "emailPlaceholder": "Text your email",
