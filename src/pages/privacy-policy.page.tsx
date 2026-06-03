@@ -71,6 +71,7 @@ export default function PrivacyPolicy() {
           items: [
             t('privacyPolicyCollectPersonal1'),
             t('privacyPolicyCollectPersonal2'),
+            t('privacyPolicyCollectPersonal3'),
           ],
         },
         {
@@ -249,6 +250,30 @@ export default function PrivacyPolicy() {
               >
                 {t('privacyPolicyDeletionDesc')}
               </Typography>
+              <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                >
+                  {t('privacyPolicyDeletionInAppTitle')}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                >
+                  {t('privacyPolicyDeletionInAppDesc')}
+                </Typography>
+              </div>
+              <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
+                <Typography
+                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                >
+                  {t('privacyPolicyDeletionGraceTitle')}
+                </Typography>
+                <Typography
+                  className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                >
+                  {t('privacyPolicyDeletionGraceDesc')}
+                </Typography>
+              </div>
               <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
                 <Typography
                   className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
