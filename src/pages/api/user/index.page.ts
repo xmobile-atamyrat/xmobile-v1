@@ -1,7 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
-import { generateTokens, REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
+import {
+  ACCESS_SECRET,
+  generateTokens,
+  REFRESH_SECRET,
+} from '@/pages/api/utils/tokenUtils';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_EXPIRY_COOKIE,
@@ -30,7 +34,7 @@ export default async function handler(
     try {
       const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
 
-      const user = await dbClient.user.findUnique({
+      let user = await dbClient.user.findUnique({
         where: { id: userId },
       });
       if (!user) {
@@ -39,6 +43,21 @@ export default async function handler(
           .status(401)
           .json({ success: false, message: 'Unauthorized: User not found' });
       }
+
+      if (user.deletedAt != null) {
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        if (Date.now() - user.deletedAt.getTime() > thirtyDaysMs) {
+          await dbClient.user.delete({ where: { id: user.id } });
+          return res
+            .status(401)
+            .json({ success: false, message: 'Unauthorized: User not found' });
+        }
+        user = await dbClient.user.update({
+          where: { id: user.id },
+          data: { deletedAt: null },
+        });
+      }
+
       delete user.password;
 
       const { accessToken, refreshToken: newRefreshToken } = generateTokens(
@@ -63,6 +82,44 @@ export default async function handler(
           message: 'Unauthorized: Refresh token expired',
         });
       }
+      return res.status(500).json({
+        success: false,
+        message: (error as Error).message,
+      });
+    }
+  }
+
+  if (method === 'DELETE') {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized' });
+      }
+      const token = authHeader.split(' ')[1];
+      const { userId } = await verifyToken(token, ACCESS_SECRET);
+
+      const user = await dbClient.user.findUnique({ where: { id: userId } });
+      if (!user || user.deletedAt != null) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'userNotFound' });
+      }
+
+      await dbClient.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date() },
+      });
+
+      res.setHeader(
+        'Set-Cookie',
+        `${AUTH_REFRESH_COOKIE_NAME}=; Max-Age=0; Path=/`,
+      );
+
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(error);
       return res.status(500).json({
         success: false,
         message: (error as Error).message,
