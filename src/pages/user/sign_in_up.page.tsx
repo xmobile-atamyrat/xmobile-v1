@@ -3,7 +3,8 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, interClassname } from '@/styles/theme';
-import { Box, CardMedia, Link, Typography } from '@mui/material';
+import { Box, CardMedia, Typography } from '@mui/material';
+import Link from 'next/link';
 import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import cookie from 'cookie';
 import { GetServerSideProps } from 'next';
@@ -12,10 +13,13 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const cookieLocale = cookie.parse(context.req.headers.cookie ?? '')[
+    LOCALE_COOKIE_NAME
+  ];
   const locale =
-    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ??
-    context.locale ??
-    'ru';
+    context.locale !== context.defaultLocale
+      ? context.locale!
+      : cookieLocale ?? context.locale ?? 'ru';
   const messages = (await import(`../../i18n/${locale}.json`)).default;
   return { props: { messages } };
 };
