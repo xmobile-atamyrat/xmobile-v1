@@ -118,10 +118,6 @@ export default function Signup() {
               setErrorMessage('errorNameInput');
               return;
             }
-            if (!phoneNumber) {
-              setErrorMessage('errorPhoneNumberInput');
-              return;
-            }
             try {
               const {
                 success,
@@ -445,11 +441,10 @@ export default function Signup() {
                 </Typography>
                 <Typography
                   component="span"
-                  fontWeight="bold"
-                  color={colors.main}
+                  color={colors.placeholder}
                   className={interClassname.className}
                 >
-                  *
+                  {`(${t('optional')})`}
                 </Typography>
               </Box>
               <TextField
