@@ -42,15 +42,15 @@ export default async function handler(
       }
 
       if (user.deletedAt != null) {
-        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-        if (Date.now() - user.deletedAt.getTime() > thirtyDaysMs) {
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        if (Date.now() - user.deletedAt.getTime() > ninetyDaysMs) {
           await dbClient.user.delete({ where: { id: user.id } });
           console.warn(
             `${filepath}: permanently deleted expired account. email: ${email}`,
           );
           return res
             .status(400)
-            .json({ success: false, message: 'accountDeleted' });
+            .json({ success: false, message: 'accountPermanentlyDeleted' });
         }
         user = await dbClient.user.update({
           where: { id: user.id },
