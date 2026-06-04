@@ -399,8 +399,8 @@
   "privacyPolicyDeletionDesc": "Hesabınızı ve tüm ilgili kişisel verilerinizi istediğiniz zaman doğrudan uygulama üzerinden veya e-posta ile bizimle iletişime geçerek silebilirsiniz.",
   "privacyPolicyDeletionInAppTitle": "Uygulamadan Silme",
   "privacyPolicyDeletionInAppDesc": "Profil sayfasını açın, \"Hesabı Sil\" düğmesine dokunun ve onaylayın. Hesabınız anında devre dışı bırakılır ve gizlenir.",
-  "privacyPolicyDeletionGraceTitle": "30 Günlük Bekleme Süresi",
-  "privacyPolicyDeletionGraceDesc": "Silme işleminin ardından hesabınız 30 günlük bir bekleme süresine girer. Bu 30 gün içinde tekrar giriş yaparsanız hesabınız tamamen geri yüklenir. 30 gün boyunca giriş yapılmazsa hesabınız ve tüm ilgili veriler kalıcı olarak ve geri alınamaz biçimde silinir.",
+  "privacyPolicyDeletionGraceTitle": "90 Günlük Bekleme Süresi",
+  "privacyPolicyDeletionGraceDesc": "Silme işleminin ardından hesabınız 90 günlük bir bekleme süresine girer. Bu 90 gün içinde tekrar giriş yaparsanız hesabınız tamamen geri yüklenir. 90 gün boyunca giriş yapılmazsa hesabınız ve tüm ilgili veriler otomatik olarak ve geri alınamaz biçimde silinir.",
   "privacyPolicyDeletionHowTitle": "E-posta ile Silme",
   "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine kayıtlı e-posta adresinizi veya telefon numaranızı belirterek 'Account Deletion Request' konusuyla e-posta gönderin. Talebinizi 7–14 iş günü içinde işleme alacağız ve hesabınız ile verileriniz silindikten sonra size e-posta ile bildirim göndereceğiz.",
   "categoryHierarchy": "Kategori hiyerarşisi",
@@ -452,9 +452,10 @@
     "supportFaq5": "Sipariş vermek için hesap oluşturmam gerekiyor mu?",
     "supportFaq5Answer": "Hayır, misafir olarak da sipariş verebilirsiniz. Ancak hesap oluşturmak, sipariş geçmişinizi takip etmenize, adreslerinizi kaydetmenize ve bir sonraki alışverişinizde daha hızlı işlem yapmanıza olanak tanır.",
   "deleteAccount": "Hesabı Sil",
-  "deleteAccountVerify": "Hesabınızı silmek istediğinizden emin misiniz? 30 gün içinde tekrar giriş yaparak hesabınızı geri yükleyebilirsiniz. 30 gün sonra tüm verileriniz kalıcı olarak silinecektir.",
-  "deleteAccountSuccess": "Hesabınız silindi. Geri yüklemek için 30 gün içinde giriş yapın.",
+  "deleteAccountVerify": "Hesabınızı silmek istediğinizden emin misiniz? 90 gün içinde tekrar giriş yaparak hesabınızı geri yükleyebilirsiniz. 90 gün sonra tüm verileriniz kalıcı olarak silinecektir.",
+  "deleteAccountSuccess": "Hesabınız silindi. Geri yüklemek için 90 gün içinde giriş yapın.",
   "deleteAccountError": "Hesap silinemedi. Lütfen tekrar deneyin.",
-  "accountDeleted": "Bu hesap silinmiştir. Geri yüklemek için 30 gün içinde oturum açın."
+  "accountDeleted": "Bu hesap silinmiştir. Geri yüklemek için 90 gün içinde oturum açın.",
+  "accountPermanentlyDeleted": "Hesabınız kalıcı olarak silindi. Lütfen yeni bir hesap oluşturun."
 }
 
