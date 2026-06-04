@@ -2,6 +2,20 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { BrandProps, ExtendedProduct, ResponseApi } from '@/pages/lib/types';
 import { Product } from '@prisma/client';
 
+export const parseFetchedPrice = (price: string): string => {
+  if (price == null) {
+    return '';
+  }
+
+  const match = price.match(/\{([^}]+)\}/);
+
+  if (match) {
+    return match[1].replace(/[^\d.]/g, '');
+  }
+
+  return price.replace(/[^\d.]/g, '');
+};
+
 export const fetchProducts = async ({
   categoryIds,
   brandIds,
@@ -48,7 +62,10 @@ export const fetchProducts = async ({
   if (!success || data == null) {
     throw new Error(message);
   }
-  return Array.isArray(data) ? data : [data];
+  return (Array.isArray(data) ? data : [data]).map((product) => ({
+    ...product,
+    price: parseFetchedPrice(product.price),
+  }));
 };
 
 // todo: legacy func, fetchProducts applies default sortBy=newest parameter

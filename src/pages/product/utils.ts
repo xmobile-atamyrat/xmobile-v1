@@ -1,4 +1,5 @@
-import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
+import { parseFetchedPrice } from '@/pages/lib/apis';
+import { squareBracketRegex } from '@/pages/lib/constants';
 import { FetchWithCredsType } from '@/pages/lib/types';
 import { Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
@@ -119,12 +120,12 @@ export const computeProductPrice = async ({
   fetchWithCreds: FetchWithCredsType;
 }) => {
   const priceMatchId = product.price?.match(squareBracketRegex);
-  const priceMatchValue = product.price?.match(curlyBracketRegex);
+  const priceMatchValue = product.price?.match(/\{([^}]+)\}/s);
   const processedProduct = { ...product };
 
   if (priceMatchValue != null && priceMatchId != null) {
-    processedProduct.price = priceMatchValue[1];
-    sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
+    processedProduct.price = parseFetchedPrice(product.price);
+    sessionStorage.setItem(priceMatchId[1], parseFetchedPrice(product.price));
   } else if (priceMatchId != null) {
     processedProduct.price = await computePrice({
       priceId: priceMatchId[1],

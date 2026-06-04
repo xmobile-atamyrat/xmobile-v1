@@ -6,14 +6,10 @@ import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { useAbortControllerContext } from '@/pages/lib/AbortControllerContext';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchProducts, parseFetchedPrice } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
-import {
-  curlyBracketRegex,
-  LOCALE_TO_OG_LOCALE,
-  squareBracketRegex,
-} from '@/pages/lib/constants';
+import { LOCALE_TO_OG_LOCALE, squareBracketRegex } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -136,12 +132,7 @@ export const getStaticProps: GetStaticProps = async ({
 
         const productName = parseName(product.name, locale);
 
-        let priceValue = product.price;
-        const priceMatch = product.price?.match(curlyBracketRegex);
-        if (priceMatch) {
-          priceValue = priceMatch[1];
-        }
-        priceValue = priceValue?.replace(/[^\d.]/g, '');
+        const priceValue = parseFetchedPrice(product.price);
 
         const productPath = `product/${product.id}`;
 
