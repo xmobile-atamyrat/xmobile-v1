@@ -401,8 +401,8 @@
   "privacyPolicyDeletionDesc": "Islendik wagt hasabyňyzy we ähli degişli şahsy maglumatlaryňyzy programmanyň üsti bilen ýa-da biz bilen email arkaly habarlaşyp pozup bilersiňiz.",
   "privacyPolicyDeletionInAppTitle": "Programmada pozmak",
   "privacyPolicyDeletionInAppDesc": "Profil sahypasyny açyň, «Hasaby öçür» düwmesine basyň we tassyklaň. Hasabyňyz derhal işjeňligini ýitirip, gizlenýär.",
-  "privacyPolicyDeletionGraceTitle": "30 günlük möhlet",
-  "privacyPolicyDeletionGraceDesc": "Pozmakdan soň hasabyňyz 30 günlük möhlete geçýär. Şol 30 günüň içinde täzeden giriş etseňiz, hasabyňyz doly dikeldilýär. 30 gün geçenden soň giriş edilmese, hasabyňyz we ähli maglumatlar hemişelik pozulýar.",
+  "privacyPolicyDeletionGraceTitle": "90 günlük möhlet",
+  "privacyPolicyDeletionGraceDesc": "Pozmakdan soň hasabyňyz 90 günlük möhlete geçýär. Şol 90 günüň içinde täzeden giriş etseňiz, hasabyňyz doly dikeldilýär. 90 gün geçenden soň giriş edilmese, hasabyňyz we ähli maglumatlar awtomatiki usulda we hemişelik pozulýar.",
   "privacyPolicyDeletionHowTitle": "Email arkaly pozmak",
   "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine hasaba alnan email salgyňyzy ýa-da telefon belgiňizi görkezip, 'Account Deletion Request' temaly hat iberiň. Haýyşyňyz 7–14 iş günüň içinde garalynýar we hasabyňyz pozulandan soň email arkaly tassyklama iberilýär.",
   "categoryHierarchy": "Kategoriýa ierarhiýasy",
@@ -453,8 +453,9 @@
   "supportFaq5": "Sargyt etmek üçin hökmany suratda hasap (akkaunt) açmalymy?",
   "supportFaq5Answer": "Ýok, siz ulgama girmän, myhman hökmünde hem sargyt edip bilersiňiz. Emma hasap açmak size sargytlaryňyzyň taryhyny yzarlamaga, salgylaryňyzy ýatda saklamaga we indiki gezek has çalt sargyt etmäge mümkinçilik berer.",
   "deleteAccount": "Hasaby öçür",
-  "deleteAccountVerify": "Hasabyňyzy öçürmek isleýändigiňize ynamyňyz barmy? 30 günüň içinde täzeden giriş edip ony dikeldip bilersiňiz. 30 günden soň ähli maglumatyňyz hemişelik pozular.",
-  "deleteAccountSuccess": "Hasabyňyz öçürildi. Dikeltmek üçin 30 günüň içinde giriş ediň.",
+  "deleteAccountVerify": "Hasabyňyzy öçürmek isleýändigiňize ynamyňyz barmy? 90 günüň içinde täzeden giriş edip ony dikeldip bilersiňiz. 90 günden soň ähli maglumatyňyz hemişelik pozular.",
+  "deleteAccountSuccess": "Hasabyňyz öçürildi. Dikeltmek üçin 90 günüň içinde giriş ediň.",
   "deleteAccountError": "Hasaby öçürmek başartmady. Täzeden synanyşyň.",
-  "accountDeleted": "Bu hasap pozuldy. Ony dikeltmek üçin 30 gün içinde giriş ediň."
+  "accountDeleted": "Bu hasap pozuldy. Ony dikeltmek üçin 90 gün içinde giriş ediň.",
+  "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň."
 }

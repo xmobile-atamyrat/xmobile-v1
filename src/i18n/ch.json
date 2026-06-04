@@ -400,8 +400,8 @@
   "privacyPolicyDeletionDesc": "İslendik wagt akkaundyňyzy we ähli degişli şahsy maglumatlaryňyzy programmanyň üstünden ýa-da email arkaly pozup bilersiň.",
   "privacyPolicyDeletionInAppTitle": "Programmada pozmak",
   "privacyPolicyDeletionInAppDesc": "Profil sahypasyny aç, «Akkauntu öçür» düwmesine bas we tassykla. Akkaunt derhal işjeňligini ýitirip gizlenýär.",
-  "privacyPolicyDeletionGraceTitle": "30 günlük möhlet",
-  "privacyPolicyDeletionGraceDesc": "Pozmakdan soň akkaunt 30 günlük möhlete geçýär. Şol 30 günüň içinde täzeden girseň, akkaunt doly dikeldiledi. 30 gün geçenden soň giriş edilmese, akkaunt we ähli maglumatlar hemişelik pozulady.",
+  "privacyPolicyDeletionGraceTitle": "90 günlük möhlet",
+  "privacyPolicyDeletionGraceDesc": "Pozmakdan soň akkaunt 90 günlük möhlete geçýär. Şol 90 günüň içinde täzeden girseň, akkaunt doly dikeldiledi. 90 gün geçenden soň giriş edilmese, akkaunt we ähli maglumatlar awtomatiki usulda we hemişelik pozulady.",
   "privacyPolicyDeletionHowTitle": "Email arkaly pozmak",
   "privacyPolicyDeletionHowDesc": "xmobiletm@gmail.com adresine hasaba alnan email salgyňyzy ýa-da telefon belgiňizi görkezip, 'Account Deletion Request' temaly hat iberiň. Haýyşyňyz 7–14 iş günide karanylady we akkaundyňyz pozulandan soňra email arkaly tassyklama iberilinady.",
   "categoryHierarchy": "Kategoriye ierarhýasy",
@@ -452,8 +452,9 @@
   "supportFaq5": "Zakaz etmek üçin hökman akkaunt açmalymy?",
   "supportFaq5Answer": "Ýok, siz ulgama girmin, myhman bolup hem zakaz edip bilesiz. Emma akkaunt açmak size zakazlaryňyzyň istoriýasyny yzarlamaga, zakazlaryňyzy ýatda saklamaaýa we indiki gezek has çakgan zakaz etmeýe kömek ededi.",
   "deleteAccount": "Akkauntu öçür",
-  "deleteAccountVerify": "Akkauntyny öçürmek isledigiňe ynamyňyz barmy? 30 günüň içinde täzeden girip dikeldip bilersiň. 30 günden soň hemmä maglumatlar hemişelik pozulady.",
-  "deleteAccountSuccess": "Akkaunt öçürildi. Dikeltmek üçin 30 günüň içinde giriş et.",
+  "deleteAccountVerify": "Akkauntyny öçürmek isledigiňe ynamyňyz barmy? 90 günüň içinde täzeden girip dikeldip bilersiň. 90 günden soň hemmä maglumatlar hemişelik pozulady.",
+  "deleteAccountSuccess": "Akkaunt öçürildi. Dikeltmek üçin 90 günüň içinde giriş et.",
   "deleteAccountError": "Akkauntu öçürmek başartmady. Täzeden synanyş.",
-  "accountDeleted": "Bu akkaunt pozuldy. Dikeltmek üçin 30 günüň içinde giriş ediň."
+  "accountDeleted": "Bu akkaunt pozuldy. Dikeltmek üçin 90 günüň içinde giriş ediň.",
+  "accountPermanentlyDeleted": "Akkaunt hemişelik pozulady. Täze akkaunt açyň."
 }
