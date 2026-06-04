@@ -455,6 +455,6 @@
   "deleteAccountVerify": "Hesabınızı silmek istediğinizden emin misiniz? 30 gün içinde tekrar giriş yaparak hesabınızı geri yükleyebilirsiniz. 30 gün sonra tüm verileriniz kalıcı olarak silinecektir.",
   "deleteAccountSuccess": "Hesabınız silindi. Geri yüklemek için 30 gün içinde giriş yapın.",
   "deleteAccountError": "Hesap silinemedi. Lütfen tekrar deneyin.",
-  "accountDeleted": "Bu hesap kalıcı olarak silindi."
+  "accountDeleted": "Bu hesap silinmiştir. Geri yüklemek için 30 gün içinde oturum açın."
 }
 

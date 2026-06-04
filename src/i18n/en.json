@@ -453,5 +453,5 @@
   "deleteAccountVerify": "Are you sure you want to delete your account? You can sign in within 30 days to restore it. After 30 days, all your data will be permanently erased.",
   "deleteAccountSuccess": "Your account has been deleted. Sign in within 30 days to restore it.",
   "deleteAccountError": "Failed to delete account. Please try again.",
-  "accountDeleted": "This account has been permanently deleted."
+  "accountDeleted": "This account has been deleted. Sign in within 30 days to restore it."
 }
