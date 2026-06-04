@@ -444,7 +444,7 @@ export default function Profile() {
             id="alert-dialog-title"
             className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
           >
-            {t('signout').toUpperCase()}
+            {t('signout').toLocaleUpperCase(router.locale)}
           </Typography>
           <Box className={profileClasses.boxes.verifyTxt}>
             <Typography

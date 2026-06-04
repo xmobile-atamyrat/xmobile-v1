@@ -22,19 +22,21 @@ export default async function handler(
 ) {
   addCors(res);
   const { method } = req;
-  const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
-  if (!refreshToken) {
-    console.error(`${filepath}: No refresh token found`);
-    return res
-      .status(401)
-      .json({ success: false, message: 'Unauthorized: Missing refresh token' });
-  }
 
   if (method === 'GET') {
     try {
+      const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
+      if (!refreshToken) {
+        console.error(`${filepath}: No refresh token found`);
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized: Missing refresh token',
+        });
+      }
+
       const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
 
-      let user = await dbClient.user.findUnique({
+      const user = await dbClient.user.findUnique({
         where: { id: userId },
       });
       if (!user) {
@@ -45,17 +47,9 @@ export default async function handler(
       }
 
       if (user.deletedAt != null) {
-        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-        if (Date.now() - user.deletedAt.getTime() > thirtyDaysMs) {
-          await dbClient.user.delete({ where: { id: user.id } });
-          return res
-            .status(401)
-            .json({ success: false, message: 'Unauthorized: User not found' });
-        }
-        user = await dbClient.user.update({
-          where: { id: user.id },
-          data: { deletedAt: null },
-        });
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized: User not found' });
       }
 
       delete user.password;
@@ -114,7 +108,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=; Max-Age=0; Path=/`,
+        `${AUTH_REFRESH_COOKIE_NAME}=; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=0; Path=/`,
       );
 
       return res.status(200).json({ success: true });
