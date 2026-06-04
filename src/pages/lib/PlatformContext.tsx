@@ -1,6 +1,12 @@
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { createContext, ReactNode, useContext } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 export type Platform = 'mobile' | 'web';
 
@@ -18,9 +24,12 @@ export default function PlatformContextProvider({
   children: ReactNode;
 }) {
   const theme = useTheme();
+  const isMobileQuery = useMediaQuery(theme.breakpoints.down('md'));
+  const [platform, setPlatform] = useState<Platform>('web');
 
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const platform: Platform = isMobile ? 'mobile' : 'web';
+  useEffect(() => {
+    setPlatform(isMobileQuery ? 'mobile' : 'web');
+  }, [isMobileQuery]);
 
   return (
     <PlatformContext.Provider value={{ platform }}>
@@ -31,5 +40,8 @@ export default function PlatformContextProvider({
 
 export const usePlatform = (): Platform => {
   const context = useContext(PlatformContext);
+  if (!context) {
+    return 'web';
+  }
   return context.platform;
 };
