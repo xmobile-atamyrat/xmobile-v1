@@ -1,5 +1,4 @@
 import Layout from '@/pages/components/Layout';
-import BASE_URL from '@/lib/ApiEndpoints';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
@@ -562,7 +561,7 @@ export default function Profile() {
                 (async () => {
                   try {
                     const { success }: { success: boolean } = await (
-                      await fetch(`${BASE_URL}/api/user`, {
+                      await fetch('/api/user', {
                         method: 'DELETE',
                         headers: accessToken
                           ? { Authorization: `Bearer ${accessToken}` }
