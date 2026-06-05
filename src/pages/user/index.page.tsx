@@ -21,6 +21,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
 import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
@@ -54,6 +55,10 @@ export default function Profile() {
     useUserContext();
   const [open, setOpen] = useState(false);
   const [openLang, setOpenLang] = useState(false);
+  const [openDeleteAccount, setOpenDeleteAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(
+    null,
+  );
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const router = useRouter();
   const t = useTranslations();
@@ -382,24 +387,52 @@ export default function Profile() {
             </Button>
             <Divider className={profileClasses.divider[platform]} />
             {user && (
-              <Button
-                className={profileClasses.boxes.sectionLogOut[platform]}
-                onClick={handleToggle}
-                variant={platform === 'web' ? 'outlined' : 'text'}
-                disableRipple
-              >
-                <MeetingRoomOutlinedIcon
-                  className={profileClasses.sectionIcon[platform]}
-                />
-                <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+              <>
+                <Button
+                  className={profileClasses.boxes.sectionLogOut[platform]}
+                  onClick={() => {
+                    setDeleteAccountError(null);
+                    setOpenDeleteAccount(true);
+                  }}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  disableRipple
+                  sx={{ '&:hover': { backgroundColor: colors.lightRed } }}
                 >
-                  {t('signout')}
-                </Typography>
-                <ArrowForwardIos
-                  className={profileClasses.iconLogOut[platform]}
-                />
-              </Button>
+                  <DeleteForeverOutlinedIcon
+                    className={profileClasses.sectionIcon[platform]}
+                    sx={{ color: '#ff3b30' }}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                    sx={{ color: '#ff3b30' }}
+                  >
+                    {t('deleteAccount')}
+                  </Typography>
+                  <ArrowForwardIos
+                    className={profileClasses.iconLogOut[platform]}
+                    sx={{ color: '#ff3b30' }}
+                  />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionLogOut[platform]}
+                  onClick={handleToggle}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  disableRipple
+                >
+                  <MeetingRoomOutlinedIcon
+                    className={profileClasses.sectionIcon[platform]}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                  >
+                    {t('signout')}
+                  </Typography>
+                  <ArrowForwardIos
+                    className={profileClasses.iconLogOut[platform]}
+                  />
+                </Button>
+              </>
             )}
           </Box>
         </Box>
@@ -416,7 +449,7 @@ export default function Profile() {
             id="alert-dialog-title"
             className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
           >
-            {t('signout').toUpperCase()}
+            {t('signout').toLocaleUpperCase(router.locale)}
           </Typography>
           <Box className={profileClasses.boxes.verifyTxt}>
             <Typography
@@ -466,6 +499,112 @@ export default function Profile() {
                     localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
                   } catch (error) {
                     console.error(error);
+                  }
+                })();
+              }}
+            >
+              <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  color={colors.white}
+                >
+                  {t('yes')}
+                </Typography>
+              </Box>
+            </Button>
+          </Box>
+        </Dialog>
+        <Dialog
+          open={openDeleteAccount}
+          onClose={() => setOpenDeleteAccount(false)}
+          aria-labelledby="delete-account-dialog-title"
+          aria-describedby="delete-account-dialog-description"
+          PaperProps={{
+            className: `${profileClasses.dialog.main[platform]} !h-auto`,
+          }}
+        >
+          <Typography
+            id="delete-account-dialog-title"
+            className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
+            sx={{ color: '#ff3b30' }}
+          >
+            {t('deleteAccount').toUpperCase()}
+          </Typography>
+          <Box className="flex justify-center mt-[16px] px-[10px]">
+            <Typography
+              id="delete-account-dialog-description"
+              className={`${profileClasses.typos.verifyTxt} ${interClassname.className} !h-auto text-center`}
+            >
+              {t('deleteAccountVerify')}
+            </Typography>
+          </Box>
+          {deleteAccountError && (
+            <Box className="flex justify-center mt-[8px]">
+              <Typography
+                className={`${interClassname.className} text-center text-[13px]`}
+                sx={{ color: '#ff3b30' }}
+              >
+                {t(deleteAccountError)}
+              </Typography>
+            </Box>
+          )}
+          <Box className={profileClasses.boxes.verify}>
+            <Button onClick={() => setOpenDeleteAccount(false)} disableRipple>
+              <Box
+                className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+              >
+                <Typography
+                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  color={colors.black}
+                >
+                  {t('no')}
+                </Typography>
+              </Box>
+            </Button>
+            <Button
+              disableRipple
+              onClick={() => {
+                (async () => {
+                  try {
+                    const { success }: { success: boolean } = await (
+                      await fetch('/api/user', {
+                        method: 'DELETE',
+                        headers: accessToken
+                          ? { Authorization: `Bearer ${accessToken}` }
+                          : undefined,
+                        credentials: 'include',
+                      })
+                    ).json();
+
+                    if (!success) {
+                      setDeleteAccountError('deleteAccountError');
+                      return;
+                    }
+
+                    setOpenDeleteAccount(false);
+
+                    if (accessToken) {
+                      const fcmToken = localStorage.getItem(
+                        FCM_TOKEN_STORAGE_KEY,
+                      );
+                      if (fcmToken) {
+                        try {
+                          await unregisterFCMToken(fcmToken, accessToken);
+                        } catch (err) {
+                          console.error('Failed to unregister FCM token', err);
+                        }
+                      }
+                    }
+
+                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+                    deleteCookie(LOCALE_COOKIE_NAME);
+                    setUser(undefined);
+                    setAccessToken(undefined);
+                    localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+                    localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+                  } catch (error) {
+                    console.error(error);
+                    setDeleteAccountError('deleteAccountError');
                   }
                 })();
               }}

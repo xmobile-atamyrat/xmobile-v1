@@ -1,7 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
-import { generateTokens, REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
+import {
+  ACCESS_SECRET,
+  generateTokens,
+  REFRESH_SECRET,
+} from '@/pages/api/utils/tokenUtils';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   REFRESH_TOKEN_EXPIRY_COOKIE,
@@ -18,16 +22,18 @@ export default async function handler(
 ) {
   addCors(res);
   const { method } = req;
-  const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
-  if (!refreshToken) {
-    console.error(`${filepath}: No refresh token found`);
-    return res
-      .status(401)
-      .json({ success: false, message: 'Unauthorized: Missing refresh token' });
-  }
 
   if (method === 'GET') {
     try {
+      const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
+      if (!refreshToken) {
+        console.error(`${filepath}: No refresh token found`);
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized: Missing refresh token',
+        });
+      }
+
       const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
 
       const user = await dbClient.user.findUnique({
@@ -39,6 +45,13 @@ export default async function handler(
           .status(401)
           .json({ success: false, message: 'Unauthorized: User not found' });
       }
+
+      if (user.deletedAt != null) {
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized: User not found' });
+      }
+
       delete user.password;
 
       const { accessToken, refreshToken: newRefreshToken } = generateTokens(
@@ -66,6 +79,59 @@ export default async function handler(
       return res.status(500).json({
         success: false,
         message: (error as Error).message,
+      });
+    }
+  }
+
+  if (method === 'DELETE') {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized' });
+      }
+      const token = authHeader.split(' ')[1];
+      const { userId } = await verifyToken(token, ACCESS_SECRET);
+
+      const user = await dbClient.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'userNotFound' });
+      }
+      if (user.deletedAt != null) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'accountAlreadyDeleted' });
+      }
+
+      await dbClient.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date() },
+      });
+
+      res.setHeader(
+        'Set-Cookie',
+        `${AUTH_REFRESH_COOKIE_NAME}=; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=0; Path=/`,
+      );
+
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(error);
+      const name = (error as Error).name;
+      if (
+        name === 'TokenExpiredError' ||
+        name === 'JsonWebTokenError' ||
+        name === 'NotBeforeError'
+      ) {
+        return res
+          .status(401)
+          .json({ success: false, message: 'Unauthorized' });
+      }
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
       });
     }
   }

@@ -22,7 +22,7 @@ export default async function handler(
   if (method === 'POST') {
     try {
       const { email, password }: User = req.body;
-      const user = await dbClient.user.findUnique({
+      let user = await dbClient.user.findUnique({
         where: { email },
       });
 
@@ -40,6 +40,24 @@ export default async function handler(
           .status(400)
           .json({ success: false, message: 'passwordIncorrect' });
       }
+
+      if (user.deletedAt != null) {
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        if (Date.now() - user.deletedAt.getTime() > ninetyDaysMs) {
+          await dbClient.user.delete({ where: { id: user.id } });
+          console.warn(
+            `${filepath}: permanently deleted expired account. email: ${email}`,
+          );
+          return res
+            .status(400)
+            .json({ success: false, message: 'accountPermanentlyDeleted' });
+        }
+        user = await dbClient.user.update({
+          where: { id: user.id },
+          data: { deletedAt: null },
+        });
+      }
+
       delete user.password;
 
       const { accessToken, refreshToken } = generateTokens(user.id, user.grade);

@@ -25,6 +25,12 @@ export default async function handler(
         where: { email },
       });
       if (existingUser) {
+        if (existingUser.deletedAt != null) {
+          console.warn(`${filepath}: account deleted. email: ${email}`);
+          return res
+            .status(400)
+            .json({ success: false, message: 'accountDeleted' });
+        }
         console.warn(
           `${filepath}: user already exists. email: ${email}, name: ${name}`,
         );
