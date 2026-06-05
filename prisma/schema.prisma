@@ -40,8 +40,12 @@ model User {
   inAppNotifications  InAppNotification[]
   fcmTokens       FCMToken[]
 
+  deletedAt       DateTime?
+
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  @@index([deletedAt])
 }
 
 
