@@ -492,7 +492,23 @@ export default function Signup() {
                 color={colors.blackText}
                 className={`${signupClasses.error[platform]} ${interClassname.className} opacity-85`}
               >
-                {t(errorMessage)}
+                <span>
+                  {errorMessage === 'accountDeleted'
+                    ? t.rich('accountDeleted', {
+                        link: (chunks) => (
+                          <Link
+                            href="/user/signin"
+                            style={{
+                              color: colors.main,
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            {chunks}
+                          </Link>
+                        ),
+                      })
+                    : t(errorMessage)}
+                </span>
               </Typography>
             )}
             <Box className={signupClasses.boxes.button}>

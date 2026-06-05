@@ -452,9 +452,9 @@
   "supportFaq5": "Zakaz etmek üçin hökman akkaunt açmalymy?",
   "supportFaq5Answer": "Ýok, siz ulgama girmin, myhman bolup hem zakaz edip bilesiz. Emma akkaunt açmak size zakazlaryňyzyň istoriýasyny yzarlamaga, zakazlaryňyzy ýatda saklamaaýa we indiki gezek has çakgan zakaz etmeýe kömek ededi.",
   "deleteAccount": "Akkauntu öçür",
-  "deleteAccountVerify": "Akkauntyny öçürmek isledigiňe ynamyňyz barmy? 90 günüň içinde täzeden girip dikeldip bilersiň. 90 günden soň hemmä maglumatlar hemişelik pozulady.",
-  "deleteAccountSuccess": "Akkaunt öçürildi. Dikeltmek üçin 90 günüň içinde giriş et.",
-  "deleteAccountError": "Akkauntu öçürmek başartmady. Täzeden synanyş.",
-  "accountDeleted": "Bu akkaunt pozuldy. Dikeltmek üçin 90 günüň içinde giriş ediň.",
-  "accountPermanentlyDeleted": "Akkaunt hemişelik pozulady. Täze akkaunt açyň."
+  "deleteAccountVerify": "Akkauntyny udalit etmek islisizmi? 90 günüň içinde tazaldan girip yzyna getirip bilesiz. 90 günden soň hemmä maglumatlar dannylaryňyz pozulady we taza akkount açmaly bolasyz.",
+  "deleteAccountSuccess": "Akkaunt öçürildi. Wostanawit etmek üçin 90 günüň içinde giriş et.",
+  "deleteAccountError": "Akkauntu öçürmek başartmady. Tazaldan barlaň.",
+  "accountDeleted": "Akkaunt udalit edildi. Yzyna getirmek üçin <link>giriş ediň</link>.",
+  "accountPermanentlyDeleted": "Akkaunt hemişelik pozuldy. Taza akkaunt açyň."
 }
