@@ -254,12 +254,13 @@ export default function App({ Component, pageProps }: AppProps) {
                               timeZone="Asia/Ashgabat"
                               messages={pageProps.messages}
                             >
-                              {isLoading && <Loader />}
-                              {showHardUpdateModal && (
+                              {showHardUpdateModal ? (
                                 <UpdateModal type="hard" />
-                              )}
-                              {!isLoading && !showHardUpdateModal && (
-                                <Component {...pageProps} />
+                              ) : (
+                                <>
+                                  <Component {...pageProps} />
+                                  {isLoading && <Loader />}
+                                </>
                               )}
                             </NextIntlClientProvider>
                           </PlatformContextProvider>
