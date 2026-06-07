@@ -41,6 +41,11 @@ export default function PlatformContextProvider({
 export const usePlatform = (): Platform => {
   const context = useContext(PlatformContext);
   if (!context) {
+    if (process.env.NODE_ENV !== 'production') {
+      throw new Error(
+        'usePlatform must be used within <PlatformContextProvider />',
+      );
+    }
     return 'web';
   }
   return context.platform;
