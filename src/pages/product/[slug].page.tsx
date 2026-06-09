@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
-import Carousel from '@/pages/components/Carousel';
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import ProductImageGallery from '@/pages/components/ProductImageGallery';
 import Layout from '@/pages/components/Layout';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import TikTokIcon from '@/pages/components/TikTokIcon';
@@ -65,6 +65,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
@@ -400,46 +401,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               />
             </IconButton>
           </Box>
-          {displayImgUrls.length === 1 && (
-            <Box className={detailPageClasses.boxes.img[platform]}>
-              <CardMedia
-                component="img"
-                image={displayImgUrls[0]}
-                alt={product?.name}
-                className={detailPageClasses.cardMedia[platform]}
-                loading="lazy"
-                decoding="async"
-                onClick={() => handleDialogOpen(0)}
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.onerror = null;
-                  el.src = PRODUCT_IMAGE_FALLBACK;
-                }}
-              />
-            </Box>
-          )}
-          {displayImgUrls.length > 1 && (
-            <Box className={detailPageClasses.boxes.img[platform]}>
-              <Carousel>
-                {displayImgUrls.map((imgUrl, index) => (
-                  <CardMedia
-                    component="img"
-                    image={imgUrl}
-                    alt={product?.name}
-                    className={detailPageClasses.cardMedia[platform]}
-                    key={index}
-                    loading="lazy"
-                    decoding="async"
-                    onClick={() => handleDialogOpen(index)}
-                    onError={(e) => {
-                      const el = e.currentTarget;
-                      el.onerror = null;
-                      el.src = PRODUCT_IMAGE_FALLBACK;
-                    }}
-                  />
-                ))}
-              </Carousel>
-            </Box>
+          {displayImgUrls.length > 0 && (
+            <ProductImageGallery
+              displayImgUrls={displayImgUrls}
+              altText={product?.name ?? ''}
+              onExpand={handleDialogOpen}
+            />
           )}
           <Dialog open={dialogStatus} onClose={handleDialogClose}>
             <CardMedia
@@ -747,9 +714,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         router.push('/');
       }}
     >
-      <Box className="flex justify-center items-center h-64">
-        <CircularProgress />
-      </Box>
+      <ProductDetailSkeleton />
     </Layout>
   );
 }

@@ -7,6 +7,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { computeProductPrice } from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import { interClassname } from '@/styles/theme';
+import { CartPageSkeleton } from '@/pages/components/SkeletonLoader';
 import {
   Box,
   Breadcrumbs,
@@ -116,9 +117,7 @@ export default function CartPage() {
     return (
       <Layout handleHeaderBackButton={() => router.push('/')}>
         <Box className={cartIndexClasses.box[platform]}>
-          <Box className="flex justify-center items-center h-full">
-            <CircularProgress />
-          </Box>
+          <CartPageSkeleton count={4} />
         </Box>
       </Layout>
     );

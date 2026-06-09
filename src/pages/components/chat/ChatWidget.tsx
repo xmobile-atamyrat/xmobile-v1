@@ -1,6 +1,7 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -43,6 +44,7 @@ const ChatWidget = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const visualViewport = useVisualViewport();
 
   const [isSessionClosed, setSessionClosed] = useState(false);
   const router = useRouter();
@@ -311,9 +313,11 @@ const ChatWidget = () => {
                   height: '600px',
                 }
               : {
-                  inset: 0,
+                  top: visualViewport ? visualViewport.offsetTop : 0,
+                  left: 0,
+                  right: 0,
                   width: '100%',
-                  height: '100%',
+                  height: visualViewport ? visualViewport.height : '100%',
                 }),
             zIndex: 1300,
             borderRadius: '16px',

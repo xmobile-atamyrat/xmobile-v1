@@ -1,4 +1,5 @@
 import Layout from '@/pages/components/Layout';
+import { OrderListSkeleton } from '@/pages/components/SkeletonLoader';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -10,7 +11,6 @@ import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   IconButton,
   Pagination,
   Snackbar,
@@ -285,11 +285,7 @@ export default function OrdersPage() {
         )}
 
         {/* Loading */}
-        {loading && (
-          <Box className="flex justify-center items-center py-12">
-            <CircularProgress />
-          </Box>
-        )}
+        {loading && <OrderListSkeleton count={5} />}
 
         {/* Empty State */}
         {!loading && orders.length === 0 && (
