@@ -290,7 +290,7 @@ export default function Home({
           setSearchKeyword,
           width: '100%',
         })}
-        {platform === 'mobile' && (
+        {platform === 'mobile' && !searchKeyword && (
           <PopularCategoriesSection categories={categories} />
         )}
       </Box>
