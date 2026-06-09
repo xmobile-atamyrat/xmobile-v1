@@ -1,4 +1,5 @@
 import Layout from '@/pages/components/Layout';
+import { OrderDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
@@ -17,7 +18,6 @@ import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogContent,
   IconButton,
@@ -206,11 +206,9 @@ export default function OrderDetailPage() {
               platform === 'web'
                 ? `${appBarHeight}px`
                 : `${mobileAppBarHeight}px`,
-            p: platform === 'web' ? 2 : 1,
           }}
-          className="flex justify-center items-center py-12"
         >
-          <CircularProgress />
+          <OrderDetailSkeleton />
         </Box>
       </Layout>
     );

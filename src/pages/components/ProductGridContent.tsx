@@ -1,4 +1,5 @@
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
+import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -403,29 +404,32 @@ export default function ProductGridContent({
                   </Box>
                 )}
               </Box>
-              <Box className="flex flex-wrap w-full">
-                {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
-                  <ProductCard
-                    handleClickAddProduct={() =>
-                      setAddEditProductDialog({
-                        open: true,
-                        dialogType: 'add',
-                        imageUrls: [],
-                      })
-                    }
-                  />
-                )}
-                {products.length > 0 &&
-                  products.map((product, idx) => (
+              {isLoading && products.length === 0 ? (
+                <ProductGridSkeleton count={8} />
+              ) : (
+                <Box className="flex flex-wrap w-full">
+                  {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
+                    <ProductCard
+                      handleClickAddProduct={() =>
+                        setAddEditProductDialog({
+                          open: true,
+                          dialogType: 'add',
+                          imageUrls: [],
+                        })
+                      }
+                    />
+                  )}
+                  {products.map((product, idx) => (
                     <ProductCard
                       product={product}
                       key={idx}
                       cartProps={{ cartAction: 'add' }}
                     />
                   ))}
-              </Box>
+                </Box>
+              )}
               <div id="load-more-trigger"></div>
-              {isLoading && (
+              {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">
                   <CircularProgress />
                 </Box>
