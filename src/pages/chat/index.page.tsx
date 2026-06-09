@@ -3,6 +3,7 @@ import ChatWindow from '@/pages/components/chat/ChatWindow';
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
@@ -52,6 +53,7 @@ export default function ChatPage() {
 
   const [loading, setLoading] = useState(false);
   const [showTakenAlert, setShowTakenAlert] = useState(false);
+  const visualViewport = useVisualViewport();
   const [isSessionClosed, setSessionClosed] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -486,9 +488,11 @@ export default function ChatPage() {
       <Paper
         sx={{
           position: 'fixed',
-          inset: 0,
+          top: visualViewport ? visualViewport.offsetTop : 0,
+          left: 0,
+          right: 0,
           width: '100%',
-          height: '100%',
+          height: visualViewport ? visualViewport.height : '100%',
           zIndex: 1300,
           borderRadius: 0,
           overflow: 'hidden',

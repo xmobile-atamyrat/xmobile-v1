@@ -28,6 +28,7 @@ import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
+import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Box,
@@ -289,7 +290,7 @@ export default function Home({
           setSearchKeyword,
           width: '100%',
         })}
-        {platform === 'mobile' && (
+        {platform === 'mobile' && !searchKeyword && (
           <PopularCategoriesSection categories={categories} />
         )}
       </Box>
@@ -356,11 +357,7 @@ export default function Home({
               )}
             </Box>
 
-            {isLoading && page === 1 && (
-              <Box className="flex justify-center items-center h-64">
-                <CircularProgress />
-              </Box>
-            )}
+            {isLoading && page === 1 && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
               {products.length > 0 &&
                 products.map((product, idx) => (

@@ -1,4 +1,5 @@
 import Layout from '@/pages/components/Layout';
+import { ProfileSkeleton } from '@/pages/components/SkeletonLoader';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
@@ -30,7 +31,6 @@ import {
   Box,
   Button,
   CardMedia,
-  CircularProgress,
   Dialog,
   Divider,
   List,
@@ -99,9 +99,7 @@ export default function Profile() {
     return (
       <Layout handleHeaderBackButton={() => router.push('/')}>
         <Box className={cartIndexClasses.box[platform]}>
-          <Box className="flex justify-center items-center h-full">
-            <CircularProgress />
-          </Box>
+          <ProfileSkeleton />
         </Box>
       </Layout>
     );

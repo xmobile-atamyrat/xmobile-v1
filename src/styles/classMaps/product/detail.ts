@@ -7,7 +7,7 @@ export const detailPageClasses = {
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-[#f0f0f0] justify-center items-center',
-      mobile: 'flex flex-row gap-2 w-full h-[70vw] mx-auto justify-center',
+      mobile: 'flex flex-col w-full h-auto mx-auto',
     },
     typo: 'w-full flex flex-row justify-between items-center pb-4',
     img: {
@@ -140,5 +140,26 @@ export const detailPageClasses = {
   dialogImg: {
     web: 'w-[90vw] h-auto',
     mobile: 'w-auto h-[90vw] object-contain',
+  },
+  gallery: {
+    wrapper: {
+      web: 'relative w-[41.6vw] flex flex-col justify-center items-center',
+      mobile: 'relative w-full flex flex-col justify-center items-center',
+    },
+    expandBtn: 'absolute top-2 right-2 z-10 bg-white/70 hover:bg-white',
+    thumbnailStrip: {
+      web: 'flex flex-row gap-3 mt-10 mb-3 justify-center',
+      mobile:
+        'flex flex-row gap-3 mt-6 mb-3 justify-center overflow-x-auto px-2 w-full',
+    },
+    thumbnail: {
+      base: 'cursor-pointer border-2 rounded bg-white flex-shrink-0',
+      inactive: 'border-transparent',
+      active: 'border-[#221765]',
+      size: {
+        web: 'w-[5vw] h-[5vw]',
+        mobile: 'w-[80px] h-[80px]',
+      },
+    },
   },
 };
