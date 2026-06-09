@@ -65,6 +65,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
@@ -747,9 +748,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         router.push('/');
       }}
     >
-      <Box className="flex justify-center items-center h-64">
-        <CircularProgress />
-      </Box>
+      <ProductDetailSkeleton />
     </Layout>
   );
 }
