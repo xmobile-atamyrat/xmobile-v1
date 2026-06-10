@@ -61,9 +61,19 @@ export async function verifySessionParticipant(
   userId: string,
   userGrade?: AuthenticatedConnection['userGrade'],
 ): Promise<SessionVerificationResult> {
+  // Always read current grade from DB so role changes and sign-in switches take effect immediately
+  const currentUser = await dbClient.user.findUnique({
+    where: { id: userId },
+    select: { grade: true },
+  });
+  const effectiveGrade = currentUser?.grade ?? userGrade;
+
   let session: ChatSessionWithUsers | null;
 
-  if (userGrade === UserRole.SUPERUSER || userGrade === UserRole.ADMIN) {
+  if (
+    effectiveGrade === UserRole.SUPERUSER ||
+    effectiveGrade === UserRole.ADMIN
+  ) {
     session = (await dbClient.chatSession.findUnique({
       where: { id: sessionId },
       include: { users: true },

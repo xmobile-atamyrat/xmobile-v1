@@ -67,6 +67,13 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     sessionRef.current = currentSession;
   }, [currentSession]);
 
+  // Reset all chat state when the signed-in user changes (e.g. sign-out then sign-in as different user)
+  useEffect(() => {
+    setSessions([]);
+    setMessages([]);
+    setCurrentSession(undefined);
+  }, [user?.id]);
+
   const loadSessions = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/chat/session`, {

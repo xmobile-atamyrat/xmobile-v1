@@ -90,15 +90,27 @@ const authenticateConnection = async (
         const cookies = cookie.parse(request.headers?.cookie);
         const refreshToken = cookies[AUTH_REFRESH_COOKIE_NAME];
 
-        const { userId, grade } = await verifyToken(
-          refreshToken,
-          REFRESH_SECRET,
-        );
+        const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
+
+        // Read current grade from DB so a role change is reflected in new tokens
+        const freshUser = await dbClient.user.findUnique({
+          where: { id: userId },
+          select: { grade: true },
+        });
+        if (!freshUser) {
+          safeCloseConnection(
+            1008,
+            'Unauthorized: User not found',
+            safeConnection,
+          );
+          return { safeConnection: null };
+        }
+
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-          generateTokens(userId, grade);
+          generateTokens(userId, freshUser.grade);
 
         safeConnection.userId = userId;
-        safeConnection.userGrade = grade;
+        safeConnection.userGrade = freshUser.grade;
 
         return {
           safeConnection,
