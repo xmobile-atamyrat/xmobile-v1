@@ -1,11 +1,16 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
-import ProductImageGallery from '@/pages/components/ProductImageGallery';
 import Layout from '@/pages/components/Layout';
+import ProductImageGallery from '@/pages/components/ProductImageGallery';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
+import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import TikTokIcon from '@/pages/components/TikTokIcon';
-import { fetchAllProductSlugs, fetchProducts } from '@/pages/lib/apis';
+import {
+  fetchAllProductSlugs,
+  fetchColors,
+  fetchProducts,
+} from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
@@ -41,15 +46,18 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { isUUID, parseName } from '@/pages/lib/utils';
-import { computeProductPriceTags } from '@/pages/product/utils';
+import {
+  computePrice,
+  computeProductPriceTags,
+  parseVariantTag,
+} from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
-import { colors, interClassname } from '@/styles/theme';
+import { interClassname } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import {
@@ -59,15 +67,11 @@ import {
   Dialog,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
   Snackbar,
   Typography,
 } from '@mui/material';
-import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import CircularProgress from '@mui/material/CircularProgress';
-import type { Product } from '@prisma/client';
+import type { Colors, Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -271,6 +275,114 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
 
+  // Selectable variants derived from the product's tags ("<spec> [priceId]{colorId}")
+  const [variants, setVariants] = useState<
+    {
+      raw: string;
+      specText: string;
+      colorId?: string;
+      priceTmt?: string;
+    }[]
+  >([]);
+  // Selection is two-dimensional: a spec (e.g. "128GB 12GB RAM") and a color
+  const [selectedSpec, setSelectedSpec] = useState<string>();
+  const [selectedColorId, setSelectedColorId] = useState<string | undefined>();
+  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
+
+  useEffect(() => {
+    (async () => {
+      const cs = await fetchColors();
+      setColorsMap(new Map(cs.map((c) => [c.id, c])));
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (initialProduct == null) return;
+    (async () => {
+      const resolved = await Promise.all(
+        (initialProduct.tags ?? []).map(async (raw) => {
+          const { specText, priceId, colorId } = parseVariantTag(raw);
+          const priceTmt = priceId
+            ? await computePrice({ priceId, accessToken, fetchWithCreds })
+            : undefined;
+          return { raw, specText, colorId, priceTmt };
+        }),
+      );
+      setVariants(resolved);
+      setSelectedSpec(resolved[0]?.specText);
+      setSelectedColorId(resolved[0]?.colorId);
+    })();
+    // accessToken intentionally omitted: prices are public
+  }, [initialProduct]);
+
+  // Distinct spec options (variant chips), in first-seen order
+  const specOptions = useMemo(
+    () => [...new Set(variants.map((v) => v.specText))],
+    [variants],
+  );
+  // All distinct colors used by the product (color chips). Some may be
+  // unavailable for the currently selected spec — those are shown disabled.
+  const colorOptions = useMemo(
+    () => [...new Set(variants.map((v) => v.colorId).filter(Boolean))],
+    [variants],
+  ) as string[];
+  // Colors available for the selected spec
+  const availableColorIds = useMemo(
+    () =>
+      new Set(
+        variants
+          .filter((v) => v.specText === selectedSpec)
+          .map((v) => v.colorId)
+          .filter(Boolean),
+      ),
+    [variants, selectedSpec],
+  );
+
+  const selectedVariant =
+    variants.find(
+      (v) => v.specText === selectedSpec && v.colorId === selectedColorId,
+    ) ?? variants.find((v) => v.specText === selectedSpec);
+
+  // Pick a valid color when switching spec
+  const handleSelectSpec = (spec: string) => {
+    setSelectedSpec(spec);
+    const colorsForSpec = variants
+      .filter((v) => v.specText === spec)
+      .map((v) => v.colorId);
+    if (!colorsForSpec.includes(selectedColorId)) {
+      setSelectedColorId(colorsForSpec[0]);
+    }
+  };
+
+  // Price shown / sent to cart: selected variant's price when variants exist,
+  // otherwise the product's base resolved price.
+  const displayPrice =
+    variants.length > 0 ? selectedVariant?.priceTmt ?? '' : product?.price;
+
+  // Pill/chip styling: selected = red border+text, disabled = grey, else dark
+  const chipSx = (selected: boolean, disabled: boolean) => {
+    let tone = '#191919';
+    if (disabled) tone = '#BDBDBD';
+    else if (selected) tone = '#FF624C';
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '8px',
+      px: 2,
+      py: 1,
+      borderRadius: '10px',
+      border: '1.5px solid',
+      borderColor: disabled ? '#E0E0E0' : tone,
+      color: tone,
+      fontWeight: 600,
+      fontSize: '15px',
+      lineHeight: 1.2,
+      cursor: disabled ? 'default' : 'pointer',
+      userSelect: 'none' as const,
+      transition: 'border-color 0.15s, color 0.15s',
+    };
+  };
+
   const handleDialogClose = () => {
     setDialogStatus(false);
   };
@@ -462,7 +574,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />
             <Box className={detailPageClasses.price[platform]}>
-              {product.price?.includes('[') ? (
+              {displayPrice == null || displayPrice?.includes('[') ? (
                 <CircularProgress
                   className={detailPageClasses.circProgress[platform]}
                 />
@@ -470,52 +582,82 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 <Typography
                   className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
                 >
-                  {product.price.includes('null')
+                  {displayPrice === '' || displayPrice.includes('null')
                     ? t('nullPrice')
-                    : `${product.price} ${t('manat')}`}
+                    : `${displayPrice} ${t('manat')}`}
                 </Typography>
               )}
             </Box>
           </Box>
 
-          {product.tags[0]?.includes('[') ? (
-            <CircularProgress
-              className={detailPageClasses.circProgress[platform]}
-            />
-          ) : (
-            <List className={detailPageClasses.list[platform]}>
-              {product.tags.map((tag, index) => {
-                const words = tag.split(' ');
-                const n = words[words.length - 1].length < 1 ? 3 : 2;
-                const beginning = words.slice(0, -n).join(' ');
-                const end = words.slice(-n).join(' ');
-                return (
-                  <ListItem key={index} className="p-0">
-                    <FiberManualRecordIcon
-                      className={detailPageClasses.listItemIcon[platform]}
-                    />
-                    <ListItemText
-                      className={detailPageClasses.listItemText[platform]}
-                      primary={
-                        <Box className={detailPageClasses.boxes.tag[platform]}>
-                          <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} ${interClassname.className}`}
-                          >
-                            {beginning}
-                          </Typography>
-                          <Typography
-                            className={`${detailPageClasses.typographs.font[platform]} font-semibold min-w-[2vw] text-end ${interClassname.className}`}
-                            color={colors.mainWebMobile[platform]}
-                          >
-                            {end}
-                          </Typography>
+          {specOptions.length > 0 && (
+            <Box className="flex flex-col gap-4 my-2">
+              {/* Variant (spec) chips */}
+              <Box>
+                <Typography
+                  className={`${interClassname.className}`}
+                  sx={{ fontWeight: 700, mb: 1.5 }}
+                >
+                  {t('tags')}
+                </Typography>
+                <Box className="flex flex-row flex-wrap gap-2">
+                  {specOptions.map((spec) => (
+                    <Box
+                      key={spec}
+                      onClick={() => handleSelectSpec(spec)}
+                      className={interClassname.className}
+                      sx={chipSx(spec === selectedSpec, false)}
+                    >
+                      {spec}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Colors of the selected variant */}
+              {colorOptions.length > 0 && (
+                <Box>
+                  <Typography
+                    className={`${interClassname.className}`}
+                    sx={{ fontWeight: 700, mb: 1.5 }}
+                  >
+                    {t('color')}
+                  </Typography>
+                  <Box className="flex flex-row flex-wrap gap-2">
+                    {colorOptions.map((colorId) => {
+                      const color = colorsMap.get(colorId);
+                      const available = availableColorIds.has(colorId);
+                      const isSel = colorId === selectedColorId && available;
+                      return (
+                        <Box
+                          key={colorId}
+                          onClick={() =>
+                            available && setSelectedColorId(colorId)
+                          }
+                          className={interClassname.className}
+                          sx={chipSx(isSel, !available)}
+                        >
+                          {color?.hex && (
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                border: '1px solid rgba(0,0,0,0.15)',
+                                backgroundColor: color.hex,
+                                flexShrink: 0,
+                                opacity: available ? 1 : 0.4,
+                              }}
+                            />
+                          )}
+                          {color?.name ?? colorId}
                         </Box>
-                      }
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              )}
+            </Box>
           )}
 
           {description && Object.keys(description).length > 0 && (
@@ -566,7 +708,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               <AddToCart
                 productId={product.id}
                 cartAction="detail"
-                price={product.price}
+                price={displayPrice ?? product.price}
+                selectedVariant={selectedVariant?.raw}
               />
             ))}
         </Box>
@@ -628,7 +771,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           <AddToCart
             productId={product.id}
             cartAction="detail"
-            price={product.price}
+            price={displayPrice ?? product.price}
+            selectedVariant={selectedVariant?.raw}
           />
         ))}
       {showDeleteProductDialog?.show && (
