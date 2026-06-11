@@ -267,6 +267,7 @@ export async function addEditProduct({
   videoUrls,
   selectedProductId,
   brandId,
+  isOutOfStock,
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
@@ -281,6 +282,7 @@ export async function addEditProduct({
   tags: string[];
   videoUrls: string[];
   selectedProductId?: string;
+  isOutOfStock?: boolean;
 }): Promise<Product> {
   const {
     productNameInCharjov,
@@ -350,6 +352,8 @@ export async function addEditProduct({
   if (videoUrls.length > 0) {
     newFormData.append('videoUrls', JSON.stringify(videoUrls));
   }
+
+  newFormData.append('isOutOfStock', String(isOutOfStock ?? false));
 
   let product: Product;
   if (type === 'add') {
