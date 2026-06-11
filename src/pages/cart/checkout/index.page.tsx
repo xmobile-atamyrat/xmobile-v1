@@ -1,9 +1,14 @@
 import Layout from '@/pages/components/Layout';
+import VariantBadge from '@/pages/components/VariantBadge';
+import { fetchColors } from '@/pages/lib/apis';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPrice } from '@/pages/product/utils';
+import {
+  computeProductPrice,
+  resolveVariantDisplay,
+} from '@/pages/product/utils';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
 import { colors, interClassname, units } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -20,7 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CartItem, Prices, Product } from '@prisma/client';
+import { CartItem, Colors, Prices, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -50,11 +55,18 @@ export default function CheckoutPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [computedProducts, setComputedProducts] = useState<
-    Record<string, Product>
-  >({});
+  // Unit price (TMT) per cart line id — variant-aware
+  const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
+  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const cs = await fetchColors();
+      setColorsMap(new Map(cs.map((c) => [c.id, c])));
+    })();
+  }, []);
 
   // Fetch cart items
   useEffect(() => {
@@ -96,16 +108,18 @@ export default function CheckoutPage() {
   const cartItemsSignature = useMemo(
     () =>
       cartItems
-        .map((item) => `${item.product.id}:${item.quantity}`)
+        .map(
+          (item) => `${item.id}:${item.selectedVariant ?? ''}:${item.quantity}`,
+        )
         .sort()
         .join(','),
     [cartItems],
   );
 
-  // Compute product prices for order summary
+  // Compute variant-aware unit prices for the order summary
   useEffect(() => {
     if (cartItems.length === 0) {
-      setComputedProducts({});
+      setItemPrices({});
       setTotalPrice(0);
       return undefined;
     }
@@ -113,52 +127,50 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     (async () => {
-      const computed: Record<string, Product> = {};
+      const prices: Record<string, number> = {};
       await Promise.all(
         cartItems.map(async (item) => {
-          if (!cancelled && !computed[item.product.id]) {
-            let computedProduct = item.product;
-            if (user && accessToken) {
-              computedProduct = await computeProductPrice({
-                product: item.product,
-                accessToken,
-                fetchWithCreds,
-              });
-            } else {
-              const priceMatch = item.product.price?.match(/\[([^\]]+)\]/);
-              if (priceMatch) {
-                const priceResp = await fetchWithoutCreds<Prices>(
-                  `/api/prices?id=${priceMatch[1]}`,
-                  'GET',
-                );
-                if (priceResp.success && priceResp.data?.priceInTmt) {
-                  computedProduct = {
-                    ...item.product,
-                    price: priceResp.data.priceInTmt,
-                  };
-                }
-              }
+          // Prefer the selected variant's price, fall back to the product price
+          const priceSource = item.selectedVariant ?? item.product.price;
+          const priceMatch = priceSource?.match(/\[([^\]]+)\]/);
+          let unitPrice = 0;
+
+          if (priceMatch) {
+            const priceId = priceMatch[1];
+            const priceResp =
+              user && accessToken
+                ? await fetchWithCreds<Prices>({
+                    accessToken,
+                    path: `/api/prices?id=${priceId}`,
+                    method: 'GET',
+                  })
+                : await fetchWithoutCreds<Prices>(
+                    `/api/prices?id=${priceId}`,
+                    'GET',
+                  );
+            if (priceResp.success && priceResp.data?.priceInTmt) {
+              unitPrice = parseFloat(priceResp.data.priceInTmt) || 0;
             }
-            if (!cancelled) {
-              computed[item.product.id] = computedProduct;
+          } else if (user && accessToken) {
+            const computedProduct = await computeProductPrice({
+              product: item.product,
+              accessToken,
+              fetchWithCreds,
+            });
+            if (computedProduct.price && !computedProduct.price.includes('[')) {
+              unitPrice = parseFloat(computedProduct.price) || 0;
             }
           }
+
+          if (!cancelled) prices[item.id] = unitPrice;
         }),
       );
       if (!cancelled) {
-        setComputedProducts(computed);
-        // Calculate total price
-        let sum = 0;
-        cartItems.forEach((item) => {
-          const product = computed[item.product.id] || item.product;
-          const priceStr = product.price;
-          if (priceStr && !priceStr.includes('[')) {
-            const price = parseFloat(priceStr);
-            if (!Number.isNaN(price)) {
-              sum += price * item.quantity;
-            }
-          }
-        });
+        setItemPrices(prices);
+        const sum = cartItems.reduce(
+          (acc, item) => acc + (prices[item.id] || 0) * item.quantity,
+          0,
+        );
         setTotalPrice(sum);
       }
     })();
@@ -217,17 +229,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const getProductPrice = (product: Product): number => {
-    const computed = computedProducts[product.id] || product;
-    const priceStr = computed.price;
-    if (priceStr && !priceStr.includes('[')) {
-      const price = parseFloat(priceStr);
-      if (!Number.isNaN(price)) {
-        return price;
-      }
-    }
-    return 0;
-  };
+  const getItemPrice = (item: CartItem & { product: Product }): number =>
+    itemPrices[item.id] ?? 0;
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/cart')}>
@@ -526,16 +529,28 @@ export default function CheckoutPage() {
                   {t('orderSummary')}
                 </Typography>
                 {cartItems.map((item, index) => {
-                  const productPrice = getProductPrice(item.product);
-                  const itemTotal = productPrice * item.quantity;
+                  const itemTotal = getItemPrice(item) * item.quantity;
                   return (
                     <Box key={item.id}>
                       <Box className={checkoutDialogClasses.orderItem.web}>
-                        <Typography
-                          className={`${interClassname.className} ${checkoutDialogClasses.orderItemName.web}`}
-                        >
-                          {parseName(item.product.name, router.locale ?? 'tk')}
-                        </Typography>
+                        <Box className="flex flex-col gap-1">
+                          <Typography
+                            className={`${interClassname.className} ${checkoutDialogClasses.orderItemName.web}`}
+                          >
+                            {parseName(
+                              item.product.name,
+                              router.locale ?? 'tk',
+                            )}
+                          </Typography>
+                          {item.selectedVariant && (
+                            <VariantBadge
+                              {...resolveVariantDisplay(
+                                item.selectedVariant,
+                                colorsMap,
+                              )}
+                            />
+                          )}
+                        </Box>
                         <Typography
                           className={`${interClassname.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
                         >
