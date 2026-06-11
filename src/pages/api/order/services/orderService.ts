@@ -1,6 +1,8 @@
 import dbClient from '@/lib/dbClient';
 import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
+import { getColor } from '@/pages/api/colors/index.page';
 import { getPrice } from '@/pages/api/prices/index.page';
+import { parseVariantTag } from '@/pages/product/utils';
 import {
   createNotificationForOrderStatusUpdate,
   createNotificationsForAdmins,
@@ -49,27 +51,44 @@ async function buildOrderItemsData(
   cartItems: Array<{
     quantity: number;
     productId: string;
+    selectedVariant?: string | null;
     product: { name: string; price: string | null };
   }>,
 ) {
   return Promise.all(
     cartItems.map(async (item) => {
+      // Resolve price from the selected variant's reference, fall back to product price
+      const priceSource = item.selectedVariant ?? item.product.price;
       let productPrice = '0';
-      if (item.product.price) {
-        const priceMatch = item.product.price.match(squareBracketRegex);
+      if (priceSource) {
+        const priceMatch = priceSource.match(squareBracketRegex);
         if (priceMatch) {
-          const priceId = priceMatch[1];
-          const price = await getPrice(priceId);
+          const price = await getPrice(priceMatch[1]);
           if (price && price.priceInTmt) {
             productPrice = price.priceInTmt;
           }
         }
       }
+
+      // Snapshot the chosen variant as JSON (spec + color hex/name), resolved
+      // now so the order stays correct if the color is later changed/deleted.
+      let selectedVariant: string | null = null;
+      if (item.selectedVariant) {
+        const { specText, colorId } = parseVariantTag(item.selectedVariant);
+        const color = colorId ? await getColor(colorId) : null;
+        selectedVariant = JSON.stringify({
+          spec: specText,
+          colorHex: color?.hex ?? null,
+          colorName: color?.name ?? null,
+        });
+      }
+
       return {
         quantity: item.quantity,
         productName: item.product.name,
         productPrice,
         productId: item.productId,
+        selectedVariant,
       };
     }),
   );
@@ -323,14 +342,23 @@ export async function migrateGuestDataToUser(
 
   if (!guestItems.length && !user) return;
 
+  // Key by product + selected variant so the same product with different
+  // variants stays as separate cart lines.
+  const variantKey = (productId: string, variant?: string | null) =>
+    `${productId}::${variant ?? ''}`;
   const userItemByProduct = new Map(
-    userItems.map((item) => [item.productId, item]),
+    userItems.map((item) => [
+      variantKey(item.productId, item.selectedVariant),
+      item,
+    ]),
   );
 
   await dbClient.$transaction(async (tx) => {
     await Promise.all(
       guestItems.map(async (guestItem) => {
-        const existing = userItemByProduct.get(guestItem.productId);
+        const existing = userItemByProduct.get(
+          variantKey(guestItem.productId, guestItem.selectedVariant),
+        );
         if (existing) {
           // Requirement: overwrite quantity if product already exists in user cart.
           await tx.cartItem.update({
@@ -344,6 +372,7 @@ export async function migrateGuestDataToUser(
             userId,
             productId: guestItem.productId,
             quantity: guestItem.quantity,
+            selectedVariant: guestItem.selectedVariant ?? null,
           },
         });
       }),

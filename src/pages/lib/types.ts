@@ -284,6 +284,7 @@ export interface AddToCartProps {
   productId?: string;
   cartAction: 'add' | 'delete' | 'detail';
   price?: string;
+  selectedVariant?: string;
   onDelete?: (message: string) => void;
   setTotalPrice?: Dispatch<SetStateAction<number>>;
 }

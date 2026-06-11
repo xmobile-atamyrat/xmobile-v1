@@ -13,6 +13,7 @@ const FormSchema = z.object({
   cartItemId: z.string(),
   productId: z.string(),
   quantity: z.number(),
+  selectedVariant: z.string().nullish(),
 });
 
 const CreateCartItem = FormSchema.omit({ cartItemId: true });
@@ -26,14 +27,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   if (req.method === 'POST') {
     try {
       // validate the data input
-      const { productId, quantity } = CreateCartItem.parse({
+      const { productId, quantity, selectedVariant } = CreateCartItem.parse({
         productId: data.productId,
         quantity: data.quantity,
+        selectedVariant: data.selectedVariant,
       });
 
-      // delete if product and cart has a relation
+      // A product can exist in the cart multiple times with different variants
       const cartItemExist = await dbClient.cartItem.findFirst({
-        where: { userId, productId },
+        where: { userId, productId, selectedVariant: selectedVariant ?? null },
       });
 
       if (!cartItemExist) {
@@ -53,6 +55,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             userId,
             productId,
             quantity,
+            selectedVariant: selectedVariant ?? null,
           },
         });
 

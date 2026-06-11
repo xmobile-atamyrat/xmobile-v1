@@ -11,6 +11,7 @@ const filepath = 'src/pages/api/guest/cart.page.ts';
 const createSchema = z.object({
   productId: z.string(),
   quantity: z.coerce.number().int().min(1),
+  selectedVariant: z.string().nullish(),
 });
 
 const updateSchema = z.object({
@@ -51,7 +52,7 @@ export default async function handler(
 
   if (method === 'POST') {
     try {
-      const { productId, quantity } = createSchema.parse(body);
+      const { productId, quantity, selectedVariant } = createSchema.parse(body);
 
       const product = await dbClient.product.findFirst({
         where: { id: productId, ...whereActiveProduct },
@@ -63,7 +64,11 @@ export default async function handler(
       }
 
       const existing = await dbClient.guestCartItem.findFirst({
-        where: { guestSessionId, productId },
+        where: {
+          guestSessionId,
+          productId,
+          selectedVariant: selectedVariant ?? null,
+        },
       });
       if (existing) {
         return res
@@ -72,7 +77,12 @@ export default async function handler(
       }
 
       await dbClient.guestCartItem.create({
-        data: { guestSessionId, productId, quantity },
+        data: {
+          guestSessionId,
+          productId,
+          quantity,
+          selectedVariant: selectedVariant ?? null,
+        },
       });
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
