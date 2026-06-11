@@ -296,7 +296,7 @@
   "noNotifications": "No notifications",
   "markAllRead": "Mark all as read",
   "enableBrowserNotifications": "Enable browser notifications to receive updates",
-  "enableNativeNotifications": "Permit android notifications permission to receive updates",
+  "enableNativeNotifications": "Permit phone notifications permission to receive updates",
   "enable": "Enable",
   "loading": "Loading",
   "justNow": "Just now",
