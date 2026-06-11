@@ -46,9 +46,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Select,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -77,6 +79,7 @@ export default function AddEditProductDialog({
     videoUrls: initVideoUrls,
     categoryId: initCategoryId,
     brandId: initBrandId,
+    isOutOfStock: initIsOutOfStock,
   },
   snackbarErrorHandler,
   setProduct,
@@ -118,6 +121,7 @@ export default function AddEditProductDialog({
     { id: string; name: string }[]
   >([]);
 
+  const [isOutOfStock, setIsOutOfStock] = useState(initIsOutOfStock ?? false);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [brandId, setBrandId] = useState(initBrandId || '');
   const [brandSearch, setBrandSearch] = useState('');
@@ -318,6 +322,7 @@ export default function AddEditProductDialog({
               tags,
               videoUrls,
               selectedProductId: id,
+              isOutOfStock,
             });
             setSelectedProduct(updatedProduct);
             if (setProduct) {
@@ -479,6 +484,17 @@ export default function AddEditProductDialog({
               name="price"
               className={addEditProductDialogClasses.textField.price[platform]}
               defaultValue={price ?? ''}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isOutOfStock}
+                  onChange={(e) => setIsOutOfStock(e.target.checked)}
+                  color="error"
+                />
+              }
+              label={t('outOfStock')}
             />
 
             {/* Brand Section */}
