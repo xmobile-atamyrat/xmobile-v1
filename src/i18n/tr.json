@@ -456,5 +456,6 @@
   "deleteAccountSuccess": "Hesabınız silindi. Geri yüklemek için 90 gün içinde giriş yapın.",
   "deleteAccountError": "Hesap silinemedi. Lütfen tekrar deneyin.",
   "accountDeleted": "Hesap silindi. Geri yüklemek için  <link> giriş yapın</link>.",
-  "accountPermanentlyDeleted": "Hesabınız kalıcı olarak silindi. Lütfen yeni bir hesap oluşturun."
+  "accountPermanentlyDeleted": "Hesabınız kalıcı olarak silindi. Lütfen yeni bir hesap oluşturun.",
+  "outOfStock": "Stokta yok"
 }
