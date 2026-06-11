@@ -115,6 +115,7 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
+  isOutOfStock    Boolean     @default(false)
   deletedAt       DateTime?
 
   createdAt       DateTime    @default(now())
