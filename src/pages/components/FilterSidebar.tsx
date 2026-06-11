@@ -1,6 +1,12 @@
-import { fetchBrands } from '@/pages/lib/apis';
+import {
+  fetchBrands,
+  fetchColors,
+  fetchProductFilterOptions,
+  ProductFilterOptions,
+} from '@/pages/lib/apis';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
+import { Colors } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
 import CheckIcon from '@mui/icons-material/Check';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -24,12 +30,14 @@ interface FilterSidebarProps {
   categories: ExtendedCategory[];
   selectedCategoryIds: string[];
   selectedBrandIds: string[];
+  selectedColorIds?: string[];
   minPrice: string;
   maxPrice: string;
   sortBy?: string;
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
+    colorIds?: string[];
     minPrice?: string;
     maxPrice?: string;
     sortBy?: string;
@@ -100,6 +108,7 @@ export default function FilterSidebar({
   categories,
   selectedCategoryIds,
   selectedBrandIds,
+  selectedColorIds = [],
   minPrice,
   maxPrice,
   sortBy,
@@ -115,6 +124,31 @@ export default function FilterSidebar({
     { id: string; name: string; productCount: number }[]
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
+
+  const [colors, setColors] = useState<Colors[]>([]);
+  const [filterOptions, setFilterOptions] = useState<ProductFilterOptions>({
+    colors: [],
+  });
+  const [colorsOpen, setColorsOpen] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setColors(await fetchColors());
+      setFilterOptions(await fetchProductFilterOptions());
+    })();
+  }, []);
+
+  // Only show colors that are actually used by some product
+  const colorsToShow = colors.filter((c) =>
+    filterOptions.colors.includes(c.id),
+  );
+
+  const toggleColor = (value: string) => {
+    const next = selectedColorIds.includes(value)
+      ? selectedColorIds.filter((v) => v !== value)
+      : [...selectedColorIds, value];
+    onFilterChange({ colorIds: next });
+  };
 
   // -- Section Visibility Logic --
   const [categoriesOpen, setCategoriesOpen] = useState(
@@ -175,6 +209,7 @@ export default function FilterSidebar({
       maxPrice: '',
       categoryIds: [],
       brandIds: [],
+      colorIds: [],
       sortBy: SORT_OPTIONS.NEWEST,
     });
   };
@@ -383,6 +418,45 @@ export default function FilterSidebar({
             )}
           </Box>
         </FilterSection>
+
+        {colorsToShow.length > 0 && (
+          <FilterSection
+            title={t('color') || 'Color'}
+            open={colorsOpen}
+            onToggle={() => setColorsOpen(!colorsOpen)}
+            variant={variant}
+          >
+            <Box
+              display="flex"
+              flexDirection="column"
+              sx={{ maxHeight: '300px', overflowY: 'auto' }}
+            >
+              {colorsToShow.map((color) => (
+                <Box key={color.id} display="flex" alignItems="center" pl={2}>
+                  <CustomCheckbox
+                    checked={selectedColorIds.includes(color.id)}
+                    onChange={() => toggleColor(color.id)}
+                  />
+                  <Box
+                    title={color.name}
+                    onClick={() => toggleColor(color.id)}
+                    sx={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      border: selectedColorIds.includes(color.id)
+                        ? '2px solid #FF624C'
+                        : '1px solid #ccc',
+                      backgroundColor: color.hex,
+                      mx: 1,
+                      cursor: 'pointer',
+                    }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          </FilterSection>
+        )}
 
         {variant === 'mobile' && (
           <>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 export interface FilterState {
   categoryIds: string[];
   brandIds: string[];
+  colorIds: string[];
   minPrice: string;
   maxPrice: string;
   sortBy: string;
@@ -31,6 +32,7 @@ export function useProductFilters(
   const [filters, setFiltersState] = useState<FilterState>({
     categoryIds: [],
     brandIds: [],
+    colorIds: [],
     minPrice: '',
     maxPrice: '',
     sortBy: initialSortBy,
@@ -46,6 +48,7 @@ export function useProductFilters(
         'categoryId',
         'categoryIds',
         'brandIds',
+        'colorIds',
         'minPrice',
         'maxPrice',
         'sortBy',
@@ -71,6 +74,10 @@ export function useProductFilters(
         query.brandIds = newFilters.brandIds;
       }
 
+      if (newFilters.colorIds.length > 0) {
+        query.colorIds = newFilters.colorIds;
+      }
+
       if (newFilters.minPrice) query.minPrice = newFilters.minPrice;
       if (newFilters.maxPrice) query.maxPrice = newFilters.maxPrice;
 
@@ -94,11 +101,13 @@ export function useProductFilters(
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { categoryIds, brandIds, minPrice, maxPrice, sortBy } = router.query;
+    const { categoryIds, brandIds, colorIds, minPrice, maxPrice, sortBy } =
+      router.query;
 
     setFiltersState({
       categoryIds: normalizeQueryStringArray(categoryIds),
       brandIds: normalizeQueryStringArray(brandIds),
+      colorIds: normalizeQueryStringArray(colorIds),
       minPrice: (minPrice as string) || '',
       maxPrice: (maxPrice as string) || '',
       sortBy: (sortBy as string) || initialSortBy,
