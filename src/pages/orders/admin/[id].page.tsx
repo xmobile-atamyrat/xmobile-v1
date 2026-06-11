@@ -1,6 +1,8 @@
 import Layout from '@/pages/components/Layout';
+import VariantBadge from '@/pages/components/VariantBadge';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { parseOrderVariant } from '@/pages/product/utils';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -58,6 +60,7 @@ export default function UserOrderDetailPage() {
           quantity: number;
           productName: string;
           productPrice: string;
+          selectedVariant?: string | null;
         }>;
         user?: {
           name: string;
@@ -413,6 +416,11 @@ export default function UserOrderDetailPage() {
                           <Typography className={interClassname.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
+                          {item.selectedVariant && (
+                            <VariantBadge
+                              {...parseOrderVariant(item.selectedVariant)}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography className={interClassname.className}>
