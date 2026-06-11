@@ -1,7 +1,9 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
 import { Box, CardMedia } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const AUTO_ADVANCE_MS = 3000;
 
 interface ProductImageGalleryProps {
   displayImgUrls: string[];
@@ -19,6 +21,14 @@ export default function ProductImageGallery({
   const classes = detailPageClasses.gallery;
 
   const safeIndex = selectedIndex < displayImgUrls.length ? selectedIndex : 0;
+
+  useEffect(() => {
+    if (displayImgUrls.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setSelectedIndex((prev) => (prev + 1) % displayImgUrls.length);
+    }, AUTO_ADVANCE_MS);
+    return () => clearInterval(timer);
+  }, [displayImgUrls.length, selectedIndex]);
 
   return (
     <Box className={classes.wrapper[platform]}>
