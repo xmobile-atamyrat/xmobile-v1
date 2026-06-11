@@ -59,10 +59,13 @@ model CartItem {
   product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
+  // Raw selected variant tag, e.g. "128gb storage 12gb ram [priceId]{colorId}"
+  selectedVariant String?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  @@unique([userId, productId])
+  @@unique([userId, productId, selectedVariant])
 }
 
 model Category {
@@ -115,6 +118,8 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
+  colors          String[]    @default([])
+
   deletedAt       DateTime?
 
   createdAt       DateTime    @default(now())
@@ -132,10 +137,13 @@ model GuestCartItem {
   product         Product     @relation(references: [id], fields: [productId], onDelete: Cascade)
   productId       String
 
+  // Raw selected variant tag, e.g. "128gb storage 12gb ram [priceId]{colorId}"
+  selectedVariant String?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  @@unique([guestSessionId, productId])
+  @@unique([guestSessionId, productId, selectedVariant])
   @@index([guestSessionId])
 }
 
@@ -160,6 +168,15 @@ model Prices {
   updatedAt       DateTime    @updatedAt
 
   @@index([price])
+}
+
+model Colors {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  hex             String      @unique
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model UserVisitRecord {
@@ -447,7 +464,10 @@ model UserOrderItem {
   quantity        Int         @default(1)
   productName     String
   productPrice    String
-  
+
+  // Snapshot of the chosen variant (spec + color name) at order time
+  selectedVariant String?
+
   order           UserOrder   @relation(references: [id], fields: [orderId], onDelete: Cascade)
   orderId         String
   
