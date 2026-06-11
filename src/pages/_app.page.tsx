@@ -16,8 +16,9 @@ import {
 } from '@/pages/lib/serviceWorker';
 import { HreflangLink, PageSeoData } from '@/pages/lib/types';
 import UserContextProvider from '@/pages/lib/UserContext';
-import { theme } from '@/pages/lib/utils';
+import { getCookie, setCookie, theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
 import { NextIntlClientProvider } from 'next-intl';
@@ -143,6 +144,37 @@ export default function App({ Component, pageProps }: AppProps) {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Locale persistence: sync cookie with URL locale, redirect unprefixed URLs
+  useEffect(() => {
+    if (!router.isReady || !router.locale) return;
+
+    const cookieLocale = getCookie(LOCALE_COOKIE_NAME);
+    const pathname = window.location.pathname;
+    const defaultLocale = router.defaultLocale || 'ru';
+
+    // Detect unprefixed URL (default locale served without explicit prefix)
+    const isUnprefixed =
+      router.locale === defaultLocale &&
+      !pathname.startsWith(`/${defaultLocale}/`) &&
+      pathname !== `/${defaultLocale}`;
+
+    if (isUnprefixed) {
+      if (cookieLocale && cookieLocale !== defaultLocale) {
+        router.replace(router.asPath, router.asPath, { locale: cookieLocale });
+        return;
+      }
+      if (!cookieLocale) {
+        setCookie(LOCALE_COOKIE_NAME, defaultLocale);
+      }
+      return;
+    }
+
+    // Prefixed URL: sync cookie to match (url > cache)
+    if (cookieLocale !== router.locale) {
+      setCookie(LOCALE_COOKIE_NAME, router.locale);
+    }
+  }, [router.isReady, router.locale, router.asPath]);
 
   return (
     <ThemeProvider theme={theme}>
