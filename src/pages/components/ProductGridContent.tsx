@@ -76,6 +76,7 @@ export default function ProductGridContent({
   const [localFilters, setLocalFilters] = useState({
     categoryIds: [] as string[],
     brandIds: [] as string[],
+    colorIds: [] as string[],
     minPrice: '',
     maxPrice: '',
     sortBy: '',
@@ -92,6 +93,7 @@ export default function ProductGridContent({
       setLocalFilters({
         categoryIds: filters.categoryIds,
         brandIds: filters.brandIds,
+        colorIds: filters.colorIds,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
@@ -146,6 +148,7 @@ export default function ProductGridContent({
           page: 1,
           categoryIds: effectiveCategoryIds,
           brandIds: filters.brandIds,
+          colorIds: filters.colorIds,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
@@ -194,6 +197,7 @@ export default function ProductGridContent({
         page: page + 1,
         categoryIds: effectiveCategoryIds,
         brandIds: filters.brandIds,
+        colorIds: filters.colorIds,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
@@ -323,6 +327,7 @@ export default function ProductGridContent({
                 categories={allCategories}
                 selectedCategoryIds={localFilters.categoryIds}
                 selectedBrandIds={localFilters.brandIds}
+                selectedColorIds={localFilters.colorIds}
                 minPrice={localFilters.minPrice}
                 maxPrice={localFilters.maxPrice}
                 sortBy={localFilters.sortBy}
@@ -366,6 +371,7 @@ export default function ProductGridContent({
                 categories={allCategories}
                 selectedCategoryIds={filters.categoryIds}
                 selectedBrandIds={filters.brandIds}
+                selectedColorIds={filters.colorIds}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
                 onFilterChange={(newFilters) => {
