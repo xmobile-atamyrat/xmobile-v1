@@ -456,5 +456,6 @@
   "deleteAccountSuccess": "Akkaunt öçürildi. Wostanawit etmek üçin 90 günüň içinde giriş et.",
   "deleteAccountError": "Akkauntu öçürmek başartmady. Tazaldan barlaň.",
   "accountDeleted": "Akkaunt udalit edildi. Yzyna getirmek üçin <link>giriş ediň</link>.",
-  "accountPermanentlyDeleted": "Akkaunt hemişelik pozuldy. Taza akkaunt açyň."
+  "accountPermanentlyDeleted": "Akkaunt hemişelik pozuldy. Taza akkaunt açyň.",
+  "outOfStock": "Stokda ýok"
 }
