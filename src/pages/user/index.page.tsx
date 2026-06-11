@@ -213,6 +213,26 @@ export default function Profile() {
                 <Button
                   className={profileClasses.boxes.sectionOrders[platform]}
                   disableRipple
+                  onClick={() => router.push('/product/update-colors')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <DriveFolderUploadIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {t('updateColors')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
                   onClick={() => router.push('/user/category-hierarchy')}
                   variant={platform === 'web' ? 'outlined' : 'text'}
                   sx={{
