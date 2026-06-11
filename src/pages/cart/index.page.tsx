@@ -1,6 +1,7 @@
 import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
+import { fetchColors } from '@/pages/lib/apis';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -17,7 +18,7 @@ import {
   Link,
   Typography,
 } from '@mui/material';
-import { CartItem, Prices, Product } from '@prisma/client';
+import { CartItem, Colors, Prices, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -38,6 +39,7 @@ export default function CartPage() {
     (CartItem & { product: Product })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
@@ -46,6 +48,13 @@ export default function CartPage() {
   const onDelete = (cartItemId: string) => {
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
   };
+
+  useEffect(() => {
+    (async () => {
+      const cs = await fetchColors();
+      setColorsMap(new Map(cs.map((c) => [c.id, c])));
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -65,28 +74,38 @@ export default function CartPage() {
         if (success) {
           const computedData = await Promise.all(
             data.map(async (item) => {
+              // Price comes from the selected variant when present, else the product
+              const priceSource = item.selectedVariant ?? item.product.price;
+              const priceMatch = priceSource?.match(/\[([^\]]+)\]/);
               let computedProduct = item.product;
-              if (user && accessToken) {
+
+              if (priceMatch) {
+                const priceId = priceMatch[1];
+                const priceResp =
+                  user && accessToken
+                    ? await fetchWithCreds<Prices>({
+                        accessToken,
+                        path: `/api/prices?id=${priceId}`,
+                        method: 'GET',
+                      })
+                    : await fetchWithoutCreds<Prices>(
+                        `/api/prices?id=${priceId}`,
+                        'GET',
+                      );
+                if (priceResp.success && priceResp.data?.priceInTmt) {
+                  computedProduct = {
+                    ...item.product,
+                    price: priceResp.data.priceInTmt,
+                  };
+                }
+              } else if (user && accessToken) {
                 computedProduct = await computeProductPrice({
                   product: item.product,
                   accessToken,
                   fetchWithCreds,
                 });
-              } else {
-                const priceMatch = item.product.price?.match(/\[([^\]]+)\]/);
-                if (priceMatch) {
-                  const priceResp = await fetchWithoutCreds<Prices>(
-                    `/api/prices?id=${priceMatch[1]}`,
-                    'GET',
-                  );
-                  if (priceResp.success && priceResp.data?.priceInTmt) {
-                    computedProduct = {
-                      ...item.product,
-                      price: priceResp.data.priceInTmt,
-                    };
-                  }
-                }
               }
+
               return {
                 ...item,
                 product: computedProduct,
@@ -187,6 +206,8 @@ export default function CartPage() {
                   <CartProductCard
                     product={cartItem?.product}
                     key={cartItem?.id}
+                    selectedVariant={cartItem?.selectedVariant}
+                    colorsMap={colorsMap}
                     cartProps={{
                       cartAction: 'delete',
                       quantity: cartItem?.quantity,
