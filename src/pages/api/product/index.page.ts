@@ -471,6 +471,9 @@ async function handleEditProduct(
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
       }
+      if (fields.isOutOfStock?.length > 0) {
+        data.isOutOfStock = fields.isOutOfStock[0] === 'true';
+      }
 
       const currProduct = await dbClient.product.findFirst({
         where: {

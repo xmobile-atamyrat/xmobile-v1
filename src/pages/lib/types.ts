@@ -211,6 +211,7 @@ export interface AddEditProductProps {
   videoUrls?: string[];
   categoryId?: string;
   brandId?: string;
+  isOutOfStock?: boolean;
 }
 
 export interface DeleteCategoriesProps {
