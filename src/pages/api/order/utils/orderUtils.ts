@@ -64,24 +64,30 @@ export async function generateOrderNumber(): Promise<string> {
  * Calculates total price from cart items
  */
 export async function calculateTotalPrice(
-  cartItems: Array<{ product: { price: string | null }; quantity: number }>,
+  cartItems: Array<{
+    product: { price: string | null };
+    quantity: number;
+    selectedVariant?: string | null;
+  }>,
 ): Promise<string> {
   const prices = await Promise.all(
-    cartItems
-      .filter((item) => item.product.price)
-      .map(async (item) => {
-        const priceMatch = item.product.price!.match(squareBracketRegex);
-        if (!priceMatch) return 0;
+    cartItems.map(async (item) => {
+      // Prefer the selected variant's price reference, fall back to product price
+      const priceSource = item.selectedVariant ?? item.product.price;
+      if (!priceSource) return 0;
 
-        const priceId = priceMatch[1];
-        const price = await getPrice(priceId);
-        if (!price || !price.priceInTmt) return 0;
+      const priceMatch = priceSource.match(squareBracketRegex);
+      if (!priceMatch) return 0;
 
-        const itemPrice = parseFloat(price.priceInTmt);
-        if (Number.isNaN(itemPrice)) return 0;
+      const priceId = priceMatch[1];
+      const price = await getPrice(priceId);
+      if (!price || !price.priceInTmt) return 0;
 
-        return itemPrice * item.quantity;
-      }),
+      const itemPrice = parseFloat(price.priceInTmt);
+      if (Number.isNaN(itemPrice)) return 0;
+
+      return itemPrice * item.quantity;
+    }),
   );
 
   const total = prices.reduce((sum, price) => sum + price, 0);
