@@ -387,20 +387,23 @@ async function handleGetProduct(query: {
     }
   }
 
-  let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' }; // default
+  let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
+    { isOutOfStock: 'asc' },
+    { createdAt: 'desc' },
+  ]; // default
   if (sortBy) {
     switch (sortBy) {
       case SORT_OPTIONS.PRICE_ASC:
-        orderBy = { cachedPrice: 'asc' };
+        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'asc' }];
         break;
       case SORT_OPTIONS.PRICE_DESC:
-        orderBy = { cachedPrice: 'desc' };
+        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'desc' }];
         break;
       case SORT_OPTIONS.A_Z:
-        orderBy = { name: 'asc' };
+        orderBy = [{ isOutOfStock: 'asc' }, { name: 'asc' }];
         break;
       case SORT_OPTIONS.NEWEST:
-        orderBy = { createdAt: 'desc' };
+        orderBy = [{ isOutOfStock: 'asc' }, { createdAt: 'desc' }];
         break;
       default:
         break;
