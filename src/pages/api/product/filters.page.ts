@@ -22,12 +22,12 @@ export default async function handler(
   try {
     const products = await dbClient.product.findMany({
       where: whereActiveProduct,
-      select: { colors: true },
+      select: { colors: { select: { id: true } } },
     });
 
     const colors = new Set<string>();
     products.forEach((p) => {
-      p.colors.forEach((c) => colors.add(c));
+      p.colors.forEach((c) => colors.add(c.id));
     });
 
     return res.status(200).json({
