@@ -211,7 +211,7 @@ async function createProduct(
           brandId: fields.brandId?.[0] || null,
           description: fields.description?.[0],
           tags: productTags,
-          colors: variantColumns.colors,
+          colors: { connect: variantColumns.colors.map((id) => ({ id })) },
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
@@ -383,7 +383,7 @@ async function handleGetProduct(query: {
 
   // Color filter (OR within the dimension)
   const colorFilter = toArray(colorIds);
-  if (colorFilter) where.colors = { hasSome: colorFilter };
+  if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
 
   if (searchKeyword) {
     where.name = { contains: searchKeyword, mode: 'insensitive' };
@@ -477,6 +477,7 @@ async function handleEditProduct(
       }
 
       const data: Partial<Product> = { imgUrls: [] };
+      let colorsUpdate: Prisma.ProductUpdateInput['colors'];
       if (fields.categoryId?.[0]) {
         data.categoryId = fields.categoryId[0];
       }
@@ -498,7 +499,9 @@ async function handleEditProduct(
       if (fields.tags?.length > 0) {
         const editTags: string[] = JSON.parse(fields.tags[0]);
         data.tags = editTags;
-        data.colors = deriveVariantColumns(editTags).colors;
+        colorsUpdate = {
+          set: deriveVariantColumns(editTags).colors.map((id) => ({ id })),
+        };
       }
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
@@ -576,7 +579,7 @@ async function handleEditProduct(
         where: {
           id: productId as string,
         },
-        data,
+        data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
       });
 
       if (currProduct.brandId) {
