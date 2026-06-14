@@ -118,7 +118,7 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
-  colors          String[]    @default([])
+  colors          Colors[]
 
   deletedAt       DateTime?
 
@@ -174,6 +174,8 @@ model Colors {
   id              String      @id @default(uuid())
   name            String      @unique
   hex             String      @unique
+
+  products        Product[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
