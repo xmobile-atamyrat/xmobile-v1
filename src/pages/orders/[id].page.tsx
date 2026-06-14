@@ -1,6 +1,8 @@
 import Layout from '@/pages/components/Layout';
 import { OrderDetailSkeleton } from '@/pages/components/SkeletonLoader';
+import VariantBadge from '@/pages/components/VariantBadge';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { parseOrderVariant } from '@/pages/product/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -62,6 +64,7 @@ export default function OrderDetailPage() {
           quantity: number;
           productName: string;
           productPrice: string;
+          selectedVariant?: string | null;
         }>;
       })
     | null
@@ -468,6 +471,11 @@ export default function OrderDetailPage() {
                           <Typography className={interClassname.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
+                          {item.selectedVariant && (
+                            <VariantBadge
+                              {...parseOrderVariant(item.selectedVariant)}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography className={interClassname.className}>
@@ -673,6 +681,11 @@ export default function OrderDetailPage() {
                           <Typography className={interClassname.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
+                          {item.selectedVariant && (
+                            <VariantBadge
+                              {...parseOrderVariant(item.selectedVariant)}
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
                           <Typography className={interClassname.className}>

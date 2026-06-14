@@ -1,10 +1,15 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { BrandProps, ExtendedProduct, ResponseApi } from '@/pages/lib/types';
-import { Product } from '@prisma/client';
+import { Colors, Prices, Product } from '@prisma/client';
+
+export interface ProductFilterOptions {
+  colors: string[]; // colorIds in use
+}
 
 export const fetchProducts = async ({
   categoryIds,
   brandIds,
+  colorIds,
   minPrice,
   maxPrice,
   sortBy,
@@ -15,6 +20,7 @@ export const fetchProducts = async ({
 }: {
   categoryIds?: string[];
   brandIds?: string[];
+  colorIds?: string[];
   minPrice?: string;
   maxPrice?: string;
   sortBy?: string;
@@ -27,7 +33,7 @@ export const fetchProducts = async ({
 
   // Helper to append params
   const appendParam = (key: string, val: any) => {
-    if (val) url += `&${key}=${val}`;
+    if (val) url += `&${key}=${encodeURIComponent(val)}`;
   };
 
   if (brandIds && brandIds.length > 0) {
@@ -36,6 +42,10 @@ export const fetchProducts = async ({
 
   if (categoryIds && categoryIds.length > 0) {
     categoryIds.forEach((cid) => appendParam('categoryIds', cid));
+  }
+
+  if (colorIds && colorIds.length > 0) {
+    colorIds.forEach((cid) => appendParam('colorIds', cid));
   }
 
   appendParam('maxPrice', maxPrice);
@@ -98,3 +108,39 @@ export const fetchBrands = async (): Promise<BrandProps[]> => {
   }
   return data;
 };
+
+export const fetchColors = async (): Promise<Colors[]> => {
+  const { success, data, message }: ResponseApi<Colors[]> = await (
+    await fetch(`${BASE_URL}/api/colors`)
+  ).json();
+
+  if (!success || data == null) {
+    console.error('Failed to fetch colors:', message);
+    return [];
+  }
+  return data;
+};
+
+export const fetchPrices = async (): Promise<Prices[]> => {
+  const { success, data, message }: ResponseApi<Prices[]> = await (
+    await fetch(`${BASE_URL}/api/prices`)
+  ).json();
+
+  if (!success || data == null) {
+    console.error('Failed to fetch prices:', message);
+    return [];
+  }
+  return data;
+};
+
+export const fetchProductFilterOptions =
+  async (): Promise<ProductFilterOptions> => {
+    const { success, data, message }: ResponseApi<ProductFilterOptions> =
+      await (await fetch(`${BASE_URL}/api/product/filters`)).json();
+
+    if (!success || data == null) {
+      console.error('Failed to fetch product filter options:', message);
+      return { colors: [] };
+    }
+    return data;
+  };
