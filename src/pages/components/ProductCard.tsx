@@ -100,6 +100,15 @@ export default function ProductCard({
                   el.src = PRODUCT_IMAGE_FALLBACK;
                 }}
               />
+              {product.isOutOfStock && (
+                <Box className="absolute bottom-0 left-0 right-0 bg-black/50 flex items-center justify-center py-1.5">
+                  <Typography
+                    className={`text-white font-semibold tracking-widest uppercase ${platform === 'web' ? 'text-xs' : 'text-[10px]'}`}
+                  >
+                    {t('outOfStock')}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
@@ -122,7 +131,7 @@ export default function ProductCard({
               </Typography>
             )}
           </Box>
-          {cartProps.cartAction === 'delete' && (
+          {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
             <Box onClick={(e) => e.stopPropagation()}>
               <AddToCart
                 productId={product.id}

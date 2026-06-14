@@ -11,9 +11,9 @@ export const productCardClasses = {
         'flex flex-col justify-start min-h-[40px] mt-[8px] mb-[20px] gap-[4px]',
     },
     img: {
-      web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
+      web: 'relative flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
       mobile:
-        'flex w-full h-[45vw] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
+        'relative flex w-full h-[45vw] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
   },
   typo: {
