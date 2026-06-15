@@ -31,7 +31,7 @@ CREATE TABLE "_ColorToProduct" (
 );
 
 -- CreateTable
-CREATE TABLE "_ColorsToProduct" (
+CREATE TABLE "_ColorToProduct" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
 );
@@ -49,10 +49,10 @@ CREATE UNIQUE INDEX "_ColorToProduct_AB_unique" ON "_ColorToProduct"("A", "B");
 CREATE INDEX "_ColorToProduct_B_index" ON "_ColorToProduct"("B");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "_ColorsToProduct_AB_unique" ON "_ColorsToProduct"("A", "B");
+CREATE UNIQUE INDEX "_ColorToProduct_AB_unique" ON "_ColorToProduct"("A", "B");
 
 -- CreateIndex
-CREATE INDEX "_ColorsToProduct_B_index" ON "_ColorsToProduct"("B");
+CREATE INDEX "_ColorToProduct_B_index" ON "_ColorToProduct"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CartItem_userId_productId_selectedVariant_key" ON "CartItem"("userId", "productId", "selectedVariant");
