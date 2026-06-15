@@ -2,6 +2,7 @@ import dbClient from '@/lib/dbClient';
 import { NotificationType } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import fs from 'fs';
+import { createOAuth2GoogleapisCredential } from './credential';
 import { FCMNotificationPayload, FCMSendResult } from './types';
 
 let firebaseApp: admin.app.App | null = null;
@@ -37,8 +38,16 @@ function initializeOrGetFirebaseApp(): admin.app.App {
     const serviceAccountData = fs.readFileSync(credentialsPath, 'utf8');
     const serviceAccount = JSON.parse(serviceAccountData);
 
+    // NOTE: we deliberately do NOT use `admin.credential.cert()`. Its token
+    // minting goes to `www.googleapis.com`, which is blocked (DNS sinkhole +
+    // SNI filtering) on the Telekom VM. Our credential mints at
+    // `oauth2.googleapis.com` instead. Because a custom credential does not
+    // carry the project id, we pass `projectId` explicitly so the messaging
+    // send URL (fcm.googleapis.com/v1/projects/<id>/messages:send) is built.
+    // See src/lib/fcm/credential.ts for the full network context.
     firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: createOAuth2GoogleapisCredential(serviceAccount),
+      projectId: serviceAccount.project_id,
     });
 
     console.log('[FCM Service] Firebase Admin SDK initialized successfully');
