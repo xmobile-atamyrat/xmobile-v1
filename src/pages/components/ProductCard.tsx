@@ -91,7 +91,7 @@ export default function ProductCard({
                 component="img"
                 image={cardImageSrc}
                 alt={product?.name}
-                className={productCardClasses.cardMedia[platform]}
+                className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
                 loading="lazy"
                 decoding="async"
                 onError={(e) => {
@@ -101,9 +101,11 @@ export default function ProductCard({
                 }}
               />
               {product.isOutOfStock && (
-                <Box className="absolute bottom-0 left-0 right-0 bg-black/50 flex items-center justify-center py-1.5">
+                <Box
+                  className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
+                >
                   <Typography
-                    className={`text-white font-semibold tracking-widest uppercase ${platform === 'web' ? 'text-xs' : 'text-[10px]'}`}
+                    className={`font-semibold text-[#555] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
                   >
                     {t('outOfStock')}
                   </Typography>
@@ -113,7 +115,6 @@ export default function ProductCard({
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
             <Typography
-              gutterBottom
               className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
             >
               {parseName(product.name, router.locale ?? 'tk')}
