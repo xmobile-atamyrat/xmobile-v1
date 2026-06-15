@@ -28,10 +28,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
  * OAuth scope *identifiers* embedded in the signed JWT — they are NOT network
  * calls, so the `www.googleapis.com` strings here never hit the SNI filter.
  */
-const SCOPES = [
-  'https://www.googleapis.com/auth/cloud-platform',
-  'https://www.googleapis.com/auth/firebase.messaging',
-].join(' ');
+const SCOPES = 'https://www.googleapis.com/auth/firebase.messaging';
 
 interface ServiceAccountJson {
   client_email: string;
