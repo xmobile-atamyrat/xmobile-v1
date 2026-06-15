@@ -56,7 +56,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { Colors, Prices, Product } from '@prisma/client';
+import type { Color, Prices, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -130,7 +130,7 @@ export default function AddEditProductDialog({
   const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editBrandName, setEditBrandName] = useState('');
 
-  const [colorOptions, setColorOptions] = useState<Colors[]>([]);
+  const [colorOptions, setColorOptions] = useState<Color[]>([]);
   const [priceOptions, setPriceOptions] = useState<Prices[]>([]);
 
   const loadBrands = async () => {

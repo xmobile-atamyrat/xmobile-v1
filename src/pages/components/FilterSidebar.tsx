@@ -6,7 +6,7 @@ import {
 } from '@/pages/lib/apis';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { Colors } from '@prisma/client';
+import { Color } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
 import CheckIcon from '@mui/icons-material/Check';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -125,7 +125,7 @@ export default function FilterSidebar({
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
 
-  const [colors, setColors] = useState<Colors[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
   const [filterOptions, setFilterOptions] = useState<ProductFilterOptions>({
     colors: [],
   });

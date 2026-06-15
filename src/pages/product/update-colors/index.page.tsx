@@ -24,7 +24,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Colors } from '@prisma/client';
+import { Color } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -46,8 +46,8 @@ export default function UpdateColors() {
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  const [colors, setColors] = useState<Colors[]>([]);
-  const [updatedColors, setUpdatedColors] = useState<{ [id: string]: Colors }>(
+  const [colors, setColors] = useState<Color[]>([]);
+  const [updatedColors, setUpdatedColors] = useState<{ [id: string]: Color }>(
     {},
   );
   const [hoveredColor, setHoveredColor] = useState<string>();
@@ -66,7 +66,7 @@ export default function UpdateColors() {
   useEffect(() => {
     if (!accessToken) return;
     (async () => {
-      const res = await fetchWithCreds<Colors[]>({
+      const res = await fetchWithCreds<Color[]>({
         accessToken,
         path: '/api/colors',
         method: 'GET',
@@ -96,7 +96,7 @@ export default function UpdateColors() {
   const handleSave = async () => {
     const colorPairs = Object.values(updatedColors);
     if (colorPairs.length === 0) return;
-    const { success, message } = await fetchWithCreds<Colors[]>({
+    const { success, message } = await fetchWithCreds<Color[]>({
       accessToken,
       path: '/api/colors',
       method: 'PUT',
@@ -286,7 +286,7 @@ export default function UpdateColors() {
               handleDelete={async () => {
                 if (selectedColor == null) return;
                 try {
-                  const { success } = await fetchWithCreds<Colors>({
+                  const { success } = await fetchWithCreds<Color>({
                     accessToken,
                     path: `/api/colors?id=${selectedColor}`,
                     method: 'DELETE',
@@ -323,7 +323,7 @@ export default function UpdateColors() {
                 }
                 try {
                   const { success, data, message } =
-                    await fetchWithCreds<Colors>({
+                    await fetchWithCreds<Color>({
                       accessToken,
                       path: '/api/colors',
                       method: 'POST',

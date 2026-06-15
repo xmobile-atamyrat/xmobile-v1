@@ -25,7 +25,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CartItem, Colors, Prices, Product } from '@prisma/client';
+import { CartItem, Color, Prices, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -57,7 +57,7 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   // Unit price (TMT) per cart line id — variant-aware
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
-  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
+  const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
