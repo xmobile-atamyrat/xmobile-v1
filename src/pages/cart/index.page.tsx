@@ -18,7 +18,7 @@ import {
   Link,
   Typography,
 } from '@mui/material';
-import { CartItem, Colors, Prices, Product } from '@prisma/client';
+import { CartItem, Color, Prices, Product } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -39,7 +39,7 @@ export default function CartPage() {
     (CartItem & { product: Product })[]
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
+  const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();

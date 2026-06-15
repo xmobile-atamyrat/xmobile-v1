@@ -71,7 +71,7 @@ import {
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import type { Colors, Product } from '@prisma/client';
+import type { Color, Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -287,7 +287,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   // Selection is two-dimensional: a spec (e.g. "128GB 12GB RAM") and a color
   const [selectedSpec, setSelectedSpec] = useState<string>();
   const [selectedColorId, setSelectedColorId] = useState<string | undefined>();
-  const [colorsMap, setColorsMap] = useState<Map<string, Colors>>(new Map());
+  const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
 
   useEffect(() => {
     (async () => {

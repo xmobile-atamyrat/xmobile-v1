@@ -1,6 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { BrandProps, ExtendedProduct, ResponseApi } from '@/pages/lib/types';
-import { Colors, Prices, Product } from '@prisma/client';
+import { Color, Prices, Product } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
@@ -109,8 +109,8 @@ export const fetchBrands = async (): Promise<BrandProps[]> => {
   return data;
 };
 
-export const fetchColors = async (): Promise<Colors[]> => {
-  const { success, data, message }: ResponseApi<Colors[]> = await (
+export const fetchColors = async (): Promise<Color[]> => {
+  const { success, data, message }: ResponseApi<Color[]> = await (
     await fetch(`${BASE_URL}/api/colors`)
   ).json();
 

@@ -15,7 +15,7 @@ import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
 import { colors, interClassname } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Colors, Product } from '@prisma/client';
+import { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useMemo, useState } from 'react';
@@ -28,7 +28,7 @@ interface ProductCardProps {
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
   selectedVariant?: string | null;
-  colorsMap?: Map<string, Colors>;
+  colorsMap?: Map<string, Color>;
 }
 
 export default function CartProductCard({

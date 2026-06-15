@@ -6,12 +6,12 @@ import withAuth, {
 } from '@/pages/api/utils/authMiddleware';
 import { curlyBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
-import { Colors, Prisma } from '@prisma/client';
+import { Color, Prisma } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/colors/index.page.ts';
 
-export async function getColor(colorId: string): Promise<Colors | null> {
+export async function getColor(colorId: string): Promise<Color | null> {
   if (colorId == null) {
     console.warn(filepath, 'colorId is null');
     return null;
@@ -19,7 +19,7 @@ export async function getColor(colorId: string): Promise<Colors | null> {
   const colorMatch = colorId.match(curlyBracketRegex);
   const id = colorMatch != null ? colorMatch[1] : colorId;
 
-  return dbClient.colors.findUnique({ where: { id } });
+  return dbClient.color.findUnique({ where: { id } });
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -42,7 +42,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
   if (method === 'POST') {
     try {
-      const body: Partial<Colors> = req.body;
+      const body: Partial<Color> = req.body;
       const { name, hex } = body ?? {};
       if (name == null || hex == null) {
         return res.status(400).json({
@@ -50,7 +50,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           message: 'Missing required fields',
         });
       }
-      const newColor = await dbClient.colors.create({ data: { name, hex } });
+      const newColor = await dbClient.color.create({ data: { name, hex } });
       return res.status(200).json({
         success: true,
         message: 'Color created',
@@ -72,7 +72,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         const color = await getColor(id as string);
         return res.status(200).json({ success: true, data: color });
       }
-      const colors = await dbClient.colors.findMany({
+      const colors = await dbClient.color.findMany({
         orderBy: { name: 'asc' },
       });
       return res.status(200).json({ success: true, data: colors });
@@ -84,7 +84,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     }
   } else if (method === 'PUT') {
     try {
-      const { colorPairs }: { colorPairs: Partial<Colors>[] } = req.body;
+      const { colorPairs }: { colorPairs: Partial<Color>[] } = req.body;
       if (colorPairs == null) {
         return res
           .status(400)
@@ -93,10 +93,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
       await Promise.all(
         colorPairs.map((color) => {
-          const data: Prisma.ColorsUpdateInput = {};
+          const data: Prisma.ColorUpdateInput = {};
           if (color.name != null) data.name = color.name;
           if (color.hex != null) data.hex = color.hex;
-          return dbClient.colors.update({ where: { id: color.id }, data });
+          return dbClient.color.update({ where: { id: color.id }, data });
         }),
       );
 
@@ -118,7 +118,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           .status(400)
           .json({ success: false, message: 'No color id provided' });
       }
-      const deletedColor = await dbClient.colors.delete({
+      const deletedColor = await dbClient.color.delete({
         where: { id: id as string },
       });
       return res.status(200).json({

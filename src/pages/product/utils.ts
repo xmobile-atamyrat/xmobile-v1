@@ -1,6 +1,6 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import { FetchWithCredsType } from '@/pages/lib/types';
-import { Colors, Prices, Product } from '@prisma/client';
+import { Color, Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -67,7 +67,7 @@ export const parsePrice = (price: string): number => {
 export interface ParsedVariantTag {
   specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
   priceId?: string; // referenced Prices id, from [..]
-  colorId?: string; // referenced Colors id, from {..}
+  colorId?: string; // referenced Color id, from {..}
 }
 
 // Parses a raw variant tag like "128gb storage 12gb ram [priceId]{colorId}".
@@ -94,7 +94,7 @@ export interface VariantDisplay {
 // Resolves a raw variant tag to a display (spec + color hex/name) using a colors map.
 export const resolveVariantDisplay = (
   rawTag: string,
-  colorsMap: Map<string, Colors>,
+  colorsMap: Map<string, Color>,
 ): VariantDisplay => {
   const { specText, colorId } = parseVariantTag(rawTag);
   const color = colorId ? colorsMap.get(colorId) : undefined;
