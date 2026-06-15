@@ -14,33 +14,33 @@ ALTER TABLE "GuestCartItem" ADD COLUMN     "selectedVariant" TEXT;
 ALTER TABLE "UserOrderItem" ADD COLUMN     "selectedVariant" TEXT;
 
 -- CreateTable
-CREATE TABLE "Colors" (
+CREATE TABLE "Color" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "hex" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Colors_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Color_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "_ColorsToProduct" (
+CREATE TABLE "_ColorToProduct" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Colors_name_key" ON "Colors"("name");
+CREATE UNIQUE INDEX "Color_name_key" ON "Color"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Colors_hex_key" ON "Colors"("hex");
+CREATE UNIQUE INDEX "Color_hex_key" ON "Color"("hex");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "_ColorsToProduct_AB_unique" ON "_ColorsToProduct"("A", "B");
+CREATE UNIQUE INDEX "_ColorToProduct_AB_unique" ON "_ColorToProduct"("A", "B");
 
 -- CreateIndex
-CREATE INDEX "_ColorsToProduct_B_index" ON "_ColorsToProduct"("B");
+CREATE INDEX "_ColorToProduct_B_index" ON "_ColorToProduct"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CartItem_userId_productId_selectedVariant_key" ON "CartItem"("userId", "productId", "selectedVariant");
@@ -49,7 +49,7 @@ CREATE UNIQUE INDEX "CartItem_userId_productId_selectedVariant_key" ON "CartItem
 CREATE UNIQUE INDEX "GuestCartItem_guestSessionId_productId_selectedVariant_key" ON "GuestCartItem"("guestSessionId", "productId", "selectedVariant");
 
 -- AddForeignKey
-ALTER TABLE "_ColorsToProduct" ADD CONSTRAINT "_ColorsToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Colors"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_ColorToProduct" ADD CONSTRAINT "_ColorToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "Color"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_ColorsToProduct" ADD CONSTRAINT "_ColorsToProduct_B_fkey" FOREIGN KEY ("B") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_ColorToProduct" ADD CONSTRAINT "_ColorToProduct_B_fkey" FOREIGN KEY ("B") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
