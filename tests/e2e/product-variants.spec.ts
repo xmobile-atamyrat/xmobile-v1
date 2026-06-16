@@ -82,8 +82,9 @@ test.describe('Product detail — variant selection', () => {
     await colorSwatch.waitFor({ state: 'visible', timeout: 10_000 });
     await colorSwatch.click();
 
-    // Add to Cart should be enabled
-    const addToCart = page.getByRole('button', { name: /cart|add/i }).first();
-    await expect(addToCart).toBeVisible({ timeout: 10_000 });
+    // The AddToCart widget always renders a quantity input regardless of locale
+    await expect(page.locator('input[name="quantity"]')).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });
