@@ -457,5 +457,6 @@
   "deleteAccountSuccess": "Hasabyňyz öçürildi. Dikeltmek üçin 90 günüň içinde giriş ediň.",
   "deleteAccountError": "Hasaby öçürmek başartmady. Täzeden synanyşyň.",
   "accountDeleted": "Hasap pozuldy. Dikeltmek üçin <link>giriş ediň</link>.",
-  "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň."
+  "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň.",
+  "outOfStock": "Elýeter däl"
 }

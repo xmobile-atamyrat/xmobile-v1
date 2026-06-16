@@ -91,7 +91,7 @@ export default function ProductCard({
                 component="img"
                 image={cardImageSrc}
                 alt={product?.name}
-                className={productCardClasses.cardMedia[platform]}
+                className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
                 loading="lazy"
                 decoding="async"
                 onError={(e) => {
@@ -100,11 +100,21 @@ export default function ProductCard({
                   el.src = PRODUCT_IMAGE_FALLBACK;
                 }}
               />
+              {product.isOutOfStock && (
+                <Box
+                  className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
+                >
+                  <Typography
+                    className={`font-semibold text-[#555] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+                  >
+                    {t('outOfStock')}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
             <Typography
-              gutterBottom
               className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
             >
               {parseName(product.name, router.locale ?? 'tk')}
@@ -122,7 +132,7 @@ export default function ProductCard({
               </Typography>
             )}
           </Box>
-          {cartProps.cartAction === 'delete' && (
+          {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
             <Box onClick={(e) => e.stopPropagation()}>
               <AddToCart
                 productId={product.id}
