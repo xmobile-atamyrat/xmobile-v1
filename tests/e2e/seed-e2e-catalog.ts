@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 
-import { E2E_CATALOG } from './fixtures/catalog-slugs';
+import { E2E_CATALOG, E2E_VARIANT_PRODUCT } from './fixtures/catalog-slugs';
 
 const name = (label: string) =>
   JSON.stringify({
@@ -53,6 +53,39 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
       tags: [],
       videoUrls: [],
       price: `[${price.id}]`,
+    },
+  });
+
+  // ── Variant product ────────────────────────────────────────────────────────
+  const variantColor = await prisma.color.create({
+    data: {
+      id: E2E_VARIANT_PRODUCT.colorUuid,
+      name: E2E_VARIANT_PRODUCT.colorName,
+      hex: E2E_VARIANT_PRODUCT.colorHex,
+    },
+  });
+
+  const variantPrice = await prisma.prices.create({
+    data: {
+      name: 'e2e-variant-price',
+      price: '2',
+      priceInTmt: '149.99',
+    },
+  });
+
+  await prisma.product.create({
+    data: {
+      id: E2E_VARIANT_PRODUCT.uuid,
+      slug: E2E_VARIANT_PRODUCT.slug,
+      name: name(E2E_VARIANT_PRODUCT.name),
+      categoryId: sub.id,
+      imgUrls: [],
+      videoUrls: [],
+      tags: [
+        `${E2E_VARIANT_PRODUCT.specText} [${variantPrice.id}]{${variantColor.id}}`,
+      ],
+      price: `[${variantPrice.id}]`,
+      colors: { connect: [{ id: variantColor.id }] },
     },
   });
 }
