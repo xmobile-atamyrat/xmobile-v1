@@ -553,15 +553,13 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           )}
           {platform === 'web' &&
             (product.isOutOfStock ? (
-              <Box className="flex flex-row min-w-[28vw] h-[3.5vw] mt-[7.5vw]">
-                <Box className="flex w-full h-full">
-                  <Box className="max-w-[15vw] h-[3.5vw] bg-[#e8e8e8] gap-[10px] rounded-[10px] py-[16px] px-[2vw] flex items-center ml-[4vw]">
-                    <Typography
-                      className={`${interClassname.className} justify-center font-[700] text-[1vw] leading-[30px] tracking-widest text-[#9e9e9e] uppercase`}
-                    >
-                      {t('outOfStock')}
-                    </Typography>
-                  </Box>
+              <Box className="mt-[2vw]">
+                <Box className="max-w-[20vw] h-[3.5vw] bg-[#e8e8e8] rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
+                  <Typography
+                    className={`${interClassname.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
+                  >
+                    {t('outOfStock')}
+                  </Typography>
                 </Box>
               </Box>
             ) : (
@@ -619,7 +617,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <Box className="bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)] flex items-center justify-center pt-4">
               <Box className="w-[88.7vw] bg-[#e8e8e8] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center mx-auto">
                 <Typography
-                  className={`${interClassname.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-[#9e9e9e] uppercase`}
+                  className={`${interClassname.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
                 >
                   {t('outOfStock')}
                 </Typography>
