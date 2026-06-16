@@ -24,11 +24,6 @@ CREATE TABLE "Color" (
     CONSTRAINT "Color_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "_ColorToProduct" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL
-);
 
 -- CreateTable
 CREATE TABLE "_ColorToProduct" (
@@ -41,12 +36,6 @@ CREATE UNIQUE INDEX "Color_name_key" ON "Color"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Color_hex_key" ON "Color"("hex");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_ColorToProduct_AB_unique" ON "_ColorToProduct"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_ColorToProduct_B_index" ON "_ColorToProduct"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_ColorToProduct_AB_unique" ON "_ColorToProduct"("A", "B");
