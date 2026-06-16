@@ -55,9 +55,9 @@ test.describe('Product detail — variant selection', () => {
     await chip.waitFor({ state: 'visible', timeout: 60_000 });
     await chip.click();
 
-    // The color circle has title={colorName} — look for the swatch by title
+    // The color chip renders the color name as visible text
     await expect(
-      page.locator(`[title="${E2E_VARIANT_PRODUCT.colorName}"]`).first(),
+      page.getByText(E2E_VARIANT_PRODUCT.colorName, { exact: false }).first(),
     ).toBeVisible({ timeout: 10_000 });
   });
 
@@ -75,9 +75,9 @@ test.describe('Product detail — variant selection', () => {
     await chip.waitFor({ state: 'visible', timeout: 60_000 });
     await chip.click();
 
-    // Select color
+    // Select color — the chip renders the color name as visible text
     const colorSwatch = page
-      .locator(`[title="${E2E_VARIANT_PRODUCT.colorName}"]`)
+      .getByText(E2E_VARIANT_PRODUCT.colorName, { exact: false })
       .first();
     await colorSwatch.waitFor({ state: 'visible', timeout: 10_000 });
     await colorSwatch.click();
