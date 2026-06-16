@@ -1,27 +1,27 @@
 export const productCardClasses = {
   card: {
-    web: 'w-[280px] min-h-[427px] border-[1px] rounded-[10px] px-2 py-2 border-[#f0f0f0] hover:border-[#30303040] mx-[8px] my-[15px]',
+    web: 'w-[240px] min-h-[340px] rounded-[12px] overflow-hidden border border-[#ebebeb] hover:shadow-[0_4px_20px_rgba(0,0,0,0.09)] transition-shadow duration-200 mx-[8px] my-[12px]',
     mobile: 'w-[35vw] min-h-[45vw] gap-[8px] mx-[8px] my-[8px]',
   },
   boxes: {
     main: 'relative h-full w-full flex flex-col',
     detail: {
-      web: 'flex flex-col justify-start min-h-[60px] mb-[16px]',
+      web: 'flex flex-col justify-start px-3 pt-2 pb-3',
       mobile:
         'flex flex-col justify-start min-h-[40px] mt-[8px] mb-[20px] gap-[4px]',
     },
     img: {
-      web: 'flex justify-center h-[315px] bg-[#f4f4f4] items-center p-0 mb-[16px]',
+      web: 'relative flex justify-center h-[200px] bg-[#f5f5f5] items-center overflow-hidden',
       mobile:
-        'flex w-full h-[45vw] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
+        'relative flex w-full h-[45vw] border-[1px] border-[#f2f2f2] bg-[#fff] rounded-[8px] justify-center items-center p-0',
     },
   },
   typo: {
-    web: 'text-[20px] font-[600] leading-[30px]',
-    mobile: 'text-[14px] font-medium text-[#1b1b1b] my-[2px]',
+    web: 'text-[14px] font-semibold leading-[20px] line-clamp-2 text-[#1a1a1a] mt-2',
+    mobile: 'text-[13px] font-medium text-[#1b1b1b] my-[2px] line-clamp-2',
   },
   typo2: {
-    web: 'font-[600] text-[24px] leading-[30px]',
+    web: 'font-bold text-[17px] leading-[22px] mt-1',
     mobile:
       'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b]',
   },
@@ -30,12 +30,12 @@ export const productCardClasses = {
     mobile: 'flex justify-center text-center text-lg font-medium',
   },
   circProgress: {
-    web: 'w-[30px] h-[30px]',
+    web: 'w-[24px] h-[24px] mt-1',
     mobile: 'w-[24px] h-[24px]',
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[160px] w-auto p-0 rounded-[5px] justify-center',
-    mobile: 'w-auto h-[25vw]',
+    web: 'h-full w-full object-contain',
+    mobile: 'h-full w-full object-contain',
   },
 };

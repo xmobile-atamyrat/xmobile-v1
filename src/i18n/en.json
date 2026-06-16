@@ -454,5 +454,6 @@
   "deleteAccountSuccess": "Your account has been deleted. Sign in within 90 days to restore it.",
   "deleteAccountError": "Failed to delete account. Please try again.",
   "accountDeleted": "Account deleted. <link>Sign in</link> to restore it.",
-  "accountPermanentlyDeleted": "Your account has been permanently deleted. Please create a new account."
+  "accountPermanentlyDeleted": "Your account has been permanently deleted. Please create a new account.",
+  "outOfStock": "Out of stock"
 }
