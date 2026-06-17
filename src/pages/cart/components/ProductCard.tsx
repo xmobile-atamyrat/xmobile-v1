@@ -7,13 +7,15 @@ import {
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import VariantBadge from '@/pages/components/VariantBadge';
 import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
+import { resolveVariantDisplay } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
 import { colors, interClassname } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Product } from '@prisma/client';
+import { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useMemo, useState } from 'react';
@@ -25,11 +27,15 @@ interface ProductCardProps {
   product?: Product;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  selectedVariant?: string | null;
+  colorsMap?: Map<string, Color>;
 }
 
 export default function CartProductCard({
   product,
   cartProps,
+  selectedVariant,
+  colorsMap,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -110,6 +116,14 @@ export default function CartProductCard({
                     24,
                   )}
                 </Typography>
+                {selectedVariant && (
+                  <VariantBadge
+                    {...resolveVariantDisplay(
+                      selectedVariant,
+                      colorsMap ?? new Map(),
+                    )}
+                  />
+                )}
               </Box>
               {product?.price?.includes('[') ? (
                 <CircularProgress
