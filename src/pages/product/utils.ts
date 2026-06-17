@@ -1,6 +1,6 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import { FetchWithCredsType } from '@/pages/lib/types';
-import { Prices, Product } from '@prisma/client';
+import { Color, Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import * as XLSX from 'xlsx';
@@ -62,6 +62,61 @@ export const handleFileUpload = (
 export const parsePrice = (price: string): number => {
   if (price == null) return 0;
   return parseFloat(parseFloat(price).toFixed(2));
+};
+
+export interface ParsedVariantTag {
+  specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
+  priceId?: string; // referenced Prices id, from [..]
+  colorId?: string; // referenced Color id, from {..}
+}
+
+// Parses a raw variant tag like "128gb storage 12gb ram [priceId]{colorId}".
+// priceId/colorId are references; specText is the human-readable variant label.
+export const parseVariantTag = (tag: string): ParsedVariantTag => {
+  const priceId = tag.match(squareBracketRegex)?.[1];
+  const colorId = tag.match(curlyBracketRegex)?.[1];
+
+  const specText = tag
+    .replace(squareBracketRegex, '')
+    .replace(curlyBracketRegex, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return { specText, priceId, colorId };
+};
+
+export interface VariantDisplay {
+  spec: string;
+  colorHex?: string;
+  colorName?: string;
+}
+
+// Resolves a raw variant tag to a display (spec + color hex/name) using a colors map.
+export const resolveVariantDisplay = (
+  rawTag: string,
+  colorsMap: Map<string, Color>,
+): VariantDisplay => {
+  const { specText, colorId } = parseVariantTag(rawTag);
+  const color = colorId ? colorsMap.get(colorId) : undefined;
+  return { spec: specText, colorHex: color?.hex, colorName: color?.name };
+};
+
+// Order items snapshot the variant as JSON ({spec, colorHex, colorName}).
+// Older orders stored a plain string — fall back to showing it as the spec.
+export const parseOrderVariant = (raw: string): VariantDisplay => {
+  try {
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object' && typeof obj.spec === 'string') {
+      return {
+        spec: obj.spec,
+        colorHex: obj.colorHex ?? undefined,
+        colorName: obj.colorName ?? undefined,
+      };
+    }
+  } catch (_) {
+    // legacy plain-text snapshot
+  }
+  return { spec: raw };
 };
 
 export const processPrices = (prices: Prices[]): TableData => {

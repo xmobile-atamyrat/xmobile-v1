@@ -11,6 +11,7 @@ import {
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
+import { parseVariantTag } from '@/pages/product/utils';
 import { slugify } from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
@@ -27,6 +28,21 @@ export const config = {
 
 const filepath = 'src/pages/api/product/index.page.ts';
 const productsPerPage = 20;
+
+// Derives the colors filter column from variant tags (referenced colorIds).
+export function deriveVariantColumns(tags: string[]): { colors: string[] } {
+  const colors = new Set<string>();
+  tags.forEach((tag) => {
+    const { colorId } = parseVariantTag(tag);
+    if (colorId) colors.add(colorId);
+  });
+  return { colors: [...colors] };
+}
+
+function toArray(value?: string | string[]): string[] | undefined {
+  if (value == null) return undefined;
+  return Array.isArray(value) ? value : [value];
+}
 
 interface CreateProductReturnType {
   success: boolean;
@@ -183,6 +199,10 @@ async function createProduct(
       const cachedPrice = parseFloat(
         (await getPrice(fields.price?.[0]))?.price ?? '0',
       );
+      const productTags: string[] = fields.tags
+        ? JSON.parse(fields.tags[0])
+        : [];
+      const variantColumns = deriveVariantColumns(productTags);
       const product = await dbClient.product.create({
         data: {
           name: fields.name[0],
@@ -190,7 +210,8 @@ async function createProduct(
           categoryId: fields.categoryId[0],
           brandId: fields.brandId?.[0] || null,
           description: fields.description?.[0],
-          tags: fields.tags ? JSON.parse(fields.tags[0]) : [],
+          tags: productTags,
+          colors: { connect: variantColumns.colors.map((id) => ({ id })) },
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
           imgUrls: [
             ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
@@ -267,6 +288,7 @@ async function handleGetProduct(query: {
   categoryId?: string | string[];
   categoryIds?: string | string[];
   brandIds?: string | string[];
+  colorIds?: string | string[];
   productId?: string;
   productSlug?: string;
   page?: string;
@@ -281,6 +303,7 @@ async function handleGetProduct(query: {
     categoryId,
     categoryIds,
     brandIds,
+    colorIds,
     page,
     minPrice,
     maxPrice,
@@ -357,6 +380,10 @@ async function handleGetProduct(query: {
       in: Array.isArray(brandIds) ? brandIds : [brandIds],
     };
   }
+
+  // Color filter (OR within the dimension)
+  const colorFilter = toArray(colorIds);
+  if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
 
   if (searchKeyword) {
     where.name = { contains: searchKeyword, mode: 'insensitive' };
@@ -450,6 +477,7 @@ async function handleEditProduct(
       }
 
       const data: Partial<Product> = { imgUrls: [] };
+      let colorsUpdate: Prisma.ProductUpdateInput['colors'];
       if (fields.categoryId?.[0]) {
         data.categoryId = fields.categoryId[0];
       }
@@ -469,7 +497,11 @@ async function handleEditProduct(
         data.brandId = fields.brandId[0] || null;
       }
       if (fields.tags?.length > 0) {
-        data.tags = JSON.parse(fields.tags[0]);
+        const editTags: string[] = JSON.parse(fields.tags[0]);
+        data.tags = editTags;
+        colorsUpdate = {
+          set: deriveVariantColumns(editTags).colors.map((id) => ({ id })),
+        };
       }
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
@@ -547,7 +579,7 @@ async function handleEditProduct(
         where: {
           id: productId as string,
         },
-        data,
+        data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
       });
 
       if (currProduct.brandId) {

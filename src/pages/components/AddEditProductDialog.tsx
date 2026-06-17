@@ -1,7 +1,9 @@
 import TikTokIcon from '@/pages/components/TikTokIcon';
-import { fetchBrands } from '@/pages/lib/apis';
+import { fetchBrands, fetchColors, fetchPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
+  curlyBracketRegex,
+  squareBracketRegex,
   defaultProductDescCh,
   defaultProductDescEn,
   defaultProductDescRu,
@@ -54,7 +56,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { Product } from '@prisma/client';
+import type { Color, Prices, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -128,6 +130,9 @@ export default function AddEditProductDialog({
   const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editBrandName, setEditBrandName] = useState('');
 
+  const [colorOptions, setColorOptions] = useState<Color[]>([]);
+  const [priceOptions, setPriceOptions] = useState<Prices[]>([]);
+
   const loadBrands = async () => {
     const data = await fetchBrands();
     setBrands(data);
@@ -136,6 +141,30 @@ export default function AddEditProductDialog({
   useEffect(() => {
     loadBrands();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      setColorOptions(await fetchColors());
+      setPriceOptions(await fetchPrices());
+    })();
+  }, []);
+
+  // A variant tag is "<spec> [priceId]{colorId}". Price and color are picked
+  // from dropdowns; only the spec text is free-typed.
+  const splitTag = (tag: string) => {
+    const priceId = tag.match(squareBracketRegex)?.[1] ?? '';
+    const colorId = tag.match(curlyBracketRegex)?.[1] ?? '';
+    const spec = tag
+      .replace(squareBracketRegex, '')
+      .replace(curlyBracketRegex, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return { spec, priceId, colorId };
+  };
+  const composeTag = (spec: string, priceId: string, colorId: string) =>
+    `${spec.trim()}${priceId ? ` [${priceId}]` : ''}${
+      colorId ? `{${colorId}}` : ''
+    }`.trim();
 
   const handleCreateBrand = async () => {
     const trimmedBrandSearch = brandSearch.trim();
@@ -657,31 +686,98 @@ export default function AddEditProductDialog({
             className={addEditProductDialogClasses.box.flex.colGapP[platform]}
           >
             <Typography>{t('tags')}:</Typography>
-            {tags.map((tag, index) => (
-              <Box
-                className={addEditProductDialogClasses.box.flex.rowGap}
-                key={index}
-              >
-                <TextField
-                  type="text"
-                  name={`tag${index}`}
-                  className={
-                    addEditProductDialogClasses.textField.usual[platform]
-                  }
-                  value={tag}
-                  onChange={(event) => {
-                    const newTags = [...tags];
-                    newTags[index] = event.currentTarget.value;
-                    setTags(newTags);
-                  }}
-                />
-                <IconButton
-                  onClick={() => setTags(tags.filter((_, i) => i !== index))}
+            {tags.map((tag, index) => {
+              const { spec, priceId, colorId } = splitTag(tag);
+              return (
+                <Box
+                  className={addEditProductDialogClasses.box.flex.rowGap}
+                  key={index}
                 >
-                  <CancelIcon fontSize="medium" color="error" />
-                </IconButton>
-              </Box>
-            ))}
+                  <TextField
+                    type="text"
+                    name={`tag${index}`}
+                    placeholder={t('tags')}
+                    className={
+                      addEditProductDialogClasses.textField.usual[platform]
+                    }
+                    value={spec}
+                    onChange={(event) => {
+                      const newTags = [...tags];
+                      newTags[index] = composeTag(
+                        event.currentTarget.value,
+                        priceId,
+                        colorId,
+                      );
+                      setTags(newTags);
+                    }}
+                  />
+                  <Select
+                    size="small"
+                    displayEmpty
+                    value={priceId}
+                    sx={{ minWidth: 150 }}
+                    onChange={(event) => {
+                      const newTags = [...tags];
+                      newTags[index] = composeTag(
+                        spec,
+                        event.target.value,
+                        colorId,
+                      );
+                      setTags(newTags);
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>{t('price')}</em>
+                    </MenuItem>
+                    {priceOptions.map((priceOpt) => (
+                      <MenuItem value={priceOpt.id} key={priceOpt.id}>
+                        {priceOpt.name} — {priceOpt.priceInTmt} {t('manat')}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <Select
+                    size="small"
+                    displayEmpty
+                    value={colorId}
+                    sx={{ minWidth: 130 }}
+                    onChange={(event) => {
+                      const newTags = [...tags];
+                      newTags[index] = composeTag(
+                        spec,
+                        priceId,
+                        event.target.value,
+                      );
+                      setTags(newTags);
+                    }}
+                  >
+                    <MenuItem value="">
+                      <em>{t('color')}</em>
+                    </MenuItem>
+                    {colorOptions.map((color) => (
+                      <MenuItem value={color.id} key={color.id}>
+                        <Box className="flex flex-row items-center gap-2">
+                          <Box
+                            sx={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: '50%',
+                              border: '1px solid #ccc',
+                              backgroundColor: color.hex,
+                            }}
+                          />
+                          {color.name}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <IconButton
+                    onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                  >
+                    <CancelIcon fontSize="medium" color="error" />
+                  </IconButton>
+                </Box>
+              );
+            })}
             <Box className={addEditProductDialogClasses.box.flex.rowEnd}>
               <Button variant="outlined" onClick={() => setTags([...tags, ''])}>
                 {t('add')}

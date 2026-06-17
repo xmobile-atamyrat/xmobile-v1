@@ -28,6 +28,7 @@ export default function AddToCart({
   cartAction,
   cartItemId = undefined,
   price,
+  selectedVariant,
   onDelete,
   setTotalPrice,
 }: AddToCartProps) {
@@ -58,11 +59,13 @@ export default function AddToCart({
               userId: user.id,
               productId,
               quantity,
+              selectedVariant,
             },
           })
         : await fetchWithoutCreds('/api/guest/cart', 'POST', {
             productId,
             quantity,
+            selectedVariant,
           });
 
       if (data.success) {

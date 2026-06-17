@@ -24,6 +24,7 @@ CREATE TABLE "Color" (
     CONSTRAINT "Color_pkey" PRIMARY KEY ("id")
 );
 
+
 -- CreateTable
 CREATE TABLE "_ColorToProduct" (
     "A" TEXT NOT NULL,
