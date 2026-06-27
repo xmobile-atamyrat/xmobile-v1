@@ -295,6 +295,7 @@
   "chatNoActiveSession": "Нет активной сессии",
   "chatLoadOlderMessages": "Загрузить старые сообщения",
   "chatStartConversation": "Начать разговор...",
+  "chatWelcomeMessage": "Здравствуйте! Это служба поддержки клиентов. Чем мы можем вам помочь?",
   "chatWaitingForSupport": "Ждём оператора…",
   "chatPendingRequests": "В очереди",
   "chatNoPendingRequests": "Очередь пуста",
