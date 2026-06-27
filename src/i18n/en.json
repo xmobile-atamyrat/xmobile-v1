@@ -292,6 +292,7 @@
   "chatNoActiveSession": "No active session",
   "chatLoadOlderMessages": "Load older messages",
   "chatStartConversation": "Start conversation...",
+  "chatWelcomeMessage": "Hello! This is customer support. How can we help you?",
   "chatWaitingForSupport": "Waiting for support to join...",
   "chatPendingRequests": "Pending Requests",
   "chatNoPendingRequests": "No pending requests",

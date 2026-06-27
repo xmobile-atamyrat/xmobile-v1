@@ -1,5 +1,6 @@
 import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
+import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -92,12 +93,13 @@ const ChatWindow = () => {
             </Button>
           </Box>
         )}
+        {!hasMore && currentSession && <ChatWelcomeBanner />}
         {messages.length === 0 ? (
           <Typography
             sx={{
               textAlign: 'center',
               color: '#9E9E9E',
-              mt: 4,
+              mt: 2,
               fontSize: '14px',
             }}
           >

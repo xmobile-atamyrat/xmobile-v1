@@ -207,6 +207,7 @@
   "chatNoActiveSession": "Aktif oturum yok",
   "chatLoadOlderMessages": "Daha eski mesajları yükle",
   "chatStartConversation": "Konuşmayı başlat...",
+  "chatWelcomeMessage": "Merhaba! Bu müşteri desteği. Size nasıl yardımcı olabiliriz?",
   "chatWaitingForSupport": "Temsilci bekleniyor…",
   "chatPendingRequests": "Bekleyen İstekler",
   "chatNoPendingRequests": "Bekleyen istek yok",
