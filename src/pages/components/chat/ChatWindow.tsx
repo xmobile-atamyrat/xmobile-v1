@@ -93,19 +93,8 @@ const ChatWindow = () => {
             </Button>
           </Box>
         )}
-        {!hasMore && currentSession && <ChatWelcomeBanner />}
-        {messages.length === 0 ? (
-          <Typography
-            sx={{
-              textAlign: 'center',
-              color: '#9E9E9E',
-              mt: 2,
-              fontSize: '14px',
-            }}
-          >
-            {t('chatStartConversation')}
-          </Typography>
-        ) : (
+        {messages.length === 0 && <ChatWelcomeBanner />}
+        {messages.length > 0 &&
           (() => {
             const elements: JSX.Element[] = [];
             let lastDateKey: string | null = null;
@@ -167,8 +156,7 @@ const ChatWindow = () => {
             });
 
             return elements;
-          })()
-        )}
+          })()}
       </Box>
 
       {isClosed && (
