@@ -12,6 +12,8 @@ export const GUEST_SESSION_EXPIRY_COOKIE = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 ye
 
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
+export const BANNER_IMAGE_WIDTH = 1600; // px
+
 export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;

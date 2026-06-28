@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
+  BANNER_IMAGE_WIDTH,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
   X_MOBILE_DOMAIN,
@@ -90,6 +91,15 @@ export async function deleteCategory(
   return success;
 }
 
+export interface BannerImageInput {
+  /** 'default' or a locale code (en/ru/tk/ch/tr). */
+  key: string;
+  /** Newly selected file to upload (takes precedence over url). */
+  file?: File;
+  /** Existing stored path/URL to keep, or a pasted remote URL. */
+  url?: string;
+}
+
 export const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
   clipPath: 'inset(50%)',
@@ -120,6 +130,83 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
     img.src = URL.createObjectURL(image);
   });
 }
+
+export const addEditBanner = async ({
+  type,
+  bannerId,
+  images,
+  clearedImages,
+  redirectType,
+  redirectId,
+  isActive,
+  sortOrder,
+  startsAt,
+  endsAt,
+  accessToken,
+}: {
+  type: 'add' | 'edit';
+  bannerId?: string;
+  images: BannerImageInput[];
+  clearedImages?: string[];
+  redirectType: 'CATEGORY' | 'PRODUCT' | null;
+  redirectId: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  accessToken: string | undefined;
+}): Promise<void> => {
+  const formData = new FormData();
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const img of images) {
+    if (img.file != null && img.file.name !== '') {
+      // eslint-disable-next-line no-await-in-loop
+      const resized = await resizeImage(img.file, BANNER_IMAGE_WIDTH);
+      formData.append(`imageUrl_${img.key}`, resized);
+    } else if (img.url != null && img.url !== '') {
+      formData.append(`imageUrl_${img.key}`, img.url);
+    }
+  }
+
+  if (clearedImages != null && clearedImages.length > 0) {
+    formData.append('clearedImages', JSON.stringify(clearedImages));
+  }
+
+  formData.append('redirectType', redirectType ?? 'NONE');
+  if (redirectId != null && redirectId !== '') {
+    formData.append('redirectId', redirectId);
+  }
+  formData.append('isActive', isActive ? 'true' : 'false');
+  formData.append('sortOrder', String(sortOrder ?? 0));
+  if (startsAt != null && startsAt !== '') {
+    formData.append('startsAt', startsAt);
+  }
+  if (endsAt != null && endsAt !== '') {
+    formData.append('endsAt', endsAt);
+  }
+
+  const authHeaders = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : undefined;
+
+  const url =
+    type === 'add'
+      ? `${BASE_URL}/api/promo-banner`
+      : `${BASE_URL}/api/promo-banner?id=${bannerId}`;
+
+  const response = await fetch(url, {
+    method: type === 'add' ? 'POST' : 'PUT',
+    body: formData,
+    credentials: 'include',
+    headers: authHeaders,
+  });
+
+  if (!response.ok) {
+    const { message } = await response.json();
+    throw new Error(message || 'Failed to save banner');
+  }
+};
 
 export const parseName = (name: string, locale: string): string => {
   try {
