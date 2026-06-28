@@ -17,11 +17,11 @@ export const productCardClasses = {
     },
   },
   typo: {
-    web: 'text-[14px] font-semibold leading-[20px] line-clamp-2 text-[#1a1a1a] mt-2',
+    web: 'text-[18px] font-semibold leading-[24px] line-clamp-2 text-[#1a1a1a] mt-2',
     mobile: 'text-[13px] font-medium text-[#1b1b1b] my-[2px] line-clamp-2',
   },
   typo2: {
-    web: 'font-bold text-[17px] leading-[22px] mt-1',
+    web: 'font-bold text-[22px] leading-[28px] mt-1',
     mobile:
       'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b]',
   },
