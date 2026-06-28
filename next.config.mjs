@@ -25,6 +25,16 @@ if (localMediaOrigin) {
       destination: `${localMediaOrigin}/media/:path*`,
     },
   ];
+} else if (process.env.NODE_ENV === 'development') {
+  // Local dev without a Docker nginx: serve uploaded media (e.g. banners) from
+  // disk via the /api/media fallback route. Dev-only — production serves /media
+  // through its own web server, so this rewrite is never added there.
+  nextConfig.rewrites = async () => [
+    {
+      source: '/media/:path*',
+      destination: '/api/media/:path*',
+    },
+  ];
 }
 
 export default nextConfig;
