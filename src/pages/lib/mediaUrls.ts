@@ -38,6 +38,16 @@ export function getCategoryMediaUrl(
   return `/media/category/${encodeURIComponent(base)}`;
 }
 
+export function getBannerMediaUrl(
+  storedPath: string | null | undefined,
+): string | undefined {
+  if (!storedPath) return undefined;
+  if (isRemoteImageUrl(storedPath)) return storedPath;
+  const base = getBasename(storedPath);
+  if (!base) return undefined;
+  return `/media/banner/${encodeURIComponent(base)}`;
+}
+
 /** Grids / cards: bad when slow or unknown; good when fast. */
 export function tierForProductList(
   network: 'slow' | 'fast' | 'unknown',
