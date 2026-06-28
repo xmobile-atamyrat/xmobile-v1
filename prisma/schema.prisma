@@ -96,6 +96,40 @@ model Category {
 }
 
 
+enum BannerRedirectType {
+  CATEGORY
+  PRODUCT
+}
+
+model PromoBanner {
+  id              String              @id @default(uuid())
+
+  /// Map of locale -> stored image path/URL, e.g. { "default": "...", "en": "...", "ru": "..." }.
+  /// `default` is always present; per-locale keys are optional overrides.
+  imgUrls         Json
+
+  /// Optional internal deep-link target. Resolved to /category/[slug] or /product/[slug] at read time.
+  redirectType    BannerRedirectType?
+  redirectId      String?
+
+  isActive        Boolean             @default(true)
+
+  /// Display order in the carousel. Lower values appear first.
+  sortOrder       Int                 @default(0)
+
+  /// Optional scheduling window. Null means no bound on that side.
+  startsAt        DateTime?
+  endsAt          DateTime?
+
+  deletedAt       DateTime?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([deletedAt])
+  @@index([isActive, sortOrder])
+}
+
 model Product {
   id              String      @id @default(uuid())
   slug            String      @unique
