@@ -27,6 +27,7 @@ import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
 import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
+import ViewCarouselOutlinedIcon from '@mui/icons-material/ViewCarouselOutlined';
 import {
   Box,
   Button,
@@ -246,6 +247,26 @@ export default function Profile() {
                     className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('categoryHierarchy')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={() => router.push('/admin/banners')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <ViewCarouselOutlinedIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {t('promoBanners')}
                   </Typography>
                   <ArrowForwardIos className={profileClasses.icons[platform]} />
                 </Button>
