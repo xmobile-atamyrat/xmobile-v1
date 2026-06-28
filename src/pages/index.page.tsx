@@ -5,6 +5,7 @@ import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
+import PromoBannerSection from '@/pages/components/PromoBannerSection';
 import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -24,8 +25,9 @@ import {
   generateOrganizationSchema,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
-import { PageSeoData } from '@/pages/lib/types';
+import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { interClassname } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
@@ -137,21 +139,31 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     localBusinessJsonLd: generateLocalBusinessSchema(),
   };
 
+  let banners: StorefrontBanner[] = [];
+  try {
+    banners = await getStorefrontBanners(routeLocale ?? finalLocale);
+  } catch (error) {
+    console.error('Failed to load promo banners:', error);
+  }
+
   return {
     props: {
       locale:
         context.locale !== context.defaultLocale ? context.locale : locale,
       messages,
       seoData,
+      banners,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
   seoData: PageSeoData;
+  banners: StorefrontBanner[];
 }>;
 
 export default function Home({
   locale,
+  banners,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
@@ -291,9 +303,15 @@ export default function Home({
           width: '100%',
         })}
         {platform === 'mobile' && !searchKeyword && (
+          <PromoBannerSection banners={banners} />
+        )}
+        {platform === 'mobile' && !searchKeyword && (
           <PopularCategoriesSection categories={categories} />
         )}
       </Box>
+      {platform === 'web' && !searchKeyword && (
+        <PromoBannerSection banners={banners} />
+      )}
       <Box className="flex flex-row gap-6 w-full">
         {platform === 'web' && (
           <FilterSidebar
