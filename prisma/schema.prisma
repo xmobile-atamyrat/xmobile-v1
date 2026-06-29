@@ -108,16 +108,14 @@ model PromoBanner {
   /// `default` is always present; per-locale keys are optional overrides.
   imgUrls         Json
 
-  /// Optional internal deep-link target. Resolved to /category/[slug] or /product/[slug] at read time.
+  /// Resolved to /category/[slug] or /product/[slug] at read time.
   redirectType    BannerRedirectType?
   redirectId      String?
 
   isActive        Boolean             @default(true)
 
-  /// Display order in the carousel. Lower values appear first.
   sortOrder       Int                 @default(0)
 
-  /// Optional scheduling window. Null means no bound on that side.
   startsAt        DateTime?
   endsAt          DateTime?
 
@@ -126,7 +124,6 @@ model PromoBanner {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  @@index([deletedAt])
   @@index([isActive, sortOrder])
 }
 

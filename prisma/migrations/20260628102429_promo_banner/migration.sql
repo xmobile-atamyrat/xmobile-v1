@@ -19,7 +19,4 @@ CREATE TABLE "PromoBanner" (
 );
 
 -- CreateIndex
-CREATE INDEX "PromoBanner_deletedAt_idx" ON "PromoBanner"("deletedAt");
-
--- CreateIndex
 CREATE INDEX "PromoBanner_isActive_sortOrder_idx" ON "PromoBanner"("isActive", "sortOrder");
