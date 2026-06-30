@@ -84,6 +84,8 @@ model Category {
 
   imgUrl                          String?
 
+  promoBanners                    PromoBanner[]
+
   deletedAt                       DateTime?
 
   popular                         Boolean    @default(false)
@@ -95,34 +97,30 @@ model Category {
   @@index([predecessorId, sortOrder])
 }
 
-
-enum BannerRedirectType {
-  CATEGORY
-  PRODUCT
-}
-
 model PromoBanner {
-  id              String              @id @default(uuid())
+  id                  String              @id @default(uuid())
 
   /// Map of locale -> stored image path/URL, e.g. { "default": "...", "en": "...", "ru": "..." }.
   /// `default` is always present; per-locale keys are optional overrides.
-  imgUrls         Json
+  imgUrls             Json
 
-  /// Resolved to /category/[slug] or /product/[slug] at read time.
-  redirectType    BannerRedirectType?
-  redirectId      String?
+  redirectProductId   String?           
+  redirectProduct     Product?            @relation(fields: [redirectProductId], references: [id], onDelete: SetNull)
 
-  isActive        Boolean             @default(true)
+  redirectCategoryId  String?           
+  redirectCategory    Category?           @relation(fields: [redirectCategoryId], references: [id], onDelete: SetNull)
 
-  sortOrder       Int                 @default(0)
+  isActive            Boolean             @default(true)
 
-  startsAt        DateTime?
-  endsAt          DateTime?
+  sortOrder           Int                 @default(0)
 
-  deletedAt       DateTime?
+  startsAt            DateTime?
+  endsAt              DateTime?
 
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  deletedAt           DateTime?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 
   @@index([isActive, sortOrder])
 }
@@ -151,6 +149,8 @@ model Product {
 
   isOutOfStock    Boolean     @default(false)
   colors          Color[]
+
+  promoBanners    PromoBanner[]
 
   deletedAt       DateTime?
 
