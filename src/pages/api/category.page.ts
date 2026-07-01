@@ -433,6 +433,27 @@ export default async function handler(
           .filter((id): id is string => id != null),
       );
 
+      const activeBanner = await dbClient.promoBanner.findFirst({
+        where: {
+          deletedAt: null,
+          isActive: true,
+          OR: [
+            { redirectCategoryId: { in: subtreeIds } },
+            {
+              redirectProductId: {
+                in: productsToSoftDelete.map((p) => p.id),
+              },
+            },
+          ],
+        },
+        select: { id: true },
+      });
+      if (activeBanner) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'categoryHasActiveBanner' });
+      }
+
       const now = new Date();
 
       await dbClient.$transaction(async (tx) => {

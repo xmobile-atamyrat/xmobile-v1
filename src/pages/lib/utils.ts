@@ -78,8 +78,8 @@ export const theme = createTheme({
 export async function deleteCategory(
   categoryId: string,
   accessToken: string | undefined,
-): Promise<boolean> {
-  const { success }: ResponseApi = await (
+): Promise<ResponseApi> {
+  return (
     await fetch(`${BASE_URL}/api/category?categoryId=${categoryId}`, {
       method: 'DELETE',
       credentials: 'include',
@@ -88,7 +88,6 @@ export async function deleteCategory(
         : undefined,
     })
   ).json();
-  return success;
 }
 
 export interface BannerImageInput {
