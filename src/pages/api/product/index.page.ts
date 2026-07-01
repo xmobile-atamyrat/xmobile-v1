@@ -650,6 +650,20 @@ export default async function handler(
           .json({ success: false, message: "Couldn't find the product" });
       }
 
+      const activeBanner = await dbClient.promoBanner.findFirst({
+        where: {
+          deletedAt: null,
+          isActive: true,
+          redirectProductId: existing.id,
+        },
+        select: { id: true },
+      });
+      if (activeBanner) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'productHasActiveBanner' });
+      }
+
       const now = new Date();
       await dbClient.$transaction([
         dbClient.product.update({

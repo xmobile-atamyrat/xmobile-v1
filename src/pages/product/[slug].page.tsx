@@ -783,7 +783,10 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           redButtonText={t('delete')}
           handleDelete={async () => {
             try {
-              const { success: deleteSuccess }: ResponseApi = await (
+              const {
+                success: deleteSuccess,
+                message: deleteMessage,
+              }: ResponseApi = await (
                 await fetch(
                   `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
                   {
@@ -794,7 +797,10 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               if (!deleteSuccess) {
                 setSnackbarOpen(true);
                 setSnackbarMessage({
-                  message: 'deleteProductError',
+                  message:
+                    deleteMessage === 'productHasActiveBanner'
+                      ? deleteMessage
+                      : 'deleteProductError',
                   severity: 'error',
                 });
                 return;
