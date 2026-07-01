@@ -9,7 +9,7 @@ import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { localeOptions } from '@/pages/lib/constants';
 import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ResponseApi } from '@/pages/lib/types';
-import { BannerRedirectType, PromoBanner } from '@prisma/client';
+import { PromoBanner } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -68,42 +68,35 @@ function collectImgUrls(fields: Fields, files: Files): Record<string, string> {
 }
 
 /**
- * Validate redirect target. Returns `{ redirectType, redirectId }` (both null when
- * no redirect) or an error message.
+ * Validate redirect target. Returns the two relation columns
+ * (`redirectCategoryId`/`redirectProductId`, both null when no redirect) or an error.
  */
 interface RedirectResult {
   error?: string;
-  redirectType: BannerRedirectType | null;
-  redirectId: string | null;
+  redirectCategoryId: string | null;
+  redirectProductId: string | null;
 }
 
 async function resolveRedirectInput(fields: Fields): Promise<RedirectResult> {
   const typeRaw = firstField(fields, 'redirectType');
   const redirectId = firstField(fields, 'redirectId') || null;
+  const none: Omit<RedirectResult, 'error'> = {
+    redirectCategoryId: null,
+    redirectProductId: null,
+  };
 
   if (!typeRaw || typeRaw === 'NONE') {
-    return { redirectType: null, redirectId: null };
+    return none;
   }
-  if (
-    typeRaw !== BannerRedirectType.CATEGORY &&
-    typeRaw !== BannerRedirectType.PRODUCT
-  ) {
-    return {
-      error: 'invalidRedirectType',
-      redirectType: null,
-      redirectId: null,
-    };
+  if (typeRaw !== 'CATEGORY' && typeRaw !== 'PRODUCT') {
+    return { error: 'invalidRedirectType', ...none };
   }
   if (!redirectId) {
-    return {
-      error: 'redirectTargetRequired',
-      redirectType: null,
-      redirectId: null,
-    };
+    return { error: 'redirectTargetRequired', ...none };
   }
 
   const exists =
-    typeRaw === BannerRedirectType.CATEGORY
+    typeRaw === 'CATEGORY'
       ? await dbClient.category.findFirst({
           where: { id: redirectId, deletedAt: null },
           select: { id: true },
@@ -113,13 +106,11 @@ async function resolveRedirectInput(fields: Fields): Promise<RedirectResult> {
           select: { id: true },
         });
   if (!exists) {
-    return {
-      error: 'redirectTargetNotFound',
-      redirectType: null,
-      redirectId: null,
-    };
+    return { error: 'redirectTargetNotFound', ...none };
   }
-  return { redirectType: typeRaw, redirectId };
+  return typeRaw === 'CATEGORY'
+    ? { redirectCategoryId: redirectId, redirectProductId: null }
+    : { redirectCategoryId: null, redirectProductId: redirectId };
 }
 
 /**
@@ -200,8 +191,8 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
         const banner = await dbClient.promoBanner.create({
           data: {
             imgUrls: imgUrls as BannerImgUrls,
-            redirectType: redirect.redirectType,
-            redirectId: redirect.redirectId,
+            redirectCategoryId: redirect.redirectCategoryId,
+            redirectProductId: redirect.redirectProductId,
             isActive,
             sortOrder,
             startsAt: parseDate(firstField(fields, 'startsAt')),
@@ -315,8 +306,8 @@ async function handleEditBanner(
           where: { id: bannerId },
           data: {
             imgUrls: currentImgUrls as BannerImgUrls,
-            redirectType: redirect.redirectType,
-            redirectId: redirect.redirectId,
+            redirectCategoryId: redirect.redirectCategoryId,
+            redirectProductId: redirect.redirectProductId,
             isActive,
             sortOrder,
             startsAt: parseDate(firstField(fields, 'startsAt')),

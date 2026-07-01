@@ -1,14 +1,29 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveBanner } from '@/lib/prismaActiveScope';
 import { BannerImgUrls, StorefrontBanner } from '@/pages/lib/types';
-import { BannerRedirectType, PromoBanner } from '@prisma/client';
+import { PromoBanner } from '@prisma/client';
 
 export type { BannerImgUrls, StorefrontBanner };
 
 export interface ResolvedBanner extends Omit<PromoBanner, 'imgUrls'> {
   imgUrls: BannerImgUrls;
+  /** Single-target UI shape derived from the redirectCategoryId/redirectProductId relations. */
+  redirectType: 'CATEGORY' | 'PRODUCT' | null;
+  redirectId: string | null;
   /** Resolved internal deep-link (/category/[slug] or /product/[slug]) or null. */
   redirectUrl: string | null;
+}
+
+/** Collapse the two relation columns into the single-target shape the UI/API use. */
+export function deriveBannerRedirect(banner: {
+  redirectCategoryId: string | null;
+  redirectProductId: string | null;
+}): { redirectType: 'CATEGORY' | 'PRODUCT' | null; redirectId: string | null } {
+  if (banner.redirectCategoryId)
+    return { redirectType: 'CATEGORY', redirectId: banner.redirectCategoryId };
+  if (banner.redirectProductId)
+    return { redirectType: 'PRODUCT', redirectId: banner.redirectProductId };
+  return { redirectType: null, redirectId: null };
 }
 
 const bannerOrderBy = [
@@ -21,15 +36,11 @@ async function resolveRedirectUrls(
   banners: PromoBanner[],
 ): Promise<Map<string, string | null>> {
   const categoryIds = banners
-    .filter(
-      (b) => b.redirectType === BannerRedirectType.CATEGORY && b.redirectId,
-    )
-    .map((b) => b.redirectId as string);
+    .filter((b) => b.redirectCategoryId)
+    .map((b) => b.redirectCategoryId as string);
   const productIds = banners
-    .filter(
-      (b) => b.redirectType === BannerRedirectType.PRODUCT && b.redirectId,
-    )
-    .map((b) => b.redirectId as string);
+    .filter((b) => b.redirectProductId)
+    .map((b) => b.redirectProductId as string);
 
   const [categories, products] = await Promise.all([
     categoryIds.length
@@ -51,11 +62,11 @@ async function resolveRedirectUrls(
 
   const result = new Map<string, string | null>();
   banners.forEach((b) => {
-    if (b.redirectType === BannerRedirectType.CATEGORY && b.redirectId) {
-      const slug = categorySlug.get(b.redirectId);
+    if (b.redirectCategoryId) {
+      const slug = categorySlug.get(b.redirectCategoryId);
       result.set(b.id, slug ? `/category/${slug}` : null);
-    } else if (b.redirectType === BannerRedirectType.PRODUCT && b.redirectId) {
-      const slug = productSlug.get(b.redirectId);
+    } else if (b.redirectProductId) {
+      const slug = productSlug.get(b.redirectProductId);
       result.set(b.id, slug ? `/product/${slug}` : null);
     } else {
       result.set(b.id, null);
@@ -71,6 +82,7 @@ function toResolved(
   return {
     ...banner,
     imgUrls: banner.imgUrls as unknown as BannerImgUrls,
+    ...deriveBannerRedirect(banner),
     redirectUrl: redirectUrls.get(banner.id) ?? null,
   };
 }
