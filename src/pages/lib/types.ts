@@ -199,6 +199,31 @@ export interface EditCategoriesProps {
   popular?: boolean;
 }
 
+/** Locale -> stored image path/URL. `default` always present; locale keys optional. */
+export type BannerImgUrls = { default: string } & Record<string, string>;
+
+/** Slim, serializable banner for storefront rendering (one image per locale). */
+export interface StorefrontBanner {
+  id: string;
+  imgUrl: string;
+  redirectUrl: string | null;
+}
+
+/** Full banner shape as returned by the API (dates are JSON strings on the client). */
+export interface PromoBannerData {
+  id: string;
+  imgUrls: BannerImgUrls;
+  redirectType: 'CATEGORY' | 'PRODUCT' | null;
+  redirectId: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  redirectUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AddEditProductProps {
   open: boolean;
   dialogType?: 'add' | 'edit';

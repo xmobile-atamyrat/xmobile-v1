@@ -1,5 +1,10 @@
 import BASE_URL from '@/lib/ApiEndpoints';
-import { BrandProps, ExtendedProduct, ResponseApi } from '@/pages/lib/types';
+import {
+  BrandProps,
+  ExtendedProduct,
+  PromoBannerData,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { Color, Prices, Product } from '@prisma/client';
 
 export interface ProductFilterOptions {
@@ -131,6 +136,56 @@ export const fetchPrices = async (): Promise<Prices[]> => {
     return [];
   }
   return data;
+};
+
+/** Admin: all non-deleted banners (incl. inactive / scheduled). Requires staff token. */
+export const fetchAllBanners = async (
+  accessToken: string | undefined,
+): Promise<PromoBannerData[]> => {
+  const { success, data, message }: ResponseApi<PromoBannerData[]> = await (
+    await fetch(`${BASE_URL}/api/promo-banner?all=true`, {
+      credentials: 'include',
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    })
+  ).json();
+  if (!success || data == null) {
+    console.error('Failed to fetch banners:', message);
+    return [];
+  }
+  return data;
+};
+
+/** Public: active banners within their schedule window. */
+export const fetchActiveBanners = async (): Promise<PromoBannerData[]> => {
+  const { success, data, message }: ResponseApi<PromoBannerData[]> = await (
+    await fetch(`${BASE_URL}/api/promo-banner`)
+  ).json();
+  if (!success || data == null) {
+    console.error('Failed to fetch banners:', message);
+    return [];
+  }
+  return data;
+};
+
+export const deleteBanner = async (
+  id: string,
+  accessToken: string | undefined,
+): Promise<boolean> => {
+  const { success, message }: ResponseApi = await (
+    await fetch(`${BASE_URL}/api/promo-banner?id=${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    })
+  ).json();
+  if (!success) {
+    throw new Error(message || 'Failed to delete banner');
+  }
+  return success;
 };
 
 export const fetchProductFilterOptions =

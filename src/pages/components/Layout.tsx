@@ -110,7 +110,23 @@ export default function Layout({
             try {
               const { categoryId } = deleteCategoriesModal;
               if (categoryId == null) return;
-              await deleteCategory(categoryId, accessToken);
+              const { success, message } = await deleteCategory(
+                categoryId,
+                accessToken,
+              );
+
+              if (!success) {
+                setSnackbar({
+                  open: true,
+                  message: t(
+                    message === 'categoryHasActiveBanner'
+                      ? message
+                      : 'deleteCategoryError',
+                  ),
+                  severity: 'error',
+                });
+                return;
+              }
 
               const {
                 success: catSuccess,
@@ -138,14 +154,14 @@ export default function Layout({
                   setProducts([]);
                 }
               }
-            } catch (error) {
-              console.error(error);
-            } finally {
               setSnackbar({
                 open: true,
                 message: t('categoryDeleted'),
                 severity: 'success',
               });
+            } catch (error) {
+              console.error(error);
+            } finally {
               setDeleteCategoriesModal({
                 open: false,
                 categoryId: undefined,
