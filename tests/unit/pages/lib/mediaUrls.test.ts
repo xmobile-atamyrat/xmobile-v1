@@ -1,6 +1,7 @@
 import {
   getAbsoluteCategoryMediaUrl,
   getAbsoluteProductMediaUrl,
+  getBannerMediaUrl,
   getBasename,
   getCategoryMediaUrl,
   getProductMediaUrl,
@@ -40,6 +41,23 @@ describe('mediaUrls', () => {
     expect(getCategoryMediaUrl('/home/ubuntu/images/categories/cat.jpg')).toBe(
       '/media/category/cat.jpg',
     );
+  });
+
+  it('getBannerMediaUrl maps local paths', () => {
+    expect(getBannerMediaUrl('/home/ubuntu/images/banners/promo.jpg')).toBe(
+      '/media/banner/promo.jpg',
+    );
+  });
+
+  it('getBannerMediaUrl returns remote URLs unchanged', () => {
+    expect(getBannerMediaUrl('https://cdn.example.com/promo.jpg')).toBe(
+      'https://cdn.example.com/promo.jpg',
+    );
+  });
+
+  it('getBannerMediaUrl returns undefined for nullish input', () => {
+    expect(getBannerMediaUrl(null)).toBeUndefined();
+    expect(getBannerMediaUrl(undefined)).toBeUndefined();
   });
 
   it('tierForProductList', () => {
