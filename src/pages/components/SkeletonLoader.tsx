@@ -54,6 +54,23 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
+// --- PromoBanner ---
+export function BannerSkeleton() {
+  const platform = usePlatform();
+  return (
+    <Skeleton
+      variant="rectangular"
+      animation="wave"
+      sx={{
+        width: '100%',
+        aspectRatio: platform === 'web' ? '3 / 1' : '2 / 1',
+        borderRadius: platform === 'web' ? '16px' : '12px',
+        bgcolor: '#ebebeb',
+      }}
+    />
+  );
+}
+
 // --- ProductDetail ---
 export function ProductDetailSkeleton() {
   const platform = usePlatform();

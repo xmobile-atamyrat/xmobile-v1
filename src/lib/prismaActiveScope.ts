@@ -6,3 +6,7 @@ export const whereActiveProduct: Prisma.ProductWhereInput = { deletedAt: null };
 export const whereActiveCategory: Prisma.CategoryWhereInput = {
   deletedAt: null,
 };
+
+export const whereActiveBanner: Prisma.PromoBannerWhereInput = {
+  deletedAt: null,
+};
