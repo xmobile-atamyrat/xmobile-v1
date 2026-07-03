@@ -276,6 +276,34 @@ export function createFCMNotificationPayload(
 }
 
 /**
+ * Record the outcome of a send attempt on the InAppNotification row so the
+ * batch-runner retry job (scripts/batch-runner/jobs/notification-retry.ts) can
+ * pick up anything that didn't reach the user. `delivered` = FCM accepted OR
+ * WS fallback delivered. Failures land as PENDING (nextRetryAt=null) so the job
+ * retries on its next tick.
+ */
+export async function recordNotificationDelivery(
+  notificationId: string,
+  delivered: boolean,
+): Promise<void> {
+  try {
+    await dbClient.inAppNotification.update({
+      where: { id: notificationId },
+      data: {
+        lastAttemptAt: new Date(),
+        deliveryStatus: delivered ? 'SENT' : 'PENDING',
+      },
+    });
+  } catch (error) {
+    // ponytail: delivery status is best-effort telemetry, never block a send
+    console.error(
+      `[FCM Service] Failed to record delivery status for ${notificationId}:`,
+      error,
+    );
+  }
+}
+
+/**
  * Send notification with FCM first, then fallback to WebSocket server if FCM fails
  * This is used from Next.js API routes
  */
@@ -301,11 +329,13 @@ export async function sendFCMWithCallbackFallback(
 
     if (fcmResult.success && fcmResult.tokensSent > 0) {
       // FCM succeeded
+      await recordNotificationDelivery(notification.id, true);
       return true;
     }
 
     // FCM failed, try WebSocket fallback
     const wsResult = await sendToWebSocketServer(targetUserId, [notification]);
+    await recordNotificationDelivery(notification.id, wsResult);
     return wsResult;
   } catch (error) {
     console.error(
@@ -314,7 +344,11 @@ export async function sendFCMWithCallbackFallback(
     );
     // Try WebSocket as last resort
     try {
-      return await sendToWebSocketServer(targetUserId, [notification]);
+      const wsResult = await sendToWebSocketServer(targetUserId, [
+        notification,
+      ]);
+      await recordNotificationDelivery(notification.id, wsResult);
+      return wsResult;
     } catch (wsError) {
       console.error(
         `[FCM Service] WebSocket fallback also failed for notification ${notification.id}:`,
