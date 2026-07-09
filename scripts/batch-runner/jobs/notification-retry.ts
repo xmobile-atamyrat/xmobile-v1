@@ -37,7 +37,7 @@ const DEFAULT_CONFIG = {
   maxDelaySec: 3600,
 };
 
-async function runNotificationRetry(): Promise<void> {
+async function runNotificationRetryInner(): Promise<void> {
   const cfg = await dbClient.pushRetryConfig.upsert({
     where: { id: 1 },
     update: {},
@@ -149,6 +149,21 @@ async function runNotificationRetry(): Promise<void> {
     console.log(
       `[NotificationRetry] processed ${due.length} (sent ${sent}, newly-failed ${newlyFailed}).`,
     );
+  }
+}
+
+// ponytail: single-process guard so a slow tick (FCM can hang on the sinkholed
+// VM) can't overlap the next one and re-send the same PENDING rows. Needs a DB
+// lock only if the runner ever goes multi-instance.
+let running = false;
+
+async function runNotificationRetry(): Promise<void> {
+  if (running) return;
+  running = true;
+  try {
+    await runNotificationRetryInner();
+  } finally {
+    running = false;
   }
 }
 

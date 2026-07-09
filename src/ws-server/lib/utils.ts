@@ -525,7 +525,10 @@ export async function sendNotificationToWebSocketServer(
     }
 
     const result = await response.json();
-    return result.success === true;
+    // success is always true on a 200; only sentCount tells us the user was
+    // actually connected. Returning true on sentCount 0 would mark undelivered
+    // notifications SENT and rob the retry job of anything to retry.
+    return result.sentCount > 0;
   } catch (error) {
     console.error('Error sending notification to WebSocket server:', error);
     return false;
