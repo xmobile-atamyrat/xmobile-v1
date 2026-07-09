@@ -282,6 +282,22 @@ enum NotificationType {
   ORDER_STATUS_UPDATE
 }
 
+enum NotificationDeliveryStatus {
+  PENDING // needs (re)send — created-but-unsent or a failed attempt
+  SENT 
+  FAILED // retries exhausted — gave up
+}
+
+model PushRetryConfig {
+  id                Int      @id @default(1)
+  enabled           Boolean  @default(true)
+  maxRetries        Int      @default(3)
+  baseDelaySec      Int      @default(30)
+  backoffMultiplier Float    @default(2.0)
+  maxDelaySec       Int      @default(3600)
+  updatedAt         DateTime @updatedAt
+}
+
 model InAppNotification {
   id          String            @id @default(uuid())
   
@@ -306,11 +322,18 @@ model InAppNotification {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   readAt      DateTime?         // When notification was read
-  
+
+  deliveryStatus NotificationDeliveryStatus @default(PENDING)
+  retryCount     Int                        @default(0)
+  nextRetryAt    DateTime?
+  lastAttemptAt  DateTime?
+  lastError      String?
+
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@index([sessionId])
   @@index([orderId])
+  @@index([deliveryStatus, nextRetryAt])
 }
 
 model FCMToken {
