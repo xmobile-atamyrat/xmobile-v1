@@ -6,7 +6,7 @@
     "dev:ws": "dotenv -e .env.local -- ts-node --ignore-diagnostics 6133 -r tsconfig-paths/register --project tsconfig.ws.json src/ws-server/index.ts",
     "dev": "next dev -p 3003 -H 0.0.0.0",
     "build:ws": "tsc --project tsconfig.ws.json && tsc-alias --project tsconfig.ws.json",
-    "build:batch-runner": "tsc --project tsconfig.batch-runner.json",
+    "build:batch-runner": "tsc --project tsconfig.batch-runner.json && tsc-alias --project tsconfig.batch-runner.json",
     "build": "next build",
     "build-dev": "test -f .env.local && rm -rf .next && dotenv -e .env.local -- next build",
     "start:ws": "node --env-file=.env dist/ws-server/index.js",

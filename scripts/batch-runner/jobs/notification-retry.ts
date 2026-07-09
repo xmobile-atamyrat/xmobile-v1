@@ -3,6 +3,7 @@ import {
   createFCMNotificationPayload,
   sendFCMNotificationToUser,
 } from '../../../src/lib/fcm/fcmService';
+import { getSlack } from '../../../src/lib/slack';
 
 const INTERVAL_MS = 60_000; // every minute
 const BATCH_SIZE = 100;
@@ -46,80 +47,109 @@ async function runNotificationRetry(): Promise<void> {
   if (!cfg.enabled) return;
 
   const now = new Date();
+  const windowCutoff = new Date(now.getTime() - RETRY_WINDOW_MS);
+
+  // Rows that aged out of the retry window while still PENDING would otherwise
+  // sit forever claiming they'll be retried — they won't, so close them out.
+  const expired = await dbClient.inAppNotification.updateMany({
+    where: { deliveryStatus: 'PENDING', createdAt: { lt: windowCutoff } },
+    data: { deliveryStatus: 'FAILED', lastError: 'retry window expired' },
+  });
+
   const due = await dbClient.inAppNotification.findMany({
     where: {
       deliveryStatus: 'PENDING',
       retryCount: { lt: cfg.maxRetries },
-      createdAt: { gte: new Date(now.getTime() - RETRY_WINDOW_MS) },
+      createdAt: { gte: windowCutoff },
       OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }],
     },
     take: BATCH_SIZE,
     orderBy: { createdAt: 'asc' },
   });
 
-  if (due.length === 0) return;
+  let sent = 0;
+  let exhausted = 0;
 
-  // Retries are independent; fan out in parallel (same pattern as the order-service
-  // notification sends). ponytail: FCM only — the batch process holds no live WS
-  // connections, and FCM is the durable retry channel; WS fallback stays in the API path.
-  const outcomes = await Promise.allSettled(
-    due.map(async (n) => {
-      const payload = createFCMNotificationPayload(n);
-      const result = await sendFCMNotificationToUser(n.userId, payload).catch(
-        () => ({
-          success: false,
-          tokensSent: 0,
-          tokensFailed: 0,
-          failedTokenIds: [],
-        }),
-      );
+  if (due.length > 0) {
+    // Retries are independent; fan out in parallel (same pattern as the order-service
+    // notification sends). ponytail: FCM only — the batch process holds no live WS
+    // connections, and FCM is the durable retry channel; WS fallback stays in the API path.
+    const outcomes = await Promise.allSettled(
+      due.map(async (n): Promise<'sent' | 'pending' | 'failed'> => {
+        const payload = createFCMNotificationPayload(n);
+        const result = await sendFCMNotificationToUser(n.userId, payload).catch(
+          () => ({
+            success: false,
+            tokensSent: 0,
+            tokensFailed: 0,
+            failedTokenIds: [],
+          }),
+        );
 
-      const attempt = n.retryCount + 1;
+        const attempt = n.retryCount + 1;
 
-      if (result.tokensSent > 0) {
+        if (result.tokensSent > 0) {
+          await dbClient.inAppNotification.update({
+            where: { id: n.id },
+            data: {
+              deliveryStatus: 'SENT',
+              retryCount: attempt,
+              lastAttemptAt: now,
+              nextRetryAt: null,
+              lastError: null,
+            },
+          });
+          return 'sent';
+        }
+
+        const isExhausted = attempt >= cfg.maxRetries;
         await dbClient.inAppNotification.update({
           where: { id: n.id },
           data: {
-            deliveryStatus: 'SENT',
+            deliveryStatus: isExhausted ? 'FAILED' : 'PENDING',
             retryCount: attempt,
             lastAttemptAt: now,
-            nextRetryAt: null,
-            lastError: null,
+            nextRetryAt: isExhausted
+              ? null
+              : new Date(
+                  now.getTime() + computeBackoffSec(n.retryCount, cfg) * 1000,
+                ),
+            lastError:
+              result.tokensFailed > 0
+                ? `${result.tokensFailed} token(s) failed`
+                : 'no active tokens',
           },
         });
-        return true;
-      }
+        return isExhausted ? 'failed' : 'pending';
+      }),
+    );
 
-      const exhausted = attempt >= cfg.maxRetries;
-      await dbClient.inAppNotification.update({
-        where: { id: n.id },
-        data: {
-          deliveryStatus: exhausted ? 'FAILED' : 'PENDING',
-          retryCount: attempt,
-          lastAttemptAt: now,
-          nextRetryAt: exhausted
-            ? null
-            : new Date(
-                now.getTime() + computeBackoffSec(n.retryCount, cfg) * 1000,
-              ),
-          lastError:
-            result.tokensFailed > 0
-              ? `${result.tokensFailed} token(s) failed`
-              : 'no active tokens',
-        },
-      });
-      return false;
-    }),
-  );
+    sent = outcomes.filter(
+      (o) => o.status === 'fulfilled' && o.value === 'sent',
+    ).length;
+    exhausted = outcomes.filter(
+      (o) => o.status === 'fulfilled' && o.value === 'failed',
+    ).length;
+  }
 
-  const sent = outcomes.filter(
-    (o) => o.status === 'fulfilled' && o.value,
-  ).length;
-  const failed = due.length - sent;
+  const newlyFailed = exhausted + expired.count;
 
-  console.log(
-    `[NotificationRetry] processed ${due.length} (sent ${sent}, still-failing ${failed}).`,
-  );
+  if (newlyFailed > 0) {
+    const slack = getSlack('HEALTH_BOT_WEBHOOK');
+    await slack
+      ?.send(
+        `:x: *Push notifications permanently failed*\nCount: ${newlyFailed}\n(retries exhausted or 24h retry window expired)`,
+      )
+      .catch((err) =>
+        console.error('[NotificationRetry] Failed to send Slack alert:', err),
+      );
+  }
+
+  if (due.length > 0 || newlyFailed > 0) {
+    console.log(
+      `[NotificationRetry] processed ${due.length} (sent ${sent}, newly-failed ${newlyFailed}).`,
+    );
+  }
 }
 
 export const notificationRetryJob = {
