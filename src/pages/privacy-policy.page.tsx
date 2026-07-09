@@ -4,7 +4,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
 import { privacyPolicyClasses } from '@/styles/classMaps/privacy-policy.page';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import cookie from 'cookie';
 import { GetServerSideProps } from 'next';
@@ -158,7 +158,7 @@ export default function PrivacyPolicy() {
         <Box className={privacyPolicyClasses.boxes.main[platform]}>
           <Typography
             component="h1"
-            className={`${interClassname.className} ${privacyPolicyClasses.h1[platform]}`}
+            className={`${fontClassName.className} ${privacyPolicyClasses.h1[platform]}`}
           >
             {t('privacyPolicyTitle')}
           </Typography>
@@ -171,14 +171,14 @@ export default function PrivacyPolicy() {
               >
                 <Typography
                   component="h2"
-                  className={`${interClassname.className} ${privacyPolicyClasses.h2[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.h2[platform]}`}
                 >
                   {`${idx + 1}. ${section.title}`}
                 </Typography>
 
                 {section.desc && (
                   <Typography
-                    className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                    className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                   >
                     {section.desc}
                   </Typography>
@@ -194,7 +194,7 @@ export default function PrivacyPolicy() {
                         }
                       >
                         <Typography
-                          className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                          className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                         >
                           {item}
                         </Typography>
@@ -209,7 +209,7 @@ export default function PrivacyPolicy() {
                     className={privacyPolicyClasses.boxes.subsection[platform]}
                   >
                     <Typography
-                      className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                      className={`${fontClassName.className} ${privacyPolicyClasses.subtitle[platform]}`}
                     >
                       {sub.subtitle}
                     </Typography>
@@ -224,7 +224,7 @@ export default function PrivacyPolicy() {
                           }
                         >
                           <Typography
-                            className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                            className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                           >
                             {item}
                           </Typography>
@@ -243,47 +243,47 @@ export default function PrivacyPolicy() {
             >
               <Typography
                 component="h2"
-                className={`${interClassname.className} ${privacyPolicyClasses.h2[platform]}`}
+                className={`${fontClassName.className} ${privacyPolicyClasses.h2[platform]}`}
               >
                 {t('privacyPolicyDeletionTitle')}
               </Typography>
               <Typography
-                className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
               >
                 {t('privacyPolicyDeletionDesc')}
               </Typography>
               <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.subtitle[platform]}`}
                 >
                   {t('privacyPolicyDeletionInAppTitle')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                 >
                   {t('privacyPolicyDeletionInAppDesc')}
                 </Typography>
               </div>
               <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.subtitle[platform]}`}
                 >
                   {t('privacyPolicyDeletionGraceTitle')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                 >
                   {t('privacyPolicyDeletionGraceDesc')}
                 </Typography>
               </div>
               <div className={privacyPolicyClasses.boxes.deletionBox[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.subtitle[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.subtitle[platform]}`}
                 >
                   {t('privacyPolicyDeletionHowTitle')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${privacyPolicyClasses.p[platform]}`}
+                  className={`${fontClassName.className} ${privacyPolicyClasses.p[platform]}`}
                 >
                   {t('privacyPolicyDeletionHowDesc')}
                 </Typography>

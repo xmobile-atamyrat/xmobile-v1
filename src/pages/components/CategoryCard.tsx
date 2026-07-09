@@ -6,7 +6,7 @@ import {
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { parseName } from '@/pages/lib/utils';
 import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
@@ -51,7 +51,7 @@ export default function CategoryCard({
       {initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD ? (
         <Box className={categoryCardClasses.boxes.allP}>
           <Typography
-            className={`${categoryCardClasses.typography[platform]} ${interClassname.className}`}
+            className={`${categoryCardClasses.typography[platform]} ${fontClassName.className}`}
           >
             {t('allProducts')}
           </Typography>
@@ -59,7 +59,7 @@ export default function CategoryCard({
       ) : (
         <Box className={categoryCardClasses.boxes.cardMedia[platform]}>
           <Typography
-            className={`${categoryCardClasses.typography2[platform]} ${interClassname.className}`}
+            className={`${categoryCardClasses.typography2[platform]} ${fontClassName.className}`}
           >
             {parseName(name, router.locale ?? 'tk')}
           </Typography>

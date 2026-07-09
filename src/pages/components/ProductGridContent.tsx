@@ -21,7 +21,7 @@ import { parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
@@ -286,7 +286,7 @@ export default function ProductGridContent({
         <Box className={productIndexPageClasses.boxes.category[platform]}>
           {category && (
             <Typography
-              className={`${interClassname.className} ${productIndexPageClasses.categoryName[platform]}`}
+              className={`${fontClassName.className} ${productIndexPageClasses.categoryName[platform]}`}
             >
               {parseName(category?.name, router.locale ?? 'ru')}
             </Typography>
@@ -397,7 +397,7 @@ export default function ProductGridContent({
                 }}
               >
                 <Typography
-                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+                  className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
                 >
                   {titleText}
                 </Typography>

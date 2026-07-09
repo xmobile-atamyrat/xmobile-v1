@@ -3,7 +3,7 @@ import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { checkoutSuccessClasses } from '@/styles/classMaps/cart/checkoutSuccess';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -84,7 +84,7 @@ export default function CheckoutSuccessPage() {
 
         {/* Title */}
         <Typography
-          className={`${interClassname.className} ${checkoutSuccessClasses.title[platform]}`}
+          className={`${fontClassName.className} ${checkoutSuccessClasses.title[platform]}`}
         >
           {platform === 'web' ? t('successfullyOrdered') : t('thankYou')}
         </Typography>
@@ -92,12 +92,12 @@ export default function CheckoutSuccessPage() {
         {/* Message */}
         <Box className={checkoutSuccessClasses.message[platform]}>
           <Typography
-            className={`${interClassname.className} ${checkoutSuccessClasses.yourOrder[platform]}`}
+            className={`${fontClassName.className} ${checkoutSuccessClasses.yourOrder[platform]}`}
           >
             {t('yourOrder')}{' '}
             {orderNumber && (
               <span
-                className={`${interClassname.className} ${checkoutSuccessClasses.orderNumber[platform]}`}
+                className={`${fontClassName.className} ${checkoutSuccessClasses.orderNumber[platform]}`}
               >
                 {orderNumber}
               </span>
@@ -105,7 +105,7 @@ export default function CheckoutSuccessPage() {
             {t('isCompleted')}
           </Typography>
           <Typography
-            className={`${interClassname.className} ${checkoutSuccessClasses.confirmation[platform]}`}
+            className={`${fontClassName.className} ${checkoutSuccessClasses.confirmation[platform]}`}
           >
             {t('waitForConfirmation')}
           </Typography>
@@ -115,7 +115,7 @@ export default function CheckoutSuccessPage() {
         <Box className="flex flex-row gap-2 w-full justify-center">
           <Button
             onClick={() => router.push('/')}
-            className={`${interClassname.className} ${checkoutSuccessClasses.button[platform]}`}
+            className={`${fontClassName.className} ${checkoutSuccessClasses.button[platform]}`}
             sx={{
               backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
               color: 'white',
@@ -129,7 +129,7 @@ export default function CheckoutSuccessPage() {
           </Button>
           <Button
             onClick={() => router.push('/orders')}
-            className={`${interClassname.className} ${checkoutSuccessClasses.button[platform]}`}
+            className={`${fontClassName.className} ${checkoutSuccessClasses.button[platform]}`}
             sx={{
               backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
               color: 'white',

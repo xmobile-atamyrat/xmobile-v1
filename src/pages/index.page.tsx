@@ -1,8 +1,5 @@
-import { SearchBar } from '@/pages/components/Appbar';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
-import NotificationBadge from '@/pages/components/NotificationBadge';
-import NotificationMenu from '@/pages/components/NotificationMenu';
 import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
@@ -26,16 +23,14 @@ import {
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Box,
   Button,
-  CardMedia,
   CircularProgress,
   Dialog,
   IconButton,
@@ -168,9 +163,8 @@ export default function Home({
   const router = useRouter();
   const platform = usePlatform();
   const t = useTranslations();
-  const { user } = useUserContext();
   const { categories } = useCategoryContext();
-  const { searchKeyword, setSearchKeyword } = useProductContext();
+  const { searchKeyword } = useProductContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -186,8 +180,6 @@ export default function Home({
   });
 
   const { filters, setFilters } = useProductFilters();
-  const [notificationAnchorEl, setNotificationAnchorEl] =
-    useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -269,39 +261,8 @@ export default function Home({
   }, [locale]);
 
   return (
-    <Layout>
+    <Layout showHomeHeader onHomeFilterClick={() => setMobileFilterOpen(true)}>
       <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
-        <Box className={homePageClasses.topLayer}>
-          <CardMedia
-            component="img"
-            src="/logo/xmobile-processed-logo.png"
-            className="w-auto h-[40px]"
-          />
-          {(user || platform === 'mobile') && (
-            <Box className="w-[18px] h-[18px] rounded-full bg-[#f5f5f5] justify-center items-center flex mr-6">
-              <NotificationBadge
-                onClick={(e: React.MouseEvent<HTMLElement>) => {
-                  if (user) {
-                    setNotificationAnchorEl(e.currentTarget);
-                  } else {
-                    router.push('/user/sign_in_up');
-                  }
-                }}
-              />
-              <NotificationMenu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={() => setNotificationAnchorEl(null)}
-              />
-            </Box>
-          )}
-        </Box>
-        {SearchBar({
-          searchKeyword: searchKeyword ?? '',
-          searchPlaceholder: t('search'),
-          setSearchKeyword,
-          width: '100%',
-        })}
         {platform === 'mobile' && !searchKeyword && (
           <PromoBannerSection banners={banners} />
         )}
@@ -345,7 +306,7 @@ export default function Home({
               }}
             >
               <Typography
-                className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+                className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
               >
                 {searchKeyword
                   ? t('searchResultsFor', { keyword: searchKeyword })
@@ -360,18 +321,6 @@ export default function Home({
                     setProducts([]);
                   }}
                 />
-              )}
-              {platform === 'mobile' && (
-                <IconButton
-                  onClick={() => setMobileFilterOpen(true)}
-                  sx={{ ml: 'auto' }}
-                >
-                  <CardMedia
-                    component="img"
-                    src="/icons/filter.svg"
-                    sx={{ width: 30, height: 30 }}
-                  />
-                </IconButton>
               )}
             </Box>
 

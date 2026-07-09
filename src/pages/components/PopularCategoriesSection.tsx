@@ -10,7 +10,7 @@ import { buildPopularCategoriesSectionModel } from '@/pages/lib/popularCategorie
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { popularCategoriesSectionClasses as cls } from '@/styles/classMaps/components/popularCategoriesSection';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -81,7 +81,7 @@ export default function PopularCategoriesSection({
 
   return (
     <Box className={cls.section}>
-      <Typography className={`${interClassname.className} ${cls.sectionTitle}`}>
+      <Typography className={`${fontClassName.className} ${cls.sectionTitle}`}>
         {t('popularCategories')}
       </Typography>
 
@@ -99,7 +99,7 @@ export default function PopularCategoriesSection({
               />
             </Box>
             <Typography
-              className={`${interClassname.className} ${cls.fullWidthName}`}
+              className={`${fontClassName.className} ${cls.fullWidthName}`}
             >
               {parseName(cat.name, locale)}
             </Typography>
@@ -113,7 +113,7 @@ export default function PopularCategoriesSection({
               <Typography className={cls.moreDotsText}>···</Typography>
             </Box>
             <Typography
-              className={`${interClassname.className} ${cls.fullWidthName}`}
+              className={`${fontClassName.className} ${cls.fullWidthName}`}
               sx={{ color: 'text.secondary' }}
             >
               {t('moreCategories')}

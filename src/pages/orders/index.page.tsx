@@ -5,7 +5,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ordersIndexClasses } from '@/styles/classMaps/orders/index';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
@@ -210,7 +210,7 @@ export default function OrdersPage() {
           )}
           <Box className="flex w-full justify-center">
             <Typography
-              className={`${interClassname.className} ${ordersIndexClasses.title[platform]}`}
+              className={`${fontClassName.className} ${ordersIndexClasses.title[platform]}`}
             >
               {t('myOrders')}
             </Typography>
@@ -239,7 +239,7 @@ export default function OrdersPage() {
               }}
             >
               <Typography
-                className={`${interClassname.className} font-medium text-[16px]`}
+                className={`${fontClassName.className} font-medium text-[16px]`}
               >
                 {t('ongoing')}
               </Typography>
@@ -263,7 +263,7 @@ export default function OrdersPage() {
               }}
             >
               <Typography
-                className={`${interClassname.className} font-medium text-[16px]`}
+                className={`${fontClassName.className} font-medium text-[16px]`}
               >
                 {t('completed')}
               </Typography>
@@ -290,7 +290,7 @@ export default function OrdersPage() {
         {/* Empty State */}
         {!loading && orders.length === 0 && (
           <Box className={ordersIndexClasses.emptyState[platform]}>
-            <Typography className={interClassname.className}>
+            <Typography className={fontClassName.className}>
               {t('noOrdersFound')}
             </Typography>
           </Box>

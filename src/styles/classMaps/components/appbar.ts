@@ -2,12 +2,17 @@ export const appbarClasses = {
   boxes: {
     form: {
       web: 'flex items-center min-w-[200px] h-[56px] border-[1px] border-[#00000025] rounded-[10px] text-[#000] justify-between px-[24px] py-[18px]',
-      mobile:
-        'flex items-center w-[88.78vw] h-[40px] bg-[#f6f6f6] rounded-[12px] gap-[8px] mx-auto px-[10px]',
+      mobile: 'flex items-center gap-2.5 px-5 pb-4 bg-white',
     },
     logo: {
       web: 'flex items-center justify-center w-[146px] h-100%',
       mobile: 'flex items-center justify-center w-[100px] h-100%',
+    },
+    header: {
+      mobile: 'flex items-center justify-between px-5 pt-2 pb-[14px] bg-white',
+    },
+    deliverTo: {
+      mobile: 'flex items-center gap-1',
     },
     search: 'flex w-fit h-full items-center justify-center',
     lang: {
@@ -18,11 +23,13 @@ export const appbarClasses = {
   },
   paper: {
     web: 'flex items-center rounded-2xl p-[2px_4px] justify-between w-full h-full',
-    mobile: 'flex bg-[#f6f6f6] w-full justify-center',
+    mobile:
+      'flex-1 flex items-center gap-2.5 h-12 bg-[#F5F5F8] rounded-[14px] px-4',
   },
   inputBase: {
     web: 'flex w-full text-[#303030] [&_.MuiInputBase-input]:text-[#303030]',
-    mobile: 'flex w-full text-[#0b0b0b] leading-[100%] text-[15px] font-medium',
+    mobile:
+      'flex w-full text-[#8B8A98] leading-[100%] text-[15px] font-normal placeholder-[#8B8A98]',
   },
   toolBar: 'flex items-center justify-between',
   arrowBackIos: {
@@ -56,10 +63,18 @@ export const appbarClasses = {
   },
   appbar: {
     web: 'bg-white min-h-[142px] my-[16px]',
-    mobile: 'hidden',
+    mobile: 'sticky top-0 z-40 bg-white border-b border-[#ECECF1]',
   },
   backButton: {
     web: 'hidden',
     mobile: 'flex justify-center',
+  },
+  filterButton: {
+    mobile:
+      'w-12 h-12 rounded-[14px] bg-[#20166E] flex items-center justify-center text-white',
+  },
+  notificationButton: {
+    mobile:
+      'relative w-11 h-11 rounded-full bg-[#F5F5F8] flex items-center justify-center',
   },
 };

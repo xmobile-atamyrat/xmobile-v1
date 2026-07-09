@@ -30,12 +30,16 @@ interface LayoutProps {
   children: ReactNode;
   handleHeaderBackButton?: () => void;
   showSearch?: boolean;
+  showHomeHeader?: boolean;
+  onHomeFilterClick?: () => void;
 }
 
 export default function Layout({
   children,
   handleHeaderBackButton,
   showSearch = false,
+  showHomeHeader = false,
+  onHomeFilterClick,
 }: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
@@ -72,6 +76,8 @@ export default function Layout({
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
         showSearch={showSearch}
+        showHomeHeader={showHomeHeader}
+        onHomeFilterClick={onHomeFilterClick}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
       />

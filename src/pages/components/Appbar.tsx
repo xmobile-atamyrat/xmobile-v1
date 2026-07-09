@@ -12,14 +12,16 @@ import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
+import { Search, MapPin, Bell, SlidersHorizontal } from 'lucide-react';
 
 import CategoryList from '@/pages/components/Drawer';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { drawerClasses } from '@/styles/classMaps/components/drawer';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CallIcon from '@mui/icons-material/Call';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -47,6 +49,8 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface CustomAppBarProps {
   showSearch?: boolean;
+  showHomeHeader?: boolean;
+  onHomeFilterClick?: () => void;
   handleBackButton?: () => void;
   setEditCategoriesModal?: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal?: Dispatch<SetStateAction<DeleteCategoriesProps>>;
@@ -59,6 +63,8 @@ export const SearchBar = ({
   setSearchKeyword,
   mt,
   width,
+  showFilter,
+  onFilterClick,
 }: {
   handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
@@ -66,6 +72,8 @@ export const SearchBar = ({
   setSearchKeyword: Dispatch<SetStateAction<string>>;
   mt?: string;
   width?: string;
+  showFilter?: boolean;
+  onFilterClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) => {
   const platform = usePlatform();
   return (
@@ -75,9 +83,14 @@ export const SearchBar = ({
         className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
         elevation={0}
       >
+        {platform === 'mobile' ? (
+          <Search size={18} className="text-[#8B8A98] flex-shrink-0" />
+        ) : (
+          <SearchIcon className="text-[#30303090]" />
+        )}
         <InputBase
-          className={`${appbarClasses.inputBase[platform]} ${interClassname.className}`}
-          placeholder={`${searchPlaceholder}...`}
+          className={`${appbarClasses.inputBase[platform]} ${fontClassName.className}`}
+          placeholder={`${searchPlaceholder}${platform === 'web' ? '...' : ''}`}
           onChange={(e) => {
             const keyword = e.target.value;
             setSearchKeyword(keyword);
@@ -93,18 +106,30 @@ export const SearchBar = ({
           }}
         />
       </Paper>
-      <SearchIcon className="text-[#30303090]" />
+      {showFilter && platform === 'mobile' && (
+        <button
+          className={appbarClasses.filterButton.mobile}
+          onClick={onFilterClick}
+          type="button"
+          aria-label="filters"
+        >
+          <SlidersHorizontal size={20} />
+        </button>
+      )}
     </Box>
   );
 };
 
 export default function CustomAppBar({
   showSearch = false,
+  showHomeHeader = false,
+  onHomeFilterClick,
   handleBackButton,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
 }: CustomAppBarProps) {
   const { user } = useUserContext();
+  const { unreadCount } = useNotificationContext();
   const router = useRouter();
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
@@ -152,6 +177,66 @@ export default function CustomAppBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSearchKeyword]);
 
+  if (platform === 'mobile' && !showHomeHeader) {
+    return null;
+  }
+
+  if (platform === 'mobile') {
+    return (
+      <Box className={appbarClasses.appbar.mobile}>
+        {/* Header with location and notification */}
+        <Box className={appbarClasses.boxes.header.mobile}>
+          <Box className={appbarClasses.boxes.deliverTo.mobile}>
+            <MapPin size={15} className="text-[#E41E2B]" />
+            <div>
+              <div className="text-[11px] text-[#8B8A98] font-normal">
+                {t('deliverTo')}
+              </div>
+              <div className="text-[15px] text-[#20166E] font-bold">
+                {t('shortAddress')}
+              </div>
+            </div>
+          </Box>
+          <button
+            className={appbarClasses.notificationButton.mobile}
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              if (user) {
+                setNotificationAnchorEl(e.currentTarget);
+              } else {
+                router.push('/user/sign_in_up');
+              }
+            }}
+            type="button"
+            aria-label="notifications"
+          >
+            <Bell size={20} className="text-[#20166E]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
+            )}
+          </button>
+          {user && (
+            <NotificationMenu
+              anchorEl={notificationAnchorEl}
+              open={Boolean(notificationAnchorEl)}
+              onClose={() => setNotificationAnchorEl(null)}
+            />
+          )}
+        </Box>
+
+        {/* Search bar with filter */}
+        {SearchBar({
+          searchKeyword: localSearchKeyword,
+          searchPlaceholder: t('search'),
+          setSearchKeyword: setLocalSearchKeyword,
+          showFilter: true,
+          onFilterClick: onHomeFilterClick
+            ? () => onHomeFilterClick()
+            : (e) => handleMenuButton(e),
+        })}
+      </Box>
+    );
+  }
+
   return (
     <Box className="flex-grow-1">
       <AppBar
@@ -180,7 +265,7 @@ export default function CustomAppBar({
               <Box className="min-w-[200px] h-full flex flex-row items-center">
                 <LocationOnIcon className="h-[20px] text-[#303030]" />
                 <Typography
-                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                  className={`${fontClassName.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
                   {t('shortAddress')}
                 </Typography>
@@ -193,7 +278,7 @@ export default function CustomAppBar({
               <Box className="min-w-[234px] flex flex-row items-center">
                 <CallIcon className="h-[16px] text-[#303030]" />
                 <Typography
-                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                  className={`${fontClassName.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
                   (+993) 61 004933
                 </Typography>
@@ -208,7 +293,7 @@ export default function CustomAppBar({
                   >
                     <SupportAgentOutlinedIcon className="h-[18px] text-[#303030] mr-[6px]" />
                     <Typography
-                      className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
+                      className={`${fontClassName.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                     >
                       {t('supportTitle')}
                     </Typography>
@@ -247,7 +332,7 @@ export default function CustomAppBar({
                         className="w-[24px] h-[18px]"
                       />
                       <Typography
-                        className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
+                        className={`${appbarClasses.typography[platform]} ${fontClassName.className}`}
                       >
                         {lang.name}
                       </Typography>
@@ -382,7 +467,7 @@ export default function CustomAppBar({
                   className={appbarClasses.shoppingCCI[platform]}
                 />
                 <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
+                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
                 >
                   {t('cart')}
                 </Typography>
@@ -421,12 +506,12 @@ export default function CustomAppBar({
               />
               <Box className="flex flex-col items-start justify-center ml-[20px]">
                 <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
                 >
                   {t('user')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+                  className={`${fontClassName.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
                 >
                   {user ? user.name.split(' ')[0] : t('guest')}
                 </Typography>
@@ -436,7 +521,6 @@ export default function CustomAppBar({
         </Box>
       </AppBar>
       {showSearch &&
-        platform === 'mobile' &&
         SearchBar({
           mt: isMdUp ? undefined : `${appBarHeight}px`,
           searchKeyword: localSearchKeyword,

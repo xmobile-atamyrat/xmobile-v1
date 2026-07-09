@@ -1,6 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { userOrdersIndexClasses } from '@/styles/classMaps/userOrders';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -58,7 +58,7 @@ export default function OrderFilters({
     <Box className={userOrdersIndexClasses.filtersContainer[platform]}>
       {platform === 'mobile' && (
         <Box className="flex flex-row justify-between items-center mb-2">
-          <Typography className={interClassname.className} fontWeight={600}>
+          <Typography className={fontClassName.className} fontWeight={600}>
             {t('filterOrders')}
           </Typography>
           <IconButton onClick={() => setFiltersOpen(!filtersOpen)} size="small">

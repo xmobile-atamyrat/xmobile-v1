@@ -2,7 +2,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Breadcrumbs } from '@mui/material';
 import Chip from '@mui/material/Chip';
 import { styled } from '@mui/material/styles';
@@ -38,7 +38,7 @@ export default function StyledBreadcrumbs({
     >
       {categoryPath.slice(0, -1).map((cat) => (
         <StyledBreadcrumb
-          className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
+          className={`${fontClassName.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
           component="a"
           label={parseName(cat.name, router.locale ?? 'ru')}
           key={cat.id}
@@ -48,7 +48,7 @@ export default function StyledBreadcrumbs({
         />
       ))}
       <StyledBreadcrumb
-        className={`${interClassname.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
+        className={`${fontClassName.className} ${simpleBreadcrumbsClasses.breadcrumbMobile}`}
         component="span"
         label={parseName(
           categoryPath[categoryPath.length - 1].name,

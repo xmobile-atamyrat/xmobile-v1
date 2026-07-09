@@ -3,7 +3,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { emailCheck } from '@/pages/user/utils';
 import { signupClasses } from '@/styles/classMaps/user/signup';
-import { colors, interClassname, units } from '@/styles/theme';
+import { colors, fontClassName, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
@@ -82,7 +82,7 @@ export default function Signup() {
           <Typography
             color={colors.blackText}
             variant="h3"
-            className={`${signupClasses.h3[platform]} ${interClassname.className}`}
+            className={`${signupClasses.h3[platform]} ${fontClassName.className}`}
           >
             {t('signup')}
           </Typography>
@@ -172,7 +172,7 @@ export default function Signup() {
               <Box component="label" className={signupClasses.label[platform]}>
                 <Typography
                   component="span"
-                  className={`font-bold ${interClassname.className}`}
+                  className={`font-bold ${fontClassName.className}`}
                   color={colors.blackText}
                 >
                   {`${t('email')} `}
@@ -181,7 +181,7 @@ export default function Signup() {
                   component="span"
                   fontWeight="bold"
                   color={colors.main}
-                  className={interClassname.className}
+                  className={fontClassName.className}
                 >
                   *
                 </Typography>
@@ -227,7 +227,7 @@ export default function Signup() {
               <Box component="label" className={signupClasses.label[platform]}>
                 <Typography
                   component="span"
-                  className={`font-bold ${interClassname.className}`}
+                  className={`font-bold ${fontClassName.className}`}
                   color={colors.blackText}
                 >
                   {`${t('password')} `}
@@ -236,7 +236,7 @@ export default function Signup() {
                   component="span"
                   fontWeight="bold"
                   color={colors.main}
-                  className={interClassname.className}
+                  className={fontClassName.className}
                 >
                   *
                 </Typography>
@@ -313,7 +313,7 @@ export default function Signup() {
               <Box component="label" className={signupClasses.label[platform]}>
                 <Typography
                   component="span"
-                  className={`font-bold ${interClassname.className}`}
+                  className={`font-bold ${fontClassName.className}`}
                   color={colors.blackText}
                 >
                   {t('confirmPassword')}
@@ -322,7 +322,7 @@ export default function Signup() {
                   component="span"
                   fontWeight="bold"
                   color={colors.main}
-                  className={interClassname.className}
+                  className={fontClassName.className}
                 >
                   *
                 </Typography>
@@ -385,7 +385,7 @@ export default function Signup() {
               <Box component="label" className={signupClasses.label[platform]}>
                 <Typography
                   component="span"
-                  className={`font-bold ${interClassname.className}`}
+                  className={`font-bold ${fontClassName.className}`}
                   color={colors.blackText}
                 >
                   {t('name')}
@@ -394,7 +394,7 @@ export default function Signup() {
                   component="span"
                   fontWeight="bold"
                   color={colors.main}
-                  className={interClassname.className}
+                  className={fontClassName.className}
                 >
                   *
                 </Typography>
@@ -439,7 +439,7 @@ export default function Signup() {
               <Box component="label" className={signupClasses.label[platform]}>
                 <Typography
                   component="span"
-                  className={`font-bold ${interClassname.className}`}
+                  className={`font-bold ${fontClassName.className}`}
                   color={colors.blackText}
                 >
                   {`${t('phoneNumber')} `}
@@ -447,7 +447,7 @@ export default function Signup() {
                 <Typography
                   component="span"
                   color={colors.placeholder}
-                  className={interClassname.className}
+                  className={fontClassName.className}
                 >
                   {`(${t('optional')})`}
                 </Typography>
@@ -495,7 +495,7 @@ export default function Signup() {
             {errorMessage != null && (
               <Typography
                 color={colors.blackText}
-                className={`${signupClasses.error[platform]} ${interClassname.className} opacity-85`}
+                className={`${signupClasses.error[platform]} ${fontClassName.className} opacity-85`}
               >
                 <span>
                   {errorMessage === 'accountDeleted'
@@ -522,7 +522,7 @@ export default function Signup() {
                 variant="contained"
                 disableElevation
                 type="submit"
-                className={`${signupClasses.buttonSubmit[platform]} ${interClassname.className}`}
+                className={`${signupClasses.buttonSubmit[platform]} ${fontClassName.className}`}
                 sx={{
                   backgroundColor: colors.main,
                   '&:hover': {
@@ -539,12 +539,12 @@ export default function Signup() {
 
             <Box className={signupClasses.boxes.text[platform]}>
               <Typography
-                className={`${signupClasses.typography} ${interClassname.className}`}
+                className={`${signupClasses.typography} ${fontClassName.className}`}
               >
                 {t('haveAccount')}
               </Typography>
               <Button
-                className={`${interClassname.className} ${signupClasses.buttonRedirect}`}
+                className={`${fontClassName.className} ${signupClasses.buttonRedirect}`}
                 sx={{ color: colors.blackText }}
                 onClick={() => router.push('/user/signin')}
               >

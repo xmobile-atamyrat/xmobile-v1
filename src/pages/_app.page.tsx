@@ -153,7 +153,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
         <link rel="icon" href="/logo/xm-logo.ico" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#d32f2f" />
+        <meta name="theme-color" content="#20166E" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="XMobile" />

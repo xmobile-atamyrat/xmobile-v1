@@ -1,4 +1,4 @@
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
   Button,
@@ -42,12 +42,12 @@ export default function CancelOrderDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className={interClassname.className}>
+      <DialogTitle className={fontClassName.className}>
         {t('cancelOrder')}
       </DialogTitle>
       <DialogContent>
         <DialogContentText
-          className={interClassname.className}
+          className={fontClassName.className}
           id="cancel-dialog-description"
         >
           {t('cancelOrderConfirmation')}

@@ -12,7 +12,7 @@ import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { resolveVariantDisplay } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Color, Product } from '@prisma/client';
@@ -102,14 +102,14 @@ export default function CartProductCard({
             <Box className={cartProductCardClasses.det2[platform]}>
               <Box className={cartProductCardClasses.boxes.detail[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
+                  className={`${fontClassName.className} ${cartProductCardClasses.categoryName[platform]}`}
                 >
                   {categoryName &&
                     parseName(categoryName, router.locale ?? 'tk')}
                 </Typography>
                 <Typography
                   gutterBottom
-                  className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
+                  className={`${fontClassName.className} ${cartProductCardClasses.typo[platform]}`}
                 >
                   {parseName(product.name, router.locale ?? 'tk').substring(
                     0,
@@ -132,7 +132,7 @@ export default function CartProductCard({
               ) : (
                 <Typography
                   color={colors.text[platform]}
-                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                  className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]}`}
                 >
                   {product?.price} {t('manat')}
                 </Typography>

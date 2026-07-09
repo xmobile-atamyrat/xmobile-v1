@@ -27,7 +27,7 @@ import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { Box, IconButton, Typography } from '@mui/material';
 import { GetStaticPaths, GetStaticProps } from 'next';
@@ -278,7 +278,7 @@ export default function CategoryPage({
           <Box className="flex w-full justify-center">
             {category && (
               <Typography
-                className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+                className={`${fontClassName.className} ${homePageClasses.categoriesText[platform]}`}
               >
                 {parseName(category.name, router.locale ?? 'ru')}
               </Typography>
