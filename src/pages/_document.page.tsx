@@ -1,5 +1,6 @@
 import type { DocumentProps } from 'next/document';
 import { Head, Html, Main, NextScript } from 'next/document';
+import { fontClassName } from '@/styles/theme';
 
 export default function Document(props: DocumentProps) {
   // eslint-disable-next-line no-underscore-dangle
@@ -10,7 +11,11 @@ export default function Document(props: DocumentProps) {
   }
 
   return (
-    <Html lang={locale} className="notranslate" translate="no">
+    <Html
+      lang={locale}
+      className={`notranslate ${fontClassName.className}`}
+      translate="no"
+    >
       <Head />
       <body>
         <Main />

@@ -4,7 +4,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
 import { privacyPolicyClasses as supportClasses } from '@/styles/classMaps/privacy-policy.page';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
@@ -90,14 +90,14 @@ export default function SupportPage() {
         <Box className={supportClasses.boxes.main[platform]}>
           <Typography
             component="h1"
-            className={`${interClassname.className} ${supportClasses.h1[platform]}`}
+            className={`${fontClassName.className} ${supportClasses.h1[platform]}`}
           >
             {t('supportTitle')}
           </Typography>
 
           <Box className={supportClasses.boxes.sectionsWrapper[platform]}>
             <Typography
-              className={`${interClassname.className} ${supportClasses.p[platform]} text-center mb-[8px]`}
+              className={`${fontClassName.className} ${supportClasses.p[platform]} text-center mb-[8px]`}
             >
               {t('supportIntro')}
             </Typography>
@@ -105,13 +105,13 @@ export default function SupportPage() {
             <Box className={supportClasses.boxes.section[platform]}>
               <Typography
                 component="h2"
-                className={`${interClassname.className} ${supportClasses.h2[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.h2[platform]}`}
               >
                 {t('supportContactTitle')}
               </Typography>
 
               <Typography
-                className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.p[platform]}`}
               >
                 <strong>{t('supportEmailLabel')}:</strong>{' '}
                 <MuiLink href={`mailto:${SUPPORT_EMAIL}`} className={linkClass}>
@@ -120,7 +120,7 @@ export default function SupportPage() {
               </Typography>
 
               <Typography
-                className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.p[platform]}`}
               >
                 <strong>{t('supportPhoneLabel')}:</strong>
               </Typography>
@@ -131,7 +131,7 @@ export default function SupportPage() {
                     className={supportClasses.boxes.listItem[platform]}
                   >
                     <Typography
-                      className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                      className={`${fontClassName.className} ${supportClasses.p[platform]}`}
                     >
                       <MuiLink href={`tel:${phone}`} className={linkClass}>
                         {phone}
@@ -142,7 +142,7 @@ export default function SupportPage() {
               </ul>
 
               <Typography
-                className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.p[platform]}`}
               >
                 {t('supportChatNote')}{' '}
                 <Link href="/chat" className={linkClass}>
@@ -154,17 +154,17 @@ export default function SupportPage() {
             <Box className={supportClasses.boxes.section[platform]}>
               <Typography
                 component="h2"
-                className={`${interClassname.className} ${supportClasses.h2[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.h2[platform]}`}
               >
                 {t('supportHoursTitle')}
               </Typography>
               <Typography
-                className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.p[platform]}`}
               >
                 {t('supportHoursDays')}
               </Typography>
               <Typography
-                className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.p[platform]}`}
               >
                 {t('supportHoursTime')}
               </Typography>
@@ -173,7 +173,7 @@ export default function SupportPage() {
             <Box className={supportClasses.boxes.section[platform]}>
               <Typography
                 component="h2"
-                className={`${interClassname.className} ${supportClasses.h2[platform]}`}
+                className={`${fontClassName.className} ${supportClasses.h2[platform]}`}
               >
                 {t('supportFaqTitle')}
               </Typography>
@@ -206,14 +206,14 @@ export default function SupportPage() {
                       }}
                     >
                       <Typography
-                        className={`${interClassname.className} ${supportClasses.subtitle[platform]}`}
+                        className={`${fontClassName.className} ${supportClasses.subtitle[platform]}`}
                       >
                         {item.question}
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails sx={{ px: 0, pt: 0, pb: 2 }}>
                       <Typography
-                        className={`${interClassname.className} ${supportClasses.p[platform]}`}
+                        className={`${fontClassName.className} ${supportClasses.p[platform]}`}
                       >
                         {item.answer}
                       </Typography>

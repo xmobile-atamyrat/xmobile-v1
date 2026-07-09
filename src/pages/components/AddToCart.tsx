@@ -14,10 +14,11 @@ import { useTranslations } from 'next-intl';
 import { Suspense, useCallback, useState } from 'react';
 
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
-import { img, interClassname } from '@/styles/theme';
+import { img, fontClassName } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -215,7 +216,7 @@ export default function AddToCart({
               <Input
                 name="quantity"
                 inputProps={{ min: 1 }}
-                className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
+                className={`${addToCartClasses.inputDet[platform]} ${fontClassName.className}`}
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
@@ -242,7 +243,7 @@ export default function AddToCart({
 
             <Box className={addToCartClasses.price[platform]}>
               <Typography
-                className={`${interClassname.className} ${addToCartClasses.priceText[platform]}`}
+                className={`${fontClassName.className} ${addToCartClasses.priceText[platform]}`}
               >
                 {quantity * Number(price)} TMT
               </Typography>
@@ -273,7 +274,14 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
-            <Box className={addToCartClasses.detail.bg[platform]}>
+            <Box
+              className={addToCartClasses.detail.bg[platform]}
+              sx={
+                platform === 'mobile'
+                  ? { paddingBottom: `${mobileBottomNavHeight}px` }
+                  : undefined
+              }
+            >
               <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between items-center">
                 {/* removeButton */}
                 <IconButton
@@ -289,7 +297,7 @@ export default function AddToCart({
                 <Input
                   name="quantity"
                   inputProps={{ min: 1 }}
-                  className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
+                  className={`${addToCartClasses.input[platform]} ${fontClassName.className}`}
                   value={quantity}
                   disableUnderline
                   onChange={(e) => {
@@ -320,7 +328,7 @@ export default function AddToCart({
                 disableRipple
               >
                 <Typography
-                  className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
+                  className={`${fontClassName.className} ${addToCartClasses.detail.addToCartText[platform]}`}
                 >
                   {t('addToCart')}
                 </Typography>

@@ -3,7 +3,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { InAppNotification } from '@/pages/lib/types';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import Menu from '@mui/material/Menu';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -135,14 +135,14 @@ export default function NotificationMenu({
     >
       <Paper className={notificationClasses.menu.header[platform]}>
         <Typography
-          className={`${notificationClasses.menu.title[platform]} ${interClassname.className}`}
+          className={`${notificationClasses.menu.title[platform]} ${fontClassName.className}`}
         >
           {t('notifications')}
         </Typography>
         {unreadCount > 0 && (
           <Typography
             onClick={handleMarkAllRead}
-            className={`${notificationClasses.menu.clearButton[platform]} ${interClassname.className}`}
+            className={`${notificationClasses.menu.clearButton[platform]} ${fontClassName.className}`}
           >
             {t('markAllRead')}
           </Typography>
@@ -152,7 +152,7 @@ export default function NotificationMenu({
       <div ref={listRef} className={notificationClasses.menu.list[platform]}>
         {notifications.length === 0 && !isLoading ? (
           <Typography
-            className={`${notificationClasses.menu.empty[platform]} ${interClassname.className}`}
+            className={`${notificationClasses.menu.empty[platform]} ${fontClassName.className}`}
           >
             {t('noNotifications')}
           </Typography>
@@ -170,18 +170,18 @@ export default function NotificationMenu({
               <div className={notificationClasses.item.content[platform]}>
                 {notification.title && (
                   <Typography
-                    className={`${notificationClasses.item.title[platform]} ${interClassname.className}`}
+                    className={`${notificationClasses.item.title[platform]} ${fontClassName.className}`}
                   >
                     {notification.title}
                   </Typography>
                 )}
                 <Typography
-                  className={`${notificationClasses.item.text[platform]} ${interClassname.className}`}
+                  className={`${notificationClasses.item.text[platform]} ${fontClassName.className}`}
                 >
                   {notification.content}
                 </Typography>
                 <Typography
-                  className={`${notificationClasses.item.time[platform]} ${interClassname.className}`}
+                  className={`${notificationClasses.item.time[platform]} ${fontClassName.className}`}
                 >
                   {formatTime(notification.createdAt)}
                 </Typography>
@@ -191,7 +191,7 @@ export default function NotificationMenu({
         )}
         {isLoading && (
           <Typography
-            className={`${notificationClasses.menu.empty[platform]} ${interClassname.className}`}
+            className={`${notificationClasses.menu.empty[platform]} ${fontClassName.className}`}
           >
             {t('loading')}...
           </Typography>

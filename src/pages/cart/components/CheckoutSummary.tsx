@@ -1,6 +1,7 @@
+import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { cartCheckoutClasses } from '@/styles/classMaps/cart/checkout';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 
@@ -18,15 +19,22 @@ export default function CheckoutSummary({
 
   return (
     <Box className={cartCheckoutClasses.container[platform]}>
-      <Box className={cartCheckoutClasses.summaryBox[platform]}>
+      <Box
+        className={cartCheckoutClasses.summaryBox[platform]}
+        sx={
+          platform === 'mobile'
+            ? { paddingBottom: `${mobileBottomNavHeight}px` }
+            : undefined
+        }
+      >
         <Box className={cartCheckoutClasses.subtotalRow[platform]}>
           <Typography
-            className={`${interClassname.className} ${cartCheckoutClasses.subtotalLabel[platform]}`}
+            className={`${fontClassName.className} ${cartCheckoutClasses.subtotalLabel[platform]}`}
           >
             {t('totalAmount')}:
           </Typography>
           <Typography
-            className={`${interClassname.className} ${cartCheckoutClasses.subtotalValue[platform]}`}
+            className={`${fontClassName.className} ${cartCheckoutClasses.subtotalValue[platform]}`}
             sx={{
               color: platform === 'web' ? colors.main : '#1b1b1b',
             }}
@@ -46,7 +54,7 @@ export default function CheckoutSummary({
           }}
         >
           <Typography
-            className={`${interClassname.className} ${cartCheckoutClasses.checkoutButtonText[platform]}`}
+            className={`${fontClassName.className} ${cartCheckoutClasses.checkoutButtonText[platform]}`}
           >
             {t('checkout')}
           </Typography>

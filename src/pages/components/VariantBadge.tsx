@@ -1,4 +1,4 @@
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { VariantDisplay } from '@/pages/product/utils';
 import { Box, Typography } from '@mui/material';
 
@@ -19,7 +19,7 @@ export default function VariantBadge({
     <Box className="flex flex-row items-center gap-1.5">
       {spec && (
         <Typography
-          className={interClassname.className}
+          className={fontClassName.className}
           sx={{ fontSize, color: 'text.secondary' }}
         >
           {spec}

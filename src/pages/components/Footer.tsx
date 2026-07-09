@@ -3,19 +3,12 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MailIcon from '@mui/icons-material/Mail';
 import PhoneIcon from '@mui/icons-material/Phone';
-import {
-  BottomNavigation,
-  BottomNavigationAction,
-  Box,
-  CardMedia,
-  Divider,
-  Paper,
-  Typography,
-} from '@mui/material';
+import { Box, CardMedia, Divider, Typography } from '@mui/material';
+import { Home, LayoutGrid, Search, ShoppingBag, User } from 'lucide-react';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -31,6 +24,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
 
+const navItems = [
+  { href: '/', labelKey: 'home', Icon: Home },
+  { href: '/category', labelKey: 'categories', Icon: LayoutGrid },
+  { href: '/product', labelKey: 'searchNav', Icon: Search },
+  { href: '/cart', labelKey: 'cart', Icon: ShoppingBag },
+  { href: '/user', labelKey: 'profileNav', Icon: User },
+] as const;
+
 export default function Footer() {
   const t = useTranslations();
   const platform = usePlatform();
@@ -39,15 +40,16 @@ export default function Footer() {
     useCategoryContext();
   const { setProducts } = useProductContext();
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: string) => {
-    router.push(newValue, newValue, { locale: router.locale });
+  const goTo = (href: string) => {
+    router.push(href, href, { locale: router.locale });
     setProducts([]);
     setSelectedCategoryId(undefined);
   };
 
   return (
     <Box className={footerClasses.boxes.main[platform]}>
-      <Paper
+      <Box
+        component="nav"
         sx={{
           position: 'fixed',
           bottom: 0,
@@ -55,55 +57,40 @@ export default function Footer() {
           right: 0,
           zIndex: 1000,
         }}
-        elevation={0}
         className={footerClasses.boxes.mainMobile[platform]}
       >
-        <BottomNavigation
-          onChange={handleChange}
-          className={footerClasses.boxes.bottomNavigation}
-        >
-          <BottomNavigationAction
-            value="/"
-            icon={
-              <CardMedia
-                component="img"
-                image="/footer/mobileIcons/home.png"
-                className={footerClasses.imgs.icons[platform]}
-              />
-            }
-          />
-          <BottomNavigationAction
-            value="/category"
-            icon={
-              <CardMedia
-                component="img"
-                image="/footer/mobileIcons/category.png"
-                className={footerClasses.imgs.icons[platform]}
-              />
-            }
-          />
-          <BottomNavigationAction
-            value="/cart"
-            icon={
-              <CardMedia
-                component="img"
-                image="/footer/mobileIcons/cart.png"
-                className={footerClasses.imgs.icons[platform]}
-              />
-            }
-          />
-          <BottomNavigationAction
-            value="/user"
-            icon={
-              <CardMedia
-                component="img"
-                image="/footer/mobileIcons/profile.png"
-                className={footerClasses.imgs.icons[platform]}
-              />
-            }
-          />
-        </BottomNavigation>
-      </Paper>
+        <Box className={footerClasses.boxes.bottomNavigation}>
+          {navItems.map(({ href, labelKey, Icon }) => {
+            const active = router.pathname === href;
+            return (
+              <button
+                key={href}
+                type="button"
+                onClick={() => goTo(href)}
+                className={`${footerClasses.navItem.wrapper} ${
+                  active
+                    ? footerClasses.navItem.active
+                    : footerClasses.navItem.inactive
+                }`}
+              >
+                <Icon
+                  className={footerClasses.navItem.icon}
+                  strokeWidth={1.75}
+                />
+                <span
+                  className={`${fontClassName.className} ${
+                    active
+                      ? footerClasses.navItem.labelActive
+                      : footerClasses.navItem.labelInactive
+                  }`}
+                >
+                  {t(labelKey)}
+                </span>
+              </button>
+            );
+          })}
+        </Box>
+      </Box>
       <Box className={footerClasses.boxes.mainWeb[platform]}>
         <Box className={footerClasses.boxes.footerMain}>
           {/* Footer Stack */}
@@ -131,7 +118,7 @@ export default function Footer() {
                   {[0, 1, 2].map((number) => (
                     <Typography
                       key={phoneNumbers[number]}
-                      className={`${footerClasses.typos.contact} ${interClassname.className}`}
+                      className={`${footerClasses.typos.contact} ${fontClassName.className}`}
                     >
                       <a href={`tel:${phoneNumbers[number]}`}>
                         {phoneNumbers[number]}
@@ -143,7 +130,7 @@ export default function Footer() {
               <Box className={`${footerClasses.flexDirections.row} my-[16px]`}>
                 <MailIcon className={footerClasses.imgs.icons[platform]} />
                 <Typography
-                  className={`${footerClasses.typos.contact} ${interClassname.className} ml-[5px]`}
+                  className={`${footerClasses.typos.contact} ${fontClassName.className} ml-[5px]`}
                 >
                   <a href="mailto: ">xmobiletm@gmail.com</a>
                 </Typography>
@@ -154,7 +141,7 @@ export default function Footer() {
                   className={footerClasses.imgs.icons[platform]}
                 />
                 <Typography
-                  className={`${footerClasses.typos.contact} ${interClassname.className} ml-[5px]`}
+                  className={`${footerClasses.typos.contact} ${fontClassName.className} ml-[5px]`}
                 >
                   <Link
                     href={'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76'}
@@ -170,7 +157,7 @@ export default function Footer() {
           {/* social media */}
           <Box className={`${footerClasses.boxes.menu} min-w-[14vw] mr-[50px]`}>
             <Typography
-              className={`${footerClasses.typos.headers} ${interClassname.className} mb-[12px]`}
+              className={`${footerClasses.typos.headers} ${fontClassName.className} mb-[12px]`}
             >
               {t('followUs')}
             </Typography>
@@ -182,14 +169,14 @@ export default function Footer() {
                 className="my-[12px]"
               >
                 <Typography
-                  className={`${interClassname.className} ${footerClasses.socialLinks}`}
+                  className={`${fontClassName.className} ${footerClasses.socialLinks}`}
                 >
                   Instagram
                 </Typography>
               </Link>
               <Link target="_blank" href={'https://www.tiktok.com/@xmobiletm'}>
                 <Typography
-                  className={`${interClassname.className} ${footerClasses.socialLinks}`}
+                  className={`${fontClassName.className} ${footerClasses.socialLinks}`}
                 >
                   TikTok
                 </Typography>
@@ -200,7 +187,7 @@ export default function Footer() {
           {/* Categories */}
           <Box className={footerClasses.boxes.menu}>
             <Typography
-              className={`${interClassname.className} ${footerClasses.typos.headers}`}
+              className={`${fontClassName.className} ${footerClasses.typos.headers}`}
             >
               {t('allCategory')}
             </Typography>
@@ -214,7 +201,7 @@ export default function Footer() {
                       setSelectedCategoryId(category.id);
                       router.push(`/product-category/${category.slug}`);
                     }}
-                    className={`${interClassname.className} ${footerClasses.typos.categoryNames}`}
+                    className={`${fontClassName.className} ${footerClasses.typos.categoryNames}`}
                   >
                     {parseName(category.name, router.locale ?? 'tk')}
                   </Typography>
@@ -227,7 +214,7 @@ export default function Footer() {
 
         <Box className={footerClasses.boxes.rights}>
           <Typography
-            className={`${footerClasses.typos.copyright} ${interClassname.className}`}
+            className={`${footerClasses.typos.copyright} ${fontClassName.className}`}
           >
             Xmobile © {new Date().getFullYear()}. All Rights Reserved.
           </Typography>

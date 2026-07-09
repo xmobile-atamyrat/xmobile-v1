@@ -7,7 +7,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { categoryPageClasses } from '@/styles/classMaps/category';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -76,7 +76,7 @@ export default function CategoriesPage() {
       <Box className={categoryPageClasses.main[platform]}>
         <Box className="w-full flex-col px-[24px] my-[36px]">
           <Typography
-            className={`${interClassname.className} ${categoryPageClasses.categoriesText[platform]}`}
+            className={`${fontClassName.className} ${categoryPageClasses.categoriesText[platform]}`}
           >
             {t('categories')}
           </Typography>

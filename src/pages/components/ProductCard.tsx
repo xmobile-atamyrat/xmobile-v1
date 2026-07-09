@@ -12,7 +12,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -115,7 +115,7 @@ export default function ProductCard({
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
             <Typography
-              className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
+              className={`${fontClassName.className} ${productCardClasses.typo[platform]}`}
             >
               {parseName(product.name, router.locale ?? 'tk')}
             </Typography>
@@ -126,7 +126,7 @@ export default function ProductCard({
             ) : (
               <Typography
                 color={colors.mainWebMobile[platform]}
-                className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
               >
                 {product?.price} {t('manat')}
               </Typography>

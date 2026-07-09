@@ -14,7 +14,7 @@ import {
 } from '@/pages/lib/fcm/fcmClient';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -326,7 +326,7 @@ export default function NotificationPermissionBanner() {
     <>
       <Box className={notificationClasses.permissionBanner.container[platform]}>
         <Typography
-          className={`${notificationClasses.permissionBanner.text[platform]} ${interClassname.className}`}
+          className={`${notificationClasses.permissionBanner.text[platform]} ${fontClassName.className}`}
         >
           {isWebView()
             ? t('enableNativeNotifications')
@@ -335,7 +335,7 @@ export default function NotificationPermissionBanner() {
         <Box className="flex items-center gap-[8px]">
           <Typography
             onClick={requestPermission}
-            className={`${notificationClasses.permissionBanner.button[platform]} ${interClassname.className}`}
+            className={`${notificationClasses.permissionBanner.button[platform]} ${fontClassName.className}`}
           >
             {t('enable')}
           </Typography>

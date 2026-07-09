@@ -1,6 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ordersComponentClasses } from '@/styles/classMaps/orders/components';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -76,11 +76,11 @@ export default function OrderCard({ order }: OrderCardProps) {
       <Box className={ordersComponentClasses.orderCardHeader.mobile}>
         <Box>
           <Typography
-            className={`${interClassname.className} ${ordersComponentClasses.orderCardName.mobile}`}
+            className={`${fontClassName.className} ${ordersComponentClasses.orderCardName.mobile}`}
           >
             {order.userName || 'N/A'} |{' '}
             <span
-              className={`${interClassname.className} ${ordersComponentClasses.orderCardPhone.mobile}`}
+              className={`${fontClassName.className} ${ordersComponentClasses.orderCardPhone.mobile}`}
             >
               {order.deliveryPhone}
             </span>
@@ -89,19 +89,19 @@ export default function OrderCard({ order }: OrderCardProps) {
         {getStatusIcon(order.status)}
       </Box>
       <Typography
-        className={`${interClassname.className} ${ordersComponentClasses.orderCardAddress.mobile}`}
+        className={`${fontClassName.className} ${ordersComponentClasses.orderCardAddress.mobile}`}
       >
         {order.deliveryAddress}
       </Typography>
       <Box className={ordersComponentClasses.orderCardFooter.mobile}>
         <Typography
-          className={`${interClassname.className} ${ordersComponentClasses.orderCardDate.mobile}`}
+          className={`${fontClassName.className} ${ordersComponentClasses.orderCardDate.mobile}`}
         >
           {formatDate(order.createdAt)}
         </Typography>
         <Box className="flex items-center gap-2">
           <Typography
-            className={`${interClassname.className} ${ordersComponentClasses.orderCardPrice.mobile}`}
+            className={`${fontClassName.className} ${ordersComponentClasses.orderCardPrice.mobile}`}
           >
             {parseFloat(order.totalPrice).toFixed(2)} TMT
           </Typography>

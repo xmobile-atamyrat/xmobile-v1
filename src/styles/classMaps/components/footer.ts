@@ -7,7 +7,7 @@ export const footerClasses = {
     mainMobile: {
       web: 'hidden',
       mobile:
-        'justify-between bg-[#fff] w-full h-[60px] py-[20px] shadow-[0_0_70px_0_#0000001A] flex items-center',
+        'justify-between bg-white w-full h-[64px] px-[18px] pt-[10px] pb-[12px] border-t border-hairline flex items-center',
     },
     main: {
       web: 'flex flex-col w-full',
@@ -19,7 +19,7 @@ export const footerClasses = {
       mobile: 'grid grid-cols-1',
     },
     menu: 'flex flex-col pb-6',
-    bottomNavigation: 'w-full flex justify-between',
+    bottomNavigation: 'w-full flex',
     address: 'flex items-center w-[26vw] mr-[50px]',
     categoryLinks: 'grid grid-cols-2 mt-[24px] gap-y-[12px] gap-x-[35px]',
     rights: 'flex justify-center my-[24px]',
@@ -40,6 +40,14 @@ export const footerClasses = {
   },
   socialLinks:
     'font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]',
+  navItem: {
+    wrapper: 'flex-1 flex flex-col items-center gap-1',
+    active: 'text-navy',
+    inactive: 'text-[#B6B5C2]',
+    icon: 'w-[24px] h-[24px]',
+    labelActive: 'text-[10px] font-semibold text-center',
+    labelInactive: 'text-[10px] font-medium text-center',
+  },
   imgs: {
     icons: {
       web: 'text-[#221765]',

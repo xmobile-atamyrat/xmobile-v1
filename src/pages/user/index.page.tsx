@@ -14,7 +14,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import { ArrowForwardIos } from '@mui/icons-material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
@@ -111,7 +111,7 @@ export default function Profile() {
       <Box className={profileClasses.boxes.loggedInMain}>
         <Box className={profileClasses.accountTitle[platform]}>
           <Typography
-            className={`${profileClasses.typos.account[platform]} ${interClassname.className}`}
+            className={`${profileClasses.typos.account[platform]} ${fontClassName.className}`}
           >
             {t('account')}
           </Typography>
@@ -125,7 +125,7 @@ export default function Profile() {
             />
             <Box className={profileClasses.boxes.account}>
               <Typography
-                className={`${interClassname.className} ${profileClasses.typos.name[platform]}`}
+                className={`${fontClassName.className} ${profileClasses.typos.name[platform]}`}
               >
                 {`${t('hello')} ${
                   user && user.name.trim() !== ''
@@ -134,7 +134,7 @@ export default function Profile() {
                 }`}
               </Typography>
               <Typography
-                className={`${interClassname.className} ${profileClasses.typos.email}`}
+                className={`${fontClassName.className} ${profileClasses.typos.email}`}
               >
                 {user?.email}
               </Typography>
@@ -157,7 +157,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('signin')}
                   </Typography>
@@ -182,7 +182,7 @@ export default function Profile() {
               />
 
               <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
               >
                 {t('appLanguage')}
               </Typography>
@@ -204,7 +204,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('updatePrices')}
                   </Typography>
@@ -224,7 +224,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('updateColors')}
                   </Typography>
@@ -244,7 +244,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('categoryHierarchy')}
                   </Typography>
@@ -264,7 +264,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('promoBanners')}
                   </Typography>
@@ -284,7 +284,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('analytics')}
                   </Typography>
@@ -304,7 +304,7 @@ export default function Profile() {
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                   >
                     {t('serverLogs')}
                   </Typography>
@@ -326,7 +326,7 @@ export default function Profile() {
                         className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                       />
                       <Typography
-                        className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                        className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                       >
                         {t('procurement')}
                       </Typography>
@@ -348,7 +348,7 @@ export default function Profile() {
                         className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                       />
                       <Typography
-                        className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                        className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                       >
                         {t('appVersions')}
                       </Typography>
@@ -377,7 +377,7 @@ export default function Profile() {
                   className={profileClasses.sectionIcon[platform]}
                 />
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
                 >
                   {isAdmin ? t('userOrders') : t('myOrders')}
                 </Typography>
@@ -398,7 +398,7 @@ export default function Profile() {
                 className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
               />
               <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
               >
                 {t('supportTitle')}
               </Typography>
@@ -418,7 +418,7 @@ export default function Profile() {
                 className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
               />
               <Typography
-                className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
               >
                 {t('privacyPolicyTitle')}
               </Typography>
@@ -442,7 +442,7 @@ export default function Profile() {
                     sx={{ color: '#ff3b30' }}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
                     sx={{ color: '#ff3b30' }}
                   >
                     {t('deleteAccount')}
@@ -463,7 +463,7 @@ export default function Profile() {
                     className={profileClasses.sectionIcon[platform]}
                   />
                   <Typography
-                    className={`${interClassname.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
+                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
                   >
                     {t('signout')}
                   </Typography>
@@ -486,13 +486,13 @@ export default function Profile() {
         >
           <Typography
             id="alert-dialog-title"
-            className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
+            className={`${profileClasses.typos.dialogSignOut} ${fontClassName.className}`}
           >
             {t('signout').toLocaleUpperCase(router.locale)}
           </Typography>
           <Box className={profileClasses.boxes.verifyTxt}>
             <Typography
-              className={`${profileClasses.typos.verifyTxt} ${interClassname.className}`}
+              className={`${profileClasses.typos.verifyTxt} ${fontClassName.className}`}
             >
               {t('signOutVerify')}
             </Typography>
@@ -503,7 +503,7 @@ export default function Profile() {
                 className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
               >
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
                   color={colors.black}
                 >
                   {t('no')}
@@ -544,7 +544,7 @@ export default function Profile() {
             >
               <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
                   color={colors.white}
                 >
                   {t('yes')}
@@ -564,7 +564,7 @@ export default function Profile() {
         >
           <Typography
             id="delete-account-dialog-title"
-            className={`${profileClasses.typos.dialogSignOut} ${interClassname.className}`}
+            className={`${profileClasses.typos.dialogSignOut} ${fontClassName.className}`}
             sx={{ color: '#ff3b30' }}
           >
             {t('deleteAccount').toUpperCase()}
@@ -572,7 +572,7 @@ export default function Profile() {
           <Box className="flex justify-center mt-[16px] px-[10px]">
             <Typography
               id="delete-account-dialog-description"
-              className={`${profileClasses.typos.verifyTxt} ${interClassname.className} !h-auto text-center`}
+              className={`${profileClasses.typos.verifyTxt} ${fontClassName.className} !h-auto text-center`}
             >
               {t('deleteAccountVerify')}
             </Typography>
@@ -580,7 +580,7 @@ export default function Profile() {
           {deleteAccountError && (
             <Box className="flex justify-center mt-[8px]">
               <Typography
-                className={`${interClassname.className} text-center text-[13px]`}
+                className={`${fontClassName.className} text-center text-[13px]`}
                 sx={{ color: '#ff3b30' }}
               >
                 {t(deleteAccountError)}
@@ -593,7 +593,7 @@ export default function Profile() {
                 className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
               >
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
                   color={colors.black}
                 >
                   {t('no')}
@@ -650,7 +650,7 @@ export default function Profile() {
             >
               <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
                 <Typography
-                  className={`${interClassname.className} ${profileClasses.typos.option}`}
+                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
                   color={colors.white}
                 >
                   {t('yes')}
@@ -670,7 +670,7 @@ export default function Profile() {
         >
           <Typography
             id="alert-dialog-title"
-            className={`${profileClasses.typos.language} ${interClassname.className}`}
+            className={`${profileClasses.typos.language} ${fontClassName.className}`}
           >
             {'Language'}
           </Typography>
@@ -702,7 +702,7 @@ export default function Profile() {
                     className={profileClasses.langImg}
                   />
                   <Typography
-                    className={`${profileClasses.typos.langOption} ${interClassname.className}`}
+                    className={`${profileClasses.typos.langOption} ${fontClassName.className}`}
                   >
                     {language.name}
                   </Typography>

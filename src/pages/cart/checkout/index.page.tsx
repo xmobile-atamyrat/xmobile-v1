@@ -10,7 +10,7 @@ import {
   resolveVariantDisplay,
 } from '@/pages/product/utils';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
-import { colors, interClassname, units } from '@/styles/theme';
+import { colors, fontClassName, units } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
@@ -243,7 +243,7 @@ export default function CheckoutPage() {
             </IconButton>
             <Box className="flex w-5/6 justify-center">
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.title[platform]}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.title[platform]}`}
               >
                 {t('checkout')}
               </Typography>
@@ -260,27 +260,27 @@ export default function CheckoutPage() {
             >
               <Link href="/" className="no-underline">
                 <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
+                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
                 >
                   {t('home')}
                 </Typography>
               </Link>
               <Link href="/cart" className="no-underline">
                 <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
+                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
                 >
                   {t('cart')}
                 </Typography>
               </Link>
               <Typography
-                className={`${interClassname.className} font-bold text-[16px] leading-[24px] text-[#303030]`}
+                className={`${fontClassName.className} font-bold text-[16px] leading-[24px] text-[#303030]`}
               >
                 {t('checkout')}
               </Typography>
             </Breadcrumbs>
             {/* Title */}
             <Typography
-              className={`${interClassname.className} ${checkoutDialogClasses.title[platform]}`}
+              className={`${fontClassName.className} ${checkoutDialogClasses.title[platform]}`}
             >
               {t('checkout')}
             </Typography>
@@ -293,7 +293,7 @@ export default function CheckoutPage() {
           <Box className={checkoutDialogClasses.customerDetails[platform]}>
             {platform === 'web' && (
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.sectionTitle.web}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.sectionTitle.web}`}
               >
                 {t('customerDetails')}
               </Typography>
@@ -302,7 +302,7 @@ export default function CheckoutPage() {
             {/* Full Name */}
             <Box className={checkoutDialogClasses.fieldContainer[platform]}>
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.label[platform]}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
               >
                 {t('fullName')}{' '}
                 <span className={checkoutDialogClasses.required[platform]}>
@@ -353,7 +353,7 @@ export default function CheckoutPage() {
             {/* Phone Number */}
             <Box className={checkoutDialogClasses.fieldContainer[platform]}>
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.label[platform]}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
               >
                 {t('phoneNumber')}{' '}
                 <span className={checkoutDialogClasses.required[platform]}>
@@ -404,7 +404,7 @@ export default function CheckoutPage() {
             {/* Address */}
             <Box className={checkoutDialogClasses.fieldContainer[platform]}>
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.label[platform]}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
               >
                 {t('addressText')}{' '}
                 <span className={checkoutDialogClasses.required[platform]}>
@@ -455,7 +455,7 @@ export default function CheckoutPage() {
             {/* Order Notes */}
             <Box className={checkoutDialogClasses.fieldContainer[platform]}>
               <Typography
-                className={`${interClassname.className} ${checkoutDialogClasses.label[platform]}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
               >
                 {t('orderNotes')}
               </Typography>
@@ -504,7 +504,7 @@ export default function CheckoutPage() {
             {platform === 'mobile' && (
               <Button
                 onClick={handleOrder}
-                className={`${interClassname.className} ${checkoutDialogClasses.orderButton.mobile}`}
+                className={`${fontClassName.className} ${checkoutDialogClasses.orderButton.mobile}`}
                 sx={{
                   backgroundColor: '#1b1b1b',
                   color: 'white',
@@ -524,7 +524,7 @@ export default function CheckoutPage() {
               {/* Order Items - Scrollable */}
               <Box className="flex flex-col gap-[30px] overflow-y-auto max-h-[600px] pr-2">
                 <Typography
-                  className={`${interClassname.className} ${checkoutDialogClasses.orderSummaryTitle.web}`}
+                  className={`${fontClassName.className} ${checkoutDialogClasses.orderSummaryTitle.web}`}
                 >
                   {t('orderSummary')}
                 </Typography>
@@ -535,7 +535,7 @@ export default function CheckoutPage() {
                       <Box className={checkoutDialogClasses.orderItem.web}>
                         <Box className="flex flex-col gap-1">
                           <Typography
-                            className={`${interClassname.className} ${checkoutDialogClasses.orderItemName.web}`}
+                            className={`${fontClassName.className} ${checkoutDialogClasses.orderItemName.web}`}
                           >
                             {parseName(
                               item.product.name,
@@ -552,12 +552,12 @@ export default function CheckoutPage() {
                           )}
                         </Box>
                         <Typography
-                          className={`${interClassname.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
+                          className={`${fontClassName.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
                         >
                           {item.quantity}
                         </Typography>
                         <Typography
-                          className={`${interClassname.className} ${checkoutDialogClasses.orderItemPrice.web}`}
+                          className={`${fontClassName.className} ${checkoutDialogClasses.orderItemPrice.web}`}
                         >
                           {itemTotal.toFixed(2)} {t('manat')}
                         </Typography>
@@ -576,12 +576,12 @@ export default function CheckoutPage() {
               <Box className={checkoutDialogClasses.totalContainer.web}>
                 <Box className={checkoutDialogClasses.totalRow.web}>
                   <Typography
-                    className={`${interClassname.className} ${checkoutDialogClasses.totalLabel.web}`}
+                    className={`${fontClassName.className} ${checkoutDialogClasses.totalLabel.web}`}
                   >
                     {t('total')}:
                   </Typography>
                   <Typography
-                    className={`${interClassname.className} ${checkoutDialogClasses.totalValue.web}`}
+                    className={`${fontClassName.className} ${checkoutDialogClasses.totalValue.web}`}
                   >
                     {totalPrice.toFixed(2)} {t('manat')}
                   </Typography>
@@ -594,7 +594,7 @@ export default function CheckoutPage() {
                     !phoneNumber.trim() ||
                     !address.trim()
                   }
-                  className={`${interClassname.className} ${checkoutDialogClasses.orderButton.web}`}
+                  className={`${fontClassName.className} ${checkoutDialogClasses.orderButton.web}`}
                   sx={{
                     backgroundColor: colors.main,
                     color: 'white',

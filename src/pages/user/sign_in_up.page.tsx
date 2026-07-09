@@ -2,7 +2,7 @@ import Layout from '@/pages/components/Layout';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { profileClasses } from '@/styles/classMaps/user/profile';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import { Box, CardMedia, Typography } from '@mui/material';
 import Link from 'next/link';
 import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
@@ -59,7 +59,7 @@ export default function SignInUp() {
               href="/user/signin"
             >
               <Typography
-                className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
+                className={`${profileClasses.logInOptionsTypo[platform]} ${fontClassName.className}`}
                 color={colors.white}
               >
                 {t('signin')}
@@ -70,7 +70,7 @@ export default function SignInUp() {
               href="/user/signup"
             >
               <Typography
-                className={`${profileClasses.logInOptionsTypo[platform]} ${interClassname.className}`}
+                className={`${profileClasses.logInOptionsTypo[platform]} ${fontClassName.className}`}
                 color={colors.main}
               >
                 {t('signup')}

@@ -1,7 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { notFoundClasses } from '@/styles/classMaps/not-found.page';
-import { img, interClassname } from '@/styles/theme';
+import { img, fontClassName } from '@/styles/theme';
 import { Box, Button, CardMedia, Typography } from '@mui/material';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -38,7 +38,7 @@ export default function Custom404() {
             className={notFoundClasses.image[platform]}
           />
           <Typography
-            className={`${interClassname.className} ${notFoundClasses.heading[platform]}`}
+            className={`${fontClassName.className} ${notFoundClasses.heading[platform]}`}
           >
             {t('pageNotFound')}
           </Typography>
@@ -47,7 +47,7 @@ export default function Custom404() {
               variant="contained"
               disableElevation
               onClick={handleHome}
-              className={`${interClassname.className} ${notFoundClasses.button[platform]}`}
+              className={`${fontClassName.className} ${notFoundClasses.button[platform]}`}
             >
               {t(button[platform])}
             </Button>

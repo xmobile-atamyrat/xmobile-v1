@@ -5,8 +5,9 @@ export const cartCheckoutClasses = {
   },
   summaryBox: {
     web: 'rounded-[10px] px-[40px] py-[16px] flex flex-row justify-between items-center min-w-[618px]',
+    // paddingBottom set inline from mobileBottomNavHeight (constants.ts) — clearance above the fixed bottom nav
     mobile:
-      'bg-white rounded-t-[40px] px-6 pt-6 pb-[88px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
+      'bg-white rounded-t-[40px] px-6 pt-6 shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
   },
   subtotalRow: {
     web: 'flex flex-row items-center gap-2',

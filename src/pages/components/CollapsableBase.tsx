@@ -3,7 +3,7 @@ import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { collapsableClasses } from '@/styles/classMaps/components/collapsable';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -68,7 +68,7 @@ export default function CollapsableBase({
       >
         <ListItemText
           primary={parseName(categoryTitle, router.locale ?? 'tk')}
-          className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
+          className={`${fontClassName.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
         />
         {hasSubcategories && (
           <KeyboardArrowRightIcon className="text-[#30303080] text-[20px]" />

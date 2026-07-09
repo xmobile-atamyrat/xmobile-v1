@@ -3,7 +3,7 @@ import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { emailCheck } from '@/pages/user/utils';
 import { signinClasses } from '@/styles/classMaps/user/signin';
-import { colors, interClassname, units } from '@/styles/theme';
+import { colors, fontClassName, units } from '@/styles/theme';
 import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
 import {
   Box,
@@ -72,7 +72,7 @@ export default function Signin() {
           <Typography
             color={colors.blackText}
             variant="h3"
-            className={`${signinClasses.h3[platform]} ${interClassname.className}`}
+            className={`${signinClasses.h3[platform]} ${fontClassName.className}`}
           >
             {t('signin')}
           </Typography>
@@ -139,7 +139,7 @@ export default function Signin() {
             <Box component="label" className={signinClasses.label[platform]}>
               <Typography
                 component="span"
-                className={`font-bold ${interClassname.className}`}
+                className={`font-bold ${fontClassName.className}`}
                 color={colors.blackText}
               >
                 {`${t('email')} `}
@@ -148,7 +148,7 @@ export default function Signin() {
                 component="span"
                 fontWeight="bold"
                 color={colors.main}
-                className={interClassname.className}
+                className={fontClassName.className}
               >
                 *
               </Typography>
@@ -159,7 +159,7 @@ export default function Signin() {
               placeholder={t('emailPlaceholder')}
               type="email"
               name="email"
-              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
+              className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
@@ -194,7 +194,7 @@ export default function Signin() {
             <Box component="label" className={signinClasses.label[platform]}>
               <Typography
                 component="span"
-                className={`font-bold ${interClassname.className}`}
+                className={`font-bold ${fontClassName.className}`}
                 color={colors.blackText}
               >
                 {`${t('password')} `}
@@ -203,7 +203,7 @@ export default function Signin() {
                 component="span"
                 fontWeight="bold"
                 color={colors.main}
-                className={interClassname.className}
+                className={fontClassName.className}
               >
                 *
               </Typography>
@@ -223,7 +223,7 @@ export default function Signin() {
                   </InputAdornment>
                 ),
               }}
-              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
+              className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'white',
@@ -257,7 +257,7 @@ export default function Signin() {
           {errorMessage != null && (
             <Typography
               color={colors.blackText}
-              className={`${signinClasses.error[platform]} ${interClassname.className} opacity-85`}
+              className={`${signinClasses.error[platform]} ${fontClassName.className} opacity-85`}
             >
               {t(errorMessage)}
             </Typography>
@@ -270,7 +270,7 @@ export default function Signin() {
                 size="large"
                 type="submit"
                 disableElevation
-                className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
+                className={`${signinClasses.buttonSubmit[platform]} ${fontClassName.className}`}
                 sx={{
                   backgroundColor: colors.main,
                   '&:hover': {
@@ -286,12 +286,12 @@ export default function Signin() {
             </Box>
             <Box className={signinClasses.boxes.text[platform]}>
               <Typography
-                className={`${signinClasses.typography} ${interClassname.className}`}
+                className={`${signinClasses.typography} ${fontClassName.className}`}
               >
                 {t('dontHaveAccount')}
               </Typography>
               <Button
-                className={`${interClassname.className} ${signinClasses.buttonRedirect}`}
+                className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
                 onClick={() => router.push('/user/signup')}
               >
                 {t('signup')}

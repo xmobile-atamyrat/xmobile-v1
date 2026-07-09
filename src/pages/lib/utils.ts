@@ -4,6 +4,7 @@ import {
   BANNER_IMAGE_WIDTH,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
+  RED_COLOR,
   X_MOBILE_DOMAIN,
   HIGHEST_LEVEL_CATEGORY_ID,
 } from '@/pages/lib/constants';
@@ -70,6 +71,12 @@ export const theme = createTheme({
   palette: {
     primary: {
       main: LOGO_COLOR,
+    },
+    secondary: {
+      main: RED_COLOR,
+    },
+    error: {
+      main: RED_COLOR,
     },
   },
 });

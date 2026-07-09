@@ -7,7 +7,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { computeProductPrice } from '@/pages/product/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart/index';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { CartPageSkeleton } from '@/pages/components/SkeletonLoader';
 import {
   Box,
@@ -152,14 +152,14 @@ export default function CartPage() {
         >
           <Link href="/" className={cartIndexClasses.link}>
             <Typography
-              className={`${interClassname.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
+              className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
             >
               {t('home')}
             </Typography>
           </Link>
           <Link href="/cart" className={cartIndexClasses.link}>
             <Typography
-              className={`${interClassname.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
+              className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
             >
               {t('cart')}
             </Typography>
@@ -170,7 +170,7 @@ export default function CartPage() {
             <Box className="flex flex-col">
               <Box className={cartIndexClasses.cartHeader[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.yourCartTypo[platform]}`}
+                  className={`${fontClassName.className} ${cartIndexClasses.yourCartTypo[platform]}`}
                 >
                   {t('cart')}
                 </Typography>
@@ -181,22 +181,22 @@ export default function CartPage() {
               </Box>
               <Box className={cartIndexClasses.infoRow[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[38vw] ml-[3vw]`}
+                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[38vw] ml-[3vw]`}
                 >
                   {t('product').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
+                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('price').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
+                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('quantity').toUpperCase()}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
+                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
                 >
                   {t('total').toUpperCase()}
                 </Typography>
@@ -227,7 +227,7 @@ export default function CartPage() {
                 className={cartIndexClasses.emptyCart.img[platform]}
               />
               <Typography
-                className={`${interClassname.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
+                className={`${fontClassName.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
               >
                 {t('emptyCart')}
               </Typography>
@@ -237,7 +237,7 @@ export default function CartPage() {
               >
                 <IconButton
                   disableRipple
-                  className={`${cartIndexClasses.iconButton[platform]} ${interClassname.className}`}
+                  className={`${cartIndexClasses.iconButton[platform]} ${fontClassName.className}`}
                 >
                   {t('continueShopping')}
                 </IconButton>

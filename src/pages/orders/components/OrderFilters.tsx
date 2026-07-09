@@ -1,5 +1,5 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Box, MenuItem, Select, TextField, Typography } from '@mui/material';
 import { UserOrderStatus } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -33,7 +33,7 @@ export default function OrderFilters({
     <Box className="flex flex-row gap-4 items-end mb-6">
       <Box className="min-w-[200px]">
         <Typography
-          className={`${interClassname.className} mb-2`}
+          className={`${fontClassName.className} mb-2`}
           variant="body2"
         >
           {t('orderStatus')}
@@ -62,7 +62,7 @@ export default function OrderFilters({
       </Box>
       <Box className="min-w-[200px]">
         <Typography
-          className={`${interClassname.className} mb-2`}
+          className={`${fontClassName.className} mb-2`}
           variant="body2"
         >
           {t('dateFrom')}
@@ -83,7 +83,7 @@ export default function OrderFilters({
       </Box>
       <Box className="min-w-[200px]">
         <Typography
-          className={`${interClassname.className} mb-2`}
+          className={`${fontClassName.className} mb-2`}
           variant="body2"
         >
           {t('dateTo')}

@@ -11,7 +11,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { formatDate } from '@/pages/orders/lib/utils';
 import { ordersDetailClasses } from '@/styles/classMaps/orders/detail';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -230,7 +230,7 @@ export default function OrderDetailPage() {
           }}
           className="flex justify-center items-center py-12"
         >
-          <Typography className={interClassname.className}>
+          <Typography className={fontClassName.className}>
             {t('noOrdersFound')}
           </Typography>
         </Box>
@@ -279,7 +279,7 @@ export default function OrderDetailPage() {
               <ArrowBackIosIcon sx={{ fontSize: '24px' }} />
             </IconButton>
             <Typography
-              className={`${interClassname.className} ${ordersDetailClasses.orderNumber.mobile}`}
+              className={`${fontClassName.className} ${ordersDetailClasses.orderNumber.mobile}`}
             >
               {order.orderNumber}
             </Typography>
@@ -289,7 +289,7 @@ export default function OrderDetailPage() {
           <Box className={ordersDetailClasses.header.web}>
             <Box className="flex-1">
               <Typography
-                className={`${interClassname.className} text-2xl font-semibold mb-2`}
+                className={`${fontClassName.className} text-2xl font-semibold mb-2`}
               >
                 {order.orderNumber}
               </Typography>
@@ -315,7 +315,7 @@ export default function OrderDetailPage() {
             onClick={() => setItemsDialogOpen(true)}
           >
             <Typography
-              className={`${interClassname.className} ${ordersDetailClasses.orderedItemsText.mobile}`}
+              className={`${fontClassName.className} ${ordersDetailClasses.orderedItemsText.mobile}`}
             >
               {t('orderedItems')} ({order.items?.length})
             </Typography>
@@ -327,31 +327,31 @@ export default function OrderDetailPage() {
         {platform === 'mobile' ? (
           <Box className={ordersDetailClasses.addressSection.mobile}>
             <Typography
-              className={`${interClassname.className} ${ordersDetailClasses.addressTitle.mobile}`}
+              className={`${fontClassName.className} ${ordersDetailClasses.addressTitle.mobile}`}
             >
               {t('addressText')}
             </Typography>
             <Box className="flex flex-col gap-4">
               <Box className={ordersDetailClasses.addressRow.mobile}>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressLabel.mobile}`}
                 >
                   {t('fullName')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressValue.mobile}`}
                 >
                   {order.userName || '-'}
                 </Typography>
               </Box>
               <Box className={ordersDetailClasses.addressRow.mobile}>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressLabel.mobile}`}
                 >
                   {t('phoneNumber')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressValue.mobile}`}
                 >
                   {order.deliveryPhone}
                 </Typography>
@@ -359,12 +359,12 @@ export default function OrderDetailPage() {
 
               <Box className={ordersDetailClasses.addressRow.mobile}>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressLabel.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressLabel.mobile}`}
                 >
                   {t('addressText')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.addressValue.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.addressValue.mobile}`}
                 >
                   {order.deliveryAddress}
                 </Typography>
@@ -374,39 +374,39 @@ export default function OrderDetailPage() {
         ) : (
           <Box className="mb-6">
             <Typography
-              className={`${interClassname.className} text-lg font-semibold mb-3`}
+              className={`${fontClassName.className} text-lg font-semibold mb-3`}
             >
               {t('delivery')}
             </Typography>
             <Box className="space-y-2">
               <Box>
                 <Typography
-                  className={`${interClassname.className} text-sm text-gray-600`}
+                  className={`${fontClassName.className} text-sm text-gray-600`}
                 >
                   {t('deliveryAddress')}:
                 </Typography>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {order.deliveryAddress}
                 </Typography>
               </Box>
               <Box>
                 <Typography
-                  className={`${interClassname.className} text-sm text-gray-600`}
+                  className={`${fontClassName.className} text-sm text-gray-600`}
                 >
                   {t('deliveryPhone')}:
                 </Typography>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {order.deliveryPhone}
                 </Typography>
               </Box>
               {order.notes && (
                 <Box>
                   <Typography
-                    className={`${interClassname.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} text-sm text-gray-600`}
                   >
                     {t('notes')}:
                   </Typography>
-                  <Typography className={interClassname.className}>
+                  <Typography className={fontClassName.className}>
                     {order.notes}
                   </Typography>
                 </Box>
@@ -419,7 +419,7 @@ export default function OrderDetailPage() {
         {platform === 'web' && (
           <Box className="mb-6">
             <Typography
-              className={`${interClassname.className} text-lg font-semibold mb-3`}
+              className={`${fontClassName.className} text-lg font-semibold mb-3`}
             >
               {t('orderItems')}
             </Typography>
@@ -429,7 +429,7 @@ export default function OrderDetailPage() {
                   <TableRow>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('product')}
@@ -437,7 +437,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('quantity')}
@@ -445,7 +445,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('price')}
@@ -453,7 +453,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('subtotal')}
@@ -468,7 +468,7 @@ export default function OrderDetailPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
                           {item.selectedVariant && (
@@ -478,17 +478,17 @@ export default function OrderDetailPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {item.quantity}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {parseFloat(item.productPrice).toFixed(2)} TMT
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {subtotal.toFixed(2)} TMT
                           </Typography>
                         </TableCell>
@@ -498,7 +498,7 @@ export default function OrderDetailPage() {
                   <TableRow>
                     <TableCell colSpan={3}>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('orderTotal')}:
@@ -506,7 +506,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {parseFloat(order.totalPrice).toFixed(2)} TMT
@@ -523,19 +523,19 @@ export default function OrderDetailPage() {
         {platform === 'mobile' && (
           <Box className={ordersDetailClasses.orderInfoSection.mobile}>
             <Typography
-              className={`${interClassname.className} ${ordersDetailClasses.orderInfoTitle.mobile}`}
+              className={`${fontClassName.className} ${ordersDetailClasses.orderInfoTitle.mobile}`}
             >
               {t('orderInfo')}
             </Typography>
             <Box className="flex flex-col gap-0">
               <Box className={ordersDetailClasses.orderInfoTotal.mobile}>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.orderInfoTotalLabel.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.orderInfoTotalLabel.mobile}`}
                 >
                   {t('totalAmount')}
                 </Typography>
                 <Typography
-                  className={`${interClassname.className} ${ordersDetailClasses.orderInfoTotalValue.mobile}`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.orderInfoTotalValue.mobile}`}
                 >
                   {parseFloat(order.totalPrice).toFixed(2)} TMT
                 </Typography>
@@ -548,29 +548,29 @@ export default function OrderDetailPage() {
         {platform === 'web' && (
           <Box className="mb-6">
             <Typography
-              className={`${interClassname.className} text-lg font-semibold mb-3`}
+              className={`${fontClassName.className} text-lg font-semibold mb-3`}
             >
               {t('information')}
             </Typography>
             <Box className="space-y-2">
               <Box>
                 <Typography
-                  className={`${interClassname.className} text-sm text-gray-600`}
+                  className={`${fontClassName.className} text-sm text-gray-600`}
                 >
                   {t('createdAt')}:
                 </Typography>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {formatDate(order.createdAt, platform)}
                 </Typography>
               </Box>
               {order.completedAt && (
                 <Box>
                   <Typography
-                    className={`${interClassname.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} text-sm text-gray-600`}
                   >
                     {t('completedAt')}:
                   </Typography>
-                  <Typography className={interClassname.className}>
+                  <Typography className={fontClassName.className}>
                     {formatDate(order.completedAt, platform)}
                   </Typography>
                 </Box>
@@ -578,11 +578,11 @@ export default function OrderDetailPage() {
               {order.cancelledAt && (
                 <Box>
                   <Typography
-                    className={`${interClassname.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} text-sm text-gray-600`}
                   >
                     {t('cancelledAt')}:
                   </Typography>
-                  <Typography className={interClassname.className}>
+                  <Typography className={fontClassName.className}>
                     {formatDate(order.cancelledAt, platform)}
                   </Typography>
                 </Box>
@@ -590,11 +590,11 @@ export default function OrderDetailPage() {
               {order.cancellationReason && (
                 <Box>
                   <Typography
-                    className={`${interClassname.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} text-sm text-gray-600`}
                   >
                     {t('cancellationReason')}:
                   </Typography>
-                  <Typography className={interClassname.className}>
+                  <Typography className={fontClassName.className}>
                     {order.cancellationReason}
                   </Typography>
                 </Box>
@@ -606,7 +606,7 @@ export default function OrderDetailPage() {
         {/* Cancel Button - Mobile Only */}
         {platform === 'mobile' && canCancelOrder() && (
           <Button
-            className={`${interClassname.className} ${ordersDetailClasses.cancelButton.mobile}`}
+            className={`${fontClassName.className} ${ordersDetailClasses.cancelButton.mobile}`}
             onClick={() => setCancelDialogOpen(true)}
             sx={{
               '&:hover': {
@@ -629,7 +629,7 @@ export default function OrderDetailPage() {
         >
           <DialogContent>
             <Typography
-              className={`${interClassname.className} text-lg font-semibold mb-4`}
+              className={`${fontClassName.className} text-lg font-semibold mb-4`}
             >
               {t('orderedItems')} ({order.items?.length})
             </Typography>
@@ -639,7 +639,7 @@ export default function OrderDetailPage() {
                   <TableRow>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('product')}
@@ -647,7 +647,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('quantity')}
@@ -655,7 +655,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('price')}
@@ -663,7 +663,7 @@ export default function OrderDetailPage() {
                     </TableCell>
                     <TableCell>
                       <Typography
-                        className={interClassname.className}
+                        className={fontClassName.className}
                         fontWeight={600}
                       >
                         {t('subtotal')}
@@ -678,7 +678,7 @@ export default function OrderDetailPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {parseName(item.productName, router.locale ?? 'tk')}
                           </Typography>
                           {item.selectedVariant && (
@@ -688,17 +688,17 @@ export default function OrderDetailPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {item.quantity}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {parseFloat(item.productPrice).toFixed(2)} TMT
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography className={interClassname.className}>
+                          <Typography className={fontClassName.className}>
                             {subtotal.toFixed(2)} TMT
                           </Typography>
                         </TableCell>

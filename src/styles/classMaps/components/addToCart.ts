@@ -29,8 +29,9 @@ export const addToCartClasses = {
     },
     bg: {
       web: 'flex w-full h-full',
+      // paddingBottom set inline from mobileBottomNavHeight (constants.ts) — clearance above the fixed bottom nav
       mobile:
-        'bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
+        'bg-white rounded-t-[40px] px-6 shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
     },
     addToCart: {
       web: 'max-w-[15vw] h-[3.5vw] bg-[#ff624c] gap-[10px] rounded-[10px] py-[16px] px-[2vw] items-center hover:bg-[#ec4d38] ml-[4vw]',

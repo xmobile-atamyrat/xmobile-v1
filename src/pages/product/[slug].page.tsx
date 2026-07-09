@@ -54,7 +54,7 @@ import {
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -567,7 +567,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <Box className={detailPageClasses.detail.name[platform]}>
               <Typography
                 variant="h5"
-                className={`${interClassname.className} ${detailPageClasses.productName[platform]}`}
+                className={`${fontClassName.className} ${detailPageClasses.productName[platform]}`}
               >
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
@@ -580,7 +580,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 />
               ) : (
                 <Typography
-                  className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
+                  className={`${detailPageClasses.typographs.price[platform]} ${fontClassName.className}`}
                 >
                   {displayPrice === '' || displayPrice.includes('null')
                     ? t('nullPrice')
@@ -595,7 +595,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               {/* Variant (spec) chips */}
               <Box>
                 <Typography
-                  className={`${interClassname.className}`}
+                  className={`${fontClassName.className}`}
                   sx={{ fontWeight: 700, mb: 1.5 }}
                 >
                   {t('tags')}
@@ -605,7 +605,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     <Box
                       key={spec}
                       onClick={() => handleSelectSpec(spec)}
-                      className={interClassname.className}
+                      className={fontClassName.className}
                       sx={chipSx(spec === selectedSpec, false)}
                     >
                       {spec}
@@ -618,7 +618,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               {colorOptions.length > 0 && (
                 <Box>
                   <Typography
-                    className={`${interClassname.className}`}
+                    className={`${fontClassName.className}`}
                     sx={{ fontWeight: 700, mb: 1.5 }}
                   >
                     {t('color')}
@@ -634,7 +634,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                           onClick={() =>
                             available && setSelectedColorId(colorId)
                           }
-                          className={interClassname.className}
+                          className={fontClassName.className}
                           sx={chipSx(isSel, !available)}
                         >
                           {color?.hex && (
@@ -674,7 +674,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   <Box key={key} className={detailPageClasses.detailSide.part}>
                     <Box className={detailPageClasses.detailSide.head}>
                       <Typography
-                        className={`${detailPageClasses.detailSide.desc} ${interClassname.className}`}
+                        className={`${detailPageClasses.detailSide.desc} ${fontClassName.className}`}
                       >
                         {key}
                       </Typography>
@@ -683,7 +683,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                       {description[key].map((descLine, index) => (
                         <Typography
                           key={index}
-                          className={`${detailPageClasses.detailSide.font2} ${interClassname.className}`}
+                          className={`${detailPageClasses.detailSide.font2} ${fontClassName.className}`}
                         >
                           {descLine}
                         </Typography>
@@ -698,7 +698,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               <Box className="mt-[2vw]">
                 <Box className="max-w-[20vw] h-[3.5vw] bg-[#e8e8e8] rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
                   <Typography
-                    className={`${interClassname.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
+                    className={`${fontClassName.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
                   >
                     {t('outOfStock')}
                   </Typography>
@@ -717,7 +717,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       {description && Object.keys(description).length > 0 && (
         <Box className={detailPageClasses.boxes.detail[platform]}>
           <Typography
-            className={`${interClassname.className} ${detailPageClasses.specs[platform]}`}
+            className={`${fontClassName.className} ${detailPageClasses.specs[platform]}`}
           >
             {t('specification')}
           </Typography>
@@ -734,7 +734,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 >
                   <Box className={detailPageClasses.detail.head[platform]}>
                     <Typography
-                      className={`${detailPageClasses.typographs.desc[platform]} ${interClassname.className}`}
+                      className={`${detailPageClasses.typographs.desc[platform]} ${fontClassName.className}`}
                     >
                       {key}
                     </Typography>
@@ -743,7 +743,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     {description[key].map((descLine, index) => (
                       <Typography
                         key={index}
-                        className={`${detailPageClasses.typographs.font2[platform]} ${interClassname.className}`}
+                        className={`${detailPageClasses.typographs.font2[platform]} ${fontClassName.className}`}
                       >
                         {descLine}
                       </Typography>
@@ -760,7 +760,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <Box className="bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)] flex items-center justify-center pt-4">
               <Box className="w-[88.7vw] bg-[#e8e8e8] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center mx-auto">
                 <Typography
-                  className={`${interClassname.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
+                  className={`${fontClassName.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
                 >
                   {t('outOfStock')}
                 </Typography>
