@@ -7,12 +7,12 @@ import {
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
-import { AddToCartProps } from '@/pages/lib/types';
+import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { computeProductPrice } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
-import { colors, fontClassName } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {
   Box,
@@ -25,7 +25,6 @@ import {
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useMemo, useState } from 'react';
@@ -34,7 +33,7 @@ import { lazy, useEffect, useMemo, useState } from 'react';
 const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 interface ProductCardProps {
-  product?: Product;
+  product?: ExtendedProduct;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
 }
@@ -102,10 +101,10 @@ export default function ProductCard({
               />
               {product.isOutOfStock && (
                 <Box
-                  className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
+                  className={`absolute top-2 left-2 bg-white/90 border border-[#ECECF1] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
                 >
                   <Typography
-                    className={`font-semibold text-[#555] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+                    className={`font-semibold text-[#8B8A98] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
                   >
                     {t('outOfStock')}
                   </Typography>
@@ -114,6 +113,13 @@ export default function ProductCard({
             </Box>
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
+            {product.brand?.name != null && (
+              <Typography
+                className={`${fontClassName.className} ${productCardClasses.brand[platform]}`}
+              >
+                {product.brand.name}
+              </Typography>
+            )}
             <Typography
               className={`${fontClassName.className} ${productCardClasses.typo[platform]}`}
             >
@@ -125,10 +131,12 @@ export default function ProductCard({
               />
             ) : (
               <Typography
-                color={colors.mainWebMobile[platform]}
                 className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
               >
-                {product?.price} {t('manat')}
+                {product?.price}
+                <span className={productCardClasses.priceUnit[platform]}>
+                  {t('manat')}
+                </span>
               </Typography>
             )}
           </Box>

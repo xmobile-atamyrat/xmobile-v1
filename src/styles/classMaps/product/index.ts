@@ -18,6 +18,10 @@ export const productIndexPageClasses = {
       web: 'flex flex-col w-full h-full',
       mobile: 'flex flex-col w-full h-full px-[24px]',
     },
+    productsGrid: {
+      web: 'flex flex-wrap w-full',
+      mobile: 'grid grid-cols-2 gap-3 w-full',
+    },
   },
   categoryName: {
     mobile:

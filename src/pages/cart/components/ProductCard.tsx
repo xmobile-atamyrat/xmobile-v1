@@ -12,7 +12,7 @@ import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { resolveVariantDisplay } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
-import { colors, fontClassName } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Color, Product } from '@prisma/client';
@@ -131,10 +131,12 @@ export default function CartProductCard({
                 />
               ) : (
                 <Typography
-                  color={colors.text[platform]}
                   className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]}`}
                 >
-                  {product?.price} {t('manat')}
+                  {product?.price}
+                  <span className={cartProductCardClasses.priceUnit[platform]}>
+                    {t('manat')}
+                  </span>
                 </Typography>
               )}
             </Box>
