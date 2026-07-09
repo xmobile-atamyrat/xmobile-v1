@@ -18,13 +18,14 @@ import { colors, interClassname } from '@/styles/theme';
 import { ArrowForwardIos } from '@mui/icons-material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
+import ReplayIcon from '@mui/icons-material/Replay';
 import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import ViewCarouselOutlinedIcon from '@mui/icons-material/ViewCarouselOutlined';
@@ -351,6 +352,28 @@ export default function Profile() {
                         className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
                       >
                         {t('appVersions')}
+                      </Typography>
+                      <ArrowForwardIos
+                        className={profileClasses.icons[platform]}
+                      />
+                    </Button>
+                    <Divider className={profileClasses.divider[platform]} />
+                    <Button
+                      className={profileClasses.boxes.sectionOrders[platform]}
+                      disableRipple
+                      onClick={() => router.push('/admin/push-retry-config')}
+                      variant={platform === 'web' ? 'outlined' : 'text'}
+                      sx={{
+                        '&:hover': { backgroundColor: colors.lightRed },
+                      }}
+                    >
+                      <ReplayIcon
+                        className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                      />
+                      <Typography
+                        className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                      >
+                        {t('pushRetryConfig')}
                       </Typography>
                       <ArrowForwardIos
                         className={profileClasses.icons[platform]}
