@@ -413,7 +413,11 @@ export default function ProductGridContent({
               {isLoading && products.length === 0 ? (
                 <ProductGridSkeleton count={8} />
               ) : (
-                <Box className="flex flex-wrap w-full">
+                <Box
+                  className={
+                    productIndexPageClasses.boxes.productsGrid[platform]
+                  }
+                >
                   {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
                     <ProductCard
                       handleClickAddProduct={() =>

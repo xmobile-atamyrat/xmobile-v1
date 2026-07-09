@@ -23,7 +23,7 @@ export const homePageClasses = {
     web: 'font-medium text-[24px] mt-[20px] mb-[25px]',
   },
   newProductsBox: {
-    mobile: 'grid grid-cols-2 gap-0 w-full',
+    mobile: 'grid grid-cols-2 gap-3 w-full',
     web: 'flex flex-wrap w-full',
   },
   main: {
