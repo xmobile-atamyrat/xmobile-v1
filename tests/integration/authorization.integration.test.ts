@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { NotificationType, PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -256,5 +256,100 @@ describe('Role-gated API routes (integration)', () => {
     );
 
     await prisma.user.delete({ where: { id: admin.id } });
+  });
+
+  it('GET /api/notifications/failed returns 401 without token', async () => {
+    const handler = (await import('@/pages/api/notifications/failed.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/notifications/failed',
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(401);
+  });
+
+  it('GET /api/notifications/failed returns 403 for non-superuser', async () => {
+    const session = await signupTestUser('failed-notif-free');
+    const handler = (await import('@/pages/api/notifications/failed.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/notifications/failed',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(403);
+  });
+
+  it('GET /api/notifications/failed returns only FAILED notifications for SUPERUSER', async () => {
+    const su = await prisma.user.create({
+      data: {
+        email: `su-failed-notif-${Date.now()}@test.local`,
+        name: 'SU',
+        password: 'placeholder',
+        grade: UserRole.SUPERUSER,
+      },
+    });
+    const { generateTokens } = await import('@/pages/api/utils/tokenUtils');
+    const { accessToken } = generateTokens(su.id, UserRole.SUPERUSER);
+
+    const failedNotif = await prisma.inAppNotification.create({
+      data: {
+        userId: su.id,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Failed push',
+        content: 'Retries exhausted',
+        isRead: false,
+        deliveryStatus: 'FAILED',
+        retryCount: 3,
+        lastError: 'no active tokens',
+      },
+    });
+    const sentNotif = await prisma.inAppNotification.create({
+      data: {
+        userId: su.id,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Delivered push',
+        content: 'Sent fine',
+        isRead: false,
+        deliveryStatus: 'SENT',
+      },
+    });
+
+    const handler = (await import('@/pages/api/notifications/failed.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/notifications/failed',
+      headers: { authorization: `Bearer ${accessToken}` },
+      query: {},
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const body = JSON.parse(res._getData() as string) as Array<{
+      id: string;
+      lastError: string | null;
+    }>;
+    const ids = body.map((n) => n.id);
+    expect(ids).toContain(failedNotif.id);
+    expect(ids).not.toContain(sentNotif.id);
+    expect(body.find((n) => n.id === failedNotif.id)?.lastError).toBe(
+      'no active tokens',
+    );
+
+    await prisma.inAppNotification.deleteMany({
+      where: { id: { in: [failedNotif.id, sentNotif.id] } },
+    });
+    await prisma.user.delete({ where: { id: su.id } });
   });
 });
