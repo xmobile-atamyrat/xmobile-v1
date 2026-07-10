@@ -20,7 +20,7 @@ export default function VariantBadge({
       {spec && (
         <Typography
           className={fontClassName.className}
-          sx={{ fontSize, color: 'text.secondary' }}
+          sx={{ fontSize, fontWeight: 500, color: '#8B8A98' }}
         >
           {spec}
         </Typography>
@@ -32,7 +32,7 @@ export default function VariantBadge({
             width: 14,
             height: 14,
             borderRadius: '50%',
-            border: '1px solid rgba(0,0,0,0.2)',
+            border: '1px solid #ECECF1',
             backgroundColor: colorHex,
             flexShrink: 0,
           }}

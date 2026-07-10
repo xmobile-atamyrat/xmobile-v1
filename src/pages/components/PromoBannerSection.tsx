@@ -70,7 +70,9 @@ export default function PromoBannerSection({
   return (
     <Box className={bannerClasses.section[platform]}>
       {multiple ? (
-        <Slider {...settings}>{banners.map(renderSlide)}</Slider>
+        <Slider {...settings} className={bannerClasses.slider}>
+          {banners.map(renderSlide)}
+        </Slider>
       ) : (
         renderSlide(banners[0])
       )}

@@ -1,79 +1,83 @@
 export const addToCartClasses = {
   cartIcon: {
-    box: 'rounded-full bg-[rgb(25, 118, 210)] hover:bg-blue-700 shadow',
-    iButton: 'rounded-full bg-blue-600 hover:bg-blue-700 shadow text-white',
+    box: 'rounded-full bg-navy shadow',
+    iButton: 'rounded-full bg-navy hover:bg-[#1A1258] text-white',
     fSize: {
-      web: 'text-[1.5rem]',
-      mobile: 'text-[1.1rem]',
+      web: 'w-[22px] h-[22px]',
+      mobile: 'w-[18px] h-[18px]',
     },
   },
   circIcon: {
     box: {
-      web: 'flex flex-row h-full w-[41vw] items-center justify-start ml-[0px]',
+      web: 'flex flex-row h-full items-center gap-[16px]',
       mobile:
-        'flex flex-row w-[50vw] h-full items-center justify-between mt-[10px]',
+        'flex flex-row w-full h-full items-center justify-between mt-[10px]',
     },
     fSize: {
-      web: 'w-[16px] h-[16px] text-[#303030] items-center',
-      mobile: 'w-[14px] h-[14px] text-[#1c1b1b]',
+      web: 'w-[15px] h-[15px] text-navy',
+      mobile: 'w-[13px] h-[13px] text-navy',
     },
   },
   input: {
-    web: 'text-[1.8vw] font-[600] text-[#303030] leading-[46px] tracking-0 [&>input]:text-center',
+    web: 'text-[1.1vw] font-bold text-ink leading-[32px] tracking-0 w-[2vw] [&>input]:text-center',
     mobile: 'hidden',
   },
   detail: {
     box: {
-      web: 'flex flex-row min-w-[28vw] h-[3.5vw] mt-[7.5vw]',
+      web: 'flex flex-row items-center min-w-[28vw] h-[3.5vw] mt-[7.5vw] gap-[1.5vw]',
       mobile: 'w-full fixed bottom-0 left-0 right-0 z-10',
     },
     bg: {
-      web: 'flex w-full h-full',
+      web: 'flex w-full h-full items-center',
       // paddingBottom set inline from mobileBottomNavHeight (constants.ts) — clearance above the fixed bottom nav
       mobile:
-        'bg-white rounded-t-[40px] px-6 shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)]',
+        'flex items-center bg-white rounded-t-[24px] px-4 pt-3 shadow-[0px_-6px_20px_0px_rgba(20,16,60,0.06)]',
+    },
+    stepper: {
+      web: 'flex flex-row items-center gap-[10px] bg-fill rounded-full px-[14px] py-[10px]',
+      mobile: 'hidden',
     },
     addToCart: {
-      web: 'max-w-[15vw] h-[3.5vw] bg-[#ff624c] gap-[10px] rounded-[10px] py-[16px] px-[2vw] items-center hover:bg-[#ec4d38] ml-[4vw]',
+      web: 'flex-1 h-[3.5vw] bg-navy gap-[10px] rounded-[15px] py-[16px] px-[2vw] items-center justify-center hover:bg-[#1A1258]',
       mobile:
-        'w-[88.7vw] bg-[#1C1B1B] text-[#fff] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] gap-[8px] mx-auto',
+        'w-full bg-navy hover:bg-[#1A1258] text-white h-[clamp(44px,_11.2vw,_52px)] rounded-[15px] px-[10px] gap-[8px]',
     },
-    quantityButton:
-      'w-[1.5vw] h-[1.5vw] rounded-[100%] bg-[#f4f4f4] text-[#000]',
+    quantityButton: 'w-[1.1vw] h-[1.1vw] text-navy',
     addToCartText: {
-      web: 'justify-center font-[700] text-[1vw] leading-[30px] tracking-0 text-[#fff]',
+      web: 'justify-center font-[700] text-[1vw] leading-[30px] tracking-0 text-white',
       mobile:
-        'font-[500] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-normal',
+        'font-[600] text-[clamp(13px,_3.5vw,_15px)] leading-[100%] tracking-normal text-white',
     },
   },
   iconButton: {
-    web: 'w-[2.5vw] h-[2.5vw] bg-[#f4f4f4]',
+    web: 'w-[32px] h-[32px] flex items-center justify-center',
     mobile: 'hidden',
   },
   inputDet: {
-    web: 'w-[clamp(30px,_2vw,_40px)] h-[clamp(30px,_2vw,_40px)] rounded-full bg-[#f4f4f4] mx-[16px] font-bold text-[clamp(12px,_0.8vw,_16px)] leading-[24px] tracking-normal text-[#303030] [&>input]:text-center',
+    web: 'w-[clamp(24px,_1.6vw,_32px)] h-[clamp(24px,_1.6vw,_32px)] bg-transparent mx-0 font-bold text-[clamp(12px,_0.8vw,_16px)] leading-[24px] tracking-normal text-ink [&>input]:text-center',
     mobile:
-      'w-[40px] h-[24px] [&>input]:text-center text-[16px] font-medium leading-[150%] tracking-[0.5%] text-[#1c1b1b]',
+      'w-[28px] h-[24px] bg-transparent [&>input]:text-center text-[14px] font-bold leading-[150%] tracking-[0.5%] text-ink',
   },
   price: {
     web: 'flex justify-start items-center w-[14vw]',
     mobile: 'hidden',
   },
   priceText: {
-    web: 'font-[500] text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal text-[#303030] whitespace-nowrap',
+    web: 'font-[700] text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal text-navy whitespace-nowrap',
     mobile: 'hidden',
   },
   deleteButton: {
     box: {
-      web: 'ml-[3vw] w-[clamp(40px,_3.33vw,_64px)] h-[clamp(40px,_3.33vw,_64px)] rounded-full border-[1px] border-[#ff624c] p-0 flex justify-center items-center flex-shrink-0 group/delete',
-      mobile: 'w-[40px] h-[40px] color-[#838383] p-0 gap-0 ml-[8px]',
+      web: 'ml-[8px] w-[32px] h-[32px] p-0 flex justify-center items-center flex-shrink-0',
+      mobile:
+        'w-[32px] h-[32px] p-0 flex justify-center items-center flex-shrink-0 ml-[8px]',
     },
     deleteIcon: {
-      web: 'h-[clamp(15px,_1.3vw,_25px)] w-auto brightness-100 group-hover/delete:invert group-hover/delete:brightness-0 transition-all duration-200',
-      mobile: 'w-[24px] h-[24px]',
+      web: 'w-[18px] h-[18px] text-muted hover:text-red transition-colors duration-200',
+      mobile: 'w-[18px] h-[18px] text-muted',
     },
     iconButton: {
-      web: 'w-full h-full hover:bg-[#ff624c]',
+      web: 'w-full h-full',
       mobile: 'w-full h-full',
     },
   },
@@ -82,8 +86,8 @@ export const addToCartClasses = {
     mobile: '',
   },
   quanChange: {
-    web: 'flex items-center w-[14vw] m-0',
+    web: 'flex items-center gap-[10px] bg-fill rounded-full px-[14px] py-[8px] w-fit',
     mobile:
-      'flex flex-row justify-between p-[4px] border-[1px] rounded-[8px] border-[#f4f5fd] w-[96px] h-[32px]',
+      'flex items-center gap-[8px] bg-fill rounded-full px-[10px] py-[5px] w-fit',
   },
 };

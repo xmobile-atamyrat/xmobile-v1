@@ -63,7 +63,7 @@ export const appbarClasses = {
   },
   appbar: {
     web: 'bg-white min-h-[142px] my-[16px]',
-    mobile: 'sticky top-0 z-40 bg-white border-b border-[#ECECF1]',
+    mobile: 'sticky top-0 z-40 bg-white border-b border-[#ECECF1] pt-3',
   },
   backButton: {
     web: 'hidden',

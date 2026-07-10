@@ -7,7 +7,7 @@ import Footer from '@/pages/components/Footer';
 import NotificationPermissionBanner from '@/pages/components/NotificationPermissionBanner';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { MAIN_BG_COLOR, mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -20,9 +20,18 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { layoutClasses } from '@/styles/classMaps/components/layout';
-import { Alert, Box, Snackbar } from '@mui/material';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { fontClassName } from '@/styles/theme';
+import { Box, Snackbar, Typography } from '@mui/material';
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
+
+const snackbarIcon = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertTriangle,
+};
 
 type SnackbarSeverity = 'success' | 'error' | 'warning';
 
@@ -181,13 +190,28 @@ export default function Layout({
         autoHideDuration={4000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        sx={
+          platform === 'mobile'
+            ? { bottom: `${mobileBottomNavHeight + 8}px !important` }
+            : undefined
+        }
       >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
+        <Box className={snackbarClasses.pill}>
+          {(() => {
+            const Icon = snackbarIcon[snackbar.severity];
+            return (
+              <Icon
+                size={20}
+                className={snackbarClasses.icon[snackbar.severity]}
+              />
+            );
+          })()}
+          <Typography
+            className={`${fontClassName.className} ${snackbarClasses.message}`}
+          >
+            {snackbar.message}
+          </Typography>
+        </Box>
       </Snackbar>
       <ChatWidget />
     </Box>
