@@ -1,15 +1,17 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { ShoppingCart } from '@mui/icons-material';
+import { Box, IconButton, Input, Snackbar, Typography } from '@mui/material';
 import {
-  Alert,
-  Box,
-  CardMedia,
-  IconButton,
-  Input,
-  Snackbar,
-  Typography,
-} from '@mui/material';
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
 import { Suspense, useCallback, useState } from 'react';
 
@@ -18,10 +20,16 @@ import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
-import { img, fontClassName } from '@/styles/theme';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { fontClassName } from '@/styles/theme';
 import CircularProgress from '@mui/material/CircularProgress';
+
+const snackbarIcon = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertTriangle,
+  info: Info,
+};
 
 export default function AddToCart({
   productId,
@@ -40,6 +48,7 @@ export default function AddToCart({
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const router = useRouter();
 
   const addCartItems = async () => {
     if (price.includes('null')) {
@@ -193,7 +202,7 @@ export default function AddToCart({
               onClick={addCartItems}
               className={addToCartClasses.cartIcon.iButton}
             >
-              <ShoppingCart
+              <ShoppingBag
                 className={addToCartClasses.cartIcon.fSize[platform]}
               />
             </IconButton>
@@ -208,9 +217,7 @@ export default function AddToCart({
                 disableRipple
                 onClick={handleProductQuantity('remove')}
               >
-                <RemoveIcon
-                  className={addToCartClasses.circIcon.fSize[platform]}
-                />
+                <Minus className={addToCartClasses.circIcon.fSize[platform]} />
               </IconButton>
               {/* quantityInput */}
               <Input
@@ -235,9 +242,7 @@ export default function AddToCart({
 
               {/* addButton */}
               <IconButton disableRipple onClick={handleProductQuantity('add')}>
-                <AddIcon
-                  className={addToCartClasses.circIcon.fSize[platform]}
-                />
+                <Plus className={addToCartClasses.circIcon.fSize[platform]} />
               </IconButton>
             </Box>
 
@@ -262,9 +267,7 @@ export default function AddToCart({
                   deleteCartItems(cartItemId);
                 }}
               >
-                <CardMedia
-                  component="img"
-                  src={img.trash[platform]}
+                <Trash2
                   className={addToCartClasses.deleteButton.deleteIcon[platform]}
                 />
               </IconButton>
@@ -282,15 +285,13 @@ export default function AddToCart({
                   : undefined
               }
             >
-              <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between items-center">
+              <Box className={addToCartClasses.detail.stepper[platform]}>
                 {/* removeButton */}
                 <IconButton
                   onClick={handleProductQuantity('quantityRemove')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <RemoveIcon
-                    className={addToCartClasses.detail.quantityButton}
-                  />
+                  <Minus className={addToCartClasses.detail.quantityButton} />
                 </IconButton>
 
                 {/* quantityInput */}
@@ -317,7 +318,7 @@ export default function AddToCart({
                   onClick={handleProductQuantity('quantityAdd')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <AddIcon className={addToCartClasses.detail.quantityButton} />
+                  <Plus className={addToCartClasses.detail.quantityButton} />
                 </IconButton>
               </Box>
 
@@ -348,15 +349,40 @@ export default function AddToCart({
           }
           setSnackbarOpen(false);
         }}
+        sx={
+          platform === 'mobile'
+            ? { bottom: `${mobileBottomNavHeight + 8}px !important` }
+            : undefined
+        }
       >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage?.severity}
-          variant="filled"
-          className="w-100%"
-        >
-          {snackbarMessage?.message && t(snackbarMessage.message)}
-        </Alert>
+        <Box className={snackbarClasses.pill}>
+          {snackbarMessage?.severity &&
+            (() => {
+              const Icon = snackbarIcon[snackbarMessage.severity];
+              return (
+                <Icon
+                  size={20}
+                  className={snackbarClasses.icon[snackbarMessage.severity]}
+                />
+              );
+            })()}
+          <Typography
+            className={`${fontClassName.className} ${snackbarClasses.message}`}
+          >
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+          </Typography>
+          {snackbarMessage?.message === 'addToCartSuccess' && (
+            <span
+              className={`${fontClassName.className} ${snackbarClasses.viewLink}`}
+              onClick={() => {
+                setSnackbarOpen(false);
+                router.push('/cart');
+              }}
+            >
+              {t('view')}
+            </span>
+          )}
+        </Box>
       </Snackbar>
     </Box>
   );

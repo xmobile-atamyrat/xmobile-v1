@@ -80,10 +80,6 @@ export const units = {
 };
 
 export const img = {
-  trash: {
-    web: '/cart/icons/deleteIcon.png',
-    mobile: '/cart/icons/deleteIconMobile.png',
-  },
   not_found: {
     web: '/icons/404.png',
     mobile: '/icons/404-mobile.png',

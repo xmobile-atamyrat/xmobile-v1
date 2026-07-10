@@ -5,13 +5,13 @@ export const notificationClasses = {
       mobile: 'relative inline-flex items-center justify-center',
     },
     icon: {
-      web: 'w-[28px] h-[28px] text-[#303030]',
-      mobile: 'w-[30px] h-[30px] text-[#1b1b1b]',
+      web: 'w-[20px] h-[20px] text-[#20166E]',
+      mobile: 'w-[20px] h-[20px] text-[#20166E]',
     },
     count: {
-      web: 'absolute top-[-4px] right-[-4px] min-w-[18px] h-[18px] bg-[#ff624c] text-white text-[11px] font-semibold rounded-full flex items-center justify-center px-[4px]',
+      web: 'absolute top-[-4px] right-[-4px] min-w-[18px] h-[18px] bg-[#E41E2B] text-white text-[11px] font-bold rounded-full flex items-center justify-center px-[4px]',
       mobile:
-        'absolute top-[-4px] right-[-4px] min-w-[18px] h-[18px] bg-[#ff624c] text-white text-[11px] font-semibold rounded-full flex items-center justify-center px-[4px]',
+        'absolute top-[-4px] right-[-4px] min-w-[18px] h-[18px] bg-[#E41E2B] text-white text-[11px] font-bold rounded-full flex items-center justify-center px-[4px]',
     },
   },
   menu: {
