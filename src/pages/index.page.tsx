@@ -146,6 +146,19 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     console.error('Failed to load promo banners:', error);
   }
 
+  // Fetch the first page of products server-side so their links are present
+  // in the raw HTML on wave one, instead of only appearing after the
+  // client-side fetch effect below (see docs/seo-todos.md #10/#368).
+  let initialProducts: Product[] = [];
+  try {
+    initialProducts = await fetchProducts({
+      page: 1,
+      locale: routeLocale ?? finalLocale,
+    });
+  } catch (error) {
+    console.error('Failed to load initial products:', error);
+  }
+
   return {
     props: {
       locale:
@@ -153,17 +166,20 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       messages,
       seoData,
       banners,
+      initialProducts,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
   seoData: PageSeoData;
   banners: StorefrontBanner[];
+  initialProducts: Product[];
 }>;
 
 export default function Home({
   locale,
   banners,
+  initialProducts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
@@ -171,7 +187,7 @@ export default function Home({
   const { user } = useUserContext();
   const { categories } = useCategoryContext();
   const { searchKeyword, setSearchKeyword } = useProductContext();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -214,6 +230,7 @@ export default function Home({
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
+          locale: router.locale,
         });
         if (!mounted) return;
 
