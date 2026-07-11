@@ -126,7 +126,7 @@ export const getStaticProps: GetStaticProps = async ({
     }
 
     // Fetch the specific product at build time
-    const products = await fetchProducts({ productSlug });
+    const products = await fetchProducts({ productSlug, locale });
     const product = products && products.length > 0 ? products[0] : null;
 
     if (!product) {
@@ -257,9 +257,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const { setProducts } = useProductContext();
   const { categories: allCategories, selectedCategoryId } =
     useCategoryContext();
-  const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
   const { network } = useNetworkContext();
 
@@ -408,9 +405,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setCategoryPath(path);
   }, [product?.categoryId, allCategories]);
 
-  useEffect(() => {
+  const [addEditProductDialog, setAddEditProductDialog] =
+    useState<AddEditProductProps>({ open: false, imageUrls: [] });
+
+  const description = useMemo(() => {
     const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
-    if (desc == null || desc === '') return;
+    if (desc == null || desc === '') return undefined;
 
     const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
     const result: { [key: string]: string } = {};
@@ -427,7 +427,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       descObj[key] = result[key].split('\n').filter(Boolean);
     });
 
-    setDescription(descObj);
+    return descObj;
   }, [product?.description, router.locale]);
 
   useEffect(() => {
@@ -459,28 +459,36 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
           <Box>
             <IconButton
-              onClick={() => {
+              onClick={async () => {
                 if (initialProduct == null) return;
+                // Page props only carry the active locale's name/description
+                // (see getStaticProps sanitization); fetch the raw multi-locale
+                // record on demand so the edit form can still show all locales.
+                const rawResults = await fetchProducts({
+                  productId: initialProduct.id,
+                });
+                const rawProduct = rawResults?.[0];
+                if (rawProduct == null) return;
                 setAddEditProductDialog({
                   open: true,
-                  id: initialProduct.id,
-                  description: initialProduct.description,
+                  id: rawProduct.id,
+                  description: rawProduct.description,
                   dialogType: 'edit',
-                  imageUrls: initialProduct.imgUrls,
-                  name: initialProduct.name,
+                  imageUrls: rawProduct.imgUrls,
+                  name: rawProduct.name,
                   price: (() => {
                     const priceMatch =
-                      initialProduct.price?.match(squareBracketRegex);
+                      rawProduct.price?.match(squareBracketRegex);
                     if (priceMatch != null) {
-                      return priceMatch[0]; // initialProduct.price = [id]{value}
+                      return priceMatch[0]; // rawProduct.price = [id]{value}
                     }
-                    return initialProduct.price;
+                    return rawProduct.price;
                   })(),
-                  tags: initialProduct.tags,
-                  videoUrls: initialProduct.videoUrls,
-                  brandId: initialProduct.brandId,
-                  categoryId: initialProduct.categoryId,
-                  isOutOfStock: initialProduct.isOutOfStock,
+                  tags: rawProduct.tags,
+                  videoUrls: rawProduct.videoUrls,
+                  brandId: rawProduct.brandId,
+                  categoryId: rawProduct.categoryId,
+                  isOutOfStock: rawProduct.isOutOfStock,
                 });
               }}
             >

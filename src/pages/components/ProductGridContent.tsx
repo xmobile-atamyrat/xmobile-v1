@@ -18,6 +18,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { Product } from '@prisma/client';
 import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -51,14 +52,19 @@ interface ProductGridContentProps {
   landingCategoryId?: string;
   category?: ExtendedCategory | null;
   categoryPath?: ExtendedCategory[];
+  // Server-fetched first page, so crawlers see real product links on wave one
+  // instead of the skeleton (see docs/seo-todos.md #10).
+  initialProducts?: Product[];
 }
 
 export default function ProductGridContent({
   landingCategoryId,
   category,
   categoryPath = [],
+  initialProducts,
 }: ProductGridContentProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const hasInitialProducts = (initialProducts?.length ?? 0) > 0;
+  const [isLoading, setIsLoading] = useState(!hasInitialProducts);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const { categories: allCategories } = useCategoryContext();
@@ -152,6 +158,7 @@ export default function ProductGridContent({
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
+          locale: router.locale,
         };
 
         if (searchKeyword) {
@@ -201,6 +208,7 @@ export default function ProductGridContent({
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
+        locale: router.locale,
       };
 
       if (searchKeyword) {
@@ -263,6 +271,13 @@ export default function ProductGridContent({
   } else if (searchKeyword) {
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
+
+  // Context products start empty and get reset to [] on every mount/filter
+  // change (see the fetch effect above), so fall back to the server-fetched
+  // first page while that round-trip is in flight — this is what keeps
+  // product links present in the raw SSR HTML instead of only the skeleton.
+  const displayProducts =
+    products.length > 0 ? products : initialProducts ?? [];
 
   return (
     <Box>
@@ -410,7 +425,7 @@ export default function ProductGridContent({
                   </Box>
                 )}
               </Box>
-              {isLoading && products.length === 0 ? (
+              {isLoading && displayProducts.length === 0 ? (
                 <ProductGridSkeleton count={8} />
               ) : (
                 <Box className="flex flex-wrap w-full">
@@ -425,7 +440,7 @@ export default function ProductGridContent({
                       }
                     />
                   )}
-                  {products.map((product, idx) => (
+                  {displayProducts.map((product, idx) => (
                     <ProductCard
                       product={product}
                       key={idx}
