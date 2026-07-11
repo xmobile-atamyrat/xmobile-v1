@@ -7,7 +7,7 @@ import {
   Info,
   Minus,
   Plus,
-  ShoppingBag,
+  ShoppingCart,
   Trash2,
   XCircle,
 } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function AddToCart({
   cartItemId = undefined,
   price,
   selectedVariant,
+  variantLabel,
   onDelete,
   setTotalPrice,
 }: AddToCartProps) {
@@ -83,6 +84,7 @@ export default function AddToCart({
         setSnackbarMessage({
           message: 'addToCartSuccess',
           severity: 'success',
+          variantLabel,
         });
       } else {
         setSnackbarOpen(true);
@@ -194,19 +196,23 @@ export default function AddToCart({
   return (
     <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
-        {/* cartIcon */}
+        {/* cartButton */}
         {cartAction === 'add' && (
-          <Box className={addToCartClasses.cartIcon.box}>
-            <IconButton
-              type="submit"
-              onClick={addCartItems}
-              className={addToCartClasses.cartIcon.iButton}
+          <IconButton
+            disableRipple
+            type="submit"
+            onClick={addCartItems}
+            className={addToCartClasses.cartButton.button[platform]}
+          >
+            <ShoppingCart
+              className={addToCartClasses.cartButton.icon[platform]}
+            />
+            <Typography
+              className={`${fontClassName.className} ${addToCartClasses.cartButton.text[platform]}`}
             >
-              <ShoppingBag
-                className={addToCartClasses.cartIcon.fSize[platform]}
-              />
-            </IconButton>
-          </Box>
+              {t('addToCart')}
+            </Typography>
+          </IconButton>
         )}
 
         {cartAction === 'delete' && (
@@ -370,6 +376,8 @@ export default function AddToCart({
             className={`${fontClassName.className} ${snackbarClasses.message}`}
           >
             {snackbarMessage?.message && t(snackbarMessage.message)}
+            {snackbarMessage?.variantLabel &&
+              ` · ${snackbarMessage.variantLabel}`}
           </Typography>
           {snackbarMessage?.message === 'addToCartSuccess' && (
             <span

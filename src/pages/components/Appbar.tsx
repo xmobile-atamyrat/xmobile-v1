@@ -2,7 +2,6 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  appBarHeight,
   HIGHEST_LEVEL_CATEGORY_ID,
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
@@ -34,8 +33,6 @@ import {
   Paper,
   Select,
   Tooltip,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -48,7 +45,6 @@ import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface CustomAppBarProps {
-  showSearch?: boolean;
   showHomeHeader?: boolean;
   onHomeFilterClick?: () => void;
   handleBackButton?: () => void;
@@ -121,7 +117,6 @@ export const SearchBar = ({
 };
 
 export default function CustomAppBar({
-  showSearch = false,
   showHomeHeader = false,
   onHomeFilterClick,
   handleBackButton,
@@ -134,8 +129,6 @@ export default function CustomAppBar({
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
   const languages = [
@@ -520,14 +513,6 @@ export default function CustomAppBar({
           </Box>
         </Box>
       </AppBar>
-      {showSearch &&
-        SearchBar({
-          mt: isMdUp ? undefined : `${appBarHeight}px`,
-          searchKeyword: localSearchKeyword,
-          searchPlaceholder: t('search'),
-          setSearchKeyword: setLocalSearchKeyword,
-          width: '95%',
-        })}
     </Box>
   );
 }

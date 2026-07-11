@@ -15,11 +15,11 @@ export const productIndexPageClasses = {
       mobile: 'flex w-full justify-center pl-8',
     },
     products: {
-      web: 'flex flex-col w-full h-full',
+      web: 'flex flex-col w-full h-full pt-8',
       mobile: 'flex flex-col w-full h-full px-[24px]',
     },
     productsGrid: {
-      web: 'flex flex-wrap w-full',
+      web: 'grid grid-cols-4 gap-4 w-full',
       mobile: 'grid grid-cols-2 gap-3 w-full',
     },
   },

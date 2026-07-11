@@ -20,6 +20,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -27,7 +28,6 @@ import {
   Alert,
   Box,
   Button,
-  CardMedia,
   CircularProgress,
   Dialog,
   IconButton,
@@ -35,6 +35,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -295,33 +296,49 @@ export default function ProductGridContent({
         <Box className="w-1/6 flex justify-start invisible"></Box>
 
         {platform === 'mobile' && (
-          <IconButton onClick={() => setMobileFilterOpen(true)}>
-            <CardMedia
-              component="img"
-              src="/icons/filter.svg"
-              sx={{ width: 30, height: 30 }}
-            />
+          <IconButton
+            className={appbarClasses.filterButton.mobile}
+            onClick={() => setMobileFilterOpen(true)}
+            aria-label="filters"
+          >
+            <SlidersHorizontal size={20} />
           </IconButton>
         )}
       </Box>
-      <Layout showSearch handleHeaderBackButton={handleBackButton}>
+      <Layout handleHeaderBackButton={handleBackButton}>
         <Dialog
-          fullScreen
           open={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
           TransitionComponent={SlideTransition}
+          fullWidth
+          PaperProps={{
+            sx: {
+              position: 'fixed',
+              bottom: 0,
+              m: 0,
+              width: '100%',
+              maxHeight: '88vh',
+              borderRadius: '26px 26px 0 0',
+            },
+          }}
         >
-          <Box className="flex flex-col h-full bg-white">
-            <Box className="flex items-center justify-between p-4 border-b">
-              <IconButton onClick={() => setMobileFilterOpen(false)}>
-                <ArrowBackIosIcon />
-              </IconButton>
-              <Typography variant="h6" fontWeight={600}>
+          <Box className="flex flex-col bg-white">
+            <Box className={filterSidebarClasses.dragHandle} />
+            <Box className={filterSidebarClasses.header}>
+              <Typography
+                className={`${fontClassName.className} ${filterSidebarClasses.title}`}
+              >
                 {t('filter') || 'Filter'}
               </Typography>
-              <Box sx={{ width: 40 }} />
+              <IconButton
+                size="small"
+                className={filterSidebarClasses.closeButton}
+                onClick={() => setMobileFilterOpen(false)}
+              >
+                <X size={20} />
+              </IconButton>
             </Box>
-            <Box className="flex-1 overflow-auto p-4">
+            <Box className={filterSidebarClasses.body}>
               <FilterSidebar
                 variant="mobile"
                 categories={allCategories}
@@ -337,22 +354,14 @@ export default function ProductGridContent({
                 hideSections={hideSections}
               />
             </Box>
-            <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
+            <Box className={filterSidebarClasses.footer}>
               <Button
                 fullWidth
-                variant="contained"
+                disableElevation
+                className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
                 onClick={() => {
                   setFilters(localFilters);
                   setMobileFilterOpen(false);
-                }}
-                sx={{
-                  bgcolor: '#191919',
-                  borderRadius: 2,
-                  py: 1.5,
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#000' },
                 }}
               >
                 {t('apply') || 'Apply'}

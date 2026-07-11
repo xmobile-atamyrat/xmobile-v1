@@ -38,7 +38,6 @@ type SnackbarSeverity = 'success' | 'error' | 'warning';
 interface LayoutProps {
   children: ReactNode;
   handleHeaderBackButton?: () => void;
-  showSearch?: boolean;
   showHomeHeader?: boolean;
   onHomeFilterClick?: () => void;
 }
@@ -46,7 +45,6 @@ interface LayoutProps {
 export default function Layout({
   children,
   handleHeaderBackButton,
-  showSearch = false,
   showHomeHeader = false,
   onHomeFilterClick,
 }: LayoutProps) {
@@ -84,7 +82,6 @@ export default function Layout({
     <Box className={layoutClasses.main[platform]}>
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
-        showSearch={showSearch}
         showHomeHeader={showHomeHeader}
         onHomeFilterClick={onHomeFilterClick}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
