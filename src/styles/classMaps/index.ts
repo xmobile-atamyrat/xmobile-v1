@@ -24,7 +24,7 @@ export const homePageClasses = {
   },
   newProductsBox: {
     mobile: 'grid grid-cols-2 gap-3 w-full',
-    web: 'flex flex-wrap w-full',
+    web: 'grid grid-cols-4 gap-4 w-full',
   },
   main: {
     web: 'w-full',

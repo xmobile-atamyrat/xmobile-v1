@@ -25,9 +25,9 @@ import {
 import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
+import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Box,
   Button,
@@ -37,6 +37,7 @@ import {
   Slide,
   Typography,
 } from '@mui/material';
+import { X } from 'lucide-react';
 import { TransitionProps } from '@mui/material/transitions';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
@@ -348,22 +349,38 @@ export default function Home({
       </Box>
       <div id="load-more-products" />
       <Dialog
-        fullScreen
         open={mobileFilterOpen}
         onClose={() => setMobileFilterOpen(false)}
         TransitionComponent={SlideTransition}
+        fullWidth
+        PaperProps={{
+          sx: {
+            position: 'fixed',
+            bottom: 0,
+            m: 0,
+            width: '100%',
+            maxHeight: '88vh',
+            borderRadius: '26px 26px 0 0',
+          },
+        }}
       >
-        <Box className="flex flex-col h-full bg-white">
-          <Box className="flex items-center justify-between p-4 border-b">
-            <IconButton onClick={() => setMobileFilterOpen(false)}>
-              <ArrowBackIosIcon />
-            </IconButton>
-            <Typography variant="h6" fontWeight={600}>
+        <Box className="flex flex-col bg-white">
+          <Box className={filterSidebarClasses.dragHandle} />
+          <Box className={filterSidebarClasses.header}>
+            <Typography
+              className={`${fontClassName.className} ${filterSidebarClasses.title}`}
+            >
               {t('filter') || 'Filter'}
             </Typography>
-            <Box sx={{ width: 40 }} />
+            <IconButton
+              size="small"
+              className={filterSidebarClasses.closeButton}
+              onClick={() => setMobileFilterOpen(false)}
+            >
+              <X size={20} />
+            </IconButton>
           </Box>
-          <Box className="flex-1 overflow-auto p-4">
+          <Box className={filterSidebarClasses.body}>
             <FilterSidebar
               variant="mobile"
               categories={categories}
@@ -377,24 +394,16 @@ export default function Home({
               }}
             />
           </Box>
-          <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
+          <Box className={filterSidebarClasses.footer}>
             <Button
               fullWidth
-              variant="contained"
+              disableElevation
+              className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
               onClick={() => {
                 setFilters(localFilters);
                 setPage(1);
                 setProducts([]);
                 setMobileFilterOpen(false);
-              }}
-              sx={{
-                bgcolor: '#191919',
-                borderRadius: 2,
-                py: 1.5,
-                fontSize: '16px',
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': { bgcolor: '#000' },
               }}
             >
               {t('apply') || 'Apply'}

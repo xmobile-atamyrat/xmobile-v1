@@ -8,8 +8,7 @@ import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { Color } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
-import CheckIcon from '@mui/icons-material/Check';
-import ExpandLess from '@mui/icons-material/ExpandLess';
+import { fontClassName, hairline, ink, muted, navy, red } from '@/styles/theme';
 import {
   Box,
   Checkbox,
@@ -21,6 +20,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { Check, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -71,18 +71,19 @@ const FilterSection = ({
           sx={{ cursor: 'pointer' }}
         >
           <Typography
-            variant="h6"
-            fontFamily="Inter, sans-serif"
+            className={fontClassName.className}
             fontWeight={700}
-            fontSize={variant === 'mobile' ? '18px' : '20px'}
-            lineHeight={variant === 'mobile' ? '24px' : '30px'}
-            color="#303030"
+            fontSize={variant === 'mobile' ? '13px' : '14px'}
+            lineHeight="20px"
+            color={ink}
           >
             {title}
           </Typography>
-          <ExpandLess
-            sx={{
-              transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+          <ChevronDown
+            size={18}
+            color={muted}
+            style={{
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s',
             }}
           />
@@ -98,7 +99,7 @@ const FilterSection = ({
       </Box>
 
       {variant !== 'mobile' && (
-        <Box my={3} sx={{ borderBottom: '1px solid rgba(48, 48, 48, 0.25)' }} />
+        <Box my={3} sx={{ borderBottom: `1px solid ${hairline}` }} />
       )}
     </>
   );
@@ -124,6 +125,7 @@ export default function FilterSidebar({
     { id: string; name: string; productCount: number }[]
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
+  const [limitCategories, setLimitCategories] = useState(true);
 
   const [colors, setColors] = useState<Color[]>([]);
   const [filterOptions, setFilterOptions] = useState<ProductFilterOptions>({
@@ -218,6 +220,9 @@ export default function FilterSidebar({
   const topLevelCategories = categories.filter(
     (category) => !category.predecessorId,
   );
+  const categoriesToShow = limitCategories
+    ? topLevelCategories.slice(0, 7)
+    : topLevelCategories;
 
   const handleCategoryClick = (categoryId: string) => {
     const newIds = selectedCategoryIds.includes(categoryId)
@@ -245,14 +250,14 @@ export default function FilterSidebar({
           sx={{
             width: 20,
             height: 20,
-            backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
-            borderRadius: '4px',
+            backgroundColor: navy,
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
+          <Check size={13} color="#fff" strokeWidth={2.5} />
         </Box>
       }
       icon={
@@ -260,11 +265,11 @@ export default function FilterSidebar({
           sx={{
             width: 20,
             height: 20,
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '1px solid #BDBDBD',
+            border: '1.5px solid #D6D5DE',
             backgroundColor: 'white',
           }}
         />
@@ -311,12 +316,11 @@ export default function FilterSidebar({
             alignItems="center"
           >
             <Typography
-              variant="body2"
-              fontFamily="Inter, sans-serif"
-              fontSize="16px"
+              className={fontClassName.className}
+              fontSize="14px"
               fontWeight={isSelected ? 700 : 400}
-              lineHeight="24px"
-              color="#303030"
+              lineHeight="22px"
+              color={isSelected ? ink : '#4A4959'}
               sx={{ ml: 1 }}
             >
               {label}
@@ -339,7 +343,7 @@ export default function FilterSidebar({
         sx={{
           width: '100%',
           maxWidth: variant === 'mobile' ? '100%' : 525,
-          bgcolor: variant === 'mobile' ? '#fff' : '#f5f5f5',
+          bgcolor: variant === 'mobile' ? '#fff' : '#F5F5F8',
           borderRadius: variant === 'mobile' ? 0 : '16px',
           p: variant === 'mobile' ? 0 : 3,
           position: variant === 'sidebar' ? 'sticky' : 'static',
@@ -355,8 +359,8 @@ export default function FilterSidebar({
             onToggle={() => setCategoriesOpen(!categoriesOpen)}
             variant={variant}
           >
-            <Box sx={{ maxHeight: '300px', overflowY: 'auto' }}>
-              {topLevelCategories.map((cat) => (
+            <Box display="flex" flexDirection="column">
+              {categoriesToShow.map((cat) => (
                 <FilterItem
                   key={cat.id}
                   label={parseName(cat.name, locale)}
@@ -365,6 +369,28 @@ export default function FilterSidebar({
                 />
               ))}
             </Box>
+            {topLevelCategories.length > 7 && (
+              <Box mt={1} pl={1}>
+                <Typography
+                  className={fontClassName.className}
+                  fontWeight={700}
+                  fontSize="13px"
+                  lineHeight="20px"
+                  color={navy}
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': {
+                      color: red,
+                    },
+                  }}
+                  onClick={() => setLimitCategories(!limitCategories)}
+                >
+                  {limitCategories
+                    ? t('moreCategories') || 'More Categories'
+                    : t('lessCategories') || 'Less Categories'}
+                </Typography>
+              </Box>
+            )}
           </FilterSection>
         )}
 
@@ -380,7 +406,12 @@ export default function FilterSidebar({
             sx={{ maxHeight: '300px', overflowY: 'auto' }}
           >
             {brands.length === 0 && (
-              <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+              <Typography
+                className={fontClassName.className}
+                fontSize="14px"
+                color={muted}
+                sx={{ pl: 1 }}
+              >
                 {t('noBrands') || 'No brands found'}
               </Typography>
             )}
@@ -395,17 +426,15 @@ export default function FilterSidebar({
             {brands.length > 7 && (
               <Box mt={1} pl={1}>
                 <Typography
-                  variant="body2"
-                  fontFamily="Inter, sans-serif"
+                  className={fontClassName.className}
                   fontWeight={700}
-                  fontSize="16px"
-                  lineHeight="24px"
-                  color="#303030"
+                  fontSize="13px"
+                  lineHeight="20px"
+                  color={navy}
                   sx={{
                     cursor: 'pointer',
-                    textDecoration: 'underline',
                     '&:hover': {
-                      color: '#FF624C',
+                      color: red,
                     },
                   }}
                   onClick={() => setLimitBrands(!limitBrands)}
@@ -445,8 +474,8 @@ export default function FilterSidebar({
                       height: 22,
                       borderRadius: '50%',
                       border: selectedColorIds.includes(color.id)
-                        ? '2px solid #FF624C'
-                        : '1px solid #ccc',
+                        ? `2px solid ${navy}`
+                        : '1px solid #D6D5DE',
                       backgroundColor: color.hex,
                       mx: 1,
                       cursor: 'pointer',
@@ -489,23 +518,23 @@ export default function FilterSidebar({
                 onChange={handleMinInputChange}
                 placeholder="0"
                 sx={{
-                  bgcolor: '#f4f4f4',
-                  borderRadius: '10px',
-                  opacity: 0.5,
+                  bgcolor: '#fff',
+                  borderRadius: '11px',
                   '& .MuiOutlinedInput-root': {
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: '16px',
+                    fontFamily: fontClassName.style.fontFamily,
+                    fontSize: '14px',
                     fontWeight: 400,
-                    lineHeight: '24px',
-                    color: '#303030',
+                    lineHeight: '22px',
+                    color: ink,
+                    borderRadius: '11px',
                     '& fieldset': {
-                      borderColor: '#303030',
+                      borderColor: hairline,
                     },
                     '&:hover fieldset': {
-                      borderColor: '#303030',
+                      borderColor: '#D6D5DE',
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: '#303030',
+                      borderColor: navy,
                     },
                   },
                 }}
@@ -513,10 +542,10 @@ export default function FilterSidebar({
                   endAdornment: (
                     <InputAdornment position="end">
                       <Typography
-                        fontFamily="Inter, sans-serif"
-                        fontSize="16px"
+                        className={fontClassName.className}
+                        fontSize="13px"
                         fontWeight={400}
-                        color="#303030"
+                        color={muted}
                       >
                         TMT
                       </Typography>
@@ -530,23 +559,23 @@ export default function FilterSidebar({
                 onChange={handleMaxInputChange}
                 placeholder={FILTER_MAX_PRICE.toString()}
                 sx={{
-                  bgcolor: '#f4f4f4',
-                  borderRadius: '10px',
-                  opacity: 0.5,
+                  bgcolor: '#fff',
+                  borderRadius: '11px',
                   '& .MuiOutlinedInput-root': {
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: '16px',
+                    fontFamily: fontClassName.style.fontFamily,
+                    fontSize: '14px',
                     fontWeight: 400,
-                    lineHeight: '24px',
-                    color: '#303030',
+                    lineHeight: '22px',
+                    color: ink,
+                    borderRadius: '11px',
                     '& fieldset': {
-                      borderColor: '#303030',
+                      borderColor: hairline,
                     },
                     '&:hover fieldset': {
-                      borderColor: '#303030',
+                      borderColor: '#D6D5DE',
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: '#303030',
+                      borderColor: navy,
                     },
                   },
                 }}
@@ -554,10 +583,10 @@ export default function FilterSidebar({
                   endAdornment: (
                     <InputAdornment position="end">
                       <Typography
-                        fontFamily="Inter, sans-serif"
-                        fontSize="16px"
+                        className={fontClassName.className}
+                        fontSize="13px"
                         fontWeight={400}
-                        color="#303030"
+                        color={muted}
                       >
                         TMT
                       </Typography>
@@ -574,30 +603,24 @@ export default function FilterSidebar({
               min={0}
               max={FILTER_MAX_PRICE}
               sx={{
-                color: variant === 'mobile' ? '#191919' : '#FF624C',
-                height: 6,
+                color: navy,
+                height: 4,
                 '& .MuiSlider-thumb': {
-                  width: 16,
-                  height: 16,
-                  backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
-                  border: '3px solid white',
-                  boxShadow:
-                    variant === 'mobile'
-                      ? '0 0 0 1px #191919'
-                      : '0 0 0 1px #FF624C',
+                  width: 18,
+                  height: 18,
+                  backgroundColor: '#fff',
+                  border: `2px solid ${navy}`,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
                   '&:hover, &.Mui-focusVisible': {
-                    boxShadow:
-                      variant === 'mobile'
-                        ? '0 0 0 8px rgba(25, 25, 25, 0.16)'
-                        : '0 0 0 8px rgba(255, 98, 76, 0.16)',
+                    boxShadow: '0 0 0 8px rgba(32, 22, 110, 0.12)',
                   },
                 },
                 '& .MuiSlider-track': {
-                  backgroundColor: variant === 'mobile' ? '#191919' : '#FF624C',
+                  backgroundColor: navy,
                   border: 'none',
                 },
                 '& .MuiSlider-rail': {
-                  backgroundColor: '#d9d9d9',
+                  backgroundColor: hairline,
                   opacity: 1,
                 },
               }}
@@ -607,13 +630,12 @@ export default function FilterSidebar({
 
         <Box display="flex" justifyContent="flex-start" mt={3}>
           <Typography
+            className={fontClassName.className}
             onClick={handleClearFilters}
             sx={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '14px',
-              fontWeight: 700,
-              textDecoration: 'underline',
-              color: '#303030',
+              fontSize: '13px',
+              fontWeight: 600,
+              color: red,
               cursor: 'pointer',
               '&:hover': {
                 opacity: 0.8,

@@ -10,7 +10,10 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPrice } from '@/pages/product/utils';
+import {
+  computeProductPrice,
+  resolveVariantDisplay,
+} from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import { fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -45,7 +48,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
-  const { setSelectedProduct } = useProductContext();
+  const { setSelectedProduct, colorsMap } = useProductContext();
   const [product, setProduct] = useState(initialProduct);
   const { network } = useNetworkContext();
   const { accessToken } = useUserContext();
@@ -59,6 +62,15 @@ export default function ProductCard({
     const tier = tierForProductList(network);
     return getProductMediaUrl(tier, raw) ?? PRODUCT_IMAGE_FALLBACK;
   }, [product?.imgUrls, network]);
+
+  // Quick-add from the grid can't ask which spec/color to buy, so it defaults
+  // to the first variant tag — same as the product detail page's default.
+  const defaultVariant = useMemo(() => {
+    const raw = product?.tags?.[0];
+    if (raw == null) return undefined;
+    const { spec, colorName } = resolveVariantDisplay(raw, colorsMap);
+    return { raw, label: [spec, colorName].filter(Boolean).join(', ') };
+  }, [product?.tags, colorsMap]);
 
   useEffect(() => {
     if (initialProduct == null) return;
@@ -139,6 +151,20 @@ export default function ProductCard({
                 </span>
               </Typography>
             )}
+            {platform === 'web' &&
+              cartProps.cartAction === 'add' &&
+              !product.isOutOfStock && (
+                <Box onClick={(e) => e.stopPropagation()}>
+                  <AddToCart
+                    productId={product.id}
+                    cartAction="add"
+                    price={product.price}
+                    selectedVariant={defaultVariant?.raw}
+                    variantLabel={defaultVariant?.label}
+                    setTotalPrice={() => undefined}
+                  />
+                </Box>
+              )}
           </Box>
           {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
             <Box onClick={(e) => e.stopPropagation()}>
