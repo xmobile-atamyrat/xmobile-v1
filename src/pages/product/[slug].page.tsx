@@ -461,9 +461,8 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             <IconButton
               onClick={async () => {
                 if (initialProduct == null) return;
-                // Page props only carry the active locale's name/description
-                // (see getStaticProps sanitization); fetch the raw multi-locale
-                // record on demand so the edit form can still show all locales.
+                // Page props are single-locale; re-fetch the raw record so the
+                // edit form can show all languages.
                 try {
                   const rawResults = await fetchProducts({
                     productId: initialProduct.id,

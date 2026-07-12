@@ -146,9 +146,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     console.error('Failed to load promo banners:', error);
   }
 
-  // Fetch the first page of products server-side so their links are present
-  // in the raw HTML on wave one, instead of only appearing after the
-  // client-side fetch effect below (see docs/seo-todos.md #10/#368).
+  // Seed the first page server-side so product links are in the raw HTML,
+  // not just after the client fetch.
   let initialProducts: Product[] = [];
   try {
     initialProducts = await fetchProducts({

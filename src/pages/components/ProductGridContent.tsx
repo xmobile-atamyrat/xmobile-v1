@@ -52,8 +52,7 @@ interface ProductGridContentProps {
   landingCategoryId?: string;
   category?: ExtendedCategory | null;
   categoryPath?: ExtendedCategory[];
-  // Server-fetched first page, so crawlers see real product links on wave one
-  // instead of the skeleton (see docs/seo-todos.md #10).
+  // Server-fetched first page so product links are in the SSR HTML, not the skeleton.
   initialProducts?: Product[];
 }
 
@@ -275,10 +274,8 @@ export default function ProductGridContent({
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
 
-  // Context products start empty and get reset to [] on every mount/filter
-  // change (see the fetch effect above), so fall back to the server-fetched
-  // first page while that round-trip is in flight — this is what keeps
-  // product links present in the raw SSR HTML instead of only the skeleton.
+  // products resets to [] on every fetch, so fall back to the seeded first
+  // page to keep links in the SSR HTML.
   const displayProducts =
     products.length > 0 ? products : initialProducts ?? [];
 
