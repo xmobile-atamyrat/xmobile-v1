@@ -18,6 +18,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { Product } from '@prisma/client';
 import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -51,14 +52,18 @@ interface ProductGridContentProps {
   landingCategoryId?: string;
   category?: ExtendedCategory | null;
   categoryPath?: ExtendedCategory[];
+  // Server-fetched first page so product links are in the SSR HTML, not the skeleton.
+  initialProducts?: Product[];
 }
 
 export default function ProductGridContent({
   landingCategoryId,
   category,
   categoryPath = [],
+  initialProducts,
 }: ProductGridContentProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const hasInitialProducts = (initialProducts?.length ?? 0) > 0;
+  const [isLoading, setIsLoading] = useState(!hasInitialProducts);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const { categories: allCategories } = useCategoryContext();
@@ -152,6 +157,7 @@ export default function ProductGridContent({
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
+          locale: router.locale,
         };
 
         if (searchKeyword) {
@@ -201,6 +207,7 @@ export default function ProductGridContent({
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
+        locale: router.locale,
       };
 
       if (searchKeyword) {
@@ -255,7 +262,10 @@ export default function ProductGridContent({
     }
   };
 
-  if (!router.isReady) return null;
+  // The /product browse page reads its category from the URL query (client-only,
+  // needs router.isReady). A landing page gets landingCategoryId as a prop, so it
+  // can render its seeded grid during SSR for indexing.
+  if (!landingCategoryId && !router.isReady) return null;
 
   let titleText = t('allProducts') || 'All Products';
   if (category) {
@@ -263,6 +273,11 @@ export default function ProductGridContent({
   } else if (searchKeyword) {
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
+
+  // products resets to [] on every fetch, so fall back to the seeded first
+  // page to keep links in the SSR HTML.
+  const displayProducts =
+    products.length > 0 ? products : initialProducts ?? [];
 
   return (
     <Box>
@@ -410,7 +425,7 @@ export default function ProductGridContent({
                   </Box>
                 )}
               </Box>
-              {isLoading && products.length === 0 ? (
+              {isLoading && displayProducts.length === 0 ? (
                 <ProductGridSkeleton count={8} />
               ) : (
                 <Box className="flex flex-wrap w-full">
@@ -425,7 +440,7 @@ export default function ProductGridContent({
                       }
                     />
                   )}
-                  {products.map((product, idx) => (
+                  {displayProducts.map((product, idx) => (
                     <ProductCard
                       product={product}
                       key={idx}

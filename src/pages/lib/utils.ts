@@ -224,6 +224,46 @@ export const parseName = (name: string, locale: string): string => {
   }
 };
 
+// Replaces a product's `name`/`description` (raw multi-locale JSON) with the
+// single active-locale string. parseName's plain-string fallback makes this
+// safe to call more than once.
+export const sanitizeProductLocale = <
+  T extends { name: string; description: string | null },
+>(
+  product: T,
+  locale: string,
+): T => ({
+  ...product,
+  name: parseName(product.name, locale),
+  description: parseName(product.description ?? '{}', locale) ?? null,
+});
+
+// List variant of sanitizeProductLocale (used when serving/seeding product
+// grids).
+export const sanitizeProductsLocale = <
+  T extends { name: string; description: string | null },
+>(
+  products: T[],
+  locale: string,
+): T[] => products.map((product) => sanitizeProductLocale(product, locale));
+
+// Recursively replaces `name` (raw multi-locale JSON) with the single
+// active-locale string on a category, all of its successorCategories, and any
+// included products, so only one locale's data reaches the client.
+export const sanitizeCategoryLocale = <T extends ExtendedCategory>(
+  category: T,
+  locale: string,
+): T => ({
+  ...category,
+  name: parseName(category.name, locale),
+  successorCategories: category.successorCategories?.map((sub) =>
+    sanitizeCategoryLocale(sub, locale),
+  ),
+  products: category.products
+    ? sanitizeProductsLocale(category.products, locale)
+    : category.products,
+});
+
 export const addEditCategory = async ({
   type,
   formJson,

@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import ProductGridContent from '@/pages/components/ProductGridContent';
+import { fetchProducts } from '@/pages/lib/apis';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import { LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
 import {
@@ -10,7 +11,11 @@ import {
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import { getAbsoluteCategoryMediaUrl } from '@/pages/lib/mediaUrls';
-import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import {
+  ExtendedCategory,
+  ExtendedProduct,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { GetStaticPaths, GetStaticProps } from 'next';
 
@@ -66,7 +71,9 @@ export const getStaticProps: GetStaticProps = async ({
   try {
     const { success, data: categoryData }: ResponseApi<ExtendedCategory> =
       await (
-        await fetch(`${BASE_URL}/api/category?categorySlug=${categorySlug}`)
+        await fetch(
+          `${BASE_URL}/api/category?categorySlug=${categorySlug}&locale=${locale}`,
+        )
       ).json();
 
     if (!success || !categoryData) {
@@ -77,12 +84,28 @@ export const getStaticProps: GetStaticProps = async ({
       success: allSuccess,
       data: allCategories,
     }: ResponseApi<ExtendedCategory[]> = await (
-      await fetch(`${BASE_URL}/api/category`)
+      await fetch(`${BASE_URL}/api/category?locale=${locale}`)
     ).json();
 
     let categoryPath: ExtendedCategory[] = [];
     if (allSuccess && allCategories && categoryData) {
       categoryPath = buildCategoryPath(categoryData.id, allCategories);
+    }
+
+    // Seed the first page server-side so product links are in the raw HTML,
+    // not just after the client fetch.
+    let initialProducts: ExtendedProduct[] = [];
+    try {
+      initialProducts = await fetchProducts({
+        categoryIds: [categoryData.id],
+        page: 1,
+        locale,
+      });
+    } catch (productsError) {
+      console.error(
+        'Error fetching initial products during build:',
+        productsError,
+      );
     }
 
     let messages = null;
@@ -150,6 +173,7 @@ export const getStaticProps: GetStaticProps = async ({
       props: {
         category: categoryData,
         categoryPath,
+        initialProducts,
         messages,
         seoData,
       },
@@ -164,17 +188,20 @@ export const getStaticProps: GetStaticProps = async ({
 interface ProductCategoryPageProps {
   category: ExtendedCategory;
   categoryPath: ExtendedCategory[];
+  initialProducts: ExtendedProduct[];
 }
 
 export default function ProductCategoryPage({
   category,
   categoryPath,
+  initialProducts,
 }: ProductCategoryPageProps) {
   return (
     <ProductGridContent
       landingCategoryId={category?.id}
       category={category}
       categoryPath={categoryPath}
+      initialProducts={initialProducts}
     />
   );
 }

@@ -9,10 +9,15 @@ import {
   IMG_COMPRESSION_MIN_QUALITY,
   IMG_COMPRESSION_OPTIONS,
   SORT_OPTIONS,
+  localeOptions,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import { parseVariantTag } from '@/pages/product/utils';
-import { slugify } from '@/pages/lib/utils';
+import {
+  sanitizeProductLocale,
+  sanitizeProductsLocale,
+  slugify,
+} from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -295,6 +300,7 @@ async function handleGetProduct(query: {
   minPrice?: string;
   maxPrice?: string;
   sortBy?: SortOption;
+  locale?: string | string[];
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
     searchKeyword,
@@ -308,7 +314,14 @@ async function handleGetProduct(query: {
     minPrice,
     maxPrice,
     sortBy,
+    locale,
   } = query;
+  // Opt-in response localization: without a valid `locale`, responses keep the
+  // raw multi-locale JSON blobs (admin edit flows depend on receiving them).
+  const activeLocale =
+    typeof locale === 'string' && localeOptions.includes(locale)
+      ? locale
+      : undefined;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
@@ -347,7 +360,15 @@ async function handleGetProduct(query: {
       };
     }
 
-    return { resp: { success: true, data: product }, status: 200 };
+    return {
+      resp: {
+        success: true,
+        data: activeLocale
+          ? sanitizeProductLocale(product, activeLocale)
+          : product,
+      },
+      status: 200,
+    };
   }
 
   const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
@@ -456,7 +477,12 @@ async function handleGetProduct(query: {
   );
 
   return {
-    resp: { success: true, data: productsWithDisplayPrice },
+    resp: {
+      success: true,
+      data: activeLocale
+        ? sanitizeProductsLocale(productsWithDisplayPrice, activeLocale)
+        : productsWithDisplayPrice,
+    },
     status: 200,
   };
 }
