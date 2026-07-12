@@ -92,9 +92,8 @@ export const getStaticProps: GetStaticProps = async ({
       categoryPath = buildCategoryPath(categoryData.id, allCategories);
     }
 
-    // Fetch the first page of products server-side so the grid's links are
-    // present in the raw HTML on wave one, instead of only appearing after
-    // the client-side fetch in ProductGridContent (see docs/seo-todos.md #10).
+    // Seed the first page server-side so product links are in the raw HTML,
+    // not just after the client fetch.
     let initialProducts: ExtendedProduct[] = [];
     try {
       initialProducts = await fetchProducts({
