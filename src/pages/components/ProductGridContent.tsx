@@ -263,7 +263,10 @@ export default function ProductGridContent({
     }
   };
 
-  if (!router.isReady) return null;
+  // The /product browse page reads its category from the URL query (client-only,
+  // needs router.isReady). A landing page gets landingCategoryId as a prop, so it
+  // can render its seeded grid during SSR for indexing.
+  if (!landingCategoryId && !router.isReady) return null;
 
   let titleText = t('allProducts') || 'All Products';
   if (category) {
