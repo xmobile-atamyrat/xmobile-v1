@@ -3,10 +3,11 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { InAppNotification } from '@/pages/lib/types';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
-import { fontClassName } from '@/styles/theme';
+import { fontClassName, red } from '@/styles/theme';
 import Menu from '@mui/material/Menu';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import { MessageCircle, Truck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useRef } from 'react';
@@ -157,37 +158,55 @@ export default function NotificationMenu({
             {t('noNotifications')}
           </Typography>
         ) : (
-          notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`${notificationClasses.item.container[platform]} ${
-                !notification.isRead
-                  ? notificationClasses.item.unread[platform]
-                  : ''
-              }`}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <div className={notificationClasses.item.content[platform]}>
-                {notification.title && (
+          notifications.map((notification) => {
+            const isOrder = notification.type === 'ORDER_STATUS_UPDATE';
+            return (
+              <div
+                key={notification.id}
+                className={`${notificationClasses.item.container[platform]} ${
+                  !notification.isRead
+                    ? notificationClasses.item.unread[platform]
+                    : ''
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <span
+                  className={`w-[40px] h-[40px] rounded-[11px] flex items-center justify-center flex-none ${
+                    isOrder
+                      ? notificationClasses.item.icon.order
+                      : notificationClasses.item.icon.chat
+                  }`}
+                >
+                  {isOrder ? <Truck size={20} /> : <MessageCircle size={20} />}
+                </span>
+                <div className={notificationClasses.item.content[platform]}>
+                  {notification.title && (
+                    <Typography
+                      className={`${notificationClasses.item.title[platform]} ${fontClassName.className}`}
+                    >
+                      {notification.title}
+                    </Typography>
+                  )}
                   <Typography
-                    className={`${notificationClasses.item.title[platform]} ${fontClassName.className}`}
+                    className={`${notificationClasses.item.text[platform]} ${fontClassName.className}`}
                   >
-                    {notification.title}
+                    {notification.content}
                   </Typography>
+                  <Typography
+                    className={`${notificationClasses.item.time[platform]} ${fontClassName.className}`}
+                  >
+                    {formatTime(notification.createdAt)}
+                  </Typography>
+                </div>
+                {!notification.isRead && (
+                  <span
+                    className="absolute top-[14px] right-[12px] w-[8px] h-[8px] rounded-full"
+                    style={{ background: red }}
+                  />
                 )}
-                <Typography
-                  className={`${notificationClasses.item.text[platform]} ${fontClassName.className}`}
-                >
-                  {notification.content}
-                </Typography>
-                <Typography
-                  className={`${notificationClasses.item.time[platform]} ${fontClassName.className}`}
-                >
-                  {formatTime(notification.createdAt)}
-                </Typography>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         {isLoading && (
           <Typography

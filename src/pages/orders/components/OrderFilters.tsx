@@ -29,11 +29,22 @@ export default function OrderFilters({
     return null; // Tabs are used on mobile instead
   }
 
+  const fieldSx = {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '12px',
+      '& fieldset': { borderColor: '#ECECF1' },
+      '&:hover fieldset': { borderColor: '#20166E' },
+      '&.Mui-focused fieldset': { borderColor: '#20166E' },
+    },
+  };
+
   return (
     <Box className="flex flex-row gap-4 items-end mb-6">
       <Box className="min-w-[200px]">
         <Typography
-          className={`${fontClassName.className} mb-2`}
+          className={`${fontClassName.className} mb-2 text-[#8B8A98]`}
           variant="body2"
         >
           {t('orderStatus')}
@@ -47,10 +58,7 @@ export default function OrderFilters({
           }
           displayEmpty
           fullWidth
-          sx={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-          }}
+          sx={fieldSx}
         >
           <MenuItem value="">{t('allOrders')}</MenuItem>
           <MenuItem value="PENDING">{t('pending')}</MenuItem>
@@ -62,7 +70,7 @@ export default function OrderFilters({
       </Box>
       <Box className="min-w-[200px]">
         <Typography
-          className={`${fontClassName.className} mb-2`}
+          className={`${fontClassName.className} mb-2 text-[#8B8A98]`}
           variant="body2"
         >
           {t('dateFrom')}
@@ -72,18 +80,12 @@ export default function OrderFilters({
           value={dateFrom || ''}
           onChange={(e) => onDateFromChange(e.target.value)}
           fullWidth
-          sx={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-            },
-          }}
+          sx={fieldSx}
         />
       </Box>
       <Box className="min-w-[200px]">
         <Typography
-          className={`${fontClassName.className} mb-2`}
+          className={`${fontClassName.className} mb-2 text-[#8B8A98]`}
           variant="body2"
         >
           {t('dateTo')}
@@ -93,13 +95,7 @@ export default function OrderFilters({
           value={dateTo || ''}
           onChange={(e) => onDateToChange(e.target.value)}
           fullWidth
-          sx={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '10px',
-            },
-          }}
+          sx={fieldSx}
         />
       </Box>
     </Box>

@@ -16,71 +16,75 @@ export const notificationClasses = {
   },
   menu: {
     paper: {
-      web: 'mt-[8px] max-w-[400px] w-[400px] max-h-[600px]',
-      mobile: 'mt-[8px] max-w-[90vw] w-[90vw] max-h-[70vh]',
+      web: 'mt-[8px] max-w-[400px] w-[400px] max-h-[600px] rounded-[16px] !bg-[#F5F5F8]',
+      mobile:
+        'mt-[8px] max-w-[90vw] w-[90vw] max-h-[70vh] rounded-[16px] !bg-[#F5F5F8]',
     },
     header: {
-      web: 'px-[16px] py-[12px] border-b border-[#e6e6e6] flex items-center justify-between',
-      mobile:
-        'px-[12px] py-[10px] border-b border-[#e6e6e6] flex items-center justify-between',
+      web: 'px-[16px] py-[12px] bg-white flex items-center justify-between',
+      mobile: 'px-[12px] py-[10px] bg-white flex items-center justify-between',
     },
     title: {
-      web: 'text-[16px] font-semibold text-[#303030]',
-      mobile: 'text-[14px] font-semibold text-[#1b1b1b]',
+      web: 'text-[16px] font-bold text-[#17161D]',
+      mobile: 'text-[14px] font-bold text-[#17161D]',
     },
     clearButton: {
-      web: 'text-[12px] text-[#ff624c] cursor-pointer hover:underline',
-      mobile: 'text-[12px] text-[#ff624c] cursor-pointer',
+      web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline',
+      mobile: 'text-[12px] text-[#20166E] font-semibold cursor-pointer',
     },
     list: {
-      web: 'max-h-[500px] overflow-y-auto',
-      mobile: 'max-h-[50vh] overflow-y-auto',
+      web: 'max-h-[500px] overflow-y-auto p-[10px] flex flex-col gap-[10px]',
+      mobile: 'max-h-[50vh] overflow-y-auto p-[8px] flex flex-col gap-[8px]',
     },
     empty: {
-      web: 'px-[16px] py-[24px] text-center text-[14px] text-[#838383]',
-      mobile: 'px-[12px] py-[20px] text-center text-[13px] text-[#838383]',
+      web: 'px-[16px] py-[24px] text-center text-[14px] text-[#8B8A98]',
+      mobile: 'px-[12px] py-[20px] text-center text-[13px] text-[#8B8A98]',
     },
   },
   item: {
     container: {
-      web: 'px-[16px] py-[12px] border-b border-[#f0f0f0] cursor-pointer hover:bg-[#f6f6f6] transition-colors',
+      web: 'relative flex gap-[12px] px-[14px] py-[14px] rounded-[14px] bg-white cursor-pointer hover:bg-[#FAFAFC] transition-colors',
       mobile:
-        'px-[12px] py-[10px] border-b border-[#f0f0f0] cursor-pointer active:bg-[#f6f6f6]',
+        'relative flex gap-[10px] px-[12px] py-[12px] rounded-[14px] bg-white cursor-pointer active:bg-[#FAFAFC]',
     },
     unread: {
-      web: 'bg-[#ffe8e5] hover:bg-[#ffe0dc]',
-      mobile: 'bg-[#ffe8e5] active:bg-[#ffe0dc]',
+      web: '',
+      mobile: '',
+    },
+    icon: {
+      order: 'bg-[#EDEBF7] text-[#20166E]',
+      chat: 'bg-[#F0EEF9] text-[#20166E]',
     },
     content: {
-      web: 'flex flex-col gap-[4px]',
-      mobile: 'flex flex-col gap-[4px]',
+      web: 'flex flex-col gap-[2px] flex-1',
+      mobile: 'flex flex-col gap-[2px] flex-1',
     },
     title: {
-      web: 'text-[14px] font-semibold text-[#303030]',
-      mobile: 'text-[13px] font-semibold text-[#1b1b1b]',
+      web: 'text-[14px] font-semibold text-[#17161D]',
+      mobile: 'text-[13px] font-semibold text-[#17161D]',
     },
     text: {
-      web: 'text-[13px] text-[#838383] line-clamp-2',
-      mobile: 'text-[12px] text-[#838383] line-clamp-2',
+      web: 'text-[13px] text-[#8B8A98] line-clamp-2 leading-[1.45]',
+      mobile: 'text-[12px] text-[#8B8A98] line-clamp-2 leading-[1.45]',
     },
     time: {
-      web: 'text-[11px] text-[#838383] mt-[4px]',
-      mobile: 'text-[10px] text-[#838383] mt-[2px]',
+      web: 'text-[11px] text-[#B6B5C2] mt-[4px]',
+      mobile: 'text-[10px] text-[#B6B5C2] mt-[2px]',
     },
   },
   permissionBanner: {
     container: {
-      web: 'px-[16px] py-[12px] bg-[#fff3cd] border-b border-[#ffc107] flex items-center justify-between',
+      web: 'px-[16px] py-[13px] bg-[#FEF6E7] flex items-center justify-between gap-[12px] rounded-[12px]',
       mobile:
-        'px-[12px] py-[10px] bg-[#fff3cd] border-b border-[#ffc107] flex items-center justify-between',
+        'px-[14px] py-[13px] bg-[#FEF6E7] flex items-center justify-between gap-[10px] rounded-[12px]',
     },
     text: {
-      web: 'text-[13px] text-[#856404]',
-      mobile: 'text-[12px] text-[#856404]',
+      web: 'text-[13px] font-semibold text-[#17161D]',
+      mobile: 'text-[12px] font-semibold text-[#17161D]',
     },
     button: {
-      web: 'text-[12px] text-[#ff624c] font-semibold cursor-pointer hover:underline',
-      mobile: 'text-[12px] text-[#ff624c] font-semibold cursor-pointer',
+      web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline',
+      mobile: 'text-[12px] text-[#20166E] font-semibold cursor-pointer',
     },
   },
 };

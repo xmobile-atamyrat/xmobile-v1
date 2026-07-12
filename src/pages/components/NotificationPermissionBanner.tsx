@@ -15,13 +15,13 @@ import {
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
 import { fontClassName } from '@/styles/theme';
-import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import { MessagePayload, onMessage } from 'firebase/messaging';
+import { AlertTriangle, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -325,13 +325,16 @@ export default function NotificationPermissionBanner() {
   return (
     <>
       <Box className={notificationClasses.permissionBanner.container[platform]}>
-        <Typography
-          className={`${notificationClasses.permissionBanner.text[platform]} ${fontClassName.className}`}
-        >
-          {isWebView()
-            ? t('enableNativeNotifications')
-            : t('enableBrowserNotifications')}
-        </Typography>
+        <Box className="flex items-center gap-[12px] flex-1">
+          <AlertTriangle size={20} color="#C98A00" style={{ flexShrink: 0 }} />
+          <Typography
+            className={`${notificationClasses.permissionBanner.text[platform]} ${fontClassName.className}`}
+          >
+            {isWebView()
+              ? t('enableNativeNotifications')
+              : t('enableBrowserNotifications')}
+          </Typography>
+        </Box>
         <Box className="flex items-center gap-[8px]">
           <Typography
             onClick={requestPermission}
@@ -344,7 +347,7 @@ export default function NotificationPermissionBanner() {
             onClick={() => setDismissed(true)}
             className="p-1"
           >
-            <CloseIcon className="w-[16px] h-[16px] text-[#856404]" />
+            <X size={16} color="#8B8A98" />
           </IconButton>
         </Box>
       </Box>

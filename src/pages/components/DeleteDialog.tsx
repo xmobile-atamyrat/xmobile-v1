@@ -1,12 +1,14 @@
+import { fontClassName, hairline, ink, muted, red } from '@/styles/theme';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
-  Button,
+  Box,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
+import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -31,24 +33,63 @@ export default function DeleteDialog({
   const t = useTranslations();
 
   return (
-    <Dialog open onClose={handleClose}>
-      <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
-      <DialogContent>
-        {description && (
-          <DialogContentText id="alert-dialog-description">
+    <Dialog
+      open
+      onClose={handleClose}
+      PaperProps={{
+        sx: { borderRadius: '16px', p: '20px', maxWidth: 320, width: '100%' },
+      }}
+    >
+      <Box
+        sx={{
+          width: 48,
+          height: 48,
+          borderRadius: '999px',
+          bgcolor: '#FDECEE',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mx: 'auto',
+        }}
+      >
+        <Trash2 size={22} color={red} />
+      </Box>
+      <DialogTitle
+        id="alert-dialog-title"
+        className={fontClassName.className}
+        sx={{
+          textAlign: 'center',
+          fontSize: '16px',
+          fontWeight: 700,
+          color: ink,
+        }}
+      >
+        {title}
+      </DialogTitle>
+      {description && (
+        <DialogContent sx={{ py: 0 }}>
+          <DialogContentText
+            id="alert-dialog-description"
+            className={fontClassName.className}
+            sx={{
+              textAlign: 'center',
+              fontSize: '13px',
+              lineHeight: 1.5,
+              color: muted,
+            }}
+          >
             {description}
           </DialogContentText>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button
+        </DialogContent>
+      )}
+      <DialogActions sx={{ gap: '10px', px: '20px', pt: '16px', pb: 0 }}>
+        <button
           onClick={handleClose}
-          color="primary"
-          variant="contained"
-          sx={{ textTransform: 'none' }}
+          className={`${fontClassName.className} flex-1 h-[42px] rounded-[11px] bg-white text-[14px] font-semibold`}
+          style={{ border: `1px solid ${hairline}`, color: '#4A4959' }}
         >
           {blueButtonText ?? t('cancel')}
-        </Button>
+        </button>
         <LoadingButton
           loading={loading}
           onClick={async () => {
@@ -56,10 +97,20 @@ export default function DeleteDialog({
             await handleDelete();
             setLoading(false);
           }}
-          color="error"
           autoFocus
           variant="contained"
-          sx={{ textTransform: 'none' }}
+          disableElevation
+          className={fontClassName.className}
+          sx={{
+            flex: 1,
+            height: '42px',
+            borderRadius: '11px',
+            textTransform: 'none',
+            fontSize: '14px',
+            fontWeight: 600,
+            bgcolor: red,
+            '&:hover': { bgcolor: red },
+          }}
         >
           {redButtonText ?? t('delete')}
         </LoadingButton>
