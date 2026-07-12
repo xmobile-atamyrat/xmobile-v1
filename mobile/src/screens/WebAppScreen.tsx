@@ -108,33 +108,74 @@ const TAGLINE_INTERVAL_MS = 2200;
 function LoadingView() {
   const [taglineIndex, setTaglineIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const breathe = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoScale, {
+          toValue: 1.06,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    breathe.start();
+    return () => breathe.stop();
+  }, [logoScale]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setTaglineIndex(prev => (prev + 1) % SPLASH_TAGLINES.length);
+      Animated.parallel([
         Animated.timing(fadeAnim, {
-          toValue: 1,
+          toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        }).start();
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -12,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setTaglineIndex(prev => (prev + 1) % SPLASH_TAGLINES.length);
+        slideAnim.setValue(12);
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
       });
     }, TAGLINE_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fadeAnim]);
+  }, [fadeAnim, slideAnim]);
 
   return (
     <View style={styles.loadingContainer}>
-      <Image
+      <Animated.Image
         source={require('../assets/images/xmobile-logo.png')}
-        style={styles.loadingLogo}
+        style={[styles.loadingLogo, { transform: [{ scale: logoScale }] }]}
         resizeMode="contain"
       />
-      <Animated.Text style={[styles.loadingText, { opacity: fadeAnim }]}>
+      <Animated.Text
+        style={[
+          styles.loadingText,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         {SPLASH_TAGLINES[taglineIndex]}
       </Animated.Text>
     </View>
@@ -791,17 +832,17 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   loadingLogo: {
-    width: 200,
-    height: 60,
-    marginBottom: 24,
+    width: 300,
+    height: 90,
+    marginBottom: 40,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 26,
     color: '#20166E',
     textAlign: 'center',
-    lineHeight: 22,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    lineHeight: 32,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,

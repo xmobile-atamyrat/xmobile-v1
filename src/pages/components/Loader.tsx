@@ -1,4 +1,4 @@
-import { Box, CardMedia, Fade, Typography } from '@mui/material';
+import { Box, CardMedia, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 const TAGLINES = [
@@ -27,20 +27,24 @@ export default function Loader() {
   }, []);
 
   return (
-    <Box className="relative flex flex-col justify-center items-center gap-6 h-full w-full bg-white">
+    <Box className="relative flex flex-col justify-center items-center gap-12 h-full w-full bg-white px-6">
       <CardMedia
         component="img"
         src="/logo/xmobile-original-logo.jpeg"
-        className="w-[200px] h-auto"
+        className="w-[260px] sm:w-[360px] md:w-[420px] h-auto animate-breathe"
       />
-      <Fade in={visible} timeout={300}>
-        <Typography
-          className="text-[#20166E] tracking-wide"
-          sx={{ fontSize: 16, fontWeight: 600 }}
-        >
-          {TAGLINES[taglineIndex]}
-        </Typography>
-      </Fade>
+      <Typography
+        className={`text-[#20166E] text-center transition-all duration-300 ease-out ${
+          visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
+        }`}
+        sx={{
+          fontSize: { xs: 22, sm: 30, md: 34 },
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+        }}
+      >
+        {TAGLINES[taglineIndex]}
+      </Typography>
     </Box>
   );
 }
