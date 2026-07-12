@@ -10,7 +10,7 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
+  Animated,
   BackHandler,
   Image,
   PermissionsAndroid,
@@ -96,17 +96,47 @@ async function ensureIOSRegisteredForRemoteMessages(): Promise<void> {
   }
 }
 
+const SPLASH_TAGLINES = [
+  'Premium Electronics',
+  'Eltip Bermek Hyzmaty',
+  'Müňlerçäniň Ynamy',
+  'Amatly Bahalar',
+];
+
+const TAGLINE_INTERVAL_MS = 2200;
+
 function LoadingView() {
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setTaglineIndex(prev => (prev + 1) % SPLASH_TAGLINES.length);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, TAGLINE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fadeAnim]);
+
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator
-        size="large"
-        color="#ff624c"
-        style={styles.loadingSpinner}
+      <Image
+        source={require('../assets/images/xmobile-logo.png')}
+        style={styles.loadingLogo}
+        resizeMode="contain"
       />
-      <Text style={styles.loadingText}>
-        Ilkinji açylyş wagt alyp biler, 5-10 sekunt garaşyň
-      </Text>
+      <Animated.Text style={[styles.loadingText, { opacity: fadeAnim }]}>
+        {SPLASH_TAGLINES[taglineIndex]}
+      </Animated.Text>
     </View>
   );
 }
@@ -760,15 +790,18 @@ const styles = StyleSheet.create({
     padding: 30,
     zIndex: 10,
   },
-  loadingSpinner: {
-    marginVertical: 32,
+  loadingLogo: {
+    width: 200,
+    height: 60,
+    marginBottom: 24,
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#20166E',
     textAlign: 'center',
     lineHeight: 22,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   offlineContainer: {
     ...StyleSheet.absoluteFillObject,
