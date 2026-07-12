@@ -464,32 +464,41 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 // Page props only carry the active locale's name/description
                 // (see getStaticProps sanitization); fetch the raw multi-locale
                 // record on demand so the edit form can still show all locales.
-                const rawResults = await fetchProducts({
-                  productId: initialProduct.id,
-                });
-                const rawProduct = rawResults?.[0];
-                if (rawProduct == null) return;
-                setAddEditProductDialog({
-                  open: true,
-                  id: rawProduct.id,
-                  description: rawProduct.description,
-                  dialogType: 'edit',
-                  imageUrls: rawProduct.imgUrls,
-                  name: rawProduct.name,
-                  price: (() => {
-                    const priceMatch =
-                      rawProduct.price?.match(squareBracketRegex);
-                    if (priceMatch != null) {
-                      return priceMatch[0]; // rawProduct.price = [id]{value}
-                    }
-                    return rawProduct.price;
-                  })(),
-                  tags: rawProduct.tags,
-                  videoUrls: rawProduct.videoUrls,
-                  brandId: rawProduct.brandId,
-                  categoryId: rawProduct.categoryId,
-                  isOutOfStock: rawProduct.isOutOfStock,
-                });
+                try {
+                  const rawResults = await fetchProducts({
+                    productId: initialProduct.id,
+                  });
+                  const rawProduct = rawResults?.[0];
+                  if (rawProduct == null) return;
+                  setAddEditProductDialog({
+                    open: true,
+                    id: rawProduct.id,
+                    description: rawProduct.description,
+                    dialogType: 'edit',
+                    imageUrls: rawProduct.imgUrls,
+                    name: rawProduct.name,
+                    price: (() => {
+                      const priceMatch =
+                        rawProduct.price?.match(squareBracketRegex);
+                      if (priceMatch != null) {
+                        return priceMatch[0]; // rawProduct.price = [id]{value}
+                      }
+                      return rawProduct.price;
+                    })(),
+                    tags: rawProduct.tags,
+                    videoUrls: rawProduct.videoUrls,
+                    brandId: rawProduct.brandId,
+                    categoryId: rawProduct.categoryId,
+                    isOutOfStock: rawProduct.isOutOfStock,
+                  });
+                } catch (error) {
+                  console.error(error);
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'serverError',
+                    severity: 'error',
+                  });
+                }
               }}
             >
               <EditIcon color="primary" fontSize="medium" />
