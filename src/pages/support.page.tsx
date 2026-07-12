@@ -3,9 +3,9 @@ import { LOCALE_COOKIE_NAME, LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
+import { accordionClasses } from '@/styles/classMaps/components/accordion';
 import { privacyPolicyClasses as supportClasses } from '@/styles/classMaps/privacy-policy.page';
-import { fontClassName } from '@/styles/theme';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { fontClassName, muted, navy } from '@/styles/theme';
 import {
   Accordion,
   AccordionDetails,
@@ -15,6 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import cookie from 'cookie';
+import { ChevronDown } from 'lucide-react';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -177,49 +178,57 @@ export default function SupportPage() {
               >
                 {t('supportFaqTitle')}
               </Typography>
-              <Box className="w-full mt-[8px]">
-                {faqItems.map((item) => (
-                  <Accordion
-                    key={item.id}
-                    disableGutters
-                    elevation={0}
-                    expanded={expandedFaq === item.id}
-                    onChange={(_event, isExpanded) => {
-                      setExpandedFaq(isExpanded ? item.id : false);
-                    }}
-                    sx={{
-                      borderBottom: '1px solid #e0e0e0',
-                      '&:before': { display: 'none' },
-                      backgroundColor: 'transparent',
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon />}
-                      aria-controls={`${item.id}-content`}
-                      id={`${item.id}-header`}
+              <Box className={`${accordionClasses.wrapper} mt-[8px]`}>
+                {faqItems.map((item) => {
+                  const isExpanded = expandedFaq === item.id;
+                  return (
+                    <Accordion
+                      key={item.id}
+                      disableGutters
+                      elevation={0}
+                      expanded={isExpanded}
+                      onChange={(_event, expand) => {
+                        setExpandedFaq(expand ? item.id : false);
+                      }}
+                      className={accordionClasses.item}
                       sx={{
-                        px: 0,
-                        minHeight: 48,
-                        '& .MuiAccordionSummary-content': {
-                          my: 1,
-                        },
+                        '&:before': { display: 'none' },
+                        backgroundColor: isExpanded ? '#F7F6FA' : 'transparent',
                       }}
                     >
-                      <Typography
-                        className={`${fontClassName.className} ${supportClasses.subtitle[platform]}`}
+                      <AccordionSummary
+                        expandIcon={
+                          <ChevronDown
+                            size={18}
+                            color={isExpanded ? navy : muted}
+                          />
+                        }
+                        aria-controls={`${item.id}-content`}
+                        id={`${item.id}-header`}
+                        sx={{
+                          px: '16px',
+                          minHeight: 48,
+                          '& .MuiAccordionSummary-content': {
+                            my: '14px',
+                          },
+                        }}
                       >
-                        {item.question}
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ px: 0, pt: 0, pb: 2 }}>
-                      <Typography
-                        className={`${fontClassName.className} ${supportClasses.p[platform]}`}
-                      >
-                        {item.answer}
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
-                ))}
+                        <Typography
+                          className={`${fontClassName.className} ${accordionClasses.question}`}
+                        >
+                          {item.question}
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ px: '16px', pt: 0, pb: '14px' }}>
+                        <Typography
+                          className={`${fontClassName.className} ${accordionClasses.answer}`}
+                        >
+                          {item.answer}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  );
+                })}
               </Box>
             </Box>
           </Box>

@@ -4,10 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChatIcon from '@mui/icons-material/Chat';
-import CloseIcon from '@mui/icons-material/Close';
-import SettingsOverscanIcon from '@mui/icons-material/SettingsOverscan';
+import { colors, navy } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -20,6 +17,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ArrowLeft, MessageCircle, Maximize2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -137,7 +135,7 @@ const ChatWidget = () => {
         <Box
           className={chatClasses.header.container[platform]}
           sx={{
-            backgroundColor: '#FF624C',
+            backgroundColor: navy,
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -153,7 +151,7 @@ const ChatWidget = () => {
                 onClick={handleBackToSessionList}
                 sx={{ color: 'white' }}
               >
-                <ArrowBackIcon />
+                <ArrowLeft size={20} />
               </IconButton>
             )}
             <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
@@ -167,7 +165,7 @@ const ChatWidget = () => {
               sx={{ color: 'white' }}
               title="Expand to full screen"
             >
-              <SettingsOverscanIcon fontSize="small" />
+              <Maximize2 size={18} />
             </IconButton>
             {canManageSession && (
               <Button
@@ -190,7 +188,7 @@ const ChatWidget = () => {
                 onClick={handleToggle}
                 sx={{ color: 'white' }}
               >
-                <CloseIcon />
+                <X size={20} />
               </IconButton>
             )}
           </Box>
@@ -202,7 +200,7 @@ const ChatWidget = () => {
       <Box
         className={chatClasses.header.container[platform]}
         sx={{
-          backgroundColor: '#FF624C',
+          backgroundColor: navy,
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -220,7 +218,7 @@ const ChatWidget = () => {
             onClick={handleToggle}
             sx={{ color: 'white' }}
           >
-            <CloseIcon />
+            <X size={20} />
           </IconButton>
         )}
       </Box>
@@ -253,7 +251,7 @@ const ChatWidget = () => {
           gap: 2,
         }}
       >
-        <Typography align="center" sx={{ fontSize: '14px', color: '#1B1B1B' }}>
+        <Typography align="center" sx={{ fontSize: '14px', color: '#17161D' }}>
           {t('chatNeedHelpPrompt')}
         </Typography>
         <Button
@@ -261,7 +259,7 @@ const ChatWidget = () => {
           onClick={handleStartChatUser}
           disabled={loading || !isConnected}
           sx={{
-            backgroundColor: '#FF624C',
+            backgroundColor: navy,
             color: 'white',
             textTransform: 'none',
             borderRadius: '8px',
@@ -269,7 +267,7 @@ const ChatWidget = () => {
             fontWeight: 500,
             px: 3,
             '&:hover': {
-              backgroundColor: '#EC4D38',
+              backgroundColor: colors.buttonHoverBg,
             },
           }}
         >
@@ -290,15 +288,15 @@ const ChatWidget = () => {
         onClick={handleToggle}
         className={chatClasses.widget.fab[platform]}
         sx={{
-          backgroundColor: '#FF624C',
+          backgroundColor: navy,
           color: 'white',
           zIndex: 1400,
           '&:hover': {
-            backgroundColor: '#EC4D38',
+            backgroundColor: colors.buttonHoverBg,
           },
         }}
       >
-        {isOpen ? <CloseIcon /> : <ChatIcon />}
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </Fab>
 
       <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
@@ -351,7 +349,7 @@ const ChatWidget = () => {
           onClose={() => setSessionClosed(false)}
           severity="info"
           variant="filled"
-          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
+          sx={{ backgroundColor: navy, color: '#fff' }}
         >
           {t('chatSessionClosedByAdmin')}
         </Alert>

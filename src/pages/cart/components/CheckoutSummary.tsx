@@ -3,6 +3,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { cartCheckoutClasses } from '@/styles/classMaps/cart/checkout';
 import { colors, fontClassName } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
+import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface CheckoutSummaryProps {
@@ -35,9 +36,7 @@ export default function CheckoutSummary({
           </Typography>
           <Typography
             className={`${fontClassName.className} ${cartCheckoutClasses.subtotalValue[platform]}`}
-            sx={{
-              color: platform === 'web' ? colors.main : '#1b1b1b',
-            }}
+            sx={{ color: colors.main }}
           >
             {totalPrice.toFixed(2)} TMT
           </Typography>
@@ -58,6 +57,7 @@ export default function CheckoutSummary({
           >
             {t('checkout')}
           </Typography>
+          <ArrowRight size={18} />
         </Button>
       </Box>
     </Box>

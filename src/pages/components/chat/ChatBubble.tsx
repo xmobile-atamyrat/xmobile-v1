@@ -2,6 +2,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ChatMessage } from '@/pages/lib/types';
 import { linkify } from '@/pages/lib/utils';
 import { chatClasses } from '@/styles/classMaps/components/chat';
+import { hairline, ink, muted, navy } from '@/styles/theme';
 import { Box, Paper, Typography } from '@mui/material';
 
 interface ChatBubbleProps {
@@ -13,7 +14,7 @@ interface ChatBubbleProps {
 const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
   const platform = usePlatform();
   const isUserMessage = message.senderRole === 'FREE';
-  const backgroundColor = isUserMessage ? '#FF624C' : '#1B1B1B';
+  const backgroundColor = isUserMessage ? navy : '#fff';
 
   const alignSelf = isMe ? 'flex-end' : 'flex-start';
   const borderRadius = isMe ? '16px 16px 0px 16px' : '16px 16px 16px 0px';
@@ -32,10 +33,11 @@ const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
         className={chatClasses.bubble.paper[platform]}
         sx={{
           backgroundColor,
-          color: '#fff',
+          color: isUserMessage ? '#fff' : ink,
           borderRadius,
           wordBreak: 'break-word',
-          border: !isUserMessage ? '1px solid #E6E6E6' : 'none',
+          border: !isUserMessage ? `1px solid ${hairline}` : 'none',
+          boxShadow: !isUserMessage ? '0 2px 8px rgba(20,16,60,.04)' : 'none',
           maxWidth: '75%',
         }}
       >
@@ -51,7 +53,7 @@ const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <Typography
           className={chatClasses.bubble.timestamp}
-          sx={{ color: '#9E9E9E' }}
+          sx={{ color: muted }}
         >
           {senderIndicator ? `${senderIndicator} • ` : ''}
           {new Date(
