@@ -81,3 +81,5 @@ fcm-configs
 .aider*
 nginx/
 docker/nginx-local/images
+
+.playwright-mcp/
