@@ -292,9 +292,9 @@ export default function CategoryPage({
           <CategoryCard
             name=""
             initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
+            href={`/product-category/${category.slug}`}
             onClick={() => {
               setProducts([]);
-              router.push(`/product-category/${category.slug}`);
             }}
           />
           {/* Subcategories */}
@@ -305,9 +305,7 @@ export default function CategoryPage({
                 name={name}
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
-                onClick={() => {
-                  router.push(`/category/${slug}`);
-                }}
+                href={`/category/${slug}`}
               />
             );
           })}
