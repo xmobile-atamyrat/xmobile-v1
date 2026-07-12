@@ -109,10 +109,12 @@ export const getStaticProps: GetStaticProps = async ({
       }
     }
 
-    // Fetch the specific category
+    // Fetch the specific category, localized to this route's locale
     const { success, data: categoryData }: ResponseApi<ExtendedCategory> =
       await (
-        await fetch(`${BASE_URL}/api/category?categorySlug=${categorySlug}`)
+        await fetch(
+          `${BASE_URL}/api/category?categorySlug=${categorySlug}&locale=${locale}`,
+        )
       ).json();
 
     if (!success || !categoryData) {
@@ -126,7 +128,7 @@ export const getStaticProps: GetStaticProps = async ({
       success: allSuccess,
       data: allCategories,
     }: ResponseApi<ExtendedCategory[]> = await (
-      await fetch(`${BASE_URL}/api/category`)
+      await fetch(`${BASE_URL}/api/category?locale=${locale}`)
     ).json();
 
     let parentCategory: ExtendedCategory | null = null;
