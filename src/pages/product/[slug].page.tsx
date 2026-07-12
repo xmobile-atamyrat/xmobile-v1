@@ -243,7 +243,7 @@ interface ProductPageProps {
 }
 
 export default function Product({ product: initialProduct }: ProductPageProps) {
-  const [product, setProduct] = useState<Product | null>();
+  const [product, setProduct] = useState<Product | null>(initialProduct);
   const router = useRouter();
   const t = useTranslations();
   const { user, accessToken } = useUserContext();
