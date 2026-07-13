@@ -27,6 +27,7 @@ import {
 import CircularProgress from '@mui/material/CircularProgress';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { lazy, useEffect, useMemo, useState } from 'react';
 
@@ -78,62 +79,62 @@ export default function ProductCard({
   return (
     <Card className={productCardClasses.card[platform]} elevation={0}>
       {product != null ? (
-        <Box
-          className={productCardClasses.boxes.main}
-          onClick={() => {
-            setSelectedProduct(initialProduct);
-            router.push(`/product/${product.slug}`);
-          }}
-        >
-          {cardImageSrc != null && (
-            <Box className={productCardClasses.boxes.img[platform]}>
-              <CardMedia
-                component="img"
-                image={cardImageSrc}
-                alt={product?.name}
-                className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.onerror = null;
-                  el.src = PRODUCT_IMAGE_FALLBACK;
-                }}
-              />
-              {product.isOutOfStock && (
-                <Box
-                  className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
-                >
-                  <Typography
-                    className={`font-semibold text-[#555] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+        <Box className={productCardClasses.boxes.main}>
+          <Link
+            href={`/product/${product.slug}`}
+            onClick={() => setSelectedProduct(initialProduct)}
+            className="block text-inherit no-underline"
+          >
+            {cardImageSrc != null && (
+              <Box className={productCardClasses.boxes.img[platform]}>
+                <CardMedia
+                  component="img"
+                  image={cardImageSrc}
+                  alt={product?.name}
+                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    el.onerror = null;
+                    el.src = PRODUCT_IMAGE_FALLBACK;
+                  }}
+                />
+                {product.isOutOfStock && (
+                  <Box
+                    className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
                   >
-                    {t('outOfStock')}
-                  </Typography>
-                </Box>
+                    <Typography
+                      className={`font-semibold text-[#555] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+                    >
+                      {t('outOfStock')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+            <Box className={productCardClasses.boxes.detail[platform]}>
+              <Typography
+                className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
+              >
+                {parseName(product.name, router.locale ?? 'tk')}
+              </Typography>
+              {product?.price?.includes('[') ? (
+                <CircularProgress
+                  className={productCardClasses.circProgress[platform]}
+                />
+              ) : (
+                <Typography
+                  color={colors.mainWebMobile[platform]}
+                  className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                >
+                  {product?.price} {t('manat')}
+                </Typography>
               )}
             </Box>
-          )}
-          <Box className={productCardClasses.boxes.detail[platform]}>
-            <Typography
-              className={`${interClassname.className} ${productCardClasses.typo[platform]}`}
-            >
-              {parseName(product.name, router.locale ?? 'tk')}
-            </Typography>
-            {product?.price?.includes('[') ? (
-              <CircularProgress
-                className={productCardClasses.circProgress[platform]}
-              />
-            ) : (
-              <Typography
-                color={colors.mainWebMobile[platform]}
-                className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
-              >
-                {product?.price} {t('manat')}
-              </Typography>
-            )}
-          </Box>
+          </Link>
           {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
-            <Box onClick={(e) => e.stopPropagation()}>
+            <Box>
               <AddToCart
                 productId={product.id}
                 cartAction={cartProps?.cartAction}

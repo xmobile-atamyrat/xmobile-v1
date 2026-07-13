@@ -11,7 +11,6 @@ import { interClassname } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -41,7 +40,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 export default function CategoriesPage() {
-  const router = useRouter();
   const platform = usePlatform();
   const { categories: allCategories, setCategories } = useCategoryContext();
   const { setProducts } = useProductContext();
@@ -84,21 +82,20 @@ export default function CategoriesPage() {
         <Box className={categoryPageClasses.card[platform]}>
           {allCategories?.map((category) => {
             const { imgUrl, name, id, slug, successorCategories } = category;
+            const isLeaf =
+              successorCategories == null || successorCategories.length === 0;
+            const href = isLeaf
+              ? `/product-category/${slug}`
+              : `/category/${slug}`;
             return (
               <CategoryCard
                 name={name}
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
+                href={href}
                 onClick={() => {
-                  // Navigate to category page or products
-                  if (
-                    successorCategories == null ||
-                    successorCategories.length === 0
-                  ) {
+                  if (isLeaf) {
                     setProducts([]);
-                    router.push(`/product-category/${slug}`);
-                  } else {
-                    router.push(`/category/${slug}`);
                   }
                 }}
               />
