@@ -96,15 +96,16 @@ export const WebSocketContextProvider = ({
     const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
 
     try {
-      wsRef.current = new WebSocket(wsUrl);
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
 
-      wsRef.current.onopen = () => {
+      socket.onopen = () => {
         console.log('WebSocket connected');
         setIsConnected(true);
         reconnectAttemptsRef.current = 0; // Reset on successful connection
       };
 
-      wsRef.current.onmessage = (event) => {
+      socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           notifySubscribers(data);
@@ -113,11 +114,15 @@ export const WebSocketContextProvider = ({
         }
       };
 
-      wsRef.current.onerror = (error) => {
+      socket.onerror = (error) => {
         console.error('WebSocket error:', error);
       };
 
-      wsRef.current.onclose = (event) => {
+      socket.onclose = (event) => {
+        // This socket has already been replaced (e.g. user switched accounts) -
+        // its stale closure must not reconnect with an outdated token.
+        if (wsRef.current !== socket) return;
+
         console.log('WebSocket disconnected', event.code, event.reason);
         setIsConnected(false);
 
