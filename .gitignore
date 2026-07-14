@@ -45,7 +45,6 @@ db/
 #mobile
 google-services.json
 googleservice-info.plist
-**/res/mipmap*/
 **/release
 # iOS locks and workspace
 mobile/ios/Podfile.lock
