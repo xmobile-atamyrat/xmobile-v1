@@ -1,5 +1,5 @@
 import dbClient from '@/lib/dbClient';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import fs from 'fs';
 import { createOAuth2GoogleapisCredential } from './credential';
@@ -123,6 +123,7 @@ export async function sendFCMNotificationToUser(
         tokensSent: 0,
         tokensFailed: 0,
         failedTokenIds: [],
+        noTokens: true,
       };
     }
 
@@ -276,6 +277,36 @@ export function createFCMNotificationPayload(
 }
 
 /**
+ * updateMany with 3 attempts (200ms·n backoff); never throws, logs on final
+ * failure. A delivery-status write that never lands leaves the row PENDING,
+ * so the batch job re-sends a push the user already got — worth retrying a
+ * couple of likely-transient DB blips. updateMany (vs update) also makes a
+ * row deleted mid-flight a no-op instead of a P2025 throw.
+ */
+export async function updateNotificationWithRetry(
+  where: Prisma.InAppNotificationWhereInput,
+  data: Prisma.InAppNotificationUpdateManyMutationInput,
+): Promise<void> {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await dbClient.inAppNotification.updateMany({ where, data });
+      return;
+    } catch (error) {
+      if (attempt === 3) {
+        console.error(
+          `[FCM Service] Failed to update notification status (${JSON.stringify(where)}) after ${attempt} attempts:`,
+          error,
+        );
+        return;
+      }
+      await new Promise((r) => {
+        setTimeout(r, 200 * attempt);
+      });
+    }
+  }
+}
+
+/**
  * Record the outcome of a send attempt on the InAppNotification row so the
  * batch-runner retry job (scripts/batch-runner/jobs/notification-retry.ts) can
  * pick up anything that didn't reach the user. `delivered` = FCM accepted OR
@@ -286,21 +317,23 @@ export async function recordNotificationDelivery(
   notificationId: string,
   delivered: boolean,
 ): Promise<void> {
-  try {
-    await dbClient.inAppNotification.update({
-      where: { id: notificationId },
-      data: {
-        lastAttemptAt: new Date(),
-        deliveryStatus: delivered ? 'SENT' : 'PENDING',
-      },
-    });
-  } catch (error) {
-    // ponytail: delivery status is best-effort telemetry, never block a send
-    console.error(
-      `[FCM Service] Failed to record delivery status for ${notificationId}:`,
-      error,
-    );
-  }
+  const data = {
+    lastAttemptAt: new Date(),
+    deliveryStatus: (delivered ? 'SENT' : 'PENDING') as 'SENT' | 'PENDING',
+  };
+
+  // The inline send and the batch retry job can race on the same row (e.g. a
+  // slow FCM call still in flight when the retry job's next tick picks the
+  // same PENDING row up). A failed attempt must never downgrade a row the
+  // other side already marked SENT, or a real delivery gets endlessly
+  // re-retried (and can even end up reported as permanently failed) despite
+  // already having reached the user. Only the successful case is allowed to
+  // write unconditionally.
+  const where = delivered
+    ? { id: notificationId }
+    : { id: notificationId, deliveryStatus: { not: 'SENT' as const } };
+
+  await updateNotificationWithRetry(where, data);
 }
 
 /**
