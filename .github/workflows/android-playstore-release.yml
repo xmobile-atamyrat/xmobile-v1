@@ -10,6 +10,10 @@ on:
         description: 'versionName shown to users, e.g. 1.0.2'
         required: true
         type: string
+      android_version_code:
+        description: 'versionCode (must be higher than the latest in Play Console). Leave blank to auto-use the workflow run number.'
+        required: false
+        type: string
       android_track:
         description: 'Play Console track to release to'
         required: true
@@ -89,6 +93,7 @@ jobs:
       - name: Set Android version for release
         env:
           ANDROID_VERSION_NAME_INPUT: ${{ inputs.android_version_name }}
+          ANDROID_VERSION_CODE_INPUT: ${{ inputs.android_version_code }}
         run: |
           set -euo pipefail
           VERSION_NAME="${ANDROID_VERSION_NAME_INPUT// /}"
@@ -100,8 +105,18 @@ jobs:
             echo "android_version_name must look like 1, 1.0, or 1.0.3 (got: $VERSION_NAME)"
             exit 1
           fi
+
+          VERSION_CODE="${ANDROID_VERSION_CODE_INPUT// /}"
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE="${{ github.run_number }}"
+          elif ! [[ "$VERSION_CODE" =~ ^[0-9]+$ ]]; then
+            echo "android_version_code must be a positive integer (got: $VERSION_CODE)"
+            exit 1
+          fi
+
           echo "ANDROID_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
-          echo "Release version: $VERSION_NAME (versionCode ${{ github.run_number }})"
+          echo "ANDROID_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "Release version: $VERSION_NAME (versionCode $VERSION_CODE)"
 
       - name: Build release AAB
         working-directory: mobile/android
@@ -120,7 +135,7 @@ jobs:
             -PMYAPP_UPLOAD_STORE_PASSWORD="$MYAPP_UPLOAD_STORE_PASSWORD" \
             -PMYAPP_UPLOAD_KEY_ALIAS="$MYAPP_UPLOAD_KEY_ALIAS" \
             -PMYAPP_UPLOAD_KEY_PASSWORD="$MYAPP_UPLOAD_KEY_PASSWORD" \
-            -PVERSION_CODE="${{ github.run_number }}" \
+            -PVERSION_CODE="$ANDROID_VERSION_CODE" \
             -PVERSION_NAME="$ANDROID_VERSION_NAME"
           AAB_PATH=$(find app/build/outputs/bundle/release -name '*.aab' | head -n 1)
           if [ -z "$AAB_PATH" ] || [ ! -f "$AAB_PATH" ]; then
