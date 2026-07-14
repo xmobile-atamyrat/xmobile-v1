@@ -252,6 +252,12 @@ const handleMessage = async (
       },
     });
 
+    // Bump session's updatedAt so admin chat lists sort by last message, not session start
+    await dbClient.chatSession.update({
+      where: { id: sessionId },
+      data: { updatedAt: new Date() },
+    });
+
     // Only fetch the sender's name if they are staff (Admin/Superuser)
     let senderName: string | undefined;
     if (senderRole !== 'FREE') {
