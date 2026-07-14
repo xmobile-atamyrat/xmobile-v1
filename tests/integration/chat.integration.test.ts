@@ -404,6 +404,57 @@ describe('Chat API (integration)', () => {
     await prisma.user.delete({ where: { id: su.userId } });
   });
 
+  it('GET /api/chat/session (admin) sorts by last activity, not session start time', async () => {
+    const free = await signupTestUser('chat-sort');
+    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const handler = (await import('@/pages/api/chat/session.page')).default;
+
+    // Older session, created first.
+    const older = await prisma.chatSession.create({
+      data: { status: 'ACTIVE', users: { connect: { id: free.userId } } },
+    });
+    // Newer session, created second - would sort first under naive createdAt/updatedAt-at-creation ordering.
+    const newer = await prisma.chatSession.create({
+      data: { status: 'ACTIVE', users: { connect: { id: free.userId } } },
+    });
+
+    // Simulate a new message arriving on the older session (mirrors the ws-server
+    // touching chatSession.updatedAt whenever a message is created).
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: older.id,
+        senderId: free.userId,
+        senderRole: UserRole.FREE,
+        content: 'hello',
+      },
+    });
+    await prisma.chatSession.update({
+      where: { id: older.id },
+      data: { updatedAt: new Date() },
+    });
+
+    const list = createMocks({
+      method: 'GET',
+      url: '/api/chat/session',
+      headers: { authorization: `Bearer ${admin.accessToken}` },
+    });
+    await handler(
+      list.req as unknown as NextApiRequest,
+      list.res as unknown as NextApiResponse,
+    );
+    expect(list.res._getStatusCode()).toBe(200);
+    const ids = JSON.parse(list.res._getData() as string).data.map(
+      (s: { id: string }) => s.id,
+    );
+    expect(ids.indexOf(older.id)).toBeLessThan(ids.indexOf(newer.id));
+
+    await prisma.chatMessage.deleteMany({ where: { sessionId: older.id } });
+    await prisma.chatSession.deleteMany({
+      where: { id: { in: [older.id, newer.id] } },
+    });
+    await prisma.user.delete({ where: { id: admin.userId } });
+  });
+
   it('ADMIN POST session returns 403', async () => {
     const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
     const handler = (await import('@/pages/api/chat/session.page')).default;
