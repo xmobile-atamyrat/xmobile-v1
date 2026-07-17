@@ -130,7 +130,16 @@ export default function App({ Component, pageProps }: AppProps) {
       return undefined;
     }
 
-    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    // sessionStorage throws when storage is blocked (in-app browsers like
+    // Instagram/Telegram, "block all cookies", strict privacy modes). Treat it
+    // as best-effort so a throw never leaves the splash stuck forever.
+    let hasShownSplash: string | null = null;
+    try {
+      hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    } catch (error) {
+      // storage unavailable — fall through and just show the splash once
+      console.warn('Splash storage read failed:', error);
+    }
     if (hasShownSplash) {
       setIsLoading(false);
       return undefined;
@@ -138,7 +147,12 @@ export default function App({ Component, pageProps }: AppProps) {
 
     const timer = setTimeout(() => {
       setIsLoading(false);
-      sessionStorage.setItem('hasShownSplash', 'true');
+      try {
+        sessionStorage.setItem('hasShownSplash', 'true');
+      } catch (error) {
+        // best-effort; splash is already dismissed
+        console.warn('Splash storage write failed:', error);
+      }
     }, 1000);
 
     return () => clearTimeout(timer);
