@@ -73,14 +73,20 @@ import {
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Color, Product } from '@prisma/client';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
-const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
+// next/dynamic (not React.lazy) so the chunk suspends inside its own boundary.
+// A bare lazy() here has no ancestor <Suspense>, so a slow/cold chunk load
+// crashes hydration and the _app splash overlay never dismisses.
+const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
+  loading: () => <CircularProgress />,
+});
 
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async (context) => {
