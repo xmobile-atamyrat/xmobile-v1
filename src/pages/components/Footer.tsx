@@ -145,7 +145,7 @@ export default function Footer() {
                 <Typography
                   className={`${footerClasses.typos.contact} ${interClassname.className} ml-[5px]`}
                 >
-                  <a href="mailto: ">xmobiletm@gmail.com</a>
+                  <a href="mailto: ">xmobile.tkm@gmail.com</a>
                 </Typography>
               </Box>
               {/* Address-icon */}
