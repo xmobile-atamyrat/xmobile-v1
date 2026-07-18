@@ -1,5 +1,5 @@
 export const popularCategoriesSectionClasses = {
-  section: 'w-full flex flex-col mt-5 mb-1',
+  section: 'w-full flex flex-col mt-5 mb-1 px-5',
   header: 'w-full flex items-center justify-between mb-3',
   sectionTitle: 'font-bold text-[16px] text-[#17161D]',
   seeAll: 'font-semibold text-[13px] text-[#20166E] cursor-pointer',

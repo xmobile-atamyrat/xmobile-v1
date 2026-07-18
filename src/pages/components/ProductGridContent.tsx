@@ -35,7 +35,7 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { SearchX, SlidersHorizontal, X } from 'lucide-react';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -284,17 +284,6 @@ export default function ProductGridContent({
           </IconButton>
         </Box>
 
-        <Box className={productIndexPageClasses.boxes.category[platform]}>
-          {category && (
-            <Typography
-              className={`${fontClassName.className} ${productIndexPageClasses.categoryName[platform]}`}
-            >
-              {parseName(category?.name, router.locale ?? 'ru')}
-            </Typography>
-          )}
-        </Box>
-        <Box className="w-1/6 flex justify-start invisible"></Box>
-
         {platform === 'mobile' && (
           <IconButton
             className={appbarClasses.filterButton.mobile}
@@ -405,11 +394,20 @@ export default function ProductGridContent({
                   paddingBottom: '8px',
                 }}
               >
-                <Typography
-                  className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
-                >
-                  {titleText}
-                </Typography>
+                <Box className="flex flex-col gap-0.5">
+                  <Typography
+                    className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
+                  >
+                    {titleText}
+                  </Typography>
+                  {!isLoading && products.length > 0 && (
+                    <Typography
+                      className={`${fontClassName.className} ${productIndexPageClasses.resultsCount[platform]}`}
+                    >
+                      {`${products.length} ${t('products')}`}
+                    </Typography>
+                  )}
+                </Box>
                 {platform === 'web' && (
                   <Box sx={{ marginLeft: 'auto' }}>
                     <SortDropdown
@@ -419,34 +417,63 @@ export default function ProductGridContent({
                   </Box>
                 )}
               </Box>
-              {isLoading && products.length === 0 ? (
-                <ProductGridSkeleton count={8} />
-              ) : (
-                <Box
-                  className={
-                    productIndexPageClasses.boxes.productsGrid[platform]
-                  }
-                >
-                  {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
-                    <ProductCard
-                      handleClickAddProduct={() =>
-                        setAddEditProductDialog({
-                          open: true,
-                          dialogType: 'add',
-                          imageUrls: [],
-                        })
-                      }
-                    />
-                  )}
-                  {products.map((product, idx) => (
-                    <ProductCard
-                      product={product}
-                      key={idx}
-                      cartProps={{ cartAction: 'add' }}
-                    />
-                  ))}
-                </Box>
-              )}
+              {(() => {
+                if (isLoading && products.length === 0) {
+                  return <ProductGridSkeleton count={8} />;
+                }
+                const isAdmin = ['SUPERUSER', 'ADMIN'].includes(
+                  user?.grade || '',
+                );
+                if (products.length === 0 && !isAdmin) {
+                  return (
+                    <Box className={productIndexPageClasses.emptyState.wrap}>
+                      <Box
+                        className={productIndexPageClasses.emptyState.iconWrap}
+                      >
+                        <SearchX size={28} color="#8B8A98" />
+                      </Box>
+                      <Typography
+                        className={`${fontClassName.className} ${productIndexPageClasses.emptyState.title}`}
+                      >
+                        {t('noProductsFound')}
+                      </Typography>
+                      {searchKeyword && (
+                        <Typography
+                          className={`${fontClassName.className} ${productIndexPageClasses.emptyState.subtitle}`}
+                        >
+                          {t('searchResultsFor', { keyword: searchKeyword })}
+                        </Typography>
+                      )}
+                    </Box>
+                  );
+                }
+                return (
+                  <Box
+                    className={
+                      productIndexPageClasses.boxes.productsGrid[platform]
+                    }
+                  >
+                    {isAdmin && (
+                      <ProductCard
+                        handleClickAddProduct={() =>
+                          setAddEditProductDialog({
+                            open: true,
+                            dialogType: 'add',
+                            imageUrls: [],
+                          })
+                        }
+                      />
+                    )}
+                    {products.map((product, idx) => (
+                      <ProductCard
+                        product={product}
+                        key={idx}
+                        cartProps={{ cartAction: 'add' }}
+                      />
+                    ))}
+                  </Box>
+                );
+              })()}
               <div id="load-more-trigger"></div>
               {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">

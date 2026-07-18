@@ -296,14 +296,14 @@ export default function Home({
               display="flex"
               justifyContent="space-between"
               alignItems="center"
-              mb={2}
+              mb={platform === 'web' ? 2 : 1.5}
               sx={{
                 position: platform === 'web' ? 'sticky' : 'static',
                 top: platform === 'web' ? '0px' : 'auto',
                 zIndex: 10,
                 backgroundColor: '#fff',
-                paddingTop: '20px',
-                paddingBottom: '8px',
+                paddingTop: platform === 'web' ? '20px' : '0px',
+                paddingBottom: platform === 'web' ? '8px' : '0px',
               }}
             >
               <Typography

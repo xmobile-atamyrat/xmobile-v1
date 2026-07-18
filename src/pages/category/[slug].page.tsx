@@ -26,10 +26,8 @@ import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
-import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { fontClassName } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -263,27 +261,13 @@ export default function CategoryPage({
       <Box className={categoryIdClasses.boxes.main[platform]}>
         <SimpleBreadcrumbs categoryPath={categoryPath} />
         <Box className={categoryIdClasses.boxes.header[platform]}>
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={appbarClasses.backButton[platform]}
-            aria-label="open drawer"
-            onClick={handleHeaderBackButton}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-          <Box className="flex w-full justify-center">
-            {category && (
-              <Typography
-                className={`${fontClassName.className} ${homePageClasses.categoriesText[platform]}`}
-              >
-                {parseName(category.name, router.locale ?? 'ru')}
-              </Typography>
-            )}
-          </Box>
+          {category && (
+            <Typography
+              className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
+            >
+              {parseName(category.name, router.locale ?? 'ru')}
+            </Typography>
+          )}
         </Box>
         <Box className={homePageClasses.card[platform]}>
           {/* All Products card - show in every category */}
