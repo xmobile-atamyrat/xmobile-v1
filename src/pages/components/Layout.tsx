@@ -90,9 +90,9 @@ export default function Layout({
       <NotificationPermissionBanner />
       <Box
         component="main"
-        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col justify-between`}
+        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col`}
       >
-        {children}
+        <Box className="flex-1 flex flex-col w-full">{children}</Box>
         <Footer />
       </Box>
       {editCategoriesModal.open && (
