@@ -23,6 +23,7 @@ import {
 import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
 /**
  * Cross-platform notification permission check.
@@ -192,6 +193,7 @@ function WebAppScreen() {
     null,
   );
   const [isReady, setIsReady] = useState(false);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [hasWebviewError, setHasWebviewError] = useState(false);
   const canGoBackRef = useRef(false);
@@ -471,10 +473,12 @@ function WebAppScreen() {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
         const guestSession = await AsyncStorage.getItem('GUEST_SESSION_ID');
+        const seenOnboarding = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
 
         setStoredToken(token);
         setStoredLocale(locale);
         setStoredGuestSession(guestSession);
+        setHasSeenOnboarding(!!seenOnboarding);
 
         if (guestSession) {
           const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
@@ -575,6 +579,10 @@ function WebAppScreen() {
 
   if (!isReady) {
     return <LoadingView />;
+  }
+
+  if (!hasSeenOnboarding) {
+    return <OnboardingScreen onDone={() => setHasSeenOnboarding(true)} />;
   }
 
   return (
