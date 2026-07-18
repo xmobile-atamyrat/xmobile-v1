@@ -16,6 +16,7 @@ import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
   curlyBracketRegex,
   LOCALE_TO_OG_LOCALE,
+  mobileBottomNavHeight,
   squareBracketRegex,
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
@@ -41,6 +42,7 @@ import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import {
   AddEditProductProps,
   ExtendedCategory,
+  ExtendedProduct,
   ResponseApi,
   SnackbarProps,
 } from '@/pages/lib/types';
@@ -51,11 +53,8 @@ import {
   computeProductPriceTags,
   parseVariantTag,
 } from '@/pages/product/utils';
-import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
-import { fontClassName } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { fontClassName, hairline, muted, navy } from '@/styles/theme';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -72,6 +71,7 @@ import {
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Color, Product } from '@prisma/client';
+import { ArrowLeft } from 'lucide-react';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -359,27 +359,54 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const displayPrice =
     variants.length > 0 ? selectedVariant?.priceTmt ?? '' : product?.price;
 
-  // Pill/chip styling: selected = red border+text, disabled = grey, else dark
+  // Brand name (real data — included by getStaticProps, not on the base type)
+  const brandName = (product as ExtendedProduct | null)?.brand?.name;
+
+  // Split description sections into short (spec cards) vs long (prose) using the
+  // same >35-char heuristic as the web sidebar. Drives the mobile mockup layout.
+  const { shortSpecKeys, longSpecKeys } = useMemo(() => {
+    const shortK: string[] = [];
+    const longK: string[] = [];
+    Object.keys(description ?? {}).forEach((key) => {
+      const lines = description?.[key];
+      if (!lines || lines.length === 0) return;
+      const isLong = lines.some((line) => line.length > 35);
+      (isLong ? longK : shortK).push(key);
+    });
+    return { shortSpecKeys: shortK, longSpecKeys: longK };
+  }, [description]);
+
+  // Pill/chip styling per design: selected = navy border+text on #F7F6FC,
+  // disabled = faint hairline, default = hairline border + muted text.
   const chipSx = (selected: boolean, disabled: boolean) => {
-    let tone = '#191919';
-    if (disabled) tone = '#BDBDBD';
-    else if (selected) tone = '#FF624C';
+    let borderColor = hairline;
+    let color = muted;
+    let bg = 'transparent';
+    if (disabled) {
+      borderColor = '#F0EFF4';
+      color = '#C4C3CE';
+    } else if (selected) {
+      borderColor = navy;
+      color = navy;
+      bg = '#F7F6FC';
+    }
     return {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '8px',
       px: 2,
       py: 1,
-      borderRadius: '10px',
+      borderRadius: '12px',
       border: '1.5px solid',
-      borderColor: disabled ? '#E0E0E0' : tone,
-      color: tone,
-      fontWeight: 600,
-      fontSize: '15px',
+      borderColor,
+      backgroundColor: bg,
+      color,
+      fontWeight: selected ? 700 : 600,
+      fontSize: '14px',
       lineHeight: 1.2,
       cursor: disabled ? 'default' : 'pointer',
       userSelect: 'none' as const,
-      transition: 'border-color 0.15s, color 0.15s',
+      transition: 'border-color 0.15s, color 0.15s, background-color 0.15s',
     };
   };
 
@@ -498,22 +525,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </IconButton>
           </Box>
         )}
+        <IconButton
+          aria-label="Back"
+          className={detailPageClasses.backButton[platform]}
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className={detailPageClasses.backIcon[platform]} />
+        </IconButton>
         {/* images */}
         <Box className={detailPageClasses.boxes.images[platform]}>
-          <Box className={productIndexPageClasses.boxes.backButton[platform]}>
-            <IconButton
-              size="medium"
-              edge="start"
-              color="inherit"
-              className={appbarClasses.backButton[platform]}
-              aria-label="open drawer"
-              onClick={() => router.back()}
-            >
-              <ArrowBackIosIcon
-                className={appbarClasses.arrowBackIos[platform]}
-              />
-            </IconButton>
-          </Box>
           {displayImgUrls.length > 0 && (
             <ProductImageGallery
               displayImgUrls={displayImgUrls}
@@ -564,43 +584,88 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         {/* side details */}
         <Box className={detailPageClasses.boxes.sideInfo[platform]}>
           <Box className={detailPageClasses.boxes.info[platform]}>
-            <Box className={detailPageClasses.detail.name[platform]}>
-              <Typography
-                variant="h5"
-                className={`${fontClassName.className} ${detailPageClasses.productName[platform]}`}
-              >
-                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-              </Typography>
-            </Box>
-            <Divider className={detailPageClasses.divider[platform]} />
-            <Box className={detailPageClasses.price[platform]}>
-              {displayPrice == null || displayPrice?.includes('[') ? (
-                <CircularProgress
-                  className={detailPageClasses.circProgress[platform]}
-                />
-              ) : (
+            {platform === 'mobile' ? (
+              <>
+                {brandName && (
+                  <Typography
+                    className={`${fontClassName.className} text-[13px] font-semibold text-muted mb-2`}
+                  >
+                    {brandName}
+                  </Typography>
+                )}
                 <Typography
-                  className={`${detailPageClasses.typographs.price[platform]} ${fontClassName.className}`}
+                  variant="h5"
+                  className={`${fontClassName.className} ${detailPageClasses.productName.mobile}`}
                 >
-                  {displayPrice === '' || displayPrice.includes('null')
-                    ? t('nullPrice')
-                    : `${displayPrice} ${t('manat')}`}
+                  {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
                 </Typography>
-              )}
-            </Box>
+                <Box className="flex items-baseline gap-2 mt-[10px]">
+                  {displayPrice == null || displayPrice?.includes('[') ? (
+                    <CircularProgress
+                      className={detailPageClasses.circProgress.mobile}
+                    />
+                  ) : (
+                    <>
+                      <Typography
+                        className={`${fontClassName.className} text-[26px] font-bold text-navy leading-none`}
+                      >
+                        {displayPrice === '' || displayPrice.includes('null')
+                          ? t('nullPrice')
+                          : displayPrice}
+                      </Typography>
+                      {displayPrice !== '' &&
+                        !displayPrice.includes('null') && (
+                          <Typography
+                            className={`${fontClassName.className} text-[13px] font-medium text-muted`}
+                          >
+                            {t('manat')}
+                          </Typography>
+                        )}
+                    </>
+                  )}
+                </Box>
+              </>
+            ) : (
+              <>
+                <Box className={detailPageClasses.detail.name.web}>
+                  <Typography
+                    variant="h5"
+                    className={`${fontClassName.className} ${detailPageClasses.productName.web}`}
+                  >
+                    {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+                  </Typography>
+                </Box>
+                <Divider className={detailPageClasses.divider.web} />
+                <Box className={detailPageClasses.price.web}>
+                  {displayPrice == null || displayPrice?.includes('[') ? (
+                    <CircularProgress
+                      className={detailPageClasses.circProgress.web}
+                    />
+                  ) : (
+                    <Typography
+                      className={`${detailPageClasses.typographs.price.web} ${fontClassName.className}`}
+                    >
+                      {displayPrice === '' || displayPrice.includes('null')
+                        ? t('nullPrice')
+                        : `${displayPrice} ${t('manat')}`}
+                    </Typography>
+                  )}
+                </Box>
+              </>
+            )}
           </Box>
 
           {specOptions.length > 0 && (
-            <Box className="flex flex-col gap-4 my-2">
+            <Box className="flex flex-col items-start gap-4 my-2 w-full">
               {/* Variant (spec) chips */}
               <Box>
                 <Typography
                   className={`${fontClassName.className}`}
-                  sx={{ fontWeight: 700, mb: 1.5 }}
+                  sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
                 >
                   {t('tags')}
                 </Typography>
-                <Box className="flex flex-row flex-wrap gap-2">
+                <Box className="flex flex-col items-start gap-2">
                   {specOptions.map((spec) => (
                     <Box
                       key={spec}
@@ -619,11 +684,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 <Box>
                   <Typography
                     className={`${fontClassName.className}`}
-                    sx={{ fontWeight: 700, mb: 1.5 }}
+                    sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
                   >
                     {t('color')}
                   </Typography>
-                  <Box className="flex flex-row flex-wrap gap-2">
+                  <Box className="flex flex-col items-start gap-2">
                     {colorOptions.map((colorId) => {
                       const color = colorsMap.get(colorId);
                       const available = availableColorIds.has(colorId);
@@ -696,9 +761,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           {platform === 'web' &&
             (product.isOutOfStock ? (
               <Box className="mt-[2vw]">
-                <Box className="max-w-[20vw] h-[3.5vw] bg-[#e8e8e8] rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
+                <Box className="max-w-[20vw] h-[3.5vw] bg-fill rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
                   <Typography
-                    className={`${fontClassName.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
+                    className={`${fontClassName.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-muted uppercase whitespace-nowrap`}
                   >
                     {t('outOfStock')}
                   </Typography>
@@ -714,53 +779,106 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             ))}
         </Box>
       </Box>
-      {description && Object.keys(description).length > 0 && (
-        <Box className={detailPageClasses.boxes.detail[platform]}>
-          <Typography
-            className={`${fontClassName.className} ${detailPageClasses.specs[platform]}`}
-          >
-            {t('specification')}
-          </Typography>
-          <Box className={detailPageClasses.detail.specs[platform]}>
-            {Object.keys(description ?? {})
-              .filter(
-                (key) =>
-                  description[key] != null && description[key].length > 0,
-              )
-              .map((key) => (
-                <Box
-                  key={key}
-                  className={detailPageClasses.detail.part[platform]}
+      {description &&
+        Object.keys(description).length > 0 &&
+        (platform === 'mobile' ? (
+          <Box className="w-full px-4 mt-4 mb-[120px]">
+            {shortSpecKeys.length > 0 && (
+              <>
+                <Typography
+                  className={`${fontClassName.className} text-[13px] font-bold text-ink mb-3`}
                 >
-                  <Box className={detailPageClasses.detail.head[platform]}>
-                    <Typography
-                      className={`${detailPageClasses.typographs.desc[platform]} ${fontClassName.className}`}
+                  {t('specification')}
+                </Typography>
+                <Box className="grid grid-cols-2 gap-[10px] mb-6">
+                  {shortSpecKeys.map((key) => (
+                    <Box
+                      key={key}
+                      className="bg-fill rounded-[12px] px-[14px] py-[12px]"
                     >
-                      {key}
-                    </Typography>
-                  </Box>
-                  <Box className={detailPageClasses.detail.val[platform]}>
-                    {description[key].map((descLine, index) => (
                       <Typography
-                        key={index}
-                        className={`${detailPageClasses.typographs.font2[platform]} ${fontClassName.className}`}
+                        className={`${fontClassName.className} text-[11px] text-muted mb-[3px]`}
                       >
-                        {descLine}
+                        {key}
                       </Typography>
-                    ))}
-                  </Box>
+                      <Typography
+                        className={`${fontClassName.className} text-[13px] font-semibold text-ink leading-snug`}
+                      >
+                        {description[key].join(' · ')}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
+              </>
+            )}
+            {longSpecKeys.map((key) => (
+              <Box key={key} className="mb-5">
+                <Typography
+                  className={`${fontClassName.className} text-[13px] font-bold text-ink mb-2`}
+                >
+                  {key}
+                </Typography>
+                {description[key].map((descLine, index) => (
+                  <Typography
+                    key={index}
+                    className={`${fontClassName.className} text-[14px] leading-[1.6] text-[#4A4959] mb-1`}
+                  >
+                    {descLine}
+                  </Typography>
+                ))}
+              </Box>
+            ))}
           </Box>
-        </Box>
-      )}
+        ) : (
+          <Box className={detailPageClasses.boxes.detail[platform]}>
+            <Typography
+              className={`${fontClassName.className} ${detailPageClasses.specs[platform]}`}
+            >
+              {t('specification')}
+            </Typography>
+            <Box className={detailPageClasses.detail.specs[platform]}>
+              {Object.keys(description ?? {})
+                .filter(
+                  (key) =>
+                    description[key] != null && description[key].length > 0,
+                )
+                .map((key) => (
+                  <Box
+                    key={key}
+                    className={detailPageClasses.detail.part[platform]}
+                  >
+                    <Box className={detailPageClasses.detail.head[platform]}>
+                      <Typography
+                        className={`${detailPageClasses.typographs.desc[platform]} ${fontClassName.className}`}
+                      >
+                        {key}
+                      </Typography>
+                    </Box>
+                    <Box className={detailPageClasses.detail.val[platform]}>
+                      {description[key].map((descLine, index) => (
+                        <Typography
+                          key={index}
+                          className={`${detailPageClasses.typographs.font2[platform]} ${fontClassName.className}`}
+                        >
+                          {descLine}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                ))}
+            </Box>
+          </Box>
+        ))}
       {platform === 'mobile' &&
         (product.isOutOfStock ? (
           <Box className="w-full fixed bottom-0 left-0 right-0 z-10">
-            <Box className="bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)] flex items-center justify-center pt-4">
-              <Box className="w-[88.7vw] bg-[#e8e8e8] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center mx-auto">
+            <Box
+              className="bg-white rounded-t-[24px] px-4 pt-3 shadow-[0px_-6px_20px_0px_rgba(20,16,60,0.06)] flex items-center justify-center"
+              sx={{ paddingBottom: `${mobileBottomNavHeight}px` }}
+            >
+              <Box className="w-full bg-fill h-[clamp(44px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center">
                 <Typography
-                  className={`${fontClassName.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-[#9e9e9e] uppercase whitespace-nowrap`}
+                  className={`${fontClassName.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-muted uppercase whitespace-nowrap`}
                 >
                   {t('outOfStock')}
                 </Typography>

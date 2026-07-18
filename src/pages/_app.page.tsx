@@ -139,7 +139,7 @@ export default function App({ Component, pageProps }: AppProps) {
     const timer = setTimeout(() => {
       setIsLoading(false);
       sessionStorage.setItem('hasShownSplash', 'true');
-    }, 1500000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
