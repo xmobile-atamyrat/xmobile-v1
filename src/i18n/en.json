@@ -113,6 +113,7 @@
   "updatePrices": "Update prices",
   "save": "Save",
   "invalidPrice": "Invalid price value",
+  "dollarRateNotLoaded": "Dollar rate not set yet. Set the rate above before editing prices.",
   "pricesUpdated": "Prices updated successfully!",
   "updatePricesError": "Could not update prices.",
   "deletePrice": "Delete product price",

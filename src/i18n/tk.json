@@ -115,6 +115,7 @@
   "updatePrices": "Bahalary täzeläň",
   "save": "Ýatda sakla",
   "invalidPrice": "Nädogry baha",
+  "dollarRateNotLoaded": "Dollar kursy heniz bellenmedi. Bahalary üýtgetmezden ozal ýokardaky kursy giriziň.",
   "pricesUpdated": "Bahalar üstünlikli täzelendi!",
   "updatePricesError": "Bahalary täzeläp bolmady",
   "deletePrice": "Harydyň bahasyny pozuň",

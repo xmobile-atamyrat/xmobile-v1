@@ -66,6 +66,7 @@ export default function BulkEdit() {
       const { success, data } = await fetchWithCreds<{
         products: BulkProductExportRow[];
         variants: BulkVariant[];
+        rate: number | null;
       }>({
         accessToken,
         path: '/api/product/bulk',
@@ -75,7 +76,11 @@ export default function BulkEdit() {
         showSnackbar('downloadProductsError', 'error');
         return;
       }
-      const blob = await buildWorkbookBlob(data.products, data.variants);
+      const blob = await buildWorkbookBlob(
+        data.products,
+        data.variants,
+        data.rate,
+      );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
