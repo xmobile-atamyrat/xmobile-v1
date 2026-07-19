@@ -42,7 +42,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
 interface CustomAppBarProps {
   showHomeHeader?: boolean;
@@ -61,6 +61,7 @@ export const SearchBar = ({
   width,
   showFilter,
   onFilterClick,
+  formClassName,
 }: {
   handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
@@ -70,10 +71,11 @@ export const SearchBar = ({
   width?: string;
   showFilter?: boolean;
   onFilterClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  formClassName?: string;
 }) => {
   const platform = usePlatform();
   return (
-    <Box className={appbarClasses.boxes.form[platform]}>
+    <Box className={formClassName ?? appbarClasses.boxes.form[platform]}>
       <Paper
         component="form"
         className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
@@ -129,6 +131,10 @@ export default function CustomAppBar({
   const t = useTranslations();
   const { setSearchKeyword } = useProductContext();
   const [localSearchKeyword, setLocalSearchKeyword] = useState('');
+  // This Appbar mounts on every page (Layout), returning null on non-home
+  // mobile pages *after* hooks run. Skip the first debounce so an unused
+  // instance doesn't clobber the shared searchKeyword with its empty state.
+  const isFirstSearchRun = useRef(true);
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
   const languages = [
@@ -160,6 +166,10 @@ export default function CustomAppBar({
   }, [router.locale, router.defaultLocale]);
 
   useEffect(() => {
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return undefined;
+    }
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
     }, 500);
@@ -221,7 +231,7 @@ export default function CustomAppBar({
           searchKeyword: localSearchKeyword,
           searchPlaceholder: t('search'),
           setSearchKeyword: setLocalSearchKeyword,
-          showFilter: true,
+          showFilter: Boolean(onHomeFilterClick),
           onFilterClick: onHomeFilterClick
             ? () => onHomeFilterClick()
             : (e) => handleMenuButton(e),

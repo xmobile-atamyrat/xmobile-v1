@@ -49,6 +49,29 @@ export default function CartPage() {
     setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
   };
 
+  const handleClearCart = async () => {
+    const items = [...cartItems];
+    // Optimistic clear — reuses the same per-item delete endpoint AddToCart uses
+    setCartItems([]);
+    setTotalPrice(0);
+    try {
+      await Promise.all(
+        items.map((item) =>
+          user
+            ? fetchWithCreds({
+                accessToken,
+                path: '/api/cart',
+                method: 'DELETE',
+                body: { id: item.id },
+              })
+            : fetchWithoutCreds('/api/guest/cart', 'DELETE', { id: item.id }),
+        ),
+      );
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const cs = await fetchColors();
@@ -173,7 +196,21 @@ export default function CartPage() {
                   className={`${fontClassName.className} ${cartIndexClasses.yourCartTypo[platform]}`}
                 >
                   {t('cart')}
+                  {platform === 'mobile' && cartItems.length > 0 && (
+                    <span className={cartIndexClasses.cartCount}>
+                      {' '}
+                      · {cartItems.length}
+                    </span>
+                  )}
                 </Typography>
+                {platform === 'mobile' && (
+                  <Typography
+                    className={`${fontClassName.className} ${cartIndexClasses.cartClearBtn}`}
+                    onClick={handleClearCart}
+                  >
+                    {t('clear')}
+                  </Typography>
+                )}
                 <CheckoutSummary
                   totalPrice={totalPrice}
                   onCheckoutClick={() => router.push('/cart/checkout')}
@@ -220,7 +257,7 @@ export default function CartPage() {
               </Suspense>
             </Box>
           ) : (
-            <Box className="w-full flex flex-col items-center">
+            <Box className="w-full grow flex flex-col items-center justify-center">
               <CardMedia
                 component="img"
                 src="/cart/empty/emptyCart.png"

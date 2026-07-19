@@ -27,7 +27,7 @@ const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
 const navItems = [
   { href: '/', labelKey: 'home', Icon: Home },
   { href: '/category', labelKey: 'categories', Icon: LayoutGrid },
-  { href: '/product', labelKey: 'searchNav', Icon: Search },
+  { href: '/search', labelKey: 'searchNav', Icon: Search },
   { href: '/cart', labelKey: 'cart', Icon: ShoppingBag },
   { href: '/user', labelKey: 'profileNav', Icon: User },
 ] as const;

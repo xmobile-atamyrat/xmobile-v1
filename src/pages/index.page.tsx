@@ -1,10 +1,8 @@
-import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
-import SortDropdown from '@/pages/components/SortDropdown';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchNewProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   BUSINESS_NAME,
@@ -13,7 +11,6 @@ import {
   LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
-import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -25,34 +22,16 @@ import {
 import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
-import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  IconButton,
-  Slide,
-  Typography,
-} from '@mui/material';
-import { X } from 'lucide-react';
-import { TransitionProps } from '@mui/material/transitions';
+import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
-
-const SlideTransition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>,
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+import { useEffect, useRef, useState } from 'react';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -165,62 +144,19 @@ export default function Home({
   const platform = usePlatform();
   const t = useTranslations();
   const { categories } = useCategoryContext();
-  const { searchKeyword } = useProductContext();
+  const { searchKeyword, setSearchKeyword } = useProductContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const isFirstRender = useRef(true);
 
-  const [localFilters, setLocalFilters] = useState({
-    categoryIds: [] as string[],
-    brandIds: [] as string[],
-    minPrice: '',
-    maxPrice: '',
-    sortBy: '',
-  });
-
-  const { filters, setFilters } = useProductFilters();
-
-  useEffect(() => {
-    if (mobileFilterOpen) {
-      setLocalFilters({
-        categoryIds: filters.categoryIds,
-        brandIds: filters.brandIds,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        sortBy: filters.sortBy,
-      });
-    }
-  }, [mobileFilterOpen, filters]);
-
+  // Home shows only the newest products — no filters, no infinite scroll.
   useEffect(() => {
     let mounted = true;
     (async () => {
       setIsLoading(true);
       try {
-        const fetched = await fetchProducts({
-          page,
-          searchKeyword: searchKeyword || undefined,
-          categoryIds: filters.categoryIds,
-          brandIds: filters.brandIds,
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          sortBy: filters.sortBy,
-        });
-        if (!mounted) return;
-
-        if (fetched.length < 20) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        if (page === 1) {
-          setProducts(fetched);
-        } else {
-          setProducts((prev) => [...prev, ...fetched]);
-        }
+        const fetched = await fetchNewProducts({ page: 1 });
+        if (mounted) setProducts(fetched);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -230,30 +166,19 @@ export default function Home({
     return () => {
       mounted = false;
     };
-  }, [searchKeyword, filters, page]);
+  }, []);
 
+  // A search on the home page belongs on the dedicated results page.
+  // Skip the first run so a stale keyword (e.g. coming back from /product)
+  // is just cleared instead of bouncing straight back.
   useEffect(() => {
-    const loadMoreTrigger = document.getElementById('load-more-products');
-    if (!loadMoreTrigger) return () => undefined;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (async () => {
-              if (isLoading || !hasMore) return;
-              setPage((prev) => prev + 1);
-            })();
-          }
-        });
-      },
-      { rootMargin: '100px' },
-    );
-
-    observer.observe(loadMoreTrigger);
-    return () => {
-      observer.disconnect();
-    };
-  }, [isLoading, hasMore]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (searchKeyword) setSearchKeyword('');
+      return;
+    }
+    if (searchKeyword) router.push('/product');
+  }, [searchKeyword, router, setSearchKeyword]);
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -262,34 +187,15 @@ export default function Home({
   }, [locale]);
 
   return (
-    <Layout showHomeHeader onHomeFilterClick={() => setMobileFilterOpen(true)}>
+    <Layout showHomeHeader>
       <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
-        {platform === 'mobile' && !searchKeyword && (
-          <PromoBannerSection banners={banners} />
-        )}
-        {platform === 'mobile' && !searchKeyword && (
+        {platform === 'mobile' && <PromoBannerSection banners={banners} />}
+        {platform === 'mobile' && (
           <PopularCategoriesSection categories={categories} />
         )}
       </Box>
-      {platform === 'web' && !searchKeyword && (
-        <PromoBannerSection banners={banners} />
-      )}
+      {platform === 'web' && <PromoBannerSection banners={banners} />}
       <Box className="flex flex-row gap-6 w-full">
-        {platform === 'web' && (
-          <FilterSidebar
-            categories={categories}
-            selectedCategoryIds={filters.categoryIds}
-            selectedBrandIds={filters.brandIds}
-            minPrice={filters.minPrice}
-            maxPrice={filters.maxPrice}
-            onFilterChange={(newFilters) => {
-              setFilters(newFilters);
-              setPage(1);
-              setProducts([]);
-            }}
-          />
-        )}
-
         <Box className={homePageClasses.main[platform]}>
           <Box className="w-full">
             <Box
@@ -309,23 +215,11 @@ export default function Home({
               <Typography
                 className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
               >
-                {searchKeyword
-                  ? t('searchResultsFor', { keyword: searchKeyword })
-                  : t('newProducts')}
+                {t('newProducts')}
               </Typography>
-              {platform === 'web' && (
-                <SortDropdown
-                  value={filters.sortBy}
-                  onChange={(val) => {
-                    setFilters({ sortBy: val });
-                    setPage(1);
-                    setProducts([]);
-                  }}
-                />
-              )}
             </Box>
 
-            {isLoading && page === 1 && <ProductGridSkeleton count={8} />}
+            {isLoading && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
               {products.length > 0 &&
                 products.map((product, idx) => (
@@ -339,78 +233,9 @@ export default function Home({
             {products.length === 0 && !isLoading && (
               <Typography>{t('noProductsFound')}</Typography>
             )}
-            {isLoading && page > 1 && (
-              <Box className="flex justify-center items-center py-4">
-                <CircularProgress />
-              </Box>
-            )}
           </Box>
         </Box>
       </Box>
-      <div id="load-more-products" />
-      <Dialog
-        open={mobileFilterOpen}
-        onClose={() => setMobileFilterOpen(false)}
-        TransitionComponent={SlideTransition}
-        fullWidth
-        PaperProps={{
-          sx: {
-            position: 'fixed',
-            bottom: 0,
-            m: 0,
-            width: '100%',
-            maxHeight: '88vh',
-            borderRadius: '26px 26px 0 0',
-          },
-        }}
-      >
-        <Box className="flex flex-col bg-white">
-          <Box className={filterSidebarClasses.dragHandle} />
-          <Box className={filterSidebarClasses.header}>
-            <Typography
-              className={`${fontClassName.className} ${filterSidebarClasses.title}`}
-            >
-              {t('filter') || 'Filter'}
-            </Typography>
-            <IconButton
-              size="small"
-              className={filterSidebarClasses.closeButton}
-              onClick={() => setMobileFilterOpen(false)}
-            >
-              <X size={20} />
-            </IconButton>
-          </Box>
-          <Box className={filterSidebarClasses.body}>
-            <FilterSidebar
-              variant="mobile"
-              categories={categories}
-              selectedCategoryIds={localFilters.categoryIds}
-              selectedBrandIds={localFilters.brandIds}
-              minPrice={localFilters.minPrice}
-              maxPrice={localFilters.maxPrice}
-              sortBy={localFilters.sortBy}
-              onFilterChange={(newFilters) => {
-                setLocalFilters((prev) => ({ ...prev, ...newFilters }));
-              }}
-            />
-          </Box>
-          <Box className={filterSidebarClasses.footer}>
-            <Button
-              fullWidth
-              disableElevation
-              className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
-              onClick={() => {
-                setFilters(localFilters);
-                setPage(1);
-                setProducts([]);
-                setMobileFilterOpen(false);
-              }}
-            >
-              {t('apply') || 'Apply'}
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
     </Layout>
   );
 }
