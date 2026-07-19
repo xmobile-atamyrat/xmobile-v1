@@ -115,6 +115,7 @@
   "updatePrices": "Bahalary tazalaň",
   "save": "Sohranit",
   "invalidPrice": "Ýalňyş baha",
+  "dollarRateNotLoaded": "Dollar kursy heniz bellenmedi. Bahalary üýtgetmezden ozal ýokardaky kursy giriziň.",
   "pricesUpdated": "Bahalar tazalandy!",
   "updatePricesError": "Bahalary tazalap bolmady",
   "deletePrice": "Towaryň bahasyny öçür",

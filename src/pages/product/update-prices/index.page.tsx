@@ -1,7 +1,9 @@
 import Layout from '@/pages/components/Layout';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
 import {
   applyPendingEdits,
   collectCategorySubtreeIds,
@@ -22,7 +24,6 @@ import {
   sortPrices,
   TableData,
 } from '@/pages/product/utils';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   Alert,
   Box,
@@ -207,8 +208,21 @@ export default function UpdatePrices() {
           return;
         }
 
+        if (
+          (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
+          !(dollarRate > 0)
+        ) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'dollarRateNotLoaded',
+            severity: 'error',
+          });
+          return;
+        }
+
         const priceId = row[PRICE_ID_IDX] as string;
         const currPrice: Partial<Prices> = { id: priceId };
+
         if (cellIndex === PRICE_MANAT_IDX) {
           currPrice.priceInTmt = value;
           currPrice.price = parsePrice(

@@ -112,6 +112,7 @@
   "updatePrices": "Fiyatları güncelle",
   "save": "Kaydet",
   "invalidPrice": "Geçersiz fiyat değeri",
+  "dollarRateNotLoaded": "Dolar kuru henüz ayarlanmadı. Fiyatları değiştirmeden önce yukarıdaki kuru girin.",
   "pricesUpdated": "Fiyatlar başarıyla güncellendi!",
   "updatePricesError": "Fiyatlar güncellenemedi.",
   "deletePrice": "Ürün fiyatını sil",

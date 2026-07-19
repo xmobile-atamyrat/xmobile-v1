@@ -357,7 +357,7 @@ export function planProductUpdate(
 // ---------- GET export ----------
 
 async function handleExport(res: NextApiResponse<ResponseApi>) {
-  const [products, prices, colors] = await Promise.all([
+  const [products, prices, colors, rateRow] = await Promise.all([
     dbClient.product.findMany({
       where: whereActiveProduct,
       include: { brand: true, categories: { select: { slug: true } } },
@@ -365,6 +365,7 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
     }),
     dbClient.prices.findMany(),
     dbClient.color.findMany(),
+    dbClient.dollarRate.findFirst({ where: { currency: 'TMT' } }),
   ]);
   const pricesById = new Map(prices.map((price) => [price.id, price]));
   const colorsById = new Map(colors.map((color) => [color.id, color]));
@@ -415,7 +416,11 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
 
   return res.status(200).json({
     success: true,
-    data: { products: productRows, variants: variantRows },
+    data: {
+      products: productRows,
+      variants: variantRows,
+      rate: rateRow?.rate ?? null,
+    },
   });
 }
 
