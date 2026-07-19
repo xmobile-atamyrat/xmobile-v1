@@ -3,13 +3,14 @@
 // need CSS-in-JS anyway) — these classes only cover the sheet wrapper built inline
 // in index.page.tsx / ProductGridContent.tsx.
 export const filterSidebarClasses = {
-  dragHandle: 'w-10 h-[5px] rounded-full bg-hairline mx-auto mt-2.5 mb-1',
-  header:
-    'flex items-center justify-between px-5 py-3 border-b border-hairline',
-  title: 'text-[18px] font-bold text-ink',
-  closeButton: 'text-muted',
-  body: 'flex-1 overflow-auto px-5 py-4',
-  footer: 'p-4 pb-6 border-t border-hairline',
+  dragHandle: 'w-10 h-[5px] rounded-full bg-[#E4E3EB] mx-auto mt-2.5 mb-3.5',
+  header: 'flex items-center justify-between px-[22px] pb-1',
+  title: 'text-[19px] font-bold text-ink',
+  resetButton: 'text-[13px] font-semibold text-red cursor-pointer normal-case',
+  body: 'flex-1 overflow-auto px-[22px] py-4',
+  footer: 'flex gap-3 px-[22px] pt-3.5 pb-8 border-t border-[#F0EFF4]',
+  clearButton:
+    'flex-1 h-[52px] rounded-[14px] border-[1.5px] border-[#E4E3EB] bg-white text-navy text-[15px] font-semibold normal-case shadow-none hover:bg-fill hover:shadow-none',
   applyButton:
-    'w-full h-[52px] rounded-[14px] bg-navy text-white text-[15px] font-semibold normal-case shadow-none hover:bg-[#1A1258] hover:shadow-none',
+    'flex-[2] h-[52px] rounded-[14px] bg-navy text-white text-[15px] font-semibold normal-case shadow-none hover:bg-[#1A1258] hover:shadow-none',
 };

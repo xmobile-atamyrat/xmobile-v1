@@ -358,6 +358,8 @@
   "notificationsDenied": "Уведомления заблокированы. Включите их в настройках браузера.",
   "serverLogs": "Журналы сервера",
   "brands": "Бренды",
+  "recentSearches": "Недавние",
+  "trendingNow": "Популярное",
   "noBrands": "Бренды не найдены",
   "moreBrands": "Ещё",
   "lessBrands": "Скрыть",

@@ -628,23 +628,25 @@ export default function FilterSidebar({
           </Box>
         </FilterSection>
 
-        <Box display="flex" justifyContent="flex-start" mt={3}>
-          <Typography
-            className={fontClassName.className}
-            onClick={handleClearFilters}
-            sx={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: red,
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8,
-              },
-            }}
-          >
-            {t('clearFilters') || 'Clear Filters'}
-          </Typography>
-        </Box>
+        {variant !== 'mobile' && (
+          <Box display="flex" justifyContent="flex-start" mt={3}>
+            <Typography
+              className={fontClassName.className}
+              onClick={handleClearFilters}
+              sx={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: red,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                },
+              }}
+            >
+              {t('clearFilters') || 'Clear Filters'}
+            </Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

@@ -6,8 +6,7 @@ export const productIndexPageClasses = {
       web: 'hidden',
     },
     appbar: {
-      mobile:
-        'flex flex-row items-center h-[30px] px-[24px] justify-between my-[20px]',
+      mobile: 'flex flex-row items-center gap-2.5 px-4 pt-6 pb-3',
       web: 'hidden',
     },
     category: {

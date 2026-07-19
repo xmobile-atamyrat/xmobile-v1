@@ -5,9 +5,10 @@ import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import SortDropdown from '@/pages/components/SortDropdown';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchProducts, fetchProductsCount } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import { SearchBar } from '@/pages/components/Appbar';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -23,7 +24,6 @@ import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import {
   Alert,
   Box,
@@ -35,11 +35,17 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { SearchX, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowLeft, SearchX } from 'lucide-react';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 const SlideTransition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
@@ -63,7 +69,17 @@ export default function ProductGridContent({
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const { categories: allCategories } = useCategoryContext();
-  const { products, setProducts, searchKeyword } = useProductContext();
+  const { products, setProducts, searchKeyword, setSearchKeyword } =
+    useProductContext();
+  // Editable search field on the results page. Debounced into the shared
+  // context so the grid refetches without a network call per keystroke.
+  const [localSearchKeyword, setLocalSearchKeyword] = useState(
+    searchKeyword ?? '',
+  );
+  const isFirstSearchRun = useRef(true);
+  // Total number of products matching the current query (all pages), so the
+  // header count reflects the real total rather than the loaded page.
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -88,6 +104,20 @@ export default function ProductGridContent({
   const platform = usePlatform();
 
   const { filters, setFilters } = useProductFilters();
+
+  // Debounce the editable search field into context (skip the mount run so we
+  // don't clobber a keyword handed off from the home page).
+  useEffect(() => {
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return undefined;
+    }
+    const handler = setTimeout(() => {
+      setSearchKeyword(localSearchKeyword);
+    }, 500);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchKeyword]);
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -142,6 +172,7 @@ export default function ProductGridContent({
     setPage(0);
     setHasMore(true);
     setIsLoading(true);
+    setTotalCount(null);
 
     (async () => {
       try {
@@ -158,6 +189,11 @@ export default function ProductGridContent({
         if (searchKeyword) {
           fetchProductsParams.searchKeyword = searchKeyword;
         }
+
+        // Total match count for the header (independent of pagination).
+        fetchProductsCount(fetchProductsParams)
+          .then(setTotalCount)
+          .catch(() => setTotalCount(null));
 
         const newProducts = await fetchProducts(fetchProductsParams);
         setProducts(newProducts);
@@ -265,33 +301,33 @@ export default function ProductGridContent({
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
 
+  // Real total for the current query (all pages); fall back to the loaded
+  // count until the count request resolves.
+  const displayCount = totalCount != null ? totalCount : products.length;
+
   return (
     <Box>
       <Box className={productIndexPageClasses.boxes.appbar[platform]}>
-        {/* Left side: Back button + Title */}
-        <Box className="flex items-center gap-2">
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={appbarClasses.backButton[platform]}
-            aria-label="open drawer"
-            onClick={handleBackButton}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-        </Box>
+        {/* Back button — matches the product detail page */}
+        <IconButton
+          aria-label="Back"
+          className={appbarClasses.backButtonCircle[platform]}
+          onClick={handleBackButton}
+        >
+          <ArrowLeft className={appbarClasses.backIconCircle[platform]} />
+        </IconButton>
 
         {platform === 'mobile' && (
-          <IconButton
-            className={appbarClasses.filterButton.mobile}
-            onClick={() => setMobileFilterOpen(true)}
-            aria-label="filters"
-          >
-            <SlidersHorizontal size={20} />
-          </IconButton>
+          <Box className="flex-1">
+            {SearchBar({
+              searchKeyword: localSearchKeyword,
+              searchPlaceholder: t('search'),
+              setSearchKeyword: setLocalSearchKeyword,
+              showFilter: true,
+              onFilterClick: () => setMobileFilterOpen(true),
+              formClassName: 'flex flex-1 items-center gap-2.5',
+            })}
+          </Box>
         )}
       </Box>
       <Layout handleHeaderBackButton={handleBackButton}>
@@ -319,13 +355,21 @@ export default function ProductGridContent({
               >
                 {t('filter') || 'Filter'}
               </Typography>
-              <IconButton
-                size="small"
-                className={filterSidebarClasses.closeButton}
-                onClick={() => setMobileFilterOpen(false)}
+              <Typography
+                className={`${fontClassName.className} ${filterSidebarClasses.resetButton}`}
+                onClick={() =>
+                  setLocalFilters({
+                    categoryIds: [],
+                    brandIds: [],
+                    colorIds: [],
+                    minPrice: '',
+                    maxPrice: '',
+                    sortBy: '',
+                  })
+                }
               >
-                <X size={20} />
-              </IconButton>
+                {t('clear') || 'Clear'}
+              </Typography>
             </Box>
             <Box className={filterSidebarClasses.body}>
               <FilterSidebar
@@ -345,7 +389,22 @@ export default function ProductGridContent({
             </Box>
             <Box className={filterSidebarClasses.footer}>
               <Button
-                fullWidth
+                disableElevation
+                className={`${fontClassName.className} ${filterSidebarClasses.clearButton}`}
+                onClick={() =>
+                  setLocalFilters({
+                    categoryIds: [],
+                    brandIds: [],
+                    colorIds: [],
+                    minPrice: '',
+                    maxPrice: '',
+                    sortBy: '',
+                  })
+                }
+              >
+                {t('clear') || 'Clear'}
+              </Button>
+              <Button
                 disableElevation
                 className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
                 onClick={() => {
@@ -404,7 +463,7 @@ export default function ProductGridContent({
                     <Typography
                       className={`${fontClassName.className} ${productIndexPageClasses.resultsCount[platform]}`}
                     >
-                      {`${products.length} ${t('products')}`}
+                      {`${displayCount} ${t('products')}`}
                     </Typography>
                   )}
                 </Box>

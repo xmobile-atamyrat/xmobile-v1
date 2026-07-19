@@ -2,7 +2,7 @@ export const cartProductCardClasses = {
   card: {
     web: 'w-[95vw] min-w-[850px] h-[13.5vw] flex flex-row mt-[3vw] rounded-2xl border border-transparent hover:border-[#F0EFF4] hover:shadow-[0_4px_14px_rgba(20,16,60,0.05)] overflow-visible transition-shadow duration-200',
     mobile:
-      'flex flex-row w-[88.7vw] min-h-[110px] gap-[12px] bg-white rounded-2xl p-3 mb-[10px] shadow-[0_2px_10px_rgba(20,16,60,0.04)]',
+      'flex flex-row w-full min-h-[110px] gap-[12px] bg-white rounded-2xl p-3 mb-[10px] shadow-[0_2px_10px_rgba(20,16,60,0.04)]',
   },
   boxes: {
     main: {

@@ -355,6 +355,8 @@
   "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings to receive notifications.",
   "serverLogs": "Server Logs",
   "brands": "Brands",
+  "recentSearches": "Recent",
+  "trendingNow": "Trending now",
   "noBrands": "No brands found",
   "moreBrands": "More Brands",
   "lessBrands": "Less Brands",

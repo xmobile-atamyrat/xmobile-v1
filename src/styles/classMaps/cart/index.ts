@@ -1,15 +1,15 @@
 export const cartIndexClasses = {
   box: {
     web: 'w-full h-full flex flex-col mt-[64px]',
-    mobile: 'w-full h-full flex flex-col my-[36px]',
+    mobile: 'w-full flex flex-col grow bg-fill pt-[36px]',
   },
   cartHeader: {
     web: 'flex flex-row w-full justify-between items-center',
-    mobile: 'flex w-full justify-center',
+    mobile: 'flex w-full justify-between items-center mb-[20px]',
   },
   prodCart: {
     web: 'flex flex-wrap gap-4 w-full pb-[5vw]',
-    mobile: 'flex flex-wrap gap-4 w-full px-[24px] pb-[50px]',
+    mobile: 'flex flex-col grow w-full px-4 pt-[8px] pb-[70px]',
   },
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {
@@ -25,7 +25,7 @@ export const cartIndexClasses = {
   emptyCart: {
     img: {
       web: 'w-[22.34vw] h-[18.64vw] mx-auto my-[3.9vw]',
-      mobile: 'w-[180px] h-[150px] mx-auto mt-[100px]',
+      mobile: 'w-[180px] h-[150px] mx-auto',
     },
     typo: {
       web: 'font-medium text-[30px] leading-[24px] tracking-normal text-[#000] text-center mb-[3.125vw]',
@@ -33,9 +33,9 @@ export const cartIndexClasses = {
         'mt-[38px] font-medium text-[20px] leading-[28px] tracking-normal text-[#000] text-center mb-[35px]',
     },
     link: {
-      web: 'min-w-[11.875vw] h-[3.22vw] bg-[#ff624c] rounded-[10px] py-[16px] px-[40px] gap-[10px] flex justify-center items-center no-underline',
+      web: 'min-w-[11.875vw] h-[3.22vw] bg-[#20166E] rounded-[10px] py-[16px] px-[40px] gap-[10px] flex justify-center items-center no-underline',
       mobile:
-        'w-[88.7vw] h-[11.2vw] max-h-[48px] bg-[#ff624c] rounded-[12px] py-[4px] px-[20px] gap-[16px] flex justify-center items-center no-underline',
+        'w-[88.7vw] h-[11.2vw] max-h-[48px] bg-[#20166E] rounded-[12px] py-[4px] px-[20px] gap-[16px] flex justify-center items-center no-underline',
     },
   },
   infoRow: {
@@ -47,6 +47,8 @@ export const cartIndexClasses = {
   yourCartTypo: {
     web: 'item-center font-bold text-[30px] leading-[68px] tracking-normal text-[#303030] text-center',
     mobile:
-      'font-medium text-[20px] leading-full tracking-normal text-[#000] text-center mb-[26px]',
+      'font-bold text-[24px] leading-tight tracking-[-0.01em] text-[#17161D] text-left',
   },
+  cartCount: 'text-muted font-medium',
+  cartClearBtn: 'text-[13px] font-semibold text-red cursor-pointer normal-case',
 };

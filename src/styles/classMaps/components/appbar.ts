@@ -69,6 +69,16 @@ export const appbarClasses = {
     web: 'hidden',
     mobile: 'flex justify-center',
   },
+  // Circular white back button matching the product detail page.
+  backButtonCircle: {
+    web: 'hidden',
+    mobile:
+      'w-10 h-10 rounded-full bg-white shadow-[0_2px_10px_rgba(20,16,60,0.10)] flex items-center justify-center active:scale-95 transition-transform flex-shrink-0',
+  },
+  backIconCircle: {
+    web: 'hidden',
+    mobile: 'w-5 h-5 text-navy',
+  },
   filterButton: {
     mobile:
       'w-12 h-12 rounded-[14px] bg-[#20166E] flex items-center justify-center text-white',

@@ -69,6 +69,42 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
+/** Total number of products matching a filter set (ignores pagination). */
+export const fetchProductsCount = async ({
+  categoryIds,
+  brandIds,
+  colorIds,
+  minPrice,
+  maxPrice,
+  searchKeyword,
+}: {
+  categoryIds?: string[];
+  brandIds?: string[];
+  colorIds?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  searchKeyword?: string;
+}): Promise<number> => {
+  let url = `${BASE_URL}/api/product?count=true`;
+  const appendParam = (key: string, val: any) => {
+    if (val) url += `&${key}=${encodeURIComponent(val)}`;
+  };
+  brandIds?.forEach((bid) => appendParam('brandIds', bid));
+  categoryIds?.forEach((cid) => appendParam('categoryIds', cid));
+  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  appendParam('maxPrice', maxPrice);
+  appendParam('minPrice', minPrice);
+  appendParam('searchKeyword', searchKeyword);
+
+  const { success, data }: ResponseApi<number> = await (
+    await fetch(url)
+  ).json();
+  if (!success || typeof data !== 'number') {
+    throw new Error('Failed to fetch product count');
+  }
+  return data;
+};
+
 /** All product slugs for SSG (e.g. getStaticPaths); uses /api/product/slugs */
 export const fetchAllProductSlugs = async (): Promise<string[]> => {
   const { success, data, message }: ResponseApi<string[]> = await (

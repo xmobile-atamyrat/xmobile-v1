@@ -295,6 +295,7 @@ async function handleGetProduct(query: {
   minPrice?: string;
   maxPrice?: string;
   sortBy?: SortOption;
+  count?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
     searchKeyword,
@@ -308,7 +309,11 @@ async function handleGetProduct(query: {
     minPrice,
     maxPrice,
     sortBy,
+    count,
   } = query;
+  // count=true returns the total number of matches for the filter set
+  // (reusing the same where-building) instead of a page of products.
+  const wantCount = count === 'true';
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
@@ -370,7 +375,10 @@ async function handleGetProduct(query: {
     ids.push(...recursiveIds.flat());
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) {
-      return { resp: { success: true, data: [] }, status: 200 };
+      return {
+        resp: { success: true, data: wantCount ? 0 : [] },
+        status: 200,
+      };
     }
     where.categoryId = { in: uniqueIds };
   }
@@ -412,6 +420,11 @@ async function handleGetProduct(query: {
         where.cachedPrice = { ...currentFilter, lte: maxTmt / rate };
       }
     }
+  }
+
+  if (wantCount) {
+    const total = await dbClient.product.count({ where });
+    return { resp: { success: true, data: total }, status: 200 };
   }
 
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
