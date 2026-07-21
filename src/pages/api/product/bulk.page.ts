@@ -33,12 +33,7 @@ export interface BulkVariant {
 // One row of the "Products" sheet on export.
 export interface BulkProductExportRow {
   id: string;
-  slug: string; // informational, ignored on import
-  nameEn: string;
-  nameTk: string;
-  nameRu: string;
-  nameCh: string;
-  nameTr: string;
+  slug: string; // recognizes the product; ignored on import
   categorySlug: string;
   brand: string;
   priceUsd: string;
@@ -52,11 +47,6 @@ const cellSchema = z.string().optional();
 const importProductRowSchema = z.object({
   row: z.number().int(), // real sheet row number, for error reporting
   id: z.string().min(1),
-  nameEn: cellSchema,
-  nameTk: cellSchema,
-  nameRu: cellSchema,
-  nameCh: cellSchema,
-  nameTr: cellSchema,
   categorySlug: cellSchema,
   brand: cellSchema,
   priceUsd: cellSchema,
@@ -130,14 +120,6 @@ export interface ProductUpdatePlan {
   basePrice?: { priceId?: string } & PlannedPrice;
   tags?: PlannedVariant[]; // undefined = don't touch tags (no Variants sheet)
 }
-
-const NAME_FIELDS = [
-  ['nameEn', 'en'],
-  ['nameTk', 'tk'],
-  ['nameRu', 'ru'],
-  ['nameCh', 'ch'],
-  ['nameTr', 'tr'],
-] as const;
 
 const TRUTHY_CELLS = ['true', '1', 'yes'];
 const FALSY_CELLS = ['false', '0', 'no'];
@@ -217,7 +199,7 @@ export function planProductUpdate(
 
   const data: NonNullable<ProductUpdatePlan['data']> = {};
 
-  // locale name blob merge; empty cells leave that locale unchanged
+  // Names aren't editable via bulk edit; the EN name only seeds new Prices rows.
   let currentName: Record<string, string> = {};
   try {
     const parsed = JSON.parse(currentProduct.name);
@@ -225,17 +207,7 @@ export function planProductUpdate(
   } catch {
     // legacy non-JSON name; treated as an empty locale blob
   }
-  const mergedName = { ...currentName };
-  let nameChanged = false;
-  NAME_FIELDS.forEach(([field, locale]) => {
-    const value = cellText(productRow[field]);
-    if (value !== '' && value !== mergedName[locale]) {
-      mergedName[locale] = value;
-      nameChanged = true;
-    }
-  });
-  if (nameChanged) data.name = JSON.stringify(mergedName);
-  const englishName = cellText(mergedName.en);
+  const englishName = cellText(currentName.en);
 
   const categorySlug = cellText(productRow.categorySlug);
   if (categorySlug !== '') {
@@ -357,16 +329,26 @@ export function planProductUpdate(
 // ---------- GET export ----------
 
 async function handleExport(res: NextApiResponse<ResponseApi>) {
-  const [products, prices, colors, rateRow] = await Promise.all([
-    dbClient.product.findMany({
-      where: whereActiveProduct,
-      include: { brand: true, categories: { select: { slug: true } } },
-      orderBy: { createdAt: 'desc' },
-    }),
-    dbClient.prices.findMany(),
-    dbClient.color.findMany(),
-    dbClient.dollarRate.findFirst({ where: { currency: 'TMT' } }),
-  ]);
+  const [products, prices, colors, rateRow, categories, brands] =
+    await Promise.all([
+      dbClient.product.findMany({
+        where: whereActiveProduct,
+        include: { brand: true, categories: { select: { slug: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      dbClient.prices.findMany(),
+      dbClient.color.findMany(),
+      dbClient.dollarRate.findFirst({ where: { currency: 'TMT' } }),
+      dbClient.category.findMany({
+        where: whereActiveCategory,
+        select: { slug: true },
+        orderBy: { slug: 'asc' },
+      }),
+      dbClient.brand.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
   const pricesById = new Map(prices.map((price) => [price.id, price]));
   const colorsById = new Map(colors.map((color) => [color.id, color]));
 
@@ -387,11 +369,6 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
     productRows.push({
       id: product.id,
       slug: product.slug,
-      nameEn: name.en ?? '',
-      nameTk: name.tk ?? '',
-      nameRu: name.ru ?? '',
-      nameCh: name.ch ?? '',
-      nameTr: name.tr ?? '',
       categorySlug: product.categories?.slug ?? '',
       brand: product.brand?.name ?? '',
       priceUsd: basePrice?.price ?? '',
@@ -420,6 +397,8 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
       products: productRows,
       variants: variantRows,
       rate: rateRow?.rate ?? null,
+      categorySlugs: categories.map((category) => category.slug),
+      brands: brands.map((brand) => brand.name),
     },
   });
 }

@@ -9,16 +9,12 @@ import * as ExcelJS from 'exceljs';
 
 export const PRODUCTS_SHEET_NAME = 'Products';
 export const VARIANTS_SHEET_NAME = 'Variants';
+export const LISTS_SHEET_NAME = 'Lists';
 export const MISSING_PRODUCTS_SHEET_ERROR = 'MISSING_PRODUCTS_SHEET';
 
 const PRODUCTS_HEADER = [
   'ID',
   'Slug',
-  'Name EN',
-  'Name TK',
-  'Name RU',
-  'Name CH',
-  'Name TR',
   'Category Slug',
   'Brand',
   'Price USD',
@@ -101,14 +97,46 @@ function tmtCell(
   return { formula: `ROUNDUP(${usdCol}${row}*${rate},0)` };
 }
 
+// Excel dropdown backed by a range on the hidden Lists sheet. showErrorMessage
+// + errorStyle 'stop' makes Excel *reject* any value not in the list (typed or
+// pasted), not just offer the dropdown — so admins can't invent a category or
+// brand. allowBlank leaves a cell untouched (empty = "no change" on import).
+function listValidation(
+  what: string,
+  column: 'A' | 'B',
+  count: number,
+): ExcelJS.DataValidation {
+  return {
+    type: 'list',
+    allowBlank: true,
+    formulae: [`${LISTS_SHEET_NAME}!$${column}$2:$${column}$${count + 1}`],
+    showErrorMessage: true,
+    errorStyle: 'stop',
+    errorTitle: `Invalid ${what}`,
+    error: `Pick an existing ${what} from the dropdown. New ${what}s must be created in the app first.`,
+  };
+}
+
 export async function buildWorkbookBlob(
   products: BulkProductExportRow[],
   variants: BulkVariant[],
   rate: number | null,
+  categorySlugs: string[],
+  brands: string[],
 ): Promise<Blob> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'WebClient';
   workbook.created = new Date();
+
+  // Hidden sheet holding the allowed values the dropdowns point at.
+  const listsSheet = workbook.addWorksheet(LISTS_SHEET_NAME);
+  listsSheet.state = 'veryHidden';
+  categorySlugs.forEach((slug, i) => {
+    listsSheet.getCell(i + 2, 1).value = slug;
+  });
+  brands.forEach((brand, i) => {
+    listsSheet.getCell(i + 2, 2).value = brand;
+  });
 
   const productsSheet = workbook.addWorksheet(PRODUCTS_SHEET_NAME);
   productsSheet.addRow(PRODUCTS_HEADER);
@@ -117,18 +145,27 @@ export async function buildWorkbookBlob(
     productsSheet.addRow([
       product.id,
       product.slug,
-      product.nameEn,
-      product.nameTk,
-      product.nameRu,
-      product.nameCh,
-      product.nameTr,
       product.categorySlug,
       product.brand,
       product.priceUsd,
-      tmtCell('J', row, product.priceUsd, product.priceTmt, rate),
+      tmtCell('E', row, product.priceUsd, product.priceTmt, rate),
       product.isOutOfStock ? 'TRUE' : 'FALSE',
       product.videoUrls,
     ]);
+    if (categorySlugs.length > 0) {
+      productsSheet.getCell(`C${row}`).dataValidation = listValidation(
+        'category',
+        'A',
+        categorySlugs.length,
+      );
+    }
+    if (brands.length > 0) {
+      productsSheet.getCell(`D${row}`).dataValidation = listValidation(
+        'brand',
+        'B',
+        brands.length,
+      );
+    }
   });
   styleSheet(productsSheet);
 
@@ -178,17 +215,12 @@ export async function parseWorkbook(file: File): Promise<BulkImportBody> {
     products.push({
       row: rowNumber,
       id,
-      nameEn: cellText(row.getCell(3).value),
-      nameTk: cellText(row.getCell(4).value),
-      nameRu: cellText(row.getCell(5).value),
-      nameCh: cellText(row.getCell(6).value),
-      nameTr: cellText(row.getCell(7).value),
-      categorySlug: cellText(row.getCell(8).value),
-      brand: cellText(row.getCell(9).value),
-      priceUsd: cellText(row.getCell(10).value),
-      priceTmt: tmtCellText(row.getCell(11).value),
-      outOfStock: cellText(row.getCell(12).value),
-      videoUrls: cellText(row.getCell(13).value),
+      categorySlug: cellText(row.getCell(3).value),
+      brand: cellText(row.getCell(4).value),
+      priceUsd: cellText(row.getCell(5).value),
+      priceTmt: tmtCellText(row.getCell(6).value),
+      outOfStock: cellText(row.getCell(7).value),
+      videoUrls: cellText(row.getCell(8).value),
     });
   });
 

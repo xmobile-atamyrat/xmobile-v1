@@ -116,7 +116,7 @@ describe('planProductUpdate variants', () => {
 
   it('rejects the whole product on duplicate specs', () => {
     const plan = planProductUpdate(
-      productRow({ nameEn: 'Renamed' }),
+      productRow(),
       [variantRow({ spec: '128gb' }), variantRow({ row: 3, spec: '128gb' })],
       makeCurrent(),
       makeRefs(),
@@ -143,7 +143,7 @@ describe('planProductUpdate variants', () => {
 
   it('leaves tags untouched when the Variants sheet is missing', () => {
     const plan = planProductUpdate(
-      productRow({ nameEn: 'Renamed' }),
+      productRow(),
       undefined,
       makeCurrent(),
       makeRefs(),
@@ -184,7 +184,7 @@ describe('planProductUpdate reference lookups', () => {
 
   it('rejects the whole product on unknown variant color, even with valid product edits', () => {
     const plan = planProductUpdate(
-      productRow({ nameEn: 'Renamed', brand: 'Apple' }),
+      productRow({ brand: 'Apple' }),
       [variantRow({ spec: '128gb', color: 'Chartreuse' })],
       makeCurrent(),
       makeRefs(),
@@ -285,7 +285,7 @@ describe('planProductUpdate prices', () => {
 describe('planProductUpdate empty cells and booleans', () => {
   it('treats all-empty cells as a no-op', () => {
     const plan = planProductUpdate(
-      productRow({ nameEn: 'iPhone 15' }), // identical to current -> no change
+      productRow(),
       undefined,
       makeCurrent(),
       makeRefs(),
@@ -294,20 +294,6 @@ describe('planProductUpdate empty cells and booleans', () => {
     expect(plan.data).toEqual({});
     expect(plan.basePrice).toBeUndefined();
     expect(plan.tags).toBeUndefined();
-  });
-
-  it('merges only the provided locale into the name blob', () => {
-    const plan = planProductUpdate(
-      productRow({ nameTk: 'Aýfon 15' }),
-      undefined,
-      makeCurrent(),
-      makeRefs(),
-    );
-    expect(JSON.parse(plan.data!.name!)).toEqual({
-      en: 'iPhone 15',
-      ru: 'Айфон 15',
-      tk: 'Aýfon 15',
-    });
   });
 
   it.each([

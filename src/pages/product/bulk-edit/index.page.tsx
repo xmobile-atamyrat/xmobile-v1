@@ -67,6 +67,8 @@ export default function BulkEdit() {
         products: BulkProductExportRow[];
         variants: BulkVariant[];
         rate: number | null;
+        categorySlugs: string[];
+        brands: string[];
       }>({
         accessToken,
         path: '/api/product/bulk',
@@ -80,6 +82,8 @@ export default function BulkEdit() {
         data.products,
         data.variants,
         data.rate,
+        data.categorySlugs,
+        data.brands,
       );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
