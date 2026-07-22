@@ -309,8 +309,10 @@ const ChatWidget = () => {
               ? {
                   bottom: '96px',
                   right: '24px',
-                  width: '420px',
-                  height: '600px',
+                  // Clamp to viewport so browser zoom (smaller CSS px viewport)
+                  // can't push the panel off the top of the screen.
+                  width: 'min(420px, calc(100vw - 48px))',
+                  height: 'min(600px, calc(100vh - 120px))',
                 }
               : {
                   top: visualViewport ? visualViewport.offsetTop : 0,
