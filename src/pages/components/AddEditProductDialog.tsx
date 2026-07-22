@@ -444,69 +444,6 @@ export default function AddEditProductDialog({
                 defaultValue={parsedProductName.en ?? ''}
               />
             </Box>
-            <Box>
-              <Typography>{t('productDescription')}</Typography>
-              <TextField
-                label={t('inRussian')}
-                type="text"
-                name="productDescriptionInRussian"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.ru ?? defaultProductDescRu
-                }
-              />
-              <TextField
-                label={t('inTurkmen')}
-                type="text"
-                name="productDescriptionInTurkmen"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.tk ?? defaultProductDescTk
-                }
-              />
-              <TextField
-                label={t('inTurkish')}
-                type="text"
-                name="productDescriptionInTurkish"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.tr ?? defaultProductDescTr
-                }
-              />
-              <TextField
-                label={t('inCharjov')}
-                type="text"
-                name="productDescriptionInCharjov"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.ch ?? defaultProductDescCh
-                }
-              />
-              <TextField
-                label={t('inEnglish')}
-                type="text"
-                name="productDescriptionInEnglish"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.en ?? defaultProductDescEn
-                }
-              />
-            </Box>
             <TextField
               label={t('price')}
               type="text"
@@ -783,6 +720,51 @@ export default function AddEditProductDialog({
                 {t('add')}
               </Button>
             </Box>
+          </Box>
+          <Box
+            className={addEditProductDialogClasses.box.flex.colGapP[platform]}
+          >
+            <Typography>{t('productDescription')}</Typography>
+            <TextField
+              label={t('inRussian')}
+              type="text"
+              name="productDescriptionInRussian"
+              multiline
+              className={addEditProductDialogClasses.textField.usual[platform]}
+              defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
+            />
+            <TextField
+              label={t('inTurkmen')}
+              type="text"
+              name="productDescriptionInTurkmen"
+              multiline
+              className={addEditProductDialogClasses.textField.usual[platform]}
+              defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
+            />
+            <TextField
+              label={t('inTurkish')}
+              type="text"
+              name="productDescriptionInTurkish"
+              multiline
+              className={addEditProductDialogClasses.textField.usual[platform]}
+              defaultValue={parsedProductDescription.tr ?? defaultProductDescTr}
+            />
+            <TextField
+              label={t('inCharjov')}
+              type="text"
+              name="productDescriptionInCharjov"
+              multiline
+              className={addEditProductDialogClasses.textField.usual[platform]}
+              defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
+            />
+            <TextField
+              label={t('inEnglish')}
+              type="text"
+              name="productDescriptionInEnglish"
+              multiline
+              className={addEditProductDialogClasses.textField.usual[platform]}
+              defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
+            />
           </Box>
           <Box className={addEditProductDialogClasses.box.flex.pad}>
             <Box className={addEditProductDialogClasses.box.flex.col}>
