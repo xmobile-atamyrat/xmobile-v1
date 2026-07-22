@@ -1,7 +1,10 @@
 import type {
+  BulkImportBody,
   BulkImportResult,
+  BulkPreviewResult,
   BulkProductExportRow,
   BulkVariant,
+  VariantChange,
 } from '@/pages/api/product/bulk.page';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
@@ -19,6 +22,10 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Snackbar,
   Table,
   TableBody,
@@ -33,6 +40,15 @@ import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useRef, useState } from 'react';
+
+function variantChangeText(change: VariantChange): string {
+  const label = change.color ? `${change.spec} (${change.color})` : change.spec;
+  if (change.kind === 'added')
+    return `+ ${label}${change.to ? `: ${change.to}` : ''}`;
+  if (change.kind === 'removed')
+    return `− ${label}${change.from ? `: ${change.from}` : ''}`;
+  return `${label}: ${change.from} → ${change.to}`;
+}
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -52,6 +68,8 @@ export default function BulkEdit() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BulkImportResult>();
+  const [preview, setPreview] = useState<BulkPreviewResult>();
+  const [pendingBody, setPendingBody] = useState<BulkImportBody>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
@@ -110,8 +128,10 @@ export default function BulkEdit() {
 
     setLoading(true);
     setResult(undefined);
+    setPreview(undefined);
+    setPendingBody(undefined);
     try {
-      let body;
+      let body: BulkImportBody;
       try {
         body = await parseWorkbook(file);
       } catch (error) {
@@ -119,17 +139,59 @@ export default function BulkEdit() {
         showSnackbar('invalidWorkbook', 'error');
         return;
       }
+      // Dry run first: preview the diff, write nothing yet.
+      const { success, data } = await fetchWithCreds<BulkPreviewResult>({
+        accessToken,
+        path: '/api/product/bulk',
+        method: 'POST',
+        body: { ...body, dryRun: true },
+      });
+      if (!success || data == null) {
+        showSnackbar('uploadProductsError', 'error');
+        return;
+      }
+      // Any error blocks everything — show them, never offer to apply.
+      if (data.errors.length > 0) {
+        setPreview(data);
+        showSnackbar('bulkEditErrors', 'error');
+        return;
+      }
+      if (data.changes.length === 0) {
+        showSnackbar('bulkEditNothingToChange', 'success');
+        return;
+      }
+      // Clean and non-empty: open the confirm dialog.
+      setPreview(data);
+      setPendingBody(body);
+    } catch (error) {
+      console.error(error);
+      showSnackbar('uploadProductsError', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmApply = async () => {
+    if (pendingBody == null) return;
+    setLoading(true);
+    try {
       const { success, data } = await fetchWithCreds<BulkImportResult>({
         accessToken,
         path: '/api/product/bulk',
         method: 'POST',
-        body,
+        body: { ...pendingBody, dryRun: false },
       });
       if (!success || data == null) {
         showSnackbar('uploadProductsError', 'error');
         return;
       }
       setResult(data);
+      // A race (data changed since preview) can still surface errors on apply.
+      setPreview(
+        data.errors.length > 0
+          ? { changes: [], errors: data.errors }
+          : undefined,
+      );
       showSnackbar(
         data.errors.length > 0 ? 'bulkEditErrors' : 'success',
         data.errors.length > 0 ? 'error' : 'success',
@@ -138,6 +200,7 @@ export default function BulkEdit() {
       console.error(error);
       showSnackbar('uploadProductsError', 'error');
     } finally {
+      setPendingBody(undefined);
       setLoading(false);
     }
   };
@@ -196,42 +259,87 @@ export default function BulkEdit() {
             />
           </Box>
 
-          {result != null && (
+          {result != null && result.errors.length === 0 && (
+            <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+              {t('bulkEditUpdated', { count: result.updatedCount })}
+            </Typography>
+          )}
+
+          {preview != null && preview.errors.length > 0 && (
             <Box className="flex flex-col gap-2">
-              <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                {t('bulkEditUpdated', { count: result.updatedCount })}
+              <Typography color="error" fontWeight={600}>
+                {t('bulkEditFixErrors')}
               </Typography>
-              {result.errors.length > 0 && (
-                <>
-                  <Typography color="error" fontWeight={600}>
-                    {t('bulkEditErrors')}
-                  </Typography>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {['sheet', 'row', 'errorMessage'].map((header) => (
-                          <TableCell key={header}>
-                            <Typography fontWeight={600}>
-                              {t(header)}
-                            </Typography>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {result.errors.map((error, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{error.sheet}</TableCell>
-                          <TableCell>{error.row}</TableCell>
-                          <TableCell>{error.message}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </>
-              )}
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {['sheet', 'row', 'errorMessage'].map((header) => (
+                      <TableCell key={header}>
+                        <Typography fontWeight={600}>{t(header)}</Typography>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {preview.errors.map((error, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{error.sheet}</TableCell>
+                      <TableCell>{error.row}</TableCell>
+                      <TableCell>{error.message}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </Box>
           )}
+
+          <Dialog
+            open={pendingBody != null}
+            onClose={() => !loading && setPendingBody(undefined)}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle>
+              {t('bulkEditConfirmTitle', {
+                count: preview?.changes.length ?? 0,
+              })}
+            </DialogTitle>
+            <DialogContent dividers>
+              <Typography sx={{ mb: 2 }}>{t('bulkEditReviewNote')}</Typography>
+              {preview?.changes.map((change) => (
+                <Box key={change.id} className="flex flex-col" sx={{ mb: 2 }}>
+                  <Typography fontWeight={600}>{change.name}</Typography>
+                  {change.fields.map((field) => (
+                    <Typography key={field.label} fontSize={14}>
+                      {field.label}: {field.from} → {field.to}
+                    </Typography>
+                  ))}
+                  {change.variants.map((variant, index) => (
+                    <Typography key={index} fontSize={14}>
+                      {variantChangeText(variant)}
+                    </Typography>
+                  ))}
+                </Box>
+              ))}
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setPendingBody(undefined)}
+                disabled={loading}
+                sx={{ textTransform: 'none' }}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmApply}
+                disabled={loading}
+                sx={{ textTransform: 'none' }}
+              >
+                {t('bulkEditApply')}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Snackbar
             open={snackbarOpen}

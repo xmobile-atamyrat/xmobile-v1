@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildProductDiff,
   CurrentProductState,
+  DiffLookups,
   ImportProductRow,
   ImportVariantRow,
   PlanRefs,
@@ -31,6 +33,7 @@ const makeRefs = (over: Partial<PlanRefs> = {}): PlanRefs => ({
     ['black', 'col1'],
     ['white', 'col2'],
   ]),
+  priceById: new Map(),
   rate: 20,
   ...over,
 });
@@ -41,7 +44,10 @@ const makeCurrent = (
   name: JSON.stringify({ en: 'iPhone 15', ru: 'Айфон 15' }),
   price: '[bp1]',
   tags: ['128gb [vp1]{col1}', '256gb [vp2]'],
-  brandId: 'brand1',
+  brandId: null,
+  categoryId: 'cat0',
+  isOutOfStock: false,
+  videoUrls: [],
   ...over,
 });
 
@@ -343,7 +349,7 @@ describe('planProductUpdate empty cells and booleans', () => {
     const plan = planProductUpdate(
       productRow({ outOfStock: raw }),
       undefined,
-      makeCurrent(),
+      makeCurrent({ isOutOfStock: !expected }), // differ so the value is emitted
       makeRefs(),
     );
     expect(plan.data?.isOutOfStock).toBe(expected);
@@ -367,5 +373,163 @@ describe('planProductUpdate empty cells and booleans', () => {
       makeRefs(),
     );
     expect(plan.data?.videoUrls).toEqual(['https://a.mp4', 'https://b.mp4']);
+  });
+});
+
+const makeLookups = (over: Partial<DiffLookups> = {}): DiffLookups => ({
+  categorySlugById: new Map([
+    ['cat0', 'laptops'],
+    ['cat1', 'phones'],
+  ]),
+  brandNameById: new Map([['brand1', 'Apple']]),
+  colorNameById: new Map([
+    ['col1', 'Black'],
+    ['col2', 'White'],
+  ]),
+  priceById: new Map([
+    ['bp1', { usd: '100', tmt: '2000' }],
+    ['vp1', { usd: '50', tmt: '1000' }],
+    ['vp2', { usd: '80', tmt: '1600' }],
+  ]),
+  ...over,
+});
+
+// buildProductDiff runs on the output of planProductUpdate, so drive it through
+// the planner to exercise the real before->after wiring.
+const diffFor = (
+  productOver: Partial<ImportProductRow>,
+  variants: ImportVariantRow[] | undefined,
+  currentOver: Partial<CurrentProductState> = {},
+) => {
+  const plan = planProductUpdate(
+    productRow(productOver),
+    variants,
+    makeCurrent(currentOver),
+    makeRefs(),
+  );
+  return buildProductDiff(makeCurrent(currentOver), plan, makeLookups());
+};
+
+describe('buildProductDiff', () => {
+  it('returns null when the plan touches nothing', () => {
+    expect(diffFor({}, undefined)).toBeNull();
+  });
+
+  it('describes a category change as slug from -> to', () => {
+    const diff = diffFor({ categorySlug: 'phones' }, undefined);
+    expect(diff?.fields).toContainEqual({
+      label: 'Category',
+      from: 'laptops',
+      to: 'phones',
+    });
+  });
+
+  it('describes a base price change as "usd / tmt"', () => {
+    const diff = diffFor({ priceUsd: '120' }, undefined);
+    expect(diff?.fields).toContainEqual({
+      label: 'Price',
+      from: '100 / 2000',
+      to: '120 / 2400',
+    });
+  });
+
+  it('flags an added variant', () => {
+    const diff = diffFor({}, [
+      variantRow({ spec: '128gb', color: 'Black' }),
+      variantRow({ row: 3, spec: '256gb' }),
+      variantRow({ row: 4, spec: '512gb', priceUsd: '300' }),
+    ]);
+    expect(diff?.variants).toContainEqual({
+      spec: '512gb',
+      color: undefined,
+      kind: 'added',
+      to: '300 / 6000',
+    });
+  });
+
+  it('flags a removed variant with its old price', () => {
+    const diff = diffFor({}, [variantRow({ spec: '128gb', color: 'Black' })]);
+    expect(diff?.variants).toContainEqual({
+      spec: '256gb',
+      color: undefined,
+      kind: 'removed',
+      from: '80 / 1600',
+    });
+  });
+
+  it('flags a variant price change', () => {
+    const diff = diffFor({}, [
+      variantRow({ spec: '128gb', color: 'Black', priceUsd: '60' }),
+      variantRow({ row: 3, spec: '256gb' }),
+    ]);
+    expect(diff?.variants).toContainEqual({
+      spec: '128gb',
+      color: 'Black',
+      kind: 'priceChanged',
+      from: '50 / 1000',
+      to: '60 / 1200',
+    });
+  });
+});
+
+describe('planProductUpdate skips unchanged values', () => {
+  it('omits product fields that already match the current row', () => {
+    const plan = planProductUpdate(
+      productRow({
+        categorySlug: 'phones',
+        brand: 'Apple',
+        outOfStock: 'TRUE',
+        videoUrls: 'https://a.mp4',
+      }),
+      undefined,
+      makeCurrent({
+        categoryId: 'cat1',
+        brandId: 'brand1',
+        isOutOfStock: true,
+        videoUrls: ['https://a.mp4'],
+      }),
+      makeRefs(),
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.data).toEqual({});
+  });
+
+  it('skips a base price whose USD and TMT already match', () => {
+    const plan = planProductUpdate(
+      productRow({ priceUsd: '100', priceTmt: '2000' }),
+      undefined,
+      makeCurrent(),
+      makeRefs({ priceById: new Map([['bp1', { usd: '100', tmt: '2000' }]]) }),
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.basePrice).toBeUndefined();
+    expect(plan.data?.cachedPrice).toBeUndefined();
+  });
+
+  it('updates a base price when the TMT differs (rate moved)', () => {
+    const plan = planProductUpdate(
+      productRow({ priceUsd: '100' }), // TMT derived = 2000 at rate 20
+      undefined,
+      makeCurrent(),
+      makeRefs({ priceById: new Map([['bp1', { usd: '100', tmt: '1800' }]]) }),
+    );
+    expect(plan.basePrice).toEqual({
+      priceId: 'bp1',
+      name: 'iPhone 15',
+      usd: '100',
+      tmt: '2000',
+    });
+  });
+
+  it('leaves a variant price untouched when it already matches', () => {
+    const plan = planProductUpdate(
+      productRow(),
+      [variantRow({ spec: '128gb', priceUsd: '50', color: 'Black' })],
+      makeCurrent(),
+      makeRefs({ priceById: new Map([['vp1', { usd: '50', tmt: '1000' }]]) }),
+    );
+    expect(plan.tags).toEqual([
+      { spec: '128gb', colorId: 'col1', priceId: 'vp1', price: undefined },
+    ]);
   });
 });

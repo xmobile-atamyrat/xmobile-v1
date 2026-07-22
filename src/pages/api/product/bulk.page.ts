@@ -68,6 +68,7 @@ const bulkImportBodySchema = z.object({
   products: z.array(importProductRowSchema),
   variants: z.array(importVariantRowSchema),
   hasVariantsSheet: z.boolean(),
+  dryRun: z.boolean().optional(), // true = preview the diff, write nothing
 });
 
 export type ImportProductRow = z.infer<typeof importProductRowSchema>;
@@ -85,12 +86,48 @@ export interface BulkImportResult {
   errors: BulkRowError[];
 }
 
+// ---------- preview (dry-run) diff, shown before applying ----------
+
+export interface FieldChange {
+  label: string;
+  from: string;
+  to: string;
+}
+
+export interface VariantChange {
+  spec: string;
+  color?: string;
+  kind: 'added' | 'removed' | 'priceChanged';
+  from?: string; // price "usd / tmt" for removed/priceChanged
+  to?: string; // price "usd / tmt" for added/priceChanged
+}
+
+export interface ProductDiff {
+  id: string;
+  name: string; // EN name (fallback slug/id) for a readable header
+  fields: FieldChange[];
+  variants: VariantChange[];
+}
+
+export interface DiffLookups {
+  categorySlugById: Map<string, string>;
+  brandNameById: Map<string, string>;
+  colorNameById: Map<string, string>;
+  priceById: Map<string, { usd: string; tmt: string }>;
+}
+
+export interface BulkPreviewResult {
+  changes: ProductDiff[];
+  errors: BulkRowError[];
+}
+
 // ---------- planning (pure, unit-tested) ----------
 
 export interface PlanRefs {
   categoryIdBySlug: Map<string, string>; // keyed lowercase
   brandIdByLowerName: Map<string, string>;
   colorIdByLowerName: Map<string, string>;
+  priceById: Map<string, { usd: string; tmt: string }>; // current stored prices
   rate: number | null; // DollarRate TMT rate; null = missing
 }
 
@@ -183,6 +220,26 @@ export interface CurrentProductState {
   price: string | null;
   tags: string[];
   brandId: string | null;
+  categoryId: string;
+  isOutOfStock: boolean;
+  videoUrls: string[];
+}
+
+// A resolved price equals what's already stored -> nothing to write. Compared
+// numerically so "1000" vs "1000.00" (or an integer TMT) don't read as changes.
+function priceUnchanged(
+  resolved: { usd: string; tmt: string },
+  current: { usd: string; tmt: string } | undefined,
+): boolean {
+  return (
+    current != null &&
+    Number(resolved.usd) === Number(current.usd) &&
+    Number(resolved.tmt) === Number(current.tmt)
+  );
+}
+
+function sameStringArray(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
 // Pure planner: validates one product row (+ its variant rows) and returns either
@@ -214,14 +271,15 @@ export function planProductUpdate(
     const categoryId = refs.categoryIdBySlug.get(categorySlug.toLowerCase());
     if (categoryId == null)
       productError(`unknown category slug "${categorySlug}"`);
-    else data.categoryId = categoryId;
+    else if (categoryId !== currentProduct.categoryId)
+      data.categoryId = categoryId;
   }
 
   const brandName = cellText(productRow.brand);
   if (brandName !== '') {
     const brandId = refs.brandIdByLowerName.get(brandName.toLowerCase());
     if (brandId == null) productError(`unknown brand "${brandName}"`);
-    else data.brandId = brandId;
+    else if (brandId !== currentProduct.brandId) data.brandId = brandId;
   }
 
   const outOfStock = cellText(productRow.outOfStock);
@@ -229,15 +287,17 @@ export function planProductUpdate(
     const parsed = parseBoolCell(outOfStock);
     if (parsed == null)
       productError(`invalid Out of Stock value "${outOfStock}"`);
-    else data.isOutOfStock = parsed;
+    else if (parsed !== currentProduct.isOutOfStock) data.isOutOfStock = parsed;
   }
 
   const videoUrls = cellText(productRow.videoUrls);
   if (videoUrls !== '') {
-    data.videoUrls = videoUrls
+    const parsed = videoUrls
       .split('|')
       .map((url) => url.trim())
       .filter((url) => url !== '');
+    if (!sameStringArray(parsed, currentProduct.videoUrls))
+      data.videoUrls = parsed;
   }
 
   let basePrice: ProductUpdatePlan['basePrice'];
@@ -254,12 +314,19 @@ export function planProductUpdate(
       const existingPriceId =
         currentProduct.price?.match(squareBracketRegex)?.[1] ??
         (currentProduct.price || undefined);
-      basePrice = {
-        priceId: existingPriceId,
-        name: englishName,
-        ...baseResolved,
-      };
-      data.cachedPrice = parseFloat(baseResolved.usd);
+      // Skip an existing price only when it already matches; a create (no ref)
+      // always happens.
+      const unchanged =
+        existingPriceId != null &&
+        priceUnchanged(baseResolved, refs.priceById.get(existingPriceId));
+      if (!unchanged) {
+        basePrice = {
+          priceId: existingPriceId,
+          name: englishName,
+          ...baseResolved,
+        };
+        data.cachedPrice = parseFloat(baseResolved.usd);
+      }
     }
   }
 
@@ -339,12 +406,165 @@ export function planProductUpdate(
       if (existingByKey.has(key)) priceId = existingByKey.get(key);
       else if (specIds?.size === 1) [priceId] = [...specIds];
 
+      // Leave the referenced price untouched when it already matches.
+      if (
+        price != null &&
+        priceId != null &&
+        priceUnchanged(price, refs.priceById.get(priceId))
+      ) {
+        price = undefined;
+      }
+
       tags!.push({ spec, colorId, priceId, price });
     });
   }
 
   if (errors.length > 0) return { errors };
   return { errors, data, basePrice, tags };
+}
+
+// ---------- preview diff builder (pure, unit-tested) ----------
+
+function priceLabel(price: { usd: string; tmt: string } | undefined): string {
+  return price ? `${price.usd} / ${price.tmt}` : '—';
+}
+
+export function englishNameOf(nameJson: string): string {
+  try {
+    const parsed = JSON.parse(nameJson);
+    if (
+      parsed != null &&
+      typeof parsed === 'object' &&
+      typeof parsed.en === 'string'
+    )
+      return parsed.en.trim();
+  } catch {
+    // legacy non-JSON name
+  }
+  return '';
+}
+
+function buildVariantChanges(
+  current: CurrentProductState,
+  plan: ProductUpdatePlan,
+  lookups: DiffLookups,
+): VariantChange[] {
+  if (plan.tags == null) return []; // no Variants sheet -> tags untouched
+  const colorName = (id: string | undefined) =>
+    id ? lookups.colorNameById.get(id) : undefined;
+  const key = (spec: string, colorId: string | undefined) =>
+    `${spec} ${colorId ?? ''}`;
+
+  const currentPriceIdByKey = new Map<string, string | undefined>();
+  current.tags.forEach((tag) => {
+    const parsed = parseVariantTag(tag);
+    currentPriceIdByKey.set(
+      key(parsed.specText, parsed.colorId),
+      parsed.priceId,
+    );
+  });
+
+  const changes: VariantChange[] = [];
+  const plannedKeys = new Set<string>();
+  plan.tags.forEach((variant) => {
+    const k = key(variant.spec, variant.colorId);
+    plannedKeys.add(k);
+    if (!currentPriceIdByKey.has(k)) {
+      changes.push({
+        spec: variant.spec,
+        color: colorName(variant.colorId),
+        kind: 'added',
+        to: variant.price
+          ? `${variant.price.usd} / ${variant.price.tmt}`
+          : undefined,
+      });
+    } else if (variant.price != null) {
+      // The planner only sets price when it differs from what's stored.
+      const priceId = currentPriceIdByKey.get(k);
+      changes.push({
+        spec: variant.spec,
+        color: colorName(variant.colorId),
+        kind: 'priceChanged',
+        from: priceLabel(priceId ? lookups.priceById.get(priceId) : undefined),
+        to: `${variant.price.usd} / ${variant.price.tmt}`,
+      });
+    }
+  });
+
+  current.tags.forEach((tag) => {
+    const parsed = parseVariantTag(tag);
+    const k = key(parsed.specText, parsed.colorId);
+    if (!plannedKeys.has(k)) {
+      changes.push({
+        spec: parsed.specText,
+        color: colorName(parsed.colorId),
+        kind: 'removed',
+        from: priceLabel(
+          parsed.priceId ? lookups.priceById.get(parsed.priceId) : undefined,
+        ),
+      });
+    }
+  });
+
+  return changes;
+}
+
+// Human-readable before->after for one planned product. null = the plan
+// touches nothing. Derived purely from the current row + its plan.
+export function buildProductDiff(
+  current: CurrentProductState,
+  plan: ProductUpdatePlan,
+  lookups: DiffLookups,
+): { fields: FieldChange[]; variants: VariantChange[] } | null {
+  const fields: FieldChange[] = [];
+  const data = plan.data ?? {};
+
+  if (data.categoryId != null) {
+    fields.push({
+      label: 'Category',
+      from:
+        lookups.categorySlugById.get(current.categoryId) ?? current.categoryId,
+      to: lookups.categorySlugById.get(data.categoryId) ?? data.categoryId,
+    });
+  }
+  if (data.brandId != null) {
+    fields.push({
+      label: 'Brand',
+      from: current.brandId
+        ? lookups.brandNameById.get(current.brandId) ?? current.brandId
+        : '—',
+      to: lookups.brandNameById.get(data.brandId) ?? data.brandId,
+    });
+  }
+  if (data.isOutOfStock != null) {
+    fields.push({
+      label: 'Out of Stock',
+      from: String(current.isOutOfStock),
+      to: String(data.isOutOfStock),
+    });
+  }
+  if (data.videoUrls != null) {
+    fields.push({
+      label: 'Video URLs',
+      from: current.videoUrls.join(' | ') || '—',
+      to: data.videoUrls.join(' | ') || '—',
+    });
+  }
+  if (plan.basePrice != null) {
+    fields.push({
+      label: 'Price',
+      from: priceLabel(
+        plan.basePrice.priceId
+          ? lookups.priceById.get(plan.basePrice.priceId)
+          : undefined,
+      ),
+      to: `${plan.basePrice.usd} / ${plan.basePrice.tmt}`,
+    });
+  }
+
+  const variants = buildVariantChanges(current, plan, lookups);
+  if (fields.length === 0 && variants.length === 0) return null;
+  return { fields, variants };
 }
 
 // ---------- GET export ----------
@@ -437,11 +657,13 @@ async function syncCachedPrice(priceId: string, usd: number) {
   });
 }
 
+// Returns true if it wrote anything (product row and/or a shared Prices row);
+// false means the sheet matched the DB and nothing was touched.
 async function applyProductPlan(
   target: Product,
   plan: ProductUpdatePlan,
   brandsToSync: Set<string>,
-) {
+): Promise<boolean> {
   const data: Prisma.ProductUncheckedUpdateInput = { ...plan.data };
   const updatedPrices: { id: string; usd: number }[] = [];
 
@@ -495,26 +717,33 @@ async function applyProductPlan(
         }`,
       );
     }
-    data.tags = builtTags;
-    data.colors = {
-      set: deriveVariantColumns(builtTags).colors.map((id) => ({ id })),
-    };
+    // Only rewrite tags/colors when the rebuilt list actually differs, so an
+    // unchanged variant sheet doesn't bump the product.
+    if (!sameStringArray(builtTags, target.tags)) {
+      data.tags = builtTags;
+      data.colors = {
+        set: deriveVariantColumns(builtTags).colors.map((id) => ({ id })),
+      };
+    }
   }
 
-  const updated = await dbClient.product.update({
-    where: { id: target.id },
-    data,
-  });
+  const productChanged = Object.keys(data).length > 0;
+  if (productChanged) {
+    await dbClient.product.update({ where: { id: target.id }, data });
+  }
 
   for (let i = 0; i < updatedPrices.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await syncCachedPrice(updatedPrices[i].id, updatedPrices[i].usd);
   }
 
-  if (updated.brandId !== target.brandId) {
+  // The planner sets data.brandId only when it changed.
+  if (plan.data?.brandId != null) {
     if (target.brandId) brandsToSync.add(target.brandId);
-    if (updated.brandId) brandsToSync.add(updated.brandId);
+    brandsToSync.add(plan.data.brandId);
   }
+
+  return productChanged || updatedPrices.length > 0;
 }
 
 async function handleImport(
@@ -547,6 +776,24 @@ async function handleImport(
     }),
   ]);
 
+  // Current prices for the targets, so the planner can skip no-op price writes
+  // (and their cachedPrice fan-out) when the sheet matches what's stored.
+  const priceIds = new Set<string>();
+  targets.forEach((product) => {
+    const baseId =
+      product.price?.match(squareBracketRegex)?.[1] ??
+      (product.price || undefined);
+    if (baseId) priceIds.add(baseId);
+    product.tags.forEach((tag) => {
+      const { priceId } = parseVariantTag(tag);
+      if (priceId) priceIds.add(priceId);
+    });
+  });
+  const prices = await dbClient.prices.findMany({
+    where: { id: { in: [...priceIds] } },
+    select: { id: true, price: true, priceInTmt: true },
+  });
+
   const refs: PlanRefs = {
     categoryIdBySlug: new Map(
       categories.map((category) => [category.slug.toLowerCase(), category.id]),
@@ -557,9 +804,24 @@ async function handleImport(
     colorIdByLowerName: new Map(
       colors.map((color) => [color.name.toLowerCase(), color.id]),
     ),
+    priceById: new Map(
+      prices.map((price) => [
+        price.id,
+        { usd: price.price, tmt: price.priceInTmt },
+      ]),
+    ),
     rate: rateRow?.rate ?? null,
   };
   const targetById = new Map(targets.map((product) => [product.id, product]));
+
+  const lookups: DiffLookups = {
+    categorySlugById: new Map(
+      categories.map((category) => [category.id, category.slug]),
+    ),
+    brandNameById: new Map(brands.map((brand) => [brand.id, brand.name])),
+    colorNameById: new Map(colors.map((color) => [color.id, color.name])),
+    priceById: refs.priceById,
+  };
 
   const idCounts = new Map<string, number>();
   ids.forEach((id) => idCounts.set(id, (idCounts.get(id) ?? 0) + 1));
@@ -581,9 +843,13 @@ async function handleImport(
     variantsByProduct.set(row.productId, list);
   });
 
-  let updatedCount = 0;
-  const brandsToSync = new Set<string>();
-
+  // Plan every row first (pure, no writes). A single bad row blocks the whole
+  // batch: bulk edits are all-or-nothing so a typo can't half-apply.
+  const planned: {
+    productRow: ImportProductRow;
+    target: Product;
+    plan: ProductUpdatePlan;
+  }[] = [];
   for (let i = 0; i < productRows.length; i += 1) {
     const productRow = productRows[i];
     const target = targetById.get(productRow.id);
@@ -608,22 +874,50 @@ async function handleImport(
         target,
         refs,
       );
-      if (plan.errors.length > 0) {
-        errors.push(...plan.errors);
-      } else {
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          await applyProductPlan(target, plan, brandsToSync);
-          updatedCount += 1;
-        } catch (error) {
-          console.error(filepath, error);
-          errors.push({
-            sheet: 'Products',
-            row: productRow.row,
-            message: 'failed to apply update',
-          });
-        }
+      if (plan.errors.length > 0) errors.push(...plan.errors);
+      else planned.push({ productRow, target, plan });
+    }
+  }
+
+  // Dry run: describe the pending changes and write nothing. When errors exist
+  // the frontend shows them and never offers the confirm dialog.
+  if (parsedBody.data.dryRun) {
+    const changes: ProductDiff[] = [];
+    planned.forEach(({ target, plan }) => {
+      const diff = buildProductDiff(target, plan, lookups);
+      if (diff != null) {
+        changes.push({
+          id: target.id,
+          name: englishNameOf(target.name) || target.slug || target.id,
+          ...diff,
+        });
       }
+    });
+    const preview: BulkPreviewResult = { changes, errors };
+    return res.status(200).json({ success: true, data: preview });
+  }
+
+  // Apply: reject the entire batch if anything failed to plan.
+  if (errors.length > 0) {
+    const result: BulkImportResult = { updatedCount: 0, errors };
+    return res.status(200).json({ success: true, data: result });
+  }
+
+  let updatedCount = 0;
+  const brandsToSync = new Set<string>();
+  for (let i = 0; i < planned.length; i += 1) {
+    const { productRow, target, plan } = planned[i];
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const changed = await applyProductPlan(target, plan, brandsToSync);
+      if (changed) updatedCount += 1;
+    } catch (error) {
+      console.error(filepath, error);
+      errors.push({
+        sheet: 'Products',
+        row: productRow.row,
+        message: 'failed to apply update',
+      });
     }
   }
 
