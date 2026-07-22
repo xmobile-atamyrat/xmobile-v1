@@ -17,6 +17,11 @@ import {
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import {
+  getListSnapshot,
+  listKey,
+  useListRestoration,
+} from '@/pages/lib/listRestoration';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -186,11 +191,20 @@ export default function Home({
   const { user } = useUserContext();
   const { categories } = useCategoryContext();
   const { searchKeyword, setSearchKeyword } = useProductContext();
-  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
+  // Snapshot read once at mount so a back-nav restores the loaded list + scroll.
+  const [restored] = useState(() => getListSnapshot(listKey()));
+  const [products, setProducts] = useState<Product[]>(
+    restored?.products ?? initialProducts ?? [],
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(restored?.page ?? 1);
+  const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const { restoringRef } = useListRestoration(
+    { products, page, hasMore },
+    restored,
+  );
 
   const [localFilters, setLocalFilters] = useState({
     categoryIds: [] as string[],
@@ -217,6 +231,10 @@ export default function Home({
   }, [mobileFilterOpen, filters]);
 
   useEffect(() => {
+    // Skip the mount + filters-hydration reruns while restoring a snapshot, so
+    // the restored list isn't overwritten. Load-more and later filter/search
+    // changes happen after the guard clears and fetch normally.
+    if (restoringRef.current) return undefined;
     let mounted = true;
     (async () => {
       setIsLoading(true);

@@ -8,6 +8,11 @@ import SortDropdown from '@/pages/components/SortDropdown';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import {
+  getListSnapshot,
+  listKey,
+  useListRestoration,
+} from '@/pages/lib/listRestoration';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -63,9 +68,13 @@ export default function ProductGridContent({
   initialProducts,
 }: ProductGridContentProps) {
   const hasInitialProducts = (initialProducts?.length ?? 0) > 0;
-  const [isLoading, setIsLoading] = useState(!hasInitialProducts);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  // Snapshot read once at mount so a back-nav restores the loaded list + scroll.
+  const [restored] = useState(() => getListSnapshot(listKey()));
+  const [isLoading, setIsLoading] = useState(
+    restored ? false : !hasInitialProducts,
+  );
+  const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
+  const [page, setPage] = useState(restored?.page ?? 0);
   const { categories: allCategories } = useCategoryContext();
   const { products, setProducts, searchKeyword } = useProductContext();
   const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
@@ -92,6 +101,18 @@ export default function ProductGridContent({
   const platform = usePlatform();
 
   const { filters, setFilters } = useProductFilters();
+
+  const { restoringRef } = useListRestoration(
+    { products, page, hasMore },
+    restored,
+  );
+
+  // Seed the shared product context from the snapshot on a restoring mount.
+  // The reset effect below is skipped while restoring, so it won't clobber this.
+  useEffect(() => {
+    if (restored) setProducts(restored.products);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -142,6 +163,11 @@ export default function ProductGridContent({
   ]);
 
   useEffect(() => {
+    // Skip the page-1 reset while restoring a snapshot (incl. the filters-hydration
+    // rerun) so the restored list isn't wiped. loadMoreProducts is independent,
+    // so infinite scroll keeps working. Later filter changes clear the guard and
+    // reset normally.
+    if (restoringRef.current) return;
     setProducts([]);
     setPage(0);
     setHasMore(true);
