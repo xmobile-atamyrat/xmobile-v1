@@ -265,15 +265,27 @@ export function planProductUpdate(
 
   let tags: PlannedVariant[] | undefined;
   if (variantRows != null) {
-    const existingBySpec = new Map(
-      currentProduct.tags.map((tag) => {
-        const parsed = parseVariantTag(tag);
-        return [parsed.specText, parsed] as const;
-      }),
-    );
+    // Same spec with different colors is a valid product (mirrors the website),
+    // so existing variants are keyed by spec+color, not spec alone. A spec-only
+    // fallback keeps the "changed the color, keep the price" behavior for the
+    // common single-color-per-spec case.
+    const specColorKey = (spec: string, colorId: string | undefined) =>
+      `${spec} ${colorId ?? ''}`;
+    const existingByKey = new Map<string, string | undefined>();
+    const priceIdsBySpec = new Map<string, Set<string | undefined>>();
+    currentProduct.tags.forEach((tag) => {
+      const parsed = parseVariantTag(tag);
+      existingByKey.set(
+        specColorKey(parsed.specText, parsed.colorId),
+        parsed.priceId,
+      );
+      const ids = priceIdsBySpec.get(parsed.specText) ?? new Set();
+      ids.add(parsed.priceId);
+      priceIdsBySpec.set(parsed.specText, ids);
+    });
 
     tags = [];
-    const seenSpecs = new Set<string>();
+    const seenKeys = new Set<string>();
     variantRows.forEach((variantRow) => {
       const rowError = (message: string) =>
         errors.push({ sheet: 'Variants', row: variantRow.row, message });
@@ -283,11 +295,6 @@ export function planProductUpdate(
         rowError('empty variant spec');
         return;
       }
-      if (seenSpecs.has(spec)) {
-        rowError(`duplicate variant spec "${spec}"`);
-        return;
-      }
-      seenSpecs.add(spec);
 
       let colorId: string | undefined;
       const colorName = cellText(variantRow.color);
@@ -298,6 +305,17 @@ export function planProductUpdate(
           return;
         }
       }
+
+      const key = specColorKey(spec, colorId);
+      if (seenKeys.has(key)) {
+        rowError(
+          `duplicate variant spec "${spec}"${
+            colorName ? ` with color "${colorName}"` : ''
+          }`,
+        );
+        return;
+      }
+      seenKeys.add(key);
 
       const resolved = resolvePriceCells(
         cellText(variantRow.priceUsd),
@@ -310,15 +328,18 @@ export function planProductUpdate(
           rowError(resolved.error);
           return;
         }
-        price = { name: `${englishName} ${spec}`.trim(), ...resolved };
+        price = {
+          name: colorName ? `${spec} ${colorName}` : spec,
+          ...resolved,
+        };
       }
 
-      tags!.push({
-        spec,
-        colorId,
-        priceId: existingBySpec.get(spec)?.priceId,
-        price,
-      });
+      const specIds = priceIdsBySpec.get(spec);
+      let priceId: string | undefined;
+      if (existingByKey.has(key)) priceId = existingByKey.get(key);
+      else if (specIds?.size === 1) [priceId] = [...specIds];
+
+      tags!.push({ spec, colorId, priceId, price });
     });
   }
 

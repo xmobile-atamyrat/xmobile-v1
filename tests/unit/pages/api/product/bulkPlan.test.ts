@@ -71,7 +71,7 @@ describe('planProductUpdate variants', () => {
         spec: '128gb',
         colorId: 'col2',
         priceId: 'vp1',
-        price: { name: 'iPhone 15 128gb', usd: '100', tmt: '2000' },
+        price: { name: '128gb White', usd: '100', tmt: '2000' },
       },
     ]);
   });
@@ -88,7 +88,7 @@ describe('planProductUpdate variants', () => {
         spec: '512gb',
         colorId: undefined,
         priceId: undefined,
-        price: { name: 'iPhone 15 512gb', usd: '200', tmt: '4000' },
+        price: { name: '512gb', usd: '200', tmt: '4000' },
       },
     ]);
   });
@@ -126,6 +126,42 @@ describe('planProductUpdate variants', () => {
     ]);
     expect(plan.data).toBeUndefined();
     expect(plan.tags).toBeUndefined();
+  });
+
+  it('accepts the same spec with different colors', () => {
+    const plan = planProductUpdate(
+      productRow(),
+      [
+        variantRow({ spec: '128gb', color: 'Black' }),
+        variantRow({ row: 3, spec: '128gb', color: 'White' }),
+      ],
+      makeCurrent({ tags: ['128gb [vp1]{col1}', '128gb [vp3]{col2}'] }),
+      makeRefs(),
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.tags).toEqual([
+      { spec: '128gb', colorId: 'col1', priceId: 'vp1', price: undefined },
+      { spec: '128gb', colorId: 'col2', priceId: 'vp3', price: undefined },
+    ]);
+  });
+
+  it('rejects the same spec repeated with the same color', () => {
+    const plan = planProductUpdate(
+      productRow(),
+      [
+        variantRow({ spec: '128gb', color: 'Black' }),
+        variantRow({ row: 3, spec: '128gb', color: 'Black' }),
+      ],
+      makeCurrent(),
+      makeRefs(),
+    );
+    expect(plan.errors).toEqual([
+      {
+        sheet: 'Variants',
+        row: 3,
+        message: 'duplicate variant spec "128gb" with color "Black"',
+      },
+    ]);
   });
 
   it('round-trips a colorless variant', () => {
