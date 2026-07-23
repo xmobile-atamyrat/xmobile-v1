@@ -230,11 +230,14 @@ export async function parseWorkbook(file: File): Promise<BulkImportBody> {
     variantsSheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return;
       const productId = cellText(row.getCell(1).value);
-      if (productId === '') return;
+      const spec = cellText(row.getCell(3).value);
+      // Blank Product ID + blank Spec = decorative/empty row. A blank Product ID
+      // with a spec is a standalone price to add to the pool (attached later).
+      if (productId === '' && spec === '') return;
       variants.push({
         row: rowNumber,
         productId,
-        spec: cellText(row.getCell(3).value),
+        spec,
         priceUsd: cellText(row.getCell(4).value),
         priceTmt: tmtCellText(row.getCell(5).value),
         color: cellText(row.getCell(6).value),

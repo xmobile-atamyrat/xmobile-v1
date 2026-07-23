@@ -22,10 +22,6 @@ import {
   Alert,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Table,
   TableBody,
@@ -156,7 +152,7 @@ export default function BulkEdit() {
         showSnackbar('bulkEditErrors', 'error');
         return;
       }
-      if (data.changes.length === 0) {
+      if (data.changes.length === 0 && data.newPrices.length === 0) {
         showSnackbar('bulkEditNothingToChange', 'success');
         return;
       }
@@ -189,7 +185,7 @@ export default function BulkEdit() {
       // A race (data changed since preview) can still surface errors on apply.
       setPreview(
         data.errors.length > 0
-          ? { changes: [], errors: data.errors }
+          ? { changes: [], newPrices: [], errors: data.errors }
           : undefined,
       );
       showSnackbar(
@@ -260,9 +256,18 @@ export default function BulkEdit() {
           </Box>
 
           {result != null && result.errors.length === 0 && (
-            <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-              {t('bulkEditUpdated', { count: result.updatedCount })}
-            </Typography>
+            <Box className="flex flex-col">
+              <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                {t('bulkEditUpdated', { count: result.updatedCount })}
+              </Typography>
+              {result.createdPriceCount > 0 && (
+                <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                  {t('bulkEditPricesCreated', {
+                    count: result.createdPriceCount,
+                  })}
+                </Typography>
+              )}
+            </Box>
           )}
 
           {preview != null && preview.errors.length > 0 && (
@@ -293,21 +298,44 @@ export default function BulkEdit() {
             </Box>
           )}
 
-          <Dialog
-            open={pendingBody != null}
-            onClose={() => !loading && setPendingBody(undefined)}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle>
-              {t('bulkEditConfirmTitle', {
-                count: preview?.changes.length ?? 0,
-              })}
-            </DialogTitle>
-            <DialogContent dividers>
-              <Typography sx={{ mb: 2 }}>{t('bulkEditReviewNote')}</Typography>
-              {preview?.changes.map((change) => (
-                <Box key={change.id} className="flex flex-col" sx={{ mb: 2 }}>
+          {pendingBody != null && preview != null && (
+            <Box className="flex flex-col gap-3">
+              <Box className="flex flex-row items-center gap-2 flex-wrap">
+                <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                  {t('bulkEditConfirmTitle', {
+                    count: preview.changes.length + preview.newPrices.length,
+                  })}
+                </Typography>
+                <Box className="flex flex-row gap-2 ml-auto">
+                  <Button
+                    onClick={() => setPendingBody(undefined)}
+                    disabled={loading}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    {t('cancel')}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleConfirmApply}
+                    disabled={loading}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    {t('bulkEditApplyAll')}
+                  </Button>
+                </Box>
+              </Box>
+              <Typography>{t('bulkEditReviewNote')}</Typography>
+              {preview.changes.map((change) => (
+                <Box
+                  key={change.id}
+                  className="flex flex-col"
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 2,
+                  }}
+                >
                   <Typography fontWeight={600}>{change.name}</Typography>
                   {change.fields.map((field) => (
                     <Typography key={field.label} fontSize={14}>
@@ -321,25 +349,28 @@ export default function BulkEdit() {
                   ))}
                 </Box>
               ))}
-            </DialogContent>
-            <DialogActions>
-              <Button
-                onClick={() => setPendingBody(undefined)}
-                disabled={loading}
-                sx={{ textTransform: 'none' }}
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleConfirmApply}
-                disabled={loading}
-                sx={{ textTransform: 'none' }}
-              >
-                {t('bulkEditApply')}
-              </Button>
-            </DialogActions>
-          </Dialog>
+              {preview.newPrices.length > 0 && (
+                <Box
+                  className="flex flex-col"
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 2,
+                  }}
+                >
+                  <Typography fontWeight={600}>
+                    {t('bulkEditNewPrices')}
+                  </Typography>
+                  {preview.newPrices.map((price, index) => (
+                    <Typography key={index} fontSize={14}>
+                      + {price.name}: {price.usd} / {price.tmt}
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
 
           <Snackbar
             open={snackbarOpen}
