@@ -18,6 +18,14 @@ export const config = { api: { bodyParser: { sizeLimit: '8mb' } } };
 
 const filepath = 'src/pages/api/product/bulk.page.ts';
 
+// Emergency guard against one sync request trying to write thousands of rows:
+// each change fans out to several sequential, non-transactional DB round-trips
+// (incl. a full-table-scan cachedPrice sync per price), so a large batch times
+// out and can half-apply. Counts actual writes, not sheet rows, so a
+// full-catalog re-upload that only edits a few products stays well under it.
+// ponytail: flat cap; raise it once apply is chunked into per-batch transactions.
+const MAX_BULK_CHANGES = 500;
+
 // ---------- shared types (imported by the bulk-edit frontend) ----------
 
 // One row of the "Variants" sheet on export.
@@ -675,37 +683,49 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
 
 // ---------- POST import ----------
 
-async function syncCachedPrice(priceId: string, usd: number) {
-  // Fan out to every product referencing this Prices row (raw id or [id] format).
-  await dbClient.product.updateMany({
-    where: {
-      deletedAt: null,
-      OR: [{ price: priceId }, { price: { contains: `[${priceId}]` } }],
-    },
-    data: { cachedPrice: usd },
-  });
+// Refresh the denormalized cachedPrice on every product whose base price points
+// at one of these Prices rows (raw id or [id] format), in a single pass over the
+// table instead of one non-indexable LIKE scan per price. Runs outside the
+// per-product transactions: cachedPrice is a read cache, so a brief lag before
+// it catches up is acceptable, and it's rebuilt from the committed price values.
+async function syncCachedPrices(priceUsdById: Map<string, number>) {
+  const values = Prisma.join(
+    [...priceUsdById].map(
+      ([id, usd]) => Prisma.sql`(${id}::text, ${usd}::double precision)`,
+    ),
+  );
+  // pid is a uuid (no % or _), so it needs no LIKE escaping; [ ] are literal in
+  // Postgres LIKE, matching the "[id]" base-price format.
+  await dbClient.$executeRaw`
+    UPDATE "Product" AS p
+    SET "cachedPrice" = v.usd
+    FROM (VALUES ${values}) AS v(pid, usd)
+    WHERE p."deletedAt" IS NULL
+      AND (p."price" = v.pid OR p."price" LIKE '%[' || v.pid || ']%')
+  `;
 }
 
 // Returns true if it wrote anything (product row and/or a shared Prices row);
 // false means the sheet matched the DB and nothing was touched.
 async function applyProductPlan(
+  db: Prisma.TransactionClient,
   target: Product,
   plan: ProductUpdatePlan,
   brandsToSync: Set<string>,
-): Promise<boolean> {
+): Promise<{ changed: boolean; updatedPrices: { id: string; usd: number }[] }> {
   const data: Prisma.ProductUncheckedUpdateInput = { ...plan.data };
   const updatedPrices: { id: string; usd: number }[] = [];
 
   if (plan.basePrice != null) {
     const { priceId, name, usd, tmt } = plan.basePrice;
     if (priceId != null) {
-      await dbClient.prices.update({
+      await db.prices.update({
         where: { id: priceId },
         data: { price: usd, priceInTmt: tmt },
       });
       updatedPrices.push({ id: priceId, usd: parseFloat(usd) });
     } else {
-      const created = await dbClient.prices.create({
+      const created = await db.prices.create({
         data: { name, price: usd, priceInTmt: tmt },
       });
       data.price = `[${created.id}]`;
@@ -720,7 +740,7 @@ async function applyProductPlan(
       if (variant.price != null) {
         if (priceId != null) {
           // eslint-disable-next-line no-await-in-loop
-          await dbClient.prices.update({
+          await db.prices.update({
             where: { id: priceId },
             data: { price: variant.price.usd, priceInTmt: variant.price.tmt },
           });
@@ -730,7 +750,7 @@ async function applyProductPlan(
           });
         } else {
           // eslint-disable-next-line no-await-in-loop
-          const created = await dbClient.prices.create({
+          const created = await db.prices.create({
             data: {
               name: variant.price.name,
               price: variant.price.usd,
@@ -758,12 +778,7 @@ async function applyProductPlan(
 
   const productChanged = Object.keys(data).length > 0;
   if (productChanged) {
-    await dbClient.product.update({ where: { id: target.id }, data });
-  }
-
-  for (let i = 0; i < updatedPrices.length; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await syncCachedPrice(updatedPrices[i].id, updatedPrices[i].usd);
+    await db.product.update({ where: { id: target.id }, data });
   }
 
   // The planner sets data.brandId only when it changed.
@@ -772,7 +787,12 @@ async function applyProductPlan(
     brandsToSync.add(plan.data.brandId);
   }
 
-  return productChanged || updatedPrices.length > 0;
+  // cachedPrice fan-out is deferred: the caller batches every committed product's
+  // changed prices into one pass after the run (see syncCachedPrices).
+  return {
+    changed: productChanged || updatedPrices.length > 0,
+    updatedPrices,
+  };
 }
 
 async function handleImport(
@@ -956,20 +976,34 @@ async function handleImport(
     }
   }
 
+  // Describe the pending changes. buildProductDiff returns null for a no-op, so
+  // this counts only rows that actually write — also used to size the batch.
+  const changes: ProductDiff[] = [];
+  planned.forEach(({ target, plan }) => {
+    const diff = buildProductDiff(target, plan, lookups);
+    if (diff != null) {
+      changes.push({
+        id: target.id,
+        name: englishNameOf(target.name) || target.slug || target.id,
+        ...diff,
+      });
+    }
+  });
+
+  // Cap the writes per request. Checked before both the dry-run response and
+  // apply, so it blocks the confirm dialog and a direct apply POST alike.
+  const changeCount = changes.length + newPrices.length;
+  if (errors.length === 0 && changeCount > MAX_BULK_CHANGES) {
+    errors.push({
+      sheet: 'Products',
+      row: 0,
+      message: `too many changes in one upload (${changeCount}); the limit is ${MAX_BULK_CHANGES}. Split it into smaller uploads.`,
+    });
+  }
+
   // Dry run: describe the pending changes and write nothing. When errors exist
   // the frontend shows them and never offers the confirm dialog.
   if (parsedBody.data.dryRun) {
-    const changes: ProductDiff[] = [];
-    planned.forEach(({ target, plan }) => {
-      const diff = buildProductDiff(target, plan, lookups);
-      if (diff != null) {
-        changes.push({
-          id: target.id,
-          name: englishNameOf(target.name) || target.slug || target.id,
-          ...diff,
-        });
-      }
-    });
     const preview: BulkPreviewResult = { changes, newPrices, errors };
     return res.status(200).json({ success: true, data: preview });
   }
@@ -986,12 +1020,22 @@ async function handleImport(
 
   let updatedCount = 0;
   const brandsToSync = new Set<string>();
+  const priceUsdById = new Map<string, number>();
   for (let i = 0; i < planned.length; i += 1) {
     const { productRow, target, plan } = planned[i];
     try {
+      // One product per transaction: its price and tag writes commit or roll
+      // back together, so a mid-write failure can't leave it half-updated.
+      // Scoped to a single product, so locks are held only briefly.
       // eslint-disable-next-line no-await-in-loop
-      const changed = await applyProductPlan(target, plan, brandsToSync);
+      const { changed, updatedPrices } = await dbClient.$transaction(
+        (tx) => applyProductPlan(tx, target, plan, brandsToSync),
+        { timeout: 20000 },
+      );
       if (changed) updatedCount += 1;
+      // Record only committed price changes; a rolled-back product is skipped,
+      // so its stale price never reaches the cachedPrice sync.
+      updatedPrices.forEach(({ id, usd }) => priceUsdById.set(id, usd));
     } catch (error) {
       console.error(filepath, error);
       errors.push({
@@ -1000,6 +1044,12 @@ async function handleImport(
         message: 'failed to apply update',
       });
     }
+  }
+
+  // One pass over the products table for all changed prices, instead of a
+  // non-indexable LIKE scan per price inside each transaction.
+  if (priceUsdById.size > 0) {
+    await syncCachedPrices(priceUsdById);
   }
 
   await Promise.all(
