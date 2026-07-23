@@ -722,15 +722,20 @@ export default function AddEditProductDialog({
             </Box>
           </Box>
           <Box
-            className={addEditProductDialogClasses.box.flex.colGapP[platform]}
+            className={addEditProductDialogClasses.box.flex.descGrid[platform]}
           >
-            <Typography>{t('productDescription')}</Typography>
+            <Typography className="col-span-full">
+              {t('productDescription')}
+            </Typography>
             <TextField
               label={t('inRussian')}
               type="text"
               name="productDescriptionInRussian"
               multiline
-              className={addEditProductDialogClasses.textField.usual[platform]}
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
               defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
             />
             <TextField
@@ -738,7 +743,10 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInTurkmen"
               multiline
-              className={addEditProductDialogClasses.textField.usual[platform]}
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
               defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
             />
             <TextField
@@ -746,7 +754,10 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInTurkish"
               multiline
-              className={addEditProductDialogClasses.textField.usual[platform]}
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
               defaultValue={parsedProductDescription.tr ?? defaultProductDescTr}
             />
             <TextField
@@ -754,7 +765,10 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInCharjov"
               multiline
-              className={addEditProductDialogClasses.textField.usual[platform]}
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
               defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
             />
             <TextField
@@ -762,7 +776,10 @@ export default function AddEditProductDialog({
               type="text"
               name="productDescriptionInEnglish"
               multiline
-              className={addEditProductDialogClasses.textField.usual[platform]}
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
               defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
             />
           </Box>
