@@ -8,6 +8,7 @@ import {
   ImportVariantRow,
   PlanRefs,
   planProductUpdate,
+  planStandalonePrice,
 } from '@/pages/api/product/bulk.page';
 
 const productRow = (
@@ -197,6 +198,47 @@ describe('planProductUpdate variants', () => {
   it('clears all tags when the sheet is present with zero rows', () => {
     const plan = planProductUpdate(productRow(), [], makeCurrent(), makeRefs());
     expect(plan.tags).toEqual([]);
+  });
+});
+
+describe('planStandalonePrice', () => {
+  it('creates a price named by spec, deriving TMT from USD', () => {
+    const result = planStandalonePrice(
+      variantRow({ productId: '', spec: '512gb', priceUsd: '200' }),
+      makeRefs(),
+    );
+    expect(result).toEqual({ name: '512gb', usd: '200', tmt: '4000' });
+  });
+
+  it('appends the color to the name when given', () => {
+    const result = planStandalonePrice(
+      variantRow({
+        productId: '',
+        spec: '512gb',
+        priceUsd: '200',
+        color: 'Gold',
+      }),
+      makeRefs(),
+    );
+    expect(result).toEqual({ name: '512gb Gold', usd: '200', tmt: '4000' });
+  });
+
+  it('errors on an empty spec', () => {
+    const result = planStandalonePrice(
+      variantRow({ productId: '', priceUsd: '200' }),
+      makeRefs(),
+    );
+    expect(result).toEqual({ error: 'empty variant spec' });
+  });
+
+  it('errors when no price is given', () => {
+    const result = planStandalonePrice(
+      variantRow({ productId: '', spec: '512gb' }),
+      makeRefs(),
+    );
+    expect(result).toEqual({
+      error: 'a price with no product needs a USD or TMT value',
+    });
   });
 });
 

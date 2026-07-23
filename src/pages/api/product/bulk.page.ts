@@ -57,7 +57,7 @@ const importProductRowSchema = z.object({
 
 const importVariantRowSchema = z.object({
   row: z.number().int(),
-  productId: z.string().min(1),
+  productId: z.string(), // '' = standalone price (added to the pool, no product)
   spec: cellSchema,
   priceUsd: cellSchema,
   priceTmt: cellSchema,
@@ -81,8 +81,16 @@ export interface BulkRowError {
   message: string;
 }
 
+// A price with no product attached: created in the pool, referenced later in-app.
+export interface NewPrice {
+  name: string;
+  usd: string;
+  tmt: string;
+}
+
 export interface BulkImportResult {
   updatedCount: number;
+  createdPriceCount: number;
   errors: BulkRowError[];
 }
 
@@ -118,6 +126,7 @@ export interface DiffLookups {
 
 export interface BulkPreviewResult {
   changes: ProductDiff[];
+  newPrices: NewPrice[];
   errors: BulkRowError[];
 }
 
@@ -421,6 +430,26 @@ export function planProductUpdate(
 
   if (errors.length > 0) return { errors };
   return { errors, data, basePrice, tags };
+}
+
+// A Variants row with no product ID: create a Prices row in the pool (attach to
+// a product later in the app). Needs a spec (its name) and a price.
+export function planStandalonePrice(
+  row: ImportVariantRow,
+  refs: PlanRefs,
+): NewPrice | { error: string } {
+  const spec = cellText(row.spec).replace(/\s+/g, ' ');
+  if (spec === '') return { error: 'empty variant spec' };
+  const resolved = resolvePriceCells(
+    cellText(row.priceUsd),
+    cellText(row.priceTmt),
+    refs.rate,
+  );
+  if (resolved == null)
+    return { error: 'a price with no product needs a USD or TMT value' };
+  if ('error' in resolved) return { error: resolved.error };
+  const colorName = cellText(row.color);
+  return { name: colorName ? `${spec} ${colorName}` : spec, ...resolved };
 }
 
 // ---------- preview diff builder (pure, unit-tested) ----------
@@ -828,8 +857,33 @@ async function handleImport(
 
   const variantsByProduct = new Map<string, ImportVariantRow[]>();
   const errors: BulkRowError[] = [];
+  const newPrices: NewPrice[] = [];
+  // A standalone price's name is spec (+ color), so two rows with the same name
+  // mean the same spec with a color that doesn't differ -> a duplicate variant.
+  const seenPriceNames = new Set<string>();
   const productSheetIds = new Set(ids);
   allVariantRows.forEach((row) => {
+    // No product ID = a standalone price added to the pool, attached later.
+    if (row.productId === '') {
+      const planned = planStandalonePrice(row, refs);
+      if ('error' in planned) {
+        errors.push({
+          sheet: 'Variants',
+          row: row.row,
+          message: planned.error,
+        });
+      } else if (seenPriceNames.has(planned.name)) {
+        errors.push({
+          sheet: 'Variants',
+          row: row.row,
+          message: `duplicate variant "${planned.name}"`,
+        });
+      } else {
+        seenPriceNames.add(planned.name);
+        newPrices.push(planned);
+      }
+      return;
+    }
     if (!productSheetIds.has(row.productId)) {
       errors.push({
         sheet: 'Variants',
@@ -842,6 +896,29 @@ async function handleImport(
     list.push(row);
     variantsByProduct.set(row.productId, list);
   });
+
+  // Standalone prices have no ID to match on, so re-uploading the same sheet
+  // would keep creating duplicates. Match them against the existing pool by
+  // name + value and drop the ones already there, making re-upload a no-op.
+  // ponytail: name+value key; add a real "price ID" column if intentional dupes matter.
+  if (newPrices.length > 0) {
+    const priceKey = (name: string, usd: string, tmt: string) =>
+      `${name}|${Number(usd)}|${Number(tmt)}`;
+    const existing = await dbClient.prices.findMany({
+      where: { name: { in: newPrices.map((price) => price.name) } },
+      select: { name: true, price: true, priceInTmt: true },
+    });
+    const existingKeys = new Set(
+      existing.map((price) =>
+        priceKey(price.name, price.price, price.priceInTmt),
+      ),
+    );
+    const deduped = newPrices.filter(
+      (price) => !existingKeys.has(priceKey(price.name, price.usd, price.tmt)),
+    );
+    newPrices.length = 0;
+    newPrices.push(...deduped);
+  }
 
   // Plan every row first (pure, no writes). A single bad row blocks the whole
   // batch: bulk edits are all-or-nothing so a typo can't half-apply.
@@ -893,13 +970,17 @@ async function handleImport(
         });
       }
     });
-    const preview: BulkPreviewResult = { changes, errors };
+    const preview: BulkPreviewResult = { changes, newPrices, errors };
     return res.status(200).json({ success: true, data: preview });
   }
 
   // Apply: reject the entire batch if anything failed to plan.
   if (errors.length > 0) {
-    const result: BulkImportResult = { updatedCount: 0, errors };
+    const result: BulkImportResult = {
+      updatedCount: 0,
+      createdPriceCount: 0,
+      errors,
+    };
     return res.status(200).json({ success: true, data: result });
   }
 
@@ -925,7 +1006,26 @@ async function handleImport(
     [...brandsToSync].map((brandId) => syncBrandProductCount(brandId)),
   );
 
-  const result: BulkImportResult = { updatedCount, errors };
+  let createdPriceCount = 0;
+  for (let i = 0; i < newPrices.length; i += 1) {
+    const { name, usd, tmt } = newPrices[i];
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await dbClient.prices.create({
+        data: { name, price: usd, priceInTmt: tmt },
+      });
+      createdPriceCount += 1;
+    } catch (error) {
+      console.error(filepath, error);
+      errors.push({
+        sheet: 'Variants',
+        row: 0,
+        message: `failed to create price "${name}"`,
+      });
+    }
+  }
+
+  const result: BulkImportResult = { updatedCount, createdPriceCount, errors };
   return res.status(200).json({ success: true, data: result });
 }
 
