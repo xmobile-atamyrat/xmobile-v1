@@ -1,6 +1,8 @@
 import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
+import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
@@ -22,7 +24,7 @@ const ChatWindow = () => {
   const t = useTranslations();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const hasMore = messages.length >= 50;
+  const hasMore = messages.length >= CHAT_MESSAGES_PAGE_SIZE;
 
   const isClosed = currentSession?.status === 'CLOSED';
 
@@ -92,18 +94,8 @@ const ChatWindow = () => {
             </Button>
           </Box>
         )}
-        {messages.length === 0 ? (
-          <Typography
-            sx={{
-              textAlign: 'center',
-              color: '#9E9E9E',
-              mt: 4,
-              fontSize: '14px',
-            }}
-          >
-            {t('chatStartConversation')}
-          </Typography>
-        ) : (
+        {messages.length === 0 && <ChatWelcomeBanner />}
+        {messages.length > 0 &&
           (() => {
             const elements: JSX.Element[] = [];
             let lastDateKey: string | null = null;
@@ -165,8 +157,7 @@ const ChatWindow = () => {
             });
 
             return elements;
-          })()
-        )}
+          })()}
       </Box>
 
       {isClosed && (

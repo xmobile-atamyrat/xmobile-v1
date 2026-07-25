@@ -5,7 +5,10 @@ import {
   generateTokens,
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
-import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import {
+  AUTH_REFRESH_COOKIE_NAME,
+  CHAT_MESSAGES_PAGE_SIZE,
+} from '@/pages/lib/constants';
 import { ChatMessage } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import {
@@ -360,9 +363,9 @@ const handleGetMessages = async (
       return;
     }
 
-    // Cursor pagination: take: -50 (backwards), skip: 1 (exclude cursor), orderBy deterministic
+    // Cursor pagination: take backwards, skip: 1 (exclude cursor), orderBy deterministic
     const messages = await dbClient.chatMessage.findMany({
-      take: -50,
+      take: -CHAT_MESSAGES_PAGE_SIZE,
       skip: cursorId ? 1 : 0,
       cursor: cursorId ? { id: cursorId } : undefined,
       where: { sessionId },
