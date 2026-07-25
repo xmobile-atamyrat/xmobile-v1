@@ -2,7 +2,6 @@ import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
 import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
 import { useChatContext } from '@/pages/lib/ChatContext';
-import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
@@ -17,14 +16,13 @@ const ChatWindow = () => {
     currentSession,
     isConnected,
     isSendingMessage,
+    hasOlderMessages,
     loadMessages,
   } = useChatContext();
   const { user } = useUserContext();
   const platform = usePlatform();
   const t = useTranslations();
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const hasMore = messages.length >= CHAT_MESSAGES_PAGE_SIZE;
 
   const isClosed = currentSession?.status === 'CLOSED';
 
@@ -79,7 +77,7 @@ const ChatWindow = () => {
           flexDirection: 'column',
         }}
       >
-        {hasMore && messages.length > 0 && (
+        {hasOlderMessages && messages.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
             <Button
               size="small"
