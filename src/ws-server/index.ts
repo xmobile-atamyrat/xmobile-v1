@@ -252,12 +252,6 @@ const handleMessage = async (
       },
     });
 
-    // Bump session's updatedAt so admin chat lists sort by last message, not session start
-    await dbClient.chatSession.update({
-      where: { id: sessionId },
-      data: { updatedAt: new Date() },
-    });
-
     // Only fetch the sender's name if they are staff (Admin/Superuser)
     let senderName: string | undefined;
     if (senderRole !== 'FREE') {
@@ -290,6 +284,18 @@ const handleMessage = async (
     };
 
     broadcastToSession(connections, adminConnections, session, outgoingMessage);
+
+    // Bump session's updatedAt so admin chat lists sort by last message, not
+    // session start. Done after broadcast so a failure here can't drop the
+    // message (the send path already succeeded).
+    try {
+      await dbClient.chatSession.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() },
+      });
+    } catch (bumpError) {
+      console.error(filepath, 'Failed to bump session updatedAt:', bumpError);
+    }
 
     // Create notifications for all participants except sender
     try {
