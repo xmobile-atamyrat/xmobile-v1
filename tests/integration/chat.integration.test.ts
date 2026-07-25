@@ -418,8 +418,9 @@ describe('Chat API (integration)', () => {
       data: { status: 'ACTIVE', users: { connect: { id: free.userId } } },
     });
 
-    // Simulate a new message arriving on the older session (mirrors the ws-server
-    // touching chatSession.updatedAt whenever a message is created).
+    // Bump the older session's updatedAt to the value the ws-server would write
+    // on a new message. This covers session.page.ts ordering only, NOT the
+    // ws-server bump itself (that write is not exercised here).
     await prisma.chatMessage.create({
       data: {
         sessionId: older.id,
@@ -446,6 +447,8 @@ describe('Chat API (integration)', () => {
     const ids = JSON.parse(list.res._getData() as string).data.map(
       (s: { id: string }) => s.id,
     );
+    expect(ids).toContain(older.id);
+    expect(ids).toContain(newer.id);
     expect(ids.indexOf(older.id)).toBeLessThan(ids.indexOf(newer.id));
 
     await prisma.chatMessage.deleteMany({ where: { sessionId: older.id } });
