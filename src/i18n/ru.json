@@ -374,6 +374,7 @@
   "recentlyEdited": "Недавно изменённые",
   "longestNotEdited": "Давно не изменялись",
   "allCategories": "Все категории",
+  "noProduct": "Без товара",
   "sortBy": "Сортировать по",
   "brandDeleteConfirm": "Вы уверены, что хотите удалить бренд \"{name}\"? Связь с продуктами будет удалена.",
   "createBrandError": "Не удалось создать бренд",

@@ -2,6 +2,8 @@ import { Color, Prices } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  applyPendingEdits,
+  filterPricesWithoutProduct,
   debounce,
   isPriceValid,
   parseOrderVariant,
@@ -51,6 +53,55 @@ describe('processPrices', () => {
     const table = processPrices(rows);
     expect(table[0]).toEqual(['Name', 'Dollars', 'Manat', 'ID']);
     expect(table[1]).toEqual(['A', '10', 35.5, 'p1']);
+  });
+});
+
+describe('applyPendingEdits', () => {
+  // [Name, Dollars, Manat, ID]
+  const table = [
+    ['Name', 'Dollars', 'Manat', 'ID'],
+    ['A', '10', 200, 'p1'],
+    ['B', '20', 400, 'p2'],
+  ];
+
+  it('passes rows through unchanged when there are no edits', () => {
+    expect(applyPendingEdits(table, {})).toEqual(table);
+  });
+
+  it('overlays an edit only onto the row with the matching price id', () => {
+    const result = applyPendingEdits(table, {
+      p2: { id: 'p2', name: 'B-edited', price: '25', priceInTmt: '500' },
+    });
+    // p1 untouched, p2 gets name/dollar/manat from the edit (manat parsed)
+    expect(result[1]).toEqual(['A', '10', 200, 'p1']);
+    expect(result[2]).toEqual(['B-edited', '25', 500, 'p2']);
+  });
+
+  it('does not leak an edit onto a different price after re-ordering', () => {
+    // p1 edited, then rows reordered (p2 now at the position p1 used to hold).
+    const reordered = [table[0], table[2], table[1]];
+    const result = applyPendingEdits(reordered, {
+      p1: { id: 'p1', priceInTmt: '999' },
+    });
+    expect(result[1]).toEqual(['B', '20', 400, 'p2']); // p2 untouched
+    expect(result[2]).toEqual(['A', '10', 999, 'p1']); // edit follows p1
+  });
+});
+
+describe('filterPricesWithoutProduct', () => {
+  const prices = [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }] as Prices[];
+
+  it('keeps prices absent from the map or mapped to no category', () => {
+    const result = filterPricesWithoutProduct(prices, {
+      p1: ['c1'],
+      p2: [], // referenced by no product
+      // p3 absent entirely
+    });
+    expect(result.map((p) => p.id)).toEqual(['p2', 'p3']);
+  });
+
+  it('returns all prices when the map is empty', () => {
+    expect(filterPricesWithoutProduct(prices, {})).toEqual(prices);
   });
 });
 
