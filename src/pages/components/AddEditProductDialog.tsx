@@ -204,6 +204,11 @@ export default function AddEditProductDialog({
   // is preserved on save; the select only edits the catalog reference.
   const [basePrice, setBasePrice] = useState(price ?? '');
   const basePriceId = basePrice.match(squareBracketRegex)?.[1] ?? '';
+  // A legacy product stored a literal price string instead of a "[priceId]" ref.
+  // The select only edits catalog refs, so surface the literal (otherwise it
+  // renders as a blank field while the hidden input silently keeps the value).
+  const legacyLiteralPrice =
+    basePrice && !basePrice.match(squareBracketRegex) ? basePrice : '';
 
   const loadBrands = async () => {
     const data = await fetchBrands();
@@ -526,6 +531,15 @@ export default function AddEditProductDialog({
                 priceOptions={priceOptions}
                 sx={{ minWidth: 200 }}
               />
+              {legacyLiteralPrice && (
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ display: 'block', mt: 0.5 }}
+                >
+                  {t('price')}: {legacyLiteralPrice}
+                </Typography>
+              )}
               <input type="hidden" name="price" value={basePrice} />
             </Box>
 

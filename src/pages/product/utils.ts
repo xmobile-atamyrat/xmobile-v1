@@ -134,6 +134,25 @@ export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
 };
 
+// Overlays typed-but-unsaved edits onto derived table rows. Edits are keyed by
+// price id (not row index) so re-sorting/filtering/searching can never merge one
+// price's pending values onto another. The header row is passed through.
+export const applyPendingEdits = (
+  data: TableData,
+  edits: Record<string, Partial<Prices>>,
+): TableData =>
+  data.map((row, index) => {
+    if (index === 0) return row; // header
+    const edit = edits[row[PRICE_ID_IDX] as string];
+    if (edit == null) return row;
+    const next = [...row];
+    if (edit.name != null) next[PRICE_NAME_IDX] = edit.name;
+    if (edit.price != null) next[PRICE_DOLLAR_IDX] = edit.price;
+    if (edit.priceInTmt != null)
+      next[PRICE_MANAT_IDX] = parsePrice(edit.priceInTmt);
+    return next;
+  });
+
 // Sort/filter helpers for the update-prices page. Pure functions over Prices[]
 // so the page can sort/filter client-side without touching the edit/save flow.
 export type PriceSortKey =
@@ -190,6 +209,17 @@ export const filterPricesByCategories = (
     (priceCategoryMap[p.id] ?? []).some((c) => categoryIds.has(c)),
   );
 };
+
+// Sentinel value for the "no product" option in the category filter dropdown.
+export const NO_PRODUCT_FILTER = '__noProduct__';
+
+// Prices referenced by no product (absent or empty in the category map).
+// Backs the "no product" option in the update-prices category filter.
+export const filterPricesWithoutProduct = (
+  prices: Prices[],
+  priceCategoryMap: Record<string, string[]>,
+): Prices[] =>
+  prices.filter((p) => (priceCategoryMap[p.id] ?? []).length === 0);
 
 // Collects a category id plus all descendant ids from the nested category tree
 // (as returned by /api/category). Used to make a category filter include the
