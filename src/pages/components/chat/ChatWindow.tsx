@@ -2,6 +2,7 @@ import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
 import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
@@ -23,7 +24,7 @@ const ChatWindow = () => {
   const t = useTranslations();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const hasMore = messages.length >= 50;
+  const hasMore = messages.length >= CHAT_MESSAGES_PAGE_SIZE;
 
   const isClosed = currentSession?.status === 'CLOSED';
 

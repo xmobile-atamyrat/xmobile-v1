@@ -14,6 +14,8 @@ export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const BANNER_IMAGE_WIDTH = 1600; // px
 
+export const CHAT_MESSAGES_PAGE_SIZE = 50;
+
 export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;
