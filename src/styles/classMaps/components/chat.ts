@@ -29,6 +29,24 @@ export const chatClasses = {
       web: 'py-[16px]',
       mobile: 'py-[12px]',
     },
+    welcomeBanner: {
+      container: {
+        web: 'px-[24px] pt-[24px] pb-[16px]',
+        mobile: 'px-[16px] pt-[20px] pb-[12px]',
+      },
+      iconWrapper: {
+        web: 'w-[48px] h-[48px] mb-[12px]',
+        mobile: 'w-[40px] h-[40px] mb-[10px]',
+      },
+      title: {
+        web: 'text-[14px] font-semibold mb-[4px]',
+        mobile: 'text-[13px] font-semibold mb-[4px]',
+      },
+      message: {
+        web: 'text-[14px] leading-[1.5]',
+        mobile: 'text-[13px] leading-[1.5]',
+      },
+    },
   },
 
   // Chat Bubble
