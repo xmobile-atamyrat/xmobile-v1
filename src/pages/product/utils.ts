@@ -1,5 +1,5 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
-import { FetchWithCredsType } from '@/pages/lib/types';
+import { ExtendedCategory, FetchWithCredsType } from '@/pages/lib/types';
 import { Color, Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
 import { ChangeEvent, Dispatch, SetStateAction } from 'react';
@@ -132,6 +132,92 @@ export const processPrices = (prices: Prices[]): TableData => {
 
 export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
+};
+
+// Sort/filter helpers for the update-prices page. Pure functions over Prices[]
+// so the page can sort/filter client-side without touching the edit/save flow.
+export type PriceSortKey =
+  | ''
+  | 'nameAsc'
+  | 'nameDesc'
+  | 'dollarAsc'
+  | 'dollarDesc'
+  | 'manatAsc'
+  | 'manatDesc'
+  | 'editedRecent'
+  | 'editedStale';
+
+const editedTime = (p: Prices) => new Date(p.updatedAt).getTime();
+
+// Returns a sorted copy; '' (or unknown key) keeps the original order.
+export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
+  const sorted = [...prices];
+  switch (key) {
+    case 'nameAsc':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    case 'nameDesc':
+      return sorted.sort((a, b) => b.name.localeCompare(a.name));
+    case 'dollarAsc':
+      return sorted.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+    case 'dollarDesc':
+      return sorted.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+    case 'manatAsc':
+      return sorted.sort(
+        (a, b) => parsePrice(a.priceInTmt) - parsePrice(b.priceInTmt),
+      );
+    case 'manatDesc':
+      return sorted.sort(
+        (a, b) => parsePrice(b.priceInTmt) - parsePrice(a.priceInTmt),
+      );
+    case 'editedRecent':
+      return sorted.sort((a, b) => editedTime(b) - editedTime(a));
+    case 'editedStale':
+      return sorted.sort((a, b) => editedTime(a) - editedTime(b));
+    default:
+      return sorted;
+  }
+};
+
+// Keeps prices referenced by a product whose categoryId is in categoryIds.
+// Empty categoryIds -> no filtering (all prices returned).
+export const filterPricesByCategories = (
+  prices: Prices[],
+  priceCategoryMap: Record<string, string[]>,
+  categoryIds: Set<string>,
+): Prices[] => {
+  if (categoryIds.size === 0) return prices;
+  return prices.filter((p) =>
+    (priceCategoryMap[p.id] ?? []).some((c) => categoryIds.has(c)),
+  );
+};
+
+// Collects a category id plus all descendant ids from the nested category tree
+// (as returned by /api/category). Used to make a category filter include the
+// prices of products in its subcategories, not just the exact category.
+export const collectCategorySubtreeIds = (
+  categories: ExtendedCategory[],
+  targetId: string,
+): Set<string> => {
+  const result = new Set<string>();
+  const collect = (node: ExtendedCategory) => {
+    result.add(node.id);
+    node.successorCategories?.forEach(collect);
+  };
+  const find = (nodes: ExtendedCategory[]): ExtendedCategory | undefined => {
+    let match: ExtendedCategory | undefined;
+    nodes.some((node) => {
+      if (node.id === targetId) {
+        match = node;
+      } else if (node.successorCategories) {
+        match = find(node.successorCategories);
+      }
+      return match != null;
+    });
+    return match;
+  };
+  const target = find(categories);
+  if (target) collect(target);
+  return result;
 };
 
 // returns product.price from session or fetches from db
