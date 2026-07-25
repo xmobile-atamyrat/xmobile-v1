@@ -26,9 +26,11 @@ const ChatWindow = () => {
 
   const hasMore = messages.length >= CHAT_MESSAGES_PAGE_SIZE;
 
-  const isClosed = currentSession?.status === 'CLOSED';
+  const isSessionClosed = currentSession?.status === 'CLOSED';
 
   const isAdminView = user?.grade === 'ADMIN' || user?.grade === 'SUPERUSER';
+
+  const isSessionEmpty = messages.length === 0;
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -94,7 +96,21 @@ const ChatWindow = () => {
             </Button>
           </Box>
         )}
-        {messages.length === 0 && <ChatWelcomeBanner />}
+        {isSessionEmpty &&
+          (isAdminView ? (
+            <Typography
+              sx={{
+                textAlign: 'center',
+                color: '#9E9E9E',
+                mt: 4,
+                fontSize: '14px',
+              }}
+            >
+              {t('chatStartConversation')}
+            </Typography>
+          ) : (
+            <ChatWelcomeBanner />
+          ))}
         {messages.length > 0 &&
           (() => {
             const elements: JSX.Element[] = [];
@@ -160,7 +176,7 @@ const ChatWindow = () => {
           })()}
       </Box>
 
-      {isClosed && (
+      {isSessionClosed && (
         <Box
           sx={{
             p: 1.5,
@@ -178,7 +194,7 @@ const ChatWindow = () => {
       )}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected || isClosed}
+        disabled={!isConnected || isSessionClosed}
         isSending={isSendingMessage}
       />
     </Box>

@@ -1,49 +1,47 @@
+import { usePlatform } from '@/pages/lib/PlatformContext';
+import { colors } from '@/styles/theme';
+import { chatClasses } from '@/styles/classMaps/components/chat';
 import HeadsetMicOutlinedIcon from '@mui/icons-material/HeadsetMicOutlined';
-import { Box, Typography } from '@mui/material';
+import { alpha, Box, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 
 const ChatWelcomeBanner = () => {
   const t = useTranslations();
+  const platform = usePlatform();
+  const classes = chatClasses.chatWindow.welcomeBanner;
 
   return (
     <Box
+      className={classes.container[platform]}
       sx={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        px: 3,
-        pt: 3,
-        pb: 2,
       }}
     >
       <Box
+        className={classes.iconWrapper[platform]}
         sx={{
-          width: 48,
-          height: 48,
           borderRadius: '50%',
-          backgroundColor: 'rgba(255, 98, 76, 0.1)',
+          backgroundColor: alpha(colors.main, 0.1),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mb: 1.5,
         }}
       >
-        <HeadsetMicOutlinedIcon sx={{ color: '#FF624C', fontSize: 24 }} />
+        <HeadsetMicOutlinedIcon sx={{ color: colors.main, fontSize: 24 }} />
       </Box>
 
       <Typography
-        sx={{ fontSize: '13px', fontWeight: 600, color: '#1B1B1B', mb: 0.5 }}
+        className={classes.title[platform]}
+        sx={{ color: colors.blackText }}
       >
         {t('chatCustomerSupport')}
       </Typography>
 
       <Typography
-        sx={{
-          fontSize: '13px',
-          color: '#838383',
-          textAlign: 'center',
-          lineHeight: 1.5,
-        }}
+        className={classes.message[platform]}
+        sx={{ color: colors.placeholder, textAlign: 'center' }}
       >
         {t('chatWelcomeMessage')}
       </Typography>
