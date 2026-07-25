@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import BASE_URL from '@/lib/ApiEndpoints';
+import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
 import { ChatMessage, ChatSession } from '@/pages/lib/types';
@@ -21,6 +22,7 @@ interface ChatContextProps {
   sessions: ChatSession[];
   currentSession: ChatSession | undefined;
   isSendingMessage: boolean;
+  hasOlderMessages: boolean;
   sendMessage: (content: string) => void;
   joinSession: (sessionId: string) => Promise<boolean>;
   loadMessages: (sessionId: string, cursorId?: string) => Promise<void>;
@@ -40,6 +42,7 @@ const ChatContext = createContext<ChatContextProps>({
   sessions: [],
   currentSession: undefined,
   isSendingMessage: false,
+  hasOlderMessages: false,
   sendMessage: () => {},
   joinSession: async () => false,
   loadMessages: async () => {},
@@ -60,6 +63,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
 
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
 
@@ -71,6 +75,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setSessions([]);
     setMessages([]);
+    setHasOlderMessages(false);
     setCurrentSession(undefined);
   }, [user?.id]);
 
@@ -116,6 +121,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       setIsSendingMessage(false);
       if (!data.success) {
         setMessages([]);
+        setHasOlderMessages(false);
         if (data.error === 'closed_session') {
           console.warn('Session closed error');
           setCurrentSession(undefined);
@@ -129,6 +135,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribeHistory = subscribe('history', (data) => {
       const activeSession = sessionRef.current;
       if (activeSession && data.sessionId === activeSession.id) {
+        setHasOlderMessages(data.messages.length === CHAT_MESSAGES_PAGE_SIZE);
+
         setMessages((prev) => {
           const incomingMessages = data.messages.map((msg: any) => ({
             ...msg,
@@ -181,6 +189,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
             prev ? { ...prev, status: 'CLOSED' } : undefined,
           );
           setMessages([]);
+          setHasOlderMessages(false);
         } else {
           setCurrentSession((prev) =>
             prev ? { ...prev, status: data.status } : undefined,
@@ -228,6 +237,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setMessages([]);
+      setHasOlderMessages(false);
 
       setCurrentSession(session);
 
@@ -322,6 +332,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
+      hasOlderMessages,
       sendMessage,
       joinSession,
       loadMessages,
@@ -338,6 +349,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       sessions,
       currentSession,
       isSendingMessage,
+      hasOlderMessages,
       sendMessage,
       joinSession,
       loadMessages,
