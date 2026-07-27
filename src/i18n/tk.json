@@ -345,6 +345,8 @@
   "chatSessionTakenByOther": "Bu söhbetdeşlik başga bir dolandyryjy tarapyndan alyndy.",
   "notifications": "Bildirişler",
   "noNotifications": "Bildiriş ýok",
+  "newMessages": "täze habar",
+  "messages": "habar",
   "markAllRead": "Hemmesini okalan diýip belläň",
   "enableBrowserNotifications": "Täzelikleri almak üçin brauzer bildirişlerini açyň",
   "enableNativeNotifications": "Täzelikleri almak üçin telefon bildirişlerini açyň",

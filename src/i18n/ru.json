@@ -346,6 +346,8 @@
   "chatSessionTakenByOther": "Эта сессия была занята другим администратором.",
   "notifications": "Уведомления",
   "noNotifications": "Нет уведомлений",
+  "newMessages": "новых сообщений",
+  "messages": "сообщений",
   "markAllRead": "Отметить все как прочитанные",
   "enableBrowserNotifications": "Включите уведомления в браузере",
   "enableNativeNotifications": "Разрешите уведомления в приложении",
