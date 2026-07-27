@@ -11,7 +11,10 @@ export const footerClasses = {
     },
     main: {
       web: 'flex flex-col w-full',
-      mobile: 'flex flex-col w-full mt-[100px]',
+      // mobile footer is only the fixed nav; its flow content is hidden, so no
+      // top margin (that left a white tail below short pages — clearance is
+      // handled per-page via mobileBottomNavHeight padding instead).
+      mobile: 'flex flex-col w-full',
     },
     footerMain: 'flex w-full h-full flex-row',
     footerStack: {
