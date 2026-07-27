@@ -15,33 +15,38 @@ import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { colors, fontClassName } from '@/styles/theme';
-import { ArrowForwardIos } from '@mui/icons-material';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import DescriptionIcon from '@mui/icons-material/Description';
-import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
-import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
-import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
-import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
-import ViewCarouselOutlinedIcon from '@mui/icons-material/ViewCarouselOutlined';
 import {
   Box,
-  Button,
+  ButtonBase,
   CardMedia,
   Dialog,
-  Divider,
   List,
   ListItemButton,
   Typography,
 } from '@mui/material';
+import {
+  BarChart3,
+  ChevronRight,
+  Download,
+  FolderTree,
+  Headphones,
+  Images,
+  Languages,
+  LogIn,
+  LogOut,
+  Package,
+  Palette,
+  ScrollText,
+  ShieldCheck,
+  Trash2,
+  Truck,
+  Upload,
+  User as UserIcon,
+} from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -50,6 +55,40 @@ export const getStaticProps = (async (context) => {
     },
   };
 }) satisfies GetStaticProps<object>;
+
+type MenuRow = {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: 'primary' | 'muted';
+};
+
+function MenuCard({ rows }: { rows: MenuRow[] }) {
+  return (
+    <Box className={profileClasses.card}>
+      {rows.map((row, i) => (
+        <ButtonBase
+          key={row.label}
+          onClick={row.onClick}
+          disableRipple
+          className={`${profileClasses.row} ${
+            i < rows.length - 1 ? profileClasses.rowBorder : ''
+          }`}
+        >
+          <span className={profileClasses.rowIcon[row.tone ?? 'primary']}>
+            {row.icon}
+          </span>
+          <span
+            className={`${profileClasses.rowLabel} ${fontClassName.className}`}
+          >
+            {row.label}
+          </span>
+          <ChevronRight className={profileClasses.chevron} />
+        </ButtonBase>
+      ))}
+    </Box>
+  );
+}
 
 export default function Profile() {
   const { user, setUser, accessToken, setAccessToken, isLoading } =
@@ -83,17 +122,75 @@ export default function Profile() {
     }
   }, [router.locale, router.defaultLocale]);
 
-  const handleToggleLang = () => {
-    setOpenLang(!openLang);
+  const handleToggleLang = () => setOpenLang(!openLang);
+  const handleToggle = () => setOpen(!open);
+  const handleToggleMyOrders = () =>
+    router.push(isAdmin ? '/orders/admin' : '/orders');
+
+  const signOut = async () => {
+    try {
+      handleToggle();
+      if (accessToken) {
+        const fcmToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+        if (fcmToken) {
+          try {
+            await unregisterFCMToken(fcmToken, accessToken);
+          } catch (err) {
+            console.error('Failed to unregister FCM token', err);
+          }
+        }
+      }
+      deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+      deleteCookie(LOCALE_COOKIE_NAME);
+      setUser(undefined);
+      setAccessToken(undefined);
+      localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+      localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleToggle = () => {
-    setOpen(!open);
-  };
+  const deleteAccount = async () => {
+    try {
+      const { success }: { success: boolean } = await (
+        await fetch('/api/user', {
+          method: 'DELETE',
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : undefined,
+          credentials: 'include',
+        })
+      ).json();
 
-  const handleToggleMyOrders = () => {
-    const route = isAdmin ? '/orders/admin' : '/orders';
-    router.push(route);
+      if (!success) {
+        setDeleteAccountError('deleteAccountError');
+        return;
+      }
+
+      setOpenDeleteAccount(false);
+
+      if (accessToken) {
+        const fcmToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+        if (fcmToken) {
+          try {
+            await unregisterFCMToken(fcmToken, accessToken);
+          } catch (err) {
+            console.error('Failed to unregister FCM token', err);
+          }
+        }
+      }
+
+      deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+      deleteCookie(LOCALE_COOKIE_NAME);
+      setUser(undefined);
+      setAccessToken(undefined);
+      localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+      localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+    } catch (error) {
+      console.error(error);
+      setDeleteAccountError('deleteAccountError');
+    }
   };
 
   if (isLoading) {
@@ -106,578 +203,272 @@ export default function Profile() {
     );
   }
 
+  const displayName =
+    user && user.name.trim() !== '' ? user.name.trim() : t('guest');
+  const contact = user?.phoneNumber || user?.email;
+  const initials =
+    user && user.name.trim() !== ''
+      ? user.name
+          .trim()
+          .split(/\s+/)
+          .map((w) => w[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase()
+      : '';
+
+  const adminRows: MenuRow[] = [
+    {
+      icon: <Upload className={profileClasses.icon.primary} />,
+      label: t('updatePrices'),
+      onClick: () => router.push('/product/update-prices'),
+    },
+    {
+      icon: <Palette className={profileClasses.icon.primary} />,
+      label: t('updateColors'),
+      onClick: () => router.push('/product/update-colors'),
+    },
+    {
+      icon: <FolderTree className={profileClasses.icon.primary} />,
+      label: t('categoryHierarchy'),
+      onClick: () => router.push('/user/category-hierarchy'),
+    },
+    {
+      icon: <Images className={profileClasses.icon.primary} />,
+      label: t('promoBanners'),
+      onClick: () => router.push('/admin/banners'),
+    },
+    {
+      icon: <BarChart3 className={profileClasses.icon.primary} />,
+      label: t('analytics'),
+      onClick: () => router.push('/analytics'),
+    },
+    {
+      icon: <ScrollText className={profileClasses.icon.primary} />,
+      label: t('serverLogs'),
+      onClick: () => router.push('/server-logs'),
+    },
+    ...(user?.grade === 'SUPERUSER'
+      ? [
+          {
+            icon: <Truck className={profileClasses.icon.primary} />,
+            label: t('procurement'),
+            onClick: () => router.push('/procurement'),
+          },
+          {
+            icon: <Download className={profileClasses.icon.primary} />,
+            label: t('appVersions'),
+            onClick: () => router.push('/admin/app-version'),
+          },
+        ]
+      : []),
+  ];
+
+  const accountRows: MenuRow[] = [
+    ...(user
+      ? [
+          {
+            icon: <Package className={profileClasses.icon.primary} />,
+            label: isAdmin ? t('userOrders') : t('myOrders'),
+            onClick: handleToggleMyOrders,
+          },
+        ]
+      : [
+          {
+            icon: <LogIn className={profileClasses.icon.primary} />,
+            label: t('signin'),
+            onClick: () => router.push('/user/sign_in_up'),
+          },
+        ]),
+    {
+      icon: <Languages className={profileClasses.icon.primary} />,
+      label: t('appLanguage'),
+      onClick: handleToggleLang,
+    },
+  ];
+
+  const moreRows: MenuRow[] = [
+    {
+      icon: <Headphones className={profileClasses.icon.muted} />,
+      label: t('supportTitle'),
+      onClick: () => router.push('/support'),
+      tone: 'muted',
+    },
+    {
+      icon: <ShieldCheck className={profileClasses.icon.muted} />,
+      label: t('privacyPolicyTitle'),
+      onClick: () => router.push('/privacy-policy'),
+      tone: 'muted',
+    },
+  ];
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
-      <Box className={profileClasses.boxes.loggedInMain}>
-        <Box className={profileClasses.accountTitle[platform]}>
+      <Box className={profileClasses.page[platform]}>
+        <Box className={profileClasses.header[platform]}>
           <Typography
-            className={`${profileClasses.typos.account[platform]} ${fontClassName.className}`}
+            className={`${profileClasses.headerTitle} ${fontClassName.className}`}
           >
             {t('account')}
           </Typography>
-        </Box>
-        <Box className={profileClasses.boxes.sectionBox[platform]}>
-          <Box className={profileClasses.boxes.accountMain[platform]}>
-            <CardMedia
-              component="img"
-              src="/profile/defaultProfile.jpg"
-              className={profileClasses.profileImg[platform]}
-            />
-            <Box className={profileClasses.boxes.account}>
+          <Box className={profileClasses.avatarRow}>
+            <Box className={profileClasses.avatar}>
+              {initials ? (
+                <span
+                  className={`${profileClasses.avatarTxt} ${fontClassName.className}`}
+                >
+                  {initials}
+                </span>
+              ) : (
+                <UserIcon className={profileClasses.avatarIcon} />
+              )}
+            </Box>
+            <Box>
               <Typography
-                className={`${fontClassName.className} ${profileClasses.typos.name[platform]}`}
+                className={`${profileClasses.name} ${fontClassName.className}`}
               >
-                {`${t('hello')} ${
-                  user && user.name.trim() !== ''
-                    ? user.name.trim().split(' ')[0]
-                    : t('guest')
-                }`}
+                {displayName}
               </Typography>
-              <Typography
-                className={`${fontClassName.className} ${profileClasses.typos.email}`}
-              >
-                {user?.email}
-              </Typography>
+              {contact && (
+                <Typography
+                  className={`${profileClasses.contact} ${fontClassName.className}`}
+                >
+                  {contact}
+                </Typography>
+              )}
             </Box>
           </Box>
-          <Box className={profileClasses.boxes.divider[platform]}></Box>
-          <Box className="w-[90%] flex flex-col items-center mx-auto">
-            {!user && (
-              <>
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/user/sign_in_up')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <LoginOutlinedIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('signin')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-              </>
-            )}
-            <Button
-              className={profileClasses.boxes.sectionLang[platform]}
-              disableRipple
-              onClick={handleToggleLang}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <CardMedia
-                component="img"
-                src="/profile/language.png"
-                className={profileClasses.sectionIcon[platform]}
-              />
-
-              <Typography
-                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {t('appLanguage')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
-            {isAdmin && (
-              <Box className="w-full">
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/product/update-prices')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <DriveFolderUploadIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('updatePrices')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/product/update-colors')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <DriveFolderUploadIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('updateColors')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/user/category-hierarchy')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <AccountTreeIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('categoryHierarchy')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/admin/banners')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <ViewCarouselOutlinedIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('promoBanners')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/analytics')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <AnalyticsIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('analytics')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionOrders[platform]}
-                  disableRipple
-                  onClick={() => router.push('/server-logs')}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  sx={{
-                    '&:hover': { backgroundColor: colors.lightRed },
-                  }}
-                >
-                  <DescriptionIcon
-                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                  >
-                    {t('serverLogs')}
-                  </Typography>
-                  <ArrowForwardIos className={profileClasses.icons[platform]} />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                {user?.grade === 'SUPERUSER' && (
-                  <Box>
-                    <Button
-                      className={profileClasses.boxes.sectionOrders[platform]}
-                      disableRipple
-                      onClick={() => router.push('/procurement')}
-                      variant={platform === 'web' ? 'outlined' : 'text'}
-                      sx={{
-                        '&:hover': { backgroundColor: colors.lightRed },
-                      }}
-                    >
-                      <LocalShippingOutlinedIcon
-                        className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                      />
-                      <Typography
-                        className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                      >
-                        {t('procurement')}
-                      </Typography>
-                      <ArrowForwardIos
-                        className={profileClasses.icons[platform]}
-                      />
-                    </Button>
-                    <Divider className={profileClasses.divider[platform]} />
-                    <Button
-                      className={profileClasses.boxes.sectionOrders[platform]}
-                      disableRipple
-                      onClick={() => router.push('/admin/app-version')}
-                      variant={platform === 'web' ? 'outlined' : 'text'}
-                      sx={{
-                        '&:hover': { backgroundColor: colors.lightRed },
-                      }}
-                    >
-                      <SystemUpdateAltIcon
-                        className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-                      />
-                      <Typography
-                        className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                      >
-                        {t('appVersions')}
-                      </Typography>
-                      <ArrowForwardIos
-                        className={profileClasses.icons[platform]}
-                      />
-                    </Button>
-                    <Divider className={profileClasses.divider[platform]} />
-                  </Box>
-                )}
-              </Box>
-            )}
-            <>
-              <Button
-                className={profileClasses.boxes.sectionOrders[platform]}
-                disableRipple
-                onClick={handleToggleMyOrders}
-                variant={platform === 'web' ? 'outlined' : 'text'}
-                sx={{
-                  '&:hover': { backgroundColor: colors.lightRed },
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  src="/orders/my_order_icon.svg"
-                  className={profileClasses.sectionIcon[platform]}
-                />
-                <Typography
-                  className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-                >
-                  {isAdmin ? t('userOrders') : t('myOrders')}
-                </Typography>
-                <ArrowForwardIos className={profileClasses.icons[platform]} />
-              </Button>
-              <Divider className={profileClasses.divider[platform]} />
-            </>
-            <Button
-              className={profileClasses.boxes.sectionOrders[platform]}
-              disableRipple
-              onClick={() => router.push('/support')}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <SupportAgentOutlinedIcon
-                className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-              />
-              <Typography
-                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {t('supportTitle')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
-            <Button
-              className={profileClasses.boxes.sectionOrders[platform]}
-              disableRipple
-              onClick={() => router.push('/privacy-policy')}
-              variant={platform === 'web' ? 'outlined' : 'text'}
-              sx={{
-                '&:hover': { backgroundColor: colors.lightRed },
-              }}
-            >
-              <PolicyOutlinedIcon
-                className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
-              />
-              <Typography
-                className={`${fontClassName.className} ${profileClasses.typos.sectionTxt[platform]}`}
-              >
-                {t('privacyPolicyTitle')}
-              </Typography>
-              <ArrowForwardIos className={profileClasses.icons[platform]} />
-            </Button>
-            <Divider className={profileClasses.divider[platform]} />
-            {user && (
-              <>
-                <Button
-                  className={profileClasses.boxes.sectionLogOut[platform]}
-                  onClick={() => {
-                    setDeleteAccountError(null);
-                    setOpenDeleteAccount(true);
-                  }}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  disableRipple
-                  sx={{ '&:hover': { backgroundColor: colors.lightRed } }}
-                >
-                  <DeleteForeverOutlinedIcon
-                    className={profileClasses.sectionIcon[platform]}
-                    sx={{ color: '#ff3b30' }}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
-                    sx={{ color: '#ff3b30' }}
-                  >
-                    {t('deleteAccount')}
-                  </Typography>
-                  <ArrowForwardIos
-                    className={profileClasses.iconLogOut[platform]}
-                    sx={{ color: '#ff3b30' }}
-                  />
-                </Button>
-                <Divider className={profileClasses.divider[platform]} />
-                <Button
-                  className={profileClasses.boxes.sectionLogOut[platform]}
-                  onClick={handleToggle}
-                  variant={platform === 'web' ? 'outlined' : 'text'}
-                  disableRipple
-                >
-                  <MeetingRoomOutlinedIcon
-                    className={profileClasses.sectionIcon[platform]}
-                  />
-                  <Typography
-                    className={`${fontClassName.className} ${profileClasses.typos.sectionTxtLogOut[platform]}`}
-                  >
-                    {t('signout')}
-                  </Typography>
-                  <ArrowForwardIos
-                    className={profileClasses.iconLogOut[platform]}
-                  />
-                </Button>
-              </>
-            )}
-          </Box>
         </Box>
+
+        <Box className={profileClasses.content[platform]}>
+          <MenuCard rows={accountRows} />
+          {isAdmin && <MenuCard rows={adminRows} />}
+          <MenuCard rows={moreRows} />
+
+          {user && (
+            <>
+              <ButtonBase
+                disableRipple
+                onClick={handleToggle}
+                className={`${profileClasses.logout} ${fontClassName.className}`}
+              >
+                <LogOut className="w-[18px] h-[18px]" />
+                {t('signout')}
+              </ButtonBase>
+              <ButtonBase
+                disableRipple
+                onClick={() => {
+                  setDeleteAccountError(null);
+                  setOpenDeleteAccount(true);
+                }}
+                className={`${profileClasses.deleteBtn} ${fontClassName.className}`}
+              >
+                <Trash2 className="w-[15px] h-[15px]" />
+                {t('deleteAccount')}
+              </ButtonBase>
+            </>
+          )}
+        </Box>
+
         <Dialog
           open={open}
           onClose={handleToggle}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          PaperProps={{
-            className: profileClasses.dialog.main[platform],
-          }}
+          PaperProps={{ className: profileClasses.dialog.main[platform] }}
         >
-          <Typography
-            id="alert-dialog-title"
-            className={`${profileClasses.typos.dialogSignOut} ${fontClassName.className}`}
-          >
-            {t('signout').toLocaleUpperCase(router.locale)}
-          </Typography>
-          <Box className={profileClasses.boxes.verifyTxt}>
+          <Box className="flex flex-col w-full">
             <Typography
-              className={`${profileClasses.typos.verifyTxt} ${fontClassName.className}`}
+              className={`${profileClasses.dialogTitle} ${fontClassName.className}`}
             >
-              {t('signOutVerify')}
+              {t('signout')}
             </Typography>
-          </Box>
-          <Box className={profileClasses.boxes.verify}>
-            <Button onClick={handleToggle} disableRipple>
-              <Box
-                className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+            <Box className={profileClasses.dialogBody}>
+              <Typography
+                className={`${profileClasses.dialogText} ${fontClassName.className}`}
               >
-                <Typography
-                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
-                  color={colors.black}
-                >
-                  {t('no')}
-                </Typography>
-              </Box>
-            </Button>
-            <Button
-              disableRipple
-              onClick={() => {
-                (async () => {
-                  try {
-                    handleToggle();
-
-                    if (accessToken) {
-                      const fcmToken = localStorage.getItem(
-                        FCM_TOKEN_STORAGE_KEY,
-                      );
-                      if (fcmToken) {
-                        try {
-                          await unregisterFCMToken(fcmToken, accessToken);
-                        } catch (err) {
-                          console.error('Failed to unregister FCM token', err);
-                        }
-                      }
-                    }
-
-                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
-                    deleteCookie(LOCALE_COOKIE_NAME);
-                    setUser(undefined);
-                    setAccessToken(undefined);
-                    localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-                    localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                })();
-              }}
-            >
-              <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
-                <Typography
-                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
-                  color={colors.white}
-                >
-                  {t('yes')}
-                </Typography>
-              </Box>
-            </Button>
+                {t('signOutVerify')}
+              </Typography>
+            </Box>
+            <Box className={profileClasses.dialogActions}>
+              <ButtonBase
+                disableRipple
+                onClick={handleToggle}
+                className={`${profileClasses.dialogOption} ${profileClasses.dialogCancel} ${fontClassName.className}`}
+              >
+                {t('no')}
+              </ButtonBase>
+              <ButtonBase
+                disableRipple
+                onClick={signOut}
+                className={`${profileClasses.dialogOption} ${profileClasses.dialogConfirm} ${fontClassName.className}`}
+              >
+                {t('yes')}
+              </ButtonBase>
+            </Box>
           </Box>
         </Dialog>
+
         <Dialog
           open={openDeleteAccount}
           onClose={() => setOpenDeleteAccount(false)}
-          aria-labelledby="delete-account-dialog-title"
-          aria-describedby="delete-account-dialog-description"
-          PaperProps={{
-            className: `${profileClasses.dialog.main[platform]} !h-auto`,
-          }}
+          PaperProps={{ className: profileClasses.dialog.main[platform] }}
         >
-          <Typography
-            id="delete-account-dialog-title"
-            className={`${profileClasses.typos.dialogSignOut} ${fontClassName.className}`}
-            sx={{ color: '#ff3b30' }}
-          >
-            {t('deleteAccount').toUpperCase()}
-          </Typography>
-          <Box className="flex justify-center mt-[16px] px-[10px]">
+          <Box className="flex flex-col w-full">
             <Typography
-              id="delete-account-dialog-description"
-              className={`${profileClasses.typos.verifyTxt} ${fontClassName.className} !h-auto text-center`}
+              className={`${profileClasses.dialogTitle} ${fontClassName.className} !text-red`}
             >
-              {t('deleteAccountVerify')}
+              {t('deleteAccount')}
             </Typography>
-          </Box>
-          {deleteAccountError && (
-            <Box className="flex justify-center mt-[8px]">
+            <Box className={profileClasses.dialogBody}>
               <Typography
-                className={`${fontClassName.className} text-center text-[13px]`}
-                sx={{ color: '#ff3b30' }}
+                className={`${profileClasses.dialogText} ${fontClassName.className}`}
               >
-                {t(deleteAccountError)}
+                {t('deleteAccountVerify')}
               </Typography>
             </Box>
-          )}
-          <Box className={profileClasses.boxes.verify}>
-            <Button onClick={() => setOpenDeleteAccount(false)} disableRipple>
-              <Box
-                className={`${profileClasses.boxes.option} border-[1px] border-[#838383]`}
+            {deleteAccountError && (
+              <Box className="flex justify-center mt-[8px]">
+                <Typography
+                  className={`${fontClassName.className} text-center text-[13px] text-red`}
+                >
+                  {t(deleteAccountError)}
+                </Typography>
+              </Box>
+            )}
+            <Box className={profileClasses.dialogActions}>
+              <ButtonBase
+                disableRipple
+                onClick={() => setOpenDeleteAccount(false)}
+                className={`${profileClasses.dialogOption} ${profileClasses.dialogCancel} ${fontClassName.className}`}
               >
-                <Typography
-                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
-                  color={colors.black}
-                >
-                  {t('no')}
-                </Typography>
-              </Box>
-            </Button>
-            <Button
-              disableRipple
-              onClick={() => {
-                (async () => {
-                  try {
-                    const { success }: { success: boolean } = await (
-                      await fetch('/api/user', {
-                        method: 'DELETE',
-                        headers: accessToken
-                          ? { Authorization: `Bearer ${accessToken}` }
-                          : undefined,
-                        credentials: 'include',
-                      })
-                    ).json();
-
-                    if (!success) {
-                      setDeleteAccountError('deleteAccountError');
-                      return;
-                    }
-
-                    setOpenDeleteAccount(false);
-
-                    if (accessToken) {
-                      const fcmToken = localStorage.getItem(
-                        FCM_TOKEN_STORAGE_KEY,
-                      );
-                      if (fcmToken) {
-                        try {
-                          await unregisterFCMToken(fcmToken, accessToken);
-                        } catch (err) {
-                          console.error('Failed to unregister FCM token', err);
-                        }
-                      }
-                    }
-
-                    deleteCookie(AUTH_REFRESH_COOKIE_NAME);
-                    deleteCookie(LOCALE_COOKIE_NAME);
-                    setUser(undefined);
-                    setAccessToken(undefined);
-                    localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-                    localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
-                  } catch (error) {
-                    console.error(error);
-                    setDeleteAccountError('deleteAccountError');
-                  }
-                })();
-              }}
-            >
-              <Box className={`${profileClasses.boxes.option} bg-[#ff3b30]`}>
-                <Typography
-                  className={`${fontClassName.className} ${profileClasses.typos.option}`}
-                  color={colors.white}
-                >
-                  {t('yes')}
-                </Typography>
-              </Box>
-            </Button>
+                {t('no')}
+              </ButtonBase>
+              <ButtonBase
+                disableRipple
+                onClick={deleteAccount}
+                className={`${profileClasses.dialogOption} ${profileClasses.dialogConfirm} ${fontClassName.className}`}
+              >
+                {t('yes')}
+              </ButtonBase>
+            </Box>
           </Box>
         </Dialog>
+
         <Dialog
           open={openLang}
           onClose={handleToggleLang}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
           PaperProps={{
-            className: `${profileClasses.dialog.main[platform]} h-[300px]`,
+            className: `${profileClasses.dialog.main[platform]} !block`,
           }}
         >
           <Typography
-            id="alert-dialog-title"
-            className={`${profileClasses.typos.language} ${fontClassName.className}`}
+            className={`${profileClasses.dialogTitle} ${fontClassName.className}`}
           >
-            {'Language'}
+            {t('appLanguage')}
           </Typography>
-          <List className={profileClasses.boxes.langList}>
+          <List className={profileClasses.langList}>
             {lang.map((language) => (
               <ListItemButton
-                className={profileClasses.boxes.langListitemButton}
+                className={profileClasses.langListItem}
                 key={language.val}
                 selected={selectedLocale === language.val}
                 onClick={() => {
@@ -695,14 +486,14 @@ export default function Profile() {
                   },
                 }}
               >
-                <Box className={profileClasses.boxes.langOption}>
+                <Box className={profileClasses.langOptionRow}>
                   <CardMedia
                     component="img"
                     src={language.img}
                     className={profileClasses.langImg}
                   />
                   <Typography
-                    className={`${profileClasses.typos.langOption} ${fontClassName.className}`}
+                    className={`${profileClasses.langOptionTxt} ${fontClassName.className}`}
                   >
                     {language.name}
                   </Typography>

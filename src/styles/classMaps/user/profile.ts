@@ -1,133 +1,69 @@
+// Profile & Settings, see xmobile-app-redesign/project/XMobile.dc.html:763-813
+// Navy header + card-grouped menu rows (icon-avatar · label · chevron).
 export const profileClasses = {
-  boxes: {
-    main: {
-      web: 'w-full',
-      mobile: 'w-full h-full flex justify-center my-auto',
-    },
-    loggedOutMain: {
-      web: 'flex flex-col w-[594px] mx-auto my-[150px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
-      mobile: 'w-[85%] h-full flex flex-col',
-    },
-    loggedOutOptions: {
-      web: 'flex flex-col w-[75%] justify-between',
-      mobile: 'flex flex-col w-full justify-center items-center',
-    },
-    loggedInMain: 'w-full h-full flex flex-col items-center',
-    accountMain: {
-      web: 'w-full h-[150px] py-[32px] px-[72px] gap-[16px] flex justify-center items-center',
-      mobile:
-        'w-full h-[90px] py-[16px] px-[28px] gap-[16px] flex justify-center items-center mt-[25px]',
-    },
-    account: 'gap-[16px] w-full h-[60px] flex flex-col justify-center',
-    divider: {
-      web: 'hidden',
-      mobile: 'w-full h-[4px] bg-[#f6f6f6]',
-    },
-    sectionLang: {
-      web: 'hidden',
-      mobile:
-        'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
-    },
-    sectionOrders: {
-      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] mt-[30px]',
-      mobile:
-        'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
-    },
-    sectionLogOut: {
-      web: 'flex flex-row justify-between w-full rounded-[15px] !border-[1px] !border-[#ff624c] h-[72px] my-[30px]',
-      mobile:
-        'flex flex-row justify-between w-full h-full items-center px-[30px] my-[20px]',
-    },
-    verifyTxt: 'flex h-[20px] justify-center mt-[20px]',
-    verify: 'w-[80%] flex flex-row justify-between mt-[30px] mx-auto',
-    option:
-      'flex justify-center items-center w-[160px] h-[50px] rounded-[12px] normal-case',
-    langList: 'min-w-[110px] h-[238px] border-0 flex flex-col mt-[20px]',
-    langListitemButton: 'px-[12px] gap-[10px]',
-    langOption:
-      'flex flex-row justify-start w-full items-center px-[12px] gap-[10px]',
-    sectionBox: {
-      web: 'w-[550px] flex flex-col my-[100px] bg-[#f4f4f4] rounded-[25px] py-[40px]',
-      mobile: 'w-full h-full',
-    },
+  page: {
+    web: 'w-full flex flex-col items-center pb-16',
+    mobile: 'w-full flex flex-col flex-1 bg-fill',
   },
-  typos: {
-    account: {
-      web: 'hidden',
-      mobile:
-        'mt-[8px] font-medium text-[20px] leading-none tracking-normal text-[#000]',
-    },
-    name: {
-      web: 'font-medium text-[32px] leading-none tracking-normal text-[#1b1b1b]',
-      mobile:
-        'font-medium text-[16px] leading-none tracking-normal text-[#1b1b1b]',
-    },
-    email:
-      'font-regular text-[14px] leading-none tracking-normal text-[#838383]',
-    sectionTxt: {
-      web: 'font-medium text-[16px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[30px] normal-case',
-      mobile:
-        'font-medium text-[13px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[20px] normal-case',
-    },
-    sectionTxtLogOut: {
-      web: 'font-medium text-[16px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[30px] normal-case',
-      mobile:
-        'font-medium text-[13px] leading-[18px] tracking-normal text-[#000] text-start w-full ml-[20px] normal-case',
-    },
-    dialogSignOut:
-      'flex justify-center font-semibold text-[22px] leading-[28px] tracking-normal text-[#000]',
-    verifyTxt:
-      'flex justify-center font-medium text-[15px] leading-[20px] tracking-normal text-[#353636] h-[20px]',
-    option: 'font-regular text-[17px] leading-[22px] tracking-normal',
-    language:
-      'flex justify-center font-semibold text-[22px] leading-[28px] tracking-normal text-[#000] uppercase',
-    langOption:
-      'text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal',
+  header: {
+    web: 'w-full max-w-[600px] bg-navy px-8 pt-8 pb-8 rounded-b-[26px] flex flex-col',
+    mobile: 'w-full bg-navy px-5 pt-3 pb-7 rounded-b-[26px] flex flex-col',
   },
+  headerTitle: 'text-white font-bold text-[20px] mb-5',
+  avatarRow: 'flex items-center gap-[14px]',
+  avatar:
+    'w-16 h-16 rounded-full bg-white/[0.14] border-2 border-white/30 flex items-center justify-center flex-none',
+  avatarTxt: 'text-white font-bold text-[22px] tracking-[0.02em]',
+  avatarIcon: 'w-8 h-8 text-white',
+  name: 'text-white font-bold text-[18px] leading-tight',
+  contact: 'text-white/70 text-[13px] leading-tight mt-[2px]',
+  content: {
+    web: 'w-full max-w-[600px] px-4 pt-4 flex flex-col',
+    mobile: 'w-full px-4 pt-4 pb-[88px] flex flex-col',
+  },
+  sectionLabel:
+    'text-[12px] font-bold uppercase tracking-[0.06em] text-muted mt-2 mb-[10px] ml-1',
+  card: 'bg-white rounded-[16px] overflow-hidden mb-3',
+  row: 'flex items-center gap-[14px] px-4 h-[54px] w-full normal-case',
+  rowBorder: 'border-b border-fill',
+  rowIcon: {
+    primary:
+      'w-[38px] h-[38px] rounded-[11px] bg-[#EDEBF7] flex items-center justify-center flex-none',
+    muted:
+      'w-[38px] h-[38px] rounded-[11px] bg-fill flex items-center justify-center flex-none',
+  },
+  icon: {
+    primary: 'w-[19px] h-[19px] text-navy',
+    muted: 'w-[19px] h-[19px] text-[#4A4959]',
+  },
+  rowLabel: 'flex-1 text-left text-[15px] font-medium text-ink normal-case',
+  chevron: 'w-[18px] h-[18px] text-[#B6B5C2] flex-none',
+  logout:
+    'w-full h-[52px] rounded-[15px] bg-[#FDECEE] text-red text-[15px] font-semibold flex items-center justify-center gap-2 normal-case mb-2',
+  deleteBtn:
+    'w-full h-[46px] rounded-[12px] bg-transparent text-muted text-[13px] font-medium flex items-center justify-center gap-[7px] normal-case',
+  // Dialogs (sign out / delete account / language) — restyled to tokens.
   dialog: {
     main: {
       mobile:
-        'w-[75vw] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
-      web: 'w-[500px] h-[220px] rounded-[10px] bg-[#fff] flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+        'w-[75vw] h-auto rounded-[16px] bg-white flex mx-auto my-auto justify-center py-[30px] px-[20px]',
+      web: 'w-[500px] h-auto rounded-[16px] bg-white flex mx-auto my-auto justify-center py-[30px] px-[20px]',
     },
   },
-  logo: 'w-[230px] mb-[30px] mx-auto',
-  logInOptionsLink: {
-    web: 'no-underline flex w-full justify-center items-center rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[75px] mt-[25px]',
-    mobile:
-      'no-underline flex w-full justify-center items-center rounded-[12px] gap-[8px] py-[4px] px-[20px] h-[48px] mt-[20px]',
-  },
-  logInOptionsTypo: {
-    web: 'font-medium text-[18px] leading-[24px] tracking-normal',
-    mobile: 'font-medium text-[16px] leading-[24px] tracking-normal',
-  },
-  sectionIcon: {
-    web: 'w-[27px] h-[27px] text-[#000]',
-    mobile: 'w-[20px] h-[20px] text-[#000]',
-  },
-  divider: {
-    web: 'hidden',
-    mobile: 'h-[1px] text-[#e7e7e7] w-[80%] mx-auto',
-  },
-  icons: {
-    web: 'w-[22px] h-[22px] text-[#303030]',
-    mobile: 'w-[17px] h-[17px] text-[#000]',
-  },
-  iconLogOut: {
-    web: 'w-[22px] h-[22px] text-[#000]',
-    mobile: 'w-[17px] h-[17px] text-[#000]',
-  },
-  langImg: 'w-[24px] h-[18px]',
-  link: {
-    web: 'absolute left-4 top-4 font-base font-light text-[36px] no-underline',
-    mobile: 'hidden',
-  },
-  profileImg: {
-    web: 'w-[86px] h-[86px] rounded-full',
-    mobile: 'w-[60px] h-[60px] rounded-full',
-  },
-  accountTitle: {
-    web: '',
-    mobile: 'px-[24px] mt-[36px]',
-  },
+  dialogTitle:
+    'flex justify-center font-bold text-[20px] leading-[26px] text-ink',
+  dialogBody: 'flex justify-center mt-[16px] px-[10px]',
+  dialogText:
+    'flex justify-center text-center font-medium text-[15px] leading-[20px] text-muted',
+  dialogActions:
+    'w-[80%] flex flex-row justify-between mt-[24px] mx-auto gap-3',
+  dialogOption:
+    'flex justify-center items-center flex-1 h-[46px] rounded-[11px] text-[15px] font-semibold normal-case',
+  dialogCancel: 'border-[1.5px] border-hairline text-ink',
+  dialogConfirm: 'bg-red text-white',
+  langList: 'min-w-[110px] border-0 flex flex-col mt-[12px]',
+  langListItem: 'px-[12px] gap-[10px] rounded-[10px]',
+  langOptionRow: 'flex flex-row justify-start w-full items-center gap-[12px]',
+  langOptionTxt: 'text-ink text-[15px] font-medium',
+  langImg: 'w-[24px] h-[18px] rounded-[3px]',
 };
