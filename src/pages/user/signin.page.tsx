@@ -3,8 +3,15 @@ import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { emailCheck } from '@/pages/user/utils';
 import { signinClasses } from '@/styles/classMaps/user/signin';
-import { colors, fontClassName, units } from '@/styles/theme';
-import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  colors,
+  fontClassName,
+  hairline,
+  muted,
+  navy,
+  red,
+} from '@/styles/theme';
+import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import {
   Box,
   Button,
@@ -54,13 +61,28 @@ export default function Signin() {
     return null;
   }
 
+  // Shared field styling — both inputs render identically (design 54px/radius-12,
+  // hairline border, navy on focus). See XMobile.dc.html:862-865.
+  const fieldSx = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: '#fff',
+      borderRadius: '12px',
+      height: platform === 'web' ? '60px' : '54px',
+      fontSize: '15px',
+      '& fieldset': { borderColor: hairline, borderWidth: '1.5px' },
+      '&:hover fieldset': { borderColor: navy },
+      '&.Mui-focused fieldset': { borderColor: navy, borderWidth: '1.5px' },
+    },
+    '& .MuiInputBase-input::placeholder': { color: muted, opacity: 1 },
+  };
+
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link href="/user/sign_in_up">
-        <ArrowBackIos
-          className={`${signinClasses.link[platform]}`}
-          style={{ color: colors.blackText }}
-        />
+      <Link
+        href="/user/sign_in_up"
+        className={signinClasses.backButton[platform]}
+      >
+        <ArrowLeft size={20} color={navy} />
       </Link>
       <Box className={signinClasses.boxes.main[platform]}>
         <CardMedia
@@ -68,15 +90,18 @@ export default function Signin() {
           src="/logo/xmobile-processed-logo.png"
           className={signinClasses.boxes.logo[platform]}
         />
-        <Box className={signinClasses.boxes.label[platform]}>
-          <Typography
-            color={colors.blackText}
-            variant="h3"
-            className={`${signinClasses.h3[platform]} ${fontClassName.className}`}
-          >
-            {t('signin')}
-          </Typography>
-        </Box>
+        <Typography
+          className={`${signinClasses.h3[platform]} ${fontClassName.className}`}
+          style={{ color: colors.blackText }}
+        >
+          {t('signin')}
+        </Typography>
+        <Typography
+          className={`${signinClasses.subtitle[platform]} ${fontClassName.className}`}
+          style={{ color: muted }}
+        >
+          {t('signinSubtitle')}
+        </Typography>
         <Paper
           className={signinClasses.paper[platform]}
           elevation={0}
@@ -136,22 +161,12 @@ export default function Signin() {
           }}
         >
           <Box className={signinClasses.boxes.input[platform]}>
-            <Box component="label" className={signinClasses.label[platform]}>
-              <Typography
-                component="span"
-                className={`font-bold ${fontClassName.className}`}
-                color={colors.blackText}
-              >
-                {`${t('email')} `}
-              </Typography>
-              <Typography
-                component="span"
-                fontWeight="bold"
-                color={colors.main}
-                className={fontClassName.className}
-              >
-                *
-              </Typography>
+            <Box
+              component="label"
+              className={`${signinClasses.label[platform]} ${fontClassName.className}`}
+              style={{ color: navy }}
+            >
+              {t('email')}
             </Box>
             <TextField
               fullWidth
@@ -160,53 +175,23 @@ export default function Signin() {
               type="email"
               name="email"
               className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: '10px',
-                  height: units.inputHeight[platform],
-                  fontSize: units.inputFontSize[platform],
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  '& fieldset': {
-                    borderColor: colors.border[platform],
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  fontSize: units.inputFontSize[platform],
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: colors.placeholder,
-                  opacity: 1,
-                },
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Mail size={18} color={muted} />
+                  </InputAdornment>
+                ),
               }}
+              sx={fieldSx}
             />
           </Box>
-          <Box className={`${signinClasses.boxes.input[platform]} mt-[25px]`}>
-            <Box component="label" className={signinClasses.label[platform]}>
-              <Typography
-                component="span"
-                className={`font-bold ${fontClassName.className}`}
-                color={colors.blackText}
-              >
-                {`${t('password')} `}
-              </Typography>
-              <Typography
-                component="span"
-                fontWeight="bold"
-                color={colors.main}
-                className={fontClassName.className}
-              >
-                *
-              </Typography>
+          <Box className={signinClasses.boxes.input[platform]}>
+            <Box
+              component="label"
+              className={`${signinClasses.label[platform]} ${fontClassName.className}`}
+              style={{ color: '#4A4959' }}
+            >
+              {t('password')}
             </Box>
             <TextField
               fullWidth
@@ -215,88 +200,64 @@ export default function Signin() {
               type={showPassword ? 'text' : 'password'}
               name="password"
               InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={18} color={muted} />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? (
+                        <EyeOff size={18} color={muted} />
+                      ) : (
+                        <Eye size={18} color={muted} />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
               className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: '10px',
-                  height: units.inputHeight[platform],
-                  fontSize: units.inputFontSize[platform],
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  '& fieldset': {
-                    borderColor: colors.border[platform],
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  fontSize: units.inputFontSize[platform],
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: colors.placeholder,
-                  opacity: 1,
-                },
-              }}
+              sx={fieldSx}
             />
           </Box>
           {errorMessage != null && (
             <Typography
-              color={colors.blackText}
-              className={`${signinClasses.error[platform]} ${fontClassName.className} opacity-85`}
+              className={`${signinClasses.error[platform]} ${fontClassName.className}`}
+              style={{ color: red }}
             >
               {t(errorMessage)}
             </Typography>
           )}
-          <Box className={signinClasses.boxes.links[platform]}>
-            <Box className={signinClasses.boxes.button[platform]}>
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                type="submit"
-                disableElevation
-                className={`${signinClasses.buttonSubmit[platform]} ${fontClassName.className}`}
-                sx={{
-                  backgroundColor: colors.main,
-                  '&:hover': {
-                    backgroundColor: colors.buttonHoverBg,
-                  },
-                  '&:focus': {
-                    backgroundColor: colors.buttonHoverBg,
-                  },
-                }}
-              >
-                {t('signin')}
-              </Button>
-            </Box>
-            <Box className={signinClasses.boxes.text[platform]}>
-              <Typography
-                className={`${signinClasses.typography} ${fontClassName.className}`}
-              >
-                {t('dontHaveAccount')}
-              </Typography>
-              <Button
-                className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
-                onClick={() => router.push('/user/signup')}
-              >
-                {t('signup')}
-              </Button>
-            </Box>
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            type="submit"
+            disableElevation
+            className={`${signinClasses.buttonSubmit[platform]} ${fontClassName.className}`}
+            sx={{
+              backgroundColor: colors.main,
+              '&:hover': { backgroundColor: colors.buttonHoverBg },
+              '&:focus': { backgroundColor: colors.buttonHoverBg },
+            }}
+          >
+            {t('signin')}
+          </Button>
+          <Box className={signinClasses.boxes.text[platform]}>
+            <Typography
+              className={`${signinClasses.typography} ${fontClassName.className}`}
+              style={{ color: muted }}
+            >
+              {t('dontHaveAccount')}
+            </Typography>
+            <Button
+              className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
+              style={{ color: navy }}
+              onClick={() => router.push('/user/signup')}
+            >
+              {t('signup')}
+            </Button>
           </Box>
         </Paper>
       </Box>
