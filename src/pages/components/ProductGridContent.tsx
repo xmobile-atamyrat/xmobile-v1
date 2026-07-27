@@ -564,7 +564,8 @@ export default function ProductGridContent({
         )}
         <Snackbar
           open={snackbarOpen}
-          autoHideDuration={6000}
+          autoHideDuration={3000}
+          disableWindowBlurListener
           onClose={(_, reason) => {
             if (reason === 'clickaway') {
               return;

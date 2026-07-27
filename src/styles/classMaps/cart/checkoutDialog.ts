@@ -34,7 +34,8 @@ export const checkoutDialogClasses = {
   },
   sectionTitle: {
     web: 'font-semibold text-[28px] leading-[46px] text-[#303030]',
-    mobile: 'hidden',
+    mobile:
+      'font-bold text-[12px] leading-normal tracking-[0.06em] uppercase text-[#8B8A98] mb-1',
   },
   fieldContainer: {
     web: 'flex flex-col gap-[16px]',
@@ -42,11 +43,11 @@ export const checkoutDialogClasses = {
   },
   label: {
     web: 'font-bold text-[20px] leading-[30px] text-[#303030]',
-    mobile: 'font-medium text-[14px] leading-normal text-[#1b1b1b]',
+    mobile: 'font-medium text-[14px] leading-normal text-[#17161D]',
   },
   required: {
     web: 'text-[#ff624c]',
-    mobile: 'text-[#ee4d4d]',
+    mobile: 'text-[#E41E2B]',
   },
   textField: {
     web: 'w-full',
@@ -94,24 +95,24 @@ export const checkoutDialogClasses = {
   },
   totalContainer: {
     web: 'bg-white rounded-[10px] p-6 flex flex-col gap-6',
-    mobile: 'hidden',
+    mobile: 'flex flex-col gap-3 mt-8',
   },
   totalRow: {
     web: 'flex flex-row items-center justify-between',
-    mobile: 'hidden',
+    mobile: 'flex flex-row items-center justify-between',
   },
   totalLabel: {
     web: 'font-semibold text-[20px] leading-[30px] text-[#303030]',
-    mobile: 'hidden',
+    mobile: 'font-medium text-[14px] leading-normal text-[#8B8A98]',
   },
   totalValue: {
     web: 'font-bold text-[20px] leading-[30px] text-[#303030]',
-    mobile: 'hidden',
+    mobile: 'font-bold text-[20px] leading-normal text-[#20166E]',
   },
   orderButton: {
     web: 'bg-[#ff624c] text-white font-bold text-[20px] leading-[30px] rounded-[10px] normal-case',
     mobile:
-      'bg-[#1b1b1b] text-white font-medium text-[16px] leading-normal rounded-[12px] h-12 w-full normal-case mt-6',
+      'bg-[#E41E2B] text-white font-semibold text-[16px] leading-normal rounded-[15px] h-[54px] w-full normal-case',
   },
   backButton: {
     mobile: '',

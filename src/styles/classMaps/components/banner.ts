@@ -1,7 +1,7 @@
 export const bannerClasses = {
   section: {
     web: 'w-full mb-8',
-    mobile: 'w-full mt-3 mb-6',
+    mobile: 'w-full mt-3 mb-4 px-5',
   },
   slider: 'hero-banner-slider',
   slide: {

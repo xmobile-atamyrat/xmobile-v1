@@ -184,7 +184,8 @@ export default function Layout({
       )}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={3000}
+        disableWindowBlurListener
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         sx={
