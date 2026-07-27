@@ -1,9 +1,10 @@
 import Layout from '@/pages/components/Layout';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { profileClasses } from '@/styles/classMaps/user/profile';
-import { colors, fontClassName } from '@/styles/theme';
-import { Box, CardMedia, Typography } from '@mui/material';
+import { buttonClasses } from '@/styles/classMaps/components/button';
+import { signInUpClasses } from '@/styles/classMaps/user/sign_in_up';
+import { colors, fontClassName, muted, navy } from '@/styles/theme';
+import { Box, Button, CardMedia, Typography } from '@mui/material';
 import Link from 'next/link';
 import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import cookie from 'cookie';
@@ -46,38 +47,45 @@ export default function SignInUp() {
         router.push('/');
       }}
     >
-      <Box className={profileClasses.boxes.main[platform]}>
-        <Box className={profileClasses.boxes.loggedOutMain[platform]}>
-          <CardMedia
-            component="img"
-            src="/logo/xmobile-processed-logo.png"
-            className={profileClasses.logo}
-          />
-          <Box className={profileClasses.boxes.loggedOutOptions[platform]}>
-            <Link
-              className={`${profileClasses.logInOptionsLink[platform]} bg-[#ff624c]`}
-              href="/user/signin"
-            >
-              <Typography
-                className={`${profileClasses.logInOptionsTypo[platform]} ${fontClassName.className}`}
-                color={colors.white}
-              >
-                {t('signin')}
-              </Typography>
-            </Link>
-            <Link
-              className={`${profileClasses.logInOptionsLink[platform]} bg-[#fff] border-[1px] border-[#ff624c] mb-[20px]`}
-              href="/user/signup"
-            >
-              <Typography
-                className={`${profileClasses.logInOptionsTypo[platform]} ${fontClassName.className}`}
-                color={colors.main}
-              >
-                {t('signup')}
-              </Typography>
-            </Link>
-          </Box>
+      <Box className={signInUpClasses.page[platform]}>
+        <CardMedia
+          component="img"
+          src="/logo/xmobile-processed-logo.png"
+          className={signInUpClasses.logo}
+        />
+        <Typography
+          className={`${signInUpClasses.title[platform]} ${fontClassName.className}`}
+          style={{ color: colors.blackText }}
+        >
+          {t('welcomeToXmobile')}
+        </Typography>
+        <Typography
+          className={`${signInUpClasses.subtitle} ${fontClassName.className}`}
+          style={{ color: muted }}
+        >
+          {t('signInUpSubtitle')}
+        </Typography>
+        <Box className={signInUpClasses.options}>
+          <Link
+            href="/user/signin"
+            className={`${buttonClasses.primary[platform]} ${signInUpClasses.optionButton} ${fontClassName.className}`}
+          >
+            {t('signin')}
+          </Link>
+          <Link
+            href="/user/signup"
+            className={`${buttonClasses.outlined[platform]} ${signInUpClasses.optionButton} ${fontClassName.className}`}
+          >
+            {t('signup')}
+          </Link>
         </Box>
+        <Button
+          className={`${signInUpClasses.guestLink} ${fontClassName.className}`}
+          style={{ color: navy }}
+          onClick={() => router.push('/')}
+        >
+          {t('continueAsGuest')}
+        </Button>
       </Box>
     </Layout>
   );
