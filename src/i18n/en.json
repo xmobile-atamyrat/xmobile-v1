@@ -343,6 +343,8 @@
   "chatSessionTakenByOther": "This session has been taken by another admin.",
   "notifications": "Notifications",
   "noNotifications": "No notifications",
+  "newMessages": "new messages",
+  "messages": "messages",
   "markAllRead": "Mark all as read",
   "enableBrowserNotifications": "Enable browser notifications to receive updates",
   "enableNativeNotifications": "Permit phone notifications permission to receive updates",

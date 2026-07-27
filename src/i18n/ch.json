@@ -345,6 +345,8 @@
   "chatSessionTakenByOther": "Bu sessiýany başka bir admin aldy.",
   "notifications": "Uwedomleniya",
   "noNotifications": "Uwedomleniya ýok",
+  "newMessages": "täze habar",
+  "messages": "habar",
   "markAllRead": "Hämmäsini okalan dep bellä",
   "enableBrowserNotifications": "Tazalyklary almak üçin brauzer uwedomleniyany açyň",
   "enableNativeNotifications": "Tazalyklary almak üçin telefon uwedomleniyany açyň",

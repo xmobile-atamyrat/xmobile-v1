@@ -41,6 +41,30 @@ export const notificationClasses = {
       mobile: 'px-[12px] py-[20px] text-center text-[13px] text-[#8B8A98]',
     },
   },
+  sheet: {
+    paper: '!bg-[#F5F5F8] !m-0 flex flex-col',
+    header:
+      'flex-none flex items-center justify-between px-[20px] pt-[12px] pb-[14px] bg-white',
+    backButton:
+      'w-[40px] h-[40px] rounded-full bg-[#F5F5F8] flex items-center justify-center text-[#20166E] flex-none',
+    title: 'text-[20px] font-bold text-[#17161D]',
+    list: 'flex-1 overflow-y-auto px-[16px] pt-[10px] pb-[24px] flex flex-col gap-[10px]',
+  },
+  group: {
+    card: {
+      web: 'relative bg-white rounded-[14px] px-[14px] py-[14px]',
+      mobile: 'relative bg-white rounded-[14px] px-[12px] py-[12px]',
+    },
+    headerRow: 'relative flex gap-[12px] items-start cursor-pointer',
+    count: 'text-[11px] font-semibold text-[#20166E]',
+    chevron:
+      'flex-none self-center text-[#8B8A98] transition-transform duration-200',
+    subList: 'flex flex-col gap-[6px] mt-[10px] pl-[52px]',
+    subItem:
+      'flex flex-col rounded-[10px] bg-[#F5F5F8] px-[11px] py-[7px] cursor-pointer active:opacity-70',
+    subText: 'text-[12px] text-[#4A4959] leading-[1.4] line-clamp-2',
+    subTime: 'text-[10px] text-[#B6B5C2] mt-[2px]',
+  },
   item: {
     container: {
       web: 'relative flex gap-[12px] px-[14px] py-[14px] rounded-[14px] bg-white cursor-pointer hover:bg-[#FAFAFC] transition-colors',

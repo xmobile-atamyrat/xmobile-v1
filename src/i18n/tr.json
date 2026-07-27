@@ -343,6 +343,8 @@
   "serverError": "Sunucu hatası. Yöneticiyle iletişime geçin.",
   "notifications": "Bildirimler",
   "noNotifications": "Bildirim yok",
+  "newMessages": "yeni mesaj",
+  "messages": "mesaj",
   "markAllRead": "Tümünü okundu işaretle",
   "enableBrowserNotifications": "Güncellemeleri almak için tarayıcı bildirimlerini etkinleştirin",
   "enableNativeNotifications": "Bildirimlere izin verin (uygulama)",
