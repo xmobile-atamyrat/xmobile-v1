@@ -9,9 +9,18 @@ import {
   computeProductPrice,
   resolveVariantDisplay,
 } from '@/pages/product/utils';
+import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
-import { colors, fontClassName, units } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import {
+  colors,
+  fontClassName,
+  hairline,
+  ink,
+  muted,
+  navy,
+  red,
+  units,
+} from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -19,7 +28,6 @@ import {
   Button,
   CircularProgress,
   Divider,
-  IconButton,
   Link,
   Snackbar,
   TextField,
@@ -232,25 +240,39 @@ export default function CheckoutPage() {
   const getItemPrice = (item: CartItem & { product: Product }): number =>
     itemPrices[item.id] ?? 0;
 
+  // Shared field style — hairline border, navy focus, ink text (design tokens)
+  const fieldSx = (multiline = false) => ({
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: 'white',
+      borderRadius: platform === 'web' ? '10px' : '12px',
+      ...(multiline ? {} : { height: units.inputHeight[platform] }),
+      fontSize: units.inputFontSize[platform],
+      '& fieldset': { borderColor: hairline, borderWidth: '1.5px' },
+      '&:hover fieldset': { borderColor: muted },
+      '&.Mui-focused fieldset': { borderColor: navy, borderWidth: '1.5px' },
+    },
+    '& .MuiInputBase-input': {
+      paddingX: platform === 'web' ? '32px' : '16px',
+      paddingY: '16px',
+      fontSize: units.inputFontSize[platform],
+      color: ink,
+    },
+    '& .MuiInputBase-input::placeholder': { color: muted, opacity: 1 },
+  });
+
+  const isFormIncomplete =
+    !fullName.trim() || !phoneNumber.trim() || !address.trim();
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/cart')}>
-      <Box className={checkoutDialogClasses.dialogContent[platform]}>
-        {/* Back button for mobile */}
-        {platform === 'mobile' && (
-          <Box className="flex flex-row mb-6 items-center">
-            <IconButton onClick={() => router.push('/cart')}>
-              <ArrowBackIosIcon />
-            </IconButton>
-            <Box className="flex w-5/6 justify-center">
-              <Typography
-                className={`${fontClassName.className} ${checkoutDialogClasses.title[platform]}`}
-              >
-                {t('checkout')}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
+      <Box
+        className={checkoutDialogClasses.dialogContent[platform]}
+        sx={
+          platform === 'mobile'
+            ? { paddingBottom: `${mobileBottomNavHeight}px` }
+            : undefined
+        }
+      >
         {/* Breadcrumbs for web */}
         {platform === 'web' && (
           <Box>
@@ -291,13 +313,11 @@ export default function CheckoutPage() {
         <Box className={checkoutDialogClasses.formContainer[platform]}>
           {/* Customer Details */}
           <Box className={checkoutDialogClasses.customerDetails[platform]}>
-            {platform === 'web' && (
-              <Typography
-                className={`${fontClassName.className} ${checkoutDialogClasses.sectionTitle.web}`}
-              >
-                {t('customerDetails')}
-              </Typography>
-            )}
+            <Typography
+              className={`${fontClassName.className} ${checkoutDialogClasses.sectionTitle[platform]}`}
+            >
+              {t('customerDetails')}
+            </Typography>
 
             {/* Full Name */}
             <Box className={checkoutDialogClasses.fieldContainer[platform]}>
@@ -316,37 +336,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder={t('fullNamePlaceholder')}
                 className={checkoutDialogClasses.textField[platform]}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'white',
-                    borderRadius: platform === 'web' ? '10px' : '12px',
-                    height: units.inputHeight[platform],
-                    fontSize: units.inputFontSize[platform],
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    '& fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
-                      opacity: 0.25,
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    fontSize: units.inputFontSize[platform],
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: colors.placeholder,
-                    opacity: 1,
-                  },
-                }}
+                sx={fieldSx()}
               />
             </Box>
 
@@ -367,37 +357,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder={t('phoneNumberPlaceholder')}
                 className={checkoutDialogClasses.textField[platform]}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'white',
-                    borderRadius: platform === 'web' ? '10px' : '12px',
-                    height: units.inputHeight[platform],
-                    fontSize: units.inputFontSize[platform],
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    '& fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
-                      opacity: 0.25,
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    fontSize: units.inputFontSize[platform],
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: colors.placeholder,
-                    opacity: 1,
-                  },
-                }}
+                sx={fieldSx()}
               />
             </Box>
 
@@ -418,37 +378,7 @@ export default function CheckoutPage() {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={t('addressPlaceholder')}
                 className={checkoutDialogClasses.textField[platform]}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'white',
-                    borderRadius: platform === 'web' ? '10px' : '12px',
-                    height: units.inputHeight[platform],
-                    fontSize: units.inputFontSize[platform],
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    '& fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
-                      opacity: 0.25,
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    fontSize: units.inputFontSize[platform],
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: colors.placeholder,
-                    opacity: 1,
-                  },
-                }}
+                sx={fieldSx()}
               />
             </Box>
 
@@ -467,54 +397,43 @@ export default function CheckoutPage() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={t('orderNotesPlaceholder')}
                 className={checkoutDialogClasses.textField[platform]}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'white',
-                    borderRadius: platform === 'web' ? '10px' : '12px',
-                    fontSize: units.inputFontSize[platform],
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    '& fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#303030',
-                      opacity: 0.25,
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.main,
-                      opacity: 0.25,
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    paddingX: platform === 'web' ? '32px' : '16px',
-                    paddingY: '16px',
-                    fontSize: units.inputFontSize[platform],
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: colors.placeholder,
-                    opacity: 1,
-                  },
-                }}
+                sx={fieldSx(true)}
               />
             </Box>
 
-            {/* Order Button for Mobile */}
+            {/* Total + Order Button for Mobile */}
             {platform === 'mobile' && (
-              <Button
-                onClick={handleOrder}
-                className={`${fontClassName.className} ${checkoutDialogClasses.orderButton.mobile}`}
-                sx={{
-                  backgroundColor: '#1b1b1b',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: '#000',
-                  },
-                }}
-              >
-                {t('order')}
-              </Button>
+              <Box className={checkoutDialogClasses.totalContainer.mobile}>
+                <Box className={checkoutDialogClasses.totalRow.mobile}>
+                  <Typography
+                    className={`${fontClassName.className} ${checkoutDialogClasses.totalLabel.mobile}`}
+                  >
+                    {t('total')}
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${checkoutDialogClasses.totalValue.mobile}`}
+                  >
+                    {totalPrice.toFixed(2)} {t('manat')}
+                  </Typography>
+                </Box>
+                <Button
+                  onClick={handleOrder}
+                  disabled={loading || isFormIncomplete}
+                  className={`${fontClassName.className} ${checkoutDialogClasses.orderButton.mobile}`}
+                  sx={{
+                    backgroundColor: red,
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#C6101C' },
+                    '&:disabled': { backgroundColor: '#E4E3EB', color: '#fff' },
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    t('order')
+                  )}
+                </Button>
+              </Box>
             )}
           </Box>
 
@@ -622,7 +541,8 @@ export default function CheckoutPage() {
       {/* Snackbar for error messages */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
+        disableWindowBlurListener
         onClose={(_, reason) => {
           if (reason === 'clickaway') {
             return;

@@ -3,8 +3,9 @@ import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { checkoutSuccessClasses } from '@/styles/classMaps/cart/checkoutSuccess';
-import { colors, fontClassName } from '@/styles/theme';
+import { colors, fontClassName, navy } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
+import { Check } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -70,17 +71,21 @@ export default function CheckoutSuccessPage() {
     <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box className={checkoutSuccessClasses.container[platform]}>
         {/* Success Image/Icon */}
-        <Box className={checkoutSuccessClasses.imageContainer[platform]}>
-          <img
-            src={
-              platform === 'web'
-                ? '/cart/checkout/success.svg'
-                : '/cart/checkout/success_mobile.svg'
-            }
-            className={checkoutSuccessClasses.image[platform]}
-            alt="Cart Checkout Success"
-          />
-        </Box>
+        {platform === 'mobile' ? (
+          <Box className={checkoutSuccessClasses.badgeOuter.mobile}>
+            <Box className={checkoutSuccessClasses.badgeInner.mobile}>
+              <Check size={34} color="#fff" strokeWidth={2.5} />
+            </Box>
+          </Box>
+        ) : (
+          <Box className={checkoutSuccessClasses.imageContainer.web}>
+            <img
+              src="/cart/checkout/success.svg"
+              className={checkoutSuccessClasses.image.web}
+              alt="Cart Checkout Success"
+            />
+          </Box>
+        )}
 
         {/* Title */}
         <Typography
@@ -112,35 +117,54 @@ export default function CheckoutSuccessPage() {
         </Box>
 
         {/* Buttons */}
-        <Box className="flex flex-row gap-2 w-full justify-center">
-          <Button
-            onClick={() => router.push('/')}
-            className={`${fontClassName.className} ${checkoutSuccessClasses.button[platform]}`}
-            sx={{
-              backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
-              color: 'white',
-              '&:hover': {
-                backgroundColor:
-                  platform === 'web' ? colors.buttonHoverBg : '#000',
-              },
-            }}
-          >
-            {t('products')}
-          </Button>
-          <Button
-            onClick={() => router.push('/orders')}
-            className={`${fontClassName.className} ${checkoutSuccessClasses.button[platform]}`}
-            sx={{
-              backgroundColor: platform === 'web' ? colors.main : '#1b1b1b',
-              color: 'white',
-              '&:hover': {
-                backgroundColor:
-                  platform === 'web' ? colors.buttonHoverBg : '#000',
-              },
-            }}
-          >
-            {t('myOrders')}
-          </Button>
+        <Box className={checkoutSuccessClasses.buttonContainer[platform]}>
+          {platform === 'mobile' ? (
+            <>
+              <Button
+                onClick={() => router.push('/orders')}
+                className={`${fontClassName.className} ${checkoutSuccessClasses.buttonPrimary.mobile}`}
+                sx={{
+                  backgroundColor: navy,
+                  color: 'white',
+                  '&:hover': { backgroundColor: colors.buttonHoverBg },
+                }}
+              >
+                {t('myOrders')}
+              </Button>
+              <Button
+                onClick={() => router.push('/')}
+                className={`${fontClassName.className} ${checkoutSuccessClasses.buttonSecondary.mobile}`}
+                sx={{ color: navy }}
+              >
+                {t('continueShopping')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={() => router.push('/')}
+                className={`${fontClassName.className} ${checkoutSuccessClasses.button.web}`}
+                sx={{
+                  backgroundColor: colors.main,
+                  color: 'white',
+                  '&:hover': { backgroundColor: colors.buttonHoverBg },
+                }}
+              >
+                {t('products')}
+              </Button>
+              <Button
+                onClick={() => router.push('/orders')}
+                className={`${fontClassName.className} ${checkoutSuccessClasses.button.web}`}
+                sx={{
+                  backgroundColor: colors.main,
+                  color: 'white',
+                  '&:hover': { backgroundColor: colors.buttonHoverBg },
+                }}
+              >
+                {t('myOrders')}
+              </Button>
+            </>
+          )}
         </Box>
       </Box>
     </Layout>
