@@ -4,7 +4,7 @@ import CustomAppBar from '@/pages/components/Appbar';
 import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Footer from '@/pages/components/Footer';
-import NotificationPermissionBanner from '@/pages/components/NotificationPermissionBanner';
+import FcmManager from '@/pages/components/FcmManager';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR, mobileBottomNavHeight } from '@/pages/lib/constants';
@@ -87,7 +87,7 @@ export default function Layout({
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
       />
-      <NotificationPermissionBanner />
+      <FcmManager />
       <Box
         component="main"
         className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col`}
