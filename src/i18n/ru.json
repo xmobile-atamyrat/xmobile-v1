@@ -333,6 +333,8 @@
   "chatEndButton": "Закончить",
   "chatAdminDashboard": "Панель администратора",
   "chatSupportChat": "Чат поддержки",
+  "chatOnline": "В сети",
+  "chatConnecting": "Подключение…",
   "chatNeedHelpPrompt": "Нужна помощь? Напишите в поддержку.",
   "chatStartChatButton": "Начать чат",
   "chatNoActiveSession": "Нет активной сессии",

@@ -7,7 +7,7 @@ import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { colors, fill, hairline, ink, muted, navy, red } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -18,10 +18,15 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ArrowLeft, Headset, Phone } from 'lucide-react';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+
+// Store support line (primary of the three in Footer/support), dialed from the chat header
+const STORE_PHONE = '+99361004933';
+const ONLINE_GREEN = '#1F9A5A';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -287,93 +292,140 @@ export default function ChatPage() {
   };
 
   const renderHeader = () => {
-    if (currentSession) {
-      const title = isAdmin
-        ? `${
-            currentSession.users?.find((u) => u.grade === 'FREE')?.name ||
-            t('chatGuest')
-          }`
-        : t('chatCustomerSupport');
+    const inSession = !!currentSession;
+    // Admin viewing the session list has no conversation partner → no avatar/status.
+    const showAvatar = !isAdmin || inSession;
+    const online = isConnected;
 
-      return (
-        <Box
-          className={chatClasses.header.container[platform]}
-          sx={{
-            backgroundColor: '#FF624C',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            minHeight: '64px',
-            px: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isAdmin ? (
-              <IconButton
-                size="small"
-                onClick={handleBackToSessionList}
-                sx={{ color: 'white' }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            ) : (
-              <IconButton
-                size="small"
-                onClick={handleBack}
-                sx={{ color: 'white' }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            )}
-            <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-              {title}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {canManageSession && (
-              <Button
-                size="small"
-                variant="text"
-                onClick={handleEndSession}
-                sx={{
-                  color: 'white',
-                  minWidth: 'auto',
-                  fontSize: '13px',
-                  textTransform: 'none',
-                }}
-              >
-                {t('chatEndButton')}
-              </Button>
-            )}
-          </Box>
-        </Box>
-      );
+    let title: string;
+    if (inSession && isAdmin) {
+      title =
+        currentSession?.users?.find((u) => u.grade === 'FREE')?.name ||
+        t('chatGuest');
+    } else if (isAdmin) {
+      title = t('chatAdminDashboard');
+    } else {
+      title = t('chatCustomerSupport');
     }
+
+    const onBack = inSession && isAdmin ? handleBackToSessionList : handleBack;
 
     return (
       <Box
         className={chatClasses.header.container[platform]}
         sx={{
-          backgroundColor: '#FF624C',
-          color: 'white',
+          backgroundColor: '#fff',
+          borderBottom: `1px solid ${hairline}`,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 1.5,
           flexShrink: 0,
           minHeight: '64px',
           px: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={handleBack} sx={{ color: 'white' }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-            {isAdmin ? t('chatAdminDashboard') : t('chatSupportChat')}
-          </Typography>
+        <Box
+          component="button"
+          onClick={onBack}
+          aria-label="Back"
+          sx={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            borderRadius: '999px',
+            backgroundColor: fill,
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ArrowLeft size={20} color={navy} />
         </Box>
+
+        {showAvatar && (
+          <Box
+            sx={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}
+          >
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                backgroundColor: navy,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Headset size={22} color="#fff" />
+            </Box>
+            {online && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 11,
+                  height: 11,
+                  borderRadius: '999px',
+                  backgroundColor: ONLINE_GREEN,
+                  border: '2px solid #fff',
+                }}
+              />
+            )}
+          </Box>
+        )}
+
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography
+            noWrap
+            sx={{ fontSize: '15px', fontWeight: 700, color: ink }}
+          >
+            {title}
+          </Typography>
+          {showAvatar && (
+            <Typography
+              sx={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: online ? ONLINE_GREEN : muted,
+              }}
+            >
+              {online ? t('chatOnline') : t('chatConnecting')}
+            </Typography>
+          )}
+        </Box>
+
+        {isAdmin ? (
+          canManageSession && (
+            <Button
+              size="small"
+              variant="text"
+              onClick={handleEndSession}
+              sx={{
+                color: red,
+                minWidth: 'auto',
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
+            >
+              {t('chatEndButton')}
+            </Button>
+          )
+        ) : (
+          <IconButton
+            component="a"
+            href={`tel:${STORE_PHONE}`}
+            size="small"
+            aria-label={STORE_PHONE}
+            sx={{ color: navy, flexShrink: 0 }}
+          >
+            <Phone size={20} />
+          </IconButton>
+        )}
       </Box>
     );
   };
@@ -390,7 +442,7 @@ export default function ChatPage() {
             justifyContent: 'center',
           }}
         >
-          <CircularProgress sx={{ color: '#FF624C' }} />
+          <CircularProgress sx={{ color: navy }} />
         </Box>
       );
     }
@@ -409,10 +461,7 @@ export default function ChatPage() {
             gap: 2,
           }}
         >
-          <Typography
-            align="center"
-            sx={{ fontSize: '14px', color: '#838383' }}
-          >
+          <Typography align="center" sx={{ fontSize: '14px', color: muted }}>
             {sessionError === 'chatSessionTakenByOther'
               ? t('chatSessionTakenByOther')
               : t('chatNotParticipant')}
@@ -448,7 +497,7 @@ export default function ChatPage() {
           gap: 2,
         }}
       >
-        <Typography align="center" sx={{ fontSize: '14px', color: '#1B1B1B' }}>
+        <Typography align="center" sx={{ fontSize: '14px', color: ink }}>
           {t('chatNeedHelpPrompt')}
         </Typography>
         <Button
@@ -456,15 +505,15 @@ export default function ChatPage() {
           onClick={handleStartChatUser}
           disabled={loading || !isConnected}
           sx={{
-            backgroundColor: '#FF624C',
+            backgroundColor: navy,
             color: 'white',
             textTransform: 'none',
-            borderRadius: '8px',
+            borderRadius: '12px',
             fontSize: '14px',
-            fontWeight: 500,
+            fontWeight: 600,
             px: 3,
             '&:hover': {
-              backgroundColor: '#EC4D38',
+              backgroundColor: colors.buttonHoverBg,
             },
           }}
         >
@@ -523,7 +572,7 @@ export default function ChatPage() {
           onClose={() => setSessionClosed(false)}
           severity="info"
           variant="filled"
-          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
+          sx={{ backgroundColor: navy, color: '#fff' }}
         >
           {t('chatSessionClosedByAdmin')}
         </Alert>
@@ -539,7 +588,7 @@ export default function ChatPage() {
           onClose={() => setShowTakenAlert(false)}
           severity="info"
           variant="filled"
-          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
+          sx={{ backgroundColor: navy, color: '#fff' }}
         >
           {t('chatSessionTakenByOther')}
         </Alert>

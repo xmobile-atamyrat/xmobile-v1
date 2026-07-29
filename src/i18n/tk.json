@@ -332,6 +332,8 @@
   "chatEndButton": "Tamamla",
   "chatAdminDashboard": "Admin paneli",
   "chatSupportChat": "Kömek söhbeti",
+  "chatOnline": "Onlaýn",
+  "chatConnecting": "Birikdirilýär…",
   "chatNeedHelpPrompt": "Kömek gerekmi? Biziň kömek toparymyz bilen söhbetdeşlige başlaň.",
   "chatStartChatButton": "Söhbetdeşligi başlat",
   "chatNoActiveSession": "Işjeň söhbetdeşlik ýok",
