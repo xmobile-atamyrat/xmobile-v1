@@ -11,7 +11,7 @@ import {
   navy,
   red,
 } from '@/styles/theme';
-import { ArrowLeft, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, UserRound } from 'lucide-react';
 import {
   Box,
   Button,
@@ -78,10 +78,7 @@ export default function Signin() {
 
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link
-        href="/user/sign_in_up"
-        className={signinClasses.backButton[platform]}
-      >
+      <Link href="/user" className={signinClasses.backButton[platform]}>
         <ArrowLeft size={20} color={navy} />
       </Link>
       <Box className={signinClasses.boxes.main[platform]}>
@@ -244,22 +241,40 @@ export default function Signin() {
           >
             {t('signin')}
           </Button>
-          <Box className={signinClasses.boxes.text[platform]}>
-            <Typography
-              className={`${signinClasses.typography} ${fontClassName.className}`}
-              style={{ color: muted }}
+          <Box className={signinClasses.divider}>
+            <span className={signinClasses.dividerLine} />
+            <span
+              className={`${signinClasses.dividerText} ${fontClassName.className}`}
             >
-              {t('dontHaveAccount')}
-            </Typography>
-            <Button
-              className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
-              style={{ color: navy }}
-              onClick={() => router.push('/user/signup')}
-            >
-              {t('signup')}
-            </Button>
+              {t('or')}
+            </span>
+            <span className={signinClasses.dividerLine} />
           </Box>
+          <Button
+            fullWidth
+            disableRipple
+            onClick={() => router.push('/')}
+            className={`${signinClasses.guestButton} ${fontClassName.className}`}
+          >
+            <UserRound size={18} color={navy} />
+            {t('continueAsGuest')}
+          </Button>
         </Paper>
+      </Box>
+      <Box className={signinClasses.boxes.text[platform]}>
+        <Typography
+          className={`${signinClasses.typography} ${fontClassName.className}`}
+          style={{ color: muted }}
+        >
+          {t('dontHaveAccount')}
+        </Typography>
+        <Button
+          className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
+          style={{ color: navy }}
+          onClick={() => router.push('/user/signup')}
+        >
+          {t('signup')}
+        </Button>
       </Box>
     </Box>
   );

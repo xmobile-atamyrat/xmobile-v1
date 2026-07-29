@@ -86,7 +86,7 @@ const ChatWidget = () => {
 
   const handleToggle = () => {
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user/signin');
       return;
     }
     // Non-admin users get the full chat page, not the floating popup.

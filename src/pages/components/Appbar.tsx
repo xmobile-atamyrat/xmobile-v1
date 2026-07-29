@@ -206,7 +206,7 @@ export default function CustomAppBar({
               if (user) {
                 setNotificationAnchorEl(e.currentTarget);
               } else {
-                router.push('/user/sign_in_up');
+                router.push('/user/signin');
               }
             }}
             type="button"

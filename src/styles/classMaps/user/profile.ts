@@ -10,6 +10,24 @@ export const profileClasses = {
     mobile: 'w-full bg-navy px-5 pt-3 pb-7 rounded-b-[26px] flex flex-col',
   },
   headerTitle: 'text-white font-bold text-[20px] mb-5',
+  // Guest (signed-out) state: plain title + navy hero card, see mockup XMobile.dc.html:945-953
+  guestHeader: {
+    web: 'w-full max-w-[600px] bg-white px-8 pt-6 pb-3 flex',
+    mobile: 'w-full bg-white px-5 pt-3 pb-3 flex',
+  },
+  guestTitle: 'text-ink font-bold text-[24px] tracking-[-0.01em]',
+  heroCard:
+    'bg-navy rounded-[20px] px-[22px] py-7 flex flex-col items-center text-center mb-5',
+  heroAvatar:
+    'w-[72px] h-[72px] rounded-full bg-white/[0.12] flex items-center justify-center mb-4',
+  heroAvatarIcon: 'w-[34px] h-[34px] text-white',
+  heroTitle: 'text-white font-bold text-[19px] mb-[6px]',
+  heroSubtitle: 'text-white/70 text-[13px] leading-[1.5] mb-5',
+  heroSignIn:
+    'w-full h-[50px] rounded-[14px] bg-white text-navy text-[15px] font-bold normal-case flex items-center justify-center mb-[10px]',
+  heroCreate:
+    'w-full h-[50px] rounded-[14px] border-[1.5px] border-white/35 text-white text-[15px] font-semibold normal-case flex items-center justify-center',
+  rowValue: 'text-[14px] text-muted flex-none',
   avatarRow: 'flex items-center gap-[14px]',
   avatar:
     'w-16 h-16 rounded-full bg-white/[0.14] border-2 border-white/30 flex items-center justify-center flex-none',
@@ -61,9 +79,30 @@ export const profileClasses = {
     'flex justify-center items-center flex-1 h-[46px] rounded-[11px] text-[15px] font-semibold normal-case',
   dialogCancel: 'border-[1.5px] border-hairline text-ink',
   dialogConfirm: 'bg-red text-white',
-  langList: 'min-w-[110px] border-0 flex flex-col mt-[12px]',
-  langListItem: 'px-[12px] gap-[10px] rounded-[10px]',
-  langOptionRow: 'flex flex-row justify-start w-full items-center gap-[12px]',
-  langOptionTxt: 'text-ink text-[15px] font-medium',
-  langImg: 'w-[24px] h-[18px] rounded-[3px]',
+  // Language bottom sheet (mockup XMobile.dc.html:979-987): handle · title+close · radio rows · Apply.
+  langSheet: {
+    mobile:
+      'w-full max-w-[440px] rounded-t-[26px] bg-white px-[22px] pt-[10px] pb-[34px] flex flex-col',
+    web: 'w-[420px] rounded-[20px] bg-white px-[22px] pt-[18px] pb-[26px] flex flex-col',
+  },
+  langHandle:
+    'w-10 h-[5px] rounded-full bg-[#E4E3EB] mx-auto mt-[6px] mb-[18px]',
+  langHeader: 'flex items-center justify-between mb-[18px]',
+  langTitle: 'text-ink font-bold text-[19px]',
+  langClose:
+    'w-8 h-8 rounded-full bg-fill flex items-center justify-center flex-none',
+  langCloseIcon: 'w-[17px] h-[17px] text-muted',
+  langOptions: 'flex flex-col gap-[10px] mb-[22px]',
+  langRow:
+    'flex items-center gap-[14px] h-14 rounded-[14px] px-4 border-[1.5px] normal-case w-full',
+  langRowIdle: 'border-hairline bg-white',
+  langRowActive: 'border-navy bg-[#F7F6FC]',
+  langRowName: 'flex-1 text-left text-[15px] text-ink',
+  langRadio: 'w-6 h-6 rounded-full flex items-center justify-center flex-none',
+  langRadioIdle: 'border-[1.5px] border-[#D7D6E0]',
+  langRadioActive: 'bg-navy',
+  langRadioIcon: 'w-[15px] h-[15px] text-white',
+  langApply:
+    'w-full h-[54px] rounded-[15px] bg-navy text-white text-[16px] font-semibold normal-case flex items-center justify-center',
+  langImg: 'w-[26px] h-[20px] rounded-[4px] flex-none',
 };
