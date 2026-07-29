@@ -123,12 +123,12 @@ const ChatWindow = () => {
                   >
                     <Typography
                       sx={{
-                        px: 2,
-                        py: 0.4,
-                        bgcolor: 'grey.300',
-                        color: 'text.secondary',
+                        px: 1.5,
+                        py: 0.5,
+                        bgcolor: '#ECEBF1',
+                        color: muted,
                         borderRadius: '999px',
-                        fontSize: '12px',
+                        fontSize: '11px',
                       }}
                     >
                       {date.toLocaleDateString()}

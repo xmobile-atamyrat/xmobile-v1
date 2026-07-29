@@ -4,7 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import { colors, navy } from '@/styles/theme';
+import { colors, fill, hairline, ink, muted, navy, red } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -17,12 +17,14 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, MessageCircle, Maximize2, X } from 'lucide-react';
+import { ArrowLeft, Headset, MessageCircle, Maximize2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ChatSessionList from './ChatSessionList';
 import ChatWindow from './ChatWindow';
+
+const ONLINE_GREEN = '#1F9A5A';
 
 const ChatWidget = () => {
   const { user } = useUserContext();
@@ -87,6 +89,11 @@ const ChatWidget = () => {
       router.push('/user/sign_in_up');
       return;
     }
+    // Non-admin users get the full chat page, not the floating popup.
+    if (!isAdmin) {
+      router.push('/chat');
+      return;
+    }
     setIsOpen((prev) => !prev);
   };
 
@@ -126,97 +133,139 @@ const ChatWidget = () => {
   };
 
   const renderHeader = () => {
-    if (currentSession) {
-      const title = isAdmin
-        ? `${currentSession.users?.find((u) => u.grade === 'FREE')?.name || t('chatGuest')}`
-        : t('chatCustomerSupport');
+    const inSession = !!currentSession;
+    const showAvatar = !isAdmin || inSession;
+    const online = isConnected;
 
-      return (
-        <Box
-          className={chatClasses.header.container[platform]}
-          sx={{
-            backgroundColor: navy,
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            minHeight: '64px',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isAdmin && (
-              <IconButton
-                size="small"
-                onClick={handleBackToSessionList}
-                sx={{ color: 'white' }}
-              >
-                <ArrowLeft size={20} />
-              </IconButton>
-            )}
-            <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-              {title}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={handleExpand}
-              sx={{ color: 'white' }}
-              title="Expand to full screen"
-            >
-              <Maximize2 size={18} />
-            </IconButton>
-            {canManageSession && (
-              <Button
-                size="small"
-                variant="text"
-                onClick={handleEndSession}
-                sx={{
-                  color: 'white',
-                  minWidth: 'auto',
-                  fontSize: '13px',
-                  textTransform: 'none',
-                }}
-              >
-                {t('chatEndButton')}
-              </Button>
-            )}
-            {platform === 'mobile' && (
-              <IconButton
-                size="small"
-                onClick={handleToggle}
-                sx={{ color: 'white' }}
-              >
-                <X size={20} />
-              </IconButton>
-            )}
-          </Box>
-        </Box>
-      );
+    let title: string;
+    if (inSession && isAdmin) {
+      title =
+        currentSession?.users?.find((u) => u.grade === 'FREE')?.name ||
+        t('chatGuest');
+    } else if (isAdmin) {
+      title = t('chatAdminDashboard');
+    } else {
+      title = t('chatCustomerSupport');
     }
 
     return (
       <Box
         className={chatClasses.header.container[platform]}
         sx={{
-          backgroundColor: navy,
-          color: 'white',
+          backgroundColor: '#fff',
+          borderBottom: `1px solid ${hairline}`,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 1.5,
           flexShrink: 0,
           minHeight: '64px',
         }}
       >
-        <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-          {isAdmin ? t('chatAdminDashboard') : t('chatSupportChat')}
-        </Typography>
+        {inSession && isAdmin && (
+          <Box
+            component="button"
+            onClick={handleBackToSessionList}
+            aria-label="Back"
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              borderRadius: '999px',
+              backgroundColor: fill,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={navy} />
+          </Box>
+        )}
+
+        {showAvatar && (
+          <Box
+            sx={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}
+          >
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                backgroundColor: navy,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Headset size={22} color="#fff" />
+            </Box>
+            {online && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 11,
+                  height: 11,
+                  borderRadius: '999px',
+                  backgroundColor: ONLINE_GREEN,
+                  border: '2px solid #fff',
+                }}
+              />
+            )}
+          </Box>
+        )}
+
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography
+            noWrap
+            sx={{ fontSize: '15px', fontWeight: 700, color: ink }}
+          >
+            {title}
+          </Typography>
+          {showAvatar && (
+            <Typography
+              sx={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: online ? ONLINE_GREEN : muted,
+              }}
+            >
+              {online ? t('chatOnline') : t('chatConnecting')}
+            </Typography>
+          )}
+        </Box>
+
+        {canManageSession && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={handleEndSession}
+            sx={{
+              color: red,
+              minWidth: 'auto',
+              fontSize: '13px',
+              fontWeight: 600,
+              textTransform: 'none',
+            }}
+          >
+            {t('chatEndButton')}
+          </Button>
+        )}
+        <IconButton
+          size="small"
+          onClick={handleExpand}
+          sx={{ color: navy, flexShrink: 0 }}
+          title="Expand to full screen"
+        >
+          <Maximize2 size={18} />
+        </IconButton>
         {platform === 'mobile' && (
           <IconButton
             size="small"
             onClick={handleToggle}
-            sx={{ color: 'white' }}
+            sx={{ color: navy, flexShrink: 0 }}
           >
             <X size={20} />
           </IconButton>

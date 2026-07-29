@@ -330,6 +330,8 @@
   "chatEndButton": "End",
   "chatAdminDashboard": "Admin Dashboard",
   "chatSupportChat": "Support Chat",
+  "chatOnline": "Online",
+  "chatConnecting": "Connecting…",
   "chatNeedHelpPrompt": "Need help? Start a chat with our support team.",
   "chatStartChatButton": "Start Chat",
   "chatNoActiveSession": "No active session",

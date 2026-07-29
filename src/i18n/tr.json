@@ -242,6 +242,8 @@
   "chatEndButton": "Bitir",
   "chatAdminDashboard": "Yönetici Kontrol Paneli",
   "chatSupportChat": "Destek Sohbeti",
+  "chatOnline": "Çevrimiçi",
+  "chatConnecting": "Bağlanıyor…",
   "chatNeedHelpPrompt": "Yardım mı lazım? Destekle yazışın.",
   "chatStartChatButton": "Sohbeti Başlat",
   "chatNoActiveSession": "Aktif oturum yok",
