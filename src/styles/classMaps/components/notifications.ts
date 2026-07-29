@@ -96,19 +96,4 @@ export const notificationClasses = {
       mobile: 'text-[10px] text-[#B6B5C2] mt-[2px]',
     },
   },
-  permissionBanner: {
-    container: {
-      web: 'px-[16px] py-[13px] bg-[#FEF6E7] flex items-center justify-between gap-[12px] rounded-[12px]',
-      mobile:
-        'px-[14px] py-[13px] bg-[#FEF6E7] flex items-center justify-between gap-[10px] rounded-[12px]',
-    },
-    text: {
-      web: 'text-[13px] font-semibold text-[#17161D]',
-      mobile: 'text-[12px] font-semibold text-[#17161D]',
-    },
-    button: {
-      web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline',
-      mobile: 'text-[12px] text-[#20166E] font-semibold cursor-pointer',
-    },
-  },
 };

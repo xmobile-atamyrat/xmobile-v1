@@ -3,10 +3,14 @@ import { ProfileSkeleton } from '@/pages/components/SkeletonLoader';
 import {
   AUTH_REFRESH_COOKIE_NAME,
   LOCALE_COOKIE_NAME,
+  mobileBottomNavHeight,
 } from '@/pages/lib/constants';
 import {
+  disableNotifications,
+  enableNotifications,
   FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
+  isNotificationsEnabled,
   unregisterFCMToken,
 } from '@/pages/lib/fcm/fcmClient';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -14,7 +18,8 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
-import { colors, fontClassName } from '@/styles/theme';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { colors, fontClassName, navy } from '@/styles/theme';
 import {
   Box,
   ButtonBase,
@@ -22,10 +27,14 @@ import {
   Dialog,
   List,
   ListItemButton,
+  Snackbar,
+  Switch,
   Typography,
 } from '@mui/material';
 import {
+  AlertTriangle,
   BarChart3,
+  Bell,
   ChevronRight,
   Download,
   FolderTree,
@@ -59,33 +68,61 @@ export const getStaticProps = (async (context) => {
 type MenuRow = {
   icon: ReactNode;
   label: string;
-  onClick: () => void;
+  onClick?: () => void;
   tone?: 'primary' | 'muted';
+  toggle?: { checked: boolean; onChange: () => void };
+};
+
+const navySwitchSx = {
+  '& .MuiSwitch-switchBase.Mui-checked': { color: '#fff' },
+  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+    backgroundColor: navy,
+    opacity: 1,
+  },
 };
 
 function MenuCard({ rows }: { rows: MenuRow[] }) {
   return (
     <Box className={profileClasses.card}>
-      {rows.map((row, i) => (
-        <ButtonBase
-          key={row.label}
-          onClick={row.onClick}
-          disableRipple
-          className={`${profileClasses.row} ${
-            i < rows.length - 1 ? profileClasses.rowBorder : ''
-          }`}
-        >
-          <span className={profileClasses.rowIcon[row.tone ?? 'primary']}>
-            {row.icon}
-          </span>
-          <span
-            className={`${profileClasses.rowLabel} ${fontClassName.className}`}
+      {rows.map((row, i) => {
+        const borderCls = i < rows.length - 1 ? profileClasses.rowBorder : '';
+        const inner = (
+          <>
+            <span className={profileClasses.rowIcon[row.tone ?? 'primary']}>
+              {row.icon}
+            </span>
+            <span
+              className={`${profileClasses.rowLabel} ${fontClassName.className}`}
+            >
+              {row.label}
+            </span>
+            {row.toggle ? (
+              <Switch
+                checked={row.toggle.checked}
+                onChange={row.toggle.onChange}
+                sx={navySwitchSx}
+              />
+            ) : (
+              <ChevronRight className={profileClasses.chevron} />
+            )}
+          </>
+        );
+
+        return row.toggle ? (
+          <Box key={row.label} className={`${profileClasses.row} ${borderCls}`}>
+            {inner}
+          </Box>
+        ) : (
+          <ButtonBase
+            key={row.label}
+            onClick={row.onClick}
+            disableRipple
+            className={`${profileClasses.row} ${borderCls}`}
           >
-            {row.label}
-          </span>
-          <ChevronRight className={profileClasses.chevron} />
-        </ButtonBase>
-      ))}
+            {inner}
+          </ButtonBase>
+        );
+      })}
     </Box>
   );
 }
@@ -100,6 +137,9 @@ export default function Profile() {
     null,
   );
   const [selectedLocale, setSelectedLocale] = useState('ru');
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifDenied, setNotifDenied] = useState(false);
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
@@ -121,6 +161,28 @@ export default function Profile() {
       );
     }
   }, [router.locale, router.defaultLocale]);
+
+  // Reflect the current device's notification state (token registered = on).
+  useEffect(() => {
+    setNotifEnabled(user ? isNotificationsEnabled() : false);
+  }, [user]);
+
+  const handleToggleNotif = async () => {
+    if (!user || !accessToken || notifBusy) return;
+    setNotifBusy(true);
+    try {
+      if (notifEnabled) {
+        await disableNotifications(accessToken);
+        setNotifEnabled(false);
+      } else {
+        const ok = await enableNotifications(accessToken, user.id);
+        setNotifEnabled(ok);
+        if (!ok) setNotifDenied(true);
+      }
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   const handleToggleLang = () => setOpenLang(!openLang);
   const handleToggle = () => setOpen(!open);
@@ -271,6 +333,14 @@ export default function Profile() {
             icon: <Package className={profileClasses.icon.primary} />,
             label: isAdmin ? t('userOrders') : t('myOrders'),
             onClick: handleToggleMyOrders,
+          },
+          {
+            icon: <Bell className={profileClasses.icon.primary} />,
+            label: t('notifications'),
+            toggle: {
+              checked: notifEnabled,
+              onChange: handleToggleNotif,
+            },
           },
         ]
       : [
@@ -502,6 +572,24 @@ export default function Profile() {
             ))}
           </List>
         </Dialog>
+
+        <Snackbar
+          open={notifDenied}
+          autoHideDuration={4000}
+          disableWindowBlurListener
+          onClose={() => setNotifDenied(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          sx={{ bottom: `${mobileBottomNavHeight + 8}px !important` }}
+        >
+          <Box className={snackbarClasses.pill}>
+            <AlertTriangle className={snackbarClasses.icon.warning} size={20} />
+            <Typography
+              className={`${fontClassName.className} ${snackbarClasses.message}`}
+            >
+              {t('notificationsDenied')}
+            </Typography>
+          </Box>
+        </Snackbar>
       </Box>
     </Layout>
   );
