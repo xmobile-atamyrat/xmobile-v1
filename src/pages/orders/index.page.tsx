@@ -6,17 +6,9 @@ import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { ordersIndexClasses } from '@/styles/classMaps/orders/index';
 import { fontClassName } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import {
-  Alert,
-  Box,
-  Button,
-  IconButton,
-  Pagination,
-  Snackbar,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Pagination, Snackbar, Typography } from '@mui/material';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
+import { ArrowLeft } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -34,7 +26,7 @@ export const getStaticProps = (async (context) => {
   };
 }) satisfies GetStaticProps<object>;
 
-type TabType = 'ongoing' | 'completed';
+type TabType = 'all' | 'ongoing' | 'completed';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -49,7 +41,7 @@ export default function OrdersPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
   // Mobile tabs
-  const [activeTab, setActiveTab] = useState<TabType>('ongoing');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
   // Web filters
   const [status, setStatus] = useState<UserOrderStatus | undefined>();
@@ -101,7 +93,7 @@ export default function OrdersPage() {
             guestOrders = guestOrders.filter(
               (o) => o.status === 'PENDING' || o.status === 'IN_PROGRESS',
             );
-          } else {
+          } else if (activeTab === 'completed') {
             guestOrders = guestOrders.filter(
               (o) =>
                 o.status === 'COMPLETED' ||
@@ -141,7 +133,7 @@ export default function OrdersPage() {
             filteredOrders = filteredOrders.filter(
               (o) => o.status === 'PENDING' || o.status === 'IN_PROGRESS',
             );
-          } else {
+          } else if (activeTab === 'completed') {
             filteredOrders = filteredOrders.filter(
               (o) =>
                 o.status === 'COMPLETED' ||
@@ -198,76 +190,62 @@ export default function OrdersPage() {
     router.push('/user');
   };
 
+  const tabs: { key: TabType; label: string }[] = [
+    { key: 'all', label: t('all') },
+    { key: 'ongoing', label: t('ongoing') },
+    { key: 'completed', label: t('completed') },
+  ];
+
   return (
     <Layout handleHeaderBackButton={handleBackButton}>
       <Box className={ordersIndexClasses.container[platform]}>
-        {/* Title */}
-        <Box className="flex items-center mb-4">
-          {platform === 'mobile' && (
-            <IconButton onClick={handleBackButton}>
-              <ArrowBackIosIcon />
-            </IconButton>
-          )}
-          <Box className="flex w-full justify-center">
+        {/* Mobile header + tabs */}
+        {platform === 'mobile' && (
+          <Box className={ordersIndexClasses.headerWrap.mobile}>
+            <Box className="flex items-center gap-3.5">
+              <button
+                type="button"
+                onClick={handleBackButton}
+                className={ordersIndexClasses.backButton.mobile}
+                aria-label="back"
+              >
+                <ArrowLeft size={20} className="text-[#20166E]" />
+              </button>
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.title.mobile}`}
+              >
+                {t('myOrders')}
+              </Typography>
+            </Box>
+            <Box className={ordersIndexClasses.tabs.mobile}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`${fontClassName.className} ${
+                    ordersIndexClasses.tab.mobile
+                  } ${
+                    activeTab === tab.key
+                      ? ordersIndexClasses.tabActive.mobile
+                      : ordersIndexClasses.tabInactive.mobile
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Web title */}
+        {platform === 'web' && (
+          <Box className="flex w-full justify-center mb-4">
             <Typography
-              className={`${fontClassName.className} ${ordersIndexClasses.title[platform]}`}
+              className={`${fontClassName.className} ${ordersIndexClasses.title.web}`}
             >
               {t('myOrders')}
             </Typography>
-          </Box>
-        </Box>
-
-        {/* Mobile Tabs */}
-        {platform === 'mobile' && (
-          <Box className={ordersIndexClasses.tabs.mobile}>
-            <Button
-              className={`${ordersIndexClasses.tab.mobile} ${
-                activeTab === 'ongoing'
-                  ? ordersIndexClasses.tabActive.mobile
-                  : ordersIndexClasses.tabInactive.mobile
-              }`}
-              onClick={() => setActiveTab('ongoing')}
-              sx={{
-                backgroundColor:
-                  activeTab === 'ongoing' ? '#1c1b1b' : 'transparent',
-                color: activeTab === 'ongoing' ? 'white' : '#1c1b1b',
-                '&:hover': {
-                  backgroundColor:
-                    activeTab === 'ongoing' ? '#1c1b1b' : 'transparent',
-                },
-                textTransform: 'none',
-              }}
-            >
-              <Typography
-                className={`${fontClassName.className} font-medium text-[16px]`}
-              >
-                {t('ongoing')}
-              </Typography>
-            </Button>
-            <Button
-              className={`${ordersIndexClasses.tab.mobile} ${
-                activeTab === 'completed'
-                  ? ordersIndexClasses.tabActive.mobile
-                  : ordersIndexClasses.tabInactive.mobile
-              }`}
-              onClick={() => setActiveTab('completed')}
-              sx={{
-                backgroundColor:
-                  activeTab === 'completed' ? '#1c1b1b' : 'transparent',
-                color: activeTab === 'completed' ? 'white' : '#1c1b1b',
-                '&:hover': {
-                  backgroundColor:
-                    activeTab === 'completed' ? '#1c1b1b' : 'transparent',
-                },
-                textTransform: 'none',
-              }}
-            >
-              <Typography
-                className={`${fontClassName.className} font-medium text-[16px]`}
-              >
-                {t('completed')}
-              </Typography>
-            </Button>
           </Box>
         )}
 
@@ -284,42 +262,47 @@ export default function OrdersPage() {
           />
         )}
 
-        {/* Loading */}
-        {loading && <OrderListSkeleton count={5} />}
+        {/* Content */}
+        <Box className={ordersIndexClasses.content[platform]}>
+          {/* Loading */}
+          {loading && <OrderListSkeleton count={5} />}
 
-        {/* Empty State */}
-        {!loading && orders.length === 0 && (
-          <Box className={ordersIndexClasses.emptyState[platform]}>
-            <Typography className={fontClassName.className}>
-              {t('noOrdersFound')}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Orders List */}
-        {!loading && orders.length > 0 && (
-          <>
-            {platform === 'web' ? (
-              <OrderTable orders={orders} />
-            ) : (
-              <Box>
-                {orders.map((order) => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </Box>
-            )}
-
-            {/* Pagination */}
-            <Box className={ordersIndexClasses.pagination[platform]}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, value) => setPage(value)}
-                color="primary"
-              />
+          {/* Empty State */}
+          {!loading && orders.length === 0 && (
+            <Box className={ordersIndexClasses.emptyState[platform]}>
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.emptyStateText[platform]}`}
+              >
+                {t('noOrdersFound')}
+              </Typography>
             </Box>
-          </>
-        )}
+          )}
+
+          {/* Orders List */}
+          {!loading && orders.length > 0 && (
+            <>
+              {platform === 'web' ? (
+                <OrderTable orders={orders} />
+              ) : (
+                <Box>
+                  {orders.map((order) => (
+                    <OrderCard key={order.id} order={order} />
+                  ))}
+                </Box>
+              )}
+
+              {/* Pagination */}
+              <Box className={ordersIndexClasses.pagination[platform]}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                />
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
 
       {/* Snackbar */}

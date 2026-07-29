@@ -48,7 +48,7 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
         fontSize: '11px',
         fontWeight: 700,
         '& .MuiChip-icon': { marginLeft: '10px' },
-        '& .MuiChip-label': { padding: '0 10px 0 4px' },
+        '& .MuiChip-label': { padding: '0 10px 0 6px' },
       }}
     />
   );

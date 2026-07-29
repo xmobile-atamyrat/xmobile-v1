@@ -1,78 +1,92 @@
 export const ordersDetailClasses = {
   container: {
     web: 'flex flex-col w-full py-4',
-    mobile: 'flex flex-col w-full px-[28px] py-4',
+    mobile: 'flex flex-col w-full min-h-screen bg-[#F5F5F8]',
   },
   header: {
     web: 'flex items-center gap-4 mb-4',
-    mobile: 'flex justify-between items-center my-4 relative',
+    mobile: 'flex items-center gap-3 bg-white px-4 pt-3 pb-3',
   },
-  orderNumber: {
-    web: 'text-2xl font-semibold mb-2',
-    mobile: 'text-[20px] font-medium text-center flex-1',
-  },
-  statusIcon: {
-    web: 'hidden',
-    mobile: 'flex justify-center items-center p-[5px] rounded-[8px]',
-  },
-  orderedItemsSection: {
+  backButton: {
     web: 'hidden',
     mobile:
-      'bg-white border-b border-[#f4f5fd] flex items-center justify-between h-[56px] px-[16px] py-[12px] mb-4 cursor-pointer',
+      'w-10 h-10 rounded-full bg-[#F5F5F8] flex items-center justify-center flex-none',
   },
-  orderedItemsText: {
+  headerTitle: {
     web: 'hidden',
-    mobile: 'font-medium text-[14px] text-[#1c1b1b] tracking-[0.07px]',
+    mobile: 'text-[20px] font-bold leading-tight',
   },
-  addressSection: {
+  headerOrderNumber: {
     web: 'hidden',
-    mobile: 'border-b border-[#f4f5fd] flex flex-col gap-[12px] pb-4 mb-4',
+    mobile: 'text-[12px] text-[#8B8A98] font-mono',
   },
-  addressTitle: {
+  content: {
     web: 'hidden',
-    mobile: 'font-medium text-[16px] text-[#1c1b1b]',
+    mobile: 'flex flex-col px-4 pt-4 pb-6 gap-[14px]',
   },
-  addressRow: {
-    web: 'hidden',
-    mobile:
-      'flex flex-row items-center justify-between h-[32px] py-[12px] text-[12px] text-[#6f7384] w-full',
-  },
-  addressLabel: {
-    web: 'hidden',
-    mobile: 'font-normal w-1/2',
-  },
-  addressValue: {
-    web: 'hidden',
-    mobile: 'font-normal w-1/2',
-  },
-  orderInfoSection: {
-    web: 'hidden',
-    mobile: 'flex flex-col gap-[12px] mb-4',
-  },
-  orderInfoTitle: {
-    web: 'hidden',
-    mobile: 'font-medium text-[16px] text-[#1c1b1b]',
-  },
-  orderInfoRow: {
+  card: {
     web: 'hidden',
     mobile:
-      'flex items-center justify-between h-[32px] py-[12px] text-[12px] text-[#6f7384]',
+      'bg-white rounded-[16px] p-4 shadow-[0_4px_14px_rgba(20,16,60,0.05)]',
   },
-  orderInfoTotal: {
+  statusRow: {
     web: 'hidden',
-    mobile: 'flex items-center justify-between py-[8px] text-[#1b1b1b]',
+    mobile: 'flex items-center justify-between gap-3',
   },
-  orderInfoTotalLabel: {
+  statusDate: {
     web: 'hidden',
-    mobile: 'font-medium text-[16px]',
+    mobile: 'text-[12px] text-[#8B8A98]',
   },
-  orderInfoTotalValue: {
+  cardLabel: {
     web: 'hidden',
-    mobile: 'font-medium text-[20px]',
+    mobile:
+      'text-[12px] font-bold uppercase tracking-[0.06em] text-[#8B8A98] mb-3',
+  },
+  itemRow: {
+    web: 'hidden',
+    mobile:
+      'flex items-start justify-between gap-3 py-[14px] border-b border-[#F4F3F7] first:pt-0 last:pb-0 last:border-0',
+  },
+  itemName: {
+    web: 'hidden',
+    mobile: 'text-[14px] font-semibold text-[#17161D]',
+  },
+  itemMeta: {
+    web: 'hidden',
+    mobile: 'flex items-center gap-2 text-[12px] text-[#8B8A98] mt-[2px]',
+  },
+  itemPrice: {
+    web: 'hidden',
+    mobile: 'text-[14px] font-bold text-[#20166E] whitespace-nowrap',
+  },
+  totalRow: {
+    web: 'hidden',
+    mobile: 'flex items-center justify-between',
+  },
+  totalLabel: {
+    web: 'hidden',
+    mobile: 'text-[15px] font-bold text-[#17161D]',
+  },
+  totalValue: {
+    web: 'hidden',
+    mobile: 'text-[18px] font-extrabold text-[#20166E]',
+  },
+  infoRow: {
+    web: 'hidden',
+    mobile:
+      'flex gap-3 py-[14px] border-b border-[#F4F3F7] first:pt-0 last:pb-0 last:border-0',
+  },
+  infoTitle: {
+    web: 'hidden',
+    mobile: 'text-[13px] font-bold text-[#17161D] mb-[2px]',
+  },
+  infoText: {
+    web: 'hidden',
+    mobile: 'text-[12px] text-[#8B8A98] leading-[1.5]',
   },
   cancelButton: {
     web: 'hidden',
     mobile:
-      'bg-[#dcdde2] text-[#1c1b1b] font-medium text-[16px] h-12 w-full rounded-[12px] normal-case',
+      'h-[50px] w-full rounded-[13px] border-[1.5px] border-[#E41E2B] text-[#E41E2B] font-semibold text-[14px] normal-case',
   },
 };
