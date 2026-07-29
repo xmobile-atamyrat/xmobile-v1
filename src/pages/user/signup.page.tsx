@@ -96,10 +96,7 @@ export default function Signup() {
 
   return (
     <Box className={signupClasses.boxes.page[platform]}>
-      <Link
-        href="/user/sign_in_up"
-        className={signupClasses.backButton[platform]}
-      >
+      <Link href="/user" className={signupClasses.backButton[platform]}>
         <ArrowLeft size={20} color={navy} />
       </Link>
       <Box className={signupClasses.boxes.main[platform]}>
@@ -413,24 +410,23 @@ export default function Signup() {
             >
               {t('signup')}
             </Button>
-
-            <Box className={signupClasses.boxes.text[platform]}>
-              <Typography
-                className={`${signupClasses.typography} ${fontClassName.className}`}
-                style={{ color: muted }}
-              >
-                {t('haveAccount')}
-              </Typography>
-              <Button
-                className={`${fontClassName.className} ${signupClasses.buttonRedirect}`}
-                style={{ color: navy }}
-                onClick={() => router.push('/user/signin')}
-              >
-                {t('signin')}
-              </Button>
-            </Box>
           </Box>
         </Paper>
+      </Box>
+      <Box className={signupClasses.boxes.text[platform]}>
+        <Typography
+          className={`${signupClasses.typography} ${fontClassName.className}`}
+          style={{ color: muted }}
+        >
+          {t('haveAccount')}
+        </Typography>
+        <Button
+          className={`${fontClassName.className} ${signupClasses.buttonRedirect}`}
+          style={{ color: navy }}
+          onClick={() => router.push('/user/signin')}
+        >
+          {t('signin')}
+        </Button>
       </Box>
     </Box>
   );

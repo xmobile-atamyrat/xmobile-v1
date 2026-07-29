@@ -295,7 +295,7 @@ export default function CategoryHierarchyPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user/signin');
       return;
     }
     if (!['ADMIN', 'SUPERUSER'].includes(user.grade)) {

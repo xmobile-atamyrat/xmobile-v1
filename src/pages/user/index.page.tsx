@@ -19,14 +19,12 @@ import { deleteCookie, getCookie, setCookie } from '@/pages/lib/utils';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
-import { colors, fontClassName, navy } from '@/styles/theme';
+import { fontClassName, navy } from '@/styles/theme';
 import {
   Box,
   ButtonBase,
   CardMedia,
   Dialog,
-  List,
-  ListItemButton,
   Snackbar,
   Switch,
   Typography,
@@ -35,13 +33,13 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
+  Check,
   ChevronRight,
   Download,
   FolderTree,
   Headphones,
   Images,
   Languages,
-  LogIn,
   LogOut,
   Package,
   Palette,
@@ -51,6 +49,7 @@ import {
   Truck,
   Upload,
   User as UserIcon,
+  X,
 } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
@@ -70,6 +69,7 @@ type MenuRow = {
   label: string;
   onClick?: () => void;
   tone?: 'primary' | 'muted';
+  value?: string;
   toggle?: { checked: boolean; onChange: () => void };
 };
 
@@ -96,6 +96,13 @@ function MenuCard({ rows }: { rows: MenuRow[] }) {
             >
               {row.label}
             </span>
+            {row.value && (
+              <span
+                className={`${profileClasses.rowValue} ${fontClassName.className}`}
+              >
+                {row.value}
+              </span>
+            )}
             {row.toggle ? (
               <Switch
                 checked={row.toggle.checked}
@@ -137,6 +144,7 @@ export default function Profile() {
     null,
   );
   const [selectedLocale, setSelectedLocale] = useState('ru');
+  const [pendingLocale, setPendingLocale] = useState('ru');
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifDenied, setNotifDenied] = useState(false);
@@ -184,7 +192,16 @@ export default function Profile() {
     }
   };
 
-  const handleToggleLang = () => setOpenLang(!openLang);
+  const handleToggleLang = () => {
+    setPendingLocale(selectedLocale);
+    setOpenLang(true);
+  };
+  const applyLang = () => {
+    setSelectedLocale(pendingLocale);
+    setCookie(LOCALE_COOKIE_NAME, pendingLocale);
+    router.push(router.pathname, router.asPath, { locale: pendingLocale });
+    setOpenLang(false);
+  };
   const handleToggle = () => setOpen(!open);
   const handleToggleMyOrders = () =>
     router.push(isAdmin ? '/orders/admin' : '/orders');
@@ -326,30 +343,22 @@ export default function Profile() {
       : []),
   ];
 
+  const currentLangName = lang.find((l) => l.val === selectedLocale)?.name;
+
   const accountRows: MenuRow[] = [
-    ...(user
-      ? [
-          {
-            icon: <Package className={profileClasses.icon.primary} />,
-            label: isAdmin ? t('userOrders') : t('myOrders'),
-            onClick: handleToggleMyOrders,
-          },
-          {
-            icon: <Bell className={profileClasses.icon.primary} />,
-            label: t('notifications'),
-            toggle: {
-              checked: notifEnabled,
-              onChange: handleToggleNotif,
-            },
-          },
-        ]
-      : [
-          {
-            icon: <LogIn className={profileClasses.icon.primary} />,
-            label: t('signin'),
-            onClick: () => router.push('/user/sign_in_up'),
-          },
-        ]),
+    {
+      icon: <Package className={profileClasses.icon.primary} />,
+      label: isAdmin ? t('userOrders') : t('myOrders'),
+      onClick: handleToggleMyOrders,
+    },
+    {
+      icon: <Bell className={profileClasses.icon.primary} />,
+      label: t('notifications'),
+      toggle: {
+        checked: notifEnabled,
+        onChange: handleToggleNotif,
+      },
+    },
     {
       icon: <Languages className={profileClasses.icon.primary} />,
       label: t('appLanguage'),
@@ -372,51 +381,83 @@ export default function Profile() {
     },
   ];
 
+  // Guest: single "General" card (mockup XMobile.dc.html:954-959).
+  const guestRows: MenuRow[] = [
+    {
+      icon: <Headphones className={profileClasses.icon.muted} />,
+      label: t('supportTitle'),
+      onClick: () => router.push('/support'),
+      tone: 'muted',
+    },
+    {
+      icon: <Languages className={profileClasses.icon.muted} />,
+      label: t('appLanguage'),
+      onClick: handleToggleLang,
+      tone: 'muted',
+      value: currentLangName,
+    },
+    {
+      icon: <ShieldCheck className={profileClasses.icon.muted} />,
+      label: t('privacyPolicyTitle'),
+      onClick: () => router.push('/privacy-policy'),
+      tone: 'muted',
+    },
+  ];
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box className={profileClasses.page[platform]}>
-        <Box className={profileClasses.header[platform]}>
-          <Typography
-            className={`${profileClasses.headerTitle} ${fontClassName.className}`}
-          >
-            {t('account')}
-          </Typography>
-          <Box className={profileClasses.avatarRow}>
-            <Box className={profileClasses.avatar}>
-              {initials ? (
-                <span
-                  className={`${profileClasses.avatarTxt} ${fontClassName.className}`}
-                >
-                  {initials}
-                </span>
-              ) : (
-                <UserIcon className={profileClasses.avatarIcon} />
-              )}
-            </Box>
-            <Box>
-              <Typography
-                className={`${profileClasses.name} ${fontClassName.className}`}
-              >
-                {displayName}
-              </Typography>
-              {contact && (
+        {user ? (
+          <Box className={profileClasses.header[platform]}>
+            <Typography
+              className={`${profileClasses.headerTitle} ${fontClassName.className}`}
+            >
+              {t('account')}
+            </Typography>
+            <Box className={profileClasses.avatarRow}>
+              <Box className={profileClasses.avatar}>
+                {initials ? (
+                  <span
+                    className={`${profileClasses.avatarTxt} ${fontClassName.className}`}
+                  >
+                    {initials}
+                  </span>
+                ) : (
+                  <UserIcon className={profileClasses.avatarIcon} />
+                )}
+              </Box>
+              <Box>
                 <Typography
-                  className={`${profileClasses.contact} ${fontClassName.className}`}
+                  className={`${profileClasses.name} ${fontClassName.className}`}
                 >
-                  {contact}
+                  {displayName}
                 </Typography>
-              )}
+                {contact && (
+                  <Typography
+                    className={`${profileClasses.contact} ${fontClassName.className}`}
+                  >
+                    {contact}
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
-        </Box>
+        ) : (
+          <Box className={profileClasses.guestHeader[platform]}>
+            <Typography
+              className={`${profileClasses.guestTitle} ${fontClassName.className}`}
+            >
+              {t('account')}
+            </Typography>
+          </Box>
+        )}
 
         <Box className={profileClasses.content[platform]}>
-          <MenuCard rows={accountRows} />
-          {isAdmin && <MenuCard rows={adminRows} />}
-          <MenuCard rows={moreRows} />
-
-          {user && (
+          {user ? (
             <>
+              <MenuCard rows={accountRows} />
+              {isAdmin && <MenuCard rows={adminRows} />}
+              <MenuCard rows={moreRows} />
               <ButtonBase
                 disableRipple
                 onClick={handleToggle}
@@ -436,6 +477,44 @@ export default function Profile() {
                 <Trash2 className="w-[15px] h-[15px]" />
                 {t('deleteAccount')}
               </ButtonBase>
+            </>
+          ) : (
+            <>
+              <Box className={profileClasses.heroCard}>
+                <Box className={profileClasses.heroAvatar}>
+                  <UserIcon className={profileClasses.heroAvatarIcon} />
+                </Box>
+                <Typography
+                  className={`${profileClasses.heroTitle} ${fontClassName.className}`}
+                >
+                  {t('browsingAsGuest')}
+                </Typography>
+                <Typography
+                  className={`${profileClasses.heroSubtitle} ${fontClassName.className}`}
+                >
+                  {t('signInUpSubtitle')}
+                </Typography>
+                <ButtonBase
+                  disableRipple
+                  onClick={() => router.push('/user/signin')}
+                  className={`${profileClasses.heroSignIn} ${fontClassName.className}`}
+                >
+                  {t('signin')}
+                </ButtonBase>
+                <ButtonBase
+                  disableRipple
+                  onClick={() => router.push('/user/signup')}
+                  className={`${profileClasses.heroCreate} ${fontClassName.className}`}
+                >
+                  {t('createAccount')}
+                </ButtonBase>
+              </Box>
+              <Typography
+                className={`${profileClasses.sectionLabel} ${fontClassName.className}`}
+              >
+                {t('general')}
+              </Typography>
+              <MenuCard rows={guestRows} />
             </>
           )}
         </Box>
@@ -525,52 +604,82 @@ export default function Profile() {
 
         <Dialog
           open={openLang}
-          onClose={handleToggleLang}
+          onClose={() => setOpenLang(false)}
+          sx={
+            platform === 'mobile'
+              ? { '& .MuiDialog-container': { alignItems: 'flex-end' } }
+              : undefined
+          }
           PaperProps={{
-            className: `${profileClasses.dialog.main[platform]} !block`,
+            className: profileClasses.langSheet[platform],
+            sx: { m: 0, maxWidth: 'none' },
           }}
         >
-          <Typography
-            className={`${profileClasses.dialogTitle} ${fontClassName.className}`}
-          >
-            {t('appLanguage')}
-          </Typography>
-          <List className={profileClasses.langList}>
-            {lang.map((language) => (
-              <ListItemButton
-                className={profileClasses.langListItem}
-                key={language.val}
-                selected={selectedLocale === language.val}
-                onClick={() => {
-                  const newLocale = language.val;
-                  setSelectedLocale(newLocale);
-                  setCookie(LOCALE_COOKIE_NAME, newLocale);
-                  router.push(router.pathname, router.asPath, {
-                    locale: newLocale,
-                  });
-                  handleToggleLang();
-                }}
-                sx={{
-                  '&.Mui-selected': {
-                    backgroundColor: colors.paperBackground.web,
-                  },
-                }}
-              >
-                <Box className={profileClasses.langOptionRow}>
+          {platform === 'mobile' && (
+            <Box className={profileClasses.langHandle} />
+          )}
+          <Box className={profileClasses.langHeader}>
+            <Typography
+              className={`${profileClasses.langTitle} ${fontClassName.className}`}
+            >
+              {t('appLanguage')}
+            </Typography>
+            <ButtonBase
+              disableRipple
+              onClick={() => setOpenLang(false)}
+              className={profileClasses.langClose}
+            >
+              <X className={profileClasses.langCloseIcon} />
+            </ButtonBase>
+          </Box>
+          <Box className={profileClasses.langOptions}>
+            {lang.map((language) => {
+              const active = pendingLocale === language.val;
+              return (
+                <ButtonBase
+                  key={language.val}
+                  disableRipple
+                  onClick={() => setPendingLocale(language.val)}
+                  className={`${profileClasses.langRow} ${
+                    active
+                      ? profileClasses.langRowActive
+                      : profileClasses.langRowIdle
+                  }`}
+                >
                   <CardMedia
                     component="img"
                     src={language.img}
                     className={profileClasses.langImg}
                   />
                   <Typography
-                    className={`${profileClasses.langOptionTxt} ${fontClassName.className}`}
+                    className={`${profileClasses.langRowName} ${
+                      active ? 'font-semibold' : 'font-medium'
+                    } ${fontClassName.className}`}
                   >
                     {language.name}
                   </Typography>
-                </Box>
-              </ListItemButton>
-            ))}
-          </List>
+                  <Box
+                    className={`${profileClasses.langRadio} ${
+                      active
+                        ? profileClasses.langRadioActive
+                        : profileClasses.langRadioIdle
+                    }`}
+                  >
+                    {active && (
+                      <Check className={profileClasses.langRadioIcon} />
+                    )}
+                  </Box>
+                </ButtonBase>
+              );
+            })}
+          </Box>
+          <ButtonBase
+            disableRipple
+            onClick={applyLang}
+            className={`${profileClasses.langApply} ${fontClassName.className}`}
+          >
+            {t('apply')}
+          </ButtonBase>
         </Dialog>
 
         <Snackbar

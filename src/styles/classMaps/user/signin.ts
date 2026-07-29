@@ -18,7 +18,7 @@ export const signinClasses = {
     },
     text: {
       web: 'w-full flex flex-row justify-center items-center mt-6',
-      mobile: 'w-full flex flex-row justify-center items-center mt-6',
+      mobile: 'w-full flex flex-row justify-center items-center mt-auto pt-6',
     },
   },
   backButton: {
@@ -51,6 +51,12 @@ export const signinClasses = {
     mobile:
       'normal-case font-semibold w-full h-[54px] rounded-[15px] text-[16px] mt-2',
   },
+  // Mockup XMobile.dc.html:868-869 — or-divider, guest button.
+  divider: 'w-full flex items-center gap-3 my-4',
+  dividerLine: 'flex-1 h-px bg-[#ECECF1]',
+  dividerText: 'text-[12px] text-[#B6B5C2]',
+  guestButton:
+    'w-full h-[52px] rounded-[15px] border-[1.5px] border-hairline bg-white text-navy text-[15px] font-semibold flex items-center justify-center gap-2 normal-case',
   buttonRedirect: 'normal-case px-1 font-bold text-[14px] min-w-0',
   typography: 'normal-case text-[14px]',
   error: {

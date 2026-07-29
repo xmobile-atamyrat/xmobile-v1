@@ -22,7 +22,7 @@ export const signupClasses = {
     },
     text: {
       web: 'w-full flex flex-row justify-center items-center mt-6',
-      mobile: 'w-full flex flex-row justify-center items-center mt-6',
+      mobile: 'w-full flex flex-row justify-center items-center mt-auto pt-6',
     },
     links: {
       web: 'w-full flex flex-col mt-4',
