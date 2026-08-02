@@ -118,4 +118,44 @@ export const checkoutDialogClasses = {
     mobile: '',
     web: 'hidden',
   },
+
+  // --- Mobile checkout (mockup-shaped, flat string keys, mobile-only) ---
+  mobileWrap: 'flex flex-col gap-6 w-full',
+  section: 'flex flex-col gap-2',
+  // Stepper (decorative)
+  stepper: 'flex flex-col gap-1.5 mb-1',
+  stepDotsRow: 'flex flex-row items-center',
+  stepDotActive:
+    'flex items-center justify-center w-7 h-7 rounded-full bg-[#20166E] text-white text-[12px] font-semibold flex-shrink-0 border-0 p-0 cursor-pointer',
+  stepDotInactive:
+    'flex items-center justify-center w-7 h-7 rounded-full bg-[#ECECF1] text-[#8B8A98] text-[12px] font-semibold flex-shrink-0 border-0 p-0 cursor-pointer',
+  stepLine: 'flex-1 h-[2px] bg-[#ECECF1] mx-1',
+  stepLabelsRow: 'flex flex-row justify-between',
+  stepLabelActive: 'text-[11px] font-medium text-[#20166E] cursor-pointer',
+  stepLabelInactive: 'text-[11px] font-medium text-[#8B8A98] cursor-pointer',
+  // Wizard nav bar
+  navRow: 'flex flex-row gap-3',
+  navBackBtn:
+    'h-[54px] px-6 rounded-[15px] font-semibold text-[16px] leading-normal normal-case border border-[#ECECF1]',
+  navPrimaryBtn:
+    'flex-1 h-[54px] rounded-[15px] font-semibold text-[16px] leading-normal normal-case',
+  // Address card (saved state)
+  addressCard:
+    'flex flex-row items-start justify-between bg-white border border-[#ECECF1] rounded-2xl p-4',
+  addressName: 'font-bold text-[15px] leading-normal text-[#17161D]',
+  addressLine: 'font-normal text-[13px] leading-[20px] text-[#4A4959] mt-1',
+  editCard:
+    'flex flex-col gap-4 bg-white border border-[#ECECF1] rounded-2xl p-4',
+  saveRow: 'flex flex-row items-center gap-1 -ml-2',
+  saveLabel: 'font-normal text-[13px] leading-normal text-[#4A4959]',
+  // Info cards (delivery / payment)
+  infoCard:
+    'flex flex-row items-center gap-3 bg-white border border-[#ECECF1] rounded-2xl p-4',
+  infoIconTile:
+    'flex items-center justify-center w-10 h-10 rounded-[11px] bg-[#F5F5F8] flex-shrink-0 text-[#20166E]',
+  infoGrow: 'flex flex-col flex-1 min-w-0',
+  infoTitle: 'font-semibold text-[15px] leading-normal text-[#17161D]',
+  infoSub: 'font-normal text-[13px] leading-[18px] text-[#8B8A98] mt-0.5',
+  infoRight:
+    'font-bold text-[15px] leading-normal text-[#20166E] flex-shrink-0',
 };

@@ -187,42 +187,61 @@ export default function CustomAppBar({
   if (platform === 'mobile') {
     return (
       <Box className={appbarClasses.appbar.mobile}>
-        {/* Header with location and notification */}
+        {/* Header: guest greeting + Sign in, or location + notification */}
         <Box className={appbarClasses.boxes.header.mobile}>
-          <Box className={appbarClasses.boxes.deliverTo.mobile}>
-            <MapPin size={15} className="text-[#E41E2B]" />
-            <div>
+          {user ? (
+            <Box className={appbarClasses.boxes.deliverTo.mobile}>
+              <MapPin size={15} className="text-[#E41E2B]" />
+              <div>
+                <div className="text-[11px] text-[#8B8A98] font-normal">
+                  {t('deliverTo')}
+                </div>
+                <div className="text-[15px] text-[#20166E] font-bold">
+                  {t('shortAddress')}
+                </div>
+              </div>
+            </Box>
+          ) : (
+            <Box
+              className={`${appbarClasses.boxes.guestGreeting.mobile} ${fontClassName.className}`}
+            >
               <div className="text-[11px] text-[#8B8A98] font-normal">
-                {t('deliverTo')}
+                {t('welcomeToXmobile')} 👋
               </div>
-              <div className="text-[15px] text-[#20166E] font-bold">
-                {t('shortAddress')}
+              <div className="text-[18px] text-[#20166E] font-bold leading-tight">
+                {t('browsingAsGuest')}
               </div>
-            </div>
-          </Box>
-          <button
-            className={appbarClasses.notificationButton.mobile}
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              if (user) {
-                setNotificationAnchorEl(e.currentTarget);
-              } else {
-                router.push('/user/signin');
-              }
-            }}
-            type="button"
-            aria-label="notifications"
-          >
-            <Bell size={20} className="text-[#20166E]" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
-            )}
-          </button>
-          {user && (
-            <NotificationMenu
-              anchorEl={notificationAnchorEl}
-              open={Boolean(notificationAnchorEl)}
-              onClose={() => setNotificationAnchorEl(null)}
-            />
+            </Box>
+          )}
+          {user ? (
+            <>
+              <button
+                className={appbarClasses.notificationButton.mobile}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  setNotificationAnchorEl(e.currentTarget)
+                }
+                type="button"
+                aria-label="notifications"
+              >
+                <Bell size={20} className="text-[#20166E]" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
+                )}
+              </button>
+              <NotificationMenu
+                anchorEl={notificationAnchorEl}
+                open={Boolean(notificationAnchorEl)}
+                onClose={() => setNotificationAnchorEl(null)}
+              />
+            </>
+          ) : (
+            <button
+              className={`${appbarClasses.guestSignInButton.mobile} ${fontClassName.className}`}
+              onClick={() => router.push('/user/signin')}
+              type="button"
+            >
+              {t('signin')}
+            </button>
           )}
         </Box>
 
