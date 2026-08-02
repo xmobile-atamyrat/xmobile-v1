@@ -14,6 +14,9 @@ export const appbarClasses = {
     deliverTo: {
       mobile: 'flex items-center gap-1',
     },
+    guestGreeting: {
+      mobile: 'flex flex-col',
+    },
     search: 'flex w-fit h-full items-center justify-center',
     lang: {
       web: 'flex flex-row justify-start w-full items-center px-[12px] gap-[10px]',
@@ -86,5 +89,9 @@ export const appbarClasses = {
   notificationButton: {
     mobile:
       'relative w-11 h-11 rounded-full bg-[#F5F5F8] flex items-center justify-center',
+  },
+  guestSignInButton: {
+    mobile:
+      'flex-shrink-0 rounded-full bg-[#20166E] text-white text-[14px] font-bold px-5 h-10 flex items-center justify-center active:scale-95 transition-transform',
   },
 };
