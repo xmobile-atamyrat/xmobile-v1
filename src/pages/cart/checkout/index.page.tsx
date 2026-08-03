@@ -9,7 +9,6 @@ import {
   computeProductPrice,
   resolveVariantDisplay,
 } from '@/pages/product/utils';
-import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { checkoutDialogClasses } from '@/styles/classMaps/cart/checkoutDialog';
 import {
   colors,
@@ -401,14 +400,7 @@ export default function CheckoutPage() {
           : router.push('/cart')
       }
     >
-      <Box
-        className={checkoutDialogClasses.dialogContent[platform]}
-        sx={
-          platform === 'mobile'
-            ? { paddingBottom: `${mobileBottomNavHeight}px` }
-            : undefined
-        }
-      >
+      <Box className={checkoutDialogClasses.dialogContent[platform]}>
         {/* Breadcrumbs for web */}
         {platform === 'web' && (
           <Box>

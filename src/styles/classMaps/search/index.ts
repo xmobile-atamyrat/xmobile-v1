@@ -9,7 +9,7 @@ export const searchPageClasses = {
   clearBtn:
     'w-5 h-5 rounded-full bg-[#D7D6E0] flex items-center justify-center flex-shrink-0',
   cancel: 'text-[14px] font-semibold text-[#20166E] flex-shrink-0',
-  scroll: 'flex-1 px-5 pt-1 pb-24',
+  scroll: 'flex-1 px-5 pt-1 pb-2',
   sectionHead: 'flex items-center justify-between mt-2 mb-3',
   sectionTitle: 'text-[14px] font-bold text-[#17161D]',
   clearLink: 'text-[12px] font-semibold text-[#8B8A98]',

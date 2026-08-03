@@ -268,8 +268,13 @@ export default function CustomAppBar({
       >
         <Box className="w-full min-h-[64px] flex justify-center items-start">
           <Box className="w-full h-full justify-between flex flex-row items-center">
-            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center justify-center">
-              <Box className="min-w-[100px] h-auto cursor-pointer">
+            {/* justify-start (not center): when this row is narrower than its
+                content — viewports 900..1036px, where platform is already
+                'web' — centering pushes the overflow off the LEFT edge, which
+                cannot be scrolled to. Shrinking is absorbed by the address
+                below instead. */}
+            <Box className="gap-[24px] min-w-0 h-full flex flex-row items-center justify-start">
+              <Box className="min-w-[100px] flex-shrink-0 h-auto cursor-pointer">
                 <CardMedia
                   component="img"
                   src="/logo/xmobile-processed-logo.png"
@@ -284,9 +289,12 @@ export default function CustomAppBar({
                 flexItem
                 className="text-[#303030] mx-[-15px] h-[30px] my-auto"
               />
-              <Box className="min-w-[200px] h-full flex flex-row items-center">
-                <LocationOnIcon className="h-[20px] text-[#303030]" />
+              {/* the one shrinkable block in the row: truncates instead of
+                  squeezing its siblings out of the viewport */}
+              <Box className="min-w-0 flex-shrink h-full flex flex-row items-center">
+                <LocationOnIcon className="h-[20px] text-[#303030] flex-shrink-0" />
                 <Typography
+                  noWrap
                   className={`${fontClassName.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
                 >
                   {t('shortAddress')}
@@ -297,7 +305,7 @@ export default function CustomAppBar({
                 flexItem
                 className="text-[#303030] mx-[-15px] h-[30px] my-auto"
               />
-              <Box className="min-w-[234px] flex flex-row items-center">
+              <Box className="flex-shrink-0 flex flex-row items-center whitespace-nowrap">
                 <CallIcon className="h-[16px] text-[#303030]" />
                 <Typography
                   className={`${fontClassName.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
@@ -306,7 +314,7 @@ export default function CustomAppBar({
                 </Typography>
               </Box>
             </Box>
-            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
+            <Box className="gap-[24px] flex-shrink-0 flex flex-row items-center">
               {platform === 'web' && (
                 <>
                   <Box

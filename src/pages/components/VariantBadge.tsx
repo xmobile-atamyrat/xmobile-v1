@@ -16,28 +16,39 @@ export default function VariantBadge({
 }: VariantBadgeProps) {
   if (!spec && !colorHex) return null;
   return (
-    <Box className="flex flex-row items-center gap-1.5">
-      {spec && (
-        <Typography
-          className={fontClassName.className}
-          sx={{ fontSize, fontWeight: 500, color: '#8B8A98' }}
-        >
-          {spec}
-        </Typography>
-      )}
+    // Specs are merchant-authored and often repeat the whole product name, so this
+    // has to wrap inside whatever column it lands in. The swatch is inline rather
+    // than a flex sibling so it trails the last wrapped line instead of being
+    // parked at the far right of a full-width paragraph.
+    <Typography
+      component="p"
+      className={fontClassName.className}
+      sx={{
+        fontSize,
+        fontWeight: 500,
+        color: '#8B8A98',
+        minWidth: 0,
+        maxWidth: '100%',
+        overflowWrap: 'anywhere',
+      }}
+    >
+      {spec}
       {colorHex && (
         <Box
+          component="span"
           title={colorName ?? undefined}
           sx={{
+            display: 'inline-block',
+            verticalAlign: 'middle',
+            marginLeft: spec ? '6px' : 0,
             width: 14,
             height: 14,
             borderRadius: '50%',
             border: '1px solid #ECECF1',
             backgroundColor: colorHex,
-            flexShrink: 0,
           }}
         />
       )}
-    </Box>
+    </Typography>
   );
 }

@@ -2,8 +2,9 @@ export const detailPageClasses = {
   boxes: {
     main: {
       web: 'w-full h-full flex flex-row px-4 gap-4 pb-10 overflow-hidden',
+      // pb-[60px] clears the fixed AddToCart bar; the bottom nav's own 64px comes from Layout
       mobile:
-        'w-full h-full flex flex-col px-4 justify-center items-center mx-auto mt-[16px]',
+        'w-full h-full flex flex-col px-4 justify-center items-center mx-auto mt-[16px] pb-[60px]',
     },
     images: {
       web: 'flex flex-col gap-2 w-[41.6vw] h-[41.6vw] border-[2px] border-hairline justify-center items-center',
