@@ -11,7 +11,9 @@ export const cartProductCardClasses = {
     },
     detail: {
       web: 'flex flex-col justify-center items-start w-[24vw] ml-[1vw]',
-      mobile: 'flex flex-col justify-start items-start w-[260px] h-auto',
+      // no fixed width: variant tags carry the full product name, so this column
+      // has to wrap to whatever the card leaves it (~208px at 360, ~180 at 320)
+      mobile: 'flex flex-col justify-start items-start w-full min-w-0 h-auto',
     },
     img: {
       web: 'flex w-[14vw] h-[11vw] justify-center border-[1px] border-[#F0EFF4] bg-[#F5F5F8] rounded-2xl items-center ml-[3vw] flex-shrink-0',
@@ -51,8 +53,9 @@ export const cartProductCardClasses = {
   },
   info: {
     web: 'flex w-full h-[294px] items-center',
-    mobile:
-      'ml-3 h-auto min-w-[180px] flex-1 flex flex-row flex-wrap justify-between',
+    // column, not flex-wrap: the details used to be pushed onto their own line by
+    // a fixed 260px width, which overflowed narrow screens. Stacking is explicit.
+    mobile: 'ml-3 h-auto min-w-0 flex-1 flex flex-col justify-start gap-2',
   },
   divider: {
     web: 'hidden',
@@ -60,6 +63,7 @@ export const cartProductCardClasses = {
   },
   det2: {
     web: 'flex flex-row m-0 p-0',
-    mobile: 'flex flex-col',
+    // min-w-0 lets this shrink below its text's min-content width
+    mobile: 'flex flex-col min-w-0 w-full',
   },
 };

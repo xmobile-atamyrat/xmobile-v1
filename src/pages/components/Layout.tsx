@@ -92,7 +92,18 @@ export default function Layout({
         component="main"
         className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col`}
       >
-        <Box className="flex-1 flex flex-col w-full">{children}</Box>
+        <Box
+          className="flex-1 flex flex-col w-full"
+          // clearance for the fixed mobile bottom nav (Footer.tsx) so page
+          // content is never hidden behind it, +16px breathing room
+          sx={
+            platform === 'mobile'
+              ? { paddingBottom: `${mobileBottomNavHeight + 16}px` }
+              : undefined
+          }
+        >
+          {children}
+        </Box>
         <Footer />
       </Box>
       {editCategoriesModal.open && (

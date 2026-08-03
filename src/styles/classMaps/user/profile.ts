@@ -37,7 +37,7 @@ export const profileClasses = {
   contact: 'text-white/70 text-[13px] leading-tight mt-[2px]',
   content: {
     web: 'w-full max-w-[600px] px-4 pt-4 flex flex-col',
-    mobile: 'w-full px-4 pt-4 pb-[88px] flex flex-col',
+    mobile: 'w-full px-4 pt-4 pb-6 flex flex-col',
   },
   sectionLabel:
     'text-[12px] font-bold uppercase tracking-[0.06em] text-muted mt-2 mb-[10px] ml-1',
