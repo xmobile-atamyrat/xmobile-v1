@@ -271,7 +271,10 @@ export const collectCategorySubtreeIds = (
   return result;
 };
 
-// returns product.price from session or fetches from db
+// Fetches the price's TMT value from the db. Deliberately uncached: this used
+// to memoize into sessionStorage with nothing to invalidate it, so any price
+// edit (bulk upload, /product/update-prices, the product dialog) stayed
+// invisible for the rest of the tab's session — including in the cart.
 export const computePrice = async ({
   accessToken,
   fetchWithCreds,
@@ -281,11 +284,6 @@ export const computePrice = async ({
   accessToken: string;
   fetchWithCreds: FetchWithCredsType;
 }): Promise<string> => {
-  const cachePrice = sessionStorage.getItem(priceId);
-  if (cachePrice != null) {
-    return cachePrice;
-  }
-
   const { success, data } = await fetchWithCreds<Prices>({
     accessToken,
     path: `/api/prices?id=${priceId}`,
@@ -293,7 +291,6 @@ export const computePrice = async ({
   });
 
   if (success && data) {
-    sessionStorage.setItem(priceId, data.priceInTmt);
     return data.priceInTmt;
   }
   return priceId;
@@ -316,7 +313,6 @@ export const computeProductPrice = async ({
 
   if (priceMatchValue != null && priceMatchId != null) {
     processedProduct.price = priceMatchValue[1];
-    sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
   } else if (priceMatchId != null) {
     processedProduct.price = await computePrice({
       priceId: priceMatchId[1],

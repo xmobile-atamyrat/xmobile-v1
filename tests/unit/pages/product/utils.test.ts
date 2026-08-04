@@ -4,10 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyPendingEdits,
   collectCategorySubtreeIds,
+  computePrice,
+  debounce,
   filterPricesByCategories,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
-  debounce,
   isPriceValid,
   parseOrderVariant,
   parsePrice,
@@ -325,5 +326,24 @@ describe('parseOrderVariant', () => {
   it('falls back to plain-text when JSON is valid but missing spec string', () => {
     const result = parseOrderVariant(JSON.stringify({ colorHex: '#fff' }));
     expect(result.spec).toBe(JSON.stringify({ colorHex: '#fff' }));
+  });
+});
+
+describe('computePrice', () => {
+  it('reflects a price edited between two reads instead of a stale cache', async () => {
+    const tmtValues = ['2680', '1176000'];
+    const fetchWithCreds = vi.fn(async () => ({
+      success: true,
+      data: { priceInTmt: tmtValues.shift() } as Prices,
+    }));
+    const args = {
+      priceId: 'b087830c-7064-4eb3-9b01-c0f7d77781ab',
+      accessToken: '',
+      fetchWithCreds: fetchWithCreds as never,
+    };
+
+    expect(await computePrice(args)).toBe('2680');
+    // a bulk upload changed the stored price in between
+    expect(await computePrice(args)).toBe('1176000');
   });
 });
