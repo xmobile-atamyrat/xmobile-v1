@@ -49,6 +49,20 @@ describe('bulk-edit workbook TMT formula round-trip', () => {
     expect(parsed.products[0].priceTmt).toBe('2400');
   });
 
+  it('exports a hand-pinned TMT as a literal so an untouched sheet re-imports as a no-op', async () => {
+    // 370 manat typed by an admin back-computes to 18.88 USD, and
+    // 18.88 * 19.6 = 370.048 rounds up to 371 — so a formula would silently
+    // raise the pinned price by 1 on every round trip.
+    const blob = await build(
+      [product({ priceUsd: '18.88', priceTmt: '370' })],
+      19.6,
+    );
+    const file = new File([await blob.arrayBuffer()], 'x.xlsx');
+    const parsed = await parseWorkbook(file);
+
+    expect(parsed.products[0].priceTmt).toBe('370');
+  });
+
   it('falls back to the plain last-known TMT value when no rate is available', async () => {
     const blob = await build([product()], null);
     const file = new File([await blob.arrayBuffer()], 'x.xlsx');

@@ -15,6 +15,7 @@ import {
   parseVariantTag,
   processPrices,
   resolveVariantDisplay,
+  tmtFromUsd,
 } from '@/pages/product/utils';
 import { ExtendedCategory } from '@/pages/lib/types';
 
@@ -26,6 +27,19 @@ describe('parsePrice', () => {
 
   it('returns 0 for null-like input used at runtime', () => {
     expect(parsePrice(null as unknown as string)).toBe(0);
+  });
+});
+
+describe('tmtFromUsd', () => {
+  it('rounds a fractional manat amount up to the next whole manat', () => {
+    expect(tmtFromUsd(18.88, 19.6)).toBe(371); // 370.048
+  });
+
+  it('does not add a manat when the product is only above a whole number by float error', () => {
+    // 50 * 19.6 === 980.0000000000001 in IEEE-754
+    expect(tmtFromUsd(50, 19.6)).toBe(980);
+    // 100 * 19.6 === 1960.0000000000002
+    expect(tmtFromUsd(100, 19.6)).toBe(1960);
   });
 });
 

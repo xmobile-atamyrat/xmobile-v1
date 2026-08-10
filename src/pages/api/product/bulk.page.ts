@@ -9,7 +9,7 @@ import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
-import { parsePrice, parseVariantTag } from '@/pages/product/utils';
+import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
 import { Prisma, Product } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -223,7 +223,7 @@ function resolvePriceCells(
   if (usd != null) {
     return {
       usd: String(parsePrice(String(usd))),
-      tmt: String(Math.ceil(usd * rate)),
+      tmt: String(tmtFromUsd(usd, rate)),
     };
   }
   return {
@@ -257,6 +257,18 @@ function priceUnchanged(
 
 function sameStringArray(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+// videoUrls is a positional list (0 = TikTok, 1 = Instagram, 2 = YouTube), so a
+// blank slot carries meaning and must not be filtered out — dropping one would
+// shift a YouTube link into the TikTok position. Only trailing blanks go, which
+// is what makes the exported "url |  | " padding read back as the same list.
+function trimTrailingBlanks(urls: string[]): string[] {
+  const end = urls.reduce(
+    (last, url, index) => (url === '' ? last : index + 1),
+    0,
+  );
+  return urls.slice(0, end);
 }
 
 // Pure planner: validates one product row (+ its variant rows) and returns either
@@ -309,11 +321,10 @@ export function planProductUpdate(
 
   const videoUrls = cellText(productRow.videoUrls);
   if (videoUrls !== '') {
-    const parsed = videoUrls
-      .split('|')
-      .map((url) => url.trim())
-      .filter((url) => url !== '');
-    if (!sameStringArray(parsed, currentProduct.videoUrls))
+    const parsed = trimTrailingBlanks(
+      videoUrls.split('|').map((url) => url.trim()),
+    );
+    if (!sameStringArray(parsed, trimTrailingBlanks(currentProduct.videoUrls)))
       data.videoUrls = parsed;
   }
 
