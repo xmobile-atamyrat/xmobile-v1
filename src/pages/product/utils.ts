@@ -65,6 +65,12 @@ export const parsePrice = (price: string): number => {
   return parseFloat(parseFloat(price).toFixed(2));
 };
 
+// The single USD -> TMT rounding rule: prices are always whole manat, rounded
+// up. The toFixed absorbs IEEE-754 error before the ceil — 50 * 19.6 is
+// 980.0000000000001, which a bare Math.ceil would bill as 981.
+export const tmtFromUsd = (usd: number, rate: number): number =>
+  Math.ceil(parseFloat((usd * rate).toFixed(6)));
+
 export interface ParsedVariantTag {
   specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
   priceId?: string; // referenced Prices id, from [..]

@@ -23,6 +23,7 @@ import {
   processPrices,
   sortPrices,
   TableData,
+  tmtFromUsd,
 } from '@/pages/product/utils';
 import {
   Alert,
@@ -230,8 +231,9 @@ export default function UpdatePrices() {
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          currPrice.priceInTmt = Math.ceil(
-            parseFloat(value) * dollarRate,
+          currPrice.priceInTmt = tmtFromUsd(
+            parseFloat(value),
+            dollarRate,
           ).toString();
         } else if (cellIndex === PRICE_NAME_IDX) {
           currPrice.name = value;
@@ -252,7 +254,7 @@ export default function UpdatePrices() {
               return prevRow.map((cell, idx) => {
                 if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
-                    Math.ceil(parseFloat(value) * dollarRate).toString(),
+                    tmtFromUsd(parseFloat(value), dollarRate).toString(),
                   );
                 }
                 if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {

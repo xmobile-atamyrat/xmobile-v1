@@ -416,6 +416,48 @@ describe('planProductUpdate empty cells and booleans', () => {
     );
     expect(plan.data?.videoUrls).toEqual(['https://a.mp4', 'https://b.mp4']);
   });
+
+  // videoUrls is a positional list (0 = TikTok, 1 = Instagram, 2 = YouTube), so
+  // an empty slot is meaningful and an exported "url |  | " must round-trip.
+  it('leaves an all-empty slot list untouched', () => {
+    const plan = planProductUpdate(
+      productRow({ videoUrls: ['', '', ''].join(' | ').trim() }),
+      undefined,
+      makeCurrent({ videoUrls: ['', '', ''] }),
+      makeRefs(),
+    );
+    expect(plan.data?.videoUrls).toBeUndefined();
+  });
+
+  it('leaves a partly filled slot list untouched', () => {
+    const plan = planProductUpdate(
+      productRow({ videoUrls: ['https://a.mp4', '', ''].join(' | ').trim() }),
+      undefined,
+      makeCurrent({ videoUrls: ['https://a.mp4', '', ''] }),
+      makeRefs(),
+    );
+    expect(plan.data?.videoUrls).toBeUndefined();
+  });
+
+  it('keeps a trailing slot in place instead of shifting it to the front', () => {
+    const plan = planProductUpdate(
+      productRow({ videoUrls: ['', '', 'https://yt.mp4'].join(' | ').trim() }),
+      undefined,
+      makeCurrent({ videoUrls: [] }),
+      makeRefs(),
+    );
+    expect(plan.data?.videoUrls).toEqual(['', '', 'https://yt.mp4']);
+  });
+
+  it('still detects a URL added to an empty slot', () => {
+    const plan = planProductUpdate(
+      productRow({ videoUrls: 'https://a.mp4 | https://b.mp4 |' }),
+      undefined,
+      makeCurrent({ videoUrls: ['https://a.mp4', '', ''] }),
+      makeRefs(),
+    );
+    expect(plan.data?.videoUrls).toEqual(['https://a.mp4', 'https://b.mp4']);
+  });
 });
 
 const makeLookups = (over: Partial<DiffLookups> = {}): DiffLookups => ({
@@ -546,6 +588,22 @@ describe('planProductUpdate skips unchanged values', () => {
     expect(plan.errors).toEqual([]);
     expect(plan.basePrice).toBeUndefined();
     expect(plan.data?.cachedPrice).toBeUndefined();
+  });
+
+  it('skips a base price whose derived TMT only differs by float error', () => {
+    // 50 * 19.6 === 980.0000000000001, so a naive Math.ceil derives 981 and
+    // reports an edit on every re-upload of an untouched sheet.
+    const plan = planProductUpdate(
+      productRow({ priceUsd: '50' }), // TMT cell blank -> derived from the rate
+      undefined,
+      makeCurrent(),
+      makeRefs({
+        rate: 19.6,
+        priceById: new Map([['bp1', { usd: '50', tmt: '980' }]]),
+      }),
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.basePrice).toBeUndefined();
   });
 
   it('updates a base price when the TMT differs (rate moved)', () => {

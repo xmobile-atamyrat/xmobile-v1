@@ -5,6 +5,7 @@ import type {
   ImportProductRow,
   ImportVariantRow,
 } from '@/pages/api/product/bulk.page';
+import { tmtFromUsd } from '@/pages/product/utils';
 import * as ExcelJS from 'exceljs';
 
 export const PRODUCTS_SHEET_NAME = 'Products';
@@ -86,6 +87,12 @@ function styleSheet(worksheet: ExcelJS.Worksheet) {
 // TMT cell for a given USD column/row: a live formula when a rate is known
 // (admins overwrite it to pin a manual TMT price), otherwise the plain
 // last-known value.
+//
+// A stored TMT that the formula would not reproduce was pinned by hand — an
+// admin typing manat gets a USD back-computed to 2 decimals, and that rounded
+// USD times the rate lands just above the typed manat, so ROUNDUP adds 1. Such
+// a price is exported as a literal, otherwise re-uploading an untouched sheet
+// silently raises it by a manat every time.
 function tmtCell(
   usdCol: string,
   row: number,
@@ -94,6 +101,7 @@ function tmtCell(
   rate: number | null,
 ): ExcelJS.CellValue {
   if (rate == null || usd === '') return tmt;
+  if (tmt !== '' && tmtFromUsd(Number(usd), rate) !== Number(tmt)) return tmt;
   return { formula: `ROUNDUP(${usdCol}${row}*${rate},0)` };
 }
 
