@@ -81,6 +81,7 @@ model Category {
   sortOrder                       Int         @default(0)
 
   products                        Product[]
+  prices                          Prices[]
 
   imgUrl                          String?
 
@@ -196,10 +197,14 @@ model Prices {
   price           String    
   priceInTmt      String      @default("0")
 
+  category        Category?   @relation(references: [id], fields: [categoryId], onDelete: SetNull)
+  categoryId      String?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([price])
+  @@index([categoryId])
 }
 
 model Color {
