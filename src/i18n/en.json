@@ -373,6 +373,7 @@
   "longestNotEdited": "Longest not edited",
   "allCategories": "All categories",
   "noProduct": "No product",
+  "noCategory": "No category",
   "sortBy": "Sort by",
   "brandDeleteConfirm": "Are you sure you want to delete brand \"{name}\"? Products will be unlinked.",
   "createBrandError": "Failed to create brand",

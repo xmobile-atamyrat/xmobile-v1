@@ -10,7 +10,8 @@ export type TableData = (string | number | boolean | null)[][];
 export const PRICE_NAME_IDX = 0;
 export const PRICE_DOLLAR_IDX = 1;
 export const PRICE_MANAT_IDX = 2;
-export const PRICE_ID_IDX = 3;
+export const PRICE_CATEGORY_IDX = 3;
+export const PRICE_ID_IDX = 4;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -119,15 +120,20 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
   return { spec: raw };
 };
 
+// The category cell holds the raw categoryId, not a display name: resolving the
+// localized name needs the category tree, which lives in the page's context.
 export const processPrices = (prices: Prices[]): TableData => {
-  const processedPrices = prices.map(({ id, name, price, priceInTmt }) => [
-    name,
-    price,
-    parsePrice(priceInTmt),
-    id,
-  ]) as TableData;
+  const processedPrices = prices.map(
+    ({ id, name, price, priceInTmt, categoryId }) => [
+      name,
+      price,
+      parsePrice(priceInTmt),
+      categoryId,
+      id,
+    ],
+  ) as TableData;
 
-  return [['Name', 'Dollars', 'Manat', 'ID'], ...processedPrices];
+  return [['Name', 'Dollars', 'Manat', 'Category', 'ID'], ...processedPrices];
 };
 
 export const isPriceValid = (price: string): boolean => {
@@ -150,6 +156,10 @@ export const applyPendingEdits = (
     if (edit.price != null) next[PRICE_DOLLAR_IDX] = edit.price;
     if (edit.priceInTmt != null)
       next[PRICE_MANAT_IDX] = parsePrice(edit.priceInTmt);
+    // Keyed on presence, not null-ness: clearing a category is a legitimate
+    // edit whose value is null, which a `!= null` guard would silently drop.
+    if ('categoryId' in edit)
+      next[PRICE_CATEGORY_IDX] = edit.categoryId ?? null;
     return next;
   });
 
@@ -197,21 +207,32 @@ export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
   }
 };
 
-// Keeps prices referenced by a product whose categoryId is in categoryIds.
+// Keeps prices whose own category relation is in categoryIds. Matches on
+// Prices.categoryId rather than the categories of the products referencing the
+// price, so an admin's explicit assignment is what the filter honours.
 // Empty categoryIds -> no filtering (all prices returned).
 export const filterPricesByCategories = (
   prices: Prices[],
-  priceCategoryMap: Record<string, string[]>,
   categoryIds: Set<string>,
 ): Prices[] => {
   if (categoryIds.size === 0) return prices;
-  return prices.filter((p) =>
-    (priceCategoryMap[p.id] ?? []).some((c) => categoryIds.has(c)),
+  return prices.filter(
+    (p) => p.categoryId != null && categoryIds.has(p.categoryId),
   );
 };
 
 // Sentinel value for the "no product" option in the category filter dropdown.
 export const NO_PRODUCT_FILTER = '__noProduct__';
+
+// Sentinel value for the "no category" option in the category filter dropdown.
+// Distinct from NO_PRODUCT_FILTER: the two describe the same prices only until
+// an admin edits categories by hand (e.g. clearing the category on a price that
+// several products still reference puts it in one list but not the other).
+export const NO_CATEGORY_FILTER = '__noCategory__';
+
+// Prices with no category relation of their own.
+export const filterPricesWithoutCategory = (prices: Prices[]): Prices[] =>
+  prices.filter((p) => p.categoryId == null);
 
 // Prices referenced by no product (absent or empty in the category map).
 // Backs the "no product" option in the update-prices category filter.

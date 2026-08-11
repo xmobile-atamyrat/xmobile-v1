@@ -373,6 +373,7 @@
   "longestNotEdited": "En eski düzenlenen",
   "allCategories": "Tüm kategoriler",
   "noProduct": "Ürün yok",
+  "noCategory": "Kategori yok",
   "sortBy": "Sırala",
   "brandDeleteConfirm": "\"{name}\" markasını silmek istediğinizden emin misiniz? Ürünlerin bağlantısı kaldırılacak.",
   "createBrandError": "Marka oluşturulamadı",
