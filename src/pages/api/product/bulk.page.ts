@@ -18,13 +18,13 @@ export const config = { api: { bodyParser: { sizeLimit: '8mb' } } };
 
 const filepath = 'src/pages/api/product/bulk.page.ts';
 
-// Emergency guard against one sync request trying to write thousands of rows:
-// each change fans out to several sequential, non-transactional DB round-trips
-// (incl. a full-table-scan cachedPrice sync per price), so a large batch times
-// out and can half-apply. Counts actual writes, not sheet rows, so a
-// full-catalog re-upload that only edits a few products stays well under it.
-// ponytail: flat cap; raise it once apply is chunked into per-batch transactions.
-const MAX_BULK_CHANGES = 500;
+// Emergency guard against one sync request trying to write thousands of rows.
+// Apply is a sequential loop of one transaction per changed product, so cost
+// grows linearly with the batch and a big enough upload outruns the request
+// timeout — products committed before that point stay applied. Counts actual
+// writes, not sheet rows, so a full-catalog re-upload that only edits a few
+// products stays well under it.
+const MAX_BULK_CHANGES = 1000;
 
 // ---------- shared types (imported by the bulk-edit frontend) ----------
 
