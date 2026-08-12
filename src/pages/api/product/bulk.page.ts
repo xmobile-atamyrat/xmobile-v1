@@ -6,7 +6,10 @@ import {
 } from '@/lib/prismaActiveScope';
 import { deriveVariantColumns } from '@/pages/api/product/index.page';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  requireStaffBearerAuth,
+  requireSuperuserBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
@@ -1097,6 +1100,8 @@ export default async function handler(
   res: NextApiResponse<ResponseApi>,
 ) {
   addCors(res);
+  // Export is open to all staff; import writes the whole catalog, so it is
+  // SUPERUSER-only — an ADMIN token gets 403 here even though it passed above.
   if (!(await requireStaffBearerAuth(req, res))) return;
 
   const { method } = req;
@@ -1106,6 +1111,7 @@ export default async function handler(
       return;
     }
     if (method === 'POST') {
+      if (!(await requireSuperuserBearerAuth(req, res))) return;
       await handleImport(req, res);
       return;
     }

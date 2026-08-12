@@ -32,6 +32,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { UserRole } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -68,6 +69,8 @@ export default function BulkEdit() {
   const [pendingBody, setPendingBody] = useState<BulkImportBody>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+
+  const canImport = user?.grade === UserRole.SUPERUSER;
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbarOpen(true);
@@ -233,26 +236,32 @@ export default function BulkEdit() {
             >
               <Typography>{t('downloadProducts')}</Typography>
             </Button>
-            <Button
-              variant="contained"
-              disabled={loading}
-              startIcon={<UploadIcon />}
-              sx={{
-                textTransform: 'none',
-                fontSize: isMdUp ? 18 : 16,
-                height: isMdUp ? 52 : 42,
-              }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Typography>{t('uploadProducts')}</Typography>
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              hidden
-              onChange={handleUpload}
-            />
+            {/* Import rewrites the whole catalog: SUPERUSER only, matching the
+                403 the API returns for an ADMIN token. */}
+            {canImport && (
+              <>
+                <Button
+                  variant="contained"
+                  disabled={loading}
+                  startIcon={<UploadIcon />}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: isMdUp ? 18 : 16,
+                    height: isMdUp ? 52 : 42,
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Typography>{t('uploadProducts')}</Typography>
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx"
+                  hidden
+                  onChange={handleUpload}
+                />
+              </>
+            )}
           </Box>
 
           {result != null && result.errors.length === 0 && (
