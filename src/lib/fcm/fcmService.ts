@@ -176,6 +176,17 @@ export async function sendFCMNotificationToUser(
 
     const tokensToDelete: string[] = [];
 
+    // Group failures by error instead of logging per token. sendEachForMulticast
+    // fans out one request per token but they all share a single access token, so
+    // one failed credential mint fails every token with the *same* error. Since
+    // console.error is mirrored to Slack (see src/lib/logger.ts), per-token
+    // logging turned one outage into N alerts per send — and the retry job
+    // re-entered this same path, multiplying it again on every attempt.
+    const failuresByError = new Map<
+      string,
+      { count: number; sampleToken: string }
+    >();
+
     response.responses.forEach((resp, idx) => {
       const token = tokenStrings[idx];
       const tokenRecord = tokens[idx];
@@ -194,11 +205,27 @@ export async function sendFCMNotificationToUser(
           if (tokenRecord) tokensToDelete.push(tokenRecord.token);
         }
 
-        console.error(
-          `[FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,
-          error?.message || 'Unknown error',
-        );
+        const key = `${error?.code || 'unknown'}::${error?.message || 'Unknown error'}`;
+        const existing = failuresByError.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          failuresByError.set(key, {
+            count: 1,
+            sampleToken: token.substring(0, 20),
+          });
+        }
       }
+    });
+
+    failuresByError.forEach(({ count, sampleToken }, key) => {
+      const [code, errorMessage] = key.split('::');
+      // Leads with the notification id: it is stable across the inline attempt
+      // and every retry of the same row, which is what lets the Slack throttle
+      // (src/lib/alertThrottle.ts) collapse a retry sequence into one alert.
+      console.error(
+        `[FCM Service] Notification ${notification.data.notificationId} failed for ${count}/${tokenStrings.length} token(s) of user ${userId} — ${code}: ${errorMessage} (e.g. ${sampleToken}...)`,
+      );
     });
 
     if (tokensToDelete.length > 0) {
