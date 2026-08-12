@@ -1,6 +1,22 @@
+import { createAlertThrottle } from './alertThrottle';
 import { getSlack } from './slack';
 
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+
+/**
+ * Long enough to span a full notification-retry sequence (inline attempt plus
+ * 3 backed-off retries land inside ~3 min), so one failing notification yields
+ * one alert rather than four.
+ */
+const ALERT_WINDOW_MS = 5 * 60_000;
+const MAX_ALERTS_PER_WINDOW = 20;
+const MAX_TRACKED_ALERT_KEYS = 500;
+
+const alertThrottle = createAlertThrottle({
+  windowMs: ALERT_WINDOW_MS,
+  maxPerWindow: MAX_ALERTS_PER_WINDOW,
+  maxKeys: MAX_TRACKED_ALERT_KEYS,
+});
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   DEBUG: 0,
@@ -67,7 +83,17 @@ function sendToSlack(level: LogLevel, args: any[]) {
       } else if (level === 'WARN') {
         icon = ':warning:';
       }
-      await slack.send(`${icon} *[${level}]* ${message}`);
+      // Throttle *after* formatting so the dedup key is the full alert text.
+      const toSend = alertThrottle.admit(
+        `${icon} *[${level}]* ${message}`,
+        Date.now(),
+      );
+      // Sequential: these share one webhook, and a rollover summary should
+      // arrive before the alert that triggered it.
+      for (let i = 0; i < toSend.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await slack.send(toSend[i]);
+      }
     } catch (error) {
       // If we fail to send to Slack, fall back to stdout but don't try to log via ourselves
       process.stderr.write(`[Logger] Failed to send log to Slack: ${error}\n`);
