@@ -29,6 +29,8 @@
     "db:generate-dev": "test -f .env.local && npx dotenv -e .env.local -- npx prisma generate dev",
     "db:studio-dev": "test -f .env.local && npx dotenv -e .env.local -- npx prisma studio",
     "db:history-dev": "test -f .env.local && npx dotenv -e .env.local -- npx prisma migrate status",
+    "backfill:price-categories-dev": "dotenv -e .env.local -- ts-node --project tsconfig.scripts.json scripts/backfill-price-categories.ts",
+    "backfill:price-categories-prod": "dotenv -e .env -- ts-node --project tsconfig.scripts.json scripts/backfill-price-categories.ts",
     "prepare": "husky",
     "tunnel": "./tunnel-client.sh",
     "docker:media-up": "docker compose up -d nginx-media",
