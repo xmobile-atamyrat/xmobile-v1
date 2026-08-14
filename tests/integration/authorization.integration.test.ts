@@ -353,7 +353,7 @@ describe('Role-gated API routes (integration)', () => {
     await prisma.user.delete({ where: { id: su.id } });
   });
 
-  it('/api/product/bulk lets ADMIN export but not import', async () => {
+  it('/api/product/bulk refuses ADMIN in both directions', async () => {
     const admin = await prisma.user.create({
       data: {
         email: `admin-bulk-${Date.now()}@test.local`,
@@ -376,9 +376,11 @@ describe('Role-gated API routes (integration)', () => {
       exportCall.req as unknown as NextApiRequest,
       exportCall.res as unknown as NextApiResponse,
     );
-    expect(exportCall.res._getStatusCode()).toBe(200);
+    // The export is the import's round-trip half, so it is SUPERUSER-only too.
+    // Staff who only need prices use /api/prices via /product/price-list.
+    expect(exportCall.res._getStatusCode()).toBe(403);
 
-    // Even a harmless dry run is refused: import is SUPERUSER-only.
+    // Even a harmless dry run is refused.
     const importCall = createMocks({
       method: 'POST',
       url: '/api/product/bulk',
