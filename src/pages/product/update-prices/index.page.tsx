@@ -3,7 +3,6 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
 import {
   applyPendingEdits,
   collectCategorySubtreeIds,
