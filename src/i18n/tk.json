@@ -375,6 +375,7 @@
   "longestNotEdited": "Iň köne üýtgedilen",
   "allCategories": "Ähli kategoriýalar",
   "noProduct": "Haryt ýok",
+  "noCategory": "Kategoriýa ýok",
   "sortBy": "Tertiple",
   "brandDeleteConfirm": "\"{name}\" brendini pozmak isleýändigiňize ynanýarsyňyzmy? Harytlar bilen baglanyşyk aýrylar.",
   "createBrandError": "Brend döredip bolmady",

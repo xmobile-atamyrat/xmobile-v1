@@ -7,9 +7,12 @@ import {
   collectCategorySubtreeIds,
   debounce,
   filterPricesByCategories,
+  filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  NO_CATEGORY_FILTER,
   NO_PRODUCT_FILTER,
   parsePrice,
+  PRICE_CATEGORY_IDX,
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
   PRICE_MANAT_IDX,
@@ -20,7 +23,6 @@ import {
   TableData,
 } from '@/pages/product/utils';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { parseName } from '@/pages/lib/utils';
 import {
   Alert,
   Box,
@@ -50,6 +52,11 @@ import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import AddPrice from '@/pages/product/components/AddPrice';
+import {
+  categoryMenuItems,
+  flattenCategories,
+} from '@/pages/product/components/categoryOptions';
+import PriceCategoryCell from '@/pages/product/components/PriceCategoryCell';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -98,35 +105,32 @@ export default function UpdatePrices() {
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  // Flattened category tree for the filter dropdown (id + localized name + depth).
-  const flattenedCats = useMemo(() => {
-    const flat: { id: string; name: string; depth: number }[] = [];
-    const walk = (nodes: typeof categories, depth: number) => {
-      nodes.forEach((node) => {
-        flat.push({
-          id: node.id,
-          name: parseName(node.name, router.locale ?? 'tk'),
-          depth,
-        });
-        if (node.successorCategories) walk(node.successorCategories, depth + 1);
-      });
-    };
-    walk(categories, 0);
-    return flat;
-  }, [categories, router.locale]);
+  // Flattened category tree (id + localized name + depth), shared by the filter,
+  // the per-row pickers, and the AddPrice dialog.
+  const flattenedCats = useMemo(
+    () => flattenCategories(categories, router.locale ?? 'tk'),
+    [categories, router.locale],
+  );
 
   // Derive the rendered table from the master list + active sort/filter, then
   // overlay any typed-but-unsaved edits (keyed by price id) so re-sorting,
   // filtering, or searching preserves pending edits instead of dropping them.
   useEffect(() => {
+    const isSentinel =
+      categoryFilter === NO_PRODUCT_FILTER ||
+      categoryFilter === NO_CATEGORY_FILTER;
     const subtreeIds =
-      categoryFilter && categoryFilter !== NO_PRODUCT_FILTER
+      categoryFilter && !isSentinel
         ? collectCategorySubtreeIds(categories, categoryFilter)
         : new Set<string>();
-    const filtered =
-      categoryFilter === NO_PRODUCT_FILTER
-        ? filterPricesWithoutProduct(allPrices, priceCategoryMap)
-        : filterPricesByCategories(allPrices, priceCategoryMap, subtreeIds);
+    let filtered: Prices[];
+    if (categoryFilter === NO_PRODUCT_FILTER) {
+      filtered = filterPricesWithoutProduct(allPrices, priceCategoryMap);
+    } else if (categoryFilter === NO_CATEGORY_FILTER) {
+      filtered = filterPricesWithoutCategory(allPrices);
+    } else {
+      filtered = filterPricesByCategories(allPrices, subtreeIds);
+    }
     setTableData(
       applyPendingEdits(
         processPrices(sortPrices(filtered, sortKey)),
@@ -253,6 +257,33 @@ export default function UpdatePrices() {
       500,
     ),
     [dollarRate],
+  );
+
+  // A category pick is a discrete event, so unlike handlePriceUpdate it needs no
+  // debounce. It records the edit in the same id-keyed pending map, which makes
+  // the Save button appear and rides along in the existing batched PUT.
+  const handleCategoryChange = useCallback(
+    (priceId: string, categoryId: string | null) => {
+      setUpdatedPrices((prevPrices) => {
+        const next = {
+          ...prevPrices,
+          [priceId]: { ...prevPrices[priceId], id: priceId, categoryId },
+        };
+        updatedPricesRef.current = next;
+        return next;
+      });
+
+      setTableData((prevData) =>
+        prevData.map((row, index) =>
+          index > 0 && row[PRICE_ID_IDX] === priceId
+            ? row.map((cell, idx) =>
+                idx === PRICE_CATEGORY_IDX ? categoryId : cell,
+              )
+            : row,
+        ),
+      );
+    },
+    [],
   );
 
   const handleSearch = useCallback(
@@ -408,18 +439,13 @@ export default function UpdatePrices() {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                   >
                     <MenuItem value="">{t('allCategories')}</MenuItem>
+                    <MenuItem value={NO_CATEGORY_FILTER}>
+                      {t('noCategory')}
+                    </MenuItem>
                     <MenuItem value={NO_PRODUCT_FILTER}>
                       {t('noProduct')}
                     </MenuItem>
-                    {flattenedCats.map((cat) => (
-                      <MenuItem
-                        key={cat.id}
-                        value={cat.id}
-                        sx={{ pl: 2 + cat.depth * 1.5 }}
-                      >
-                        {cat.name}
-                      </MenuItem>
-                    ))}
+                    {categoryMenuItems(flattenedCats)}
                   </Select>
                 </FormControl>
               </Box>
@@ -523,7 +549,10 @@ export default function UpdatePrices() {
                     {row.map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={cellIndex !== PRICE_ID_IDX}
+                        contentEditable={
+                          cellIndex !== PRICE_ID_IDX &&
+                          cellIndex !== PRICE_CATEGORY_IDX
+                        }
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
@@ -574,7 +603,21 @@ export default function UpdatePrices() {
                               <ContentCopyIcon color="primary" />
                             </IconButton>
                           )}
-                        {cell}
+                        {cellIndex === PRICE_CATEGORY_IDX ? (
+                          <PriceCategoryCell
+                            priceId={row[PRICE_ID_IDX] as string}
+                            value={(cell as string | null) ?? null}
+                            options={flattenedCats}
+                            emptyLabel={t('noCategory')}
+                            dirty={
+                              'categoryId' in
+                              (updatedPrices[row[PRICE_ID_IDX] as string] ?? {})
+                            }
+                            onChange={handleCategoryChange}
+                          />
+                        ) : (
+                          cell
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -654,10 +697,12 @@ export default function UpdatePrices() {
             <AddPrice
               handleClose={() => setShowCreatePriceDialog(false)}
               dollarRate={dollarRate}
+              categoryOptions={flattenedCats}
               handleCreate={async (
                 name: string,
                 priceInDollars: string,
                 priceInManat: string,
+                categoryId: string | null,
               ): Promise<boolean> => {
                 if (
                   name === '' ||
@@ -689,14 +734,15 @@ export default function UpdatePrices() {
                       name,
                       price: priceInDollars,
                       priceInTmt: priceInManat,
+                      categoryId,
                     },
                   });
 
                   if (success && data != null) {
                     setAllPrices((prev) => [data, ...prev]);
-                    // A brand-new price is referenced by no product yet, so it is
-                    // absent from priceCategoryMap and an active category filter
-                    // would hide it. Clear the filter so it stays visible.
+                    // A brand-new price is referenced by no product yet, and may
+                    // carry no category either, so an active filter would hide
+                    // it. Clear the filter so it stays visible.
                     setCategoryFilter('');
                     setSnackbarOpen(true);
                     setSnackbarMessage({

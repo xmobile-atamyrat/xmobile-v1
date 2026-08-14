@@ -52,7 +52,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         });
       }
 
-      const { name, price, priceInTmt } = body;
+      const { name, price, priceInTmt, categoryId } = body;
       if (name == null || price == null || priceInTmt == null) {
         return res.status(400).json({
           success: false,
@@ -64,6 +64,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           name,
           price,
           priceInTmt,
+          categoryId: categoryId ?? null,
         },
       });
 
@@ -154,6 +155,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           }
           if (price.priceInTmt != null) {
             data.priceInTmt = price.priceInTmt;
+          }
+          // Presence-keyed, not null-keyed: an explicit null clears the
+          // category relation, which a `!= null` check would ignore.
+          if ('categoryId' in price) {
+            data.categoryId = price.categoryId ?? null;
           }
           const updatedPrice = await dbClient.prices.update({
             where: { id: price.id },
