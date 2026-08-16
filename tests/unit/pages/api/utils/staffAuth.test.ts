@@ -14,7 +14,12 @@ vi.mock('@/pages/api/utils/tokenUtils', () => ({
   ACCESS_SECRET: 'unit-staff-access-secret',
 }));
 
-import { isStaff, requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  isStaff,
+  isSuperuser,
+  requireStaffBearerAuth,
+  requireSuperuserBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 
 function createMockRes() {
   const res = {
@@ -39,6 +44,15 @@ describe('staffAuth', () => {
     it('returns false for other grades and undefined', () => {
       expect(isStaff(UserRole.FREE)).toBe(false);
       expect(isStaff(undefined)).toBe(false);
+    });
+  });
+
+  describe('isSuperuser', () => {
+    it('returns true only for SUPERUSER', () => {
+      expect(isSuperuser(UserRole.SUPERUSER)).toBe(true);
+      expect(isSuperuser(UserRole.ADMIN)).toBe(false);
+      expect(isSuperuser(UserRole.FREE)).toBe(false);
+      expect(isSuperuser(undefined)).toBe(false);
     });
   });
 
@@ -99,6 +113,64 @@ describe('staffAuth', () => {
         expect(res.status).not.toHaveBeenCalled();
         expect(res.json).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  describe('requireSuperuserBearerAuth', () => {
+    it('returns false and sends 401 when Authorization is missing', async () => {
+      const req = {
+        headers: {},
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const ok = await requireSuperuserBearerAuth(req, res);
+
+      expect(ok).toBe(false);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('returns false and sends 401 when token verification fails', async () => {
+      verifyTokenMock.mockRejectedValueOnce(new Error('invalid'));
+      const req = {
+        headers: { authorization: 'Bearer bad' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const ok = await requireSuperuserBearerAuth(req, res);
+
+      expect(ok).toBe(false);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('returns false and sends 403 for a valid ADMIN token', async () => {
+      verifyTokenMock.mockResolvedValueOnce({ grade: UserRole.ADMIN });
+      const req = {
+        headers: { authorization: 'Bearer valid' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const ok = await requireSuperuserBearerAuth(req, res);
+
+      expect(ok).toBe(false);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Forbidden',
+      });
+    });
+
+    it('returns true for SUPERUSER without writing error response', async () => {
+      verifyTokenMock.mockResolvedValueOnce({ grade: UserRole.SUPERUSER });
+      const req = {
+        headers: { authorization: 'Bearer valid' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const ok = await requireSuperuserBearerAuth(req, res);
+
+      expect(ok).toBe(true);
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
     });
   });
 });

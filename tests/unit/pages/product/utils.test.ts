@@ -4,16 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyPendingEdits,
   collectCategorySubtreeIds,
+  computePrice,
+  debounce,
   filterPricesByCategories,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
-  debounce,
   isPriceValid,
   parseOrderVariant,
   parsePrice,
   parseVariantTag,
   processPrices,
   resolveVariantDisplay,
+  tmtFromUsd,
 } from '@/pages/product/utils';
 import { ExtendedCategory } from '@/pages/lib/types';
 
@@ -25,6 +27,19 @@ describe('parsePrice', () => {
 
   it('returns 0 for null-like input used at runtime', () => {
     expect(parsePrice(null as unknown as string)).toBe(0);
+  });
+});
+
+describe('tmtFromUsd', () => {
+  it('rounds a fractional manat amount up to the next whole manat', () => {
+    expect(tmtFromUsd(18.88, 19.6)).toBe(371); // 370.048
+  });
+
+  it('does not add a manat when the product is only above a whole number by float error', () => {
+    // 50 * 19.6 === 980.0000000000001 in IEEE-754
+    expect(tmtFromUsd(50, 19.6)).toBe(980);
+    // 100 * 19.6 === 1960.0000000000002
+    expect(tmtFromUsd(100, 19.6)).toBe(1960);
   });
 });
 
@@ -325,5 +340,24 @@ describe('parseOrderVariant', () => {
   it('falls back to plain-text when JSON is valid but missing spec string', () => {
     const result = parseOrderVariant(JSON.stringify({ colorHex: '#fff' }));
     expect(result.spec).toBe(JSON.stringify({ colorHex: '#fff' }));
+  });
+});
+
+describe('computePrice', () => {
+  it('reflects a price edited between two reads instead of a stale cache', async () => {
+    const tmtValues = ['2680', '1176000'];
+    const fetchWithCreds = vi.fn(async () => ({
+      success: true,
+      data: { priceInTmt: tmtValues.shift() } as Prices,
+    }));
+    const args = {
+      priceId: 'b087830c-7064-4eb3-9b01-c0f7d77781ab',
+      accessToken: '',
+      fetchWithCreds: fetchWithCreds as never,
+    };
+
+    expect(await computePrice(args)).toBe('2680');
+    // a bulk upload changed the stored price in between
+    expect(await computePrice(args)).toBe('1176000');
   });
 });
