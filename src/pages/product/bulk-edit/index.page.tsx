@@ -2,6 +2,7 @@ import type {
   BulkImportBody,
   BulkImportResult,
   BulkPreviewResult,
+  BulkPriceCategory,
   BulkProductExportRow,
   BulkVariant,
   VariantChange,
@@ -105,6 +106,7 @@ export default function BulkEdit() {
         rate: number | null;
         categorySlugs: string[];
         brands: string[];
+        priceCategories: BulkPriceCategory[];
       }>({
         accessToken,
         path: '/api/product/bulk',
@@ -114,13 +116,14 @@ export default function BulkEdit() {
         showSnackbar('downloadProductsError', 'error');
         return;
       }
-      const blob = await buildWorkbookBlob(
-        data.products,
-        data.variants,
-        data.rate,
-        data.categorySlugs,
-        data.brands,
-      );
+      const blob = await buildWorkbookBlob({
+        products: data.products,
+        variants: data.variants,
+        rate: data.rate,
+        categorySlugs: data.categorySlugs,
+        brands: data.brands,
+        priceCategories: data.priceCategories,
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -174,7 +177,11 @@ export default function BulkEdit() {
         showSnackbar('bulkEditErrors', 'error');
         return;
       }
-      if (data.changes.length === 0 && data.newPrices.length === 0) {
+      if (
+        data.changes.length === 0 &&
+        data.newPrices.length === 0 &&
+        data.updatedPrices.length === 0
+      ) {
         showSnackbar('bulkEditNothingToChange', 'success');
         return;
       }
@@ -207,7 +214,12 @@ export default function BulkEdit() {
       // A race (data changed since preview) can still surface errors on apply.
       setPreview(
         data.errors.length > 0
-          ? { changes: [], newPrices: [], errors: data.errors }
+          ? {
+              changes: [],
+              newPrices: [],
+              updatedPrices: [],
+              errors: data.errors,
+            }
           : undefined,
       );
       showSnackbar(
@@ -288,6 +300,13 @@ export default function BulkEdit() {
                 })}
               </Typography>
             )}
+            {result.updatedPriceCount > 0 && (
+              <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                {t('bulkEditPricesUpdated', {
+                  count: result.updatedPriceCount,
+                })}
+              </Typography>
+            )}
           </Box>
         )}
 
@@ -324,7 +343,10 @@ export default function BulkEdit() {
             <Box className="flex flex-row items-center gap-2 flex-wrap">
               <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                 {t('bulkEditConfirmTitle', {
-                  count: preview.changes.length + preview.newPrices.length,
+                  count:
+                    preview.changes.length +
+                    preview.newPrices.length +
+                    preview.updatedPrices.length,
                 })}
               </Typography>
               <Box className="flex flex-row gap-2 ml-auto">
@@ -370,6 +392,33 @@ export default function BulkEdit() {
                 ))}
               </Box>
             ))}
+            {preview.updatedPrices.length > 0 && (
+              <Box
+                className="flex flex-col"
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
+                <Typography fontWeight={600}>
+                  {t('bulkEditUpdatedPrices')}
+                </Typography>
+                {preview.updatedPrices.map((price) => (
+                  <Box key={price.id} className="flex flex-col">
+                    <Typography fontSize={14} fontWeight={600}>
+                      {price.label}
+                    </Typography>
+                    {price.changes.map((field) => (
+                      <Typography key={field.label} fontSize={14}>
+                        {field.label}: {field.from} → {field.to}
+                      </Typography>
+                    ))}
+                  </Box>
+                ))}
+              </Box>
+            )}
             {preview.newPrices.length > 0 && (
               <Box
                 className="flex flex-col"

@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildProductDiff,
+  CategoryNode,
   CurrentProductState,
   DiffLookups,
   ImportProductRow,
   ImportVariantRow,
   PlanRefs,
+  planPriceRows,
   planProductUpdate,
+  orderedPriceCategories,
   planStandalonePrice,
 } from '@/pages/api/product/bulk.page';
 
@@ -35,6 +38,7 @@ const makeRefs = (over: Partial<PlanRefs> = {}): PlanRefs => ({
     ['white', 'col2'],
   ]),
   priceById: new Map(),
+  priceMetaById: new Map(),
   rate: 20,
   ...over,
 });
@@ -631,5 +635,270 @@ describe('planProductUpdate skips unchanged values', () => {
     expect(plan.tags).toEqual([
       { spec: '128gb', colorId: 'col1', priceId: 'vp1', price: undefined },
     ]);
+  });
+});
+
+describe('orderedPriceCategories', () => {
+  const category = (over: Partial<CategoryNode> = {}): CategoryNode => ({
+    id: 'c1',
+    slug: 'phones',
+    name: '{"en":"Phones"}',
+    predecessorId: null,
+    sortOrder: 0,
+    ...over,
+  });
+
+  it('walks the tree depth-first so a child follows its parent', () => {
+    const ordered = orderedPriceCategories([
+      category({
+        id: 'c2',
+        slug: 'apple',
+        name: '{"en":"Apple"}',
+        predecessorId: 'c1',
+      }),
+      category(),
+      category({
+        id: 'c3',
+        slug: 'laptops',
+        name: '{"en":"Laptops"}',
+        sortOrder: 1,
+      }),
+    ]);
+
+    expect(ordered.map((entry) => entry.slug)).toEqual([
+      'phones',
+      'apple',
+      'laptops',
+    ]);
+  });
+
+  it('builds a path of ancestor names, itself last', () => {
+    const ordered = orderedPriceCategories([
+      category(),
+      category({
+        id: 'c2',
+        slug: 'apple',
+        name: '{"en":"Apple"}',
+        predecessorId: 'c1',
+      }),
+    ]);
+
+    expect(ordered[1].path).toEqual(['Phones', 'Apple']);
+  });
+
+  it('orders siblings by sortOrder', () => {
+    const ordered = orderedPriceCategories([
+      category({ id: 'c2', slug: 'second', sortOrder: 2 }),
+      category({ id: 'c1', slug: 'first', sortOrder: 1 }),
+    ]);
+
+    expect(ordered.map((entry) => entry.slug)).toEqual(['first', 'second']);
+  });
+
+  it('falls back to the slug when a category has no readable name', () => {
+    const ordered = orderedPriceCategories([category({ name: '' })]);
+
+    expect(ordered[0].path).toEqual(['phones']);
+  });
+
+  it('keeps a category whose parent is missing, rather than dropping it', () => {
+    const ordered = orderedPriceCategories([
+      category({ id: 'c2', slug: 'orphan', predecessorId: 'gone' }),
+    ]);
+
+    expect(ordered.map((entry) => entry.slug)).toEqual(['orphan']);
+  });
+});
+
+describe('planPriceRows', () => {
+  const poolRefs = () =>
+    makeRefs({
+      categoryIdBySlug: new Map([
+        ['phones', 'cat1'],
+        ['laptops', 'cat2'],
+      ]),
+      priceMetaById: new Map([
+        ['pr1', { name: '128GB', usd: '100', tmt: '2000', categoryId: 'cat1' }],
+      ]),
+    });
+
+  const poolRow = (over: Partial<ImportVariantRow> = {}): ImportVariantRow => ({
+    row: 3,
+    priceId: 'pr1',
+    productId: '',
+    spec: '128GB',
+    categorySlug: 'phones',
+    ...over,
+  });
+
+  it('updates a pool price in place instead of creating a second one', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceUsd: '150' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.creates).toHaveLength(0);
+    expect(plan.updates).toHaveLength(1);
+    expect(plan.updates[0].id).toBe('pr1');
+    expect(plan.updates[0].data.price).toBe('150');
+    expect(plan.updates[0].data.priceInTmt).toBe('3000');
+  });
+
+  it('plans nothing for a row that still matches the stored price', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceUsd: '100', priceTmt: '2000' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.updates).toHaveLength(0);
+    expect(plan.errors).toHaveLength(0);
+  });
+
+  it('moves a price to the category of the banner it sits under', () => {
+    const plan = planPriceRows(
+      [poolRow({ categorySlug: 'laptops' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.updates[0].data.categoryId).toBe('cat2');
+    expect(plan.updates[0].changes).toContainEqual({
+      label: 'Category',
+      from: 'phones',
+      to: 'laptops',
+    });
+  });
+
+  it('clears the category for a row under the Uncategorized banner', () => {
+    const plan = planPriceRows(
+      [poolRow({ categorySlug: '' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.updates[0].data.categoryId).toBeNull();
+  });
+
+  it('renames a pool price when its spec cell changed', () => {
+    const plan = planPriceRows(
+      [poolRow({ spec: '256GB' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.updates[0].data.name).toBe('256GB');
+  });
+
+  it('errors on a row that sits under no banner at all', () => {
+    const plan = planPriceRows(
+      [poolRow({ categorySlug: undefined })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.errors[0].message).toMatch(/banner/i);
+    expect(plan.updates).toHaveLength(0);
+  });
+
+  it('errors on a price ID the pool does not have', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceId: 'gone' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.errors[0].message).toMatch(/unknown price/i);
+  });
+
+  it('errors on a banner naming a category that does not exist', () => {
+    const plan = planPriceRows(
+      [poolRow({ categorySlug: 'ghosts' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.errors[0].message).toMatch(/unknown category/i);
+  });
+
+  it('errors when the same price ID appears on two rows', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceUsd: '150' }), poolRow({ row: 9, priceUsd: '160' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(
+      plan.errors.some((error) => /duplicate price/i.test(error.message)),
+    ).toBe(true);
+  });
+
+  it('errors when a pool row carries a price a product is already using', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceUsd: '150' })],
+      poolRefs(),
+      new Set(['pr1']),
+    );
+
+    expect(plan.errors[0].message).toMatch(/attached to a product/i);
+    expect(plan.updates).toHaveLength(0);
+  });
+
+  it('creates a price carrying the category of its banner when the price ID is blank', () => {
+    const plan = planPriceRows(
+      [
+        poolRow({
+          priceId: '',
+          spec: '512GB',
+          priceUsd: '400',
+          categorySlug: 'laptops',
+        }),
+      ],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.creates).toEqual([
+      { name: '512GB', usd: '400', tmt: '8000', categoryId: 'cat2' },
+    ]);
+  });
+
+  it('moves an attached price when its product row sits under another banner', () => {
+    const plan = planPriceRows(
+      [poolRow({ productId: 'p1', categorySlug: 'laptops' })],
+      poolRefs(),
+      new Set(['pr1']),
+    );
+
+    expect(plan.updates).toEqual([
+      expect.objectContaining({ id: 'pr1', data: { categoryId: 'cat2' } }),
+    ]);
+  });
+
+  it('ignores the price cells on a product row, which the product planner owns', () => {
+    const plan = planPriceRows(
+      [poolRow({ productId: 'p1', priceUsd: '999', spec: 'renamed' })],
+      poolRefs(),
+      new Set(['pr1']),
+    );
+
+    expect(plan.updates).toHaveLength(0);
+    expect(plan.errors).toHaveLength(0);
+  });
+
+  it('errors when one price is listed under two different banners', () => {
+    const plan = planPriceRows(
+      [
+        poolRow({ productId: 'p1', categorySlug: 'phones' }),
+        poolRow({ row: 9, productId: 'p2', categorySlug: 'laptops' }),
+      ],
+      poolRefs(),
+      new Set(['pr1']),
+    );
+
+    expect(
+      plan.errors.some((error) => /two categories/i.test(error.message)),
+    ).toBe(true);
   });
 });

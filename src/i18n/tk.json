@@ -149,6 +149,8 @@
   "bulkEditUpdated": "{count} haryt täzelendi",
   "bulkEditPricesCreated": "{count} baha döredildi",
   "bulkEditNewPrices": "Täze bahalar (harytsyz)",
+  "bulkEditPricesUpdated": "{count} baha üýtgedildi",
+  "bulkEditUpdatedPrices": "Üýtgedilen bahalar",
   "bulkEditErrors": "Ýalňyşlyklar",
   "sheet": "List",
   "row": "Setir",

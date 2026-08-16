@@ -1,17 +1,30 @@
 import type {
   BulkImportBody,
+  BulkPriceCategory,
   BulkProductExportRow,
   BulkVariant,
   ImportProductRow,
   ImportVariantRow,
 } from '@/pages/api/product/bulk.page';
+import { squareBracketRegex } from '@/pages/lib/constants';
 import { tmtFromUsd } from '@/pages/product/utils';
+import {
+  bannerFont,
+  fillRow,
+  HEADER_FILL,
+  NESTED_BANNER_FILL,
+  PATH_SEPARATOR,
+  ROOT_BANNER_FILL,
+} from '@/pages/product/xlsxBanner';
 import * as ExcelJS from 'exceljs';
 
 export const PRODUCTS_SHEET_NAME = 'Products';
 export const VARIANTS_SHEET_NAME = 'Variants';
 export const LISTS_SHEET_NAME = 'Lists';
 export const MISSING_PRODUCTS_SHEET_ERROR = 'MISSING_PRODUCTS_SHEET';
+
+/** Banner for prices belonging to no category — always last, always present. */
+export const UNCATEGORIZED_LABEL = 'Uncategorized';
 
 const PRODUCTS_HEADER = [
   'ID',
@@ -25,6 +38,7 @@ const PRODUCTS_HEADER = [
 ];
 
 const VARIANTS_HEADER = [
+  'Price ID',
   'Product ID',
   'Product Name',
   'Spec',
@@ -32,6 +46,27 @@ const VARIANTS_HEADER = [
   'Price TMT',
   'Color',
 ];
+
+const VARIANTS_LAST_COLUMN = VARIANTS_HEADER.length;
+
+// Columns an admin may type into. Everything else is machine identity: the IDs
+// rows are matched on, and the product name shown only to make a row readable.
+const PRODUCTS_EDITABLE_COLUMNS = [3, 4, 5, 6, 7, 8];
+const VARIANTS_EDITABLE_COLUMNS = [4, 5, 6, 7];
+
+/**
+ * Width for the UUID columns. Nobody reads a uuid, and autosizing them to their
+ * 36 characters pushes the columns that are actually edited off the screen, so
+ * they are squeezed to a stub instead. The value stays in the cell, just
+ * clipped — the neighbouring column holds text, which is what stops Excel
+ * overflowing the id across it.
+ */
+export const ID_COLUMN_WIDTH = 5;
+
+// Slug and Product Name sit right beside them and are what makes a row
+// recognizable to a person, so they keep their full autosized width.
+const PRODUCTS_ID_COLUMNS = [1];
+const VARIANTS_ID_COLUMNS = [1, 2];
 
 // True if the cell still holds the auto-calc TMT formula (untouched by the
 // admin). A cell the admin typed a literal number/text over is no longer a
@@ -81,7 +116,19 @@ function styleSheet(worksheet: ExcelJS.Worksheet) {
     });
     column.width = maxLength < 10 ? 10 : maxLength + 1;
   });
-  worksheet.getRow(1).font = { bold: true };
+}
+
+// Runs after styleSheet, whose autosize would otherwise win.
+function narrowIdColumns(sheet: ExcelJS.Worksheet, columns: number[]) {
+  columns.forEach((column) => {
+    sheet.getColumn(column).width = ID_COLUMN_WIDTH;
+  });
+}
+
+function unlock(sheet: ExcelJS.Worksheet, row: number, columns: number[]) {
+  columns.forEach((column) => {
+    sheet.getCell(row, column).protection = { locked: false };
+  });
 }
 
 // TMT cell for a given USD column/row: a live formula when a rate is known
@@ -125,13 +172,124 @@ function listValidation(
   };
 }
 
-export async function buildWorkbookBlob(
-  products: BulkProductExportRow[],
+export interface VariantSection {
+  slug: string; // '' = the Uncategorized section
+  label: string; // banner text, slug included for the parser to read back
+  depth: number; // 0 = a root category, deeper = a subcategory tint
+  variants: BulkVariant[];
+}
+
+/**
+ * Lays the Variants sheet out as one section per category, in the order the
+ * categories arrive (already depth-first from the API), with Uncategorized
+ * last.
+ *
+ * Every category gets a section even with no prices in it: the banner a row
+ * sits under IS its category, so a category with no banner would be a category
+ * no price could ever be moved into.
+ */
+export function buildVariantSections(
   variants: BulkVariant[],
+  priceCategories: BulkPriceCategory[],
+): VariantSection[] {
+  const bySlug = new Map<string, BulkVariant[]>();
+  priceCategories.forEach((category) => bySlug.set(category.slug, []));
+  bySlug.set('', []);
+  variants.forEach((variant) => {
+    // A slug that no longer exists falls back to Uncategorized rather than
+    // vanishing from the sheet.
+    (bySlug.get(variant.categorySlug) ?? bySlug.get('')!).push(variant);
+  });
+
+  const sorted = (slug: string) =>
+    [...bySlug.get(slug)!].sort((a, b) => a.spec.localeCompare(b.spec));
+
+  return [
+    ...priceCategories.map((category) => ({
+      slug: category.slug,
+      label: `${category.path.join(PATH_SEPARATOR)} [${category.slug}]`,
+      depth: category.path.length - 1,
+      variants: sorted(category.slug),
+    })),
+    {
+      slug: '',
+      label: UNCATEGORIZED_LABEL,
+      depth: 0,
+      variants: sorted(''),
+    },
+  ];
+}
+
+function writeVariantsSheet(
+  sheet: ExcelJS.Worksheet,
+  sections: VariantSection[],
   rate: number | null,
-  categorySlugs: string[],
-  brands: string[],
-): Promise<Blob> {
+) {
+  let row = 1;
+  sections.forEach((section, index) => {
+    if (index > 0) row += 1; // blank row between sections
+
+    const isRoot = section.depth === 0;
+    // Not merged, unlike the price-list sheet: the parser tells a banner from a
+    // data row by the rest of the row being empty, and a merge would hand every
+    // cell in the row the banner's text. Excel overflows the text across the
+    // empty cells anyway, so it reads the same.
+    fillRow(
+      sheet,
+      row,
+      VARIANTS_LAST_COLUMN,
+      isRoot ? ROOT_BANNER_FILL : NESTED_BANNER_FILL,
+    );
+    sheet.getCell(row, 1).value = section.label;
+    sheet.getCell(row, 1).font = bannerFont(isRoot);
+    row += 1;
+
+    // Repeated per section so the columns stay readable far down the sheet.
+    fillRow(sheet, row, VARIANTS_LAST_COLUMN, HEADER_FILL);
+    VARIANTS_HEADER.forEach((header, index_) => {
+      const cell = sheet.getCell(row, index_ + 1);
+      cell.value = header;
+      cell.font = { bold: true };
+    });
+    row += 1;
+
+    section.variants.forEach((variant) => {
+      sheet.getCell(row, 1).value = variant.priceId;
+      sheet.getCell(row, 2).value = variant.productId;
+      sheet.getCell(row, 3).value = variant.productName;
+      sheet.getCell(row, 4).value = variant.spec;
+      sheet.getCell(row, 5).value = variant.priceUsd;
+      sheet.getCell(row, 6).value = tmtCell(
+        'E',
+        row,
+        variant.priceUsd,
+        variant.priceTmt,
+        rate,
+      );
+      sheet.getCell(row, 7).value = variant.color;
+      unlock(sheet, row, VARIANTS_EDITABLE_COLUMNS);
+      row += 1;
+    });
+  });
+}
+
+export interface WorkbookInput {
+  products: BulkProductExportRow[];
+  variants: BulkVariant[];
+  rate: number | null;
+  categorySlugs: string[];
+  brands: string[];
+  priceCategories: BulkPriceCategory[];
+}
+
+export async function buildWorkbookBlob({
+  products,
+  variants,
+  rate,
+  categorySlugs,
+  brands,
+  priceCategories,
+}: WorkbookInput): Promise<Blob> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'WebClient';
   workbook.created = new Date();
@@ -148,6 +306,7 @@ export async function buildWorkbookBlob(
 
   const productsSheet = workbook.addWorksheet(PRODUCTS_SHEET_NAME);
   productsSheet.addRow(PRODUCTS_HEADER);
+  productsSheet.getRow(1).font = { bold: true };
   products.forEach((product, index) => {
     const row = index + 2;
     productsSheet.addRow([
@@ -160,6 +319,7 @@ export async function buildWorkbookBlob(
       product.isOutOfStock ? 'TRUE' : 'FALSE',
       product.videoUrls,
     ]);
+    unlock(productsSheet, row, PRODUCTS_EDITABLE_COLUMNS);
     if (categorySlugs.length > 0) {
       productsSheet.getCell(`C${row}`).dataValidation = listValidation(
         'category',
@@ -176,21 +336,47 @@ export async function buildWorkbookBlob(
     }
   });
   styleSheet(productsSheet);
+  narrowIdColumns(productsSheet, PRODUCTS_ID_COLUMNS);
 
   const variantsSheet = workbook.addWorksheet(VARIANTS_SHEET_NAME);
-  variantsSheet.addRow(VARIANTS_HEADER);
-  variants.forEach((variant, index) => {
-    const row = index + 2;
-    variantsSheet.addRow([
-      variant.productId,
-      variant.productName,
-      variant.spec,
-      variant.priceUsd,
-      tmtCell('D', row, variant.priceUsd, variant.priceTmt, rate),
-      variant.color,
-    ]);
-  });
+  writeVariantsSheet(
+    variantsSheet,
+    buildVariantSections(variants, priceCategories),
+    rate,
+  );
   styleSheet(variantsSheet);
+  narrowIdColumns(variantsSheet, VARIANTS_ID_COLUMNS);
+
+  // Locked cells are Excel's default, so protecting the sheet freezes
+  // everything the loops above did not explicitly unlock: the IDs rows are
+  // matched on, and the slug. It is a guardrail against a stray fill-drag, not
+  // a security boundary — the import ignores Slug and rejects unknown IDs
+  // regardless of what the sheet allowed.
+  await productsSheet.protect('', {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: true,
+    formatColumns: true,
+    formatRows: true,
+    insertRows: true,
+    deleteRows: true,
+    sort: true,
+    autoFilter: true,
+  });
+  // Sorting and filtering stay off here: a row's position is what says which
+  // category its price belongs to, so an Excel sort would silently recategorize
+  // the whole sheet. Inserting rows stays on — that is how a price is added.
+  await variantsSheet.protect('', {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: true,
+    formatColumns: true,
+    formatRows: true,
+    insertRows: true,
+    deleteRows: true,
+    sort: false,
+    autoFilter: false,
+  });
 
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
@@ -203,6 +389,19 @@ export async function buildWorkbookBlob(
 // (possibly stale, unrecalculated) cached result.
 function tmtCellText(value: ExcelJS.CellValue): string {
   return isFormulaCell(value) ? '' : cellText(value);
+}
+
+/**
+ * The category a banner row names, or undefined if the row is not a banner.
+ *
+ * Only the bracketed slug and the exact Uncategorized label count. Anything
+ * else sitting alone in column A is somebody's note, and reading it as a
+ * category would silently re-file every row beneath it.
+ */
+function bannerSlug(text: string): string | undefined {
+  const slug = text.match(squareBracketRegex)?.[1];
+  if (slug != null) return slug.trim();
+  return text === UNCATEGORIZED_LABEL ? '' : undefined;
 }
 
 export async function parseWorkbook(file: File): Promise<BulkImportBody> {
@@ -235,20 +434,31 @@ export async function parseWorkbook(file: File): Promise<BulkImportBody> {
   const variantsSheet = workbook.getWorksheet(VARIANTS_SHEET_NAME);
   const variants: ImportVariantRow[] = [];
   if (variantsSheet != null) {
+    // The section the walk is currently inside. Undefined until the first
+    // banner: rows above every banner belong to no category anyone chose, which
+    // the server reports rather than guessing at.
+    let sectionSlug: string | undefined;
     variantsSheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-      const productId = cellText(row.getCell(1).value);
-      const spec = cellText(row.getCell(3).value);
-      // Blank Product ID + blank Spec = decorative/empty row. A blank Product ID
-      // with a spec is a standalone price to add to the pool (attached later).
-      if (productId === '' && spec === '') return;
+      const cells = VARIANTS_HEADER.map((_, index) => row.getCell(index + 1));
+      const texts = cells.map((cell) => cellText(cell.value));
+      if (texts.every((text) => text === '')) return; // separator
+      if (texts[0] === VARIANTS_HEADER[0]) return; // a section's header row
+
+      if (texts.slice(1).every((text) => text === '')) {
+        const slug = bannerSlug(texts[0]);
+        if (slug != null) sectionSlug = slug;
+        return; // a banner, or a decorative row that names no category
+      }
+
       variants.push({
         row: rowNumber,
-        productId,
-        spec,
-        priceUsd: cellText(row.getCell(4).value),
-        priceTmt: tmtCellText(row.getCell(5).value),
-        color: cellText(row.getCell(6).value),
+        priceId: texts[0],
+        productId: texts[1],
+        spec: texts[3],
+        priceUsd: texts[4],
+        priceTmt: tmtCellText(cells[5].value),
+        color: texts[6],
+        ...(sectionSlug === undefined ? {} : { categorySlug: sectionSlug }),
       });
     });
   }

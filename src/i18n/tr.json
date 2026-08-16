@@ -146,6 +146,8 @@
   "bulkEditUpdated": "{count} ürün güncellendi",
   "bulkEditPricesCreated": "{count} fiyat oluşturuldu",
   "bulkEditNewPrices": "Yeni fiyatlar (ürünsüz)",
+  "bulkEditPricesUpdated": "{count} fiyat güncellendi",
+  "bulkEditUpdatedPrices": "Güncellenen fiyatlar",
   "bulkEditErrors": "Hatalar",
   "sheet": "Sayfa",
   "row": "Satır",

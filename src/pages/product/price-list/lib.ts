@@ -2,6 +2,14 @@ import type { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
 import { collectCategorySubtreeIds, tmtFromUsd } from '@/pages/product/utils';
+import {
+  bannerFont,
+  fillRow,
+  HEADER_FILL,
+  NESTED_BANNER_FILL,
+  PATH_SEPARATOR,
+  ROOT_BANNER_FILL,
+} from '@/pages/product/xlsxBanner';
 import type { Prices } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 
@@ -10,14 +18,7 @@ export const PRICE_LIST_SHEET_NAME = 'Prices';
 const RATE_LABEL = 'USD rate';
 const RATE_CELL = '$B$1';
 const PRICE_HEADER = ['Name', 'USD', 'TMT'];
-const PATH_SEPARATOR = ' > ';
 const LAST_COLUMN = 3;
-
-// Top-level categories get the solid brand navy, subcategories a tint of it, so
-// a scan down the sheet shows where one section ends and how deep it sits.
-const ROOT_BANNER_FILL = 'FF221765';
-const NESTED_BANNER_FILL = 'FFD9D4EC';
-const HEADER_FILL = 'FFF2F2F2';
 
 export interface PriceListSection {
   categoryId: string;
@@ -222,16 +223,6 @@ export const buildPriceSections = (
     });
 };
 
-function fillRow(sheet: ExcelJS.Worksheet, row: number, argb: string) {
-  for (let column = 1; column <= LAST_COLUMN; column += 1) {
-    sheet.getCell(row, column).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb },
-    };
-  }
-}
-
 function styleSheet(worksheet: ExcelJS.Worksheet) {
   worksheet.columns.forEach((column) => {
     let maxLength = 0;
@@ -289,16 +280,18 @@ export async function buildPriceListBlob(
     const isRoot = section.categoryPath.length <= 1;
     // The whole row is tinted, not just the merged text, so the colour survives
     // in viewers that drop the merge and reads as a band across the sheet.
-    fillRow(sheet, row, isRoot ? ROOT_BANNER_FILL : NESTED_BANNER_FILL);
+    fillRow(
+      sheet,
+      row,
+      LAST_COLUMN,
+      isRoot ? ROOT_BANNER_FILL : NESTED_BANNER_FILL,
+    );
     sheet.getCell(`A${row}`).value = section.categoryPath.join(PATH_SEPARATOR);
-    sheet.getCell(`A${row}`).font = {
-      bold: true,
-      color: { argb: isRoot ? 'FFFFFFFF' : ROOT_BANNER_FILL },
-    };
+    sheet.getCell(`A${row}`).font = bannerFont(isRoot);
     sheet.mergeCells(`A${row}:C${row}`);
     row += 1;
 
-    fillRow(sheet, row, HEADER_FILL);
+    fillRow(sheet, row, LAST_COLUMN, HEADER_FILL);
     PRICE_HEADER.forEach((header, column) => {
       const cell = sheet.getCell(row, column + 1);
       cell.value = header;

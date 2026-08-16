@@ -149,6 +149,8 @@
   "bulkEditUpdated": "{count} haryt tazalandy",
   "bulkEditPricesCreated": "{count} baha doredildi",
   "bulkEditNewPrices": "Taze bahalar (harytsyz)",
+  "bulkEditPricesUpdated": "{count} baha uytgedildi",
+  "bulkEditUpdatedPrices": "Uytgedilen bahalar",
   "bulkEditErrors": "Oşibkalar",
   "sheet": "List",
   "row": "Stroka",
