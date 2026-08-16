@@ -149,6 +149,8 @@
   "bulkEditUpdated": "Обновлено товаров: {count}",
   "bulkEditPricesCreated": "Создано цен: {count}",
   "bulkEditNewPrices": "Новые цены (без товара)",
+  "bulkEditPricesUpdated": "Обновлено цен: {count}",
+  "bulkEditUpdatedPrices": "Обновлённые цены",
   "bulkEditErrors": "Ошибки",
   "sheet": "Лист",
   "row": "Строка",

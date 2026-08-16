@@ -147,6 +147,8 @@
   "bulkEditUpdated": "{count} products updated",
   "bulkEditPricesCreated": "{count} prices created",
   "bulkEditNewPrices": "New prices (no product)",
+  "bulkEditPricesUpdated": "{count} prices updated",
+  "bulkEditUpdatedPrices": "Updated prices",
   "bulkEditErrors": "Errors",
   "sheet": "Sheet",
   "row": "Row",
