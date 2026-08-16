@@ -352,4 +352,85 @@ describe('Role-gated API routes (integration)', () => {
     });
     await prisma.user.delete({ where: { id: su.id } });
   });
+
+  it('/api/product/bulk refuses ADMIN in both directions', async () => {
+    const admin = await prisma.user.create({
+      data: {
+        email: `admin-bulk-${Date.now()}@test.local`,
+        name: 'Admin',
+        password: 'placeholder',
+        grade: UserRole.ADMIN,
+      },
+    });
+    const { generateTokens } = await import('@/pages/api/utils/tokenUtils');
+    const { accessToken } = generateTokens(admin.id, UserRole.ADMIN);
+
+    const bulk = (await import('@/pages/api/product/bulk.page')).default;
+
+    const exportCall = createMocks({
+      method: 'GET',
+      url: '/api/product/bulk',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    await bulk(
+      exportCall.req as unknown as NextApiRequest,
+      exportCall.res as unknown as NextApiResponse,
+    );
+    // The export is the import's round-trip half, so it is SUPERUSER-only too.
+    // Staff who only need prices use /api/prices via /product/price-list.
+    expect(exportCall.res._getStatusCode()).toBe(403);
+
+    // Even a harmless dry run is refused.
+    const importCall = createMocks({
+      method: 'POST',
+      url: '/api/product/bulk',
+      headers: { authorization: `Bearer ${accessToken}` },
+      body: {
+        products: [],
+        variants: [],
+        hasVariantsSheet: false,
+        dryRun: true,
+      },
+    });
+    await bulk(
+      importCall.req as unknown as NextApiRequest,
+      importCall.res as unknown as NextApiResponse,
+    );
+    expect(importCall.res._getStatusCode()).toBe(403);
+
+    await prisma.user.delete({ where: { id: admin.id } });
+  });
+
+  it('/api/product/bulk accepts a SUPERUSER dry-run import', async () => {
+    const su = await prisma.user.create({
+      data: {
+        email: `su-bulk-${Date.now()}@test.local`,
+        name: 'Superuser',
+        password: 'placeholder',
+        grade: UserRole.SUPERUSER,
+      },
+    });
+    const { generateTokens } = await import('@/pages/api/utils/tokenUtils');
+    const { accessToken } = generateTokens(su.id, UserRole.SUPERUSER);
+
+    const bulk = (await import('@/pages/api/product/bulk.page')).default;
+    const { req, res } = createMocks({
+      method: 'POST',
+      url: '/api/product/bulk',
+      headers: { authorization: `Bearer ${accessToken}` },
+      body: {
+        products: [],
+        variants: [],
+        hasVariantsSheet: false,
+        dryRun: true,
+      },
+    });
+    await bulk(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+
+    await prisma.user.delete({ where: { id: su.id } });
+  });
 });

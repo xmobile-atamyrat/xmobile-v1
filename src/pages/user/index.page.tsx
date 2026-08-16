@@ -20,8 +20,11 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import DescriptionIcon from '@mui/icons-material/Description';
-import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
+import DownloadForOfflineOutlinedIcon from '@mui/icons-material/DownloadForOfflineOutlined';
+import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import PriceChangeOutlinedIcon from '@mui/icons-material/PriceChangeOutlined';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import PolicyOutlinedIcon from '@mui/icons-material/PolicyOutlined';
@@ -73,6 +76,9 @@ export default function Profile() {
     { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const isAdmin = user && ['SUPERUSER', 'ADMIN'].includes(user.grade);
+  // Bulk import/export rewrites the whole catalog, so its link is superuser-only.
+  // Staff get the read-only price list export instead.
+  const isSuperuser = user?.grade === 'SUPERUSER';
 
   useEffect(() => {
     if (router.locale && router.locale !== router.defaultLocale) {
@@ -201,7 +207,7 @@ export default function Profile() {
                     '&:hover': { backgroundColor: colors.lightRed },
                   }}
                 >
-                  <DriveFolderUploadIcon
+                  <PriceChangeOutlinedIcon
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
@@ -221,7 +227,7 @@ export default function Profile() {
                     '&:hover': { backgroundColor: colors.lightRed },
                   }}
                 >
-                  <DriveFolderUploadIcon
+                  <PaletteOutlinedIcon
                     className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
                   />
                   <Typography
@@ -232,6 +238,52 @@ export default function Profile() {
                   <ArrowForwardIos className={profileClasses.icons[platform]} />
                 </Button>
                 <Divider className={profileClasses.divider[platform]} />
+                <Button
+                  className={profileClasses.boxes.sectionOrders[platform]}
+                  disableRipple
+                  onClick={() => router.push('/product/price-list')}
+                  variant={platform === 'web' ? 'outlined' : 'text'}
+                  sx={{
+                    '&:hover': { backgroundColor: colors.lightRed },
+                  }}
+                >
+                  <DownloadForOfflineOutlinedIcon
+                    className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                  />
+                  <Typography
+                    className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                  >
+                    {t('downloadPriceList')}
+                  </Typography>
+                  <ArrowForwardIos className={profileClasses.icons[platform]} />
+                </Button>
+                <Divider className={profileClasses.divider[platform]} />
+                {isSuperuser && (
+                  <>
+                    <Button
+                      className={profileClasses.boxes.sectionOrders[platform]}
+                      disableRipple
+                      onClick={() => router.push('/product/bulk-edit')}
+                      variant={platform === 'web' ? 'outlined' : 'text'}
+                      sx={{
+                        '&:hover': { backgroundColor: colors.lightRed },
+                      }}
+                    >
+                      <LibraryAddOutlinedIcon
+                        className={`${profileClasses.sectionIcon[platform]} !text-[#000]`}
+                      />
+                      <Typography
+                        className={`${interClassname.className} ${profileClasses.typos.sectionTxt[platform]}`}
+                      >
+                        {t('bulkEditProducts')}
+                      </Typography>
+                      <ArrowForwardIos
+                        className={profileClasses.icons[platform]}
+                      />
+                    </Button>
+                    <Divider className={profileClasses.divider[platform]} />
+                  </>
+                )}
                 <Button
                   className={profileClasses.boxes.sectionOrders[platform]}
                   disableRipple

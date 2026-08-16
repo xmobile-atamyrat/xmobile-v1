@@ -1,0 +1,1508 @@
+import { syncBrandProductCount } from '@/lib/brandProductCount';
+import dbClient from '@/lib/dbClient';
+import {
+  whereActiveCategory,
+  whereActiveProduct,
+} from '@/lib/prismaActiveScope';
+import { deriveVariantColumns } from '@/pages/api/product/index.page';
+import addCors from '@/pages/api/utils/addCors';
+import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
+import { squareBracketRegex } from '@/pages/lib/constants';
+import { parseName } from '@/pages/lib/utils';
+import { ResponseApi } from '@/pages/lib/types';
+import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
+import { Prisma, Product } from '@prisma/client';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { z } from 'zod';
+
+export const config = { api: { bodyParser: { sizeLimit: '8mb' } } };
+
+const filepath = 'src/pages/api/product/bulk.page.ts';
+
+// Emergency guard against one sync request trying to write thousands of rows.
+// Apply is a sequential loop of one transaction per changed product, so cost
+// grows linearly with the batch and a big enough upload outruns the request
+// timeout — products committed before that point stay applied. Counts actual
+// writes, not sheet rows, so a full-catalog re-upload that only edits a few
+// products stays well under it.
+const MAX_BULK_CHANGES = 1000;
+
+// ---------- shared types (imported by the bulk-edit frontend) ----------
+
+// One row of the "Variants" sheet on export.
+export interface BulkVariant {
+  priceId: string; // the Prices row behind it; '' when the tag has no price
+  productId: string; // '' = a pool price no product uses yet
+  productName: string; // EN name, informational
+  spec: string;
+  priceUsd: string;
+  priceTmt: string;
+  color: string; // Color.name, '' = colorless
+  categorySlug: string; // '' = no category; decides which banner it sits under
+}
+
+// A section banner on the "Variants" sheet. Every active category gets one,
+// prices or not, so any category is a valid place to drag a price into.
+export interface BulkPriceCategory {
+  slug: string; // the identifier the banner carries and the parser reads back
+  path: string[]; // ancestors first, itself last — ['Phones', 'Apple']
+}
+
+// One row of the "Products" sheet on export.
+export interface BulkProductExportRow {
+  id: string;
+  slug: string; // recognizes the product; ignored on import
+  categorySlug: string;
+  brand: string;
+  priceUsd: string;
+  priceTmt: string;
+  isOutOfStock: boolean;
+  videoUrls: string; // joined with ' | '
+}
+
+const cellSchema = z.string().optional();
+
+const importProductRowSchema = z.object({
+  row: z.number().int(), // real sheet row number, for error reporting
+  id: z.string().min(1),
+  categorySlug: cellSchema,
+  brand: cellSchema,
+  priceUsd: cellSchema,
+  priceTmt: cellSchema,
+  outOfStock: cellSchema,
+  videoUrls: cellSchema,
+});
+
+const importVariantRowSchema = z.object({
+  row: z.number().int(),
+  priceId: z.string(), // '' = a row typed by hand, i.e. a price to create
+  productId: z.string(), // '' = pool price (no product attached)
+  spec: cellSchema,
+  priceUsd: cellSchema,
+  priceTmt: cellSchema,
+  color: cellSchema,
+  // Slug of the banner the row sits under: '' = the Uncategorized section,
+  // absent = the row sits under no banner at all, which is a sheet the admin
+  // has mangled rather than an instruction to clear the category.
+  categorySlug: cellSchema,
+});
+
+const bulkImportBodySchema = z.object({
+  products: z.array(importProductRowSchema),
+  variants: z.array(importVariantRowSchema),
+  hasVariantsSheet: z.boolean(),
+  dryRun: z.boolean().optional(), // true = preview the diff, write nothing
+});
+
+export type ImportProductRow = z.infer<typeof importProductRowSchema>;
+export type ImportVariantRow = z.infer<typeof importVariantRowSchema>;
+export type BulkImportBody = z.infer<typeof bulkImportBodySchema>;
+
+export interface BulkRowError {
+  sheet: 'Products' | 'Variants';
+  row: number;
+  message: string;
+}
+
+export interface FieldChange {
+  label: string;
+  from: string;
+  to: string;
+}
+
+// A price with no product attached: created in the pool, referenced later in-app.
+export interface NewPrice {
+  name: string;
+  usd: string;
+  tmt: string;
+  categoryId: string | null; // the banner the row was typed under
+}
+
+// An edit to an existing Prices row, planned from the Variants sheet.
+export interface PriceUpdate {
+  id: string;
+  label: string; // the price's current name, to head its preview entry
+  data: {
+    name?: string;
+    price?: string;
+    priceInTmt?: string;
+    categoryId?: string | null;
+  };
+  changes: FieldChange[];
+}
+
+export interface PricePlan {
+  creates: NewPrice[];
+  updates: PriceUpdate[];
+  errors: BulkRowError[];
+}
+
+export interface BulkImportResult {
+  updatedCount: number;
+  createdPriceCount: number;
+  updatedPriceCount: number;
+  errors: BulkRowError[];
+}
+
+// ---------- preview (dry-run) diff, shown before applying ----------
+
+export interface VariantChange {
+  spec: string;
+  color?: string;
+  kind: 'added' | 'removed' | 'priceChanged';
+  from?: string; // price "usd / tmt" for removed/priceChanged
+  to?: string; // price "usd / tmt" for added/priceChanged
+}
+
+export interface ProductDiff {
+  id: string;
+  name: string; // EN name (fallback slug/id) for a readable header
+  fields: FieldChange[];
+  variants: VariantChange[];
+}
+
+export interface DiffLookups {
+  categorySlugById: Map<string, string>;
+  brandNameById: Map<string, string>;
+  colorNameById: Map<string, string>;
+  priceById: Map<string, { usd: string; tmt: string }>;
+}
+
+export interface BulkPreviewResult {
+  changes: ProductDiff[];
+  newPrices: NewPrice[];
+  updatedPrices: PriceUpdate[];
+  errors: BulkRowError[];
+}
+
+// ---------- planning (pure, unit-tested) ----------
+
+export interface PriceMeta {
+  name: string;
+  usd: string;
+  tmt: string;
+  categoryId: string | null;
+}
+
+export interface PlanRefs {
+  categoryIdBySlug: Map<string, string>; // keyed lowercase
+  brandIdByLowerName: Map<string, string>;
+  colorIdByLowerName: Map<string, string>;
+  priceById: Map<string, { usd: string; tmt: string }>; // current stored prices
+  // Everything a Variants row needs to decide whether it changed anything. Kept
+  // apart from priceById, which only the product planner reads.
+  priceMetaById: Map<string, PriceMeta>;
+  rate: number | null; // DollarRate TMT rate; null = missing
+}
+
+export interface PlannedPrice {
+  name: string; // name for a newly created Prices row
+  usd: string;
+  tmt: string;
+}
+
+export interface PlannedVariant {
+  spec: string;
+  colorId?: string;
+  priceId?: string; // existing Prices row (update in place); absent = create if price given
+  price?: PlannedPrice; // absent = leave the referenced price untouched
+}
+
+export interface ProductUpdatePlan {
+  errors: BulkRowError[];
+  data?: {
+    name?: string;
+    categoryId?: string;
+    brandId?: string;
+    isOutOfStock?: boolean;
+    videoUrls?: string[];
+    cachedPrice?: number;
+  };
+  basePrice?: { priceId?: string } & PlannedPrice;
+  tags?: PlannedVariant[]; // undefined = don't touch tags (no Variants sheet)
+}
+
+const TRUTHY_CELLS = ['true', '1', 'yes'];
+const FALSY_CELLS = ['false', '0', 'no'];
+
+function cellText(value: string | undefined): string {
+  return value?.trim() ?? '';
+}
+
+function parseBoolCell(raw: string): boolean | undefined {
+  const lower = raw.toLowerCase();
+  if (TRUTHY_CELLS.includes(lower)) return true;
+  if (FALSY_CELLS.includes(lower)) return false;
+  return undefined;
+}
+
+function parsePriceCell(raw: string): number | undefined {
+  const value = Number(raw.replace(/,/g, ''));
+  if (!Number.isFinite(value) || value < 0) return undefined;
+  return value;
+}
+
+// USD/TMT cell pair -> final stored strings, using the update-prices page math.
+// null = both cells empty (leave unchanged).
+function resolvePriceCells(
+  usdCell: string,
+  tmtCell: string,
+  rate: number | null,
+): { usd: string; tmt: string } | { error: string } | null {
+  if (usdCell === '' && tmtCell === '') return null;
+  const usd = usdCell === '' ? undefined : parsePriceCell(usdCell);
+  const tmt = tmtCell === '' ? undefined : parsePriceCell(tmtCell);
+  if (usdCell !== '' && usd == null)
+    return { error: `invalid USD price "${usdCell}"` };
+  if (tmtCell !== '' && tmt == null)
+    return { error: `invalid TMT price "${tmtCell}"` };
+  if (usd != null && tmt != null) {
+    return {
+      usd: String(parsePrice(String(usd))),
+      tmt: String(parsePrice(String(tmt))),
+    };
+  }
+  if (rate == null || rate <= 0) {
+    return {
+      error: 'dollar rate not found, cannot convert between USD and TMT',
+    };
+  }
+  if (usd != null) {
+    return {
+      usd: String(parsePrice(String(usd))),
+      tmt: String(tmtFromUsd(usd, rate)),
+    };
+  }
+  return {
+    usd: String(parsePrice(String((tmt as number) / rate))),
+    tmt: String(parsePrice(String(tmt))),
+  };
+}
+
+export interface CurrentProductState {
+  name: string;
+  price: string | null;
+  tags: string[];
+  brandId: string | null;
+  categoryId: string;
+  isOutOfStock: boolean;
+  videoUrls: string[];
+}
+
+// A resolved price equals what's already stored -> nothing to write. Compared
+// numerically so "1000" vs "1000.00" (or an integer TMT) don't read as changes.
+function priceUnchanged(
+  resolved: { usd: string; tmt: string },
+  current: { usd: string; tmt: string } | undefined,
+): boolean {
+  return (
+    current != null &&
+    Number(resolved.usd) === Number(current.usd) &&
+    Number(resolved.tmt) === Number(current.tmt)
+  );
+}
+
+function sameStringArray(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+// videoUrls is a positional list (0 = TikTok, 1 = Instagram, 2 = YouTube), so a
+// blank slot carries meaning and must not be filtered out — dropping one would
+// shift a YouTube link into the TikTok position. Only trailing blanks go, which
+// is what makes the exported "url |  | " padding read back as the same list.
+function trimTrailingBlanks(urls: string[]): string[] {
+  const end = urls.reduce(
+    (last, url, index) => (url === '' ? last : index + 1),
+    0,
+  );
+  return urls.slice(0, end);
+}
+
+// Pure planner: validates one product row (+ its variant rows) and returns either
+// row errors (whole product rejected) or the DB operations to apply. No DB access.
+export function planProductUpdate(
+  productRow: ImportProductRow,
+  variantRows: ImportVariantRow[] | undefined,
+  currentProduct: CurrentProductState,
+  refs: PlanRefs,
+): ProductUpdatePlan {
+  const errors: BulkRowError[] = [];
+  const productError = (message: string) =>
+    errors.push({ sheet: 'Products', row: productRow.row, message });
+
+  const data: NonNullable<ProductUpdatePlan['data']> = {};
+
+  // Names aren't editable via bulk edit; the EN name only seeds new Prices rows.
+  let currentName: Record<string, string> = {};
+  try {
+    const parsed = JSON.parse(currentProduct.name);
+    if (parsed != null && typeof parsed === 'object') currentName = parsed;
+  } catch {
+    // legacy non-JSON name; treated as an empty locale blob
+  }
+  const englishName = cellText(currentName.en);
+
+  const categorySlug = cellText(productRow.categorySlug);
+  if (categorySlug !== '') {
+    const categoryId = refs.categoryIdBySlug.get(categorySlug.toLowerCase());
+    if (categoryId == null)
+      productError(`unknown category slug "${categorySlug}"`);
+    else if (categoryId !== currentProduct.categoryId)
+      data.categoryId = categoryId;
+  }
+
+  const brandName = cellText(productRow.brand);
+  if (brandName !== '') {
+    const brandId = refs.brandIdByLowerName.get(brandName.toLowerCase());
+    if (brandId == null) productError(`unknown brand "${brandName}"`);
+    else if (brandId !== currentProduct.brandId) data.brandId = brandId;
+  }
+
+  const outOfStock = cellText(productRow.outOfStock);
+  if (outOfStock !== '') {
+    const parsed = parseBoolCell(outOfStock);
+    if (parsed == null)
+      productError(`invalid Out of Stock value "${outOfStock}"`);
+    else if (parsed !== currentProduct.isOutOfStock) data.isOutOfStock = parsed;
+  }
+
+  const videoUrls = cellText(productRow.videoUrls);
+  if (videoUrls !== '') {
+    const parsed = trimTrailingBlanks(
+      videoUrls.split('|').map((url) => url.trim()),
+    );
+    if (!sameStringArray(parsed, trimTrailingBlanks(currentProduct.videoUrls)))
+      data.videoUrls = parsed;
+  }
+
+  let basePrice: ProductUpdatePlan['basePrice'];
+  const baseResolved = resolvePriceCells(
+    cellText(productRow.priceUsd),
+    cellText(productRow.priceTmt),
+    refs.rate,
+  );
+  if (baseResolved != null) {
+    if ('error' in baseResolved) {
+      productError(baseResolved.error);
+    } else {
+      // [id] format or raw id; no ref at all -> create a Prices row on apply
+      const existingPriceId =
+        currentProduct.price?.match(squareBracketRegex)?.[1] ??
+        (currentProduct.price || undefined);
+      // Skip an existing price only when it already matches; a create (no ref)
+      // always happens.
+      const unchanged =
+        existingPriceId != null &&
+        priceUnchanged(baseResolved, refs.priceById.get(existingPriceId));
+      if (!unchanged) {
+        basePrice = {
+          priceId: existingPriceId,
+          name: englishName,
+          ...baseResolved,
+        };
+        data.cachedPrice = parseFloat(baseResolved.usd);
+      }
+    }
+  }
+
+  let tags: PlannedVariant[] | undefined;
+  if (variantRows != null) {
+    // Same spec with different colors is a valid product (mirrors the website),
+    // so existing variants are keyed by spec+color, not spec alone. A spec-only
+    // fallback keeps the "changed the color, keep the price" behavior for the
+    // common single-color-per-spec case.
+    const specColorKey = (spec: string, colorId: string | undefined) =>
+      `${spec} ${colorId ?? ''}`;
+    const existingByKey = new Map<string, string | undefined>();
+    const priceIdsBySpec = new Map<string, Set<string | undefined>>();
+    currentProduct.tags.forEach((tag) => {
+      const parsed = parseVariantTag(tag);
+      existingByKey.set(
+        specColorKey(parsed.specText, parsed.colorId),
+        parsed.priceId,
+      );
+      const ids = priceIdsBySpec.get(parsed.specText) ?? new Set();
+      ids.add(parsed.priceId);
+      priceIdsBySpec.set(parsed.specText, ids);
+    });
+
+    tags = [];
+    const seenKeys = new Set<string>();
+    variantRows.forEach((variantRow) => {
+      const rowError = (message: string) =>
+        errors.push({ sheet: 'Variants', row: variantRow.row, message });
+
+      const spec = cellText(variantRow.spec).replace(/\s+/g, ' ');
+      if (spec === '') {
+        rowError('empty variant spec');
+        return;
+      }
+
+      let colorId: string | undefined;
+      const colorName = cellText(variantRow.color);
+      if (colorName !== '') {
+        colorId = refs.colorIdByLowerName.get(colorName.toLowerCase());
+        if (colorId == null) {
+          rowError(`unknown color "${colorName}"`);
+          return;
+        }
+      }
+
+      const key = specColorKey(spec, colorId);
+      if (seenKeys.has(key)) {
+        rowError(
+          `duplicate variant spec "${spec}"${
+            colorName ? ` with color "${colorName}"` : ''
+          }`,
+        );
+        return;
+      }
+      seenKeys.add(key);
+
+      const resolved = resolvePriceCells(
+        cellText(variantRow.priceUsd),
+        cellText(variantRow.priceTmt),
+        refs.rate,
+      );
+      let price: PlannedPrice | undefined;
+      if (resolved != null) {
+        if ('error' in resolved) {
+          rowError(resolved.error);
+          return;
+        }
+        price = {
+          name: colorName ? `${spec} ${colorName}` : spec,
+          ...resolved,
+        };
+      }
+
+      const specIds = priceIdsBySpec.get(spec);
+      let priceId: string | undefined;
+      if (existingByKey.has(key)) priceId = existingByKey.get(key);
+      else if (specIds?.size === 1) [priceId] = [...specIds];
+
+      // Leave the referenced price untouched when it already matches.
+      if (
+        price != null &&
+        priceId != null &&
+        priceUnchanged(price, refs.priceById.get(priceId))
+      ) {
+        price = undefined;
+      }
+
+      tags!.push({ spec, colorId, priceId, price });
+    });
+  }
+
+  if (errors.length > 0) return { errors };
+  return { errors, data, basePrice, tags };
+}
+
+// A Variants row with no product ID: create a Prices row in the pool (attach to
+// a product later in the app). Needs a spec (its name) and a price.
+export function planStandalonePrice(
+  row: ImportVariantRow,
+  refs: PlanRefs,
+): PlannedPrice | { error: string } {
+  const spec = cellText(row.spec).replace(/\s+/g, ' ');
+  if (spec === '') return { error: 'empty variant spec' };
+  const resolved = resolvePriceCells(
+    cellText(row.priceUsd),
+    cellText(row.priceTmt),
+    refs.rate,
+  );
+  if (resolved == null)
+    return { error: 'a price with no product needs a USD or TMT value' };
+  if ('error' in resolved) return { error: resolved.error };
+  const colorName = cellText(row.color);
+  return { name: colorName ? `${spec} ${colorName}` : spec, ...resolved };
+}
+
+const NO_CATEGORY = '—';
+
+/**
+ * Plans every Prices write the Variants sheet asks for, across all its rows.
+ *
+ * A row's category comes from the banner it sits under, so moving a row between
+ * sections is how a price is recategorized — for pool rows and product-attached
+ * rows alike, since the category belongs to the price either way.
+ *
+ * What a row may change depends on whether a product uses it:
+ *  - attached (Product ID filled): category only. Its name and price belong to
+ *    the product's own plan, which owns that row's other cells.
+ *  - pool, with a Price ID: name, price and category, updated in place. This is
+ *    what stops an edited pool price from arriving as a second, near-identical
+ *    price the way matching on name+value alone would.
+ *  - pool, no Price ID: a row somebody typed — create it, under its banner.
+ */
+export function planPriceRows(
+  rows: ImportVariantRow[],
+  refs: PlanRefs,
+  attachedPriceIds: Set<string>,
+): PricePlan {
+  const creates: NewPrice[] = [];
+  const updates: PriceUpdate[] = [];
+  const errors: BulkRowError[] = [];
+  const rowError = (row: number, message: string) =>
+    errors.push({ sheet: 'Variants', row, message });
+
+  const slugByCategoryId = new Map(
+    [...refs.categoryIdBySlug].map(([slug, id]) => [id, slug]),
+  );
+  const categoryLabel = (id: string | null) =>
+    id == null ? NO_CATEGORY : slugByCategoryId.get(id) ?? id;
+
+  // An absent slug is a row above every banner, i.e. a sheet somebody has taken
+  // apart — reported rather than read as "clear this price's category".
+  const resolveCategory = (
+    row: ImportVariantRow,
+  ): { id: string | null } | { error: string } => {
+    if (row.categorySlug === undefined) {
+      return { error: 'row does not sit under a category banner' };
+    }
+    if (row.categorySlug === '') return { id: null };
+    const id = refs.categoryIdBySlug.get(row.categorySlug.toLowerCase());
+    return id == null
+      ? { error: `unknown category "${row.categorySlug}"` }
+      : { id };
+  };
+
+  const seenPoolPriceIds = new Set<string>();
+  const seenCreateNames = new Set<string>();
+  // A price two products share appears on two rows; they have to agree.
+  const categoryByPriceId = new Map<string, string | null>();
+
+  rows.forEach((row) => {
+    const priceId = cellText(row.priceId);
+    const category = resolveCategory(row);
+    if ('error' in category) {
+      rowError(row.row, category.error);
+      return;
+    }
+
+    if (cellText(row.productId) !== '') {
+      // A variant with no price yet, or one the product planner will reject
+      // anyway — either way there is no Prices row here to recategorize.
+      const meta = priceId === '' ? undefined : refs.priceMetaById.get(priceId);
+      if (meta == null) return;
+      if (categoryByPriceId.has(priceId)) {
+        if (categoryByPriceId.get(priceId) !== category.id) {
+          rowError(
+            row.row,
+            `price "${meta.name}" is listed under two categories`,
+          );
+        }
+        return;
+      }
+      categoryByPriceId.set(priceId, category.id);
+      if (meta.categoryId !== category.id) {
+        updates.push({
+          id: priceId,
+          label: meta.name,
+          data: { categoryId: category.id },
+          changes: [
+            {
+              label: 'Category',
+              from: categoryLabel(meta.categoryId),
+              to: categoryLabel(category.id),
+            },
+          ],
+        });
+      }
+      return;
+    }
+
+    if (priceId !== '' && attachedPriceIds.has(priceId)) {
+      rowError(
+        row.row,
+        `price "${refs.priceMetaById.get(priceId)?.name ?? priceId}" is ` +
+          `attached to a product; edit it on that product's row`,
+      );
+      return;
+    }
+
+    if (priceId === '') {
+      const planned = planStandalonePrice(row, refs);
+      if ('error' in planned) {
+        rowError(row.row, planned.error);
+        return;
+      }
+      if (seenCreateNames.has(planned.name)) {
+        rowError(row.row, `duplicate variant "${planned.name}"`);
+        return;
+      }
+      seenCreateNames.add(planned.name);
+      creates.push({ ...planned, categoryId: category.id });
+      return;
+    }
+
+    if (seenPoolPriceIds.has(priceId)) {
+      rowError(row.row, `duplicate price ID "${priceId}"`);
+      return;
+    }
+    seenPoolPriceIds.add(priceId);
+
+    const meta = refs.priceMetaById.get(priceId);
+    if (meta == null) {
+      rowError(row.row, `unknown price ID "${priceId}"`);
+      return;
+    }
+
+    const spec = cellText(row.spec).replace(/\s+/g, ' ');
+    if (spec === '') {
+      rowError(row.row, 'empty variant spec');
+      return;
+    }
+    const colorName = cellText(row.color);
+    const name = colorName ? `${spec} ${colorName}` : spec;
+
+    const resolvedOrError = resolvePriceCells(
+      cellText(row.priceUsd),
+      cellText(row.priceTmt),
+      refs.rate,
+    );
+    let resolved: { usd: string; tmt: string } | null = null;
+    if (resolvedOrError != null) {
+      if ('error' in resolvedOrError) {
+        rowError(row.row, resolvedOrError.error);
+        return;
+      }
+      resolved = resolvedOrError;
+    }
+
+    const data: PriceUpdate['data'] = {};
+    const changes: FieldChange[] = [];
+    if (name !== meta.name) {
+      data.name = name;
+      changes.push({ label: 'Name', from: meta.name, to: name });
+    }
+    if (resolved != null && !priceUnchanged(resolved, meta)) {
+      data.price = resolved.usd;
+      data.priceInTmt = resolved.tmt;
+      changes.push({
+        label: 'Price',
+        from: `${meta.usd} / ${meta.tmt}`,
+        to: `${resolved.usd} / ${resolved.tmt}`,
+      });
+    }
+    if (meta.categoryId !== category.id) {
+      data.categoryId = category.id;
+      changes.push({
+        label: 'Category',
+        from: categoryLabel(meta.categoryId),
+        to: categoryLabel(category.id),
+      });
+    }
+    if (changes.length > 0) {
+      updates.push({ id: priceId, label: meta.name, data, changes });
+    }
+  });
+
+  return { creates, updates, errors };
+}
+
+// ---------- preview diff builder (pure, unit-tested) ----------
+
+function priceLabel(price: { usd: string; tmt: string } | undefined): string {
+  return price ? `${price.usd} / ${price.tmt}` : '—';
+}
+
+export function englishNameOf(nameJson: string): string {
+  try {
+    const parsed = JSON.parse(nameJson);
+    if (
+      parsed != null &&
+      typeof parsed === 'object' &&
+      typeof parsed.en === 'string'
+    )
+      return parsed.en.trim();
+  } catch {
+    // legacy non-JSON name
+  }
+  return '';
+}
+
+function buildVariantChanges(
+  current: CurrentProductState,
+  plan: ProductUpdatePlan,
+  lookups: DiffLookups,
+): VariantChange[] {
+  if (plan.tags == null) return []; // no Variants sheet -> tags untouched
+  const colorName = (id: string | undefined) =>
+    id ? lookups.colorNameById.get(id) : undefined;
+  const key = (spec: string, colorId: string | undefined) =>
+    `${spec} ${colorId ?? ''}`;
+
+  const currentPriceIdByKey = new Map<string, string | undefined>();
+  current.tags.forEach((tag) => {
+    const parsed = parseVariantTag(tag);
+    currentPriceIdByKey.set(
+      key(parsed.specText, parsed.colorId),
+      parsed.priceId,
+    );
+  });
+
+  const changes: VariantChange[] = [];
+  const plannedKeys = new Set<string>();
+  plan.tags.forEach((variant) => {
+    const k = key(variant.spec, variant.colorId);
+    plannedKeys.add(k);
+    if (!currentPriceIdByKey.has(k)) {
+      changes.push({
+        spec: variant.spec,
+        color: colorName(variant.colorId),
+        kind: 'added',
+        to: variant.price
+          ? `${variant.price.usd} / ${variant.price.tmt}`
+          : undefined,
+      });
+    } else if (variant.price != null) {
+      // The planner only sets price when it differs from what's stored.
+      const priceId = currentPriceIdByKey.get(k);
+      changes.push({
+        spec: variant.spec,
+        color: colorName(variant.colorId),
+        kind: 'priceChanged',
+        from: priceLabel(priceId ? lookups.priceById.get(priceId) : undefined),
+        to: `${variant.price.usd} / ${variant.price.tmt}`,
+      });
+    }
+  });
+
+  current.tags.forEach((tag) => {
+    const parsed = parseVariantTag(tag);
+    const k = key(parsed.specText, parsed.colorId);
+    if (!plannedKeys.has(k)) {
+      changes.push({
+        spec: parsed.specText,
+        color: colorName(parsed.colorId),
+        kind: 'removed',
+        from: priceLabel(
+          parsed.priceId ? lookups.priceById.get(parsed.priceId) : undefined,
+        ),
+      });
+    }
+  });
+
+  return changes;
+}
+
+// Human-readable before->after for one planned product. null = the plan
+// touches nothing. Derived purely from the current row + its plan.
+export function buildProductDiff(
+  current: CurrentProductState,
+  plan: ProductUpdatePlan,
+  lookups: DiffLookups,
+): { fields: FieldChange[]; variants: VariantChange[] } | null {
+  const fields: FieldChange[] = [];
+  const data = plan.data ?? {};
+
+  if (data.categoryId != null) {
+    fields.push({
+      label: 'Category',
+      from:
+        lookups.categorySlugById.get(current.categoryId) ?? current.categoryId,
+      to: lookups.categorySlugById.get(data.categoryId) ?? data.categoryId,
+    });
+  }
+  if (data.brandId != null) {
+    fields.push({
+      label: 'Brand',
+      from: current.brandId
+        ? lookups.brandNameById.get(current.brandId) ?? current.brandId
+        : '—',
+      to: lookups.brandNameById.get(data.brandId) ?? data.brandId,
+    });
+  }
+  if (data.isOutOfStock != null) {
+    fields.push({
+      label: 'Out of Stock',
+      from: String(current.isOutOfStock),
+      to: String(data.isOutOfStock),
+    });
+  }
+  if (data.videoUrls != null) {
+    fields.push({
+      label: 'Video URLs',
+      from: current.videoUrls.join(' | ') || '—',
+      to: data.videoUrls.join(' | ') || '—',
+    });
+  }
+  if (plan.basePrice != null) {
+    fields.push({
+      label: 'Price',
+      from: priceLabel(
+        plan.basePrice.priceId
+          ? lookups.priceById.get(plan.basePrice.priceId)
+          : undefined,
+      ),
+      to: `${plan.basePrice.usd} / ${plan.basePrice.tmt}`,
+    });
+  }
+
+  const variants = buildVariantChanges(current, plan, lookups);
+  if (fields.length === 0 && variants.length === 0) return null;
+  return { fields, variants };
+}
+
+// ---------- GET export ----------
+
+export interface CategoryNode {
+  id: string;
+  slug: string;
+  name: string;
+  predecessorId: string | null;
+  sortOrder: number;
+}
+
+/**
+ * Flat category rows -> the banner list for the Variants sheet: depth-first, so
+ * a child follows its parent the way the app displays them, each carrying the
+ * name path that leads to it (names are only unique among siblings).
+ *
+ * A category whose parent is missing — soft-deleted out from under it — is
+ * treated as a root instead of being dropped, so its prices keep a banner to
+ * sit under.
+ */
+export function orderedPriceCategories(
+  categories: CategoryNode[],
+): BulkPriceCategory[] {
+  const ids = new Set(categories.map((category) => category.id));
+  const childrenOf = new Map<string, CategoryNode[]>();
+  categories.forEach((category) => {
+    const parent =
+      category.predecessorId != null && ids.has(category.predecessorId)
+        ? category.predecessorId
+        : '';
+    const siblings = childrenOf.get(parent) ?? [];
+    siblings.push(category);
+    childrenOf.set(parent, siblings);
+  });
+  childrenOf.forEach((siblings) =>
+    siblings.sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.slug.localeCompare(b.slug),
+    ),
+  );
+
+  const ordered: BulkPriceCategory[] = [];
+  const walk = (parentId: string, ancestors: string[]) => {
+    (childrenOf.get(parentId) ?? []).forEach((category) => {
+      const path = [
+        ...ancestors,
+        parseName(category.name, 'en') || category.slug,
+      ];
+      ordered.push({ slug: category.slug, path });
+      walk(category.id, path);
+    });
+  };
+  walk('', []);
+  return ordered;
+}
+
+async function handleExport(res: NextApiResponse<ResponseApi>) {
+  const [products, prices, colors, rateRow, categories, brands] =
+    await Promise.all([
+      dbClient.product.findMany({
+        where: whereActiveProduct,
+        include: { brand: true, categories: { select: { slug: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      dbClient.prices.findMany(),
+      dbClient.color.findMany(),
+      dbClient.dollarRate.findFirst({ where: { currency: 'TMT' } }),
+      dbClient.category.findMany({
+        where: whereActiveCategory,
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          predecessorId: true,
+          sortOrder: true,
+        },
+        orderBy: { slug: 'asc' },
+      }),
+      dbClient.brand.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+  const pricesById = new Map(prices.map((price) => [price.id, price]));
+  const colorsById = new Map(colors.map((color) => [color.id, color]));
+  const priceCategories = orderedPriceCategories(categories);
+  const categorySlugById = new Map(
+    categories.map((category) => [category.id, category.slug]),
+  );
+  // The banner a price sits under is the price's own category, not the
+  // category of whichever product happens to use it.
+  const bannerSlugOf = (priceId: string | undefined): string => {
+    const categoryId = priceId
+      ? pricesById.get(priceId)?.categoryId ?? null
+      : null;
+    return categoryId == null ? '' : categorySlugById.get(categoryId) ?? '';
+  };
+
+  const productRows: BulkProductExportRow[] = [];
+  const variantRows: BulkVariant[] = [];
+  // Every price a product already uses — as its base price or through a tag.
+  // Whatever is left is the pool, listed with an empty Product ID.
+  const attachedPriceIds = new Set<string>();
+  products.forEach((product) => {
+    let name: Record<string, string> = {};
+    try {
+      const parsed = JSON.parse(product.name);
+      if (parsed != null && typeof parsed === 'object') name = parsed;
+    } catch {
+      // legacy non-JSON name
+    }
+    const basePriceId =
+      product.price?.match(squareBracketRegex)?.[1] ?? product.price;
+    const basePrice = basePriceId ? pricesById.get(basePriceId) : undefined;
+    if (basePrice != null) attachedPriceIds.add(basePrice.id);
+
+    productRows.push({
+      id: product.id,
+      slug: product.slug,
+      categorySlug: product.categories?.slug ?? '',
+      brand: product.brand?.name ?? '',
+      priceUsd: basePrice?.price ?? '',
+      priceTmt: basePrice?.priceInTmt ?? '',
+      isOutOfStock: product.isOutOfStock,
+      videoUrls: product.videoUrls.join(' | '),
+    });
+
+    product.tags.forEach((tag) => {
+      const { specText, priceId, colorId } = parseVariantTag(tag);
+      const variantPrice = priceId ? pricesById.get(priceId) : undefined;
+      if (variantPrice != null) attachedPriceIds.add(variantPrice.id);
+      variantRows.push({
+        priceId: variantPrice?.id ?? '',
+        productId: product.id,
+        productName: name.en ?? '',
+        spec: specText,
+        priceUsd: variantPrice?.price ?? '',
+        priceTmt: variantPrice?.priceInTmt ?? '',
+        color: colorId ? colorsById.get(colorId)?.name ?? '' : '',
+        categorySlug: bannerSlugOf(variantPrice?.id),
+      });
+    });
+  });
+
+  // The pool: prices no product references yet. Exported with Product ID and
+  // Product Name left empty, which is also how the sheet says "not attached".
+  prices.forEach((price) => {
+    if (attachedPriceIds.has(price.id)) return;
+    variantRows.push({
+      priceId: price.id,
+      productId: '',
+      productName: '',
+      spec: price.name,
+      priceUsd: price.price,
+      priceTmt: price.priceInTmt,
+      color: '',
+      categorySlug: bannerSlugOf(price.id),
+    });
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      products: productRows,
+      variants: variantRows,
+      rate: rateRow?.rate ?? null,
+      categorySlugs: categories.map((category) => category.slug),
+      brands: brands.map((brand) => brand.name),
+      priceCategories,
+    },
+  });
+}
+
+// ---------- POST import ----------
+
+// Refresh the denormalized cachedPrice on every product whose base price points
+// at one of these Prices rows (raw id or [id] format), in a single pass over the
+// table instead of one non-indexable LIKE scan per price. Runs outside the
+// per-product transactions: cachedPrice is a read cache, so a brief lag before
+// it catches up is acceptable, and it's rebuilt from the committed price values.
+async function syncCachedPrices(priceUsdById: Map<string, number>) {
+  const values = Prisma.join(
+    [...priceUsdById].map(
+      ([id, usd]) => Prisma.sql`(${id}::text, ${usd}::double precision)`,
+    ),
+  );
+  // pid is a uuid (no % or _), so it needs no LIKE escaping; [ ] are literal in
+  // Postgres LIKE, matching the "[id]" base-price format.
+  await dbClient.$executeRaw`
+    UPDATE "Product" AS p
+    SET "cachedPrice" = v.usd
+    FROM (VALUES ${values}) AS v(pid, usd)
+    WHERE p."deletedAt" IS NULL
+      AND (p."price" = v.pid OR p."price" LIKE '%[' || v.pid || ']%')
+  `;
+}
+
+// Returns true if it wrote anything (product row and/or a shared Prices row);
+// false means the sheet matched the DB and nothing was touched.
+async function applyProductPlan(
+  db: Prisma.TransactionClient,
+  target: Product,
+  plan: ProductUpdatePlan,
+  brandsToSync: Set<string>,
+): Promise<{ changed: boolean; updatedPrices: { id: string; usd: number }[] }> {
+  const data: Prisma.ProductUncheckedUpdateInput = { ...plan.data };
+  const updatedPrices: { id: string; usd: number }[] = [];
+
+  if (plan.basePrice != null) {
+    const { priceId, name, usd, tmt } = plan.basePrice;
+    if (priceId != null) {
+      await db.prices.update({
+        where: { id: priceId },
+        data: { price: usd, priceInTmt: tmt },
+      });
+      updatedPrices.push({ id: priceId, usd: parseFloat(usd) });
+    } else {
+      const created = await db.prices.create({
+        data: { name, price: usd, priceInTmt: tmt },
+      });
+      data.price = `[${created.id}]`;
+    }
+  }
+
+  if (plan.tags != null) {
+    const builtTags: string[] = [];
+    for (let i = 0; i < plan.tags.length; i += 1) {
+      const variant = plan.tags[i];
+      let { priceId } = variant;
+      if (variant.price != null) {
+        if (priceId != null) {
+          // eslint-disable-next-line no-await-in-loop
+          await db.prices.update({
+            where: { id: priceId },
+            data: { price: variant.price.usd, priceInTmt: variant.price.tmt },
+          });
+          updatedPrices.push({
+            id: priceId,
+            usd: parseFloat(variant.price.usd),
+          });
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          const created = await db.prices.create({
+            data: {
+              name: variant.price.name,
+              price: variant.price.usd,
+              priceInTmt: variant.price.tmt,
+            },
+          });
+          priceId = created.id;
+        }
+      }
+      builtTags.push(
+        `${variant.spec}${priceId ? ` [${priceId}]` : ''}${
+          variant.colorId ? `{${variant.colorId}}` : ''
+        }`,
+      );
+    }
+    // Only rewrite tags/colors when the rebuilt list actually differs, so an
+    // unchanged variant sheet doesn't bump the product.
+    if (!sameStringArray(builtTags, target.tags)) {
+      data.tags = builtTags;
+      data.colors = {
+        set: deriveVariantColumns(builtTags).colors.map((id) => ({ id })),
+      };
+    }
+  }
+
+  const productChanged = Object.keys(data).length > 0;
+  if (productChanged) {
+    await db.product.update({ where: { id: target.id }, data });
+  }
+
+  // The planner sets data.brandId only when it changed.
+  if (plan.data?.brandId != null) {
+    if (target.brandId) brandsToSync.add(target.brandId);
+    brandsToSync.add(plan.data.brandId);
+  }
+
+  // cachedPrice fan-out is deferred: the caller batches every committed product's
+  // changed prices into one pass after the run (see syncCachedPrices).
+  return {
+    changed: productChanged || updatedPrices.length > 0,
+    updatedPrices,
+  };
+}
+
+async function handleImport(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseApi>,
+) {
+  const parsedBody = bulkImportBodySchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Invalid request body' });
+  }
+  const {
+    products: productRows,
+    variants: allVariantRows,
+    hasVariantsSheet,
+  } = parsedBody.data;
+
+  const ids = productRows.map((row) => row.id);
+  const [categories, brands, colors, rateRow, targets, priceRefs] =
+    await Promise.all([
+      dbClient.category.findMany({
+        where: whereActiveCategory,
+        select: { id: true, slug: true },
+      }),
+      dbClient.brand.findMany({ select: { id: true, name: true } }),
+      dbClient.color.findMany({ select: { id: true, name: true } }),
+      dbClient.dollarRate.findFirst({ where: { currency: 'TMT' } }),
+      dbClient.product.findMany({
+        where: { ...whereActiveProduct, id: { in: ids } },
+      }),
+      // Every price the whole catalog uses, not just the products in the sheet:
+      // a pool row must be refused the moment it names a price some product
+      // depends on, including products this upload never mentions.
+      dbClient.product.findMany({
+        where: whereActiveProduct,
+        select: { price: true, tags: true },
+      }),
+    ]);
+
+  const attachedPriceIds = new Set<string>();
+  priceRefs.forEach((product) => {
+    const baseId =
+      product.price?.match(squareBracketRegex)?.[1] ??
+      (product.price || undefined);
+    if (baseId) attachedPriceIds.add(baseId);
+    product.tags.forEach((tag) => {
+      const { priceId } = parseVariantTag(tag);
+      if (priceId) attachedPriceIds.add(priceId);
+    });
+  });
+
+  // Current prices for the targets, so the planner can skip no-op price writes
+  // (and their cachedPrice fan-out) when the sheet matches what's stored.
+  const priceIds = new Set<string>();
+  targets.forEach((product) => {
+    const baseId =
+      product.price?.match(squareBracketRegex)?.[1] ??
+      (product.price || undefined);
+    if (baseId) priceIds.add(baseId);
+    product.tags.forEach((tag) => {
+      const { priceId } = parseVariantTag(tag);
+      if (priceId) priceIds.add(priceId);
+    });
+  });
+  // Plus every price the Variants sheet names outright, which is how a pool row
+  // reaches a price no product in this upload touches.
+  allVariantRows.forEach((row) => {
+    const id = (row.priceId ?? '').trim();
+    if (id !== '') priceIds.add(id);
+  });
+  const prices = await dbClient.prices.findMany({
+    where: { id: { in: [...priceIds] } },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      priceInTmt: true,
+      categoryId: true,
+    },
+  });
+
+  const refs: PlanRefs = {
+    categoryIdBySlug: new Map(
+      categories.map((category) => [category.slug.toLowerCase(), category.id]),
+    ),
+    brandIdByLowerName: new Map(
+      brands.map((brand) => [brand.name.toLowerCase(), brand.id]),
+    ),
+    colorIdByLowerName: new Map(
+      colors.map((color) => [color.name.toLowerCase(), color.id]),
+    ),
+    priceById: new Map(
+      prices.map((price) => [
+        price.id,
+        { usd: price.price, tmt: price.priceInTmt },
+      ]),
+    ),
+    priceMetaById: new Map(
+      prices.map((price) => [
+        price.id,
+        {
+          name: price.name,
+          usd: price.price,
+          tmt: price.priceInTmt,
+          categoryId: price.categoryId,
+        },
+      ]),
+    ),
+    rate: rateRow?.rate ?? null,
+  };
+  const targetById = new Map(targets.map((product) => [product.id, product]));
+
+  const lookups: DiffLookups = {
+    categorySlugById: new Map(
+      categories.map((category) => [category.id, category.slug]),
+    ),
+    brandNameById: new Map(brands.map((brand) => [brand.id, brand.name])),
+    colorNameById: new Map(colors.map((color) => [color.id, color.name])),
+    priceById: refs.priceById,
+  };
+
+  const idCounts = new Map<string, number>();
+  ids.forEach((id) => idCounts.set(id, (idCounts.get(id) ?? 0) + 1));
+
+  // Every Prices write the sheet asks for: pool rows created or updated in
+  // place, and the category moves a row's section implies, on any row.
+  const pricePlan = planPriceRows(allVariantRows, refs, attachedPriceIds);
+  const { creates: newPrices, updates: priceUpdates } = pricePlan;
+
+  const variantsByProduct = new Map<string, ImportVariantRow[]>();
+  const errors: BulkRowError[] = [...pricePlan.errors];
+  const productSheetIds = new Set(ids);
+  allVariantRows.forEach((row) => {
+    if (row.productId === '') return; // a pool row, already planned above
+    if (!productSheetIds.has(row.productId)) {
+      errors.push({
+        sheet: 'Variants',
+        row: row.row,
+        message: `product ID "${row.productId}" not found in Products sheet`,
+      });
+      return;
+    }
+    const list = variantsByProduct.get(row.productId) ?? [];
+    list.push(row);
+    variantsByProduct.set(row.productId, list);
+  });
+
+  // A row typed by hand has no ID to match on, so re-uploading the same sheet
+  // would keep creating duplicates. Match those against the existing pool by
+  // name + value and drop the ones already there, making re-upload a no-op.
+  // Rows the export wrote carry their Price ID and update in place instead.
+  if (newPrices.length > 0) {
+    const priceKey = (name: string, usd: string, tmt: string) =>
+      `${name}|${Number(usd)}|${Number(tmt)}`;
+    const existing = await dbClient.prices.findMany({
+      where: { name: { in: newPrices.map((price) => price.name) } },
+      select: { name: true, price: true, priceInTmt: true },
+    });
+    const existingKeys = new Set(
+      existing.map((price) =>
+        priceKey(price.name, price.price, price.priceInTmt),
+      ),
+    );
+    const deduped = newPrices.filter(
+      (price) => !existingKeys.has(priceKey(price.name, price.usd, price.tmt)),
+    );
+    newPrices.length = 0;
+    newPrices.push(...deduped);
+  }
+
+  // Plan every row first (pure, no writes). A single bad row blocks the whole
+  // batch: bulk edits are all-or-nothing so a typo can't half-apply.
+  const planned: {
+    productRow: ImportProductRow;
+    target: Product;
+    plan: ProductUpdatePlan;
+  }[] = [];
+  for (let i = 0; i < productRows.length; i += 1) {
+    const productRow = productRows[i];
+    const target = targetById.get(productRow.id);
+    if ((idCounts.get(productRow.id) ?? 0) > 1) {
+      errors.push({
+        sheet: 'Products',
+        row: productRow.row,
+        message: `duplicate product ID "${productRow.id}"`,
+      });
+    } else if (target == null) {
+      errors.push({
+        sheet: 'Products',
+        row: productRow.row,
+        message: `unknown or deleted product ID "${productRow.id}"`,
+      });
+    } else {
+      const plan = planProductUpdate(
+        productRow,
+        hasVariantsSheet
+          ? variantsByProduct.get(productRow.id) ?? []
+          : undefined,
+        target,
+        refs,
+      );
+      if (plan.errors.length > 0) errors.push(...plan.errors);
+      else planned.push({ productRow, target, plan });
+    }
+  }
+
+  // Describe the pending changes. buildProductDiff returns null for a no-op, so
+  // this counts only rows that actually write — also used to size the batch.
+  const changes: ProductDiff[] = [];
+  planned.forEach(({ target, plan }) => {
+    const diff = buildProductDiff(target, plan, lookups);
+    if (diff != null) {
+      changes.push({
+        id: target.id,
+        name: englishNameOf(target.name) || target.slug || target.id,
+        ...diff,
+      });
+    }
+  });
+
+  // Cap the writes per request. Checked before both the dry-run response and
+  // apply, so it blocks the confirm dialog and a direct apply POST alike.
+  const changeCount = changes.length + newPrices.length + priceUpdates.length;
+  if (errors.length === 0 && changeCount > MAX_BULK_CHANGES) {
+    errors.push({
+      sheet: 'Products',
+      row: 0,
+      message: `too many changes in one upload (${changeCount}); the limit is ${MAX_BULK_CHANGES}. Split it into smaller uploads.`,
+    });
+  }
+
+  // Dry run: describe the pending changes and write nothing. When errors exist
+  // the frontend shows them and never offers the confirm dialog.
+  if (parsedBody.data.dryRun) {
+    const preview: BulkPreviewResult = {
+      changes,
+      newPrices,
+      updatedPrices: priceUpdates,
+      errors,
+    };
+    return res.status(200).json({ success: true, data: preview });
+  }
+
+  // Apply: reject the entire batch if anything failed to plan.
+  if (errors.length > 0) {
+    const result: BulkImportResult = {
+      updatedCount: 0,
+      createdPriceCount: 0,
+      updatedPriceCount: 0,
+      errors,
+    };
+    return res.status(200).json({ success: true, data: result });
+  }
+
+  let updatedCount = 0;
+  const brandsToSync = new Set<string>();
+  const priceUsdById = new Map<string, number>();
+  for (let i = 0; i < planned.length; i += 1) {
+    const { productRow, target, plan } = planned[i];
+    try {
+      // One product per transaction: its price and tag writes commit or roll
+      // back together, so a mid-write failure can't leave it half-updated.
+      // Scoped to a single product, so locks are held only briefly.
+      // eslint-disable-next-line no-await-in-loop
+      const { changed, updatedPrices } = await dbClient.$transaction(
+        (tx) => applyProductPlan(tx, target, plan, brandsToSync),
+        { timeout: 20000 },
+      );
+      if (changed) updatedCount += 1;
+      // Record only committed price changes; a rolled-back product is skipped,
+      // so its stale price never reaches the cachedPrice sync.
+      updatedPrices.forEach(({ id, usd }) => priceUsdById.set(id, usd));
+    } catch (error) {
+      console.error(filepath, error);
+      errors.push({
+        sheet: 'Products',
+        row: productRow.row,
+        message: 'failed to apply update',
+      });
+    }
+  }
+
+  // Pool prices and category moves. One row per write and no tag rewriting to
+  // keep in step, so these need no transaction of their own — and they run
+  // before the cachedPrice sync so a changed USD is carried into it too.
+  let updatedPriceCount = 0;
+  for (let i = 0; i < priceUpdates.length; i += 1) {
+    const update = priceUpdates[i];
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await dbClient.prices.update({
+        where: { id: update.id },
+        data: update.data,
+      });
+      updatedPriceCount += 1;
+      if (update.data.price != null) {
+        priceUsdById.set(update.id, Number(update.data.price));
+      }
+    } catch (error) {
+      console.error(filepath, error);
+      errors.push({
+        sheet: 'Variants',
+        row: 0,
+        message: `failed to update price "${update.label}"`,
+      });
+    }
+  }
+
+  // One pass over the products table for all changed prices, instead of a
+  // non-indexable LIKE scan per price inside each transaction.
+  if (priceUsdById.size > 0) {
+    await syncCachedPrices(priceUsdById);
+  }
+
+  await Promise.all(
+    [...brandsToSync].map((brandId) => syncBrandProductCount(brandId)),
+  );
+
+  let createdPriceCount = 0;
+  for (let i = 0; i < newPrices.length; i += 1) {
+    const { name, usd, tmt, categoryId } = newPrices[i];
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await dbClient.prices.create({
+        data: { name, price: usd, priceInTmt: tmt, categoryId },
+      });
+      createdPriceCount += 1;
+    } catch (error) {
+      console.error(filepath, error);
+      errors.push({
+        sheet: 'Variants',
+        row: 0,
+        message: `failed to create price "${name}"`,
+      });
+    }
+  }
+
+  const result: BulkImportResult = {
+    updatedCount,
+    createdPriceCount,
+    updatedPriceCount,
+    errors,
+  };
+  return res.status(200).json({ success: true, data: result });
+}
+
+// ---------- handler ----------
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseApi>,
+) {
+  addCors(res);
+  // SUPERUSER-only in both directions: import writes the whole catalog, and the
+  // export is its round-trip half. Staff who only need prices use
+  // /api/prices via the /product/price-list page instead.
+  if (!(await requireSuperuserBearerAuth(req, res))) return;
+
+  const { method } = req;
+  try {
+    if (method === 'GET') {
+      await handleExport(res);
+      return;
+    }
+    if (method === 'POST') {
+      await handleImport(req, res);
+      return;
+    }
+  } catch (error) {
+    console.error(filepath, error);
+    res.status(500).json({ success: false, message: 'Bulk operation failed' });
+    return;
+  }
+
+  console.error(`${filepath}: Method not allowed`);
+  res.status(405).json({ success: false, message: 'Method not allowed' });
+}

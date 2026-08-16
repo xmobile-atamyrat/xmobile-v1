@@ -1,4 +1,5 @@
 import Layout from '@/pages/components/Layout';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -21,8 +22,8 @@ import {
   processPrices,
   sortPrices,
   TableData,
+  tmtFromUsd,
 } from '@/pages/product/utils';
-import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   Alert,
   Box,
@@ -207,8 +208,21 @@ export default function UpdatePrices() {
           return;
         }
 
+        if (
+          (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
+          !(dollarRate > 0)
+        ) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'dollarRateNotLoaded',
+            severity: 'error',
+          });
+          return;
+        }
+
         const priceId = row[PRICE_ID_IDX] as string;
         const currPrice: Partial<Prices> = { id: priceId };
+
         if (cellIndex === PRICE_MANAT_IDX) {
           currPrice.priceInTmt = value;
           currPrice.price = parsePrice(
@@ -216,8 +230,9 @@ export default function UpdatePrices() {
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          currPrice.priceInTmt = Math.ceil(
-            parseFloat(value) * dollarRate,
+          currPrice.priceInTmt = tmtFromUsd(
+            parseFloat(value),
+            dollarRate,
           ).toString();
         } else if (cellIndex === PRICE_NAME_IDX) {
           currPrice.name = value;
@@ -238,7 +253,7 @@ export default function UpdatePrices() {
               return prevRow.map((cell, idx) => {
                 if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
-                    Math.ceil(parseFloat(value) * dollarRate).toString(),
+                    tmtFromUsd(parseFloat(value), dollarRate).toString(),
                   );
                 }
                 if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {

@@ -65,6 +65,12 @@ export const parsePrice = (price: string): number => {
   return parseFloat(parseFloat(price).toFixed(2));
 };
 
+// The single USD -> TMT rounding rule: prices are always whole manat, rounded
+// up. The toFixed absorbs IEEE-754 error before the ceil — 50 * 19.6 is
+// 980.0000000000001, which a bare Math.ceil would bill as 981.
+export const tmtFromUsd = (usd: number, rate: number): number =>
+  Math.ceil(parseFloat((usd * rate).toFixed(6)));
+
 export interface ParsedVariantTag {
   specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
   priceId?: string; // referenced Prices id, from [..]
@@ -271,7 +277,10 @@ export const collectCategorySubtreeIds = (
   return result;
 };
 
-// returns product.price from session or fetches from db
+// Fetches the price's TMT value from the db. Deliberately uncached: this used
+// to memoize into sessionStorage with nothing to invalidate it, so any price
+// edit (bulk upload, /product/update-prices, the product dialog) stayed
+// invisible for the rest of the tab's session — including in the cart.
 export const computePrice = async ({
   accessToken,
   fetchWithCreds,
@@ -281,11 +290,6 @@ export const computePrice = async ({
   accessToken: string;
   fetchWithCreds: FetchWithCredsType;
 }): Promise<string> => {
-  const cachePrice = sessionStorage.getItem(priceId);
-  if (cachePrice != null) {
-    return cachePrice;
-  }
-
   const { success, data } = await fetchWithCreds<Prices>({
     accessToken,
     path: `/api/prices?id=${priceId}`,
@@ -293,7 +297,6 @@ export const computePrice = async ({
   });
 
   if (success && data) {
-    sessionStorage.setItem(priceId, data.priceInTmt);
     return data.priceInTmt;
   }
   return priceId;
@@ -316,7 +319,6 @@ export const computeProductPrice = async ({
 
   if (priceMatchValue != null && priceMatchId != null) {
     processedProduct.price = priceMatchValue[1];
-    sessionStorage.setItem(priceMatchId[1], priceMatchValue[1]);
   } else if (priceMatchId != null) {
     processedProduct.price = await computePrice({
       priceId: priceMatchId[1],

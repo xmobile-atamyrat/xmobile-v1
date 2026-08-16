@@ -4,6 +4,7 @@ import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
+import { tmtFromUsd } from '@/pages/product/utils';
 import { CURRENCY } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -112,7 +113,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             dbClient.prices.update({
               where: { id },
               data: {
-                priceInTmt: Math.ceil(parseFloat(price) * rate).toString(),
+                priceInTmt: tmtFromUsd(parseFloat(price), rate).toString(),
               },
             }),
           ),
