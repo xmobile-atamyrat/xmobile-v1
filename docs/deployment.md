@@ -70,22 +70,32 @@ Required env (in `.env` on the VM): `SLACK_HEALTH_BOT_WEBHOOK`, and for telekom 
 
 ## Daily Backup to Drive
 
-The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`) has **two independent jobs** that run in parallel: one for the DB dump and one for images. If one job fails or times out (e.g. VM/network issues), the other can still succeed.
+The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`) has **three independent jobs** that run in parallel: the DB dump, images, and script logs. If one job fails or times out (e.g. VM/network issues), the others can still succeed.
 
 ### Triggers
 
-- **Schedule:** Every day at **00:00 UTC**.
-- **Manual:** **Actions → Daily Backup to Drive → Run workflow**.
+- **DB:** every **3 hours** — 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC.
+- **Images and script logs:** once a day at **00:00 UTC** only.
+- **Manual:** **Actions → Daily Backup to Drive → Run workflow** (runs all three jobs).
+
+Scheduled runs on GitHub are frequently delayed under load, so treat the times above as "no later than roughly 20 minutes after". Which artifacts a run produces is decided by the cron expression that triggered it, not by the clock, so a delayed midnight run still backs up images and logs.
 
 ### Flow (each job runs in parallel)
 
-**Job: Backup DB to Drive**  
-1. SSH to VM → run `backup-data.sh db` → copy `db_backup.sql` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 3) → delete `db_backup.sql` from VM.
+**Job: Backup DB to Drive**
+1. SSH to VM → run `backup-data.sh db` → copy `db_backup.sql` to runner → configure rclone → upload to `gdrive:<date>/` → prune (daily run only, keep `BACKUP_RETENTION_COUNT` = 30 folders) → delete `db_backup.sql` from VM.
 
-**Job: Backup images to Drive**  
-1. SSH to VM → run `backup-data.sh images` → copy `images.tar.gz` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 3) → delete `images.tar.gz` from VM.
+The midnight run uploads the canonical **`db_backup.sql`**; the seven intraday runs upload **`db_backup_<HHMM>.sql`** (e.g. `db_backup_1500.sql`) alongside it. The restore scripts (`scripts/apply-backup.sh`, `scripts/apply-backup-local.sh`) expect the file at `backup/db_backup.sql`, so **to restore from an intraday dump, download it and rename it to `db_backup.sql` first.**
 
-Both jobs write to the same date folder (e.g. `2025-03-09/`), so a successful run produces both `db_backup.sql` and `images.tar.gz` in that folder. Each job has its own 45-minute timeout.
+The job uses a `backup-db` concurrency group so a slow run and the next 3-hourly tick queue instead of racing on the VM's single `db_backup.sql`.
+
+**Job: Backup images to Drive**
+1. SSH to VM → run `backup-data.sh images` → copy `images.tar.gz` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 30) → delete `images.tar.gz` from VM.
+
+**Job: Backup script logs to Drive**
+1. Copy `/home/ubuntu/scripts/*.log` to runner → configure rclone → upload to `gdrive:<date>/` → truncate `nginx.access.log` and `nginx.error.log` on the VM → prune (keep 30).
+
+All jobs write to the same date folder (e.g. `2025-03-09/`), so a full day produces `db_backup.sql`, seven `db_backup_<HHMM>.sql` files, `images.tar.gz`, and the log files in that folder. Retention is **30 date folders**, so intraday dumps are kept for the same 30 days as everything else. Each job has its own 45-minute timeout.
 
 ### Required repository secrets (in addition to VM secrets)
 
