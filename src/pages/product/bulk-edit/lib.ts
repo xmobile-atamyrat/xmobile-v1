@@ -49,10 +49,18 @@ const VARIANTS_HEADER = [
 
 const VARIANTS_LAST_COLUMN = VARIANTS_HEADER.length;
 
-// Columns an admin may type into. Everything else is machine identity: the IDs
-// rows are matched on, and the product name shown only to make a row readable.
+// Columns an admin may type into — everything except the IDs rows are matched
+// on. Unlocked for the whole column, not just the rows the export wrote:
+// Excel's default is locked, so a per-cell unlock leaves every untouched cell
+// frozen — the blank rows between sections, the entire region past the last row,
+// and any row an admin inserts. That last one made insertRows pointless, since
+// inserting a row is how a price gets added.
+//
+// Column 1 stays locked on both sheets, which is also what keeps the Variants
+// layout readable back: a banner's "[slug]" label and a section header's
+// "Price ID" marker both live in column 1, so neither can be typed over.
 const PRODUCTS_EDITABLE_COLUMNS = [3, 4, 5, 6, 7, 8];
-const VARIANTS_EDITABLE_COLUMNS = [4, 5, 6, 7];
+const VARIANTS_EDITABLE_COLUMNS = [2, 3, 4, 5, 6, 7];
 
 /**
  * Width for the UUID columns. Nobody reads a uuid, and autosizing them to their
@@ -125,10 +133,24 @@ function narrowIdColumns(sheet: ExcelJS.Worksheet, columns: number[]) {
   });
 }
 
-function unlock(sheet: ExcelJS.Worksheet, row: number, columns: number[]) {
+// locked: true is Excel's default and ExcelJS omits it, so the identity columns
+// need no counterpart here — they stay locked by not appearing in `columns`.
+function unlockColumns(sheet: ExcelJS.Worksheet, columns: number[]) {
   columns.forEach((column) => {
-    sheet.getCell(row, column).protection = { locked: false };
+    sheet.getColumn(column).protection = { locked: false };
   });
+}
+
+// Prices are stored as strings, but the USD cell must be a *numeric* cell: the
+// TMT formula multiplies it, and Excel coerces a text operand to a number using
+// the reader's regional decimal separator. On a comma-decimal locale "18.5" is
+// not a number, so the formula yields #VALUE! — and only for prices that have a
+// decimal point, since "100" parses everywhere. A price that is not a number at
+// all is written as the original text rather than silently becoming 0.
+function usdCell(usd: string): ExcelJS.CellValue {
+  if (usd === '') return usd;
+  const parsed = Number(usd);
+  return Number.isFinite(parsed) ? parsed : usd;
 }
 
 // TMT cell for a given USD column/row: a live formula when a rate is known
@@ -140,6 +162,10 @@ function unlock(sheet: ExcelJS.Worksheet, row: number, columns: number[]) {
 // USD times the rate lands just above the typed manat, so ROUNDUP adds 1. Such
 // a price is exported as a literal, otherwise re-uploading an untouched sheet
 // silently raises it by a manat every time.
+//
+// `result` caches the value the app itself would compute, so a viewer that does
+// not recalculate on open — or one whose recalculation fails — still shows the
+// admin a manat price instead of a blank or an error.
 function tmtCell(
   usdCol: string,
   row: number,
@@ -148,8 +174,9 @@ function tmtCell(
   rate: number | null,
 ): ExcelJS.CellValue {
   if (rate == null || usd === '') return tmt;
-  if (tmt !== '' && tmtFromUsd(Number(usd), rate) !== Number(tmt)) return tmt;
-  return { formula: `ROUNDUP(${usdCol}${row}*${rate},0)` };
+  const computed = tmtFromUsd(Number(usd), rate);
+  if (tmt !== '' && computed !== Number(tmt)) return tmt;
+  return { formula: `ROUNDUP(${usdCol}${row}*${rate},0)`, result: computed };
 }
 
 // Excel dropdown backed by a range on the hidden Lists sheet. showErrorMessage
@@ -258,7 +285,7 @@ function writeVariantsSheet(
       sheet.getCell(row, 2).value = variant.productId;
       sheet.getCell(row, 3).value = variant.productName;
       sheet.getCell(row, 4).value = variant.spec;
-      sheet.getCell(row, 5).value = variant.priceUsd;
+      sheet.getCell(row, 5).value = usdCell(variant.priceUsd);
       sheet.getCell(row, 6).value = tmtCell(
         'E',
         row,
@@ -267,7 +294,6 @@ function writeVariantsSheet(
         rate,
       );
       sheet.getCell(row, 7).value = variant.color;
-      unlock(sheet, row, VARIANTS_EDITABLE_COLUMNS);
       row += 1;
     });
   });
@@ -314,12 +340,11 @@ export async function buildWorkbookBlob({
       product.slug,
       product.categorySlug,
       product.brand,
-      product.priceUsd,
+      usdCell(product.priceUsd),
       tmtCell('E', row, product.priceUsd, product.priceTmt, rate),
       product.isOutOfStock ? 'TRUE' : 'FALSE',
       product.videoUrls,
     ]);
-    unlock(productsSheet, row, PRODUCTS_EDITABLE_COLUMNS);
     if (categorySlugs.length > 0) {
       productsSheet.getCell(`C${row}`).dataValidation = listValidation(
         'category',
@@ -337,6 +362,7 @@ export async function buildWorkbookBlob({
   });
   styleSheet(productsSheet);
   narrowIdColumns(productsSheet, PRODUCTS_ID_COLUMNS);
+  unlockColumns(productsSheet, PRODUCTS_EDITABLE_COLUMNS);
 
   const variantsSheet = workbook.addWorksheet(VARIANTS_SHEET_NAME);
   writeVariantsSheet(
@@ -346,12 +372,13 @@ export async function buildWorkbookBlob({
   );
   styleSheet(variantsSheet);
   narrowIdColumns(variantsSheet, VARIANTS_ID_COLUMNS);
+  unlockColumns(variantsSheet, VARIANTS_EDITABLE_COLUMNS);
 
-  // Locked cells are Excel's default, so protecting the sheet freezes
-  // everything the loops above did not explicitly unlock: the IDs rows are
-  // matched on, and the slug. It is a guardrail against a stray fill-drag, not
-  // a security boundary — the import ignores Slug and rejects unknown IDs
-  // regardless of what the sheet allowed.
+  // Protection is what gives the unlockColumns calls above any effect: it
+  // freezes the columns they left out — the IDs rows are matched on, and the
+  // slug. It is a guardrail against a stray fill-drag, not a security boundary
+  // — the import ignores Slug and rejects unknown IDs regardless of what the
+  // sheet allowed.
   await productsSheet.protect('', {
     selectLockedCells: true,
     selectUnlockedCells: true,
