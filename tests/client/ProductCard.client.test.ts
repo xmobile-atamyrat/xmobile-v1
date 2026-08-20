@@ -127,4 +127,21 @@ describe('ProductCard', () => {
       expect(screen.getByTestId('add-to-cart')).toBeInTheDocument();
     });
   });
+
+  it('hides the price when isOutOfStock is true', async () => {
+    renderCard(makeProduct({ isOutOfStock: true, price: '5.00' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Out of stock')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/5\.00/)).not.toBeInTheDocument();
+  });
+
+  it('shows the price when isOutOfStock is false', async () => {
+    renderCard(makeProduct({ isOutOfStock: false, price: '5.00' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/5\.00/)).toBeInTheDocument();
+    });
+  });
 });

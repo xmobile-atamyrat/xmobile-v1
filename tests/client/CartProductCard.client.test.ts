@@ -113,3 +113,42 @@ describe('CartProductCard — variant badge', () => {
     });
   });
 });
+
+describe('CartProductCard — out-of-stock price slot', () => {
+  beforeEach(() => {
+    vi.mocked(useProductContext).mockReturnValue({
+      setSelectedProduct: vi.fn(),
+    } as never);
+
+    vi.mocked(useNetworkContext).mockReturnValue({
+      network: 'fast',
+      setNetwork: vi.fn(),
+    } as never);
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        success: true,
+        data: { name: '{"en":"Test Category"}' },
+      }),
+    } as never);
+  });
+
+  it('replaces the price with an out-of-stock label when isOutOfStock is true', async () => {
+    renderCard(null, makeProduct({ isOutOfStock: true, price: '5.00' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Out of stock')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/5\.00/)).not.toBeInTheDocument();
+  });
+
+  it('renders the price when isOutOfStock is false', async () => {
+    renderCard(null, makeProduct({ isOutOfStock: false, price: '5.00' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/5\.00/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Out of stock')).not.toBeInTheDocument();
+  });
+});

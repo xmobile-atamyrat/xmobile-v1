@@ -1,4 +1,5 @@
 import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
+import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
 import { fetchColors } from '@/pages/lib/apis';
@@ -40,6 +41,7 @@ export default function CartPage() {
   >([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
+  const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
@@ -126,11 +128,63 @@ export default function CartPage() {
     if (cartItems == null) return;
     let totPrice = 0;
     cartItems.forEach((item) => {
+      // Out-of-stock items can't be ordered, so they don't count toward the total
+      if (item.product.isOutOfStock) return;
       if (!Number.isNaN(Number(item.product.price)))
         totPrice += Number(item.product.price) * item.quantity;
     });
     setTotalPrice(totPrice);
   }, [cartItems]);
+
+  const outOfStockItems = cartItems.filter((item) => item.product.isOutOfStock);
+
+  const handleCheckoutClick = () => {
+    if (outOfStockItems.length > 0) {
+      setShowOutOfStockDialog(true);
+      return;
+    }
+    router.push('/cart/checkout');
+  };
+
+  // Removes every out-of-stock item, then continues to checkout — the user
+  // asked to check out and then asked to clear the blocker.
+  const handleRemoveOutOfStockItems = async () => {
+    const removableIds = outOfStockItems.map((item) => item.id);
+    try {
+      const results = await Promise.all(
+        removableIds.map((cartItemId) =>
+          user
+            ? fetchWithCreds({
+                accessToken,
+                path: '/api/cart',
+                method: 'DELETE',
+                body: { id: cartItemId },
+              })
+            : fetchWithoutCreds('/api/guest/cart', 'DELETE', {
+                id: cartItemId,
+              }),
+        ),
+      );
+
+      const removed = new Set(
+        removableIds.filter((_, index) => results[index]?.success),
+      );
+
+      if (removed.size > 0) {
+        setCartItems((prev) => prev.filter((item) => !removed.has(item.id)));
+      }
+
+      if (removed.size < removableIds.length) {
+        console.error('Failed to remove some out-of-stock cart items');
+        return;
+      }
+
+      setShowOutOfStockDialog(false);
+      router.push('/cart/checkout');
+    } catch (error) {
+      console.error('Error removing out-of-stock cart items:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -176,7 +230,7 @@ export default function CartPage() {
                 </Typography>
                 <CheckoutSummary
                   totalPrice={totalPrice}
-                  onCheckoutClick={() => router.push('/cart/checkout')}
+                  onCheckoutClick={handleCheckoutClick}
                 />
               </Box>
               <Box className={cartIndexClasses.infoRow[platform]}>
@@ -246,6 +300,16 @@ export default function CartPage() {
           )}
         </Box>
       </Box>
+      {showOutOfStockDialog && (
+        <OutOfStockDialog
+          items={outOfStockItems.map((item) => ({
+            id: item.id,
+            name: item.product.name,
+          }))}
+          onClose={() => setShowOutOfStockDialog(false)}
+          onRemove={handleRemoveOutOfStockItems}
+        />
+      )}
     </Layout>
   );
 }

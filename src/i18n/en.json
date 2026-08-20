@@ -556,5 +556,9 @@
   "deleteAccountError": "Failed to delete account. Please try again.",
   "accountDeleted": "Account deleted. <link>Sign in</link> to restore it.",
   "accountPermanentlyDeleted": "Your account has been permanently deleted. Please create a new account.",
-  "outOfStock": "Out of stock"
+  "outOfStock": "Out of stock",
+  "outOfStockInCartTitle": "Out-of-stock items in your cart",
+  "outOfStockInCartDescription": "These products are out of stock. Remove them from your cart to continue with payment.",
+  "removeOutOfStockItems": "Remove them",
+  "backToCart": "Back to cart"
 }
