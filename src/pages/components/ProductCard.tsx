@@ -119,18 +119,20 @@ export default function ProductCard({
               >
                 {parseName(product.name, router.locale ?? 'tk')}
               </Typography>
-              {product?.price?.includes('[') ? (
-                <CircularProgress
-                  className={productCardClasses.circProgress[platform]}
-                />
-              ) : (
-                <Typography
-                  color={colors.mainWebMobile[platform]}
-                  className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
-                >
-                  {product?.price} {t('manat')}
-                </Typography>
-              )}
+              {/* Out-of-stock products show no price; the badge carries the state */}
+              {!product.isOutOfStock &&
+                (product?.price?.includes('[') ? (
+                  <CircularProgress
+                    className={productCardClasses.circProgress[platform]}
+                  />
+                ) : (
+                  <Typography
+                    color={colors.mainWebMobile[platform]}
+                    className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                  >
+                    {product?.price} {t('manat')}
+                  </Typography>
+                ))}
             </Box>
           </Link>
           {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
