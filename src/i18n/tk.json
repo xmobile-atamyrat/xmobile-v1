@@ -559,5 +559,9 @@
   "deleteAccountError": "Hasaby öçürmek başartmady. Täzeden synanyşyň.",
   "accountDeleted": "Hasap pozuldy. Dikeltmek üçin <link>giriş ediň</link>.",
   "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň.",
-  "outOfStock": "Elýeter däl"
+  "outOfStock": "Elýeter däl",
+  "outOfStockInCartTitle": "Sebediňizde elýeter däl harytlar",
+  "outOfStockInCartDescription": "Bu harytlar elýeter däl. Töleg bilen dowam etmek üçin olary sebediňizden aýyryň.",
+  "removeOutOfStockItems": "Olary aýyr",
+  "backToCart": "Sebede dolan"
 }

@@ -129,6 +129,12 @@ export const SORT_OPTIONS = {
 
 export const FILTER_MAX_PRICE = 100000;
 
+/**
+ * Thrown by the order service and matched by the checkout page when the cart
+ * still holds out-of-stock products. Shared so both sides agree on the string.
+ */
+export const OUT_OF_STOCK_ERROR = 'OUT_OF_STOCK_ITEMS';
+
 export const BUSINESS_NAME = 'Xmobile';
 
 export const META_DESC_MAX_LENGTH = 160; // Google standard: ~160 chars

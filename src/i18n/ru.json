@@ -559,5 +559,9 @@
   "deleteAccountError": "Не удалось удалить аккаунт. Попробуйте ещё раз.",
   "accountDeleted": "Аккаунт удалён. <link>Войдите</link>, чтобы восстановить его.",
   "accountPermanentlyDeleted": "Ваш аккаунт был безвозвратно удалён. Пожалуйста, создайте новый аккаунт.",
-  "outOfStock": "Нет в наличии"
+  "outOfStock": "Нет в наличии",
+  "outOfStockInCartTitle": "В корзине есть товары не в наличии",
+  "outOfStockInCartDescription": "Этих товаров нет в наличии. Удалите их из корзины, чтобы продолжить оплату.",
+  "removeOutOfStockItems": "Удалить их",
+  "backToCart": "Вернуться в корзину"
 }
