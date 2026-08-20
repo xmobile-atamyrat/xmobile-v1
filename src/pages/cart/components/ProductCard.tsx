@@ -125,17 +125,30 @@ export default function CartProductCard({
                   />
                 )}
               </Box>
-              {product?.price?.includes('[') ? (
-                <CircularProgress
-                  className={cartProductCardClasses.circProgress[platform]}
-                />
-              ) : (
+              {/* This card has no out-of-stock badge, so the price slot carries
+                  the label rather than going blank */}
+              {product.isOutOfStock ? (
                 <Typography
-                  color={colors.text[platform]}
-                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                  color="#9e9e9e"
+                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]} uppercase`}
                 >
-                  {product?.price} {t('manat')}
+                  {t('outOfStock')}
                 </Typography>
+              ) : (
+                <>
+                  {product?.price?.includes('[') ? (
+                    <CircularProgress
+                      className={cartProductCardClasses.circProgress[platform]}
+                    />
+                  ) : (
+                    <Typography
+                      color={colors.text[platform]}
+                      className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                    >
+                      {product?.price} {t('manat')}
+                    </Typography>
+                  )}
+                </>
               )}
             </Box>
             {cartProps.cartAction === 'delete' && (

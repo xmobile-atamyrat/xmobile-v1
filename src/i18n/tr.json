@@ -558,5 +558,9 @@
   "deleteAccountError": "Hesap silinemedi. Lütfen tekrar deneyin.",
   "accountDeleted": "Hesap silindi. Geri yüklemek için  <link> giriş yapın</link>.",
   "accountPermanentlyDeleted": "Hesabınız kalıcı olarak silindi. Lütfen yeni bir hesap oluşturun.",
-  "outOfStock": "Stokta yok"
+  "outOfStock": "Stokta yok",
+  "outOfStockInCartTitle": "Sepetinizde stokta olmayan ürünler var",
+  "outOfStockInCartDescription": "Bu ürünler stokta yok. Ödemeye devam etmek için onları sepetinizden çıkarın.",
+  "removeOutOfStockItems": "Onları çıkar",
+  "backToCart": "Sepete dön"
 }
