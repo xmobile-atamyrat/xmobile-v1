@@ -116,4 +116,119 @@ describe('Out-of-stock product API (integration)', () => {
     expect(outOfStockIdx).toBeGreaterThanOrEqual(0);
     expect(inStockIdx).toBeLessThan(outOfStockIdx);
   });
+
+  it('POST /api/order is rejected when the cart holds an out-of-stock product', async () => {
+    const session = await signupTestUser('oos-order-block');
+    await prisma.cartItem.create({
+      data: {
+        userId: session.userId,
+        productId: outOfStockProductId,
+        quantity: 1,
+      },
+    });
+
+    const handler = (await import('@/pages/api/order/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'POST',
+      url: '/api/order',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: {
+        deliveryAddress: 'Blocked street 1',
+        deliveryPhone: '+99312000000',
+      },
+    });
+
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+
+    const json = JSON.parse(res._getData() as string);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('OUT_OF_STOCK_ITEMS');
+
+    // No order created, and the cart is left untouched for the user to fix
+    const orders = await prisma.userOrder.findMany({
+      where: { userId: session.userId },
+    });
+    expect(orders.length).toBe(0);
+
+    const remainingCart = await prisma.cartItem.findMany({
+      where: { userId: session.userId },
+    });
+    expect(remainingCart.length).toBe(1);
+  });
+
+  it('POST /api/order succeeds once only in-stock products remain', async () => {
+    const session = await signupTestUser('oos-order-allow');
+    await prisma.cartItem.create({
+      data: {
+        userId: session.userId,
+        productId: inStockProductId,
+        quantity: 1,
+      },
+    });
+
+    const handler = (await import('@/pages/api/order/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'POST',
+      url: '/api/order',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: {
+        deliveryAddress: 'Allowed street 1',
+        deliveryPhone: '+99312000001',
+      },
+    });
+
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(JSON.parse(res._getData() as string).success).toBe(true);
+
+    const orders = await prisma.userOrder.findMany({
+      where: { userId: session.userId },
+    });
+    expect(orders.length).toBe(1);
+  });
+
+  it('POST /api/guest/order is rejected when the guest cart holds an out-of-stock product', async () => {
+    const guestSessionId = `oos-guest-${Date.now()}`;
+    await prisma.guestCartItem.create({
+      data: {
+        guestSessionId,
+        productId: outOfStockProductId,
+        quantity: 1,
+      },
+    });
+
+    const handler = (await import('@/pages/api/guest/order/index.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'POST',
+      url: '/api/guest/order',
+      cookies: { GUEST_SESSION_ID: guestSessionId },
+      body: {
+        userName: 'Blocked Guest',
+        deliveryAddress: 'Guest blocked street',
+        deliveryPhone: '+99312000002',
+      },
+    });
+
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+
+    const json = JSON.parse(res._getData() as string);
+    expect(json.success).toBe(false);
+    expect(json.message).toBe('OUT_OF_STOCK_ITEMS');
+
+    const remainingCart = await prisma.guestCartItem.findMany({
+      where: { guestSessionId },
+    });
+    expect(remainingCart.length).toBe(1);
+  });
 });

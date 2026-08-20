@@ -2,6 +2,7 @@ import dbClient from '@/lib/dbClient';
 import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
 import { getColor } from '@/pages/api/colors/index.page';
 import { getPrice } from '@/pages/api/prices/index.page';
+import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { parseVariantTag } from '@/pages/product/utils';
 import {
   createNotificationForOrderStatusUpdate,
@@ -111,6 +112,12 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
 
   if (cartItems.length === 0) {
     throw new Error('Cart is empty');
+  }
+
+  // Reject rather than silently drop: dropping would place an order missing
+  // items the user believed they were buying
+  if (cartItems.some((item) => item.product.isOutOfStock)) {
+    throw new Error(OUT_OF_STOCK_ERROR);
   }
 
   // Get user data for snapshot
@@ -224,6 +231,12 @@ export async function createGuestOrder(
 
   if (cartItems.length === 0) {
     throw new Error('Cart is empty');
+  }
+
+  // Reject rather than silently drop: dropping would place an order missing
+  // items the user believed they were buying
+  if (cartItems.some((item) => item.product.isOutOfStock)) {
+    throw new Error(OUT_OF_STOCK_ERROR);
   }
 
   const totalPrice = await calculateTotalPrice(cartItems);

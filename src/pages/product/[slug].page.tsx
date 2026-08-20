@@ -595,21 +595,24 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               </Typography>
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />
-            <Box className={detailPageClasses.price[platform]}>
-              {displayPrice == null || displayPrice?.includes('[') ? (
-                <CircularProgress
-                  className={detailPageClasses.circProgress[platform]}
-                />
-              ) : (
-                <Typography
-                  className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
-                >
-                  {displayPrice === '' || displayPrice.includes('null')
-                    ? t('nullPrice')
-                    : `${displayPrice} ${t('manat')}`}
-                </Typography>
-              )}
-            </Box>
+            {/* Out-of-stock products show no price; the out-of-stock pill carries the state */}
+            {!product.isOutOfStock && (
+              <Box className={detailPageClasses.price[platform]}>
+                {displayPrice == null || displayPrice?.includes('[') ? (
+                  <CircularProgress
+                    className={detailPageClasses.circProgress[platform]}
+                  />
+                ) : (
+                  <Typography
+                    className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
+                  >
+                    {displayPrice === '' || displayPrice.includes('null')
+                      ? t('nullPrice')
+                      : `${displayPrice} ${t('manat')}`}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
 
           {specOptions.length > 0 && (
