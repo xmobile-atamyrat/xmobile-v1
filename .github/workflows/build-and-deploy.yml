@@ -220,15 +220,15 @@ jobs:
             tar -xf $TAR_NAME
 
             cd $APP_DIR_ON_VM
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/src .
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/scripts .
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/prisma .
+            rm -rf src && mv $TAR_DIR_ON_VM/app/xmobile-v1/src .
+            rm -rf scripts && mv $TAR_DIR_ON_VM/app/xmobile-v1/scripts .
+            rm -rf prisma && mv $TAR_DIR_ON_VM/app/xmobile-v1/prisma .
             yarn db:generate-prod
             yarn db:migrate-prod
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/node_modules .
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/public .
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/.next .
-            mv $TAR_DIR_ON_VM/app/xmobile-v1/dist .
+            rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-v1/node_modules .
+            rm -rf public && mv $TAR_DIR_ON_VM/app/xmobile-v1/public .
+            rm -rf .next && mv $TAR_DIR_ON_VM/app/xmobile-v1/.next .
+            rm -rf dist && mv $TAR_DIR_ON_VM/app/xmobile-v1/dist .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/package.json .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/yarn.lock .
             mv $TAR_DIR_ON_VM/app/xmobile-v1/next.config.mjs .
