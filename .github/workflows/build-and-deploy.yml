@@ -136,7 +136,7 @@ jobs:
         if: steps.check.outputs.tar_exists != 'true'
         run: |
           mkdir -p app/xmobile-v1
-          for item in src prisma public node_modules .next dist package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
+          for item in src scripts prisma public node_modules .next dist package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
             cp -a "$item" app/xmobile-v1/
           done
 
