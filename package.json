@@ -11,7 +11,7 @@
     "build-dev": "test -f .env.local && rm -rf .next && dotenv -e .env.local -- next build",
     "start:ws": "node --env-file=.env dist/ws-server/index.js",
     "start:batch-runner": "node --env-file=.env batch-runner-dist/scripts/batch-runner/batch-runner.js",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1 -p 3000",
     "start:staging": "next start -p 3001",
     "lint": "next lint",
     "test": "vitest run && vitest run --config vitest.integration.config.ts",

@@ -220,21 +220,15 @@ jobs:
             tar -xf $TAR_NAME
 
             cd $APP_DIR_ON_VM
-            echo 'Copying src'
-            rm -rf src && mv $TAR_DIR_ON_VM/app/xmobile-staging/src .
-            echo 'Copying prisma'
-            rm -rf prisma && mv $TAR_DIR_ON_VM/app/xmobile-staging/prisma .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/src .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/scripts .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/prisma .
             yarn db:generate-prod
             yarn db:migrate-prod
-            echo 'Copying node_modules'
-            rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-staging/node_modules .
-            echo 'Copying public'
-            rm -rf public && mv $TAR_DIR_ON_VM/app/xmobile-staging/public .
-            echo 'Copying .next (pre-built)'
-            rm -rf .next && mv $TAR_DIR_ON_VM/app/xmobile-staging/.next .
-            echo 'Copying dist (pre-built ws server)'
-            rm -rf dist && mv $TAR_DIR_ON_VM/app/xmobile-staging/dist .
-            echo 'Copying package.json, yarn.lock, configs'
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/node_modules .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/public .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/.next .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/dist .
             mv $TAR_DIR_ON_VM/app/xmobile-staging/package.json .
             mv $TAR_DIR_ON_VM/app/xmobile-staging/yarn.lock .
             mv $TAR_DIR_ON_VM/app/xmobile-staging/next.config.mjs .
