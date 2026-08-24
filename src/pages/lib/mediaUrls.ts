@@ -25,7 +25,10 @@ export function getProductMediaUrl(
   if (isRemoteImageUrl(storedPath)) return storedPath;
   const base = getBasename(storedPath);
   if (!base) return undefined;
-  return `/media/product/${tier}/${encodeURIComponent(base)}`;
+  const relativePath = `/media/product/${tier}/${encodeURIComponent(base)}`;
+  return process.env.NEXT_PUBLIC_APP_ENV === 'staging'
+    ? `https://xmobile.com.tm${relativePath}`
+    : relativePath;
 }
 
 export function getCategoryMediaUrl(
@@ -35,7 +38,10 @@ export function getCategoryMediaUrl(
   if (isRemoteImageUrl(storedPath)) return storedPath;
   const base = getBasename(storedPath);
   if (!base) return undefined;
-  return `/media/category/${encodeURIComponent(base)}`;
+  const relativePath = `/media/category/${encodeURIComponent(base)}`;
+  return process.env.NEXT_PUBLIC_APP_ENV === 'staging'
+    ? `https://xmobile.com.tm${relativePath}`
+    : relativePath;
 }
 
 export function getBannerMediaUrl(
@@ -45,7 +51,10 @@ export function getBannerMediaUrl(
   if (isRemoteImageUrl(storedPath)) return storedPath;
   const base = getBasename(storedPath);
   if (!base) return undefined;
-  return `/media/banner/${encodeURIComponent(base)}`;
+  const relativePath = `/media/banner/${encodeURIComponent(base)}`;
+  return process.env.NEXT_PUBLIC_APP_ENV === 'staging'
+    ? `https://xmobile.com.tm${relativePath}`
+    : relativePath;
 }
 
 /** Grids / cards: bad when slow or unknown; good when fast. */
