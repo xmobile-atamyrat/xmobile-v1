@@ -5,7 +5,9 @@ export const notificationClasses = {
       mobile: 'relative inline-flex items-center justify-center',
     },
     icon: {
-      web: 'w-[20px] h-[20px] text-[#20166E]',
+      // matches appbarClasses.web.actionIcon so the header's action row scales
+      // as one group (spec 1297-1298)
+      web: 'w-[clamp(24px,1.6vw,30px)] h-[clamp(24px,1.6vw,30px)] text-[#20166E]',
       mobile: 'w-[20px] h-[20px] text-[#20166E]',
     },
     count: {

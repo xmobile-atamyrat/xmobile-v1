@@ -33,7 +33,9 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
         <IconButton
           onClick={onClick}
           aria-label="notifications"
-          className="p-2"
+          // no padding on web: the header spaces its action icons at a flat
+          // 26px, so an 8px-padded button breaks the rhythm (spec 1295-1298)
+          className={platform === 'web' ? 'p-0' : 'p-2'}
           size="small"
         >
           <Bell className={notificationClasses.badge.icon[platform]} />
