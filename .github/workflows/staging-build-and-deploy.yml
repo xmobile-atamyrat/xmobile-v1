@@ -10,7 +10,7 @@ on:
       commit_ref:
         description: 'Branch name or commit hash to deploy'
         required: true
-        default: 'main'
+        default: 'staging'
 
 env:
   TAR_DIR_ON_VM: /home/ubuntu/tar-file/staging
