@@ -7,13 +7,13 @@ describe('ApiEndpoints BASE_URL', () => {
   });
 
   it('uses production host in production', async () => {
-    vi.stubEnv('APP_ENV', 'production');
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production');
     const { default: base } = await import('@/lib/ApiEndpoints');
     expect(base).toBe('https://xmobile.com.tm');
   });
 
   it('builds dev URL from NEXT_PUBLIC_HOST and PORT', async () => {
-    vi.stubEnv('APP_ENV', 'development');
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'development');
     vi.stubEnv('NEXT_PUBLIC_HOST', '192.168.1.5');
     vi.stubEnv('NEXT_PUBLIC_PORT', '3003');
     const { default: base } = await import('@/lib/ApiEndpoints');
