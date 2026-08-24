@@ -7,8 +7,10 @@ import { privacyPolicyClasses } from '@/styles/classMaps/privacy-policy.page';
 import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import cookie from 'cookie';
+import { ArrowLeft } from 'lucide-react';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/router';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   let messages = {};
@@ -63,6 +65,11 @@ type PolicySection = {
 export default function PrivacyPolicy() {
   const platform = usePlatform();
   const t = useTranslations();
+  const router = useRouter();
+
+  const handleBackButton = () => {
+    router.push('/user');
+  };
 
   const sections: PolicySection[] = [
     {
@@ -153,15 +160,34 @@ export default function PrivacyPolicy() {
   ];
 
   return (
-    <Layout>
+    <Layout handleHeaderBackButton={handleBackButton}>
       <Box className={privacyPolicyClasses.boxes.page[platform]}>
+        {platform === 'mobile' && (
+          <Box className={privacyPolicyClasses.headerWrap.mobile}>
+            <button
+              type="button"
+              onClick={handleBackButton}
+              className={privacyPolicyClasses.backButton.mobile}
+              aria-label="back"
+            >
+              <ArrowLeft size={20} className="text-navy" />
+            </button>
+            <Typography
+              className={`${fontClassName.className} ${privacyPolicyClasses.headerTitle.mobile}`}
+            >
+              {t('privacyPolicyTitle')}
+            </Typography>
+          </Box>
+        )}
         <Box className={privacyPolicyClasses.boxes.main[platform]}>
-          <Typography
-            component="h1"
-            className={`${fontClassName.className} ${privacyPolicyClasses.h1[platform]}`}
-          >
-            {t('privacyPolicyTitle')}
-          </Typography>
+          {platform === 'web' && (
+            <Typography
+              component="h1"
+              className={`${fontClassName.className} ${privacyPolicyClasses.h1[platform]}`}
+            >
+              {t('privacyPolicyTitle')}
+            </Typography>
+          )}
 
           <Box className={privacyPolicyClasses.boxes.sectionsWrapper[platform]}>
             {sections.map((section, idx) => (
