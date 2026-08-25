@@ -548,6 +548,7 @@
   "accountDeleted": "Akkaunt udalit edildi. Yzyna getirmek üçin <link>giriş ediň</link>.",
   "accountPermanentlyDeleted": "Akkaunt hemişelik pozuldy. Taza akkaunt açyň.",
   "outOfStock": "Skladda kalmady",
+  "inStock": "Skladda bar · ugratmaga taýýar",
   "filters": "Filtrler",
   "clearAll": "Ählisini çistile",
   "activeFilters": "Aktiw",

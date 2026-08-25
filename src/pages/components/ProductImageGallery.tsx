@@ -27,6 +27,9 @@ export default function ProductImageGallery({
 
   const total = displayImgUrls.length;
   const safeIndex = selectedIndex < total ? selectedIndex : 0;
+  // web only: a single image renders no thumbnail rail, so the frame takes the
+  // full column width instead of leaving 86px of empty gutter
+  const hasWebRail = platform === 'web' && total > 1;
 
   const touchStartX = useRef<number | null>(null);
   const didSwipe = useRef(false);
@@ -68,7 +71,11 @@ export default function ProductImageGallery({
   };
 
   return (
-    <Box className={classes.wrapper[platform]}>
+    <Box
+      className={`${classes.wrapper[platform]} ${
+        hasWebRail ? classes.wrapperWithRail : ''
+      }`}
+    >
       {/* Main image */}
       <Box
         className={classes.mainImage[platform]}
@@ -106,8 +113,8 @@ export default function ProductImageGallery({
         )}
       </Box>
 
-      {/* Web: thumbnail strip */}
-      {platform === 'web' && total > 1 && (
+      {/* Web: thumbnail rail (absolutely positioned beside the square frame) */}
+      {hasWebRail && (
         <Box className={classes.thumbnailStrip.web}>
           {displayImgUrls.map((url, i) => (
             <CardMedia

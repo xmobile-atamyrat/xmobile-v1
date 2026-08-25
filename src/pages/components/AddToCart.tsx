@@ -300,7 +300,7 @@ export default function AddToCart({
                   onClick={handleProductQuantity('quantityRemove')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <Minus className={addToCartClasses.detail.quantityButton} />
+                  <Minus className={addToCartClasses.detail.quantityMinus} />
                 </IconButton>
 
                 {/* quantityInput */}
@@ -313,12 +313,15 @@ export default function AddToCart({
                   onChange={(e) => {
                     const newQuantity = Number(e.target.value);
                     setQuantity(newQuantity);
-                    setTotalPrice(
-                      (cur) =>
-                        cur -
-                        quantity * Number(price) +
-                        newQuantity * Number(price),
-                    );
+                    // optional: the product page renders this control without a
+                    // running total, only the cart page passes a setter
+                    if (setTotalPrice)
+                      setTotalPrice(
+                        (cur) =>
+                          cur -
+                          quantity * Number(price) +
+                          newQuantity * Number(price),
+                      );
                   }}
                 />
 
@@ -327,7 +330,7 @@ export default function AddToCart({
                   onClick={handleProductQuantity('quantityAdd')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <Plus className={addToCartClasses.detail.quantityButton} />
+                  <Plus className={addToCartClasses.detail.quantityPlus} />
                 </IconButton>
               </Box>
 
@@ -337,6 +340,9 @@ export default function AddToCart({
                 onClick={addCartItems}
                 disableRipple
               >
+                <ShoppingCart
+                  className={addToCartClasses.detail.cartIcon[platform]}
+                />
                 <Typography
                   className={`${fontClassName.className} ${addToCartClasses.detail.addToCartText[platform]}`}
                 >

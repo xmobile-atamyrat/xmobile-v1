@@ -548,6 +548,7 @@
   "accountDeleted": "Hesap silindi. Geri yüklemek için  <link> giriş yapın</link>.",
   "accountPermanentlyDeleted": "Hesabınız kalıcı olarak silindi. Lütfen yeni bir hesap oluşturun.",
   "outOfStock": "Stokta yok",
+  "inStock": "Stokta · gönderime hazır",
   "filters": "Filtreler",
   "clearAll": "Tümünü temizle",
   "activeFilters": "Aktif",
