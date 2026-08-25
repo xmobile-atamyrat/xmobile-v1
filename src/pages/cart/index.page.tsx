@@ -165,6 +165,120 @@ export default function CartPage() {
     );
   }
 
+  const hasItems = cartItems != null && cartItems.length > 0;
+
+  // Shared between both platform trees — the cards and the empty state are the
+  // same markup, only the page scaffolding around them differs.
+  const productCards = (
+    <Suspense fallback={<CircularProgress />}>
+      {cartItems.map((cartItem) => (
+        <CartProductCard
+          product={cartItem?.product}
+          key={cartItem?.id}
+          selectedVariant={cartItem?.selectedVariant}
+          colorsMap={colorsMap}
+          cartProps={{
+            cartAction: 'delete',
+            quantity: cartItem?.quantity,
+            cartItemId: cartItem?.id,
+            onDelete,
+            setTotalPrice,
+          }}
+        />
+      ))}
+    </Suspense>
+  );
+
+  const emptyState = (
+    <Box className="w-full grow flex flex-col items-center justify-center">
+      <CardMedia
+        component="img"
+        src="/cart/empty/emptyCart.png"
+        className={cartIndexClasses.emptyCart.img[platform]}
+      />
+      <Typography
+        className={`${fontClassName.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
+      >
+        {t('emptyCart')}
+      </Typography>
+      <Link href="/" className={cartIndexClasses.emptyCart.link[platform]}>
+        <IconButton
+          disableRipple
+          className={`${cartIndexClasses.iconButton[platform]} ${fontClassName.className}`}
+        >
+          {t('continueShopping')}
+        </IconButton>
+      </Link>
+    </Box>
+  );
+
+  // Desktop storefront cart (spec 1584-1602): line-item cards on the left, the
+  // order summary as a 380px card on the right — no PRODUCT/PRICE/QUANTITY/TOTAL
+  // table header, and the checkout CTA lives in the summary instead of the head.
+  if (platform === 'web') {
+    return (
+      <Layout handleHeaderBackButton={() => router.push('/')}>
+        <Box className={cartIndexClasses.box.web}>
+          <Breadcrumbs
+            separator="|"
+            maxItems={2}
+            className={cartIndexClasses.breadcrumbs.web}
+          >
+            <Link href="/" className={cartIndexClasses.link}>
+              <Typography
+                className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
+              >
+                {t('home')}
+              </Typography>
+            </Link>
+            <Link href="/cart" className={cartIndexClasses.link}>
+              <Typography
+                className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
+              >
+                {t('cart')}
+              </Typography>
+            </Link>
+          </Breadcrumbs>
+          {hasItems ? (
+            <>
+              <Box className={cartIndexClasses.web.titleRow}>
+                <Typography
+                  className={`${fontClassName.className} ${cartIndexClasses.web.title}`}
+                >
+                  {t('cart')}
+                  <span className={cartIndexClasses.web.titleCount}>
+                    {' '}
+                    · {cartItems.length}
+                  </span>
+                </Typography>
+                {/* parity with the mobile header, which has had Clear since step 34 */}
+                <Typography
+                  className={`${fontClassName.className} ${cartIndexClasses.cartClearBtn}`}
+                  onClick={handleClearCart}
+                >
+                  {t('clear')}
+                </Typography>
+              </Box>
+              <Box className={cartIndexClasses.web.grid}>
+                <Box className={cartIndexClasses.web.itemsCol}>
+                  {productCards}
+                </Box>
+                <Box className={cartIndexClasses.web.summaryCol}>
+                  <CheckoutSummary
+                    totalPrice={totalPrice}
+                    onCheckoutClick={() => router.push('/cart/checkout')}
+                  />
+                </Box>
+              </Box>
+            </>
+          ) : (
+            emptyState
+          )}
+        </Box>
+      </Layout>
+    );
+  }
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
       <Box className={cartIndexClasses.box[platform]}>
@@ -188,98 +302,34 @@ export default function CartPage() {
             </Typography>
           </Link>
         </Breadcrumbs>
-        <Box className={cartIndexClasses.prodCart[platform]}>
-          {cartItems != null && cartItems.length > 0 ? (
+        <Box className={cartIndexClasses.prodCart.mobile}>
+          {hasItems ? (
             <Box className="flex flex-col">
-              <Box className={cartIndexClasses.cartHeader[platform]}>
+              <Box className={cartIndexClasses.cartHeader.mobile}>
                 <Typography
-                  className={`${fontClassName.className} ${cartIndexClasses.yourCartTypo[platform]}`}
+                  className={`${fontClassName.className} ${cartIndexClasses.yourCartTypo.mobile}`}
                 >
                   {t('cart')}
-                  {platform === 'mobile' && cartItems.length > 0 && (
-                    <span className={cartIndexClasses.cartCount}>
-                      {' '}
-                      · {cartItems.length}
-                    </span>
-                  )}
+                  <span className={cartIndexClasses.cartCount}>
+                    {' '}
+                    · {cartItems.length}
+                  </span>
                 </Typography>
-                {platform === 'mobile' && (
-                  <Typography
-                    className={`${fontClassName.className} ${cartIndexClasses.cartClearBtn}`}
-                    onClick={handleClearCart}
-                  >
-                    {t('clear')}
-                  </Typography>
-                )}
+                <Typography
+                  className={`${fontClassName.className} ${cartIndexClasses.cartClearBtn}`}
+                  onClick={handleClearCart}
+                >
+                  {t('clear')}
+                </Typography>
                 <CheckoutSummary
                   totalPrice={totalPrice}
                   onCheckoutClick={() => router.push('/cart/checkout')}
                 />
               </Box>
-              <Box className={cartIndexClasses.infoRow[platform]}>
-                <Typography
-                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[38vw] ml-[3vw]`}
-                >
-                  {t('product').toUpperCase()}
-                </Typography>
-                <Typography
-                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
-                >
-                  {t('price').toUpperCase()}
-                </Typography>
-                <Typography
-                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
-                >
-                  {t('quantity').toUpperCase()}
-                </Typography>
-                <Typography
-                  className={`${fontClassName.className} ${cartIndexClasses.infoRowTypo} w-[14vw]`}
-                >
-                  {t('total').toUpperCase()}
-                </Typography>
-              </Box>
-              <Suspense fallback={<CircularProgress />}>
-                {cartItems.map((cartItem) => (
-                  <CartProductCard
-                    product={cartItem?.product}
-                    key={cartItem?.id}
-                    selectedVariant={cartItem?.selectedVariant}
-                    colorsMap={colorsMap}
-                    cartProps={{
-                      cartAction: 'delete',
-                      quantity: cartItem?.quantity,
-                      cartItemId: cartItem?.id,
-                      onDelete,
-                      setTotalPrice,
-                    }}
-                  />
-                ))}
-              </Suspense>
+              {productCards}
             </Box>
           ) : (
-            <Box className="w-full grow flex flex-col items-center justify-center">
-              <CardMedia
-                component="img"
-                src="/cart/empty/emptyCart.png"
-                className={cartIndexClasses.emptyCart.img[platform]}
-              />
-              <Typography
-                className={`${fontClassName.className} ${cartIndexClasses.emptyCart.typo[platform]}`}
-              >
-                {t('emptyCart')}
-              </Typography>
-              <Link
-                href="/"
-                className={cartIndexClasses.emptyCart.link[platform]}
-              >
-                <IconButton
-                  disableRipple
-                  className={`${cartIndexClasses.iconButton[platform]} ${fontClassName.className}`}
-                >
-                  {t('continueShopping')}
-                </IconButton>
-              </Link>
-            </Box>
+            emptyState
           )}
         </Box>
       </Box>

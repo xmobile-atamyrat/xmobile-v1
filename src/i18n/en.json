@@ -312,6 +312,7 @@
   "itemsPerPage": "Items per page",
   "totalAmount": "Total Amount",
   "checkout": "Checkout",
+  "confirmation": "Confirmation",
   "fullName": "Full Name",
   "fullNamePlaceholder": "Enter full name",
   "addressPlaceholder": "Enter your current living Address",

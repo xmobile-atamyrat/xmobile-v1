@@ -111,10 +111,14 @@ export default function CartProductCard({
                   gutterBottom
                   className={`${fontClassName.className} ${cartProductCardClasses.typo[platform]}`}
                 >
-                  {parseName(product.name, router.locale ?? 'tk').substring(
-                    0,
-                    24,
-                  )}
+                  {/* the 24-char cut is sized for the mobile card; the web card
+                      is wide enough for the real name and clamps to 2 lines */}
+                  {platform === 'web'
+                    ? parseName(product.name, router.locale ?? 'tk')
+                    : parseName(product.name, router.locale ?? 'tk').substring(
+                        0,
+                        24,
+                      )}
                 </Typography>
                 {selectedVariant && (
                   <VariantBadge

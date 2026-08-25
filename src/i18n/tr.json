@@ -337,6 +337,7 @@
   "itemsPerPage": "Sayfa başına",
   "totalAmount": "Toplam Tutar",
   "checkout": "Ödeme",
+  "confirmation": "Onay",
   "fullName": "Ad Soyad",
   "fullNamePlaceholder": "Ad soyadınızı girin",
   "addressPlaceholder": "Mevcut yaşadığınız adresi girin",
