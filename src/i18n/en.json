@@ -546,6 +546,7 @@
   "accountDeleted": "Account deleted. <link>Sign in</link> to restore it.",
   "accountPermanentlyDeleted": "Your account has been permanently deleted. Please create a new account.",
   "outOfStock": "Out of stock",
+  "inStock": "In stock · ready to ship",
   "filters": "Filters",
   "clearAll": "Clear all",
   "activeFilters": "Active",

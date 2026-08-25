@@ -64,14 +64,20 @@ import {
   Box,
   CardMedia,
   Dialog,
-  Divider,
   IconButton,
   Snackbar,
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Color, Product } from '@prisma/client';
-import { ArrowLeft } from 'lucide-react';
+import {
+  ArrowLeft,
+  Banknote,
+  CheckCircle2,
+  ShieldCheck,
+  Truck,
+  XCircle,
+} from 'lucide-react';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -242,6 +248,31 @@ interface ProductPageProps {
   product: Product;
 }
 
+// Admin "edit product" prefill — identical on both platforms, so it lives here
+// rather than being spelled out inside each branch's IconButton.
+function buildEditProductDialogProps(source: Product): AddEditProductProps {
+  return {
+    open: true,
+    id: source.id,
+    description: source.description,
+    dialogType: 'edit',
+    imageUrls: source.imgUrls,
+    name: source.name,
+    price: (() => {
+      const priceMatch = source.price?.match(squareBracketRegex);
+      if (priceMatch != null) {
+        return priceMatch[0]; // source.price = [id]{value}
+      }
+      return source.price;
+    })(),
+    tags: source.tags,
+    videoUrls: source.videoUrls,
+    brandId: source.brandId,
+    categoryId: source.categoryId,
+    isOutOfStock: source.isOutOfStock,
+  };
+}
+
 export default function Product({ product: initialProduct }: ProductPageProps) {
   const [product, setProduct] = useState<Product | null>();
   const router = useRouter();
@@ -410,6 +441,52 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     };
   };
 
+  // Web info column (spec 1521) reads the first long description section as the
+  // product's marketing copy; the remaining long sections and every short one
+  // drop into the specs strip below, so nothing is rendered twice.
+  const webIntroKey = longSpecKeys[0];
+  const webProseKeys = longSpecKeys.slice(1);
+
+  // Spec 1523 draws colors as circular swatches. Color.hex is non-null in the
+  // schema, but colorsMap is fetched async — fall back to the labelled pill
+  // chips until (or unless) every option resolves to a real color.
+  const canUseSwatches =
+    colorOptions.length > 0 &&
+    colorOptions.every((id) => Boolean(colorsMap.get(id)?.hex));
+  const selectedColorName = selectedColorId
+    ? colorsMap.get(selectedColorId)?.name
+    : undefined;
+
+  // Circular swatch styling — the fill itself comes from the real hex.
+  const swatchClass = (selected: boolean, disabled: boolean) => {
+    const { swatch } = detailPageClasses;
+    if (disabled) return `${swatch.base} ${swatch.disabled}`;
+    return `${swatch.base} ${selected ? swatch.selected : swatch.default}`;
+  };
+
+  // Spec 1524 labels each non-selected variant with its price step. Real data,
+  // derived from the variants' own resolved prices — shown only when both sides
+  // are numeric and the option actually costs more.
+  const priceForSpec = (spec: string) => {
+    const match =
+      variants.find(
+        (v) => v.specText === spec && v.colorId === selectedColorId,
+      ) ?? variants.find((v) => v.specText === spec);
+    const value = Number(match?.priceTmt);
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  };
+  const specPriceDelta = (spec: string) => {
+    if (selectedSpec == null || spec === selectedSpec) return undefined;
+    const base = priceForSpec(selectedSpec);
+    const other = priceForSpec(spec);
+    if (base == null || other == null || other <= base) return undefined;
+    return other - base;
+  };
+
+  const priceIsNull =
+    displayPrice === '' || (displayPrice?.includes('null') ?? false);
+  const priceIsLoading = displayPrice == null || displayPrice.includes('[');
+
   const handleDialogClose = () => {
     setDialogStatus(false);
   };
@@ -482,110 +559,364 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         currentProductName={product.name}
         categoryPath={categoryPath}
       />
-      <Box className={detailPageClasses.boxes.main[platform]}>
-        {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-          <Box>
-            <IconButton
-              onClick={() => {
-                if (initialProduct == null) return;
-                setAddEditProductDialog({
-                  open: true,
-                  id: initialProduct.id,
-                  description: initialProduct.description,
-                  dialogType: 'edit',
-                  imageUrls: initialProduct.imgUrls,
-                  name: initialProduct.name,
-                  price: (() => {
-                    const priceMatch =
-                      initialProduct.price?.match(squareBracketRegex);
-                    if (priceMatch != null) {
-                      return priceMatch[0]; // initialProduct.price = [id]{value}
-                    }
-                    return initialProduct.price;
-                  })(),
-                  tags: initialProduct.tags,
-                  videoUrls: initialProduct.videoUrls,
-                  brandId: initialProduct.brandId,
-                  categoryId: initialProduct.categoryId,
-                  isOutOfStock: initialProduct.isOutOfStock,
-                });
-              }}
-            >
-              <EditIcon color="primary" fontSize="medium" />
-            </IconButton>
-            <IconButton
-              onClick={() => {
-                setShowDeleteProductDialog({
-                  show: true,
-                  productId: product.id,
-                });
-              }}
-            >
-              <DeleteIcon color="error" fontSize="medium" />
-            </IconButton>
+      {platform === 'web' ? (
+        <Box className={detailPageClasses.boxes.main.web}>
+          {/* gallery — spec 1506 */}
+          <Box className={detailPageClasses.boxes.images.web}>
+            {displayImgUrls.length > 0 && (
+              <ProductImageGallery
+                displayImgUrls={displayImgUrls}
+                altText={product?.name ?? ''}
+                onExpand={handleDialogOpen}
+              />
+            )}
+            {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
+              <Box className={detailPageClasses.boxes.video.web}>
+                {product.videoUrls.map(
+                  (videoUrl, index) =>
+                    videoUrl.length !== 0 && (
+                      <Link
+                        key={index}
+                        target="_blank"
+                        href={videoUrl}
+                        className={detailPageClasses.link.web}
+                      >
+                        <IconButton>
+                          {(() => {
+                            if (index === 0) return <TikTokIcon />;
+                            if (index === 1)
+                              return <InstagramIcon className="text-black" />;
+                            return <YouTubeIcon className="text-black" />;
+                          })()}
+                        </IconButton>
+                      </Link>
+                    ),
+                )}
+              </Box>
+            )}
           </Box>
-        )}
-        <IconButton
-          aria-label="Back"
-          className={detailPageClasses.backButton[platform]}
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className={detailPageClasses.backIcon[platform]} />
-        </IconButton>
-        {/* images */}
-        <Box className={detailPageClasses.boxes.images[platform]}>
-          {displayImgUrls.length > 0 && (
-            <ProductImageGallery
-              displayImgUrls={displayImgUrls}
-              altText={product?.name ?? ''}
-              onExpand={handleDialogOpen}
-            />
-          )}
-          <Dialog open={dialogStatus} onClose={handleDialogClose}>
-            <CardMedia
-              component="img"
-              image={carouselDialogImage}
-              alt={product?.name}
-              className={detailPageClasses.dialogImg[platform]}
-              onError={(e) => {
-                const el = e.currentTarget;
-                el.onerror = null;
-                el.src = PRODUCT_IMAGE_FALLBACK;
-              }}
-            />
-          </Dialog>
 
-          {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
-            <Box className={detailPageClasses.boxes.video[platform]}>
-              {product.videoUrls.map(
-                (videoUrl, index) =>
-                  videoUrl.length !== 0 && (
-                    <Link
-                      key={index}
-                      target="_blank"
-                      href={videoUrl}
-                      className={detailPageClasses.link[platform]}
-                    >
-                      <IconButton>
-                        {(() => {
-                          if (index === 0) return <TikTokIcon />;
-                          if (index === 1)
-                            return <InstagramIcon className="text-black" />;
-                          return <YouTubeIcon className="text-black" />;
-                        })()}
-                      </IconButton>
-                    </Link>
-                  ),
+          {/* info — spec 1517 */}
+          <Box className={detailPageClasses.boxes.sideInfo.web}>
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <Box className="flex flex-row justify-end -mt-2">
+                <IconButton
+                  onClick={() => {
+                    if (initialProduct == null) return;
+                    setAddEditProductDialog(
+                      buildEditProductDialogProps(initialProduct),
+                    );
+                  }}
+                >
+                  <EditIcon color="primary" fontSize="medium" />
+                </IconButton>
+                <IconButton
+                  onClick={() => {
+                    setShowDeleteProductDialog({
+                      show: true,
+                      productId: product.id,
+                    });
+                  }}
+                >
+                  <DeleteIcon color="error" fontSize="medium" />
+                </IconButton>
+              </Box>
+            )}
+            <Box className={detailPageClasses.boxes.info.web}>
+              {brandName && (
+                <Typography
+                  className={`${fontClassName.className} ${detailPageClasses.brandEyebrow}`}
+                >
+                  {brandName}
+                </Typography>
               )}
+              <Typography
+                variant="h1"
+                className={`${fontClassName.className} ${detailPageClasses.productName.web}`}
+              >
+                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+              </Typography>
+              {webIntroKey && (
+                <Typography
+                  className={`${fontClassName.className} ${detailPageClasses.webDescription}`}
+                >
+                  {description?.[webIntroKey].join(' ')}
+                </Typography>
+              )}
+            </Box>
+
+            {/* colors — spec 1523 */}
+            {colorOptions.length > 0 && (
+              <Box className={detailPageClasses.optionGroup}>
+                <Typography
+                  className={`${fontClassName.className} ${detailPageClasses.optionLabel}`}
+                >
+                  {selectedColorName
+                    ? `${t('color')} — ${selectedColorName}`
+                    : t('color')}
+                </Typography>
+                <Box className={detailPageClasses.optionRow}>
+                  {colorOptions.map((colorId) => {
+                    const color = colorsMap.get(colorId);
+                    const available = availableColorIds.has(colorId);
+                    const isSel = colorId === selectedColorId && available;
+                    const select = () =>
+                      available && setSelectedColorId(colorId);
+                    return canUseSwatches ? (
+                      <Box
+                        key={colorId}
+                        role="button"
+                        aria-label={color?.name ?? colorId}
+                        aria-pressed={isSel}
+                        title={color?.name ?? colorId}
+                        onClick={select}
+                        className={swatchClass(isSel, !available)}
+                        sx={{ backgroundColor: color?.hex }}
+                      />
+                    ) : (
+                      <Box
+                        key={colorId}
+                        onClick={select}
+                        className={fontClassName.className}
+                        sx={chipSx(isSel, !available)}
+                      >
+                        {color?.name ?? colorId}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+
+            {/* variants — spec 1524 */}
+            {specOptions.length > 0 && (
+              <Box className={detailPageClasses.optionGroup}>
+                <Typography
+                  className={`${fontClassName.className} ${detailPageClasses.optionLabel}`}
+                >
+                  {t('tags')}
+                </Typography>
+                <Box className={detailPageClasses.optionRow}>
+                  {specOptions.map((spec) => {
+                    const delta = specPriceDelta(spec);
+                    return (
+                      <Box
+                        key={spec}
+                        onClick={() => handleSelectSpec(spec)}
+                        className={fontClassName.className}
+                        sx={chipSx(spec === selectedSpec, false)}
+                      >
+                        {spec}
+                        {delta != null && (
+                          <Box
+                            component="span"
+                            sx={{ color: muted, fontWeight: 500 }}
+                          >
+                            {`+${delta}`}
+                          </Box>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+          </Box>
+
+          {/* buy box — spec 1528 */}
+          <Box className={detailPageClasses.boxes.buyBox.web}>
+            <Box className={detailPageClasses.buyBox.priceRow}>
+              {priceIsLoading ? (
+                <CircularProgress
+                  className={detailPageClasses.circProgress.web}
+                />
+              ) : (
+                <>
+                  <Typography
+                    className={`${fontClassName.className} ${detailPageClasses.buyBox.price}`}
+                  >
+                    {priceIsNull ? t('nullPrice') : displayPrice}
+                  </Typography>
+                  {!priceIsNull && (
+                    <Typography
+                      className={`${fontClassName.className} ${detailPageClasses.buyBox.priceUnit}`}
+                    >
+                      {t('manat')}
+                    </Typography>
+                  )}
+                </>
+              )}
+            </Box>
+
+            <Box
+              className={`${fontClassName.className} ${
+                product.isOutOfStock
+                  ? detailPageClasses.buyBox.stockOut
+                  : detailPageClasses.buyBox.stockIn
+              }`}
+            >
+              {product.isOutOfStock ? (
+                <XCircle className={detailPageClasses.buyBox.stockIcon} />
+              ) : (
+                <CheckCircle2 className={detailPageClasses.buyBox.stockIcon} />
+              )}
+              {product.isOutOfStock ? t('outOfStock') : t('inStock')}
+            </Box>
+
+            {/* Real store promises only — the mockup's dated delivery ETA and
+                "Pay in 4" installments have no backing data (see skip table) */}
+            <Box className={detailPageClasses.buyBox.promises}>
+              {[
+                { Icon: Truck, label: t('nationwideDelivery') },
+                { Icon: ShieldCheck, label: t('officialWarranty') },
+                { Icon: Banknote, label: t('cashOnDelivery') },
+              ].map(({ Icon, label }) => (
+                <Box
+                  key={label}
+                  className={`${fontClassName.className} ${detailPageClasses.buyBox.promiseRow}`}
+                >
+                  <Icon className={detailPageClasses.buyBox.promiseIcon} />
+                  {label}
+                </Box>
+              ))}
+            </Box>
+
+            {product.isOutOfStock ? (
+              <Typography
+                className={`${fontClassName.className} ${detailPageClasses.buyBox.outOfStock}`}
+              >
+                {t('outOfStock')}
+              </Typography>
+            ) : (
+              <AddToCart
+                productId={product.id}
+                cartAction="detail"
+                price={displayPrice ?? product.price}
+                selectedVariant={selectedVariant?.raw}
+              />
+            )}
+          </Box>
+
+          {/* specs strip — spec 1540 (reviews card skipped: no Review model) */}
+          {(shortSpecKeys.length > 0 || webProseKeys.length > 0) && (
+            <Box className={detailPageClasses.boxes.detail.web}>
+              <Box className={detailPageClasses.specs.tabBar}>
+                <Typography
+                  className={`${fontClassName.className} ${detailPageClasses.specs.tabActive}`}
+                >
+                  {t('specification')}
+                </Typography>
+              </Box>
+              {shortSpecKeys.length > 0 && (
+                <Box className={detailPageClasses.specs.grid}>
+                  {shortSpecKeys.map((key) => (
+                    <Box key={key} className={detailPageClasses.specs.row}>
+                      <Typography
+                        className={`${fontClassName.className} ${detailPageClasses.specs.rowKey}`}
+                      >
+                        {key}
+                      </Typography>
+                      <Typography
+                        className={`${fontClassName.className} ${detailPageClasses.specs.rowVal}`}
+                      >
+                        {description?.[key].join(' · ')}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              {webProseKeys.map((key) => (
+                <Box key={key} className={detailPageClasses.specs.proseBlock}>
+                  <Typography
+                    className={`${fontClassName.className} ${detailPageClasses.specs.proseTitle}`}
+                  >
+                    {key}
+                  </Typography>
+                  {description?.[key].map((descLine, index) => (
+                    <Typography
+                      key={index}
+                      className={`${fontClassName.className} ${detailPageClasses.specs.proseLine}`}
+                    >
+                      {descLine}
+                    </Typography>
+                  ))}
+                </Box>
+              ))}
             </Box>
           )}
         </Box>
+      ) : (
+        <>
+          <Box className={detailPageClasses.boxes.main.mobile}>
+            {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
+              <Box>
+                <IconButton
+                  onClick={() => {
+                    if (initialProduct == null) return;
+                    setAddEditProductDialog(
+                      buildEditProductDialogProps(initialProduct),
+                    );
+                  }}
+                >
+                  <EditIcon color="primary" fontSize="medium" />
+                </IconButton>
+                <IconButton
+                  onClick={() => {
+                    setShowDeleteProductDialog({
+                      show: true,
+                      productId: product.id,
+                    });
+                  }}
+                >
+                  <DeleteIcon color="error" fontSize="medium" />
+                </IconButton>
+              </Box>
+            )}
+            <IconButton
+              aria-label="Back"
+              className={detailPageClasses.backButton[platform]}
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className={detailPageClasses.backIcon[platform]} />
+            </IconButton>
+            {/* images */}
+            <Box className={detailPageClasses.boxes.images[platform]}>
+              {displayImgUrls.length > 0 && (
+                <ProductImageGallery
+                  displayImgUrls={displayImgUrls}
+                  altText={product?.name ?? ''}
+                  onExpand={handleDialogOpen}
+                />
+              )}
+              {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
+                <Box className={detailPageClasses.boxes.video[platform]}>
+                  {product.videoUrls.map(
+                    (videoUrl, index) =>
+                      videoUrl.length !== 0 && (
+                        <Link
+                          key={index}
+                          target="_blank"
+                          href={videoUrl}
+                          className={detailPageClasses.link[platform]}
+                        >
+                          <IconButton>
+                            {(() => {
+                              if (index === 0) return <TikTokIcon />;
+                              if (index === 1)
+                                return <InstagramIcon className="text-black" />;
+                              return <YouTubeIcon className="text-black" />;
+                            })()}
+                          </IconButton>
+                        </Link>
+                      ),
+                  )}
+                </Box>
+              )}
+            </Box>
 
-        {/* side details */}
-        <Box className={detailPageClasses.boxes.sideInfo[platform]}>
-          <Box className={detailPageClasses.boxes.info[platform]}>
-            {platform === 'mobile' ? (
-              <>
+            {/* side details */}
+            <Box className={detailPageClasses.boxes.sideInfo[platform]}>
+              <Box className={detailPageClasses.boxes.info.mobile}>
                 {brandName && (
                   <Typography
                     className={`${fontClassName.className} text-[13px] font-semibold text-muted mb-2`}
@@ -624,275 +955,168 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     </>
                   )}
                 </Box>
-              </>
-            ) : (
-              <>
-                <Box className={detailPageClasses.detail.name.web}>
-                  <Typography
-                    variant="h5"
-                    className={`${fontClassName.className} ${detailPageClasses.productName.web}`}
-                  >
-                    {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-                  </Typography>
-                </Box>
-                <Divider className={detailPageClasses.divider.web} />
-                <Box className={detailPageClasses.price.web}>
-                  {displayPrice == null || displayPrice?.includes('[') ? (
-                    <CircularProgress
-                      className={detailPageClasses.circProgress.web}
-                    />
-                  ) : (
-                    <Typography
-                      className={`${detailPageClasses.typographs.price.web} ${fontClassName.className}`}
-                    >
-                      {displayPrice === '' || displayPrice.includes('null')
-                        ? t('nullPrice')
-                        : `${displayPrice} ${t('manat')}`}
-                    </Typography>
-                  )}
-                </Box>
-              </>
-            )}
-          </Box>
-
-          {specOptions.length > 0 && (
-            <Box className="flex flex-col items-start gap-4 my-2 w-full">
-              {/* Variant (spec) chips */}
-              <Box>
-                <Typography
-                  className={`${fontClassName.className}`}
-                  sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
-                >
-                  {t('tags')}
-                </Typography>
-                <Box className="flex flex-col items-start gap-2">
-                  {specOptions.map((spec) => (
-                    <Box
-                      key={spec}
-                      onClick={() => handleSelectSpec(spec)}
-                      className={fontClassName.className}
-                      sx={chipSx(spec === selectedSpec, false)}
-                    >
-                      {spec}
-                    </Box>
-                  ))}
-                </Box>
               </Box>
 
-              {/* Colors of the selected variant */}
-              {colorOptions.length > 0 && (
-                <Box>
-                  <Typography
-                    className={`${fontClassName.className}`}
-                    sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
-                  >
-                    {t('color')}
-                  </Typography>
-                  <Box className="flex flex-col items-start gap-2">
-                    {colorOptions.map((colorId) => {
-                      const color = colorsMap.get(colorId);
-                      const available = availableColorIds.has(colorId);
-                      const isSel = colorId === selectedColorId && available;
-                      return (
+              {specOptions.length > 0 && (
+                <Box className="flex flex-col items-start gap-4 my-2 w-full">
+                  {/* Variant (spec) chips */}
+                  <Box>
+                    <Typography
+                      className={`${fontClassName.className}`}
+                      sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
+                    >
+                      {t('tags')}
+                    </Typography>
+                    <Box className="flex flex-col items-start gap-2">
+                      {specOptions.map((spec) => (
                         <Box
-                          key={colorId}
-                          onClick={() =>
-                            available && setSelectedColorId(colorId)
-                          }
+                          key={spec}
+                          onClick={() => handleSelectSpec(spec)}
                           className={fontClassName.className}
-                          sx={chipSx(isSel, !available)}
+                          sx={chipSx(spec === selectedSpec, false)}
                         >
-                          {color?.hex && (
-                            <Box
-                              sx={{
-                                width: 16,
-                                height: 16,
-                                borderRadius: '50%',
-                                border: '1px solid rgba(0,0,0,0.15)',
-                                backgroundColor: color.hex,
-                                flexShrink: 0,
-                                opacity: available ? 1 : 0.4,
-                              }}
-                            />
-                          )}
-                          {color?.name ?? colorId}
+                          {spec}
                         </Box>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {description && Object.keys(description).length > 0 && (
-            <Box className={detailPageClasses.boxes.detailSide[platform]}>
-              {Object.keys(description ?? {})
-                .filter((key) => {
-                  const line = description[key];
-                  if (!line || line.length === 0) return false;
-                  const long = line.some((descLine) => descLine.length > 35);
-                  return !long;
-                })
-                .slice(0, 3)
-                .map((key) => (
-                  <Box key={key} className={detailPageClasses.detailSide.part}>
-                    <Box className={detailPageClasses.detailSide.head}>
-                      <Typography
-                        className={`${detailPageClasses.detailSide.desc} ${fontClassName.className}`}
-                      >
-                        {key}
-                      </Typography>
-                    </Box>
-                    <Box className={detailPageClasses.detailSide.val}>
-                      {description[key].map((descLine, index) => (
-                        <Typography
-                          key={index}
-                          className={`${detailPageClasses.detailSide.font2} ${fontClassName.className}`}
-                        >
-                          {descLine}
-                        </Typography>
                       ))}
                     </Box>
                   </Box>
-                ))}
+
+                  {/* Colors of the selected variant */}
+                  {colorOptions.length > 0 && (
+                    <Box>
+                      <Typography
+                        className={`${fontClassName.className}`}
+                        sx={{ fontWeight: 700, mb: 1.5, fontSize: '13px' }}
+                      >
+                        {t('color')}
+                      </Typography>
+                      <Box className="flex flex-col items-start gap-2">
+                        {colorOptions.map((colorId) => {
+                          const color = colorsMap.get(colorId);
+                          const available = availableColorIds.has(colorId);
+                          const isSel =
+                            colorId === selectedColorId && available;
+                          return (
+                            <Box
+                              key={colorId}
+                              onClick={() =>
+                                available && setSelectedColorId(colorId)
+                              }
+                              className={fontClassName.className}
+                              sx={chipSx(isSel, !available)}
+                            >
+                              {color?.hex && (
+                                <Box
+                                  sx={{
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: '50%',
+                                    border: '1px solid rgba(0,0,0,0.15)',
+                                    backgroundColor: color.hex,
+                                    flexShrink: 0,
+                                    opacity: available ? 1 : 0.4,
+                                  }}
+                                />
+                              )}
+                              {color?.name ?? colorId}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </Box>
+          {description && Object.keys(description).length > 0 && (
+            <Box className="w-full px-4 mt-4 mb-[120px]">
+              {shortSpecKeys.length > 0 && (
+                <>
+                  <Typography
+                    className={`${fontClassName.className} text-[13px] font-bold text-ink mb-3`}
+                  >
+                    {t('specification')}
+                  </Typography>
+                  <Box className="grid grid-cols-2 gap-[10px] mb-6">
+                    {shortSpecKeys.map((key) => (
+                      <Box
+                        key={key}
+                        className="bg-fill rounded-[12px] px-[14px] py-[12px]"
+                      >
+                        <Typography
+                          className={`${fontClassName.className} text-[11px] text-muted mb-[3px]`}
+                        >
+                          {key}
+                        </Typography>
+                        <Typography
+                          className={`${fontClassName.className} text-[13px] font-semibold text-ink leading-snug`}
+                        >
+                          {description[key].join(' · ')}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+              {longSpecKeys.map((key) => (
+                <Box key={key} className="mb-5">
+                  <Typography
+                    className={`${fontClassName.className} text-[13px] font-bold text-ink mb-2`}
+                  >
+                    {key}
+                  </Typography>
+                  {description[key].map((descLine, index) => (
+                    <Typography
+                      key={index}
+                      className={`${fontClassName.className} text-[14px] leading-[1.6] text-[#4A4959] mb-1`}
+                    >
+                      {descLine}
+                    </Typography>
+                  ))}
+                </Box>
+              ))}
             </Box>
           )}
-          {platform === 'web' &&
-            (product.isOutOfStock ? (
-              <Box className="mt-[2vw]">
-                <Box className="max-w-[20vw] h-[3.5vw] bg-fill rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
+          {product.isOutOfStock ? (
+            <Box className="w-full fixed bottom-0 left-0 right-0 z-10">
+              <Box
+                className="bg-white rounded-t-[24px] px-4 pt-3 shadow-[0px_-6px_20px_0px_rgba(20,16,60,0.06)] flex items-center justify-center"
+                sx={{ paddingBottom: `${mobileBottomNavHeight}px` }}
+              >
+                <Box className="w-full bg-fill h-[clamp(44px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center">
                   <Typography
-                    className={`${fontClassName.className} font-[700] text-[1vw] leading-[30px] tracking-widest text-muted uppercase whitespace-nowrap`}
+                    className={`${fontClassName.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-muted uppercase whitespace-nowrap`}
                   >
                     {t('outOfStock')}
                   </Typography>
                 </Box>
               </Box>
-            ) : (
-              <AddToCart
-                productId={product.id}
-                cartAction="detail"
-                price={displayPrice ?? product.price}
-                selectedVariant={selectedVariant?.raw}
-              />
-            ))}
-        </Box>
-      </Box>
-      {description &&
-        Object.keys(description).length > 0 &&
-        (platform === 'mobile' ? (
-          <Box className="w-full px-4 mt-4 mb-[120px]">
-            {shortSpecKeys.length > 0 && (
-              <>
-                <Typography
-                  className={`${fontClassName.className} text-[13px] font-bold text-ink mb-3`}
-                >
-                  {t('specification')}
-                </Typography>
-                <Box className="grid grid-cols-2 gap-[10px] mb-6">
-                  {shortSpecKeys.map((key) => (
-                    <Box
-                      key={key}
-                      className="bg-fill rounded-[12px] px-[14px] py-[12px]"
-                    >
-                      <Typography
-                        className={`${fontClassName.className} text-[11px] text-muted mb-[3px]`}
-                      >
-                        {key}
-                      </Typography>
-                      <Typography
-                        className={`${fontClassName.className} text-[13px] font-semibold text-ink leading-snug`}
-                      >
-                        {description[key].join(' · ')}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </>
-            )}
-            {longSpecKeys.map((key) => (
-              <Box key={key} className="mb-5">
-                <Typography
-                  className={`${fontClassName.className} text-[13px] font-bold text-ink mb-2`}
-                >
-                  {key}
-                </Typography>
-                {description[key].map((descLine, index) => (
-                  <Typography
-                    key={index}
-                    className={`${fontClassName.className} text-[14px] leading-[1.6] text-[#4A4959] mb-1`}
-                  >
-                    {descLine}
-                  </Typography>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          <Box className={detailPageClasses.boxes.detail[platform]}>
-            <Typography
-              className={`${fontClassName.className} ${detailPageClasses.specs[platform]}`}
-            >
-              {t('specification')}
-            </Typography>
-            <Box className={detailPageClasses.detail.specs[platform]}>
-              {Object.keys(description ?? {})
-                .filter(
-                  (key) =>
-                    description[key] != null && description[key].length > 0,
-                )
-                .map((key) => (
-                  <Box
-                    key={key}
-                    className={detailPageClasses.detail.part[platform]}
-                  >
-                    <Box className={detailPageClasses.detail.head[platform]}>
-                      <Typography
-                        className={`${detailPageClasses.typographs.desc[platform]} ${fontClassName.className}`}
-                      >
-                        {key}
-                      </Typography>
-                    </Box>
-                    <Box className={detailPageClasses.detail.val[platform]}>
-                      {description[key].map((descLine, index) => (
-                        <Typography
-                          key={index}
-                          className={`${detailPageClasses.typographs.font2[platform]} ${fontClassName.className}`}
-                        >
-                          {descLine}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Box>
-                ))}
             </Box>
-          </Box>
-        ))}
-      {platform === 'mobile' &&
-        (product.isOutOfStock ? (
-          <Box className="w-full fixed bottom-0 left-0 right-0 z-10">
-            <Box
-              className="bg-white rounded-t-[24px] px-4 pt-3 shadow-[0px_-6px_20px_0px_rgba(20,16,60,0.06)] flex items-center justify-center"
-              sx={{ paddingBottom: `${mobileBottomNavHeight}px` }}
-            >
-              <Box className="w-full bg-fill h-[clamp(44px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center">
-                <Typography
-                  className={`${fontClassName.className} font-[600] text-[clamp(2vw,_3.5vw,_16px)] leading-[100%] tracking-widest text-muted uppercase whitespace-nowrap`}
-                >
-                  {t('outOfStock')}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        ) : (
-          <AddToCart
-            productId={product.id}
-            cartAction="detail"
-            price={displayPrice ?? product.price}
-            selectedVariant={selectedVariant?.raw}
-          />
-        ))}
+          ) : (
+            <AddToCart
+              productId={product.id}
+              cartAction="detail"
+              price={displayPrice ?? product.price}
+              selectedVariant={selectedVariant?.raw}
+            />
+          )}
+        </>
+      )}
+      {/* full-size image viewer — shared by both platforms */}
+      <Dialog open={dialogStatus} onClose={handleDialogClose}>
+        <CardMedia
+          component="img"
+          image={carouselDialogImage}
+          alt={product?.name}
+          className={detailPageClasses.dialogImg[platform]}
+          onError={(e) => {
+            const el = e.currentTarget;
+            el.onerror = null;
+            el.src = PRODUCT_IMAGE_FALLBACK;
+          }}
+        />
+      </Dialog>
       {showDeleteProductDialog?.show && (
         <DeleteDialog
           title={t('deleteProduct')}

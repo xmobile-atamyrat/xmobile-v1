@@ -549,6 +549,7 @@
   "accountDeleted": "Hasap pozuldy. Dikeltmek üçin <link>giriş ediň</link>.",
   "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň.",
   "outOfStock": "Elýeter däl",
+  "inStock": "Bar · ugratmaga taýýar",
   "filters": "Süzgüçler",
   "clearAll": "Ählisini arassala",
   "activeFilters": "Işjeň",
