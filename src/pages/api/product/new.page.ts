@@ -17,16 +17,21 @@ async function handleGetNewProducts(query: {
   const skip = (parsedPage - 1) * productsPerPage;
 
   try {
+    // Home never surfaces out-of-stock products, so they're excluded here
+    // rather than client-side — otherwise a page of 20 could come back mostly
+    // empty after filtering.
+    const whereInStock = { ...whereActiveProduct, isOutOfStock: false };
+
     // Build the where clause for search filtering
     const where = searchKeyword
       ? {
-          ...whereActiveProduct,
+          ...whereInStock,
           name: {
             contains: searchKeyword,
             mode: 'insensitive' as const,
           },
         }
-      : { ...whereActiveProduct };
+      : whereInStock;
 
     // Fetch products with database-level pagination
     const products = await dbClient.product.findMany({

@@ -26,9 +26,11 @@ export const productCardClasses = {
       'text-[13px] font-semibold leading-[1.3] text-[#17161D] mt-[2px] mb-[7px] line-clamp-2',
   },
   typo2: {
-    web: 'font-bold text-[24px] leading-none text-[#20166E] mt-auto',
+    // web: mt-auto lives on footerRow, which owns the price + quick-add row
+    web: 'font-bold text-[24px] leading-none text-[#20166E] min-w-0 truncate',
     mobile: 'font-bold text-[15px] leading-none text-[#20166E] mt-auto',
   },
+  footerRow: 'flex items-center justify-between gap-3 mt-auto pt-1',
   priceUnit: {
     web: 'text-[13px] font-normal text-[#8B8A98] ml-1',
     mobile: 'text-[10px] font-normal text-[#8B8A98] ml-1',

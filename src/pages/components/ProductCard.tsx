@@ -86,6 +86,37 @@ export default function ProductCard({
     })();
   }, [initialProduct]);
 
+  const priceNode =
+    // eslint-disable-next-line no-nested-ternary
+    product == null ? null : product.price?.includes('[') ? (
+      <CircularProgress className={productCardClasses.circProgress[platform]} />
+    ) : (
+      <Typography
+        className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
+      >
+        {product?.price}
+        <span className={productCardClasses.priceUnit[platform]}>
+          {t('manat')}
+        </span>
+      </Typography>
+    );
+
+  const quickAdd =
+    product != null &&
+    cartProps.cartAction === 'add' &&
+    !product.isOutOfStock ? (
+      <Box onClick={(e) => e.stopPropagation()}>
+        <AddToCart
+          productId={product.id}
+          cartAction="add"
+          price={product.price}
+          selectedVariant={defaultVariant?.raw}
+          variantLabel={defaultVariant?.label}
+          setTotalPrice={() => undefined}
+        />
+      </Box>
+    ) : null;
+
   return (
     <Card className={productCardClasses.card[platform]} elevation={0}>
       {product != null ? (
@@ -137,34 +168,16 @@ export default function ProductCard({
             >
               {parseName(product.name, router.locale ?? 'tk')}
             </Typography>
-            {product?.price?.includes('[') ? (
-              <CircularProgress
-                className={productCardClasses.circProgress[platform]}
-              />
+            {platform === 'web' ? (
+              // price left, compact quick-add circle right (design's card has no
+              // full-width CTA — the icon carries the action)
+              <Box className={productCardClasses.footerRow}>
+                {priceNode}
+                {quickAdd}
+              </Box>
             ) : (
-              <Typography
-                className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
-              >
-                {product?.price}
-                <span className={productCardClasses.priceUnit[platform]}>
-                  {t('manat')}
-                </span>
-              </Typography>
+              priceNode
             )}
-            {platform === 'web' &&
-              cartProps.cartAction === 'add' &&
-              !product.isOutOfStock && (
-                <Box onClick={(e) => e.stopPropagation()}>
-                  <AddToCart
-                    productId={product.id}
-                    cartAction="add"
-                    price={product.price}
-                    selectedVariant={defaultVariant?.raw}
-                    variantLabel={defaultVariant?.label}
-                    setTotalPrice={() => undefined}
-                  />
-                </Box>
-              )}
           </Box>
           {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
             <Box onClick={(e) => e.stopPropagation()}>

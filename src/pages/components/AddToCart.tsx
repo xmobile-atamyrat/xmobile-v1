@@ -202,6 +202,9 @@ export default function AddToCart({
             disableRipple
             type="submit"
             onClick={addCartItems}
+            // the web variant is icon-only, so the label has to live here
+            aria-label={t('addToCart')}
+            title={t('addToCart')}
             className={addToCartClasses.cartButton.button[platform]}
           >
             <ShoppingCart

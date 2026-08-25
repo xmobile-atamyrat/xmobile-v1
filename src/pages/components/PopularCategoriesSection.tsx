@@ -22,7 +22,10 @@ interface CategoryImageProps {
   className: string;
 }
 
-function CategoryImage({ initialImgUrl, className }: CategoryImageProps) {
+export function CategoryImage({
+  initialImgUrl,
+  className,
+}: CategoryImageProps) {
   const imgSrc = useMemo(() => {
     if (
       initialImgUrl == null ||
