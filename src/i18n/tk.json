@@ -548,5 +548,9 @@
   "deleteAccountError": "Hasaby öçürmek başartmady. Täzeden synanyşyň.",
   "accountDeleted": "Hasap pozuldy. Dikeltmek üçin <link>giriş ediň</link>.",
   "accountPermanentlyDeleted": "Hasabyňyz hemişelik pozuldy. Täze hasap açyň.",
-  "outOfStock": "Elýeter däl"
+  "outOfStock": "Elýeter däl",
+  "filters": "Süzgüçler",
+  "clearAll": "Ählisini arassala",
+  "activeFilters": "Işjeň",
+  "previous": "Öňki"
 }

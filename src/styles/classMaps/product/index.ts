@@ -14,12 +14,19 @@ export const productIndexPageClasses = {
       mobile: 'flex w-full justify-center pl-8',
     },
     products: {
-      web: 'flex flex-col w-full h-full pt-8',
+      web: 'flex flex-col w-full h-full pt-[22px] pb-10',
       mobile: 'flex flex-col w-full h-full px-[20px]',
+    },
+    // Spec 1444: `grid-template-columns:264px 1fr; gap:28px`. minmax(0,1fr)
+    // rather than 1fr so a wide product name can't push the grid past the row.
+    // Mobile has no rail (FilterSidebar is web-only here), so it stays a column.
+    layout: {
+      web: 'grid grid-cols-[264px_minmax(0,1fr)] gap-7 w-full items-start',
+      mobile: 'flex flex-col w-full',
     },
     productsGrid: {
       // Same intrinsic sizing as the home grid, but a 195px floor rather than
-      // 230px: FilterSidebar flexes to 360-430px, so the row left for the grid
+      // 230px: the filter rail takes a fixed 264px, so the row left for the grid
       // is much narrower than the page width. Measured — anything above 195px
       // drops this page to 3 columns at 1280px (a regression from grid-cols-4)
       // and leaves 266px cards at 1600px.
@@ -27,15 +34,59 @@ export const productIndexPageClasses = {
       mobile: 'grid grid-cols-2 gap-3 w-full',
     },
   },
+  // Header block above the two-column row. Mobile keeps the old inline rhythm
+  // (pt-5/pb-2) so its layout is unchanged by the web restructure.
+  header: {
+    web: 'flex flex-col gap-1 mb-6',
+    // pt-5/pb-6 reproduces the old inline pt-20px + pb-8px + mb-16px exactly,
+    // so moving this block out of the results column doesn't shift mobile.
+    mobile: 'flex flex-col gap-0.5 pt-5 pb-6',
+  },
+  // Spec 1441: 30px/800 h1, -.02em. Mobile still uses homePageClasses.
+  pageTitle: {
+    web: 'font-extrabold text-[30px] leading-[38px] tracking-[-0.02em] text-ink',
+    mobile:
+      'font-bold text-[16px] leading-none tracking-[-0.01em] text-[#17161D]',
+  },
   categoryName: {
     mobile:
       'font-medium text-[20px] leading-[100%] tracking-normal text-[#000] justify-center',
     web: 'hidden',
   },
-  // real results count next to the header title (uses products.length only)
+  // real results count next to the header title
   resultsCount: {
     mobile: 'text-[13px] font-medium text-muted',
     web: 'text-[14px] font-medium text-muted',
+  },
+  // Sort bar, spec 1456-1458: tinted rail-width bar holding the active filter
+  // chips on the left and the sort trigger on the right. Mobile sorts inside
+  // the filter bottom sheet (step 33), so there's no bar there.
+  resultsBar: {
+    // min-h-16 + mb-5 is the paired half of filterRailClasses.header — keep the
+    // two in step or the grid's first card row stops lining up with the rail's
+    // first filter section. 38px sort trigger + py-3 + 1px borders = 64px, so
+    // min-h-16 is what the content already measures; it just pins the floor.
+    web: 'flex items-center justify-between gap-4 flex-wrap bg-[#F7F6FA] border border-hairline rounded-[14px] px-[18px] py-3 min-h-16 mb-5',
+    mobile: 'hidden',
+  },
+  activeFilters: {
+    wrap: 'flex items-center gap-2.5 flex-wrap min-w-0',
+    label: 'shrink-0 text-[13px] text-muted',
+    chip: 'flex items-center gap-1.5 rounded-full border border-hairline bg-white px-3 py-1.5 text-[13px] font-semibold text-ink normal-case min-w-0 hover:bg-fill',
+    chipLabel: 'truncate max-w-[160px]',
+    chipIcon: 'shrink-0 text-muted',
+  },
+  // Numbered pagination, spec 1473 — 40px squares, navy active, hairline rest.
+  pagination: {
+    wrap: 'flex items-center justify-center gap-2 mt-8',
+    page: 'flex items-center justify-center w-10 h-10 min-w-10 rounded-[10px] border border-hairline text-[14px] font-semibold text-ink normal-case p-0 hover:bg-fill',
+    pageActive:
+      'flex items-center justify-center w-10 h-10 min-w-10 rounded-[10px] bg-navy text-white text-[14px] font-semibold normal-case p-0 hover:bg-[#1A1258]',
+    arrow:
+      'flex items-center justify-center w-10 h-10 min-w-10 rounded-[10px] border border-hairline text-navy p-0 hover:bg-fill',
+    arrowDisabled:
+      'flex items-center justify-center w-10 h-10 min-w-10 rounded-[10px] border border-hairline text-muted p-0 opacity-50 pointer-events-none',
+    ellipsis: 'flex items-center justify-center w-10 h-10 text-muted',
   },
   // "no results" empty state — real message only, no fabricated suggestions
   emptyState: {

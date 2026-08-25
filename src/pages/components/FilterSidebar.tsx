@@ -8,6 +8,7 @@ import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { Color } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
+import { filterRailClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName, hairline, ink, muted, navy, red } from '@/styles/theme';
 import {
   Box,
@@ -44,6 +45,13 @@ interface FilterSidebarProps {
   }) => void;
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
+  /**
+   * Show the real Brand.productCount beside each brand (spec 1448).
+   * That column counts the whole catalogue, so it's only truthful on the
+   * unscoped listing — inside a category it would promise more hits than the
+   * filter returns. Category-scoped facet counts would need a new API.
+   */
+  showBrandCounts?: boolean;
 }
 
 const FilterSection = ({
@@ -98,8 +106,9 @@ const FilterSection = ({
         </Collapse>
       </Box>
 
+      {/* Spec 1448-1450: each rail section closes with a hairline rule. */}
       {variant !== 'mobile' && (
-        <Box my={3} sx={{ borderBottom: `1px solid ${hairline}` }} />
+        <Box my={2.5} sx={{ borderBottom: '1px solid #F0EFF4' }} />
       )}
     </>
   );
@@ -116,6 +125,7 @@ export default function FilterSidebar({
   onFilterChange,
   hideSections = [],
   variant = 'sidebar',
+  showBrandCounts = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -292,17 +302,24 @@ export default function FilterSidebar({
     label,
     isSelected,
     onClick,
+    count,
   }: {
     label: string;
     isSelected: boolean;
     onClick: () => void;
+    /** Real Brand.productCount — omitted where the schema has no count. */
+    count?: number;
   }) => (
     <Box display="flex" flexDirection="column">
       <FormControlLabel
         sx={{
-          pl: 2,
-          py: 0.5,
+          // MUI defaults FormControlLabel to margin-left:-11px to optically
+          // align a padded checkbox; in the fixed-width rail that hangs the
+          // row outside the column, so pin it flush (spec 1448).
+          ml: 0,
           mr: 0,
+          pl: 0,
+          py: 0.5,
           alignItems: 'center',
           width: '100%',
         }}
@@ -325,6 +342,14 @@ export default function FilterSidebar({
             >
               {label}
             </Typography>
+            {count != null && (
+              <Typography
+                component="span"
+                className={`${fontClassName.className} ${filterRailClasses.count}`}
+              >
+                {count}
+              </Typography>
+            )}
           </Box>
         }
       />
@@ -334,7 +359,8 @@ export default function FilterSidebar({
   return (
     <Box
       sx={{
-        minWidth: variant === 'sidebar' ? 300 : '100%',
+        width: '100%',
+        minWidth: 0,
         display: variant === 'sidebar' ? { xs: 'none', md: 'block' } : 'block',
       }}
     >
@@ -342,16 +368,39 @@ export default function FilterSidebar({
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: variant === 'mobile' ? '100%' : 525,
-          bgcolor: variant === 'mobile' ? '#fff' : '#F5F5F8',
-          borderRadius: variant === 'mobile' ? 0 : '16px',
-          p: variant === 'mobile' ? 0 : 3,
+          // Spec 1446: the rail sits flat on the page, no card/fill/radius.
+          bgcolor: 'transparent',
+          borderRadius: 0,
+          p: 0,
           position: variant === 'sidebar' ? 'sticky' : 'static',
           top: variant === 'sidebar' ? '20px' : 'auto',
           maxHeight: variant === 'sidebar' ? 'calc(100vh - 40px)' : 'none',
           overflowY: variant === 'sidebar' ? 'auto' : 'visible',
+          // The price Slider's thumbs overhang their track by ~1px at the ends.
+          // Since `overflow-y:auto` makes the browser coerce `overflow-x` from
+          // `visible` to `auto`, that 1px would raise a full-width horizontal
+          // scrollbar across the rail. The rail only ever scrolls vertically.
+          overflowX: variant === 'sidebar' ? 'hidden' : 'visible',
         }}
       >
+        {/* Spec 1447: "Filters" + red "Clear all". Mobile has the same pair in
+            the bottom-sheet header (step 33), so it's sidebar-only here. */}
+        {variant !== 'mobile' && (
+          <Box className={filterRailClasses.header}>
+            <Typography
+              className={`${fontClassName.className} ${filterRailClasses.title}`}
+            >
+              {t('filters') || 'Filters'}
+            </Typography>
+            <Typography
+              className={`${fontClassName.className} ${filterRailClasses.clearAll}`}
+              onClick={handleClearFilters}
+            >
+              {t('clearAll') || 'Clear all'}
+            </Typography>
+          </Box>
+        )}
+
         {!hideSections.includes('categories') && (
           <FilterSection
             title={t('categories') || 'Categories'}
@@ -421,6 +470,7 @@ export default function FilterSidebar({
                 label={brand.name}
                 isSelected={selectedBrandIds.includes(brand.id)}
                 onClick={() => handleBrandToggle(brand.id)}
+                count={showBrandCounts ? brand.productCount : undefined}
               />
             ))}
             {brands.length > 7 && (
@@ -461,7 +511,7 @@ export default function FilterSidebar({
               sx={{ maxHeight: '300px', overflowY: 'auto' }}
             >
               {colorsToShow.map((color) => (
-                <Box key={color.id} display="flex" alignItems="center" pl={2}>
+                <Box key={color.id} display="flex" alignItems="center">
                   <CustomCheckbox
                     checked={selectedColorIds.includes(color.id)}
                     onChange={() => toggleColor(color.id)}
@@ -511,7 +561,7 @@ export default function FilterSidebar({
           variant={variant}
         >
           <Box px={1} pt={1}>
-            <Box display="flex" gap={2} mb={2}>
+            <Box display="flex" gap={1.5} mb={2}>
               <TextField
                 size="small"
                 value={minPrice}
@@ -520,6 +570,10 @@ export default function FilterSidebar({
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
+                  // The rail is a fixed 264px column; the input's intrinsic
+                  // min-width would otherwise push the pair 13px past it.
+                  flex: 1,
+                  minWidth: 0,
                   '& .MuiOutlinedInput-root': {
                     fontFamily: fontClassName.style.fontFamily,
                     fontSize: '14px',
@@ -561,6 +615,10 @@ export default function FilterSidebar({
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
+                  // The rail is a fixed 264px column; the input's intrinsic
+                  // min-width would otherwise push the pair 13px past it.
+                  flex: 1,
+                  minWidth: 0,
                   '& .MuiOutlinedInput-root': {
                     fontFamily: fontClassName.style.fontFamily,
                     fontSize: '14px',
@@ -627,26 +685,6 @@ export default function FilterSidebar({
             />
           </Box>
         </FilterSection>
-
-        {variant !== 'mobile' && (
-          <Box display="flex" justifyContent="flex-start" mt={3}>
-            <Typography
-              className={fontClassName.className}
-              onClick={handleClearFilters}
-              sx={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: red,
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8,
-                },
-              }}
-            >
-              {t('clearFilters') || 'Clear Filters'}
-            </Typography>
-          </Box>
-        )}
       </Paper>
     </Box>
   );

@@ -14,3 +14,18 @@ export const filterSidebarClasses = {
   applyButton:
     'flex-[2] h-[52px] rounded-[14px] bg-navy text-white text-[15px] font-semibold normal-case shadow-none hover:bg-[#1A1258] hover:shadow-none',
 };
+
+// Desktop filter rail, see XMobile.dc.html:1446-1451. The design draws it flat
+// on the page — no card, no fill — so the rail owns only spacing and dividers.
+export const filterRailClasses = {
+  // h-16 + mb-5 must equal the sort bar's box height + margin
+  // (productIndexPageClasses.resultsBar.web). They are the first row of their
+  // respective grid columns, so if they differ the product grid's first row of
+  // cards drifts below the rail's first filter section.
+  header: 'flex items-center justify-between h-16 mb-5',
+  title: 'text-[16px] font-bold text-ink',
+  clearAll:
+    'text-[13px] font-semibold text-red cursor-pointer normal-case hover:opacity-80',
+  // Per-brand/category count pulled from the real Brand.productCount column.
+  count: 'text-[13px] text-[#B6B5C2] shrink-0 ml-3',
+};

@@ -2,11 +2,12 @@ import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
+import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/product/new.page.ts';
-const productsPerPage = 20;
+const productsPerPage = PRODUCTS_PER_PAGE;
 
 async function handleGetNewProducts(query: {
   searchKeyword?: string;

@@ -133,6 +133,10 @@ export const SORT_OPTIONS = {
 
 export const FILTER_MAX_PRICE = 100000;
 
+// Page size for the product grid. Shared so the web pagination control derives
+// the same page count the API pages by — see api/product/index.page.ts.
+export const PRODUCTS_PER_PAGE = 20;
+
 export const BUSINESS_NAME = 'Xmobile';
 
 export const META_DESC_MAX_LENGTH = 160; // Google standard: ~160 chars
