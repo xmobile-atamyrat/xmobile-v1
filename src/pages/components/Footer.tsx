@@ -1,14 +1,28 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { footerClasses } from '@/styles/classMaps/components/footer';
 import { fontClassName } from '@/styles/theme';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import MailIcon from '@mui/icons-material/Mail';
-import PhoneIcon from '@mui/icons-material/Phone';
-import { Box, CardMedia, Divider, Typography } from '@mui/material';
-import { Home, LayoutGrid, Search, ShoppingBag, User } from 'lucide-react';
+// lucide 1.x dropped brand glyphs, so Instagram stays on the MUI icon.
+import InstagramIcon from '@mui/icons-material/Instagram';
+import { Box, CardMedia, Typography } from '@mui/material';
+import {
+  Banknote,
+  Clock,
+  Headset,
+  Home,
+  LayoutGrid,
+  Mail,
+  MapPin,
+  Phone,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+  User,
+} from 'lucide-react';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -23,6 +37,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
+const supportEmail = 'xmobiletm@gmail.com';
+const mapsUrl = 'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76';
 
 const navItems = [
   { href: '/', labelKey: 'home', Icon: Home },
@@ -31,6 +47,16 @@ const navItems = [
   { href: '/cart', labelKey: 'cart', Icon: ShoppingBag },
   { href: '/user', labelKey: 'profileNav', Icon: User },
 ] as const;
+
+// The design's footer link columns; only routes that actually exist.
+const helpLinks = [
+  { href: '/orders', labelKey: 'myOrders' },
+  { href: '/support', labelKey: 'supportTitle' },
+  { href: '/chat', labelKey: 'chatSupportChat' },
+  { href: '/privacy-policy', labelKey: 'privacyPolicyTitle' },
+] as const;
+
+const web = footerClasses.web;
 
 export default function Footer() {
   const t = useTranslations();
@@ -45,6 +71,42 @@ export default function Footer() {
     setProducts([]);
     setSelectedCategoryId(undefined);
   };
+
+  // Same branch the appbar/categories index use: leaf categories go straight to
+  // the product listing, parents open the sub-category page.
+  const goToCategory = (category: ExtendedCategory) => {
+    setProducts([]);
+    setSelectedCategoryId(category.id);
+    router.push(
+      category.successorCategories == null ||
+        category.successorCategories.length === 0
+        ? `/product-category/${category.slug}`
+        : `/category/${category.slug}`,
+    );
+  };
+
+  // Real store promises only — the design's "14-day returns" / "Pay in 4" have
+  // no backing feature. Home already renders this exact strip mid-page (step
+  // 52), so it is dropped there rather than shown twice on one screen.
+  const trustItems = [
+    {
+      Icon: Truck,
+      title: t('nationwideDelivery'),
+      subtitle: t('nationwideDeliverySub'),
+    },
+    {
+      Icon: ShieldCheck,
+      title: t('officialWarranty'),
+      subtitle: t('officialWarrantySub'),
+    },
+    { Icon: Banknote, title: t('cashOnDelivery'), subtitle: t('payInCash') },
+    {
+      Icon: Headset,
+      title: t('chatCustomerSupport'),
+      subtitle: `${t('supportHoursDays')}, ${t('supportHoursTime')}`,
+    },
+  ];
+  const showTrustStrip = router.pathname !== '/';
 
   return (
     <Box className={footerClasses.boxes.main[platform]}>
@@ -91,133 +153,200 @@ export default function Footer() {
           })}
         </Box>
       </Box>
+
+      {/* ---- Web footer (spec 2291-2317) ---- */}
       <Box className={footerClasses.boxes.mainWeb[platform]}>
-        <Box className={footerClasses.boxes.footerMain}>
-          {/* Footer Stack */}
-          <Box className={footerClasses.boxes.footerStack[platform]}>
-            {/* Xmobile logo, address */}
-            <Box className={footerClasses.boxes.menu}>
-              {/* logo */}
-              <Link href="/">
+        {showTrustStrip && (
+          <Box className={web.trustRow}>
+            {trustItems.map(({ Icon, title, subtitle }) => (
+              <Box key={title} className={web.trustItem}>
+                <Box className={web.trustIcon}>
+                  <Icon size={22} strokeWidth={1.75} />
+                </Box>
+                <Box>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustTitle}`}
+                  >
+                    {title}
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustSub}`}
+                  >
+                    {subtitle}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        <Box className={web.columns}>
+          {/* brand */}
+          <Box>
+            <Link href="/">
+              <CardMedia
+                component="img"
+                image="/logo/xmobile-processed-logo.png"
+                alt="Logo"
+                className={web.brandLogo}
+              />
+            </Link>
+            <Typography className={`${fontClassName.className} ${web.tagline}`}>
+              {t('footerTagline')}
+            </Typography>
+            <Box className={web.socialRow}>
+              <a
+                href="https://www.instagram.com/xmobiletm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className={web.socialButton}
+              >
+                <InstagramIcon className="w-[18px] h-[18px]" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@xmobiletm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className={web.socialButton}
+              >
                 <CardMedia
                   component="img"
-                  image="/logo/xmobile-processed-logo.png"
-                  alt="Logo"
-                  className={footerClasses.imgs.logo}
+                  src="/icons/tiktok.png"
+                  className="w-auto h-[17px] invert brightness-0"
                 />
-              </Link>
+              </a>
             </Box>
+          </Box>
 
-            {/* contacts */}
-            <Box className={footerClasses.boxes.menu}>
-              <Box
-                className={`${footerClasses.flexDirections.row} items-center`}
+          {/* categories */}
+          <Box>
+            <Typography
+              className={`${fontClassName.className} ${web.colTitle}`}
+            >
+              {t('categories')}
+            </Typography>
+            <Box className={web.colList}>
+              {allCategories.slice(0, 6).map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => goToCategory(category)}
+                  className={`${fontClassName.className} ${web.colLink}`}
+                >
+                  {parseName(category.name, router.locale ?? 'tk')}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => goTo('/category')}
+                className={`${fontClassName.className} ${web.colLink}`}
               >
-                <PhoneIcon className={footerClasses.imgs.icons[platform]} />
-                <Box className={`${footerClasses.flexDirections.col} ml-[5px]`}>
-                  {[0, 1, 2].map((number) => (
-                    <Typography
-                      key={phoneNumbers[number]}
-                      className={`${footerClasses.typos.contact} ${fontClassName.className}`}
+                {t('allCategory')}
+              </button>
+            </Box>
+          </Box>
+
+          {/* help */}
+          <Box>
+            <Typography
+              className={`${fontClassName.className} ${web.colTitle}`}
+            >
+              {t('help')}
+            </Typography>
+            <Box className={web.colList}>
+              {helpLinks.map(({ href, labelKey }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`${fontClassName.className} ${web.colLink}`}
+                >
+                  {t(labelKey)}
+                </Link>
+              ))}
+            </Box>
+          </Box>
+
+          {/* contact — replaces the design's newsletter/app-store column, which
+              has no backing endpoint or store listing */}
+          <Box>
+            <Typography
+              className={`${fontClassName.className} ${web.colTitle}`}
+            >
+              {t('contact')}
+            </Typography>
+            <Box className={web.contactList}>
+              <Box className={web.contactRow}>
+                <Phone className={web.contactIcon} strokeWidth={1.75} />
+                <Box className={web.contactStack}>
+                  {phoneNumbers.map((phone) => (
+                    <a
+                      key={phone}
+                      href={`tel:${phone}`}
+                      className={`${fontClassName.className} ${web.contactLink}`}
                     >
-                      <a href={`tel:${phoneNumbers[number]}`}>
-                        {phoneNumbers[number]}
-                      </a>
-                    </Typography>
+                      {phone}
+                    </a>
                   ))}
                 </Box>
               </Box>
-              <Box className={`${footerClasses.flexDirections.row} my-[16px]`}>
-                <MailIcon className={footerClasses.imgs.icons[platform]} />
-                <Typography
-                  className={`${footerClasses.typos.contact} ${fontClassName.className} ml-[5px]`}
+              <Box className={web.contactRow}>
+                <Mail className={web.contactIcon} strokeWidth={1.75} />
+                <a
+                  href={`mailto:${supportEmail}`}
+                  className={`${fontClassName.className} ${web.contactLink}`}
                 >
-                  <a href="mailto: ">xmobiletm@gmail.com</a>
+                  {supportEmail}
+                </a>
+              </Box>
+              <Box className={web.contactRow}>
+                <MapPin className={web.contactIcon} strokeWidth={1.75} />
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${fontClassName.className} ${web.contactLink}`}
+                >
+                  {t('address')}
+                </a>
+              </Box>
+              <Box className={web.contactRow}>
+                <Clock className={web.contactIcon} strokeWidth={1.75} />
+                <Typography
+                  className={`${fontClassName.className} ${web.contactText}`}
+                >
+                  {t('supportHoursDays')}, {t('supportHoursTime')}
                 </Typography>
               </Box>
-              {/* Address-icon */}
-              <Box className={footerClasses.boxes.address}>
-                <LocationOnIcon
-                  className={footerClasses.imgs.icons[platform]}
-                />
-                <Typography
-                  className={`${footerClasses.typos.contact} ${fontClassName.className} ml-[5px]`}
-                >
-                  <Link
-                    href={'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76'}
-                    target="_blank"
-                  >
-                    {t('address')}
-                  </Link>
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* social media */}
-          <Box className={`${footerClasses.boxes.menu} min-w-[14vw] mr-[50px]`}>
-            <Typography
-              className={`${footerClasses.typos.headers} ${fontClassName.className} mb-[12px]`}
-            >
-              {t('followUs')}
-            </Typography>
-
-            <Box className={footerClasses.flexDirections.col}>
-              <Link
-                target="_blank"
-                href={'https://www.instagram.com/xmobiletm/'}
-                className="my-[12px]"
-              >
-                <Typography
-                  className={`${fontClassName.className} ${footerClasses.socialLinks}`}
-                >
-                  Instagram
-                </Typography>
-              </Link>
-              <Link target="_blank" href={'https://www.tiktok.com/@xmobiletm'}>
-                <Typography
-                  className={`${fontClassName.className} ${footerClasses.socialLinks}`}
-                >
-                  TikTok
-                </Typography>
-              </Link>
-            </Box>
-          </Box>
-
-          {/* Categories */}
-          <Box className={footerClasses.boxes.menu}>
-            <Typography
-              className={`${fontClassName.className} ${footerClasses.typos.headers}`}
-            >
-              {t('allCategory')}
-            </Typography>
-            <Box className={footerClasses.boxes.categoryLinks}>
-              {allCategories.map((category) => {
-                return (
-                  <Typography
-                    key={category.id}
-                    onClick={() => {
-                      setProducts([]);
-                      setSelectedCategoryId(category.id);
-                      router.push(`/product-category/${category.slug}`);
-                    }}
-                    className={`${fontClassName.className} ${footerClasses.typos.categoryNames}`}
-                  >
-                    {parseName(category.name, router.locale ?? 'tk')}
-                  </Typography>
-                );
-              })}
             </Box>
           </Box>
         </Box>
-        <Divider className="w-full" />
 
-        <Box className={footerClasses.boxes.rights}>
-          <Typography
-            className={`${footerClasses.typos.copyright} ${fontClassName.className}`}
-          >
-            Xmobile © {new Date().getFullYear()}. All Rights Reserved.
+        <Box className={web.bottomBar}>
+          <Typography className={`${fontClassName.className} ${web.copyright}`}>
+            Xmobile © {new Date().getFullYear()}. All Rights Reserved. ·{' '}
+            {t('pricesInTmt')}
           </Typography>
+          <Box className={web.bottomRight}>
+            <Link
+              href="/privacy-policy"
+              className={`${fontClassName.className} ${web.bottomLink}`}
+            >
+              {t('privacyPolicyTitle')}
+            </Link>
+            <Link
+              href="/support"
+              className={`${fontClassName.className} ${web.bottomLink}`}
+            >
+              {t('supportTitle')}
+            </Link>
+            <Typography
+              className={`${fontClassName.className} ${web.payBadge}`}
+            >
+              {t('cashOnDelivery')}
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Box>
