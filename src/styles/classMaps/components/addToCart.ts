@@ -1,16 +1,18 @@
 export const addToCartClasses = {
   cartButton: {
+    // Web quick-add sits in the grid card's price row as a compact circle
+    // (ProductCard.tsx) — the label is dropped, the icon carries the meaning.
     button: {
-      web: 'w-full h-[40px] mt-[10px] rounded-[11px] bg-navy hover:bg-[#1A1258] text-white gap-[7px] normal-case',
+      web: 'w-[40px] h-[40px] p-0 rounded-full bg-navy hover:bg-[#1A1258] text-white flex-shrink-0',
       mobile:
         'w-full h-[38px] mt-[8px] rounded-[10px] bg-navy hover:bg-[#1A1258] text-white gap-[6px] normal-case',
     },
     icon: {
-      web: 'w-[16px] h-[16px]',
+      web: 'w-[18px] h-[18px]',
       mobile: 'w-[14px] h-[14px]',
     },
     text: {
-      web: 'text-[13px] font-semibold text-white normal-case',
+      web: 'hidden',
       mobile: 'text-[12px] font-semibold text-white normal-case',
     },
   },

@@ -13,10 +13,13 @@ import 'slick-carousel/slick/slick.css';
 
 interface PromoBannerSectionProps {
   banners: StorefrontBanner[];
+  /** 'hero' drops the section's own bottom margin — the web home grid spaces it. */
+  variant?: 'default' | 'hero';
 }
 
 export default function PromoBannerSection({
   banners,
+  variant = 'default',
 }: PromoBannerSectionProps) {
   const platform = usePlatform();
 
@@ -68,7 +71,13 @@ export default function PromoBannerSection({
   };
 
   return (
-    <Box className={bannerClasses.section[platform]}>
+    <Box
+      className={
+        variant === 'hero'
+          ? bannerClasses.heroSection
+          : bannerClasses.section[platform]
+      }
+    >
       {multiple ? (
         <Slider {...settings} className={bannerClasses.slider}>
           {banners.map(renderSlide)}

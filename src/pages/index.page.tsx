@@ -1,5 +1,8 @@
+import HomePromoTile from '@/pages/components/HomePromoTile';
 import Layout from '@/pages/components/Layout';
-import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
+import PopularCategoriesSection, {
+  CategoryImage,
+} from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
 import { fetchNewProducts } from '@/pages/lib/apis';
@@ -20,6 +23,7 @@ import {
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
+import { parseName } from '@/pages/lib/utils';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { fontClassName } from '@/styles/theme';
@@ -28,10 +32,20 @@ import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
+import {
+  ArrowRight,
+  Banknote,
+  Headset,
+  ShieldCheck,
+  Truck,
+} from 'lucide-react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+const web = homePageClasses.web;
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -144,10 +158,51 @@ export default function Home({
   const platform = usePlatform();
   const t = useTranslations();
   const { categories } = useCategoryContext();
-  const { searchKeyword, setSearchKeyword } = useProductContext();
+  const {
+    searchKeyword,
+    setSearchKeyword,
+    setProducts: setContextProducts,
+  } = useProductContext();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
+
+  // Web "Shop by category" row (spec 1357-1366): real top-level categories,
+  // admin-flagged popular ones first, capped at the design's 8 tiles.
+  const webCategories = useMemo(() => {
+    const topLevel = categories.filter(
+      (cat) => cat.predecessorId == null && cat.deletedAt == null,
+    );
+    return [
+      ...topLevel.filter((cat) => cat.popular),
+      ...topLevel.filter((cat) => !cat.popular),
+    ].slice(0, 8);
+  }, [categories]);
+
+  // The two side promos reuse the newest products, so drop them from the grid
+  // below instead of showing the same card twice.
+  const promoProducts =
+    platform === 'web' && products.length >= 6 ? products.slice(0, 2) : [];
+  const gridProducts = products.slice(promoProducts.length);
+
+  const trustItems = [
+    {
+      icon: Truck,
+      title: t('nationwideDelivery'),
+      subtitle: t('nationwideDeliverySub'),
+    },
+    {
+      icon: ShieldCheck,
+      title: t('officialWarranty'),
+      subtitle: t('officialWarrantySub'),
+    },
+    { icon: Banknote, title: t('cashOnDelivery'), subtitle: t('payInCash') },
+    {
+      icon: Headset,
+      title: t('chatCustomerSupport'),
+      subtitle: `${t('supportHoursDays')}, ${t('supportHoursTime')}`,
+    },
+  ];
 
   // Home shows only the newest products — no filters, no infinite scroll.
   useEffect(() => {
@@ -186,15 +241,148 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
+  if (platform === 'web') {
+    return (
+      <Layout showHomeHeader>
+        <Box className={web.page}>
+          {/* hero banner + side promos (spec 1319-1345) */}
+          {(banners.length > 0 || promoProducts.length > 0) && (
+            <Box
+              className={banners.length > 0 ? web.heroRow : web.heroRowNoBanner}
+            >
+              {banners.length > 0 && (
+                <PromoBannerSection banners={banners} variant="hero" />
+              )}
+              {promoProducts.length > 0 && (
+                <Box
+                  className={
+                    banners.length > 0 ? web.promoCol : web.promoColWide
+                  }
+                >
+                  {promoProducts.map((product, idx) => (
+                    <HomePromoTile
+                      key={product.id}
+                      product={product}
+                      tone={idx === 0 ? 'red' : 'grey'}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* trust strip (spec 1348-1353) — real store promises only */}
+          <Box className={web.trustRow}>
+            {trustItems.map(({ icon: Icon, title, subtitle }) => (
+              <Box key={title} className={web.trustCard}>
+                <Box className={web.trustIconBox}>
+                  <Icon size={22} />
+                </Box>
+                <Box>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustTitle}`}
+                  >
+                    {title}
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustSub}`}
+                  >
+                    {subtitle}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* shop by category (spec 1356-1366) */}
+          {webCategories.length > 0 && (
+            <Box className={web.sectionGap}>
+              <Box className={web.sectionHead}>
+                <Typography
+                  className={`${fontClassName.className} ${web.sectionTitle}`}
+                >
+                  {t('shopByCategory')}
+                </Typography>
+                <Link href="/category" className={web.viewAll}>
+                  {t('viewAll')}
+                  <ArrowRight size={16} />
+                </Link>
+              </Box>
+              <Box className={web.categoryGrid}>
+                {webCategories.map((category) => (
+                  <Box
+                    key={category.id}
+                    className={web.categoryTile}
+                    onClick={() => {
+                      if (
+                        category.successorCategories == null ||
+                        category.successorCategories.length === 0
+                      ) {
+                        setContextProducts([]);
+                        router.push(`/product-category/${category.slug}`);
+                      } else {
+                        router.push(`/category/${category.slug}`);
+                      }
+                    }}
+                  >
+                    <CategoryImage
+                      initialImgUrl={category.imgUrl}
+                      className={web.categoryTileImg}
+                    />
+                    <Typography
+                      className={`${fontClassName.className} ${web.categoryTileName}`}
+                    >
+                      {parseName(
+                        category.name,
+                        router.locale ?? DEFAULT_LOCALE,
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* new arrivals grid — the design's "Recommended for you" slot (spec 1383-1390) */}
+          <Box className={web.sectionHead}>
+            <Typography
+              className={`${fontClassName.className} ${web.sectionTitle}`}
+            >
+              {t('newProducts')}
+            </Typography>
+            <Link href="/product" className={web.viewAll}>
+              {t('viewAll')}
+              <ArrowRight size={16} />
+            </Link>
+          </Box>
+          {isLoading && <ProductGridSkeleton count={10} />}
+          <Box className={web.productGrid}>
+            {gridProducts.map((product) => (
+              <ProductCard
+                product={product}
+                key={product.id}
+                cartProps={{ cartAction: 'add' }}
+              />
+            ))}
+          </Box>
+          {products.length === 0 && !isLoading && (
+            <Typography
+              className={`${fontClassName.className} ${web.emptyText}`}
+            >
+              {t('noProductsFound')}
+            </Typography>
+          )}
+        </Box>
+      </Layout>
+    );
+  }
+
   return (
     <Layout showHomeHeader>
       <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
-        {platform === 'mobile' && <PromoBannerSection banners={banners} />}
-        {platform === 'mobile' && (
-          <PopularCategoriesSection categories={categories} />
-        )}
+        <PromoBannerSection banners={banners} />
+        <PopularCategoriesSection categories={categories} />
       </Box>
-      {platform === 'web' && <PromoBannerSection banners={banners} />}
       <Box className="flex flex-row gap-6 w-full">
         <Box className={homePageClasses.main[platform]}>
           <Box className="w-full">
@@ -202,15 +390,7 @@ export default function Home({
               display="flex"
               justifyContent="space-between"
               alignItems="center"
-              mb={platform === 'web' ? 2 : 1.5}
-              sx={{
-                position: platform === 'web' ? 'sticky' : 'static',
-                top: platform === 'web' ? '0px' : 'auto',
-                zIndex: 10,
-                backgroundColor: '#fff',
-                paddingTop: platform === 'web' ? '20px' : '0px',
-                paddingBottom: platform === 'web' ? '8px' : '0px',
-              }}
+              mb={1.5}
             >
               <Typography
                 className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
