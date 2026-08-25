@@ -56,7 +56,12 @@ export const homePageClasses = {
     categoryTileImg: 'w-14 h-14 rounded-2xl object-contain bg-[#F3F2F8] p-1',
     categoryTileName: 'text-[13px] font-semibold text-ink line-clamp-2',
     sectionGap: 'mb-11',
-    productGrid: 'grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 w-full',
+    // Intrinsic sizing: the 230px floor is the card width the design was drawn
+    // at, so the column count follows the viewport instead of the card size
+    // inflating past xl. min(...,100%) keeps the track from overflowing a
+    // container narrower than one card.
+    productGrid:
+      'grid grid-cols-[repeat(auto-fill,minmax(min(230px,100%),1fr))] gap-4 w-full',
     emptyText: 'text-[15px] text-muted',
   },
   // Side promo tiles next to the hero banner (spec 1332-1343)
