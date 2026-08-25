@@ -2,9 +2,16 @@ import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  getProductMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+  tierForProductList,
+} from '@/pages/lib/mediaUrls';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { cartIndexClasses } from '@/styles/classMaps/cart/index';
 import {
   computeProductPrice,
   resolveVariantDisplay,
@@ -25,9 +32,9 @@ import {
   Box,
   Breadcrumbs,
   Button,
+  CardMedia,
   Checkbox,
   CircularProgress,
-  Divider,
   FormControlLabel,
   IconButton,
   Link,
@@ -36,7 +43,7 @@ import {
   Typography,
 } from '@mui/material';
 import { CartItem, Color, Prices, Product } from '@prisma/client';
-import { Banknote, Pencil, Truck } from 'lucide-react';
+import { Banknote, Check, MapPin, Pencil, Truck } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -57,6 +64,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
+  const { network } = useNetworkContext();
 
   const [cartItems, setCartItems] = useState<
     (CartItem & { product: Product })[]
@@ -263,22 +271,43 @@ export default function CheckoutPage() {
   const getItemPrice = (item: CartItem & { product: Product }): number =>
     itemPrices[item.id] ?? 0;
 
-  // Shared field style — hairline border, navy focus, ink text (design tokens)
+  // 52px order-summary thumbnails (web) — same tiered media path the cards use
+  const summaryThumbSrc = (raw: string | undefined) => {
+    if (raw == null) return undefined;
+    if (raw.startsWith('http')) return raw;
+    return (
+      getProductMediaUrl(tierForProductList(network), raw) ??
+      PRODUCT_IMAGE_FALLBACK
+    );
+  };
+
+  // Shared field style — hairline border, navy focus, ink text (design tokens).
+  // Web uses the mockup's compact 48px/15px field (spec 1621) rather than the
+  // 60px/18px `units` default other web forms share.
+  const isWeb = platform === 'web';
+  const fieldHeight = isWeb ? '48px' : units.inputHeight.mobile;
+  const fieldFontSize = isWeb ? '15px' : units.inputFontSize.mobile;
   const fieldSx = (multiline = false) => ({
     '& .MuiOutlinedInput-root': {
       backgroundColor: 'white',
-      borderRadius: platform === 'web' ? '10px' : '12px',
-      ...(multiline ? {} : { height: units.inputHeight[platform] }),
-      fontSize: units.inputFontSize[platform],
-      '& fieldset': { borderColor: hairline, borderWidth: '1.5px' },
+      borderRadius: '12px',
+      ...(multiline ? {} : { height: fieldHeight }),
+      fontSize: fieldFontSize,
+      '& fieldset': {
+        borderColor: hairline,
+        borderWidth: isWeb ? '1px' : '1.5px',
+      },
       '&:hover fieldset': { borderColor: muted },
-      '&.Mui-focused fieldset': { borderColor: navy, borderWidth: '1.5px' },
+      '&.Mui-focused fieldset': {
+        borderColor: navy,
+        borderWidth: isWeb ? '2px' : '1.5px',
+      },
       '&.Mui-error fieldset': { borderColor: red, borderWidth: '1.5px' },
     },
     '& .MuiInputBase-input': {
-      paddingX: platform === 'web' ? '32px' : '16px',
-      paddingY: '16px',
-      fontSize: units.inputFontSize[platform],
+      paddingX: isWeb ? '14px' : '16px',
+      paddingY: isWeb && !multiline ? 0 : '16px',
+      fontSize: fieldFontSize,
       color: ink,
     },
     '& .MuiInputBase-input::placeholder': { color: muted, opacity: 1 },
@@ -299,29 +328,27 @@ export default function CheckoutPage() {
     required?: boolean;
     multiline?: boolean;
     error?: boolean;
-  }) => {
-    const multilineRows = platform === 'web' ? 6 : 4;
-    return (
-      <Box className={cls.fieldContainer[platform]}>
-        <Typography className={`${fc} ${cls.label[platform]}`}>
-          {opts.label}
-          {opts.required && <span className={cls.required[platform]}> *</span>}
-        </Typography>
-        <TextField
-          fullWidth
-          required={opts.required}
-          error={opts.error}
-          multiline={opts.multiline}
-          rows={opts.multiline ? multilineRows : undefined}
-          value={opts.value}
-          onChange={(e) => opts.onChange(e.target.value)}
-          placeholder={opts.placeholder}
-          className={cls.textField[platform]}
-          sx={fieldSx(opts.multiline)}
-        />
-      </Box>
-    );
-  };
+  }) => (
+    // mobile-only: the web tree has its own renderWebField below
+    <Box className={cls.fieldContainer.mobile}>
+      <Typography className={`${fc} ${cls.label.mobile}`}>
+        {opts.label}
+        {opts.required && <span className={cls.required.mobile}> *</span>}
+      </Typography>
+      <TextField
+        fullWidth
+        required={opts.required}
+        error={opts.error}
+        multiline={opts.multiline}
+        rows={opts.multiline ? 4 : undefined}
+        value={opts.value}
+        onChange={(e) => opts.onChange(e.target.value)}
+        placeholder={opts.placeholder}
+        className={cls.textField.mobile}
+        sx={fieldSx(opts.multiline)}
+      />
+    </Box>
+  );
 
   const steps = [t('addressText'), t('shipping'), t('payment'), t('review')];
 
@@ -392,489 +419,595 @@ export default function CheckoutPage() {
     </Box>
   );
 
-  return (
-    <Layout
-      handleHeaderBackButton={() =>
-        platform === 'mobile' && currentStep > 0
-          ? setCurrentStep(currentStep - 1)
-          : router.push('/cart')
-      }
+  // Snackbar is shared by both platform trees
+  const errorSnackbar = (
+    <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={3000}
+      disableWindowBlurListener
+      onClose={(_, reason) => {
+        if (reason === 'clickaway') {
+          return;
+        }
+        setSnackbarOpen(false);
+      }}
     >
-      <Box className={checkoutDialogClasses.dialogContent[platform]}>
-        {/* Breadcrumbs for web */}
-        {platform === 'web' && (
-          <Box>
-            <Breadcrumbs
-              separator="|"
-              className={checkoutDialogClasses.breadcrumbs.web}
-            >
-              <Link href="/" className="no-underline">
-                <Typography
-                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
-                >
-                  {t('home')}
-                </Typography>
-              </Link>
-              <Link href="/cart" className="no-underline">
-                <Typography
-                  className={`${fontClassName.className} font-regular text-[16px] leading-[24px] text-[#303030]`}
-                >
-                  {t('cart')}
-                </Typography>
-              </Link>
+      <Alert
+        onClose={() => setSnackbarOpen(false)}
+        severity={snackbarMsg === 'serverError' ? 'error' : 'warning'}
+        variant="filled"
+        className="w-100%"
+      >
+        {t(snackbarMsg)}
+      </Alert>
+    </Snackbar>
+  );
+
+  // Web labelled field — 12px muted label over the compact 48px input
+  const renderWebField = (opts: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    placeholder: string;
+    required?: boolean;
+    multiline?: boolean;
+    wide?: boolean;
+  }) => (
+    <Box className={opts.wide ? cls.web.fieldWide : undefined}>
+      <Typography className={`${fc} ${cls.web.fieldLabel}`}>
+        {opts.label}
+        {opts.required && <span className={cls.required.web}> *</span>}
+      </Typography>
+      <TextField
+        fullWidth
+        required={opts.required}
+        multiline={opts.multiline}
+        rows={opts.multiline ? 4 : undefined}
+        value={opts.value}
+        onChange={(e) => opts.onChange(e.target.value)}
+        placeholder={opts.placeholder}
+        className={cls.textField.web}
+        sx={fieldSx(opts.multiline)}
+      />
+    </Box>
+  );
+
+  // Desktop checkout (spec 1608-1683): address / delivery / payment cards on
+  // the left, a 400px "Your order" card on the right. Single page — the mobile
+  // wizard's step state is not used here.
+  if (platform === 'web') {
+    const webSteps = [
+      { label: t('cart'), state: 'done' as const, href: '/cart' },
+      { label: t('checkout'), state: 'active' as const },
+      { label: t('confirmation'), state: 'idle' as const },
+    ];
+
+    return (
+      <Layout handleHeaderBackButton={() => router.push('/cart')}>
+        <Box className={cls.web.page}>
+          <Breadcrumbs separator="|" className={cls.breadcrumbs.web}>
+            <Link href="/" className="no-underline">
               <Typography
-                className={`${fontClassName.className} font-bold text-[16px] leading-[24px] text-[#303030]`}
+                className={`${fc} ${cartIndexClasses.breadcrumbsText} font-regular`}
               >
-                {t('checkout')}
+                {t('home')}
               </Typography>
-            </Breadcrumbs>
-            {/* Title */}
+            </Link>
+            <Link href="/cart" className="no-underline">
+              <Typography
+                className={`${fc} ${cartIndexClasses.breadcrumbsText} font-regular`}
+              >
+                {t('cart')}
+              </Typography>
+            </Link>
             <Typography
-              className={`${fontClassName.className} ${checkoutDialogClasses.title[platform]}`}
+              className={`${fc} ${cartIndexClasses.breadcrumbsText} font-bold`}
             >
               {t('checkout')}
             </Typography>
-          </Box>
-        )}
+          </Breadcrumbs>
 
-        {/* Mobile: stepped checkout wizard */}
-        {platform === 'mobile' ? (
-          <Box className={cls.mobileWrap}>
-            {/* Stepper (clickable) */}
-            <Box className={cls.stepper}>
-              <Box className={cls.stepDotsRow}>
-                {steps.map((label, i) => (
-                  <Fragment key={label}>
-                    <Box
-                      component="button"
-                      onClick={() => goToStep(i)}
-                      className={
-                        i <= currentStep
-                          ? cls.stepDotActive
-                          : cls.stepDotInactive
-                      }
-                    >
-                      {i + 1}
-                    </Box>
-                    {i < steps.length - 1 && <Box className={cls.stepLine} />}
-                  </Fragment>
-                ))}
-              </Box>
-              <Box className={cls.stepLabelsRow}>
-                {steps.map((label, i) => (
+          <Box className={cls.web.headRow}>
+            <Typography className={`${fc} ${cls.web.title}`}>
+              {t('checkout')}
+            </Typography>
+          </Box>
+
+          {/* 3-step progress — real state only, no fabricated stages */}
+          <Box className={cls.web.stepper}>
+            {webSteps.map((step, i) => (
+              <Fragment key={step.label}>
+                <Box className={cls.web.stepItem}>
+                  <Box
+                    className={
+                      {
+                        done: cls.web.stepDotDone,
+                        active: cls.web.stepDotActive,
+                        idle: cls.web.stepDotIdle,
+                      }[step.state]
+                    }
+                  >
+                    {step.state === 'done' ? <Check size={16} /> : i + 1}
+                  </Box>
                   <Typography
-                    key={label}
-                    onClick={() => goToStep(i)}
+                    onClick={
+                      step.href ? () => router.push(step.href) : undefined
+                    }
                     className={`${fc} ${
-                      i === currentStep
-                        ? cls.stepLabelActive
-                        : cls.stepLabelInactive
+                      // eslint-disable-next-line no-nested-ternary
+                      step.href
+                        ? cls.web.stepLabelLink
+                        : step.state === 'idle'
+                          ? cls.web.stepLabelIdle
+                          : cls.web.stepLabel
                     }`}
                   >
-                    {label}
+                    {step.label}
                   </Typography>
-                ))}
+                </Box>
+                {i < webSteps.length - 1 && (
+                  <Box
+                    className={
+                      webSteps[i + 1].state === 'idle'
+                        ? cls.web.stepLineIdle
+                        : cls.web.stepLineDone
+                    }
+                  />
+                )}
+              </Fragment>
+            ))}
+          </Box>
+
+          <Box className={cls.web.grid}>
+            <Box className={cls.web.formCol}>
+              {/* Delivery address (spec 1620) */}
+              <Box className={cls.web.card}>
+                <Box className={cls.web.cardHead}>
+                  <MapPin className={cls.web.cardIcon} />
+                  <Typography className={`${fc} ${cls.web.cardTitle}`}>
+                    {t('deliveryAddress')}
+                  </Typography>
+                </Box>
+                <Box className={cls.web.fieldGrid}>
+                  {renderWebField({
+                    label: t('fullName'),
+                    value: fullName,
+                    onChange: setFullName,
+                    placeholder: t('fullNamePlaceholder'),
+                    required: true,
+                  })}
+                  {renderWebField({
+                    label: t('phoneNumber'),
+                    value: phoneNumber,
+                    onChange: setPhoneNumber,
+                    placeholder: t('phoneNumberPlaceholder'),
+                    required: true,
+                  })}
+                  {renderWebField({
+                    label: t('addressText'),
+                    value: address,
+                    onChange: setAddress,
+                    placeholder: t('addressPlaceholder'),
+                    required: true,
+                    wide: true,
+                  })}
+                  {renderWebField({
+                    label: t('orderNotes'),
+                    value: notes,
+                    onChange: setNotes,
+                    placeholder: t('orderNotesPlaceholder'),
+                    multiline: true,
+                    wide: true,
+                  })}
+                </Box>
+                {user && (
+                  <FormControlLabel
+                    className={cls.web.saveRow}
+                    control={
+                      <Checkbox
+                        checked={saveToProfile}
+                        onChange={(e) => setSaveToProfile(e.target.checked)}
+                        sx={{ color: muted, '&.Mui-checked': { color: navy } }}
+                      />
+                    }
+                    label={
+                      <span className={`${fc} ${cls.web.saveLabel}`}>
+                        {t('saveToProfile')}
+                      </span>
+                    }
+                  />
+                )}
+              </Box>
+
+              {/* Delivery method (spec 1635) — one real option */}
+              <Box className={cls.web.card}>
+                <Box className={cls.web.cardHead}>
+                  <Truck className={cls.web.cardIcon} />
+                  <Typography className={`${fc} ${cls.web.cardTitle}`}>
+                    {t('delivery')}
+                  </Typography>
+                </Box>
+                <Box className={cls.web.optionRow}>
+                  <Box className={cls.web.radioOuter}>
+                    <Box className={cls.web.radioInner} />
+                  </Box>
+                  <Box className={cls.web.optionBody}>
+                    <Typography className={`${fc} ${cls.web.optionTitle}`}>
+                      {t('standardDelivery')}
+                    </Typography>
+                    <Typography className={`${fc} ${cls.web.optionSub}`}>
+                      {t('nationwideDelivery')}
+                    </Typography>
+                  </Box>
+                  <Typography className={`${fc} ${cls.web.optionRight}`}>
+                    {t('free')}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Payment (spec 1648) — COD is the only method */}
+              <Box className={cls.web.card}>
+                <Box className={cls.web.cardHead}>
+                  <Banknote className={cls.web.cardIcon} />
+                  <Typography className={`${fc} ${cls.web.cardTitle}`}>
+                    {t('payment')}
+                  </Typography>
+                </Box>
+                <Box className={cls.web.optionRow}>
+                  <Box className={cls.web.radioOuter}>
+                    <Box className={cls.web.radioInner} />
+                  </Box>
+                  <Box className={cls.web.optionBody}>
+                    <Typography className={`${fc} ${cls.web.optionTitle}`}>
+                      {t('cashOnDelivery')}
+                    </Typography>
+                    <Typography className={`${fc} ${cls.web.optionSub}`}>
+                      {t('payInCash')}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
             </Box>
 
-            {/* Step 0 — Address */}
-            {currentStep === 0 && (
+            {/* Your order (spec 1662) */}
+            <Box className={cls.web.summaryCard}>
+              <Typography className={`${fc} ${cls.web.summaryTitle}`}>
+                {t('yourOrder')}
+              </Typography>
+              <Box className={cls.web.summaryItems}>
+                {cartItems.map((item) => {
+                  const thumb = summaryThumbSrc(item.product.imgUrls[0]);
+                  return (
+                    <Box key={item.id} className={cls.web.summaryItem}>
+                      <Box className={cls.web.summaryThumb}>
+                        {thumb && (
+                          <CardMedia
+                            component="img"
+                            image={thumb}
+                            alt={parseName(
+                              item.product.name,
+                              router.locale ?? 'tk',
+                            )}
+                            className={cls.web.summaryThumbImg}
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => {
+                              const el = e.currentTarget;
+                              el.onerror = null;
+                              el.src = PRODUCT_IMAGE_FALLBACK;
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Box className={cls.web.summaryItemBody}>
+                        <Typography
+                          className={`${fc} ${cls.web.summaryItemName}`}
+                        >
+                          {parseName(item.product.name, router.locale ?? 'tk')}
+                        </Typography>
+                        {item.selectedVariant && (
+                          <VariantBadge
+                            {...resolveVariantDisplay(
+                              item.selectedVariant,
+                              colorsMap,
+                            )}
+                          />
+                        )}
+                        <Typography
+                          className={`${fc} ${cls.web.summaryItemQty}`}
+                        >
+                          × {item.quantity}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        className={`${fc} ${cls.web.summaryItemPrice}`}
+                      >
+                        {(getItemPrice(item) * item.quantity).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+              <Box className={cls.web.totals}>
+                <Box className={cls.web.totalsRow}>
+                  <Typography className={`${fc} ${cls.web.totalsLabel}`}>
+                    {t('subtotal')}
+                  </Typography>
+                  <Typography className={`${fc} ${cls.web.totalsValue}`}>
+                    {totalPrice.toFixed(2)} {t('manat')}
+                  </Typography>
+                </Box>
+                <Box className={cls.web.totalsRow}>
+                  <Typography className={`${fc} ${cls.web.totalsLabel}`}>
+                    {t('delivery')}
+                  </Typography>
+                  <Typography className={`${fc} ${cls.web.totalsFree}`}>
+                    {t('free')}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box className={cls.web.grandRow}>
+                <Typography className={`${fc} ${cls.web.grandLabel}`}>
+                  {t('total')}
+                </Typography>
+                <Typography className={`${fc} ${cls.web.grandValue}`}>
+                  {totalPrice.toFixed(2)} {t('manat')}
+                </Typography>
+              </Box>
+              <Button
+                onClick={handleOrder}
+                disabled={loading || isFormIncomplete || cartItems.length === 0}
+                className={`${fc} ${cls.web.placeOrderBtn}`}
+                sx={{
+                  backgroundColor: red,
+                  color: 'white',
+                  '&:hover': { backgroundColor: '#C6101C' },
+                  '&:disabled': { backgroundColor: '#E4E3EB', color: '#fff' },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  `${t('placeOrder')} · ${totalPrice.toFixed(2)} ${t('manat')}`
+                )}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+        {errorSnackbar}
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout
+      handleHeaderBackButton={() =>
+        currentStep > 0 ? setCurrentStep(currentStep - 1) : router.push('/cart')
+      }
+    >
+      <Box className={checkoutDialogClasses.dialogContent[platform]}>
+        {/* Mobile: stepped checkout wizard */}
+        <Box className={cls.mobileWrap}>
+          {/* Stepper (clickable) */}
+          <Box className={cls.stepper}>
+            <Box className={cls.stepDotsRow}>
+              {steps.map((label, i) => (
+                <Fragment key={label}>
+                  <Box
+                    component="button"
+                    onClick={() => goToStep(i)}
+                    className={
+                      i <= currentStep ? cls.stepDotActive : cls.stepDotInactive
+                    }
+                  >
+                    {i + 1}
+                  </Box>
+                  {i < steps.length - 1 && <Box className={cls.stepLine} />}
+                </Fragment>
+              ))}
+            </Box>
+            <Box className={cls.stepLabelsRow}>
+              {steps.map((label, i) => (
+                <Typography
+                  key={label}
+                  onClick={() => goToStep(i)}
+                  className={`${fc} ${
+                    i === currentStep
+                      ? cls.stepLabelActive
+                      : cls.stepLabelInactive
+                  }`}
+                >
+                  {label}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Step 0 — Address */}
+          {currentStep === 0 && (
+            <Box className={cls.section}>
+              <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
+                {t('deliveryAddress')}
+              </Typography>
+              {!editingAddress ? (
+                addressSummaryCard(() => setEditingAddress(true))
+              ) : (
+                <Box className={cls.editCard}>
+                  {renderField({
+                    label: t('fullName'),
+                    value: fullName,
+                    onChange: setFullName,
+                    placeholder: t('fullNamePlaceholder'),
+                    required: true,
+                    error: attemptedNext && !fullName.trim(),
+                  })}
+                  {renderField({
+                    label: t('phoneNumber'),
+                    value: phoneNumber,
+                    onChange: setPhoneNumber,
+                    placeholder: t('phoneNumberPlaceholder'),
+                    required: true,
+                    error: attemptedNext && !phoneNumber.trim(),
+                  })}
+                  {renderField({
+                    label: t('addressText'),
+                    value: address,
+                    onChange: setAddress,
+                    placeholder: t('addressPlaceholder'),
+                    required: true,
+                    error: attemptedNext && !address.trim(),
+                  })}
+                  {user && (
+                    <FormControlLabel
+                      className={cls.saveRow}
+                      control={
+                        <Checkbox
+                          checked={saveToProfile}
+                          onChange={(e) => setSaveToProfile(e.target.checked)}
+                          sx={{
+                            color: muted,
+                            '&.Mui-checked': { color: navy },
+                          }}
+                        />
+                      }
+                      label={
+                        <span className={`${fc} ${cls.saveLabel}`}>
+                          {t('saveToProfile')}
+                        </span>
+                      }
+                    />
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* Step 1 — Delivery */}
+          {currentStep === 1 && (
+            <Box className={cls.section}>
+              <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
+                {t('delivery')}
+              </Typography>
+              {deliveryCard}
+            </Box>
+          )}
+
+          {/* Step 2 — Payment */}
+          {currentStep === 2 && (
+            <Box className={cls.section}>
+              <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
+                {t('payment')}
+              </Typography>
+              {paymentCard}
+            </Box>
+          )}
+
+          {/* Step 3 — Review */}
+          {currentStep === 3 && (
+            <>
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
                   {t('deliveryAddress')}
                 </Typography>
-                {!editingAddress ? (
-                  addressSummaryCard(() => setEditingAddress(true))
-                ) : (
-                  <Box className={cls.editCard}>
-                    {renderField({
-                      label: t('fullName'),
-                      value: fullName,
-                      onChange: setFullName,
-                      placeholder: t('fullNamePlaceholder'),
-                      required: true,
-                      error: attemptedNext && !fullName.trim(),
-                    })}
-                    {renderField({
-                      label: t('phoneNumber'),
-                      value: phoneNumber,
-                      onChange: setPhoneNumber,
-                      placeholder: t('phoneNumberPlaceholder'),
-                      required: true,
-                      error: attemptedNext && !phoneNumber.trim(),
-                    })}
-                    {renderField({
-                      label: t('addressText'),
-                      value: address,
-                      onChange: setAddress,
-                      placeholder: t('addressPlaceholder'),
-                      required: true,
-                      error: attemptedNext && !address.trim(),
-                    })}
-                    {user && (
-                      <FormControlLabel
-                        className={cls.saveRow}
-                        control={
-                          <Checkbox
-                            checked={saveToProfile}
-                            onChange={(e) => setSaveToProfile(e.target.checked)}
-                            sx={{
-                              color: muted,
-                              '&.Mui-checked': { color: navy },
-                            }}
-                          />
-                        }
-                        label={
-                          <span className={`${fc} ${cls.saveLabel}`}>
-                            {t('saveToProfile')}
-                          </span>
-                        }
-                      />
-                    )}
-                  </Box>
-                )}
+                {addressSummaryCard(() => {
+                  setEditingAddress(true);
+                  setCurrentStep(0);
+                })}
               </Box>
-            )}
-
-            {/* Step 1 — Delivery */}
-            {currentStep === 1 && (
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
                   {t('delivery')}
                 </Typography>
                 {deliveryCard}
               </Box>
-            )}
-
-            {/* Step 2 — Payment */}
-            {currentStep === 2 && (
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
                   {t('payment')}
                 </Typography>
                 {paymentCard}
               </Box>
-            )}
-
-            {/* Step 3 — Review */}
-            {currentStep === 3 && (
-              <>
-                <Box className={cls.section}>
-                  <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                    {t('deliveryAddress')}
-                  </Typography>
-                  {addressSummaryCard(() => {
-                    setEditingAddress(true);
-                    setCurrentStep(0);
-                  })}
-                </Box>
-                <Box className={cls.section}>
-                  <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                    {t('delivery')}
-                  </Typography>
-                  {deliveryCard}
-                </Box>
-                <Box className={cls.section}>
-                  <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                    {t('payment')}
-                  </Typography>
-                  {paymentCard}
-                </Box>
-                <Box className={cls.section}>
-                  <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                    {t('orderNotes')}
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={t('orderNotesPlaceholder')}
-                    className={cls.textField.mobile}
-                    sx={fieldSx(true)}
-                  />
-                </Box>
-              </>
-            )}
-
-            {/* Total payable + step navigation */}
-            <Box className={cls.totalContainer.mobile}>
-              <Box className={cls.totalRow.mobile}>
-                <Typography className={`${fc} ${cls.totalLabel.mobile}`}>
-                  {t('totalPayable')}
-                </Typography>
-                <Typography className={`${fc} ${cls.totalValue.mobile}`}>
-                  {totalPrice.toFixed(2)} {t('manat')}
-                </Typography>
-              </Box>
-              <Box className={cls.navRow}>
-                {currentStep > 0 && (
-                  <Button
-                    onClick={() => setCurrentStep(currentStep - 1)}
-                    className={`${fc} ${cls.navBackBtn}`}
-                    sx={{
-                      color: navy,
-                      backgroundColor: 'white',
-                      '&:hover': { backgroundColor: '#F5F5F8' },
-                    }}
-                  >
-                    {t('back')}
-                  </Button>
-                )}
-                {currentStep < steps.length - 1 ? (
-                  <Button
-                    onClick={() => goToStep(currentStep + 1)}
-                    className={`${fc} ${cls.navPrimaryBtn}`}
-                    sx={{
-                      backgroundColor: navy,
-                      color: 'white',
-                      '&:hover': { backgroundColor: colors.buttonHoverBg },
-                    }}
-                  >
-                    {t('next')}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleOrder}
-                    disabled={loading || isFormIncomplete}
-                    className={`${fc} ${cls.navPrimaryBtn}`}
-                    sx={{
-                      backgroundColor: red,
-                      color: 'white',
-                      '&:hover': { backgroundColor: '#C6101C' },
-                      '&:disabled': {
-                        backgroundColor: '#E4E3EB',
-                        color: '#fff',
-                      },
-                    }}
-                  >
-                    {loading ? (
-                      <CircularProgress size={22} color="inherit" />
-                    ) : (
-                      t('placeOrder')
-                    )}
-                  </Button>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        ) : (
-          <Box className={cls.formContainer.web}>
-            {/* Customer Details */}
-            <Box className={cls.customerDetails.web}>
-              <Typography
-                className={`${fontClassName.className} ${checkoutDialogClasses.sectionTitle[platform]}`}
-              >
-                {t('customerDetails')}
-              </Typography>
-
-              {/* Full Name */}
-              <Box className={checkoutDialogClasses.fieldContainer[platform]}>
-                <Typography
-                  className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
-                >
-                  {t('fullName')}{' '}
-                  <span className={checkoutDialogClasses.required[platform]}>
-                    *
-                  </span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={t('fullNamePlaceholder')}
-                  className={checkoutDialogClasses.textField[platform]}
-                  sx={fieldSx()}
-                />
-              </Box>
-
-              {/* Phone Number */}
-              <Box className={checkoutDialogClasses.fieldContainer[platform]}>
-                <Typography
-                  className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
-                >
-                  {t('phoneNumber')}{' '}
-                  <span className={checkoutDialogClasses.required[platform]}>
-                    *
-                  </span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  required
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder={t('phoneNumberPlaceholder')}
-                  className={checkoutDialogClasses.textField[platform]}
-                  sx={fieldSx()}
-                />
-              </Box>
-
-              {/* Address */}
-              <Box className={checkoutDialogClasses.fieldContainer[platform]}>
-                <Typography
-                  className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
-                >
-                  {t('addressText')}{' '}
-                  <span className={checkoutDialogClasses.required[platform]}>
-                    *
-                  </span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder={t('addressPlaceholder')}
-                  className={checkoutDialogClasses.textField[platform]}
-                  sx={fieldSx()}
-                />
-              </Box>
-
-              {/* Order Notes */}
-              <Box className={checkoutDialogClasses.fieldContainer[platform]}>
-                <Typography
-                  className={`${fontClassName.className} ${checkoutDialogClasses.label[platform]}`}
-                >
+              <Box className={cls.section}>
+                <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
                   {t('orderNotes')}
                 </Typography>
                 <TextField
                   fullWidth
                   multiline
-                  rows={platform === 'web' ? 6 : 4}
+                  rows={4}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={t('orderNotesPlaceholder')}
-                  className={checkoutDialogClasses.textField[platform]}
+                  className={cls.textField.mobile}
                   sx={fieldSx(true)}
                 />
               </Box>
+            </>
+          )}
+
+          {/* Total payable + step navigation */}
+          <Box className={cls.totalContainer.mobile}>
+            <Box className={cls.totalRow.mobile}>
+              <Typography className={`${fc} ${cls.totalLabel.mobile}`}>
+                {t('totalPayable')}
+              </Typography>
+              <Typography className={`${fc} ${cls.totalValue.mobile}`}>
+                {totalPrice.toFixed(2)} {t('manat')}
+              </Typography>
             </Box>
-
-            {/* Order Summary for Web */}
-            {platform === 'web' && (
-              <Box className={checkoutDialogClasses.orderSummary.web}>
-                {/* Order Items - Scrollable */}
-                <Box className="flex flex-col gap-[30px] overflow-y-auto max-h-[600px] pr-2">
-                  <Typography
-                    className={`${fontClassName.className} ${checkoutDialogClasses.orderSummaryTitle.web}`}
-                  >
-                    {t('orderSummary')}
-                  </Typography>
-                  {cartItems.map((item, index) => {
-                    const itemTotal = getItemPrice(item) * item.quantity;
-                    return (
-                      <Box key={item.id}>
-                        <Box className={checkoutDialogClasses.orderItem.web}>
-                          <Box className="flex flex-col gap-1">
-                            <Typography
-                              className={`${fontClassName.className} ${checkoutDialogClasses.orderItemName.web}`}
-                            >
-                              {parseName(
-                                item.product.name,
-                                router.locale ?? 'tk',
-                              )}
-                            </Typography>
-                            {item.selectedVariant && (
-                              <VariantBadge
-                                {...resolveVariantDisplay(
-                                  item.selectedVariant,
-                                  colorsMap,
-                                )}
-                              />
-                            )}
-                          </Box>
-                          <Typography
-                            className={`${fontClassName.className} ${checkoutDialogClasses.orderItemQuantity.web}`}
-                          >
-                            {item.quantity}
-                          </Typography>
-                          <Typography
-                            className={`${fontClassName.className} ${checkoutDialogClasses.orderItemPrice.web}`}
-                          >
-                            {itemTotal.toFixed(2)} {t('manat')}
-                          </Typography>
-                        </Box>
-                        {index < cartItems.length - 1 && (
-                          <Divider
-                            className={checkoutDialogClasses.divider.web}
-                          />
-                        )}
-                      </Box>
-                    );
-                  })}
-                </Box>
-
-                {/* Total */}
-                <Box className={checkoutDialogClasses.totalContainer.web}>
-                  <Box className={checkoutDialogClasses.totalRow.web}>
-                    <Typography
-                      className={`${fontClassName.className} ${checkoutDialogClasses.totalLabel.web}`}
-                    >
-                      {t('total')}:
-                    </Typography>
-                    <Typography
-                      className={`${fontClassName.className} ${checkoutDialogClasses.totalValue.web}`}
-                    >
-                      {totalPrice.toFixed(2)} {t('manat')}
-                    </Typography>
-                  </Box>
-                  <Button
-                    onClick={handleOrder}
-                    disabled={
-                      loading ||
-                      !fullName.trim() ||
-                      !phoneNumber.trim() ||
-                      !address.trim()
-                    }
-                    className={`${fontClassName.className} ${checkoutDialogClasses.orderButton.web}`}
-                    sx={{
-                      backgroundColor: colors.main,
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: colors.buttonHoverBg,
-                      },
-                      '&:disabled': {
-                        backgroundColor: '#ccc',
-                        color: '#666',
-                      },
-                    }}
-                  >
-                    {loading ? (
-                      <CircularProgress size={24} color="inherit" />
-                    ) : (
-                      t('orderNow')
-                    )}
-                  </Button>
-                </Box>
-              </Box>
-            )}
+            <Box className={cls.navRow}>
+              {currentStep > 0 && (
+                <Button
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className={`${fc} ${cls.navBackBtn}`}
+                  sx={{
+                    color: navy,
+                    backgroundColor: 'white',
+                    '&:hover': { backgroundColor: '#F5F5F8' },
+                  }}
+                >
+                  {t('back')}
+                </Button>
+              )}
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  onClick={() => goToStep(currentStep + 1)}
+                  className={`${fc} ${cls.navPrimaryBtn}`}
+                  sx={{
+                    backgroundColor: navy,
+                    color: 'white',
+                    '&:hover': { backgroundColor: colors.buttonHoverBg },
+                  }}
+                >
+                  {t('next')}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOrder}
+                  disabled={loading || isFormIncomplete}
+                  className={`${fc} ${cls.navPrimaryBtn}`}
+                  sx={{
+                    backgroundColor: red,
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#C6101C' },
+                    '&:disabled': {
+                      backgroundColor: '#E4E3EB',
+                      color: '#fff',
+                    },
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={22} color="inherit" />
+                  ) : (
+                    t('placeOrder')
+                  )}
+                </Button>
+              )}
+            </Box>
           </Box>
-        )}
+        </Box>
       </Box>
 
-      {/* Snackbar for error messages */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        disableWindowBlurListener
-        onClose={(_, reason) => {
-          if (reason === 'clickaway') {
-            return;
-          }
-          setSnackbarOpen(false);
-        }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMsg === 'serverError' ? 'error' : 'warning'}
-          variant="filled"
-          className="w-100%"
-        >
-          {t(snackbarMsg)}
-        </Alert>
-      </Snackbar>
+      {errorSnackbar}
     </Layout>
   );
 }

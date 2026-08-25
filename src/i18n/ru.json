@@ -314,6 +314,7 @@
   "itemsPerPage": "На странице",
   "totalAmount": "Общая сумма",
   "checkout": "Оформление",
+  "confirmation": "Подтверждение",
   "fullName": "Полное имя",
   "fullNamePlaceholder": "Введите полное имя",
   "addressPlaceholder": "Адрес доставки",

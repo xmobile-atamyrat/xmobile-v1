@@ -16,16 +16,29 @@ export const addToCartClasses = {
       mobile: 'text-[12px] font-semibold text-white normal-case',
     },
   },
+  // cartAction="delete" — the cart line's right-hand control. Web stacks it as
+  // the mockup's price / stepper / remove column (spec 1589); mobile keeps the
+  // single row (stepper + delete) it has shipped with since step 34.
   circIcon: {
     box: {
-      web: 'flex flex-row h-full items-center gap-[16px]',
+      web: 'flex flex-col h-full items-end justify-center gap-[10px] flex-shrink-0',
       mobile:
         'flex flex-row w-full h-full items-center justify-between mt-[10px]',
     },
-    fSize: {
+    // minus reads muted, plus navy on web (spec 1589), both navy on mobile
+    minus: {
+      web: 'w-[15px] h-[15px] text-muted',
+      mobile: 'w-[13px] h-[13px] text-navy',
+    },
+    plus: {
       web: 'w-[15px] h-[15px] text-navy',
       mobile: 'w-[13px] h-[13px] text-navy',
     },
+  },
+  // 36x38 cells inside the bordered web stepper; mobile keeps MUI's own sizing
+  stepperButton: {
+    web: 'w-9 h-[38px] rounded-none p-0',
+    mobile: '',
   },
   input: {
     web: 'w-[44px] text-[16px] font-semibold text-ink leading-[24px] tracking-0 [&>input]:text-center',
@@ -73,39 +86,50 @@ export const addToCartClasses = {
     mobile: 'hidden',
   },
   inputDet: {
-    web: 'w-[clamp(24px,_1.6vw,_32px)] h-[clamp(24px,_1.6vw,_32px)] bg-transparent mx-0 font-bold text-[clamp(12px,_0.8vw,_16px)] leading-[24px] tracking-normal text-ink [&>input]:text-center',
+    web: 'w-[38px] h-[38px] bg-transparent mx-0 font-semibold text-[15px] leading-[24px] tracking-normal text-ink [&>input]:text-center [&>input]:p-0',
     mobile:
       'w-[28px] h-[24px] bg-transparent [&>input]:text-center text-[14px] font-bold leading-[150%] tracking-[0.5%] text-ink',
   },
   price: {
-    web: 'flex justify-start items-center w-[14vw]',
+    web: 'flex flex-col items-end',
     mobile: 'hidden',
   },
   priceText: {
-    web: 'font-[700] text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal text-navy whitespace-nowrap',
+    web: 'font-[700] text-[18px] leading-none tracking-normal text-navy whitespace-nowrap',
+    mobile: 'hidden',
+  },
+  // Only rendered above 1 unit — the big number is the line total, this says
+  // what one costs so the two can never be mistaken for each other.
+  unitText: {
+    web: 'text-[12px] leading-none text-muted mt-[5px] whitespace-nowrap',
     mobile: 'hidden',
   },
   deleteButton: {
     box: {
-      web: 'ml-[8px] w-[32px] h-[32px] p-0 flex justify-center items-center flex-shrink-0',
+      web: 'flex justify-end items-center',
       mobile:
         'w-[32px] h-[32px] p-0 flex justify-center items-center flex-shrink-0 ml-[8px]',
     },
     deleteIcon: {
-      web: 'w-[18px] h-[18px] text-muted hover:text-red transition-colors duration-200',
+      web: 'w-[15px] h-[15px]',
       mobile: 'w-[18px] h-[18px] text-muted',
     },
     iconButton: {
-      web: 'w-full h-full',
+      web: 'flex flex-row items-center gap-[5px] p-0 text-red hover:bg-transparent',
       mobile: 'w-full h-full',
+    },
+    label: {
+      web: 'text-[13px] font-semibold text-red leading-none normal-case',
+      mobile: 'hidden',
     },
   },
   main: {
     web: 'flex',
     mobile: '',
   },
+  // Spec 1589: bordered 36/38/36 x 38px stepper on web; mobile keeps the pill
   quanChange: {
-    web: 'flex items-center gap-[10px] bg-fill rounded-full px-[14px] py-[8px] w-fit',
+    web: 'flex items-center border border-hairline rounded-[10px] overflow-hidden w-fit',
     mobile:
       'flex items-center gap-[8px] bg-fill rounded-full px-[10px] py-[5px] w-fit',
   },

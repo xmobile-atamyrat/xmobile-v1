@@ -220,13 +220,31 @@ export default function AddToCart({
 
         {cartAction === 'delete' && (
           <Box className={addToCartClasses.circIcon.box[platform]}>
+            {/* line total — first in the DOM for the web column's price/stepper/
+                remove order; hidden on mobile, so the row there is unchanged */}
+            <Box className={addToCartClasses.price[platform]}>
+              <Typography
+                className={`${fontClassName.className} ${addToCartClasses.priceText[platform]}`}
+              >
+                {quantity * Number(price)} TMT
+              </Typography>
+              {quantity > 1 && !Number.isNaN(Number(price)) && (
+                <Typography
+                  className={`${fontClassName.className} ${addToCartClasses.unitText[platform]}`}
+                >
+                  {quantity} × {Number(price)} TMT
+                </Typography>
+              )}
+            </Box>
+
             <Box className={addToCartClasses.quanChange[platform]}>
               {/* removeButton */}
               <IconButton
                 disableRipple
+                className={addToCartClasses.stepperButton[platform]}
                 onClick={handleProductQuantity('remove')}
               >
-                <Minus className={addToCartClasses.circIcon.fSize[platform]} />
+                <Minus className={addToCartClasses.circIcon.minus[platform]} />
               </IconButton>
               {/* quantityInput */}
               <Input
@@ -250,17 +268,13 @@ export default function AddToCart({
               />
 
               {/* addButton */}
-              <IconButton disableRipple onClick={handleProductQuantity('add')}>
-                <Plus className={addToCartClasses.circIcon.fSize[platform]} />
-              </IconButton>
-            </Box>
-
-            <Box className={addToCartClasses.price[platform]}>
-              <Typography
-                className={`${fontClassName.className} ${addToCartClasses.priceText[platform]}`}
+              <IconButton
+                disableRipple
+                className={addToCartClasses.stepperButton[platform]}
+                onClick={handleProductQuantity('add')}
               >
-                {quantity * Number(price)} TMT
-              </Typography>
+                <Plus className={addToCartClasses.circIcon.plus[platform]} />
+              </IconButton>
             </Box>
 
             {/* delete button */}
@@ -279,6 +293,12 @@ export default function AddToCart({
                 <Trash2
                   className={addToCartClasses.deleteButton.deleteIcon[platform]}
                 />
+                {/* web spells the action out (spec 1589); mobile stays icon-only */}
+                <Typography
+                  className={`${fontClassName.className} ${addToCartClasses.deleteButton.label[platform]}`}
+                >
+                  {t('remove')}
+                </Typography>
               </IconButton>
             </Box>
           </Box>
