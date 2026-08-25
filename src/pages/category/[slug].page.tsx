@@ -29,6 +29,7 @@ import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
@@ -240,6 +241,7 @@ export default function CategoryPage({
 }: CategoryPageProps) {
   const router = useRouter();
   const platform = usePlatform();
+  const t = useTranslations();
   const { setSelectedCategoryId } = useCategoryContext();
   const { setProducts } = useProductContext();
 
@@ -262,11 +264,21 @@ export default function CategoryPage({
         <SimpleBreadcrumbs categoryPath={categoryPath} />
         <Box className={categoryIdClasses.boxes.header[platform]}>
           {category && (
-            <Typography
-              className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
-            >
-              {parseName(category.name, router.locale ?? 'ru')}
-            </Typography>
+            <>
+              <Typography
+                component={platform === 'web' ? 'h1' : 'p'}
+                className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
+              >
+                {parseName(category.name, router.locale ?? 'ru')}
+              </Typography>
+              {category.successorCategories.length > 0 && (
+                <Typography
+                  className={`${fontClassName.className} ${categoryIdClasses.subtitle[platform]}`}
+                >
+                  {`${category.successorCategories.length} ${t('categories')}`}
+                </Typography>
+              )}
+            </>
           )}
         </Box>
         <Box className={homePageClasses.card[platform]}>

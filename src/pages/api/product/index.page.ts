@@ -8,6 +8,7 @@ import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
   IMG_COMPRESSION_OPTIONS,
+  PRODUCTS_PER_PAGE,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
@@ -27,7 +28,7 @@ export const config = {
 };
 
 const filepath = 'src/pages/api/product/index.page.ts';
-const productsPerPage = 20;
+const productsPerPage = PRODUCTS_PER_PAGE;
 
 // Derives the colors filter column from variant tags (referenced colorIds).
 export function deriveVariantColumns(tags: string[]): { colors: string[] } {

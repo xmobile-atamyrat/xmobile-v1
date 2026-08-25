@@ -545,5 +545,9 @@
   "deleteAccountError": "Failed to delete account. Please try again.",
   "accountDeleted": "Account deleted. <link>Sign in</link> to restore it.",
   "accountPermanentlyDeleted": "Your account has been permanently deleted. Please create a new account.",
-  "outOfStock": "Out of stock"
+  "outOfStock": "Out of stock",
+  "filters": "Filters",
+  "clearAll": "Clear all",
+  "activeFilters": "Active",
+  "previous": "Previous"
 }

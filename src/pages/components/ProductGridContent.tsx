@@ -5,21 +5,32 @@ import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import SortDropdown from '@/pages/components/SortDropdown';
-import { fetchProducts, fetchProductsCount } from '@/pages/lib/apis';
+import {
+  fetchBrands,
+  fetchColors,
+  fetchProducts,
+  fetchProductsCount,
+} from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import {
+  buildPaginationItems,
+  getTotalPages,
+  PAGINATION_ELLIPSIS,
+} from '@/pages/lib/pagination';
 import { SearchBar } from '@/pages/components/Appbar';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
+  BrandProps,
   ExtendedCategory,
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -35,7 +46,8 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, SearchX } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, SearchX, X } from 'lucide-react';
+import { Color } from '@prisma/client';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -88,6 +100,11 @@ export default function ProductGridContent({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // Web paginates (spec 1473); mobile keeps the infinite-scroll list.
+  const [webPage, setWebPage] = useState(1);
+  // Reference lists, only for labelling the active-filter chips in the sort bar.
+  const [brands, setBrands] = useState<BrandProps[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
 
   // local state for mobile (doesn't automatically apply filters) - trigger 'Apply Button'
   const [localFilters, setLocalFilters] = useState({
@@ -105,6 +122,46 @@ export default function ProductGridContent({
 
   const { filters, setFilters } = useProductFilters();
 
+  // Any filter/sort change invalidates the current page. Resetting in the same
+  // batch as setFilters keeps it to one refetch (a reset-on-change effect would
+  // fire twice: once for the stale page, once for page 1).
+  const applyFilters = useCallback(
+    (newFilters: Parameters<typeof setFilters>[0]) => {
+      setWebPage(1);
+      setFilters(newFilters);
+    },
+    // setFilters is re-created each render by useProductFilters; the closure
+    // only ever calls the latest one via this component's render scope.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Put the reader back at the top of the results after a page change. This
+  // has to run post-commit: scrolling inside the click handler gets undone
+  // when React re-renders the pagination row, because the browser scrolls the
+  // still-focused page button back into view.
+  const isFirstPageRun = useRef(true);
+  useEffect(() => {
+    if (isFirstPageRun.current) {
+      isFirstPageRun.current = false;
+      return;
+    }
+    if (platform !== 'web') return;
+    window.scrollTo(0, 0);
+  }, [webPage, platform]);
+
+  // Chip labels need the brand/colour names the sidebar already fetches.
+  // Web-only: the mobile sheet has no active-chip row.
+  useEffect(() => {
+    if (platform !== 'web') return;
+    fetchBrands()
+      .then(setBrands)
+      .catch(() => setBrands([]));
+    fetchColors()
+      .then(setColors)
+      .catch(() => setColors([]));
+  }, [platform]);
+
   // Debounce the editable search field into context (skip the mount run so we
   // don't clobber a keyword handed off from the home page).
   useEffect(() => {
@@ -113,6 +170,7 @@ export default function ProductGridContent({
       return undefined;
     }
     const handler = setTimeout(() => {
+      setWebPage(1);
       setSearchKeyword(localSearchKeyword);
     }, 500);
     return () => clearTimeout(handler);
@@ -174,10 +232,14 @@ export default function ProductGridContent({
     setIsLoading(true);
     setTotalCount(null);
 
+    // Web jumps straight to the requested page; mobile always restarts at 1
+    // and appends via loadMoreProducts.
+    const requestedPage = platform === 'web' ? webPage : 1;
+
     (async () => {
       try {
         const fetchProductsParams: any = {
-          page: 1,
+          page: requestedPage,
           categoryIds: effectiveCategoryIds,
           brandIds: filters.brandIds,
           colorIds: filters.colorIds,
@@ -203,7 +265,7 @@ export default function ProductGridContent({
           setPrevCategory(effectiveCategoryIds[0]);
         }
         setPrevSearchKeyword(searchKeyword);
-        setPage(1);
+        setPage(requestedPage);
 
         if (newProducts.length === 0) {
           setHasMore(false);
@@ -219,6 +281,8 @@ export default function ProductGridContent({
     searchKeyword,
     router.isReady,
     effectiveCategoryIds,
+    platform,
+    webPage,
     setProducts,
     setPrevProducts,
     setPrevCategory,
@@ -264,6 +328,8 @@ export default function ProductGridContent({
   }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
 
   useEffect(() => {
+    // Web uses numbered pagination instead of infinite scroll.
+    if (platform === 'web') return () => undefined;
     const loadMoreTrigger = document.getElementById('load-more-trigger');
     if (!loadMoreTrigger) return () => undefined;
 
@@ -281,7 +347,7 @@ export default function ProductGridContent({
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts]);
+  }, [loadMoreProducts, platform]);
 
   const handleBackButton = () => {
     if (categoryPath.length > 1) {
@@ -304,6 +370,84 @@ export default function ProductGridContent({
   // Real total for the current query (all pages); fall back to the loaded
   // count until the count request resolves.
   const displayCount = totalCount != null ? totalCount : products.length;
+
+  // --- Active filter chips (spec 1457) ---------------------------------
+  // Every chip is a real selected filter; there is no fabricated state here.
+  const categoryById = new Map<string, ExtendedCategory>();
+  const collectCategories = (cats: ExtendedCategory[]) => {
+    cats.forEach((cat) => {
+      categoryById.set(cat.id, cat);
+      if (cat.successorCategories?.length) {
+        collectCategories(cat.successorCategories);
+      }
+    });
+  };
+  collectCategories(allCategories ?? []);
+
+  const activeChips: { key: string; label: string; onRemove: () => void }[] =
+    [];
+
+  filters.categoryIds.forEach((id) => {
+    const cat = categoryById.get(id);
+    if (!cat) return;
+    activeChips.push({
+      key: `category-${id}`,
+      label: parseName(cat.name, router.locale ?? 'ru'),
+      onRemove: () =>
+        applyFilters({
+          categoryIds: filters.categoryIds.filter((cid) => cid !== id),
+        }),
+    });
+  });
+
+  filters.brandIds.forEach((id) => {
+    const brand = brands.find((b) => b.id === id);
+    if (!brand) return;
+    activeChips.push({
+      key: `brand-${id}`,
+      label: brand.name,
+      onRemove: () =>
+        applyFilters({
+          brandIds: filters.brandIds.filter((bid) => bid !== id),
+        }),
+    });
+  });
+
+  filters.colorIds.forEach((id) => {
+    const color = colors.find((c) => c.id === id);
+    if (!color) return;
+    activeChips.push({
+      key: `color-${id}`,
+      label: color.name,
+      onRemove: () =>
+        applyFilters({
+          colorIds: filters.colorIds.filter((cid) => cid !== id),
+        }),
+    });
+  });
+
+  if (filters.minPrice || filters.maxPrice) {
+    activeChips.push({
+      key: 'price',
+      label: `${filters.minPrice || 0} – ${
+        filters.maxPrice || FILTER_MAX_PRICE
+      } TMT`,
+      onRemove: () => applyFilters({ minPrice: '', maxPrice: '' }),
+    });
+  }
+
+  // --- Pagination (spec 1473) ------------------------------------------
+  const totalPages =
+    totalCount != null ? getTotalPages(totalCount, PRODUCTS_PER_PAGE) : 0;
+  const paginationItems = buildPaginationItems(webPage, totalPages);
+
+  const goToPage = (next: number) => {
+    if (next < 1 || next > totalPages || next === webPage) return;
+    // Drop focus so the button can't drag the viewport back down once the
+    // pagination row re-renders; the effect above does the actual scrolling.
+    (document.activeElement as HTMLElement | null)?.blur();
+    setWebPage(next);
+  };
 
   return (
     <Box>
@@ -408,7 +552,7 @@ export default function ProductGridContent({
                 disableElevation
                 className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
                 onClick={() => {
-                  setFilters(localFilters);
+                  applyFilters(localFilters);
                   setMobileFilterOpen(false);
                 }}
               >
@@ -422,7 +566,24 @@ export default function ProductGridContent({
             <SimpleBreadcrumbs categoryPath={categoryPath} />
           )}
 
-          <Box className="flex flex-row gap-6 w-full">
+          {/* Title block spans the full width above the rail — spec 1439-1442 */}
+          <Box className={productIndexPageClasses.header[platform]}>
+            <Typography
+              component={platform === 'web' ? 'h1' : 'p'}
+              className={`${fontClassName.className} ${productIndexPageClasses.pageTitle[platform]}`}
+            >
+              {titleText}
+            </Typography>
+            {!isLoading && products.length > 0 && (
+              <Typography
+                className={`${fontClassName.className} ${productIndexPageClasses.resultsCount[platform]}`}
+              >
+                {`${displayCount} ${t('products')}`}
+              </Typography>
+            )}
+          </Box>
+
+          <Box className={productIndexPageClasses.boxes.layout[platform]}>
             {platform === 'web' && (
               <FilterSidebar
                 categories={allCategories}
@@ -431,51 +592,53 @@ export default function ProductGridContent({
                 selectedColorIds={filters.colorIds}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
-                onFilterChange={(newFilters) => {
-                  setFilters(newFilters);
-                }}
+                onFilterChange={applyFilters}
                 hideSections={hideSections}
+                showBrandCounts={!isLandingMode}
               />
             )}
 
-            <Box className="flex flex-col w-full">
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-                sx={{
-                  position: platform === 'web' ? 'sticky' : 'static',
-                  top: platform === 'web' ? '0px' : 'auto',
-                  zIndex: 10,
-                  backgroundColor: '#fff',
-                  paddingTop: '20px',
-                  paddingBottom: '8px',
-                }}
-              >
-                <Box className="flex flex-col gap-0.5">
-                  <Typography
-                    className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
-                  >
-                    {titleText}
-                  </Typography>
-                  {!isLoading && products.length > 0 && (
-                    <Typography
-                      className={`${fontClassName.className} ${productIndexPageClasses.resultsCount[platform]}`}
-                    >
-                      {`${displayCount} ${t('products')}`}
-                    </Typography>
-                  )}
-                </Box>
-                {platform === 'web' && (
-                  <Box sx={{ marginLeft: 'auto' }}>
-                    <SortDropdown
-                      value={filters.sortBy}
-                      onChange={(val) => setFilters({ sortBy: val })}
-                    />
+            <Box className="flex flex-col w-full min-w-0">
+              {platform === 'web' && (
+                <Box className={productIndexPageClasses.resultsBar.web}>
+                  <Box className={productIndexPageClasses.activeFilters.wrap}>
+                    {activeChips.length > 0 && (
+                      <Typography
+                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.label}`}
+                      >
+                        {`${t('activeFilters')}:`}
+                      </Typography>
+                    )}
+                    {activeChips.map((chip) => (
+                      <Button
+                        key={chip.key}
+                        disableRipple
+                        disableElevation
+                        onClick={chip.onRemove}
+                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.chip}`}
+                      >
+                        <span
+                          className={
+                            productIndexPageClasses.activeFilters.chipLabel
+                          }
+                        >
+                          {chip.label}
+                        </span>
+                        <X
+                          size={13}
+                          className={
+                            productIndexPageClasses.activeFilters.chipIcon
+                          }
+                        />
+                      </Button>
+                    ))}
                   </Box>
-                )}
-              </Box>
+                  <SortDropdown
+                    value={filters.sortBy}
+                    onChange={(val) => applyFilters({ sortBy: val })}
+                  />
+                </Box>
+              )}
               {(() => {
                 if (isLoading && products.length === 0) {
                   return <ProductGridSkeleton count={8} />;
@@ -533,10 +696,71 @@ export default function ProductGridContent({
                   </Box>
                 );
               })()}
-              <div id="load-more-trigger"></div>
+              {platform === 'mobile' && <div id="load-more-trigger"></div>}
               {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">
                   <CircularProgress />
+                </Box>
+              )}
+
+              {/* Numbered pagination, spec 1473 — web only; mobile keeps the
+                  infinite-scroll list it already had. */}
+              {platform === 'web' && totalPages > 1 && (
+                <Box className={productIndexPageClasses.pagination.wrap}>
+                  <Button
+                    disableRipple
+                    disableElevation
+                    aria-label={t('previous')}
+                    onClick={() => goToPage(webPage - 1)}
+                    className={
+                      webPage <= 1
+                        ? productIndexPageClasses.pagination.arrowDisabled
+                        : productIndexPageClasses.pagination.arrow
+                    }
+                  >
+                    <ChevronLeft size={18} />
+                  </Button>
+
+                  {paginationItems.map((item, idx) =>
+                    item === PAGINATION_ELLIPSIS ? (
+                      <Box
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={`gap-${idx}`}
+                        className={productIndexPageClasses.pagination.ellipsis}
+                      >
+                        …
+                      </Box>
+                    ) : (
+                      <Button
+                        key={item}
+                        disableRipple
+                        disableElevation
+                        aria-current={item === webPage ? 'page' : undefined}
+                        onClick={() => goToPage(item)}
+                        className={`${fontClassName.className} ${
+                          item === webPage
+                            ? productIndexPageClasses.pagination.pageActive
+                            : productIndexPageClasses.pagination.page
+                        }`}
+                      >
+                        {item}
+                      </Button>
+                    ),
+                  )}
+
+                  <Button
+                    disableRipple
+                    disableElevation
+                    aria-label={t('next')}
+                    onClick={() => goToPage(webPage + 1)}
+                    className={
+                      webPage >= totalPages
+                        ? productIndexPageClasses.pagination.arrowDisabled
+                        : productIndexPageClasses.pagination.arrow
+                    }
+                  >
+                    <ChevronRight size={18} />
+                  </Button>
                 </Box>
               )}
             </Box>

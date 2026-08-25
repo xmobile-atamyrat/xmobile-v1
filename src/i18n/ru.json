@@ -548,5 +548,9 @@
   "deleteAccountError": "Не удалось удалить аккаунт. Попробуйте ещё раз.",
   "accountDeleted": "Аккаунт удалён. <link>Войдите</link>, чтобы восстановить его.",
   "accountPermanentlyDeleted": "Ваш аккаунт был безвозвратно удалён. Пожалуйста, создайте новый аккаунт.",
-  "outOfStock": "Нет в наличии"
+  "outOfStock": "Нет в наличии",
+  "filters": "Фильтры",
+  "clearAll": "Очистить всё",
+  "activeFilters": "Активные",
+  "previous": "Назад"
 }
