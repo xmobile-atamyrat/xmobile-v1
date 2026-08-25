@@ -18,7 +18,12 @@ export const productIndexPageClasses = {
       mobile: 'flex flex-col w-full h-full px-[20px]',
     },
     productsGrid: {
-      web: 'grid grid-cols-4 gap-4 w-full',
+      // Same intrinsic sizing as the home grid, but a 195px floor rather than
+      // 230px: FilterSidebar flexes to 360-430px, so the row left for the grid
+      // is much narrower than the page width. Measured — anything above 195px
+      // drops this page to 3 columns at 1280px (a regression from grid-cols-4)
+      // and leaves 266px cards at 1600px.
+      web: 'grid grid-cols-[repeat(auto-fill,minmax(min(195px,100%),1fr))] gap-4 w-full',
       mobile: 'grid grid-cols-2 gap-3 w-full',
     },
   },
