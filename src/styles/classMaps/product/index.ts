@@ -76,6 +76,24 @@ export const productIndexPageClasses = {
     chipLabel: 'truncate max-w-[160px]',
     chipIcon: 'shrink-0 text-muted',
   },
+  // Category facet pills, spec 1707 — search results only. The counts are a
+  // real groupBy over the same query (see fetchCategoryFacets), rolled up to
+  // root categories; nothing here is fabricated. While these render, the rail's
+  // own category section is hidden so one dimension has one control.
+  categoryFacets: {
+    wrap: 'flex items-center gap-2.5 flex-wrap mb-6',
+    // 13px/600, 9px 16px, fully rounded — inactive #F3F2F8 on #4A4959.
+    // leading-4 because MUI Button's 1.75 line-height would make these 41px
+    // tall; 9+16+9 = 34px is both the mockup's height and the height of the
+    // active-filter chip that sits directly above them in the sort bar.
+    pill: 'rounded-full bg-[#F3F2F8] px-4 py-[9px] text-[13px] leading-4 font-semibold text-[#4A4959] normal-case min-w-0 hover:bg-[#E9E8EE]',
+    pillActive:
+      'rounded-full bg-navy px-4 py-[9px] text-[13px] leading-4 font-semibold text-white normal-case min-w-0 hover:bg-[#1A1258]',
+    label: 'truncate max-w-[180px]',
+    // The mockup runs the count into the label at the same weight; a lighter
+    // count just keeps the category name the thing you read first.
+    count: 'ml-1.5 shrink-0 opacity-70',
+  },
   // Numbered pagination, spec 1473 — 40px squares, navy active, hairline rest.
   pagination: {
     wrap: 'flex items-center justify-center gap-2 mt-8',
