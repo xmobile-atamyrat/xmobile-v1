@@ -297,6 +297,7 @@ async function handleGetProduct(query: {
   maxPrice?: string;
   sortBy?: SortOption;
   count?: string;
+  facets?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
     searchKeyword,
@@ -311,10 +312,16 @@ async function handleGetProduct(query: {
     maxPrice,
     sortBy,
     count,
+    facets,
   } = query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
   const wantCount = count === 'true';
+  // facets=categories returns the per-category breakdown of the same match set
+  // — one groupBy instead of a count request per category. Callers wanting a
+  // usable facet list omit categoryIds, so every category in the result set is
+  // still represented once one of them is selected.
+  const wantCategoryFacets = facets === 'categories';
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
@@ -426,6 +433,29 @@ async function handleGetProduct(query: {
   if (wantCount) {
     const total = await dbClient.product.count({ where });
     return { resp: { success: true, data: total }, status: 200 };
+  }
+
+  if (wantCategoryFacets) {
+    const grouped = await dbClient.product.groupBy({
+      by: ['categoryId'],
+      where,
+      // `true` rather than `{ _all: true }` so the row carries a plain number.
+      _count: true,
+    });
+    // Leaf-level counts; the caller rolls them up to whichever level it shows
+    // (the category tree is already in CategoryContext client-side).
+    return {
+      resp: {
+        success: true,
+        data: grouped.map((row) => ({
+          categoryId: row.categoryId,
+          // _count is Prisma's own groupBy result shape, not our naming.
+          // eslint-disable-next-line no-underscore-dangle
+          count: row._count,
+        })),
+      },
+      status: 200,
+    };
   }
 
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [

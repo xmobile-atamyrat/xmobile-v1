@@ -6,7 +6,9 @@ import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import SortDropdown from '@/pages/components/SortDropdown';
 import {
+  CategoryFacet,
   fetchBrands,
+  fetchCategoryFacets,
   fetchColors,
   fetchProducts,
   fetchProductsCount,
@@ -105,6 +107,10 @@ export default function ProductGridContent({
   // Reference lists, only for labelling the active-filter chips in the sort bar.
   const [brands, setBrands] = useState<BrandProps[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
+  // Per-category breakdown of the current search, for the pills (spec 1707).
+  const [categoryFacets, setCategoryFacets] = useState<CategoryFacet[] | null>(
+    null,
+  );
 
   // local state for mobile (doesn't automatically apply filters) - trigger 'Apply Button'
   const [localFilters, setLocalFilters] = useState({
@@ -194,10 +200,91 @@ export default function ProductGridContent({
   // Filter Mode: user selected categories from sidebar (root categories only)
   const isLandingMode = !!landingCategoryId;
 
-  // Hide category section in Landing Mode since user already chose their category
+  // --- Category facet pills (spec 1707) --------------------------------
+  // Search-results only. Excluded in Landing Mode on purpose: the facet query
+  // omits the category dimension (see fetchCategoryFacets), so inside a
+  // category its counts would span the whole catalogue and over-promise.
+  const canShowCategoryPills =
+    platform === 'web' && !!searchKeyword && !isLandingMode;
+
+  useEffect(() => {
+    if (!canShowCategoryPills) {
+      setCategoryFacets(null);
+      return () => undefined;
+    }
+    let cancelled = false;
+    fetchCategoryFacets({
+      brandIds: filters.brandIds,
+      colorIds: filters.colorIds,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      searchKeyword,
+    })
+      .then((data) => {
+        if (!cancelled) setCategoryFacets(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryFacets(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canShowCategoryPills,
+    searchKeyword,
+    filters.brandIds,
+    filters.colorIds,
+    filters.minPrice,
+    filters.maxPrice,
+  ]);
+
+  // The API groups by the product's own (leaf) category; the pills show root
+  // categories, so every id needs its top-level ancestor.
+  const rootByCategoryId = useMemo(() => {
+    const map = new Map<string, ExtendedCategory>();
+    const walk = (cats: ExtendedCategory[], root: ExtendedCategory) => {
+      cats.forEach((cat) => {
+        map.set(cat.id, root);
+        if (cat.successorCategories?.length) {
+          walk(cat.successorCategories, root);
+        }
+      });
+    };
+    (allCategories ?? []).forEach((root) => walk([root], root));
+    return map;
+  }, [allCategories]);
+
+  const categoryPills = useMemo(() => {
+    if (!categoryFacets) return [];
+    const byRoot = new Map<
+      string,
+      { id: string; label: string; count: number }
+    >();
+    categoryFacets.forEach(({ categoryId, count }) => {
+      const root = rootByCategoryId.get(categoryId);
+      // A category the tree hasn't loaded has no name to show — leaving it out
+      // is better than inventing a label, and its hits stay reachable via "All".
+      if (!root) return;
+      const existing = byRoot.get(root.id);
+      if (existing) existing.count += count;
+      else
+        byRoot.set(root.id, {
+          id: root.id,
+          label: parseName(root.name, router.locale ?? 'ru'),
+          count,
+        });
+    });
+    return [...byRoot.values()].sort((a, b) => b.count - a.count);
+  }, [categoryFacets, rootByCategoryId, router.locale]);
+
+  // One pill plus "All" says nothing the count line doesn't already say.
+  const showCategoryPills = canShowCategoryPills && categoryPills.length > 1;
+
+  // Hide category section in Landing Mode since user already chose their
+  // category, and while the pills are up so one dimension has one control.
   const hideSections = useMemo<('categories' | 'brands')[]>(
-    () => (isLandingMode ? ['categories'] : []),
-    [isLandingMode],
+    () => (isLandingMode || showCategoryPills ? ['categories'] : []),
+    [isLandingMode, showCategoryPills],
   );
 
   // Fallback from filter state to explicit prop or URL param for fetching
@@ -594,7 +681,10 @@ export default function ProductGridContent({
                 maxPrice={filters.maxPrice}
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
-                showBrandCounts={!isLandingMode}
+                // Brand.productCount counts the whole catalogue (step 54), so
+                // it only tells the truth on the unscoped listing — inside a
+                // search it would promise more hits than the filter returns.
+                showBrandCounts={!isLandingMode && !searchKeyword}
               />
             )}
 
@@ -637,6 +727,72 @@ export default function ProductGridContent({
                     value={filters.sortBy}
                     onChange={(val) => applyFilters({ sortBy: val })}
                   />
+                </Box>
+              )}
+
+              {/* Category pills, spec 1707 — real per-category counts for the
+                  current query, rolled up to root categories. */}
+              {showCategoryPills && (
+                <Box className={productIndexPageClasses.categoryFacets.wrap}>
+                  <Button
+                    disableRipple
+                    disableElevation
+                    onClick={() => applyFilters({ categoryIds: [] })}
+                    className={`${fontClassName.className} ${
+                      filters.categoryIds.length === 0
+                        ? productIndexPageClasses.categoryFacets.pillActive
+                        : productIndexPageClasses.categoryFacets.pill
+                    }`}
+                  >
+                    <span
+                      className={productIndexPageClasses.categoryFacets.label}
+                    >
+                      {t('all')}
+                    </span>
+                    <span
+                      className={productIndexPageClasses.categoryFacets.count}
+                    >
+                      {categoryPills.reduce((sum, pill) => sum + pill.count, 0)}
+                    </span>
+                  </Button>
+                  {categoryPills.map((pill) => {
+                    const isActive =
+                      filters.categoryIds.length === 1 &&
+                      filters.categoryIds[0] === pill.id;
+                    return (
+                      <Button
+                        key={pill.id}
+                        disableRipple
+                        disableElevation
+                        aria-pressed={isActive}
+                        onClick={() =>
+                          applyFilters({
+                            categoryIds: isActive ? [] : [pill.id],
+                          })
+                        }
+                        className={`${fontClassName.className} ${
+                          isActive
+                            ? productIndexPageClasses.categoryFacets.pillActive
+                            : productIndexPageClasses.categoryFacets.pill
+                        }`}
+                      >
+                        <span
+                          className={
+                            productIndexPageClasses.categoryFacets.label
+                          }
+                        >
+                          {pill.label}
+                        </span>
+                        <span
+                          className={
+                            productIndexPageClasses.categoryFacets.count
+                          }
+                        >
+                          {pill.count}
+                        </span>
+                      </Button>
+                    );
+                  })}
                 </Box>
               )}
               {(() => {
