@@ -4,26 +4,29 @@ import VariantBadge from '@/pages/components/VariantBadge';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  getProductMediaUrl,
+  PRODUCT_IMAGE_FALLBACK,
+  tierForProductList,
+} from '@/pages/lib/mediaUrls';
+import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { formatDate } from '@/pages/orders/lib/utils';
+import AccountNav from '@/pages/user/components/AccountNav';
 import { ordersDetailClasses } from '@/styles/classMaps/orders/detail';
 import { fontClassName } from '@/styles/theme';
-import { ArrowLeft, Banknote, MapPin } from 'lucide-react';
+import { ArrowLeft, Banknote, MapPin, Package, StickyNote } from 'lucide-react';
 import {
   Alert,
   Box,
   Button,
+  ButtonBase,
+  CardMedia,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 import { UserOrder } from '@prisma/client';
@@ -33,7 +36,11 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import CancelOrderDialog from './components/CancelOrderDialog';
 import OrderStatusBadge from './components/OrderStatusBadge';
-import { cancelUserOrder, getUserOrderDetail } from './lib/apiUtils';
+import {
+  cancelUserOrder,
+  getUserOrderDetail,
+  UserOrderWithItems,
+} from './lib/apiUtils';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -51,18 +58,8 @@ export default function OrderDetailPage() {
   const t = useTranslations();
   const platform = usePlatform();
 
-  const [order, setOrder] = useState<
-    | (UserOrder & {
-        items: Array<{
-          id: string;
-          quantity: number;
-          productName: string;
-          productPrice: string;
-          selectedVariant?: string | null;
-        }>;
-      })
-    | null
-  >(null);
+  const { network } = useNetworkContext();
+  const [order, setOrder] = useState<UserOrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -193,6 +190,16 @@ export default function OrderDetailPage() {
     router.push('/orders');
   };
 
+  // Same tiered media path the product cards use.
+  const thumbSrc = (raw: string | undefined) => {
+    if (raw == null) return undefined;
+    if (raw.startsWith('http')) return raw;
+    return (
+      getProductMediaUrl(tierForProductList(network), raw) ??
+      PRODUCT_IMAGE_FALLBACK
+    );
+  };
+
   if (loading) {
     return (
       <Layout handleHeaderBackButton={handleBackButton}>
@@ -230,6 +237,39 @@ export default function OrderDetailPage() {
       </Layout>
     );
   }
+
+  const items = order.items ?? [];
+  // Real numbers only: the line snapshots add up to the subtotal, and the total
+  // is the one stored on the order. Delivery is free (there is no fee field and
+  // none is charged), so there is no third figure to invent.
+  const subtotal = items.reduce(
+    (acc, item) => acc + (parseFloat(item.productPrice) || 0) * item.quantity,
+    0,
+  );
+  const orderTotal = parseFloat(order.totalPrice) || subtotal;
+
+  const timeline = [
+    { label: t('createdAt'), value: formatDate(order.createdAt, platform) },
+    ...(order.completedAt
+      ? [
+          {
+            label: t('completedAt'),
+            value: formatDate(order.completedAt, platform),
+          },
+        ]
+      : []),
+    ...(order.cancelledAt
+      ? [
+          {
+            label: t('cancelledAt'),
+            value: formatDate(order.cancelledAt, platform),
+          },
+        ]
+      : []),
+    ...(order.cancellationReason
+      ? [{ label: t('cancellationReason'), value: order.cancellationReason }]
+      : []),
+  ];
 
   return (
     <Layout handleHeaderBackButton={handleBackButton}>
@@ -287,7 +327,7 @@ export default function OrderDetailPage() {
                 {t('orderedItems')} ({order.items?.length})
               </Typography>
               {order.items?.map((item) => {
-                const subtotal =
+                const lineTotal =
                   (parseFloat(item.productPrice) || 0) * item.quantity;
                 return (
                   <Box
@@ -312,7 +352,7 @@ export default function OrderDetailPage() {
                     <Typography
                       className={`${fontClassName.className} ${ordersDetailClasses.itemPrice.mobile}`}
                     >
-                      {subtotal.toFixed(2)} TMT
+                      {lineTotal.toFixed(2)} TMT
                     </Typography>
                   </Box>
                 );
@@ -393,228 +433,217 @@ export default function OrderDetailPage() {
           </Box>
         </Box>
       ) : (
-        <Box className={ordersDetailClasses.container.web}>
-          {/* Header - Web */}
-          <Box className={ordersDetailClasses.header.web}>
-            <Box className="flex-1">
-              <Typography
-                className={`${fontClassName.className} text-2xl font-semibold mb-2`}
-              >
-                {order.orderNumber}
-              </Typography>
-              <OrderStatusBadge status={order.status} />
-            </Box>
-            {canCancelOrder() && (
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => setCancelDialogOpen(true)}
-                sx={{ textTransform: 'none' }}
-              >
-                {t('cancelOrder')}
-              </Button>
-            )}
-          </Box>
-
-          {/* Delivery - Web */}
-          <Box className="mb-6">
-            <Typography
-              className={`${fontClassName.className} text-lg font-semibold mb-3`}
-            >
-              {t('delivery')}
-            </Typography>
-            <Box className="space-y-2">
-              <Box>
+        <Box className={ordersDetailClasses.web.grid}>
+          <AccountNav active="orders" />
+          <Box className={ordersDetailClasses.web.col}>
+            <Box className={ordersDetailClasses.web.headRow}>
+              <Box className="min-w-0">
                 <Typography
-                  className={`${fontClassName.className} text-sm text-gray-600`}
+                  className={`${fontClassName.className} ${ordersDetailClasses.web.title}`}
                 >
-                  {t('deliveryAddress')}:
+                  {t('orderDetails')}
                 </Typography>
-                <Typography className={fontClassName.className}>
-                  {order.deliveryAddress}
+                <Typography
+                  className={`${fontClassName.className} ${ordersDetailClasses.web.orderNumber}`}
+                >
+                  {order.orderNumber} · {formatDate(order.createdAt, platform)}
                 </Typography>
               </Box>
-              <Box>
-                <Typography
-                  className={`${fontClassName.className} text-sm text-gray-600`}
-                >
-                  {t('deliveryPhone')}:
-                </Typography>
-                <Typography className={fontClassName.className}>
-                  {order.deliveryPhone}
-                </Typography>
-              </Box>
-              {order.notes && (
-                <Box>
-                  <Typography
-                    className={`${fontClassName.className} text-sm text-gray-600`}
+              <Box className="flex flex-row items-center gap-3 flex-none">
+                <OrderStatusBadge status={order.status} />
+                {canCancelOrder() && (
+                  <ButtonBase
+                    disableRipple
+                    onClick={() => setCancelDialogOpen(true)}
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.cancelButton}`}
                   >
-                    {t('notes')}:
-                  </Typography>
-                  <Typography className={fontClassName.className}>
-                    {order.notes}
-                  </Typography>
-                </Box>
-              )}
+                    {t('cancelOrder')}
+                  </ButtonBase>
+                )}
+              </Box>
             </Box>
-          </Box>
 
-          {/* Order Items - Web */}
-          <Box className="mb-6">
-            <Typography
-              className={`${fontClassName.className} text-lg font-semibold mb-3`}
-            >
-              {t('orderItems')}
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
-                      >
-                        {t('product')}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
-                      >
-                        {t('quantity')}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
-                      >
-                        {t('price')}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
-                      >
-                        {t('subtotal')}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {order.items?.map((item) => {
-                    const itemPrice = parseFloat(item.productPrice) || 0;
-                    const subtotal = itemPrice * item.quantity;
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Typography className={fontClassName.className}>
-                            {parseName(item.productName, router.locale ?? 'tk')}
-                          </Typography>
+            <Box className={ordersDetailClasses.web.body}>
+              {/* Items + totals */}
+              <Box className={ordersDetailClasses.web.card}>
+                <Typography
+                  className={`${fontClassName.className} ${ordersDetailClasses.web.eyebrow}`}
+                >
+                  {t('orderedItems')} ({items.length})
+                </Typography>
+                {items.map((item) => {
+                  const thumb = thumbSrc(item.product?.imgUrls?.[0]);
+                  const lineTotal =
+                    (parseFloat(item.productPrice) || 0) * item.quantity;
+                  return (
+                    <Box
+                      key={item.id}
+                      className={ordersDetailClasses.web.itemRow}
+                    >
+                      <Box className={ordersDetailClasses.web.thumb}>
+                        {thumb ? (
+                          <CardMedia
+                            component="img"
+                            image={thumb}
+                            alt=""
+                            className={ordersDetailClasses.web.thumbImg}
+                          />
+                        ) : (
+                          <Package
+                            className={ordersDetailClasses.web.thumbIcon}
+                          />
+                        )}
+                      </Box>
+                      <Box className={ordersDetailClasses.web.itemBody}>
+                        <Typography
+                          className={`${fontClassName.className} ${ordersDetailClasses.web.itemName}`}
+                        >
+                          {parseName(item.productName, router.locale ?? 'tk')}
+                        </Typography>
+                        <Box className={ordersDetailClasses.web.itemMeta}>
                           {item.selectedVariant && (
                             <VariantBadge
                               {...parseOrderVariant(item.selectedVariant)}
                             />
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography className={fontClassName.className}>
-                            {item.quantity}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography className={fontClassName.className}>
-                            {parseFloat(item.productPrice).toFixed(2)} TMT
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography className={fontClassName.className}>
-                            {subtotal.toFixed(2)} TMT
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  <TableRow>
-                    <TableCell colSpan={3}>
+                          <span>× {item.quantity}</span>
+                        </Box>
+                      </Box>
                       <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
+                        className={`${fontClassName.className} ${ordersDetailClasses.web.itemPrice}`}
                       >
-                        {t('orderTotal')}:
+                        {lineTotal.toFixed(2)} {t('manat')}
                       </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        className={fontClassName.className}
-                        fontWeight={600}
-                      >
-                        {parseFloat(order.totalPrice).toFixed(2)} TMT
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
+                    </Box>
+                  );
+                })}
 
-          {/* Order Metadata - Web */}
-          <Box className="mb-6">
-            <Typography
-              className={`${fontClassName.className} text-lg font-semibold mb-3`}
-            >
-              {t('information')}
-            </Typography>
-            <Box className="space-y-2">
-              <Box>
-                <Typography
-                  className={`${fontClassName.className} text-sm text-gray-600`}
-                >
-                  {t('createdAt')}:
-                </Typography>
-                <Typography className={fontClassName.className}>
-                  {formatDate(order.createdAt, platform)}
-                </Typography>
+                <Box className={ordersDetailClasses.web.totals}>
+                  <Box
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.totalsRow}`}
+                  >
+                    <span>{t('subtotal')}</span>
+                    <span>
+                      {subtotal.toFixed(2)} {t('manat')}
+                    </span>
+                  </Box>
+                  <Box
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.totalsRow}`}
+                  >
+                    <span>{t('delivery')}</span>
+                    <span className={ordersDetailClasses.web.free}>
+                      {t('free')}
+                    </span>
+                  </Box>
+                  <Box className={ordersDetailClasses.web.grandRow}>
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.grandLabel}`}
+                    >
+                      {t('orderTotal')}
+                    </Typography>
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.grandValue}`}
+                    >
+                      {orderTotal.toFixed(2)} {t('manat')}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-              {order.completedAt && (
-                <Box>
+
+              {/* Delivery · payment · dates */}
+              <Box className={ordersDetailClasses.web.sideCol}>
+                <Box className={ordersDetailClasses.web.card}>
+                  <Box className={ordersDetailClasses.web.sideHead}>
+                    <MapPin className={ordersDetailClasses.web.sideIcon} />
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.sideTitle}`}
+                    >
+                      {t('delivery')}
+                    </Typography>
+                  </Box>
+                  {order.userName && (
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
+                    >
+                      {order.userName}
+                    </Typography>
+                  )}
                   <Typography
-                    className={`${fontClassName.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
                   >
-                    {t('completedAt')}:
+                    {order.deliveryAddress}
                   </Typography>
-                  <Typography className={fontClassName.className}>
-                    {formatDate(order.completedAt, platform)}
+                  <Typography
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.sideMuted}`}
+                  >
+                    {order.deliveryPhone}
                   </Typography>
                 </Box>
-              )}
-              {order.cancelledAt && (
-                <Box>
+
+                {order.notes && (
+                  <Box className={ordersDetailClasses.web.card}>
+                    <Box className={ordersDetailClasses.web.sideHead}>
+                      <StickyNote
+                        className={ordersDetailClasses.web.sideIcon}
+                      />
+                      <Typography
+                        className={`${fontClassName.className} ${ordersDetailClasses.web.sideTitle}`}
+                      >
+                        {t('notes')}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
+                    >
+                      {order.notes}
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box className={ordersDetailClasses.web.card}>
+                  <Box className={ordersDetailClasses.web.sideHead}>
+                    <Banknote
+                      className={ordersDetailClasses.web.sideIconGreen}
+                    />
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.sideTitle}`}
+                    >
+                      {t('payment')}
+                    </Typography>
+                  </Box>
                   <Typography
-                    className={`${fontClassName.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
                   >
-                    {t('cancelledAt')}:
+                    {t('cashOnDelivery')}
                   </Typography>
-                  <Typography className={fontClassName.className}>
-                    {formatDate(order.cancelledAt, platform)}
+                  <Typography
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.sideMuted}`}
+                  >
+                    {t('payInCash')} — {orderTotal.toFixed(2)} {t('manat')}
                   </Typography>
                 </Box>
-              )}
-              {order.cancellationReason && (
-                <Box>
+
+                <Box className={ordersDetailClasses.web.card}>
                   <Typography
-                    className={`${fontClassName.className} text-sm text-gray-600`}
+                    className={`${fontClassName.className} ${ordersDetailClasses.web.eyebrow}`}
                   >
-                    {t('cancellationReason')}:
+                    {t('information')}
                   </Typography>
-                  <Typography className={fontClassName.className}>
-                    {order.cancellationReason}
-                  </Typography>
+                  {timeline.map((entry) => (
+                    <Box
+                      key={entry.label}
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.metaRow}`}
+                    >
+                      <span className={ordersDetailClasses.web.metaKey}>
+                        {entry.label}
+                      </span>
+                      <span className={ordersDetailClasses.web.metaValue}>
+                        {entry.value}
+                      </span>
+                    </Box>
+                  ))}
                 </Box>
-              )}
+              </Box>
             </Box>
           </Box>
         </Box>

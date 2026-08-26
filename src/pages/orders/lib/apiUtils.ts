@@ -1,9 +1,24 @@
 import { FetchWithCredsType } from '@/pages/lib/types';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
 
+// What the order endpoints actually return alongside the order row: the item
+// snapshots taken at order time, each still linked to the product it came from
+// (only used here for the thumbnail).
+export interface OrderItemSnapshot {
+  id: string;
+  quantity: number;
+  productName: string;
+  productPrice: string;
+  selectedVariant?: string | null;
+  product?: { imgUrls: string[] } | null;
+}
+
+export type UserOrderWithItems = UserOrder & { items?: OrderItemSnapshot[] };
+
 interface GetUserOrdersParams {
   accessToken: string;
-  status?: UserOrderStatus;
+  // A list is sent comma-separated and matches any of the given statuses.
+  status?: UserOrderStatus | UserOrderStatus[];
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -14,7 +29,7 @@ interface GetUserOrdersParams {
 interface GetUserOrdersResponse {
   success: boolean;
   data?: {
-    orders: UserOrder[];
+    orders: UserOrderWithItems[];
     pagination: {
       page: number;
       limit: number;
@@ -36,7 +51,8 @@ export async function getUserOrdersList({
 }: GetUserOrdersParams): Promise<GetUserOrdersResponse> {
   try {
     const queryParams = new URLSearchParams();
-    if (status) queryParams.append('status', status);
+    const statusParam = Array.isArray(status) ? status.join(',') : status;
+    if (statusParam) queryParams.append('status', statusParam);
     if (dateFrom) queryParams.append('dateFrom', dateFrom);
     if (dateTo) {
       // If dateTo is just a date (YYYY-MM-DD), append end of day time
@@ -48,7 +64,7 @@ export async function getUserOrdersList({
     queryParams.append('limit', limit.toString());
 
     const { success, data, message } = await fetchWithCreds<{
-      orders: UserOrder[];
+      orders: UserOrderWithItems[];
       pagination: {
         page: number;
         limit: number;
@@ -79,13 +95,15 @@ export async function getUserOrderDetail({
   accessToken: string;
   orderId: string;
   fetchWithCreds: FetchWithCredsType;
-}): Promise<{ success: boolean; data?: UserOrder; message?: string }> {
+}): Promise<{ success: boolean; data?: UserOrderWithItems; message?: string }> {
   try {
-    const { success, data, message } = await fetchWithCreds<UserOrder>({
-      accessToken,
-      path: `/api/order/${orderId}`,
-      method: 'GET',
-    });
+    const { success, data, message } = await fetchWithCreds<UserOrderWithItems>(
+      {
+        accessToken,
+        path: `/api/order/${orderId}`,
+        method: 'GET',
+      },
+    );
 
     return { success, data, message };
   } catch (error) {

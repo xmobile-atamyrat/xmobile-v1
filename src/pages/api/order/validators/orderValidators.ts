@@ -22,8 +22,34 @@ export const updateAdminNotesSchema = z.object({
   adminNotes: z.string().min(1, 'Admin notes cannot be empty'),
 });
 
+// `status` accepts either one status or a comma-separated list, so a tab that
+// covers several real statuses ("Ongoing" = PENDING,IN_PROGRESS) still filters
+// in the `where` clause instead of after pagination has already been applied.
+const orderStatusFilter = z
+  .string()
+  .optional()
+  .transform((val, ctx) => {
+    if (!val) return undefined;
+    const parts = val
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const allowed = Object.values(UserOrderStatus) as string[];
+    const invalid = parts.filter((part) => !allowed.includes(part));
+    if (parts.length === 0 || invalid.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Invalid order status: ${invalid.join(', ') || val}`,
+      });
+      return z.NEVER;
+    }
+    return parts.length === 1
+      ? (parts[0] as UserOrderStatus)
+      : (parts as UserOrderStatus[]);
+  });
+
 export const getOrdersQuerySchema = z.object({
-  status: z.nativeEnum(UserOrderStatus).optional(),
+  status: orderStatusFilter,
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   page: z
