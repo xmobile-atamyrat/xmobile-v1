@@ -25,8 +25,11 @@ export const profileClasses = {
   heroSubtitle: 'text-white/70 text-[13px] leading-[1.5] mb-5',
   heroSignIn:
     'w-full h-[50px] rounded-[14px] bg-white text-navy text-[15px] font-bold normal-case flex items-center justify-center mb-[10px]',
+  // Every `!border` below sits on a MUI ButtonBase, whose emotion `border: 0`
+  // rule is injected after the Tailwind sheet and wins at equal specificity —
+  // without the bangs these borders silently never render.
   heroCreate:
-    'w-full h-[50px] rounded-[14px] border-[1.5px] border-white/35 text-white text-[15px] font-semibold normal-case flex items-center justify-center',
+    'w-full h-[50px] rounded-[14px] !border-[1.5px] !border-solid !border-white/35 text-white text-[15px] font-semibold normal-case flex items-center justify-center',
   rowValue: 'text-[14px] text-muted flex-none',
   avatarRow: 'flex items-center gap-[14px]',
   avatar:
@@ -77,7 +80,7 @@ export const profileClasses = {
     'w-[80%] flex flex-row justify-between mt-[24px] mx-auto gap-3',
   dialogOption:
     'flex justify-center items-center flex-1 h-[46px] rounded-[11px] text-[15px] font-semibold normal-case',
-  dialogCancel: 'border-[1.5px] border-hairline text-ink',
+  dialogCancel: '!border-[1.5px] !border-solid !border-hairline text-ink',
   dialogConfirm: 'bg-red text-white',
   // Language bottom sheet (mockup XMobile.dc.html:979-987): handle · title+close · radio rows · Apply.
   langSheet: {
@@ -94,9 +97,9 @@ export const profileClasses = {
   langCloseIcon: 'w-[17px] h-[17px] text-muted',
   langOptions: 'flex flex-col gap-[10px] mb-[22px]',
   langRow:
-    'flex items-center gap-[14px] h-14 rounded-[14px] px-4 border-[1.5px] normal-case w-full',
-  langRowIdle: 'border-hairline bg-white',
-  langRowActive: 'border-navy bg-[#F7F6FC]',
+    'flex items-center gap-[14px] h-14 rounded-[14px] px-4 !border-[1.5px] !border-solid normal-case w-full',
+  langRowIdle: '!border-hairline bg-white',
+  langRowActive: '!border-navy bg-[#F7F6FC]',
   langRowName: 'flex-1 text-left text-[15px] text-ink',
   langRadio: 'w-6 h-6 rounded-full flex items-center justify-center flex-none',
   langRadioIdle: 'border-[1.5px] border-[#D7D6E0]',
@@ -105,4 +108,28 @@ export const profileClasses = {
   langApply:
     'w-full h-[54px] rounded-[15px] bg-navy text-white text-[16px] font-semibold normal-case flex items-center justify-center',
   langImg: 'w-[26px] h-[20px] rounded-[4px] flex-none',
+
+  // --- Desktop account section (spec 1725-1790): 280px nav rail + content
+  // column. Horizontal padding comes from Layout's px-[2vw]; the rail itself
+  // lives in `classMaps/user/accountNav.ts`. Rows drop the mobile icon tile so
+  // they read as one language with the rail sitting next to them. ---
+  web: {
+    grid: 'w-full grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-7 pt-7 pb-12 items-start',
+    col: 'flex flex-col min-w-0',
+    title:
+      'text-[24px] font-[800] leading-tight tracking-[-0.02em] text-ink mb-[18px]',
+    sectionLabel:
+      'text-[12px] font-bold uppercase tracking-[0.06em] text-muted mb-[10px]',
+    // Capped: unlike the order cards (which carry content at both ends), a
+    // settings row stretched to the full column strands its chevron/toggle
+    // ~1000px from its label.
+    card: 'bg-white border border-hairline rounded-[18px] p-[10px] flex flex-col mb-5 max-w-[720px]',
+    row: 'flex items-center gap-3 px-[14px] py-[13px] rounded-[12px] w-full normal-case justify-start text-left text-[14px] font-medium text-[#4A4959] hover:bg-fill',
+    rowLabel: 'flex-1 min-w-0 truncate text-left',
+    deleteBtn:
+      'self-start h-[46px] px-[18px] rounded-[12px] !border-[1.5px] !border-solid !border-hairline text-muted text-[13px] font-semibold flex items-center gap-[7px] normal-case hover:!border-red hover:text-red',
+    heroCard:
+      'bg-navy rounded-[18px] px-[26px] py-8 flex flex-col items-start mb-5 max-w-[560px]',
+    heroActions: 'flex flex-row gap-3 w-full max-w-[420px]',
+  },
 };
