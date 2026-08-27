@@ -6,6 +6,11 @@ name: Android Play Store upload
 on:
   workflow_dispatch:
     inputs:
+      commit_ref:
+        description: 'Branch name or commit hash to build'
+        required: true
+        type: string
+        default: 'main'
       android_version_name:
         description: 'versionName shown to users, e.g. 1.0.2'
         required: true
@@ -48,6 +53,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_ref }}
+
+      - name: Show build commit
+        run: |
+          set -euo pipefail
+          echo "Building ${{ inputs.commit_ref }} @ $(git rev-parse --short HEAD)"
 
       - uses: actions/setup-java@v4
         with:
