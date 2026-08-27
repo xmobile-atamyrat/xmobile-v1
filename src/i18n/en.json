@@ -511,6 +511,7 @@
   "categoryParent": "Parent category",
   "categoryParentRoot": "Root (top level)",
   "pageNotFound": "Page not found!",
+  "pageNotFoundSubtitle": "The page you are looking for was moved or never existed. Let us get you back to shopping.",
   "homepage": "Homepage",
   "startShopping": "Start Shopping",
   "popularCategories": "Popular Categories",

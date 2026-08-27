@@ -514,6 +514,7 @@
   "categoryParent": "Родитель",
   "categoryParentRoot": "Корень (верхний уровень)",
   "pageNotFound": "Страница не найдена!",
+  "pageNotFoundSubtitle": "Возможно, страница была перемещена или её никогда не существовало. Вернёмся к покупкам.",
   "homepage": "Главная",
   "startShopping": "Начать покупки",
   "popularCategories": "Популярные категории",
