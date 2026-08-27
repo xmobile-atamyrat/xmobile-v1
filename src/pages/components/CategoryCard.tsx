@@ -6,7 +6,7 @@ import {
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { parseName } from '@/pages/lib/utils';
 import { categoryCardClasses } from '@/styles/classMaps/components/categoryCard';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
@@ -47,23 +47,18 @@ export default function CategoryCard({
 
   const content =
     initialImgUrl === ALL_PRODUCTS_CATEGORY_CARD ? (
-      <Box className={categoryCardClasses.boxes.allP}>
+      <Box className={categoryCardClasses.allP}>
         <Typography
-          className={`${categoryCardClasses.typography[platform]} ${interClassname.className}`}
+          className={`${categoryCardClasses.allPText} ${fontClassName.className}`}
         >
           {t('allProducts')}
         </Typography>
       </Box>
     ) : (
-      <Box className={categoryCardClasses.boxes.cardMedia[platform]}>
-        <Typography
-          className={`${categoryCardClasses.typography2[platform]} ${interClassname.className}`}
-        >
-          {parseName(name, router.locale ?? 'tk')}
-        </Typography>
+      <>
         <CardMedia
           component="img"
-          className={categoryCardClasses.cardMedia[platform]}
+          className={categoryCardClasses.cardMedia}
           image={imgSrc ?? PRODUCT_IMAGE_FALLBACK}
           alt="Xmobile"
           loading="lazy"
@@ -74,7 +69,13 @@ export default function CategoryCard({
             el.src = PRODUCT_IMAGE_FALLBACK;
           }}
         />
-      </Box>
+        <Box className={categoryCardClasses.gradient} />
+        <Typography
+          className={`${categoryCardClasses.name} ${fontClassName.className}`}
+        >
+          {parseName(name, router.locale ?? 'tk')}
+        </Typography>
+      </>
     );
 
   if (href) {

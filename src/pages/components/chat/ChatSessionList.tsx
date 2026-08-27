@@ -4,7 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { TK_MONTHS_SHORT } from '@/pages/lib/constants';
 import { ChatSession, ProtectedUser } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { muted } from '@/styles/theme';
 import {
   Accordion,
   AccordionDetails,
@@ -17,6 +17,7 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -113,7 +114,7 @@ const SessionListItem = ({
       className={chatClasses.sessionList.listItem[platform]}
       onClick={() => onClick(chatSession)}
       sx={{
-        '&:hover': { backgroundColor: '#F6F6F6' },
+        '&:hover': { backgroundColor: '#F5F5F8' },
         display: 'flex',
         alignItems: 'flex-start',
         gap: 1,
@@ -134,7 +135,7 @@ const SessionListItem = ({
         <Typography
           sx={{
             fontSize: '12px',
-            color: '#838383',
+            color: '#8B8A98',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -156,7 +157,7 @@ const SessionListItem = ({
         <Typography
           sx={{
             fontSize: '11px',
-            color: '#838383',
+            color: '#8B8A98',
           }}
         >
           {messageDate}
@@ -167,7 +168,7 @@ const SessionListItem = ({
               width: 8,
               height: 8,
               borderRadius: '50%',
-              backgroundColor: '#ff624c',
+              backgroundColor: '#E41E2B',
             }}
           />
         )}
@@ -216,9 +217,9 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
         defaultExpanded
         disableGutters
         elevation={0}
-        sx={{ borderBottom: '1px solid #E6E6E6' }}
+        sx={{ borderBottom: '1px solid #ECECF1' }}
       >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <AccordionSummary expandIcon={<ChevronDown size={18} color={muted} />}>
           <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
             {t('chatOpenChats')}
           </Typography>
@@ -228,7 +229,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
               sx={{
                 ml: 2,
                 '& .MuiBadge-badge': {
-                  backgroundColor: '#ff624c',
+                  backgroundColor: '#E41E2B',
                   color: '#fff',
                   fontSize: '11px',
                 },
@@ -244,7 +245,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                   secondary={t('chatNoActiveChats')}
                   secondaryTypographyProps={{
                     fontSize: '13px',
-                    color: '#838383',
+                    color: '#8B8A98',
                   }}
                 />
               </ListItem>
@@ -266,7 +267,9 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
       {/* Closed Chats */}
       {isAdminOrSuperuser && (
         <Accordion disableGutters elevation={0}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <AccordionSummary
+            expandIcon={<ChevronDown size={18} color={muted} />}
+          >
             <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>
               {t('chatClosedChats')}
             </Typography>
@@ -279,7 +282,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                     secondary={t('chatNoClosedChats')}
                     secondaryTypographyProps={{
                       fontSize: '13px',
-                      color: '#838383',
+                      color: '#8B8A98',
                     }}
                   />
                 </ListItem>

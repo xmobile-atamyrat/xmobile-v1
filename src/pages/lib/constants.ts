@@ -20,6 +20,11 @@ export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;
 
+// Single source of truth for the fixed bottom nav's height, so the two
+// sticky bars that stack above it (CheckoutSummary, AddToCart buy bar)
+// reserve clearance from one number instead of three independent guesses.
+export const mobileBottomNavHeight = 64;
+
 export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
 /**
@@ -35,9 +40,10 @@ export const MAIN_BG_COLOR = '#FFF';
 
 export const DEFAULT_MUI_COLOR = '#1976d2';
 
-export const LOGO_COLOR = '#1976d2';
+export const LOGO_COLOR = '#20166E';
 export const LOGO_COLOR_LIGHT = '#1d72c2';
 export const LOGO_COLOR_ORANGE = '#ff6f00';
+export const RED_COLOR = '#E41E2B';
 /**
  * #221765 -> original
  * #4B4090
@@ -128,6 +134,10 @@ export const SORT_OPTIONS = {
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;
+
+// Page size for the product grid. Shared so the web pagination control derives
+// the same page count the API pages by — see api/product/index.page.ts.
+export const PRODUCTS_PER_PAGE = 20;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart

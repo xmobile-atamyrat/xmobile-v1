@@ -1,12 +1,10 @@
 import { SORT_OPTIONS } from '@/pages/lib/constants';
+import { fontClassName, hairline, ink, muted, navy } from '@/styles/theme';
 import {
-  Box,
-  Divider,
   FormControl,
   MenuItem,
   Select,
   SelectChangeEvent,
-  Typography,
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 
@@ -26,26 +24,16 @@ const SortChip = ({
   isActive: boolean;
   onClick: () => void;
 }) => (
-  <Box
+  <span
     onClick={onClick}
-    sx={{
-      px: 2,
-      py: 1,
-      borderRadius: '4px',
-      border: '1px solid',
-      borderColor: isActive ? '#000' : '#E0E0E0',
-      backgroundColor: isActive ? '#000' : '#FFF',
-      color: isActive ? '#FFF' : '#000',
-      cursor: 'pointer',
-      fontFamily: 'Inter, sans-serif',
-      fontSize: '14px',
-      fontWeight: 500,
-      whiteSpace: 'nowrap',
-      transition: 'all 0.2s',
-    }}
+    className={`${fontClassName.className} cursor-pointer whitespace-nowrap rounded-full px-4 py-2 text-[13px] transition-colors ${
+      isActive
+        ? 'bg-navy font-semibold text-white'
+        : 'bg-fill font-medium text-[#4A4959]'
+    }`}
   >
     {label}
-  </Box>
+  </span>
 );
 
 export default function SortDropdown({
@@ -75,93 +63,99 @@ export default function SortDropdown({
   // mobile
   if (variant === 'chips') {
     return (
-      <Box>
-        <Box display="flex" flexWrap="wrap" gap={1}>
-          {sortOptions.map((sortOption) => (
-            <SortChip
-              key={sortOption.value}
-              label={sortOption.label}
-              isActive={
-                value === sortOption.value ||
-                (!value && sortOption.value === SORT_OPTIONS.NEWEST)
-              }
-              onClick={() => onChange(sortOption.value)}
-            />
-          ))}
-        </Box>
-      </Box>
+      <div className="flex flex-wrap gap-2">
+        {sortOptions.map((sortOption) => (
+          <SortChip
+            key={sortOption.value}
+            label={sortOption.label}
+            isActive={
+              value === sortOption.value ||
+              (!value && sortOption.value === SORT_OPTIONS.NEWEST)
+            }
+            onClick={() => onChange(sortOption.value)}
+          />
+        ))}
+      </div>
     );
   }
 
-  // desktop
+  // desktop — pill trigger, see xmobile-app-redesign/project/XMobile.dc.html:1458
+  const selectedLabel =
+    sortOptions.find((o) => o.value === value)?.label ||
+    sortOptions.find((o) => o.value === SORT_OPTIONS.NEWEST)?.label;
+
   return (
-    <Box display="flex" alignItems="center" gap={1}>
-      <Typography
+    <FormControl sx={{ minWidth: 170 }}>
+      <Select
+        value={value}
+        onChange={handleChange}
+        displayEmpty
+        inputProps={{ 'aria-label': 'Sort by' }}
+        renderValue={() => `${t('sortBy') || 'Sort'}: ${selectedLabel}`}
+        className={fontClassName.className}
         sx={{
-          fontFamily: 'Inter, sans-serif',
+          height: '38px',
           fontSize: '14px',
           fontWeight: 600,
-          color: '#303030',
+          color: ink,
+          bgcolor: '#fff',
+          borderRadius: '10px',
+          '& .MuiSelect-select': {
+            paddingTop: 0,
+            paddingBottom: 0,
+            paddingLeft: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            height: '38px !important',
+          },
+          '& .MuiSelect-icon': { color: muted },
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: hairline },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: hairline,
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: navy,
+          },
         }}
-      >
-        {t('sortBy') || 'Sort by'}
-      </Typography>
-      <Divider
-        orientation="vertical"
-        flexItem
-        sx={{ height: 20, bgcolor: '#BDBDBD', my: 'auto' }}
-      />
-      <FormControl variant="standard" sx={{ minWidth: 150 }}>
-        <Select
-          value={value}
-          onChange={handleChange}
-          displayEmpty
-          inputProps={{ 'aria-label': 'Sort by' }}
-          disableUnderline
-          sx={{
-            fontSize: '14px',
-            fontWeight: 500,
-            '& .MuiSelect-select': {
-              paddingTop: '2px',
-              paddingBottom: '2px',
-            },
-          }}
-          MenuProps={{
-            PaperProps: {
-              sx: {
-                '& .MuiMenuItem-root': {
-                  fontSize: '16px',
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 400,
-                  color: '#303030',
-                  paddingLeft: '16px',
-                  paddingRight: '16px',
-                  paddingTop: '8px',
-                  paddingBottom: '8px',
-                  '&.Mui-selected': {
-                    backgroundColor: '#f5f5f5',
-                    borderLeft: '4px solid #FF624C',
-                    paddingLeft: '12px',
-                    fontWeight: 700,
-                    '&:hover': {
-                      backgroundColor: '#f5f5f5',
-                    },
-                  },
+        MenuProps={{
+          PaperProps: {
+            sx: {
+              mt: 1,
+              borderRadius: '12px',
+              border: `1px solid ${hairline}`,
+              boxShadow: '0 8px 24px rgba(23,22,29,0.08)',
+              '& .MuiMenuItem-root': {
+                fontSize: '14px',
+                fontFamily: fontClassName.style.fontFamily,
+                fontWeight: 400,
+                color: ink,
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                '&.Mui-selected': {
+                  backgroundColor: '#F7F6FA',
+                  borderLeft: `3px solid ${navy}`,
+                  paddingLeft: '13px',
+                  fontWeight: 700,
                   '&:hover': {
-                    backgroundColor: '#fafafa',
+                    backgroundColor: '#F7F6FA',
                   },
+                },
+                '&:hover': {
+                  backgroundColor: '#F7F6FA',
                 },
               },
             },
-          }}
-        >
-          {sortOptions.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </Box>
+          },
+        }}
+      >
+        {sortOptions.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   );
 }

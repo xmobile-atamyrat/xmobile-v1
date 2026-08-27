@@ -36,3 +36,39 @@ body {
 #__next {
   height: 100vh;
 }
+
+/* Hero banner carousel dots (pill-active/dot-inactive), see xmobile-app-redesign design */
+/* !important needed: slick-theme.css is imported inside the component, so it can
+   land after globals.css in the bundle and its default li/button sizing wins otherwise */
+.hero-banner-slider.slick-slider {
+  padding-bottom: 20px !important;
+}
+.hero-banner-slider .slick-dots {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  bottom: 0 !important;
+}
+.hero-banner-slider .slick-dots li {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+.hero-banner-slider .slick-dots li button {
+  position: static !important;
+  width: 6px !important;
+  height: 6px !important;
+  padding: 0 !important;
+  border-radius: 999px;
+  background: #d7d6e0;
+}
+.hero-banner-slider .slick-dots li button:before {
+  content: none !important;
+}
+.hero-banner-slider .slick-dots li.slick-active button {
+  width: 18px !important;
+  background: #20166e;
+}

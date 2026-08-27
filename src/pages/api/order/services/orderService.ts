@@ -41,7 +41,9 @@ export interface CreateGuestOrderData {
 export interface GetOrdersFilters {
   userId?: string; // For filtering user's own orders
   searchKeyword?: string;
-  status?: UserOrderStatus;
+  // A list matches any of the given statuses — the web "Ongoing" tab is
+  // PENDING + IN_PROGRESS, and "Completed" folds in the two cancelled states.
+  status?: UserOrderStatus | UserOrderStatus[];
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -441,7 +443,11 @@ export async function getOrders(filters: GetOrdersFilters) {
     ];
   }
 
-  if (status) where.status = status;
+  if (Array.isArray(status)) {
+    if (status.length > 0) where.status = { in: status };
+  } else if (status) {
+    where.status = status;
+  }
   if (dateFrom || dateTo) {
     where.createdAt = {};
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);

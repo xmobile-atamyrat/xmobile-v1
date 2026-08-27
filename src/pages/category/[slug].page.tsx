@@ -26,11 +26,10 @@ import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
-import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { interClassname } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import { Box, IconButton, Typography } from '@mui/material';
+import { fontClassName } from '@/styles/theme';
+import { Box, Typography } from '@mui/material';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
@@ -244,6 +243,7 @@ export default function CategoryPage({
 }: CategoryPageProps) {
   const router = useRouter();
   const platform = usePlatform();
+  const t = useTranslations();
   const { setSelectedCategoryId } = useCategoryContext();
   const { setProducts } = useProductContext();
 
@@ -265,27 +265,23 @@ export default function CategoryPage({
       <Box className={categoryIdClasses.boxes.main[platform]}>
         <SimpleBreadcrumbs categoryPath={categoryPath} />
         <Box className={categoryIdClasses.boxes.header[platform]}>
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={appbarClasses.backButton[platform]}
-            aria-label="open drawer"
-            onClick={handleHeaderBackButton}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-          <Box className="flex w-full justify-center">
-            {category && (
+          {category && (
+            <>
               <Typography
-                className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+                component={platform === 'web' ? 'h1' : 'p'}
+                className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
               >
                 {parseName(category.name, router.locale ?? 'ru')}
               </Typography>
-            )}
-          </Box>
+              {category.successorCategories.length > 0 && (
+                <Typography
+                  className={`${fontClassName.className} ${categoryIdClasses.subtitle[platform]}`}
+                >
+                  {`${category.successorCategories.length} ${t('categories')}`}
+                </Typography>
+              )}
+            </>
+          )}
         </Box>
         <Box className={homePageClasses.card[platform]}>
           {/* All Products card - show in every category */}

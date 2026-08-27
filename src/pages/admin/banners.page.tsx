@@ -15,7 +15,7 @@ import {
 } from '@/pages/lib/mediaUrls';
 import { PromoBannerData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import AddIcon from '@mui/icons-material/Add';
 import CollectionsIcon from '@mui/icons-material/Collections';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
@@ -156,7 +156,7 @@ export default function BannersAdminPage() {
             <Typography
               fontWeight={700}
               fontSize={isMdUp ? 22 : 18}
-              className={interClassname.className}
+              className={fontClassName.className}
             >
               {t('promoBanners')}
             </Typography>

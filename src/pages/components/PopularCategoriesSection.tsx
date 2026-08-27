@@ -10,8 +10,7 @@ import { buildPopularCategoriesSectionModel } from '@/pages/lib/popularCategorie
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { popularCategoriesSectionClasses as cls } from '@/styles/classMaps/components/popularCategoriesSection';
-import { interClassname } from '@/styles/theme';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { fontClassName } from '@/styles/theme';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
@@ -23,7 +22,10 @@ interface CategoryImageProps {
   className: string;
 }
 
-function CategoryImage({ initialImgUrl, className }: CategoryImageProps) {
+export function CategoryImage({
+  initialImgUrl,
+  className,
+}: CategoryImageProps) {
   const imgSrc = useMemo(() => {
     if (
       initialImgUrl == null ||
@@ -81,46 +83,37 @@ export default function PopularCategoriesSection({
 
   return (
     <Box className={cls.section}>
-      <Typography className={`${interClassname.className} ${cls.sectionTitle}`}>
-        {t('popularCategories')}
-      </Typography>
+      <Box className={cls.header}>
+        <Typography
+          className={`${fontClassName.className} ${cls.sectionTitle}`}
+        >
+          {t('popularCategories')}
+        </Typography>
+        {showFullWidthMore && (
+          <Typography
+            className={`${fontClassName.className} ${cls.seeAll}`}
+            onClick={handleMore}
+          >
+            {t('moreCategories')}
+          </Typography>
+        )}
+      </Box>
 
-      <Box className={cls.grid}>
+      <Box className={cls.rail}>
         {fullWidthItems.map((cat) => (
           <Box
             key={cat.id}
-            className={cls.fullWidthCard}
+            className={cls.item}
             onClick={() => handleNavigate(cat.slug)}
           >
-            <Box className={cls.fullWidthImageBox}>
-              <CategoryImage
-                initialImgUrl={cat.imgUrl}
-                className={cls.fullWidthImage}
-              />
+            <Box className={cls.imageBox}>
+              <CategoryImage initialImgUrl={cat.imgUrl} className={cls.image} />
             </Box>
-            <Typography
-              className={`${interClassname.className} ${cls.fullWidthName}`}
-            >
+            <Typography className={`${fontClassName.className} ${cls.name}`}>
               {parseName(cat.name, locale)}
             </Typography>
-            <ChevronRightIcon className={cls.chevron} />
           </Box>
         ))}
-
-        {showFullWidthMore && (
-          <Box className={cls.fullWidthMoreCard} onClick={handleMore}>
-            <Box className={cls.moreDotsBox}>
-              <Typography className={cls.moreDotsText}>···</Typography>
-            </Box>
-            <Typography
-              className={`${interClassname.className} ${cls.fullWidthName}`}
-              sx={{ color: 'text.secondary' }}
-            >
-              {t('moreCategories')}
-            </Typography>
-            <ChevronRightIcon className={cls.chevron} />
-          </Box>
-        )}
       </Box>
     </Box>
   );

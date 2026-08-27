@@ -77,6 +77,84 @@ export const fetchProducts = async ({
   return Array.isArray(data) ? data : [data];
 };
 
+/** Total number of products matching a filter set (ignores pagination). */
+export const fetchProductsCount = async ({
+  categoryIds,
+  brandIds,
+  colorIds,
+  minPrice,
+  maxPrice,
+  searchKeyword,
+}: {
+  categoryIds?: string[];
+  brandIds?: string[];
+  colorIds?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  searchKeyword?: string;
+}): Promise<number> => {
+  let url = `${BASE_URL}/api/product?count=true`;
+  const appendParam = (key: string, val: any) => {
+    if (val) url += `&${key}=${encodeURIComponent(val)}`;
+  };
+  brandIds?.forEach((bid) => appendParam('brandIds', bid));
+  categoryIds?.forEach((cid) => appendParam('categoryIds', cid));
+  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  appendParam('maxPrice', maxPrice);
+  appendParam('minPrice', minPrice);
+  appendParam('searchKeyword', searchKeyword);
+
+  const { success, data }: ResponseApi<number> = await (
+    await fetch(url)
+  ).json();
+  if (!success || typeof data !== 'number') {
+    throw new Error('Failed to fetch product count');
+  }
+  return data;
+};
+
+export interface CategoryFacet {
+  categoryId: string;
+  count: number;
+}
+
+/**
+ * Per-category breakdown of a filter set, for the search results' category
+ * pills. Deliberately takes no `categoryIds`: a facet computed with its own
+ * dimension applied would report 0 for every category except the selected one.
+ */
+export const fetchCategoryFacets = async ({
+  brandIds,
+  colorIds,
+  minPrice,
+  maxPrice,
+  searchKeyword,
+}: {
+  brandIds?: string[];
+  colorIds?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  searchKeyword?: string;
+}): Promise<CategoryFacet[]> => {
+  let url = `${BASE_URL}/api/product?facets=categories`;
+  const appendParam = (key: string, val: any) => {
+    if (val) url += `&${key}=${encodeURIComponent(val)}`;
+  };
+  brandIds?.forEach((bid) => appendParam('brandIds', bid));
+  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  appendParam('maxPrice', maxPrice);
+  appendParam('minPrice', minPrice);
+  appendParam('searchKeyword', searchKeyword);
+
+  const { success, data }: ResponseApi<CategoryFacet[]> = await (
+    await fetch(url)
+  ).json();
+  if (!success || !Array.isArray(data)) {
+    throw new Error('Failed to fetch category facets');
+  }
+  return data;
+};
+
 /** All product slugs for SSG (e.g. getStaticPaths); uses /api/product/slugs */
 export const fetchAllProductSlugs = async (): Promise<string[]> => {
   const { success, data, message }: ResponseApi<string[]> = await (

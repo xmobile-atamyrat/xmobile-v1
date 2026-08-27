@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import CookieManager from '@react-native-cookies/cookies';
 import messaging from '@react-native-firebase/messaging';
+import { RefreshCw, ServerCrash, WifiOff } from 'lucide-react-native';
 import React, {
   useCallback,
   useEffect,
@@ -10,9 +11,9 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
+  Animated,
   BackHandler,
-  Image,
+  Linking,
   PermissionsAndroid,
   Platform,
   StyleSheet,
@@ -23,6 +24,18 @@ import {
 import DeviceInfo from 'react-native-device-info';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
+
+const NAVY = '#20166E';
+const RED = '#E41E2B';
+const INK = '#17161D';
+const MUTED = '#8B8A98';
+const FILL = '#F5F5F8';
+const RED_TINT = '#FDECEE';
+const ICON_MUTED = '#B6B5C2';
+
+// XMobile support line — matches SUPPORT_PHONES[0] in src/pages/support.page.tsx
+const SUPPORT_PHONE = '+99361004933';
 
 /**
  * Cross-platform notification permission check.
@@ -97,16 +110,34 @@ async function ensureIOSRegisteredForRemoteMessages(): Promise<void> {
 }
 
 function LoadingView() {
+  const logoScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const breathe = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoScale, {
+          toValue: 1.06,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    breathe.start();
+    return () => breathe.stop();
+  }, [logoScale]);
+
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator
-        size="large"
-        color="#ff624c"
-        style={styles.loadingSpinner}
+      <Animated.Image
+        source={require('../assets/images/xmobile-logo.png')}
+        style={[styles.loadingLogo, { transform: [{ scale: logoScale }] }]}
+        resizeMode="contain"
       />
-      <Text style={styles.loadingText}>
-        Ilkinji açylyş wagt alyp biler, 5-10 sekunt garaşyň
-      </Text>
     </View>
   );
 }
@@ -121,6 +152,7 @@ function WebAppScreen() {
     null,
   );
   const [isReady, setIsReady] = useState(false);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [hasWebviewError, setHasWebviewError] = useState(false);
   const canGoBackRef = useRef(false);
@@ -400,10 +432,12 @@ function WebAppScreen() {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
         const locale = await AsyncStorage.getItem('NEXT_LOCALE');
         const guestSession = await AsyncStorage.getItem('GUEST_SESSION_ID');
+        const seenOnboarding = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
 
         setStoredToken(token);
         setStoredLocale(locale);
         setStoredGuestSession(guestSession);
+        setHasSeenOnboarding(!!seenOnboarding);
 
         if (guestSession) {
           const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
@@ -506,6 +540,10 @@ function WebAppScreen() {
     return <LoadingView />;
   }
 
+  if (!hasSeenOnboarding) {
+    return <OnboardingScreen onDone={() => setHasSeenOnboarding(true)} />;
+  }
+
   return (
     <View
       style={[
@@ -518,7 +556,61 @@ function WebAppScreen() {
         },
       ]}
     >
-      {!isOffline && !hasWebviewError ? (
+      {isOffline ? (
+        <View style={styles.stateContainer}>
+          <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
+            <WifiOff width={52} height={52} color={ICON_MUTED} />
+          </View>
+          <Text style={styles.stateTitle}>Internet baglanyşygy ýok</Text>
+          <Text style={styles.stateBody}>
+            Wi-Fi ýa-da mobil internetiňizi barlaň we täzeden synanyşyň.
+            Sebediňiz ýatda saklandy.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.stateButton}
+            onPress={() => {
+              // NetInfo addEventListener is sometimes lazy on VPNs — force a fresh fetch
+              NetInfo.fetch().then(state => {
+                setIsOffline(state.isConnected === false);
+              });
+            }}
+          >
+            <RefreshCw width={18} height={18} color="#ffffff" />
+            <Text style={styles.stateButtonText}>Täzeden synanyş</Text>
+          </TouchableOpacity>
+        </View>
+      ) : hasWebviewError ? (
+        <View style={styles.stateContainer}>
+          <View style={[styles.iconCircle, { backgroundColor: RED_TINT }]}>
+            <ServerCrash width={50} height={50} color={RED} />
+          </View>
+          <Text style={styles.stateTitle}>Näsazlyk ýüze çykdy</Text>
+          <Text style={styles.stateBody}>
+            Bu sahypany häzir ýükläp bolmady. Birazdan täzeden synanyşyň.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[styles.stateButton, styles.stateButtonSpaced]}
+            onPress={() => {
+              // WebView is unmounted while this state shows, so there's no ref to
+              // reload() — remounting it against the same uri is the retry.
+              setHasWebviewError(false);
+            }}
+          >
+            <RefreshCw width={18} height={18} color="#ffffff" />
+            <Text style={styles.stateButtonText}>Täzeden synanyş</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL(`tel:${SUPPORT_PHONE}`)}
+          >
+            <Text style={styles.stateSupportText}>
+              Goldaw gullugyna ýüz tutuň
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
         <>
           {activeNotification && (
             <TouchableOpacity
@@ -717,28 +809,6 @@ function WebAppScreen() {
             injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
           />
         </>
-      ) : (
-        <View style={styles.offlineContainer}>
-          <Image
-            source={require('../assets/images/connectionErr.png')}
-            style={styles.offlineImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.offlineTitle}>Baglanyşyk Kesildi</Text>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.retryButton}
-            onPress={() => {
-              setHasWebviewError(false);
-              // Force NetInfo to fetch current state (NetInfo addEventListener is sometimes lazy on VPNs)
-              NetInfo.fetch().then(state => {
-                setIsOffline(state.isConnected === false);
-              });
-            }}
-          >
-            <Text style={styles.retryButtonText}>Täzeden synanyş</Text>
-          </TouchableOpacity>
-        </View>
       )}
     </View>
   );
@@ -760,54 +830,63 @@ const styles = StyleSheet.create({
     padding: 30,
     zIndex: 10,
   },
-  loadingSpinner: {
-    marginVertical: 32,
+  loadingLogo: {
+    width: 300,
+    height: 90,
   },
-  loadingText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 22,
-    fontWeight: '500',
-  },
-  offlineContainer: {
+  stateContainer: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 30,
+    paddingHorizontal: 40,
     zIndex: 10,
   },
-  offlineImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 24,
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 26,
   },
-  offlineTitle: {
+  stateTitle: {
     fontSize: 22,
-    fontWeight: '600',
-    color: '#000000',
-    marginTop: 0,
-    marginBottom: 40,
+    fontWeight: '700',
+    color: INK,
+    marginBottom: 10,
     textAlign: 'center',
   },
-  retryButton: {
-    backgroundColor: '#ff624c',
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    width: '100%',
-    borderRadius: 12,
-    shadowColor: '#ff624c',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+  stateBody: {
+    fontSize: 15,
+    lineHeight: 23,
+    color: MUTED,
+    textAlign: 'center',
+    marginBottom: 26,
   },
-  retryButtonText: {
+  stateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    paddingHorizontal: 34,
+    borderRadius: 15,
+    backgroundColor: NAVY,
+  },
+  stateButtonSpaced: {
+    marginBottom: 12,
+  },
+  stateButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  stateSupportText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: MUTED,
   },
   fcmBanner: {
     position: 'absolute',

@@ -1,52 +1,58 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import {
-  appBarHeight,
-  HIGHEST_LEVEL_CATEGORY_ID,
-  LOCALE_COOKIE_NAME,
-} from '@/pages/lib/constants';
-import { getCookie, setCookie } from '@/pages/lib/utils';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import { getCookie, parseName, setCookie } from '@/pages/lib/utils';
 
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
+import {
+  ArrowLeft,
+  BadgeHelp,
+  Bell,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+  MapPin,
+  Menu as MenuIcon,
+  Phone,
+  Search,
+  ShoppingCart,
+  SlidersHorizontal,
+  Truck,
+  User as UserIcon,
+} from 'lucide-react';
 
-import CategoryList from '@/pages/components/Drawer';
+import CategoryMegaMenu from '@/pages/components/CategoryMegaMenu';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { DeleteCategoriesProps, EditCategoriesProps } from '@/pages/lib/types';
-import { drawerClasses } from '@/styles/classMaps/components/drawer';
-import { interClassname } from '@/styles/theme';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CallIcon from '@mui/icons-material/Call';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import SupportAgentOutlinedIcon from '@mui/icons-material/SupportAgentOutlined';
+import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import {
-  CardMedia,
-  Divider,
-  Menu,
-  Paper,
-  Select,
-  Tooltip,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+  DeleteCategoriesProps,
+  EditCategoriesProps,
+  ExtendedCategory,
+} from '@/pages/lib/types';
+import { fontClassName } from '@/styles/theme';
+// lucide 1.x dropped brand glyphs, so Instagram stays on the MUI icon.
+import InstagramIcon from '@mui/icons-material/Instagram';
+import { CardMedia, Paper, Select } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+
+// Real store line — same number the footer contact block already lists.
+const HEADER_PHONE = '+99361004933';
+const HEADER_PHONE_DISPLAY = '(+993) 61 004933';
 
 interface CustomAppBarProps {
-  showSearch?: boolean;
+  showHomeHeader?: boolean;
+  onHomeFilterClick?: () => void;
   handleBackButton?: () => void;
   setEditCategoriesModal?: Dispatch<SetStateAction<EditCategoriesProps>>;
   setDeleteCategoriesModal?: Dispatch<SetStateAction<DeleteCategoriesProps>>;
@@ -59,6 +65,9 @@ export const SearchBar = ({
   setSearchKeyword,
   mt,
   width,
+  showFilter,
+  onFilterClick,
+  formClassName,
 }: {
   handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
@@ -66,18 +75,26 @@ export const SearchBar = ({
   setSearchKeyword: Dispatch<SetStateAction<string>>;
   mt?: string;
   width?: string;
+  showFilter?: boolean;
+  onFilterClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  formClassName?: string;
 }) => {
   const platform = usePlatform();
   return (
-    <Box className={appbarClasses.boxes.form[platform]}>
+    <Box className={formClassName ?? appbarClasses.boxes.form[platform]}>
       <Paper
         component="form"
         className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
         elevation={0}
       >
+        {platform === 'mobile' ? (
+          <Search size={18} className="text-[#8B8A98] flex-shrink-0" />
+        ) : (
+          <SearchIcon className="text-[#30303090]" />
+        )}
         <InputBase
-          className={`${appbarClasses.inputBase[platform]} ${interClassname.className}`}
-          placeholder={`${searchPlaceholder}...`}
+          className={`${appbarClasses.inputBase[platform]} ${fontClassName.className}`}
+          placeholder={`${searchPlaceholder}${platform === 'web' ? '...' : ''}`}
           onChange={(e) => {
             const keyword = e.target.value;
             setSearchKeyword(keyword);
@@ -93,24 +110,42 @@ export const SearchBar = ({
           }}
         />
       </Paper>
-      <SearchIcon className="text-[#30303090]" />
+      {showFilter && platform === 'mobile' && (
+        <button
+          className={appbarClasses.filterButton.mobile}
+          onClick={onFilterClick}
+          type="button"
+          aria-label="filters"
+        >
+          <SlidersHorizontal size={20} />
+        </button>
+      )}
     </Box>
   );
 };
 
 export default function CustomAppBar({
-  showSearch = false,
+  showHomeHeader = false,
+  onHomeFilterClick,
   handleBackButton,
   setEditCategoriesModal,
   setDeleteCategoriesModal,
 }: CustomAppBarProps) {
   const { user } = useUserContext();
+  const { unreadCount } = useNotificationContext();
   const router = useRouter();
   const t = useTranslations();
-  const { setSearchKeyword } = useProductContext();
-  const [localSearchKeyword, setLocalSearchKeyword] = useState('');
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { searchKeyword, setSearchKeyword, setProducts } = useProductContext();
+  // Layout (and with it this Appbar) remounts on every navigation, so seed the
+  // field from the shared keyword — otherwise the header search goes blank the
+  // moment it lands on the results page.
+  const [localSearchKeyword, setLocalSearchKeyword] = useState(
+    searchKeyword ?? '',
+  );
+  // This Appbar mounts on every page (Layout), returning null on non-home
+  // mobile pages *after* hooks run. Skip the first debounce so an unused
+  // instance doesn't clobber the shared searchKeyword with its empty state.
+  const isFirstSearchRun = useRef(true);
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const platform = usePlatform();
   const languages = [
@@ -122,14 +157,12 @@ export default function CustomAppBar({
   ];
   const [menuStatus, setMenuStatus] = useState(false);
   const { categories, setSelectedCategoryId } = useCategoryContext();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
 
-  const handleMenuButton = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-    setMenuStatus(true);
-  };
+  // Both "All categories" triggers (search scope + category bar) toggle the one
+  // mega menu, which drops from the bottom of the header rather than anchoring.
+  const handleMenuButton = () => setMenuStatus((isOpen) => !isOpen);
 
   useEffect(() => {
     if (router.locale && router.locale !== router.defaultLocale) {
@@ -142,6 +175,10 @@ export default function CustomAppBar({
   }, [router.locale, router.defaultLocale]);
 
   useEffect(() => {
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return undefined;
+    }
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
     }, 500);
@@ -152,6 +189,112 @@ export default function CustomAppBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSearchKeyword]);
 
+  if (platform === 'mobile' && !showHomeHeader) {
+    return null;
+  }
+
+  if (platform === 'mobile') {
+    return (
+      <Box className={appbarClasses.appbar.mobile}>
+        {/* Header: guest greeting + Sign in, or location + notification */}
+        <Box className={appbarClasses.boxes.header.mobile}>
+          {user ? (
+            <Box className={appbarClasses.boxes.deliverTo.mobile}>
+              <MapPin size={15} className="text-[#E41E2B]" />
+              <div>
+                <div className="text-[11px] text-[#8B8A98] font-normal">
+                  {t('deliverTo')}
+                </div>
+                <div className="text-[15px] text-[#20166E] font-bold">
+                  {t('shortAddress')}
+                </div>
+              </div>
+            </Box>
+          ) : (
+            <Box
+              className={`${appbarClasses.boxes.guestGreeting.mobile} ${fontClassName.className}`}
+            >
+              <div className="text-[11px] text-[#8B8A98] font-normal">
+                {t('welcomeToXmobile')} 👋
+              </div>
+              <div className="text-[18px] text-[#20166E] font-bold leading-tight">
+                {t('browsingAsGuest')}
+              </div>
+            </Box>
+          )}
+          {user ? (
+            <>
+              <button
+                className={appbarClasses.notificationButton.mobile}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  setNotificationAnchorEl(e.currentTarget)
+                }
+                type="button"
+                aria-label="notifications"
+              >
+                <Bell size={20} className="text-[#20166E]" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
+                )}
+              </button>
+              <NotificationMenu
+                anchorEl={notificationAnchorEl}
+                open={Boolean(notificationAnchorEl)}
+                onClose={() => setNotificationAnchorEl(null)}
+              />
+            </>
+          ) : (
+            <button
+              className={`${appbarClasses.guestSignInButton.mobile} ${fontClassName.className}`}
+              onClick={() => router.push('/user/signin')}
+              type="button"
+            >
+              {t('signin')}
+            </button>
+          )}
+        </Box>
+
+        {/* Search bar with filter */}
+        {SearchBar({
+          searchKeyword: localSearchKeyword,
+          searchPlaceholder: t('search'),
+          setSearchKeyword: setLocalSearchKeyword,
+          showFilter: Boolean(onHomeFilterClick),
+          onFilterClick: onHomeFilterClick
+            ? () => onHomeFilterClick()
+            : undefined,
+        })}
+      </Box>
+    );
+  }
+
+  // ---- Web header (spec 1281-1315): utility bar / main header / category bar.
+  const web = appbarClasses.web;
+  const activeCategorySlug = (router.query.slug ??
+    router.query.categorySlug) as string | undefined;
+
+  const runWebSearch = () => {
+    const keyword = localSearchKeyword.trim();
+    if (!keyword) return;
+    setSearchKeyword(keyword);
+    router.push('/product');
+  };
+
+  // Same branch the categories index uses: leaf categories go straight to the
+  // product listing, parents open the sub-category page.
+  const goToCategory = (category: ExtendedCategory) => {
+    setProducts([]);
+    setSelectedCategoryId(category.id);
+    if (
+      category.successorCategories == null ||
+      category.successorCategories.length === 0
+    ) {
+      router.push(`/product-category/${category.slug}`);
+    } else {
+      router.push(`/category/${category.slug}`);
+    }
+  };
+
   return (
     <Box className="flex-grow-1">
       <AppBar
@@ -159,291 +302,250 @@ export default function CustomAppBar({
         className={appbarClasses.appbar[platform]}
         elevation={0}
       >
-        <Box className="w-full min-h-[64px] flex justify-center items-start">
-          <Box className="w-full h-full justify-between flex flex-row items-center">
-            <Box className="gap-[24px] min-w-[214px] h-full flex flex-row items-center justify-center">
-              <Box className="min-w-[100px] h-auto cursor-pointer">
-                <CardMedia
-                  component="img"
-                  src="/logo/xmobile-processed-logo.png"
-                  className="w-[100px] h-auto"
-                  onClick={() => {
-                    router.push('/');
-                  }}
-                />
-              </Box>
-              <Divider
-                orientation="vertical"
-                flexItem
-                className="text-[#303030] mx-[-15px] h-[30px] my-auto"
-              />
-              <Box className="min-w-[200px] h-full flex flex-row items-center">
-                <LocationOnIcon className="h-[20px] text-[#303030]" />
-                <Typography
-                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
-                >
-                  {t('shortAddress')}
-                </Typography>
-              </Box>
-              <Divider
-                orientation="vertical"
-                flexItem
-                className="text-[#303030] mx-[-15px] h-[30px] my-auto"
-              />
-              <Box className="min-w-[234px] flex flex-row items-center">
-                <CallIcon className="h-[16px] text-[#303030]" />
-                <Typography
-                  className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
-                >
-                  (+993) 61 004933
-                </Typography>
-              </Box>
-            </Box>
-            <Box className="gap-[24px] min-w-[214px] flex flex-row items-center">
-              {platform === 'web' && (
-                <>
-                  <Box
-                    className="flex flex-row items-center cursor-pointer hover:opacity-80"
-                    onClick={() => router.push('/support')}
-                  >
-                    <SupportAgentOutlinedIcon className="h-[18px] text-[#303030] mr-[6px]" />
-                    <Typography
-                      className={`${interClassname.className} text-[#303030] text-[14px] text-regular leading-[20px] tracking-normal`}
-                    >
-                      {t('supportTitle')}
-                    </Typography>
-                  </Box>
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                    className="text-[#303030] mx-[-15px] h-[30px] my-auto"
-                  />
-                </>
-              )}
-              <Select
-                value={selectedLocale}
-                variant="standard"
-                disableUnderline
-                className={appbarClasses.select[platform]}
-                onChange={(event) => {
-                  const newLocale = event.target.value;
-                  setSelectedLocale(newLocale);
-                  setCookie(LOCALE_COOKIE_NAME, newLocale);
-                  router.push(router.pathname, router.asPath, {
-                    locale: newLocale,
-                  });
-                }}
-              >
-                {languages.map((lang) => (
-                  <MenuItem
-                    key={lang.val}
-                    value={lang.val}
-                    className={appbarClasses.menuItem[platform]}
-                  >
-                    <Box className={appbarClasses.boxes.lang[platform]}>
-                      <CardMedia
-                        component="img"
-                        src={lang.img}
-                        className="w-[24px] h-[18px]"
-                      />
-                      <Typography
-                        className={`${appbarClasses.typography[platform]} ${interClassname.className}`}
-                      >
-                        {lang.name}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-              <Divider
-                orientation="vertical"
-                flexItem
-                className="text-[#303030] mx-[-15px]"
-              />
-              <Box className="w-[56px] flex flex-row items-center justify-between">
-                <IconButton
-                  href={'https://www.tiktok.com/@xmobiletm/'}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  <CardMedia
-                    component="img"
-                    src="/icons/tiktok.png"
-                    className="w-auto h-[16px]"
-                  />
-                </IconButton>
-                <IconButton
-                  href={'https://www.instagram.com/xmobiletm/'}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  <InstagramIcon className="w-[16px] h-[16px] text-[#000]"></InstagramIcon>
-                </IconButton>
-              </Box>
-            </Box>
+        {/* ---- Utility bar ---- */}
+        <Box
+          className={`${web.bleed} ${web.utilityBar} ${fontClassName.className}`}
+        >
+          <Box className={web.utilityAddressGroup}>
+            <MapPin className={web.utilityIcon} />
+            <span className="whitespace-nowrap">{t('deliverTo')}</span>
+            <span className={web.utilityAddress}>{t('shortAddress')}</span>
           </Box>
-        </Box>
-        <Divider className="text-[#303030] mt-[-10px]" />
-        <Box className="my-[28px] w-full h-[48px] flex flex-row justify-between mx-auto">
-          {/* Back button, Menu, Logo */}
-          <Box className={appbarClasses.boxes.toolbar}>
-            {handleBackButton && (
-              <IconButton
-                size="large"
-                edge="start"
-                color="inherit"
-                className="p-4"
-                aria-label="open drawer"
-                onClick={handleBackButton}
-              >
-                <ArrowBackIosIcon
-                  className={appbarClasses.arrowBackIos[platform]}
-                />
-              </IconButton>
-            )}
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleMenuButton}
-              className="p-4"
+          <Box className={web.utilityGroup}>
+            <a
+              href={`tel:${HEADER_PHONE}`}
+              className={`${web.utilityItem} ${web.utilityItemPhone}`}
             >
-              <MenuIcon className={appbarClasses.menuIcon[platform]} />
-            </IconButton>
-            <Menu
-              open={menuStatus}
-              onClose={() => setMenuStatus(false)}
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'left',
-              }}
-              TransitionProps={{ exit: false }}
+              <Phone className={web.utilityIcon} />
+              {HEADER_PHONE_DISPLAY}
+            </a>
+            <button
+              type="button"
+              className={web.utilityItem}
+              onClick={() => router.push('/orders')}
             >
-              {categories?.length > 0 && (
-                <Box className={`${drawerClasses.box}`}>
-                  <CategoryList
-                    categories={categories}
-                    setEditCategoriesModal={setEditCategoriesModal}
-                    setDeleteCategoriesModal={setDeleteCategoriesModal}
-                    closeDrawer={() => setMenuStatus(false)}
-                    isDrawerOpen={menuStatus}
-                  />
+              <Truck className={web.utilityIcon} />
+              {t('myOrders')}
+            </button>
+            <button
+              type="button"
+              className={web.utilityItem}
+              onClick={() => router.push('/support')}
+            >
+              <BadgeHelp className={web.utilityIcon} />
+              {t('supportTitle')}
+            </button>
+            <Select
+              value={selectedLocale}
+              variant="standard"
+              disableUnderline
+              className={appbarClasses.select[platform]}
+              renderValue={(value) => (
+                <Box className="flex flex-row items-center gap-1.5 text-white text-[13px]">
+                  <Globe className={web.utilityIcon} />
+                  <Typography
+                    className={`${fontClassName.className} text-[13px] text-white`}
+                  >
+                    {languages.find((lang) => lang.val === value)?.name}
+                  </Typography>
                 </Box>
               )}
-              {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-                <Paper className={drawerClasses.paper}>
-                  <Tooltip title="Edit categories">
-                    <IconButton
-                      onClick={() => {
-                        setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-                        setEditCategoriesModal({
-                          open: true,
-                          dialogType: 'add',
-                        });
-                      }}
+              onChange={(event) => {
+                const newLocale = event.target.value;
+                setSelectedLocale(newLocale);
+                setCookie(LOCALE_COOKIE_NAME, newLocale);
+                router.push(router.pathname, router.asPath, {
+                  locale: newLocale,
+                });
+              }}
+            >
+              {languages.map((lang) => (
+                <MenuItem
+                  key={lang.val}
+                  value={lang.val}
+                  className={appbarClasses.menuItem[platform]}
+                >
+                  <Box className={appbarClasses.boxes.lang[platform]}>
+                    <CardMedia
+                      component="img"
+                      src={lang.img}
+                      className="w-[24px] h-[18px]"
+                    />
+                    <Typography
+                      className={`${appbarClasses.typography[platform]} ${fontClassName.className}`}
                     >
-                      <AddCircleIcon
-                        className={drawerClasses.addCircleIcon[platform]}
-                        color="primary"
-                      />
-                    </IconButton>
-                  </Tooltip>
-                </Paper>
-              )}
-            </Menu>
-          </Box>
-
-          {/* Search Bar */}
-          <Box className="w-[30vw] h-[48px]">
-            {SearchBar({
-              searchKeyword: localSearchKeyword,
-              searchPlaceholder: t('search'),
-              setSearchKeyword: setLocalSearchKeyword,
-              width: '95%',
-            })}
-          </Box>
-
-          {/* Cart, Notifications, Profile */}
-          <Box className="flex flex-row w-auto h-full justify-between items-center">
-            <Box className="flex flex-row items-center">
-              <IconButton
-                onClick={() => router.push('/cart')}
-                className="rounded-none"
+                      {lang.name}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+            <Box className={web.utilitySocial}>
+              <a
+                href="https://www.instagram.com/xmobiletm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className={web.utilitySocialButton}
+              >
+                <InstagramIcon className="w-[15px] h-[15px]" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@xmobiletm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className={web.utilitySocialButton}
               >
                 <CardMedia
                   component="img"
-                  src="/icons/cart.png"
-                  className={appbarClasses.shoppingCCI[platform]}
+                  src="/icons/tiktok.png"
+                  className="w-auto h-[14px] invert brightness-0"
                 />
-                <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030] ml-[24px]`}
-                >
-                  {t('cart')}
-                </Typography>
-              </IconButton>
-              <Divider
-                orientation="vertical"
-                className="h-[32px] text-[#303030] mx-[12px]"
-              />
-              {user && (
-                <>
-                  <NotificationBadge
-                    onClick={(e: React.MouseEvent<HTMLElement>) =>
-                      setNotificationAnchorEl(e.currentTarget)
-                    }
-                  />
-                  <NotificationMenu
-                    anchorEl={notificationAnchorEl}
-                    open={Boolean(notificationAnchorEl)}
-                    onClose={() => setNotificationAnchorEl(null)}
-                  />
-                  <Divider
-                    orientation="vertical"
-                    className="h-[32px] text-[#303030] mx-[12px]"
-                  />
-                </>
-              )}
+              </a>
             </Box>
-            <IconButton
-              onClick={() => router.push('/user')}
-              className="rounded-none"
-            >
-              <CardMedia
-                component="img"
-                src="/footer/mobileIcons/profile.png"
-                className={appbarClasses.shoppingCCI[platform]}
-              />
-              <Box className="flex flex-col items-start justify-center ml-[20px]">
-                <Typography
-                  className={`${interClassname.className} font-regular text-[16px] leading-[24px] tracking-normal text-[#303030]`}
-                >
-                  {t('user')}
-                </Typography>
-                <Typography
-                  className={`${interClassname.className} font-bold text-[16px] leading-[24px] tracking-normal text-[#303030]`}
-                >
-                  {user ? user.name.split(' ')[0] : t('guest')}
-                </Typography>
-              </Box>
-            </IconButton>
           </Box>
         </Box>
+
+        {/* ---- Main header: logo, search, account/cart ---- */}
+        <Box className={`${web.bleed} ${web.mainBar}`}>
+          {handleBackButton && (
+            <button
+              type="button"
+              aria-label="back"
+              className={web.backButton}
+              onClick={handleBackButton}
+            >
+              <ArrowLeft className={web.backIcon} />
+            </button>
+          )}
+          <CardMedia
+            component="img"
+            src="/logo/xmobile-processed-logo.png"
+            className={web.logo}
+            onClick={() => router.push('/')}
+          />
+          <form
+            className={web.searchForm}
+            onSubmit={(event) => {
+              event.preventDefault();
+              runWebSearch();
+            }}
+          >
+            <button
+              type="button"
+              aria-expanded={menuStatus}
+              className={`${web.searchScope} ${fontClassName.className}`}
+              onClick={handleMenuButton}
+            >
+              {t('allCategory')}
+              {menuStatus ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            <Box className={web.searchField}>
+              <Search className="w-[18px] h-[18px] text-muted flex-shrink-0" />
+              <InputBase
+                className={`${web.searchInput} ${fontClassName.className}`}
+                placeholder={t('search')}
+                value={localSearchKeyword}
+                onChange={(e) => setLocalSearchKeyword(e.target.value)}
+              />
+            </Box>
+            <button
+              type="submit"
+              className={`${web.searchSubmit} ${fontClassName.className}`}
+            >
+              <Search className="w-[18px] h-[18px]" />
+              {t('searchNav')}
+            </button>
+          </form>
+
+          <Box className={web.actions}>
+            <Box className={web.account} onClick={() => router.push('/user')}>
+              <UserIcon className={web.accountIcon} />
+              <Box className="flex flex-col items-start">
+                <span
+                  className={`${web.accountLabel} ${fontClassName.className}`}
+                >
+                  {user ? t('account') : t('signin')}
+                </span>
+                <span
+                  className={`${web.accountValue} ${fontClassName.className}`}
+                >
+                  {user ? user.name.split(' ')[0] : t('guest')}
+                </span>
+              </Box>
+            </Box>
+            {user && (
+              <>
+                <NotificationBadge
+                  onClick={(e: React.MouseEvent<HTMLElement>) =>
+                    setNotificationAnchorEl(e.currentTarget)
+                  }
+                />
+                <NotificationMenu
+                  anchorEl={notificationAnchorEl}
+                  open={Boolean(notificationAnchorEl)}
+                  onClose={() => setNotificationAnchorEl(null)}
+                />
+              </>
+            )}
+            <button
+              type="button"
+              aria-label={t('cart')}
+              title={t('cart')}
+              className={web.iconAction}
+              onClick={() => router.push('/cart')}
+            >
+              <ShoppingCart className={web.actionIcon} />
+            </button>
+          </Box>
+        </Box>
+
+        {/* ---- Category bar ---- */}
+        <Box className={`${web.bleed} ${web.categoryBar}`}>
+          <button
+            type="button"
+            aria-expanded={menuStatus}
+            className={`${web.categoryMenuButton} ${
+              menuStatus ? web.categoryMenuButtonOpen : ''
+            } ${fontClassName.className}`}
+            onClick={handleMenuButton}
+          >
+            <MenuIcon className="w-[18px] h-[18px]" />
+            {t('allCategory')}
+          </button>
+          <Box className={web.categoryList}>
+            {categories?.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => goToCategory(category)}
+                className={`${web.categoryChip} ${
+                  activeCategorySlug === category.slug
+                    ? web.categoryChipActive
+                    : web.categoryChipInactive
+                } ${fontClassName.className}`}
+              >
+                {parseName(category.name, router.locale ?? 'ru')}
+              </button>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Shared mega menu: opened by both "All categories" triggers above */}
+        <CategoryMegaMenu
+          categories={categories}
+          open={menuStatus}
+          onClose={() => setMenuStatus(false)}
+          onNavigate={goToCategory}
+          setEditCategoriesModal={setEditCategoriesModal}
+          setDeleteCategoriesModal={setDeleteCategoriesModal}
+        />
       </AppBar>
-      {showSearch &&
-        platform === 'mobile' &&
-        SearchBar({
-          mt: isMdUp ? undefined : `${appBarHeight}px`,
-          searchKeyword: localSearchKeyword,
-          searchPlaceholder: t('search'),
-          setSearchKeyword: setLocalSearchKeyword,
-          width: '95%',
-        })}
     </Box>
   );
 }

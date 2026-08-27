@@ -5,35 +5,47 @@ import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import SortDropdown from '@/pages/components/SortDropdown';
-import { fetchProducts } from '@/pages/lib/apis';
+import {
+  CategoryFacet,
+  fetchBrands,
+  fetchCategoryFacets,
+  fetchColors,
+  fetchProducts,
+  fetchProductsCount,
+} from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
   getListSnapshot,
   listKey,
   useListRestoration,
 } from '@/pages/lib/listRestoration';
+import {
+  buildPaginationItems,
+  getTotalPages,
+  PAGINATION_ELLIPSIS,
+} from '@/pages/lib/pagination';
+import { SearchBar } from '@/pages/components/Appbar';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
+  BrandProps,
   ExtendedCategory,
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { Product } from '@prisma/client';
-import { homePageClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
-import { interClassname } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { fontClassName } from '@/styles/theme';
 import {
   Alert,
   Box,
   Button,
-  CardMedia,
   CircularProgress,
   Dialog,
   IconButton,
@@ -41,10 +53,18 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ArrowLeft, ChevronLeft, ChevronRight, SearchX, X } from 'lucide-react';
+import { Color, Product } from '@prisma/client';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 const SlideTransition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement },
@@ -76,7 +96,17 @@ export default function ProductGridContent({
   const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
   const [page, setPage] = useState(restored?.page ?? 0);
   const { categories: allCategories } = useCategoryContext();
-  const { products, setProducts, searchKeyword } = useProductContext();
+  const { products, setProducts, searchKeyword, setSearchKeyword } =
+    useProductContext();
+  // Editable search field on the results page. Debounced into the shared
+  // context so the grid refetches without a network call per keystroke.
+  const [localSearchKeyword, setLocalSearchKeyword] = useState(
+    searchKeyword ?? '',
+  );
+  const isFirstSearchRun = useRef(true);
+  // Total number of products matching the current query (all pages), so the
+  // header count reflects the real total rather than the loaded page.
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -85,6 +115,15 @@ export default function ProductGridContent({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  // Web paginates (spec 1473); mobile keeps the infinite-scroll list.
+  const [webPage, setWebPage] = useState(1);
+  // Reference lists, only for labelling the active-filter chips in the sort bar.
+  const [brands, setBrands] = useState<BrandProps[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  // Per-category breakdown of the current search, for the pills (spec 1707).
+  const [categoryFacets, setCategoryFacets] = useState<CategoryFacet[] | null>(
+    null,
+  );
 
   // local state for mobile (doesn't automatically apply filters) - trigger 'Apply Button'
   const [localFilters, setLocalFilters] = useState({
@@ -114,6 +153,61 @@ export default function ProductGridContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Any filter/sort change invalidates the current page. Resetting in the same
+  // batch as setFilters keeps it to one refetch (a reset-on-change effect would
+  // fire twice: once for the stale page, once for page 1).
+  const applyFilters = useCallback(
+    (newFilters: Parameters<typeof setFilters>[0]) => {
+      setWebPage(1);
+      setFilters(newFilters);
+    },
+    // setFilters is re-created each render by useProductFilters; the closure
+    // only ever calls the latest one via this component's render scope.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Put the reader back at the top of the results after a page change. This
+  // has to run post-commit: scrolling inside the click handler gets undone
+  // when React re-renders the pagination row, because the browser scrolls the
+  // still-focused page button back into view.
+  const isFirstPageRun = useRef(true);
+  useEffect(() => {
+    if (isFirstPageRun.current) {
+      isFirstPageRun.current = false;
+      return;
+    }
+    if (platform !== 'web') return;
+    window.scrollTo(0, 0);
+  }, [webPage, platform]);
+
+  // Chip labels need the brand/colour names the sidebar already fetches.
+  // Web-only: the mobile sheet has no active-chip row.
+  useEffect(() => {
+    if (platform !== 'web') return;
+    fetchBrands()
+      .then(setBrands)
+      .catch(() => setBrands([]));
+    fetchColors()
+      .then(setColors)
+      .catch(() => setColors([]));
+  }, [platform]);
+
+  // Debounce the editable search field into context (skip the mount run so we
+  // don't clobber a keyword handed off from the home page).
+  useEffect(() => {
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return undefined;
+    }
+    const handler = setTimeout(() => {
+      setWebPage(1);
+      setSearchKeyword(localSearchKeyword);
+    }, 500);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchKeyword]);
+
   useEffect(() => {
     if (mobileFilterOpen) {
       setLocalFilters({
@@ -131,10 +225,91 @@ export default function ProductGridContent({
   // Filter Mode: user selected categories from sidebar (root categories only)
   const isLandingMode = !!landingCategoryId;
 
-  // Hide category section in Landing Mode since user already chose their category
+  // --- Category facet pills (spec 1707) --------------------------------
+  // Search-results only. Excluded in Landing Mode on purpose: the facet query
+  // omits the category dimension (see fetchCategoryFacets), so inside a
+  // category its counts would span the whole catalogue and over-promise.
+  const canShowCategoryPills =
+    platform === 'web' && !!searchKeyword && !isLandingMode;
+
+  useEffect(() => {
+    if (!canShowCategoryPills) {
+      setCategoryFacets(null);
+      return () => undefined;
+    }
+    let cancelled = false;
+    fetchCategoryFacets({
+      brandIds: filters.brandIds,
+      colorIds: filters.colorIds,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      searchKeyword,
+    })
+      .then((data) => {
+        if (!cancelled) setCategoryFacets(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryFacets(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canShowCategoryPills,
+    searchKeyword,
+    filters.brandIds,
+    filters.colorIds,
+    filters.minPrice,
+    filters.maxPrice,
+  ]);
+
+  // The API groups by the product's own (leaf) category; the pills show root
+  // categories, so every id needs its top-level ancestor.
+  const rootByCategoryId = useMemo(() => {
+    const map = new Map<string, ExtendedCategory>();
+    const walk = (cats: ExtendedCategory[], root: ExtendedCategory) => {
+      cats.forEach((cat) => {
+        map.set(cat.id, root);
+        if (cat.successorCategories?.length) {
+          walk(cat.successorCategories, root);
+        }
+      });
+    };
+    (allCategories ?? []).forEach((root) => walk([root], root));
+    return map;
+  }, [allCategories]);
+
+  const categoryPills = useMemo(() => {
+    if (!categoryFacets) return [];
+    const byRoot = new Map<
+      string,
+      { id: string; label: string; count: number }
+    >();
+    categoryFacets.forEach(({ categoryId, count }) => {
+      const root = rootByCategoryId.get(categoryId);
+      // A category the tree hasn't loaded has no name to show — leaving it out
+      // is better than inventing a label, and its hits stay reachable via "All".
+      if (!root) return;
+      const existing = byRoot.get(root.id);
+      if (existing) existing.count += count;
+      else
+        byRoot.set(root.id, {
+          id: root.id,
+          label: parseName(root.name, router.locale ?? 'ru'),
+          count,
+        });
+    });
+    return [...byRoot.values()].sort((a, b) => b.count - a.count);
+  }, [categoryFacets, rootByCategoryId, router.locale]);
+
+  // One pill plus "All" says nothing the count line doesn't already say.
+  const showCategoryPills = canShowCategoryPills && categoryPills.length > 1;
+
+  // Hide category section in Landing Mode since user already chose their
+  // category, and while the pills are up so one dimension has one control.
   const hideSections = useMemo<('categories' | 'brands')[]>(
-    () => (isLandingMode ? ['categories'] : []),
-    [isLandingMode],
+    () => (isLandingMode || showCategoryPills ? ['categories'] : []),
+    [isLandingMode, showCategoryPills],
   );
 
   // Fallback from filter state to explicit prop or URL param for fetching
@@ -172,11 +347,16 @@ export default function ProductGridContent({
     setPage(0);
     setHasMore(true);
     setIsLoading(true);
+    setTotalCount(null);
+
+    // Web jumps straight to the requested page; mobile always restarts at 1
+    // and appends via loadMoreProducts.
+    const requestedPage = platform === 'web' ? webPage : 1;
 
     (async () => {
       try {
         const fetchProductsParams: any = {
-          page: 1,
+          page: requestedPage,
           categoryIds: effectiveCategoryIds,
           brandIds: filters.brandIds,
           colorIds: filters.colorIds,
@@ -190,6 +370,11 @@ export default function ProductGridContent({
           fetchProductsParams.searchKeyword = searchKeyword;
         }
 
+        // Total match count for the header (independent of pagination).
+        fetchProductsCount(fetchProductsParams)
+          .then(setTotalCount)
+          .catch(() => setTotalCount(null));
+
         const newProducts = await fetchProducts(fetchProductsParams);
         setProducts(newProducts);
         setPrevProducts(newProducts);
@@ -198,7 +383,7 @@ export default function ProductGridContent({
           setPrevCategory(effectiveCategoryIds[0]);
         }
         setPrevSearchKeyword(searchKeyword);
-        setPage(1);
+        setPage(requestedPage);
 
         if (newProducts.length === 0) {
           setHasMore(false);
@@ -214,6 +399,8 @@ export default function ProductGridContent({
     searchKeyword,
     router.isReady,
     effectiveCategoryIds,
+    platform,
+    webPage,
     setProducts,
     setPrevProducts,
     setPrevCategory,
@@ -260,6 +447,8 @@ export default function ProductGridContent({
   }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
 
   useEffect(() => {
+    // Web uses numbered pagination instead of infinite scroll.
+    if (platform === 'web') return () => undefined;
     const loadMoreTrigger = document.getElementById('load-more-trigger');
     if (!loadMoreTrigger) return () => undefined;
 
@@ -277,7 +466,7 @@ export default function ProductGridContent({
     return () => {
       observer.disconnect();
     };
-  }, [loadMoreProducts]);
+  }, [loadMoreProducts, platform]);
 
   const handleBackButton = () => {
     if (categoryPath.length > 1) {
@@ -305,64 +494,155 @@ export default function ProductGridContent({
   const displayProducts =
     products.length > 0 ? products : initialProducts ?? [];
 
+  // Real total for the current query (all pages); fall back to the loaded
+  // count until the count request resolves.
+  const displayCount = totalCount != null ? totalCount : products.length;
+
+  // --- Active filter chips (spec 1457) ---------------------------------
+  // Every chip is a real selected filter; there is no fabricated state here.
+  const categoryById = new Map<string, ExtendedCategory>();
+  const collectCategories = (cats: ExtendedCategory[]) => {
+    cats.forEach((cat) => {
+      categoryById.set(cat.id, cat);
+      if (cat.successorCategories?.length) {
+        collectCategories(cat.successorCategories);
+      }
+    });
+  };
+  collectCategories(allCategories ?? []);
+
+  const activeChips: { key: string; label: string; onRemove: () => void }[] =
+    [];
+
+  filters.categoryIds.forEach((id) => {
+    const cat = categoryById.get(id);
+    if (!cat) return;
+    activeChips.push({
+      key: `category-${id}`,
+      label: parseName(cat.name, router.locale ?? 'ru'),
+      onRemove: () =>
+        applyFilters({
+          categoryIds: filters.categoryIds.filter((cid) => cid !== id),
+        }),
+    });
+  });
+
+  filters.brandIds.forEach((id) => {
+    const brand = brands.find((b) => b.id === id);
+    if (!brand) return;
+    activeChips.push({
+      key: `brand-${id}`,
+      label: brand.name,
+      onRemove: () =>
+        applyFilters({
+          brandIds: filters.brandIds.filter((bid) => bid !== id),
+        }),
+    });
+  });
+
+  filters.colorIds.forEach((id) => {
+    const color = colors.find((c) => c.id === id);
+    if (!color) return;
+    activeChips.push({
+      key: `color-${id}`,
+      label: color.name,
+      onRemove: () =>
+        applyFilters({
+          colorIds: filters.colorIds.filter((cid) => cid !== id),
+        }),
+    });
+  });
+
+  if (filters.minPrice || filters.maxPrice) {
+    activeChips.push({
+      key: 'price',
+      label: `${filters.minPrice || 0} – ${
+        filters.maxPrice || FILTER_MAX_PRICE
+      } TMT`,
+      onRemove: () => applyFilters({ minPrice: '', maxPrice: '' }),
+    });
+  }
+
+  // --- Pagination (spec 1473) ------------------------------------------
+  const totalPages =
+    totalCount != null ? getTotalPages(totalCount, PRODUCTS_PER_PAGE) : 0;
+  const paginationItems = buildPaginationItems(webPage, totalPages);
+
+  const goToPage = (next: number) => {
+    if (next < 1 || next > totalPages || next === webPage) return;
+    // Drop focus so the button can't drag the viewport back down once the
+    // pagination row re-renders; the effect above does the actual scrolling.
+    (document.activeElement as HTMLElement | null)?.blur();
+    setWebPage(next);
+  };
+
   return (
     <Box>
       <Box className={productIndexPageClasses.boxes.appbar[platform]}>
-        {/* Left side: Back button + Title */}
-        <Box className="flex items-center gap-2">
-          <IconButton
-            size="medium"
-            edge="start"
-            color="inherit"
-            className={appbarClasses.backButton[platform]}
-            aria-label="open drawer"
-            onClick={handleBackButton}
-          >
-            <ArrowBackIosIcon
-              className={appbarClasses.arrowBackIos[platform]}
-            />
-          </IconButton>
-        </Box>
-
-        <Box className={productIndexPageClasses.boxes.category[platform]}>
-          {category && (
-            <Typography
-              className={`${interClassname.className} ${productIndexPageClasses.categoryName[platform]}`}
-            >
-              {parseName(category?.name, router.locale ?? 'ru')}
-            </Typography>
-          )}
-        </Box>
-        <Box className="w-1/6 flex justify-start invisible"></Box>
+        {/* Back button — matches the product detail page */}
+        <IconButton
+          aria-label="Back"
+          className={appbarClasses.backButtonCircle[platform]}
+          onClick={handleBackButton}
+        >
+          <ArrowLeft className={appbarClasses.backIconCircle[platform]} />
+        </IconButton>
 
         {platform === 'mobile' && (
-          <IconButton onClick={() => setMobileFilterOpen(true)}>
-            <CardMedia
-              component="img"
-              src="/icons/filter.svg"
-              sx={{ width: 30, height: 30 }}
-            />
-          </IconButton>
+          <Box className="flex-1">
+            {SearchBar({
+              searchKeyword: localSearchKeyword,
+              searchPlaceholder: t('search'),
+              setSearchKeyword: setLocalSearchKeyword,
+              showFilter: true,
+              onFilterClick: () => setMobileFilterOpen(true),
+              formClassName: 'flex flex-1 items-center gap-2.5',
+            })}
+          </Box>
         )}
       </Box>
-      <Layout showSearch handleHeaderBackButton={handleBackButton}>
+      <Layout handleHeaderBackButton={handleBackButton}>
         <Dialog
-          fullScreen
           open={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
           TransitionComponent={SlideTransition}
+          fullWidth
+          PaperProps={{
+            sx: {
+              position: 'fixed',
+              bottom: 0,
+              m: 0,
+              width: '100%',
+              maxHeight: '88vh',
+              borderRadius: '26px 26px 0 0',
+            },
+          }}
         >
-          <Box className="flex flex-col h-full bg-white">
-            <Box className="flex items-center justify-between p-4 border-b">
-              <IconButton onClick={() => setMobileFilterOpen(false)}>
-                <ArrowBackIosIcon />
-              </IconButton>
-              <Typography variant="h6" fontWeight={600}>
+          <Box className="flex flex-col bg-white">
+            <Box className={filterSidebarClasses.dragHandle} />
+            <Box className={filterSidebarClasses.header}>
+              <Typography
+                className={`${fontClassName.className} ${filterSidebarClasses.title}`}
+              >
                 {t('filter') || 'Filter'}
               </Typography>
-              <Box sx={{ width: 40 }} />
+              <Typography
+                className={`${fontClassName.className} ${filterSidebarClasses.resetButton}`}
+                onClick={() =>
+                  setLocalFilters({
+                    categoryIds: [],
+                    brandIds: [],
+                    colorIds: [],
+                    minPrice: '',
+                    maxPrice: '',
+                    sortBy: '',
+                  })
+                }
+              >
+                {t('clear') || 'Clear'}
+              </Typography>
             </Box>
-            <Box className="flex-1 overflow-auto p-4">
+            <Box className={filterSidebarClasses.body}>
               <FilterSidebar
                 variant="mobile"
                 categories={allCategories}
@@ -378,22 +658,29 @@ export default function ProductGridContent({
                 hideSections={hideSections}
               />
             </Box>
-            <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
+            <Box className={filterSidebarClasses.footer}>
               <Button
-                fullWidth
-                variant="contained"
+                disableElevation
+                className={`${fontClassName.className} ${filterSidebarClasses.clearButton}`}
+                onClick={() =>
+                  setLocalFilters({
+                    categoryIds: [],
+                    brandIds: [],
+                    colorIds: [],
+                    minPrice: '',
+                    maxPrice: '',
+                    sortBy: '',
+                  })
+                }
+              >
+                {t('clear') || 'Clear'}
+              </Button>
+              <Button
+                disableElevation
+                className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
                 onClick={() => {
-                  setFilters(localFilters);
+                  applyFilters(localFilters);
                   setMobileFilterOpen(false);
-                }}
-                sx={{
-                  bgcolor: '#191919',
-                  borderRadius: 2,
-                  py: 1.5,
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#000' },
                 }}
               >
                 {t('apply') || 'Apply'}
@@ -406,7 +693,24 @@ export default function ProductGridContent({
             <SimpleBreadcrumbs categoryPath={categoryPath} />
           )}
 
-          <Box className="flex flex-row gap-6 w-full">
+          {/* Title block spans the full width above the rail — spec 1439-1442 */}
+          <Box className={productIndexPageClasses.header[platform]}>
+            <Typography
+              component={platform === 'web' ? 'h1' : 'p'}
+              className={`${fontClassName.className} ${productIndexPageClasses.pageTitle[platform]}`}
+            >
+              {titleText}
+            </Typography>
+            {!isLoading && products.length > 0 && (
+              <Typography
+                className={`${fontClassName.className} ${productIndexPageClasses.resultsCount[platform]}`}
+              >
+                {`${displayCount} ${t('products')}`}
+              </Typography>
+            )}
+          </Box>
+
+          <Box className={productIndexPageClasses.boxes.layout[platform]}>
             {platform === 'web' && (
               <FilterSidebar
                 categories={allCategories}
@@ -415,70 +719,244 @@ export default function ProductGridContent({
                 selectedColorIds={filters.colorIds}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
-                onFilterChange={(newFilters) => {
-                  setFilters(newFilters);
-                }}
+                onFilterChange={applyFilters}
                 hideSections={hideSections}
+                // Brand.productCount counts the whole catalogue (step 54), so
+                // it only tells the truth on the unscoped listing — inside a
+                // search it would promise more hits than the filter returns.
+                showBrandCounts={!isLandingMode && !searchKeyword}
               />
             )}
 
-            <Box className="flex flex-col w-full">
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-                sx={{
-                  position: platform === 'web' ? 'sticky' : 'static',
-                  top: platform === 'web' ? '0px' : 'auto',
-                  zIndex: 10,
-                  backgroundColor: '#fff',
-                  paddingTop: '20px',
-                  paddingBottom: '8px',
-                }}
-              >
-                <Typography
-                  className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
-                >
-                  {titleText}
-                </Typography>
-                {platform === 'web' && (
-                  <Box sx={{ marginLeft: 'auto' }}>
-                    <SortDropdown
-                      value={filters.sortBy}
-                      onChange={(val) => setFilters({ sortBy: val })}
-                    />
+            <Box className="flex flex-col w-full min-w-0">
+              {platform === 'web' && (
+                <Box className={productIndexPageClasses.resultsBar.web}>
+                  <Box className={productIndexPageClasses.activeFilters.wrap}>
+                    {activeChips.length > 0 && (
+                      <Typography
+                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.label}`}
+                      >
+                        {`${t('activeFilters')}:`}
+                      </Typography>
+                    )}
+                    {activeChips.map((chip) => (
+                      <Button
+                        key={chip.key}
+                        disableRipple
+                        disableElevation
+                        onClick={chip.onRemove}
+                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.chip}`}
+                      >
+                        <span
+                          className={
+                            productIndexPageClasses.activeFilters.chipLabel
+                          }
+                        >
+                          {chip.label}
+                        </span>
+                        <X
+                          size={13}
+                          className={
+                            productIndexPageClasses.activeFilters.chipIcon
+                          }
+                        />
+                      </Button>
+                    ))}
                   </Box>
-                )}
-              </Box>
-              {isLoading && displayProducts.length === 0 ? (
-                <ProductGridSkeleton count={8} />
-              ) : (
-                <Box className="flex flex-wrap w-full">
-                  {['SUPERUSER', 'ADMIN'].includes(user?.grade || '') && (
-                    <ProductCard
-                      handleClickAddProduct={() =>
-                        setAddEditProductDialog({
-                          open: true,
-                          dialogType: 'add',
-                          imageUrls: [],
-                        })
-                      }
-                    />
-                  )}
-                  {displayProducts.map((product, idx) => (
-                    <ProductCard
-                      product={product}
-                      key={idx}
-                      cartProps={{ cartAction: 'add' }}
-                    />
-                  ))}
+                  <SortDropdown
+                    value={filters.sortBy}
+                    onChange={(val) => applyFilters({ sortBy: val })}
+                  />
                 </Box>
               )}
-              <div id="load-more-trigger"></div>
+
+              {/* Category pills, spec 1707 — real per-category counts for the
+                  current query, rolled up to root categories. */}
+              {showCategoryPills && (
+                <Box className={productIndexPageClasses.categoryFacets.wrap}>
+                  <Button
+                    disableRipple
+                    disableElevation
+                    onClick={() => applyFilters({ categoryIds: [] })}
+                    className={`${fontClassName.className} ${
+                      filters.categoryIds.length === 0
+                        ? productIndexPageClasses.categoryFacets.pillActive
+                        : productIndexPageClasses.categoryFacets.pill
+                    }`}
+                  >
+                    <span
+                      className={productIndexPageClasses.categoryFacets.label}
+                    >
+                      {t('all')}
+                    </span>
+                    <span
+                      className={productIndexPageClasses.categoryFacets.count}
+                    >
+                      {categoryPills.reduce((sum, pill) => sum + pill.count, 0)}
+                    </span>
+                  </Button>
+                  {categoryPills.map((pill) => {
+                    const isActive =
+                      filters.categoryIds.length === 1 &&
+                      filters.categoryIds[0] === pill.id;
+                    return (
+                      <Button
+                        key={pill.id}
+                        disableRipple
+                        disableElevation
+                        aria-pressed={isActive}
+                        onClick={() =>
+                          applyFilters({
+                            categoryIds: isActive ? [] : [pill.id],
+                          })
+                        }
+                        className={`${fontClassName.className} ${
+                          isActive
+                            ? productIndexPageClasses.categoryFacets.pillActive
+                            : productIndexPageClasses.categoryFacets.pill
+                        }`}
+                      >
+                        <span
+                          className={
+                            productIndexPageClasses.categoryFacets.label
+                          }
+                        >
+                          {pill.label}
+                        </span>
+                        <span
+                          className={
+                            productIndexPageClasses.categoryFacets.count
+                          }
+                        >
+                          {pill.count}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </Box>
+              )}
+              {(() => {
+                if (isLoading && displayProducts.length === 0) {
+                  return <ProductGridSkeleton count={8} />;
+                }
+                const isAdmin = ['SUPERUSER', 'ADMIN'].includes(
+                  user?.grade || '',
+                );
+                if (displayProducts.length === 0 && !isAdmin) {
+                  return (
+                    <Box className={productIndexPageClasses.emptyState.wrap}>
+                      <Box
+                        className={productIndexPageClasses.emptyState.iconWrap}
+                      >
+                        <SearchX size={28} color="#8B8A98" />
+                      </Box>
+                      <Typography
+                        className={`${fontClassName.className} ${productIndexPageClasses.emptyState.title}`}
+                      >
+                        {t('noProductsFound')}
+                      </Typography>
+                      {searchKeyword && (
+                        <Typography
+                          className={`${fontClassName.className} ${productIndexPageClasses.emptyState.subtitle}`}
+                        >
+                          {t('searchResultsFor', { keyword: searchKeyword })}
+                        </Typography>
+                      )}
+                    </Box>
+                  );
+                }
+                return (
+                  <Box
+                    className={
+                      productIndexPageClasses.boxes.productsGrid[platform]
+                    }
+                  >
+                    {isAdmin && (
+                      <ProductCard
+                        handleClickAddProduct={() =>
+                          setAddEditProductDialog({
+                            open: true,
+                            dialogType: 'add',
+                            imageUrls: [],
+                          })
+                        }
+                      />
+                    )}
+                    {displayProducts.map((product, idx) => (
+                      <ProductCard
+                        product={product}
+                        key={idx}
+                        cartProps={{ cartAction: 'add' }}
+                      />
+                    ))}
+                  </Box>
+                );
+              })()}
+              {platform === 'mobile' && <div id="load-more-trigger"></div>}
               {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">
                   <CircularProgress />
+                </Box>
+              )}
+
+              {/* Numbered pagination, spec 1473 — web only; mobile keeps the
+                  infinite-scroll list it already had. */}
+              {platform === 'web' && totalPages > 1 && (
+                <Box className={productIndexPageClasses.pagination.wrap}>
+                  <Button
+                    disableRipple
+                    disableElevation
+                    aria-label={t('previous')}
+                    onClick={() => goToPage(webPage - 1)}
+                    className={
+                      webPage <= 1
+                        ? productIndexPageClasses.pagination.arrowDisabled
+                        : productIndexPageClasses.pagination.arrow
+                    }
+                  >
+                    <ChevronLeft size={18} />
+                  </Button>
+
+                  {paginationItems.map((item, idx) =>
+                    item === PAGINATION_ELLIPSIS ? (
+                      <Box
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={`gap-${idx}`}
+                        className={productIndexPageClasses.pagination.ellipsis}
+                      >
+                        …
+                      </Box>
+                    ) : (
+                      <Button
+                        key={item}
+                        disableRipple
+                        disableElevation
+                        aria-current={item === webPage ? 'page' : undefined}
+                        onClick={() => goToPage(item)}
+                        className={`${fontClassName.className} ${
+                          item === webPage
+                            ? productIndexPageClasses.pagination.pageActive
+                            : productIndexPageClasses.pagination.page
+                        }`}
+                      >
+                        {item}
+                      </Button>
+                    ),
+                  )}
+
+                  <Button
+                    disableRipple
+                    disableElevation
+                    aria-label={t('next')}
+                    onClick={() => goToPage(webPage + 1)}
+                    className={
+                      webPage >= totalPages
+                        ? productIndexPageClasses.pagination.arrowDisabled
+                        : productIndexPageClasses.pagination.arrow
+                    }
+                  >
+                    <ChevronRight size={18} />
+                  </Button>
                 </Box>
               )}
             </Box>
@@ -506,7 +984,8 @@ export default function ProductGridContent({
         )}
         <Snackbar
           open={snackbarOpen}
-          autoHideDuration={6000}
+          autoHideDuration={3000}
+          disableWindowBlurListener
           onClose={(_, reason) => {
             if (reason === 'clickaway') {
               return;

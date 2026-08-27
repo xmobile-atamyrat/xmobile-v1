@@ -1,6 +1,7 @@
 import {
   Brand,
   Category,
+  Color,
   DollarRate,
   Product,
   User,
@@ -251,6 +252,7 @@ export interface ProductContextProps {
   setSelectedProduct: Dispatch<SetStateAction<Product | undefined>>;
   searchKeyword?: string | undefined;
   setSearchKeyword: Dispatch<SetStateAction<string | undefined>>;
+  colorsMap: Map<string, Color>;
 }
 
 export interface PrevProductContextProps {
@@ -310,6 +312,7 @@ export interface AddToCartProps {
   cartAction: 'add' | 'delete' | 'detail';
   price?: string;
   selectedVariant?: string;
+  variantLabel?: string;
   onDelete?: (message: string) => void;
   setTotalPrice?: Dispatch<SetStateAction<number>>;
 }
@@ -317,6 +320,7 @@ export interface AddToCartProps {
 export interface SnackbarProps {
   message: string;
   severity: 'success' | 'error' | 'info' | 'warning';
+  variantLabel?: string;
 }
 
 export interface CarouselArrowProps {

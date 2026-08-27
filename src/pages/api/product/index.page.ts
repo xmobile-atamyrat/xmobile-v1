@@ -8,6 +8,7 @@ import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
   IMG_COMPRESSION_OPTIONS,
+  PRODUCTS_PER_PAGE,
   SORT_OPTIONS,
   localeOptions,
 } from '@/pages/lib/constants';
@@ -32,7 +33,7 @@ export const config = {
 };
 
 const filepath = 'src/pages/api/product/index.page.ts';
-const productsPerPage = 20;
+const productsPerPage = PRODUCTS_PER_PAGE;
 
 // Derives the colors filter column from variant tags (referenced colorIds).
 export function deriveVariantColumns(tags: string[]): { colors: string[] } {
@@ -300,6 +301,8 @@ async function handleGetProduct(query: {
   minPrice?: string;
   maxPrice?: string;
   sortBy?: SortOption;
+  count?: string;
+  facets?: string;
   locale?: string | string[];
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
@@ -314,8 +317,18 @@ async function handleGetProduct(query: {
     minPrice,
     maxPrice,
     sortBy,
+    count,
+    facets,
     locale,
   } = query;
+  // count=true returns the total number of matches for the filter set
+  // (reusing the same where-building) instead of a page of products.
+  const wantCount = count === 'true';
+  // facets=categories returns the per-category breakdown of the same match set
+  // — one groupBy instead of a count request per category. Callers wanting a
+  // usable facet list omit categoryIds, so every category in the result set is
+  // still represented once one of them is selected.
+  const wantCategoryFacets = facets === 'categories';
   // Opt-in response localization: without a valid `locale`, responses keep the
   // raw multi-locale JSON blobs (admin edit flows depend on receiving them).
   const activeLocale =
@@ -391,7 +404,10 @@ async function handleGetProduct(query: {
     ids.push(...recursiveIds.flat());
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length === 0) {
-      return { resp: { success: true, data: [] }, status: 200 };
+      return {
+        resp: { success: true, data: wantCount ? 0 : [] },
+        status: 200,
+      };
     }
     where.categoryId = { in: uniqueIds };
   }
@@ -433,6 +449,34 @@ async function handleGetProduct(query: {
         where.cachedPrice = { ...currentFilter, lte: maxTmt / rate };
       }
     }
+  }
+
+  if (wantCount) {
+    const total = await dbClient.product.count({ where });
+    return { resp: { success: true, data: total }, status: 200 };
+  }
+
+  if (wantCategoryFacets) {
+    const grouped = await dbClient.product.groupBy({
+      by: ['categoryId'],
+      where,
+      // `true` rather than `{ _all: true }` so the row carries a plain number.
+      _count: true,
+    });
+    // Leaf-level counts; the caller rolls them up to whichever level it shows
+    // (the category tree is already in CategoryContext client-side).
+    return {
+      resp: {
+        success: true,
+        data: grouped.map((row) => ({
+          categoryId: row.categoryId,
+          // _count is Prisma's own groupBy result shape, not our naming.
+          // eslint-disable-next-line no-underscore-dangle
+          count: row._count,
+        })),
+      },
+      status: 200,
+    };
   }
 
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [

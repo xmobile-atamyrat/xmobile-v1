@@ -3,7 +3,7 @@ import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -49,7 +49,7 @@ export default function LogsPage() {
   // Redirect to sign in if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/user/sign_in_up');
+      router.push('/user/signin');
     }
   }, [user, isLoading, router]);
 
@@ -165,7 +165,7 @@ export default function LogsPage() {
         className="flex flex-col gap-4 w-full h-full"
       >
         <Typography
-          className={interClassname.className}
+          className={fontClassName.className}
           fontWeight={600}
           fontSize={platform === 'web' ? 24 : 20}
         >
@@ -175,7 +175,7 @@ export default function LogsPage() {
         {/* Log File Selector */}
         <Box className="flex flex-col gap-2">
           <Typography
-            className={interClassname.className}
+            className={fontClassName.className}
             variant="body2"
             fontWeight={500}
           >
@@ -215,7 +215,7 @@ export default function LogsPage() {
         {selectedLogFile && (
           <Box className="flex flex-col gap-2 flex-1 min-h-0">
             <Typography
-              className={interClassname.className}
+              className={fontClassName.className}
               variant="body2"
               fontWeight={500}
             >

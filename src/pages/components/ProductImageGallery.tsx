@@ -1,9 +1,11 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { detailPageClasses } from '@/styles/classMaps/product/detail';
+import { fontClassName } from '@/styles/theme';
 import { Box, CardMedia } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const AUTO_ADVANCE_MS = 3000;
+const AUTO_ADVANCE_MS = 4500;
+const SWIPE_THRESHOLD = 40; // px of horizontal travel before it counts as a swipe
 
 interface ProductImageGalleryProps {
   displayImgUrls: string[];
@@ -17,23 +19,69 @@ export default function ProductImageGallery({
   onExpand,
 }: ProductImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // Once the user swipes or taps a dot, stop the auto-advance so it doesn't
+  // fight their intent while they read the page.
+  const [interacted, setInteracted] = useState(false);
   const platform = usePlatform();
   const classes = detailPageClasses.gallery;
 
-  const safeIndex = selectedIndex < displayImgUrls.length ? selectedIndex : 0;
+  const total = displayImgUrls.length;
+  const safeIndex = selectedIndex < total ? selectedIndex : 0;
+  // web only: a single image renders no thumbnail rail, so the frame takes the
+  // full column width instead of leaving 86px of empty gutter
+  const hasWebRail = platform === 'web' && total > 1;
+
+  const touchStartX = useRef<number | null>(null);
+  const didSwipe = useRef(false);
 
   useEffect(() => {
-    if (displayImgUrls.length <= 1) return undefined;
+    if (total <= 1 || interacted) return undefined;
     const timer = setInterval(() => {
-      setSelectedIndex((prev) => (prev + 1) % displayImgUrls.length);
+      setSelectedIndex((prev) => (prev + 1) % total);
     }, AUTO_ADVANCE_MS);
     return () => clearInterval(timer);
-  }, [displayImgUrls.length, selectedIndex]);
+  }, [total, interacted]);
+
+  const goTo = (index: number) => {
+    setInteracted(true);
+    setSelectedIndex(((index % total) + total) % total);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    didSwipe.current = false;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      didSwipe.current = true; // suppress the tap-to-expand that follows
+      goTo(dx < 0 ? safeIndex + 1 : safeIndex - 1);
+    }
+    touchStartX.current = null;
+  };
+
+  const handleImageClick = () => {
+    if (didSwipe.current) {
+      didSwipe.current = false;
+      return;
+    }
+    onExpand(safeIndex);
+  };
 
   return (
-    <Box className={classes.wrapper[platform]}>
+    <Box
+      className={`${classes.wrapper[platform]} ${
+        hasWebRail ? classes.wrapperWithRail : ''
+      }`}
+    >
       {/* Main image */}
-      <Box className="w-full flex justify-center items-center">
+      <Box
+        className={classes.mainImage[platform]}
+        onTouchStart={platform === 'mobile' ? handleTouchStart : undefined}
+        onTouchEnd={platform === 'mobile' ? handleTouchEnd : undefined}
+      >
         <CardMedia
           component="img"
           image={displayImgUrls[safeIndex]}
@@ -41,13 +89,33 @@ export default function ProductImageGallery({
           className={`${detailPageClasses.cardMedia[platform]} cursor-pointer`}
           loading="lazy"
           decoding="async"
-          onClick={() => onExpand(safeIndex)}
+          onClick={handleImageClick}
         />
+
+        {/* Mobile: page counter + dot indicators overlaid on the gallery */}
+        {platform === 'mobile' && total > 1 && (
+          <>
+            <Box className={`${classes.counter} ${fontClassName.className}`}>
+              {safeIndex + 1} / {total}
+            </Box>
+            <Box className={classes.dots}>
+              {displayImgUrls.map((_, i) => (
+                <Box
+                  key={i}
+                  role="button"
+                  aria-label={`Go to image ${i + 1}`}
+                  className={i === safeIndex ? classes.dotActive : classes.dot}
+                  onClick={() => goTo(i)}
+                />
+              ))}
+            </Box>
+          </>
+        )}
       </Box>
 
-      {/* Thumbnail strip */}
-      {displayImgUrls.length > 1 && (
-        <Box className={classes.thumbnailStrip[platform]}>
+      {/* Web: thumbnail rail (absolutely positioned beside the square frame) */}
+      {hasWebRail && (
+        <Box className={classes.thumbnailStrip.web}>
           {displayImgUrls.map((url, i) => (
             <CardMedia
               key={i}
@@ -56,7 +124,7 @@ export default function ProductImageGallery({
               alt={`${altText} ${i + 1}`}
               className={[
                 classes.thumbnail.base,
-                classes.thumbnail.size[platform],
+                classes.thumbnail.size.web,
                 i === safeIndex
                   ? classes.thumbnail.active
                   : classes.thumbnail.inactive,
