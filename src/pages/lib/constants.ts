@@ -14,6 +14,8 @@ export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const BANNER_IMAGE_WIDTH = 1600; // px
 
+export const CHAT_MESSAGES_PAGE_SIZE = 50;
+
 export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;
@@ -136,6 +138,12 @@ export const FILTER_MAX_PRICE = 100000;
 // Page size for the product grid. Shared so the web pagination control derives
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;
+
+/**
+ * Thrown by the order service and matched by the checkout page when the cart
+ * still holds out-of-stock products. Shared so both sides agree on the string.
+ */
+export const OUT_OF_STOCK_ERROR = 'OUT_OF_STOCK_ITEMS';
 
 export const BUSINESS_NAME = 'Xmobile';
 

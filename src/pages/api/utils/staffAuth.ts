@@ -10,16 +10,24 @@ export function isStaff(grade: UserRole | undefined): boolean {
   return grade === UserRole.ADMIN || grade === UserRole.SUPERUSER;
 }
 
+/** SUPERUSER only (destructive / catalog-wide operations). */
+export function isSuperuser(grade: UserRole | undefined): boolean {
+  return grade === UserRole.SUPERUSER;
+}
+
 type JwtPayloadWithGrade = { grade?: UserRole };
 
 /**
- * Requires `Authorization: Bearer <access JWT>` with ADMIN or SUPERUSER.
- * Sends 401 JSON `{ success: false, message }` and returns false when rejected.
- * Use for routes that cannot use `withAuth` (e.g. bodyParser: false / multipart).
+ * Requires `Authorization: Bearer <access JWT>` whose grade passes `allow`.
+ * A missing or invalid token is always 401; a valid token with a disallowed
+ * grade gets `rejectStatus`, so each caller keeps its own established contract.
+ * Sends JSON `{ success: false, message }` and returns false when rejected.
  */
-export async function requireStaffBearerAuth(
+async function requireBearerGrade(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
+  allow: (grade: UserRole | undefined) => boolean,
+  rejectStatus: 401 | 403,
 ): Promise<boolean> {
   const authHeader = req.headers.authorization;
   if (authHeader == null || !authHeader.startsWith('Bearer ')) {
@@ -35,16 +43,43 @@ export async function requireStaffBearerAuth(
     });
     return false;
   }
+  let grade: UserRole | undefined;
   try {
     const decoded = await verifyToken(token, secret);
-    const grade = (decoded as JwtPayloadWithGrade).grade;
-    if (!isStaff(grade)) {
-      res.status(401).json({ success: false, message: 'Unauthorized' });
-      return false;
-    }
-    return true;
+    grade = (decoded as JwtPayloadWithGrade).grade;
   } catch {
     res.status(401).json({ success: false, message: 'Unauthorized' });
     return false;
   }
+  if (!allow(grade)) {
+    res.status(rejectStatus).json({
+      success: false,
+      message: rejectStatus === 403 ? 'Forbidden' : 'Unauthorized',
+    });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Requires `Authorization: Bearer <access JWT>` with ADMIN or SUPERUSER.
+ * Rejects with 401 (its long-standing contract; clients treat it as "not staff").
+ * Use for routes that cannot use `withAuth` (e.g. bodyParser: false / multipart).
+ */
+export async function requireStaffBearerAuth(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseApi>,
+): Promise<boolean> {
+  return requireBearerGrade(req, res, isStaff, 401);
+}
+
+/**
+ * Requires `Authorization: Bearer <access JWT>` with SUPERUSER.
+ * A valid non-superuser token gets 403 — it is authenticated, just not allowed.
+ */
+export async function requireSuperuserBearerAuth(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseApi>,
+): Promise<boolean> {
+  return requireBearerGrade(req, res, isSuperuser, 403);
 }

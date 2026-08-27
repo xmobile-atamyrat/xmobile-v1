@@ -37,7 +37,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
-const supportEmail = 'xmobiletm@gmail.com';
+const supportEmail = 'xmobile.tkm@gmail.com';
 const mapsUrl = 'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76';
 
 const navItems = [

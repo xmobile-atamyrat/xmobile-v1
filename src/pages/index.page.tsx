@@ -5,7 +5,7 @@ import PopularCategoriesSection, {
 } from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
-import { fetchNewProducts } from '@/pages/lib/apis';
+import { fetchNewProducts, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   BUSINESS_NAME,
@@ -135,6 +135,18 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     console.error('Failed to load promo banners:', error);
   }
 
+  // Seed the first page server-side so product links are in the raw HTML,
+  // not just after the client fetch.
+  let initialProducts: Product[] = [];
+  try {
+    initialProducts = await fetchProducts({
+      page: 1,
+      locale: routeLocale ?? finalLocale,
+    });
+  } catch (error) {
+    console.error('Failed to load initial products:', error);
+  }
+
   return {
     props: {
       locale:
@@ -142,17 +154,20 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       messages,
       seoData,
       banners,
+      initialProducts,
     },
   };
 }) satisfies GetServerSideProps<{
   locale: string | null;
   seoData: PageSeoData;
   banners: StorefrontBanner[];
+  initialProducts: Product[];
 }>;
 
 export default function Home({
   locale,
   banners,
+  initialProducts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
@@ -163,7 +178,9 @@ export default function Home({
     setSearchKeyword,
     setProducts: setContextProducts,
   } = useProductContext();
-  const [products, setProducts] = useState<Product[]>([]);
+  // Seeded from the server-rendered first page so the grid isn't empty in the
+  // raw HTML; the effect below swaps in the newest-products feed on mount.
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
 
@@ -204,7 +221,8 @@ export default function Home({
     },
   ];
 
-  // Home shows only the newest products — no filters, no infinite scroll.
+  // Home shows only the newest products — no filters, no infinite scroll, so
+  // there is no list snapshot to restore here (that lives on /product).
   useEffect(() => {
     let mounted = true;
     (async () => {

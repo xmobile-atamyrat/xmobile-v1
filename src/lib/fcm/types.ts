@@ -17,4 +17,5 @@ export interface FCMSendResult {
   tokensSent: number;
   tokensFailed: number;
   failedTokenIds: string[];
+  noTokens?: boolean; // user has zero registered FCM tokens — not a send failure
 }

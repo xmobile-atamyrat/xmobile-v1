@@ -29,7 +29,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
-const SUPPORT_EMAIL = 'xmobiletm@gmail.com';
+const SUPPORT_EMAIL = 'xmobile.tkm@gmail.com';
 const SUPPORT_PHONES = ['+99361004933', '+99371211717', '+99342230620'];
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

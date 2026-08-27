@@ -1,6 +1,8 @@
+import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
+import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   getProductMediaUrl,
@@ -47,7 +49,7 @@ import { Banknote, Check, MapPin, Pencil, Truck } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
@@ -87,6 +89,7 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState(0);
   // Set once the user tries to advance past the address step incomplete.
   const [attemptedNext, setAttemptedNext] = useState(false);
+  const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -95,31 +98,38 @@ export default function CheckoutPage() {
     })();
   }, []);
 
-  // Fetch cart items
-  useEffect(() => {
-    (async () => {
-      try {
-        const { success, data, message } = user
-          ? await fetchWithCreds<(CartItem & { product: Product })[]>({
-              accessToken,
-              path: `/api/cart?userId=${user.id}`,
-              method: 'GET',
-            })
-          : await fetchWithoutCreds<(CartItem & { product: Product })[]>(
-              '/api/guest/cart',
-              'GET',
-            );
+  // Fetch cart items. Returns the fresh list so callers can react to it —
+  // the order handler needs it to recover from a stale out-of-stock cart.
+  const loadCartItems = useCallback(async (): Promise<
+    (CartItem & { product: Product })[] | null
+  > => {
+    try {
+      const { success, data, message } = user
+        ? await fetchWithCreds<(CartItem & { product: Product })[]>({
+            accessToken,
+            path: `/api/cart?userId=${user.id}`,
+            method: 'GET',
+          })
+        : await fetchWithoutCreds<(CartItem & { product: Product })[]>(
+            '/api/guest/cart',
+            'GET',
+          );
 
-        if (success) {
-          setCartItems(data);
-        } else {
-          console.error(message);
-        }
-      } catch (error) {
-        console.error('Error fetching cart data:', error);
+      if (success) {
+        setCartItems(data);
+        return data;
       }
-    })();
+      console.error(message);
+    } catch (error) {
+      console.error('Error fetching cart data:', error);
+    }
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accessToken]);
+
+  useEffect(() => {
+    loadCartItems();
+  }, [loadCartItems]);
 
   // Initialize form with user data
   useEffect(() => {
@@ -203,8 +213,12 @@ export default function CheckoutPage() {
       );
       if (!cancelled) {
         setItemPrices(prices);
+        // Out-of-stock items can't be ordered, so they don't count toward the total
         const sum = cartItems.reduce(
-          (acc, item) => acc + (prices[item.id] || 0) * item.quantity,
+          (acc, item) =>
+            item.product.isOutOfStock
+              ? acc
+              : acc + (prices[item.id] || 0) * item.quantity,
           0,
         );
         setTotalPrice(sum);
@@ -217,7 +231,54 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItemsSignature, accessToken, user]);
 
+  const outOfStockItems = cartItems.filter((item) => item.product.isOutOfStock);
+
+  // Removes every out-of-stock item so the order can go through
+  const handleRemoveOutOfStockItems = async () => {
+    const removableIds = outOfStockItems.map((item) => item.id);
+    try {
+      const results = await Promise.all(
+        removableIds.map((cartItemId) =>
+          user
+            ? fetchWithCreds({
+                accessToken,
+                path: '/api/cart',
+                method: 'DELETE',
+                body: { id: cartItemId },
+              })
+            : fetchWithoutCreds('/api/guest/cart', 'DELETE', {
+                id: cartItemId,
+              }),
+        ),
+      );
+
+      const removed = new Set(
+        removableIds.filter((_, index) => results[index]?.success),
+      );
+
+      if (removed.size > 0) {
+        setCartItems((prev) => prev.filter((item) => !removed.has(item.id)));
+      }
+
+      if (removed.size < removableIds.length) {
+        console.error('Failed to remove some out-of-stock cart items');
+        return;
+      }
+
+      setShowOutOfStockDialog(false);
+    } catch (error) {
+      console.error('Error removing out-of-stock cart items:', error);
+    }
+  };
+
   const handleOrder = async () => {
+    // Out-of-stock items block the order outright — check before anything else
+    // so the user isn't asked to fix form fields on an order that can't succeed
+    if (outOfStockItems.length > 0) {
+      setShowOutOfStockDialog(true);
+      return;
+    }
+
     // Validate required fields
     if (!fullName.trim()) {
       return;
@@ -232,7 +293,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const { success } = user
+      const { success, message } = user
         ? await fetchWithCreds({
             accessToken,
             path: '/api/order',
@@ -254,6 +315,15 @@ export default function CheckoutPage() {
       if (success) {
         // Redirect to success page
         router.push('/cart/checkout/success');
+      } else if (message === OUT_OF_STOCK_ERROR) {
+        // A product went out of stock after this page loaded, so local state
+        // can't name the offender — refetch before opening the dialog
+        const fresh = await loadCartItems();
+        if (fresh?.some((item) => item.product.isOutOfStock)) {
+          setShowOutOfStockDialog(true);
+        } else {
+          setSnackbarOpen(true);
+        }
       } else {
         // Show error snackbar
         setSnackbarMsg('serverError');
@@ -1008,6 +1078,18 @@ export default function CheckoutPage() {
       </Box>
 
       {errorSnackbar}
+
+      {showOutOfStockDialog && (
+        <OutOfStockDialog
+          items={outOfStockItems.map((item) => ({
+            id: item.id,
+            name: item.product.name,
+          }))}
+          onClose={() => setShowOutOfStockDialog(false)}
+          onRemove={handleRemoveOutOfStockItems}
+          onBackToCart={() => router.push('/cart')}
+        />
+      )}
     </Layout>
   );
 }

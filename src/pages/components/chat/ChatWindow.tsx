@@ -1,6 +1,8 @@
 import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
+import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
@@ -23,11 +25,13 @@ const ChatWindow = () => {
   const t = useTranslations();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const hasMore = messages.length >= 50;
+  const hasMore = messages.length >= CHAT_MESSAGES_PAGE_SIZE;
 
-  const isClosed = currentSession?.status === 'CLOSED';
+  const isSessionClosed = currentSession?.status === 'CLOSED';
 
   const isAdminView = user?.grade === 'ADMIN' || user?.grade === 'SUPERUSER';
+
+  const isSessionEmpty = messages.length === 0;
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -93,18 +97,22 @@ const ChatWindow = () => {
             </Button>
           </Box>
         )}
-        {messages.length === 0 ? (
-          <Typography
-            sx={{
-              textAlign: 'center',
-              color: muted,
-              mt: 4,
-              fontSize: '14px',
-            }}
-          >
-            {t('chatStartConversation')}
-          </Typography>
-        ) : (
+        {isSessionEmpty &&
+          (isAdminView ? (
+            <Typography
+              sx={{
+                textAlign: 'center',
+                color: muted,
+                mt: 4,
+                fontSize: '14px',
+              }}
+            >
+              {t('chatStartConversation')}
+            </Typography>
+          ) : (
+            <ChatWelcomeBanner />
+          ))}
+        {messages.length > 0 &&
           (() => {
             const elements: JSX.Element[] = [];
             let lastDateKey: string | null = null;
@@ -166,11 +174,10 @@ const ChatWindow = () => {
             });
 
             return elements;
-          })()
-        )}
+          })()}
       </Box>
 
-      {isClosed && (
+      {isSessionClosed && (
         <Box
           sx={{
             p: 1.5,
@@ -188,7 +195,7 @@ const ChatWindow = () => {
       )}
       <ChatInput
         onSendMessage={sendMessage}
-        disabled={!isConnected || isClosed}
+        disabled={!isConnected || isSessionClosed}
         isSending={isSendingMessage}
       />
     </Box>

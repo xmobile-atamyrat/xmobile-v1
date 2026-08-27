@@ -1,5 +1,5 @@
 import dbClient from '@/lib/dbClient';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 import * as admin from 'firebase-admin';
 import fs from 'fs';
 import { createOAuth2GoogleapisCredential } from './credential';
@@ -123,6 +123,7 @@ export async function sendFCMNotificationToUser(
         tokensSent: 0,
         tokensFailed: 0,
         failedTokenIds: [],
+        noTokens: true,
       };
     }
 
@@ -175,6 +176,17 @@ export async function sendFCMNotificationToUser(
 
     const tokensToDelete: string[] = [];
 
+    // Group failures by error instead of logging per token. sendEachForMulticast
+    // fans out one request per token but they all share a single access token, so
+    // one failed credential mint fails every token with the *same* error. Since
+    // console.error is mirrored to Slack (see src/lib/logger.ts), per-token
+    // logging turned one outage into N alerts per send — and the retry job
+    // re-entered this same path, multiplying it again on every attempt.
+    const failuresByError = new Map<
+      string,
+      { count: number; sampleToken: string }
+    >();
+
     response.responses.forEach((resp, idx) => {
       const token = tokenStrings[idx];
       const tokenRecord = tokens[idx];
@@ -193,11 +205,27 @@ export async function sendFCMNotificationToUser(
           if (tokenRecord) tokensToDelete.push(tokenRecord.token);
         }
 
-        console.error(
-          `[FCM Service] Failed to send to token ${token.substring(0, 20)}...:`,
-          error?.message || 'Unknown error',
-        );
+        const key = `${error?.code || 'unknown'}::${error?.message || 'Unknown error'}`;
+        const existing = failuresByError.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          failuresByError.set(key, {
+            count: 1,
+            sampleToken: token.substring(0, 20),
+          });
+        }
       }
+    });
+
+    failuresByError.forEach(({ count, sampleToken }, key) => {
+      const [code, errorMessage] = key.split('::');
+      // Leads with the notification id: it is stable across the inline attempt
+      // and every retry of the same row, which is what lets the Slack throttle
+      // (src/lib/alertThrottle.ts) collapse a retry sequence into one alert.
+      console.error(
+        `[FCM Service] Notification ${notification.data.notificationId} failed for ${count}/${tokenStrings.length} token(s) of user ${userId} — ${code}: ${errorMessage} (e.g. ${sampleToken}...)`,
+      );
     });
 
     if (tokensToDelete.length > 0) {
@@ -276,6 +304,66 @@ export function createFCMNotificationPayload(
 }
 
 /**
+ * updateMany with 3 attempts (200ms·n backoff); never throws, logs on final
+ * failure. A delivery-status write that never lands leaves the row PENDING,
+ * so the batch job re-sends a push the user already got — worth retrying a
+ * couple of likely-transient DB blips. updateMany (vs update) also makes a
+ * row deleted mid-flight a no-op instead of a P2025 throw.
+ */
+export async function updateNotificationWithRetry(
+  where: Prisma.InAppNotificationWhereInput,
+  data: Prisma.InAppNotificationUpdateManyMutationInput,
+): Promise<void> {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await dbClient.inAppNotification.updateMany({ where, data });
+      return;
+    } catch (error) {
+      if (attempt === 3) {
+        console.error(
+          `[FCM Service] Failed to update notification status (${JSON.stringify(where)}) after ${attempt} attempts:`,
+          error,
+        );
+        return;
+      }
+      await new Promise((r) => {
+        setTimeout(r, 200 * attempt);
+      });
+    }
+  }
+}
+
+/**
+ * Record the outcome of a send attempt on the InAppNotification row so the
+ * batch-runner retry job (scripts/batch-runner/jobs/notification-retry.ts) can
+ * pick up anything that didn't reach the user. `delivered` = FCM accepted OR
+ * WS fallback delivered. Failures land as PENDING (nextRetryAt=null) so the job
+ * retries on its next tick.
+ */
+export async function recordNotificationDelivery(
+  notificationId: string,
+  delivered: boolean,
+): Promise<void> {
+  const data = {
+    lastAttemptAt: new Date(),
+    deliveryStatus: (delivered ? 'SENT' : 'PENDING') as 'SENT' | 'PENDING',
+  };
+
+  // The inline send and the batch retry job can race on the same row (e.g. a
+  // slow FCM call still in flight when the retry job's next tick picks the
+  // same PENDING row up). A failed attempt must never downgrade a row the
+  // other side already marked SENT, or a real delivery gets endlessly
+  // re-retried (and can even end up reported as permanently failed) despite
+  // already having reached the user. Only the successful case is allowed to
+  // write unconditionally.
+  const where = delivered
+    ? { id: notificationId }
+    : { id: notificationId, deliveryStatus: { not: 'SENT' as const } };
+
+  await updateNotificationWithRetry(where, data);
+}
+
+/**
  * Send notification with FCM first, then fallback to WebSocket server if FCM fails
  * This is used from Next.js API routes
  */
@@ -301,11 +389,13 @@ export async function sendFCMWithCallbackFallback(
 
     if (fcmResult.success && fcmResult.tokensSent > 0) {
       // FCM succeeded
+      await recordNotificationDelivery(notification.id, true);
       return true;
     }
 
     // FCM failed, try WebSocket fallback
     const wsResult = await sendToWebSocketServer(targetUserId, [notification]);
+    await recordNotificationDelivery(notification.id, wsResult);
     return wsResult;
   } catch (error) {
     console.error(
@@ -314,7 +404,11 @@ export async function sendFCMWithCallbackFallback(
     );
     // Try WebSocket as last resort
     try {
-      return await sendToWebSocketServer(targetUserId, [notification]);
+      const wsResult = await sendToWebSocketServer(targetUserId, [
+        notification,
+      ]);
+      await recordNotificationDelivery(notification.id, wsResult);
+      return wsResult;
     } catch (wsError) {
       console.error(
         `[FCM Service] WebSocket fallback also failed for notification ${notification.id}:`,
