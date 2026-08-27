@@ -8,8 +8,8 @@ export const cartProductCardClasses = {
   },
   boxes: {
     main: {
-      web: 'relative w-full flex flex-row items-center gap-[18px]',
-      mobile: 'relative h-full w-full flex flex-row items-start',
+      web: 'relative w-full flex flex-row items-center gap-[18px] cursor-pointer',
+      mobile: 'relative h-full w-full flex flex-row items-start cursor-pointer',
     },
     detail: {
       web: 'flex flex-col justify-center items-start w-full min-w-0',

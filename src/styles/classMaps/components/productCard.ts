@@ -5,7 +5,7 @@ export const productCardClasses = {
       'w-full min-h-[200px] rounded-2xl overflow-hidden shadow-[0_4px_14px_rgba(20,16,60,0.05)] bg-white',
   },
   boxes: {
-    main: 'relative h-full w-full flex flex-col',
+    main: 'relative h-full w-full flex flex-col cursor-pointer',
     detail: {
       web: 'flex flex-1 flex-col justify-start px-[14px] pt-3 pb-[14px]',
       mobile: 'flex flex-1 flex-col justify-start px-3 pt-[11px] pb-[13px]',
