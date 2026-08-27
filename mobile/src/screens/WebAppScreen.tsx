@@ -109,19 +109,7 @@ async function ensureIOSRegisteredForRemoteMessages(): Promise<void> {
   }
 }
 
-const SPLASH_TAGLINES = [
-  'Premium Electronics',
-  'Eltip Bermek Hyzmaty',
-  'Müňlerçäniň Ynamy',
-  'Amatly Bahalar',
-];
-
-const TAGLINE_INTERVAL_MS = 2200;
-
 function LoadingView() {
-  const [taglineIndex, setTaglineIndex] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -143,39 +131,6 @@ function LoadingView() {
     return () => breathe.stop();
   }, [logoScale]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: -12,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setTaglineIndex(prev => (prev + 1) % SPLASH_TAGLINES.length);
-        slideAnim.setValue(12);
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    }, TAGLINE_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fadeAnim, slideAnim]);
-
   return (
     <View style={styles.loadingContainer}>
       <Animated.Image
@@ -183,14 +138,6 @@ function LoadingView() {
         style={[styles.loadingLogo, { transform: [{ scale: logoScale }] }]}
         resizeMode="contain"
       />
-      <Animated.Text
-        style={[
-          styles.loadingText,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        {SPLASH_TAGLINES[taglineIndex]}
-      </Animated.Text>
     </View>
   );
 }
@@ -886,15 +833,6 @@ const styles = StyleSheet.create({
   loadingLogo: {
     width: 300,
     height: 90,
-    marginBottom: 40,
-  },
-  loadingText: {
-    fontSize: 26,
-    color: '#20166E',
-    textAlign: 'center',
-    lineHeight: 32,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   stateContainer: {
     ...StyleSheet.absoluteFillObject,
