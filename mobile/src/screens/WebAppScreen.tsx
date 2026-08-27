@@ -37,6 +37,12 @@ const ICON_MUTED = '#B6B5C2';
 // XMobile support line — matches SUPPORT_PHONES[0] in src/pages/support.page.tsx
 const SUPPORT_PHONE = '+99361004933';
 
+// STAGING ONLY: staging is served over plain HTTP from a bare IP, so the
+// origin is not secure. Cookies must be host-only (no domain attribute, which
+// RFC 6265 forbids for IP hosts) and must not carry the Secure flag, or the
+// WebView drops them and guest/refresh sessions silently break.
+const isSecureOrigin = false;
+
 /**
  * Cross-platform notification permission check.
  *
@@ -190,7 +196,7 @@ function WebAppScreen() {
   const isDevMode = __DEV__;
   const baseUrl = isDevMode
     ? 'http://localhost:3003'
-    : 'https://xmobile.com.tm';
+    : 'http://216.250.13.115:3001';
 
   const persistGuestSessionFromCookie = useCallback(async () => {
     try {
@@ -440,7 +446,7 @@ function WebAppScreen() {
         setHasSeenOnboarding(!!seenOnboarding);
 
         if (guestSession) {
-          const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
+          const domain = isDevMode ? 'localhost' : undefined;
           const expiresAt = new Date();
           expiresAt.setFullYear(expiresAt.getFullYear() + 10);
           await CookieManager.set(baseUrl, {
@@ -450,7 +456,7 @@ function WebAppScreen() {
             domain,
             expires: expiresAt.toISOString(),
             httpOnly: true,
-            secure: !isDevMode,
+            secure: isSecureOrigin,
           });
         }
       } catch (error) {
@@ -463,13 +469,14 @@ function WebAppScreen() {
     loadStoredData();
   }, [baseUrl, isDevMode]);
 
-  const cookieDomain = isDevMode ? null : '.xmobile.com.tm';
+  // STAGING ONLY: host-only cookies on the bare-IP origin, dev included.
+  const cookieDomain: string | null = null;
 
   useEffect(() => {
     const syncStoredGuestSessionCookie = async () => {
       if (!storedGuestSession) return;
       try {
-        const domain = isDevMode ? 'localhost' : '.xmobile.com.tm';
+        const domain = isDevMode ? 'localhost' : undefined;
         const expiresAt = new Date();
         expiresAt.setFullYear(expiresAt.getFullYear() + 10);
         await CookieManager.set(baseUrl, {
@@ -479,7 +486,7 @@ function WebAppScreen() {
           domain,
           expires: expiresAt.toISOString(),
           httpOnly: true,
-          secure: !isDevMode,
+          secure: isSecureOrigin,
         });
       } catch (error) {
         console.warn('Failed to sync stored guest session cookie:', error);
@@ -505,7 +512,7 @@ function WebAppScreen() {
 
   const cookieInjectionJS = useMemo(() => {
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
-    const secureAttr = isDevMode ? '' : '; Secure';
+    const secureAttr = isSecureOrigin ? '; Secure' : '';
 
     if (storedToken) {
       return `
@@ -528,7 +535,7 @@ function WebAppScreen() {
         true;
       `;
     }
-  }, [storedToken, storedLocale, cookieDomain, isDevMode]);
+  }, [storedToken, storedLocale, cookieDomain]);
 
   useEffect(() => {
     if (cookieInjectionJS && webViewRef.current) {

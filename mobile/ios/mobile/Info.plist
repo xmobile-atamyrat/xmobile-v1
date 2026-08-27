@@ -26,10 +26,16 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- STAGING ONLY: the staging server is plain HTTP on a bare IP
+	     (http://216.250.13.115:3001). ATS blocks that by default, and
+	     NSExceptionDomains keys must be domain names, not IP addresses,
+	     so arbitrary loads is the only workable escape hatch here.
+	     Internal TestFlight testers skip Beta App Review, so this never
+	     reaches an Apple reviewer. MUST NOT reach main. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
+		<true/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
