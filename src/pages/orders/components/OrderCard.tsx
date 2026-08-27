@@ -1,13 +1,11 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ordersComponentClasses } from '@/styles/classMaps/orders/components';
-import { interClassname } from '@/styles/theme';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
-import { UserOrder, UserOrderStatus } from '@prisma/client';
+import { UserOrder } from '@prisma/client';
+import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/router';
+import OrderStatusBadge from './OrderStatusBadge';
 
 interface OrderCardProps {
   order: UserOrder;
@@ -28,42 +26,6 @@ export default function OrderCard({ order }: OrderCardProps) {
     });
   };
 
-  const getStatusIcon = (status: UserOrderStatus) => {
-    switch (status) {
-      case 'PENDING':
-      case 'IN_PROGRESS':
-        return (
-          <Box
-            className={ordersComponentClasses.orderCardStatusIcon.mobile}
-            sx={{ backgroundColor: '#dcdde2' }}
-          >
-            <AccessTimeIcon sx={{ fontSize: '16px', color: '#24292f' }} />
-          </Box>
-        );
-      case 'COMPLETED':
-        return (
-          <Box
-            className={ordersComponentClasses.orderCardStatusIcon.mobile}
-            sx={{ backgroundColor: '#2e7d32' }}
-          >
-            <CheckCircleIcon sx={{ fontSize: '16px', color: 'white' }} />
-          </Box>
-        );
-      case 'USER_CANCELLED':
-      case 'ADMIN_CANCELLED':
-        return (
-          <Box
-            className={ordersComponentClasses.orderCardStatusIcon.mobile}
-            sx={{ backgroundColor: '#ff3b30' }}
-          >
-            <CancelIcon sx={{ fontSize: '16px', color: 'white' }} />
-          </Box>
-        );
-      default:
-        return null;
-    }
-  };
-
   if (platform !== 'mobile') {
     return null;
   }
@@ -74,41 +36,41 @@ export default function OrderCard({ order }: OrderCardProps) {
       onClick={() => router.push(`/orders/${order.id}`)}
     >
       <Box className={ordersComponentClasses.orderCardHeader.mobile}>
-        <Box>
-          <Typography
-            className={`${interClassname.className} ${ordersComponentClasses.orderCardName.mobile}`}
-          >
-            {order.userName || 'N/A'} |{' '}
-            <span
-              className={`${interClassname.className} ${ordersComponentClasses.orderCardPhone.mobile}`}
-            >
-              {order.deliveryPhone}
-            </span>
-          </Typography>
-        </Box>
-        {getStatusIcon(order.status)}
+        <Typography
+          className={`${fontClassName.className} ${ordersComponentClasses.orderCardNumber.mobile}`}
+        >
+          #{order.orderNumber}
+        </Typography>
+        <OrderStatusBadge status={order.status} />
       </Box>
       <Typography
-        className={`${interClassname.className} ${ordersComponentClasses.orderCardAddress.mobile}`}
+        className={`${fontClassName.className} ${ordersComponentClasses.orderCardName.mobile}`}
+      >
+        {order.userName || 'N/A'}{' '}
+        <span
+          className={`${fontClassName.className} ${ordersComponentClasses.orderCardPhone.mobile}`}
+        >
+          · {order.deliveryPhone}
+        </span>
+      </Typography>
+      <Typography
+        className={`${fontClassName.className} ${ordersComponentClasses.orderCardAddress.mobile}`}
       >
         {order.deliveryAddress}
       </Typography>
       <Box className={ordersComponentClasses.orderCardFooter.mobile}>
         <Typography
-          className={`${interClassname.className} ${ordersComponentClasses.orderCardDate.mobile}`}
+          className={`${fontClassName.className} ${ordersComponentClasses.orderCardDate.mobile}`}
         >
           {formatDate(order.createdAt)}
         </Typography>
         <Box className="flex items-center gap-2">
           <Typography
-            className={`${interClassname.className} ${ordersComponentClasses.orderCardPrice.mobile}`}
+            className={`${fontClassName.className} ${ordersComponentClasses.orderCardPrice.mobile}`}
           >
             {parseFloat(order.totalPrice).toFixed(2)} TMT
           </Typography>
-          <ArrowForwardIosIcon
-            className={ordersComponentClasses.orderCardArrow.mobile}
-            sx={{ fontSize: '17px', color: '#24292f' }}
-          />
+          <ChevronRight size={18} color="#8B8A98" />
         </Box>
       </Box>
     </Box>

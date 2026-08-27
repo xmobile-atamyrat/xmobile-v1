@@ -12,16 +12,20 @@ import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { resolveVariantDisplay } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
-import { colors, interClassname } from '@/styles/theme';
+import { fontClassName, muted } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useState } from 'react';
 
-// use lazy() to not to load the same compononets and functions in AddToCart
-const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
+// next/dynamic (not React.lazy) so the chunk suspends inside its own boundary
+// rather than relying on an ancestor <Suspense> that may not be there.
+const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
+  loading: () => <CircularProgress />,
+});
 
 interface ProductCardProps {
   product?: Product;
@@ -102,19 +106,23 @@ export default function CartProductCard({
             <Box className={cartProductCardClasses.det2[platform]}>
               <Box className={cartProductCardClasses.boxes.detail[platform]}>
                 <Typography
-                  className={`${interClassname.className} ${cartProductCardClasses.categoryName[platform]}`}
+                  className={`${fontClassName.className} ${cartProductCardClasses.categoryName[platform]}`}
                 >
                   {categoryName &&
                     parseName(categoryName, router.locale ?? 'tk')}
                 </Typography>
                 <Typography
                   gutterBottom
-                  className={`${interClassname.className} ${cartProductCardClasses.typo[platform]}`}
+                  className={`${fontClassName.className} ${cartProductCardClasses.typo[platform]}`}
                 >
-                  {parseName(product.name, router.locale ?? 'tk').substring(
-                    0,
-                    24,
-                  )}
+                  {/* the 24-char cut is sized for the mobile card; the web card
+                      is wide enough for the real name and clamps to 2 lines */}
+                  {platform === 'web'
+                    ? parseName(product.name, router.locale ?? 'tk')
+                    : parseName(product.name, router.locale ?? 'tk').substring(
+                        0,
+                        24,
+                      )}
                 </Typography>
                 {selectedVariant && (
                   <VariantBadge
@@ -129,8 +137,8 @@ export default function CartProductCard({
                   the label rather than going blank */}
               {product.isOutOfStock ? (
                 <Typography
-                  color="#9e9e9e"
-                  className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]} uppercase`}
+                  color={muted}
+                  className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]} uppercase`}
                 >
                   {t('outOfStock')}
                 </Typography>
@@ -142,10 +150,14 @@ export default function CartProductCard({
                     />
                   ) : (
                     <Typography
-                      color={colors.text[platform]}
-                      className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]}`}
+                      className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]}`}
                     >
-                      {product?.price} {t('manat')}
+                      {product?.price}
+                      <span
+                        className={cartProductCardClasses.priceUnit[platform]}
+                      >
+                        {t('manat')}
+                      </span>
                     </Typography>
                   )}
                 </>

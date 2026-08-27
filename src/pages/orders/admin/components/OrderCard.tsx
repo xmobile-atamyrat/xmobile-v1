@@ -1,6 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { userOrdersComponentClasses } from '@/styles/classMaps/userOrders/components';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { UserOrder } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -45,7 +45,7 @@ export default function OrderCard({ order }: OrderCardProps) {
       onClick={() => router.push(`/orders/admin/${order.id}`)}
     >
       <Box className="flex flex-row justify-between items-start mb-2">
-        <Typography className={`${interClassname.className} font-bold text-lg`}>
+        <Typography className={`${fontClassName.className} font-bold text-lg`}>
           {order.orderNumber}
         </Typography>
         <OrderStatusBadge status={order.status} />
@@ -53,13 +53,13 @@ export default function OrderCard({ order }: OrderCardProps) {
       {order.user && (
         <Box className="mb-2">
           <Typography
-            className={`${interClassname.className} text-sm text-gray-600`}
+            className={`${fontClassName.className} text-sm text-gray-600`}
           >
             {t('userName')}: {order.user.name}
           </Typography>
           {order.user.phoneNumber && (
             <Typography
-              className={`${interClassname.className} text-sm text-gray-600`}
+              className={`${fontClassName.className} text-sm text-gray-600`}
             >
               {t('userPhone')}: {order.user.phoneNumber}
             </Typography>
@@ -67,11 +67,11 @@ export default function OrderCard({ order }: OrderCardProps) {
         </Box>
       )}
       <Box className="flex flex-row justify-between items-center">
-        <Typography className={`${interClassname.className} font-semibold`}>
+        <Typography className={`${fontClassName.className} font-semibold`}>
           {order.totalPrice} TMT
         </Typography>
         <Typography
-          className={`${interClassname.className} text-sm text-gray-500`}
+          className={`${fontClassName.className} text-sm text-gray-500`}
         >
           {formatDate(order.createdAt)}
         </Typography>

@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 
 interface UpdateNotesDialogProps {
   open: boolean;
@@ -51,7 +51,7 @@ export default function UpdateNotesDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className={interClassname.className}>
+      <DialogTitle className={fontClassName.className}>
         {t('updateNotes')}
       </DialogTitle>
       <DialogContent>

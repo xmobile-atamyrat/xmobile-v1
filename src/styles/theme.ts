@@ -1,40 +1,64 @@
-import { Inter } from 'next/font/google';
+import { Onest } from 'next/font/google';
+
+// Design-system tokens (navy/red/ink), see xmobile-app-redesign/project/XMobile.dc.html
+export const navy = '#20166E';
+export const red = '#E41E2B';
+export const ink = '#17161D';
+export const muted = '#8B8A98';
+export const hairline = '#ECECF1';
+export const fill = '#F5F5F8';
+export const pageBg = '#E9E8EE';
 
 export const colors = {
   text: {
-    web: '#303030',
-    mobile: '#ff624c',
+    web: ink,
+    mobile: navy,
   },
-  blackText: '#303030',
-  main: '#ff624c',
+  blackText: ink,
+  main: navy,
   mainWebMobile: {
-    web: '#ff624c',
-    mobile: '#1b1b1b',
+    web: navy,
+    mobile: ink,
   },
   paperBackground: {
-    web: '#f4f4f4',
+    web: fill,
     mobile: '#fff',
   },
   border: {
     web: '#fff',
-    mobile: '#e6e6e6',
+    mobile: hairline,
   },
   borderHover: {
-    web: '#ff624c',
-    mobile: '#554ba8',
+    web: navy,
+    mobile: navy,
   },
-  placeholder: '#838383',
-  buttonHoverBg: '#ec4d38',
-  lightRed: 'ffe8e5',
-  darkBlue: '#221765',
+  placeholder: muted,
+  buttonHoverBg: '#1A1258',
+  lightRed: '#FDECEE',
+  darkBlue: navy,
   white: '#fff',
   black: '#000',
 };
 
-export const interClassname = Inter({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
+export const fontClassName = Onest({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700', '800'],
 });
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
+export const radius = {
+  input: 12,
+  card: 16,
+  pill: 999,
+};
 
 export const units = {
   inputHeight: {
@@ -56,10 +80,6 @@ export const units = {
 };
 
 export const img = {
-  trash: {
-    web: '/cart/icons/deleteIcon.png',
-    mobile: '/cart/icons/deleteIconMobile.png',
-  },
   not_found: {
     web: '/icons/404.png',
     mobile: '/icons/404-mobile.png',

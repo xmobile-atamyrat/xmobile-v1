@@ -1,68 +1,82 @@
 export const signinClasses = {
   boxes: {
     page: {
-      web: 'w-full h-full flex flex-col items-center p-0',
-      mobile: 'w-full h-full flex flex-col justify-center',
+      // Web is the mockup's split screen (XMobile.dc.html:2116-2133): full-bleed
+      // brand panel + form half, no page chrome. This page is not wrapped in
+      // <Layout>, so it owns its own viewport height.
+      web: 'w-full min-h-screen flex flex-row bg-white',
+      mobile: 'w-full min-h-full flex flex-col bg-white px-7 pt-3 pb-10',
+    },
+    // The form half of the split; `main` is the 380px column inside it.
+    formPane: {
+      web: 'flex-1 flex flex-col items-center justify-center p-[56px] relative',
+      mobile: 'contents',
     },
     main: {
-      web: 'w-[clamp(590px,_31vw,_1920px)] h-[691px] flex flex-col mt-[60px] mb-[221px] items-center p-0 justify-center',
-      mobile: 'w-full h-[80%] flex flex-col items-center mt-[100px]',
-    },
-    text: {
-      web: 'w-[350px] flex flex-row justify-center items-center',
-      mobile: 'hidden',
-    },
-    button: {
-      web: 'flex min-h-[78px] w-[522px] rounded-[10px] gap-[10px] py-[24px]  items-center',
-      mobile: 'flex justify-center',
+      web: 'w-full max-w-[380px] flex flex-col',
+      mobile: 'w-full flex flex-col mt-2',
     },
     logo: {
       web: 'w-0',
-      mobile: 'w-[230px] mb-[30px]',
-    },
-    label: {
-      web: 'flex mb-[80px]',
-      mobile: 'flex mb-[18px]',
+      mobile: 'w-[132px] mb-7',
     },
     input: {
-      web: 'w-full h-[122px]',
-      mobile: 'w-[88%] h-[75px]',
+      web: 'w-full mb-[18px]',
+      mobile: 'w-full mb-4',
     },
-    links: {
-      web: 'w-full flex flex-col items-center mt-[10px]',
-      mobile: 'w-full flex flex-col mt-[40px]',
+    text: {
+      // Web puts "New here? Create an account" under the title instead
+      // (mockup:2125), so the bottom row is mobile-only.
+      web: 'hidden',
+      mobile: 'w-full flex flex-row justify-center items-center mt-auto pt-6',
     },
+  },
+  backButton: {
+    web: 'absolute left-6 top-6 w-10 h-10 rounded-full bg-fill flex items-center justify-center no-underline',
+    mobile:
+      'w-10 h-10 rounded-full bg-fill flex items-center justify-center no-underline mb-4',
   },
   paper: {
-    web: 'flex flex-col w-full h-[543px] rounded-[25px] px-[36px] pt-[48px] pb-[23px] bg-[#f4f4f4] items-center justify-center',
-    mobile: 'flex flex-col w-full h-[250px] justify-center items-center',
-  },
-  buttonSubmit: {
-    web: `normal-case font-bold w-full min-h-[78px] text-[18px] leading-[30px]`,
-    mobile: `normal-case font-[500] w-[88%] h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
-  },
-  buttonRedirect:
-    'normal-case px-2 text-[#000] font-bold text-[16px] w-[200px]',
-  error: {
-    web: 'flex text-[16px] mt-[10px] mr-[5px]',
-    mobile: 'flex mt-[19px] mb-[-10px] justify-center text-[14px]',
+    web: 'flex flex-col w-full bg-transparent',
+    mobile: 'flex flex-col w-full bg-transparent',
   },
   h3: {
-    web: 'font-bold text-[56px] leading-[68px] tracking-[0]',
-    mobile: 'font-bold text-[24px] leading-[100%] tracking-[0] mb-[30px]',
+    web: 'font-extrabold text-[28px] leading-[34px] tracking-[-0.02em] mb-2',
+    mobile: 'font-bold text-[28px] leading-[34px] tracking-[-0.02em] mb-2',
   },
+  subtitle: {
+    web: 'text-[15px] leading-[1.5] mb-7',
+    mobile: 'text-[15px] leading-[1.5] mb-7',
+  },
+  // Web swaps the mobile subtitle for the mockup's "New here? Create an
+  // account" cross-link (mockup:2125).
+  crossLink: 'text-[15px] font-bold text-navy no-underline hover:underline',
   label: {
-    web: 'mb-[22px] text-[20px] w-full',
-    mobile: '',
+    web: 'mb-2 text-[12px] font-semibold w-full',
+    mobile: 'mb-2 text-[12px] font-semibold',
   },
   textField: {
-    web: 'w-full h-[380px] mt-[12px]',
-    mobile: 'mt-[12px]',
+    web: 'w-full',
+    mobile: 'w-full',
   },
-  link: {
-    web: 'absolute left-4 top-4 font-base font-light text-[36px] no-underline',
+  buttonSubmit: {
+    web: 'normal-case font-bold w-full h-[54px] rounded-[14px] text-[16px] mt-2',
     mobile:
-      'absolute left-4 top-4 font-base font-light text-[24px] no-underline',
+      'normal-case font-semibold w-full h-[54px] rounded-[15px] text-[16px] mt-2',
   },
-  typography: 'normal-case text-[16px] mr-[19px] justify-center w-[300px]',
+  // Mockup XMobile.dc.html:868-869 — or-divider, guest button.
+  divider: 'w-full flex items-center gap-3 my-4',
+  dividerLine: 'flex-1 h-px bg-[#ECECF1]',
+  dividerText: 'text-[12px] text-[#B6B5C2]',
+  // `!border` because this renders on a MUI ButtonBase, whose emotion
+  // `border: 0` rule is injected after the static Tailwind sheet and wins at
+  // equal specificity (same trap as step 55/58).
+  guestButton:
+    'w-full h-[52px] rounded-[15px] !border-[1.5px] !border-solid !border-hairline bg-white text-navy text-[15px] font-semibold flex items-center justify-center gap-2 normal-case',
+  buttonRedirect: 'normal-case px-1 font-bold text-[14px] min-w-0',
+  typography: 'normal-case text-[14px]',
+  error: {
+    web: 'flex text-[14px] mt-3',
+    mobile: 'flex text-[14px] mt-3',
+  },
 };

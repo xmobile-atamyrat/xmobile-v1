@@ -1,28 +1,13 @@
 export const categoryCardClasses = {
   card: {
-    web: 'w-[354px] h-[264px] rounded-[15px] bg-[#f4f4f4] p-[26px] relative',
+    web: 'relative w-[354px] h-[200px] rounded-2xl overflow-hidden bg-[#F5F5F8] cursor-pointer',
     mobile:
-      'w-[42.9vw] h-[100px] border-[1px] border-[#f4f5fd] gap-[8px] px-[12px] py-[10px] rounded-[16px]',
+      'relative w-[42.9vw] h-[130px] rounded-2xl overflow-hidden bg-[#F5F5F8] cursor-pointer',
   },
-  boxes: {
-    allP: 'w-full h-full flex justify-center items-center',
-    cardMedia: {
-      web: 'flex flex-col items-start',
-      mobile:
-        'flex flex-col-reverse justify-between items-center w-full h-full',
-    },
-  },
-  typography: {
-    web: 'font-semibold text-[26px]',
-    mobile: 'font-semibold text-[14px]',
-  },
-  typography2: {
-    web: 'font-semibold text-[26px] leading-[36px] tracking-normal text-[#303030]',
-    mobile:
-      'font-regular text-[12px] leading-[100%] tracking-normal text-[#1c1b1b] text-center mt-2',
-  },
-  cardMedia: {
-    web: 'w-[150px] absolute right-[10px] bottom-[10px]',
-    mobile: 'w-[54px]',
-  },
+  cardMedia: 'absolute inset-0 w-full h-full object-cover',
+  gradient:
+    'absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(20,16,60,0.65)]',
+  name: 'absolute left-[14px] bottom-3 font-bold text-[15px] text-white z-[1]',
+  allP: 'w-full h-full flex items-center justify-center bg-[#20166E]',
+  allPText: 'font-bold text-[15px] text-white',
 };

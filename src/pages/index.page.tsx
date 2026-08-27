@@ -1,13 +1,11 @@
-import { SearchBar } from '@/pages/components/Appbar';
-import FilterSidebar from '@/pages/components/FilterSidebar';
+import HomePromoTile from '@/pages/components/HomePromoTile';
 import Layout from '@/pages/components/Layout';
-import NotificationBadge from '@/pages/components/NotificationBadge';
-import NotificationMenu from '@/pages/components/NotificationMenu';
-import PopularCategoriesSection from '@/pages/components/PopularCategoriesSection';
+import PopularCategoriesSection, {
+  CategoryImage,
+} from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
-import SortDropdown from '@/pages/components/SortDropdown';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchNewProducts, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   BUSINESS_NAME,
@@ -16,12 +14,6 @@ import {
   LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
-import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
-import {
-  getListSnapshot,
-  listKey,
-  useListRestoration,
-} from '@/pages/lib/listRestoration';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
@@ -31,37 +23,29 @@ import {
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
-import { useUserContext } from '@/pages/lib/UserContext';
+import { parseName } from '@/pages/lib/utils';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import {
-  Box,
-  Button,
-  CardMedia,
-  CircularProgress,
-  Dialog,
-  IconButton,
-  Slide,
-  Typography,
-} from '@mui/material';
-import { TransitionProps } from '@mui/material/transitions';
+import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
+import {
+  ArrowRight,
+  Banknote,
+  Headset,
+  ShieldCheck,
+  Truck,
+} from 'lucide-react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-const SlideTransition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>,
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+const web = homePageClasses.web;
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -188,80 +172,64 @@ export default function Home({
   const router = useRouter();
   const platform = usePlatform();
   const t = useTranslations();
-  const { user } = useUserContext();
   const { categories } = useCategoryContext();
-  const { searchKeyword, setSearchKeyword } = useProductContext();
-  // Snapshot read once at mount so a back-nav restores the loaded list + scroll.
-  const [restored] = useState(() => getListSnapshot(listKey()));
-  const [products, setProducts] = useState<Product[]>(
-    restored?.products ?? initialProducts ?? [],
-  );
+  const {
+    searchKeyword,
+    setSearchKeyword,
+    setProducts: setContextProducts,
+  } = useProductContext();
+  // Seeded from the server-rendered first page so the grid isn't empty in the
+  // raw HTML; the effect below swaps in the newest-products feed on mount.
+  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
   const [isLoading, setIsLoading] = useState(false);
-  const [page, setPage] = useState(restored?.page ?? 1);
-  const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const isFirstRender = useRef(true);
 
-  const { restoringRef } = useListRestoration(
-    { products, page, hasMore },
-    restored,
-  );
+  // Web "Shop by category" row (spec 1357-1366): real top-level categories,
+  // admin-flagged popular ones first, capped at the design's 8 tiles.
+  const webCategories = useMemo(() => {
+    const topLevel = categories.filter(
+      (cat) => cat.predecessorId == null && cat.deletedAt == null,
+    );
+    return [
+      ...topLevel.filter((cat) => cat.popular),
+      ...topLevel.filter((cat) => !cat.popular),
+    ].slice(0, 8);
+  }, [categories]);
 
-  const [localFilters, setLocalFilters] = useState({
-    categoryIds: [] as string[],
-    brandIds: [] as string[],
-    minPrice: '',
-    maxPrice: '',
-    sortBy: '',
-  });
+  // The two side promos reuse the newest products, so drop them from the grid
+  // below instead of showing the same card twice.
+  const promoProducts =
+    platform === 'web' && products.length >= 6 ? products.slice(0, 2) : [];
+  const gridProducts = products.slice(promoProducts.length);
 
-  const { filters, setFilters } = useProductFilters();
-  const [notificationAnchorEl, setNotificationAnchorEl] =
-    useState<null | HTMLElement>(null);
+  const trustItems = [
+    {
+      icon: Truck,
+      title: t('nationwideDelivery'),
+      subtitle: t('nationwideDeliverySub'),
+    },
+    {
+      icon: ShieldCheck,
+      title: t('officialWarranty'),
+      subtitle: t('officialWarrantySub'),
+    },
+    { icon: Banknote, title: t('cashOnDelivery'), subtitle: t('payInCash') },
+    {
+      icon: Headset,
+      title: t('chatCustomerSupport'),
+      subtitle: `${t('supportHoursDays')}, ${t('supportHoursTime')}`,
+    },
+  ];
 
+  // Home shows only the newest products — no filters, no infinite scroll, so
+  // there is no list snapshot to restore here (that lives on /product).
   useEffect(() => {
-    if (mobileFilterOpen) {
-      setLocalFilters({
-        categoryIds: filters.categoryIds,
-        brandIds: filters.brandIds,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        sortBy: filters.sortBy,
-      });
-    }
-  }, [mobileFilterOpen, filters]);
-
-  useEffect(() => {
-    // Skip the mount + filters-hydration reruns while restoring a snapshot, so
-    // the restored list isn't overwritten. Load-more and later filter/search
-    // changes happen after the guard clears and fetch normally.
-    if (restoringRef.current) return undefined;
     let mounted = true;
     (async () => {
       setIsLoading(true);
       try {
-        const fetched = await fetchProducts({
-          page,
-          searchKeyword: searchKeyword || undefined,
-          categoryIds: filters.categoryIds,
-          brandIds: filters.brandIds,
-          minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice,
-          sortBy: filters.sortBy,
-          locale: router.locale,
-        });
-        if (!mounted) return;
-
-        if (fetched.length < 20) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-
-        if (page === 1) {
-          setProducts(fetched);
-        } else {
-          setProducts((prev) => [...prev, ...fetched]);
-        }
+        const fetched = await fetchNewProducts({ page: 1 });
+        if (mounted) setProducts(fetched);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -271,30 +239,19 @@ export default function Home({
     return () => {
       mounted = false;
     };
-  }, [searchKeyword, filters, page]);
+  }, []);
 
+  // A search on the home page belongs on the dedicated results page.
+  // Skip the first run so a stale keyword (e.g. coming back from /product)
+  // is just cleared instead of bouncing straight back.
   useEffect(() => {
-    const loadMoreTrigger = document.getElementById('load-more-products');
-    if (!loadMoreTrigger) return () => undefined;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            (async () => {
-              if (isLoading || !hasMore) return;
-              setPage((prev) => prev + 1);
-            })();
-          }
-        });
-      },
-      { rootMargin: '100px' },
-    );
-
-    observer.observe(loadMoreTrigger);
-    return () => {
-      observer.disconnect();
-    };
-  }, [isLoading, hasMore]);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (searchKeyword) setSearchKeyword('');
+      return;
+    }
+    if (searchKeyword) router.push('/product');
+  }, [searchKeyword, router, setSearchKeyword]);
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
@@ -302,114 +259,165 @@ export default function Home({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
-  return (
-    <Layout>
-      <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
-        <Box className={homePageClasses.topLayer}>
-          <CardMedia
-            component="img"
-            src="/logo/xmobile-processed-logo.png"
-            className="w-auto h-[40px]"
-          />
-          {(user || platform === 'mobile') && (
-            <Box className="w-[18px] h-[18px] rounded-full bg-[#f5f5f5] justify-center items-center flex mr-6">
-              <NotificationBadge
-                onClick={(e: React.MouseEvent<HTMLElement>) => {
-                  if (user) {
-                    setNotificationAnchorEl(e.currentTarget);
-                  } else {
-                    router.push('/user/sign_in_up');
+  if (platform === 'web') {
+    return (
+      <Layout showHomeHeader>
+        <Box className={web.page}>
+          {/* hero banner + side promos (spec 1319-1345) */}
+          {(banners.length > 0 || promoProducts.length > 0) && (
+            <Box
+              className={banners.length > 0 ? web.heroRow : web.heroRowNoBanner}
+            >
+              {banners.length > 0 && (
+                <PromoBannerSection banners={banners} variant="hero" />
+              )}
+              {promoProducts.length > 0 && (
+                <Box
+                  className={
+                    banners.length > 0 ? web.promoCol : web.promoColWide
                   }
-                }}
-              />
-              <NotificationMenu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={() => setNotificationAnchorEl(null)}
-              />
+                >
+                  {promoProducts.map((product, idx) => (
+                    <HomePromoTile
+                      key={product.id}
+                      product={product}
+                      tone={idx === 0 ? 'red' : 'grey'}
+                    />
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
-        </Box>
-        {SearchBar({
-          searchKeyword: searchKeyword ?? '',
-          searchPlaceholder: t('search'),
-          setSearchKeyword,
-          width: '100%',
-        })}
-        {platform === 'mobile' && !searchKeyword && (
-          <PromoBannerSection banners={banners} />
-        )}
-        {platform === 'mobile' && !searchKeyword && (
-          <PopularCategoriesSection categories={categories} />
-        )}
-      </Box>
-      {platform === 'web' && !searchKeyword && (
-        <PromoBannerSection banners={banners} />
-      )}
-      <Box className="flex flex-row gap-6 w-full">
-        {platform === 'web' && (
-          <FilterSidebar
-            categories={categories}
-            selectedCategoryIds={filters.categoryIds}
-            selectedBrandIds={filters.brandIds}
-            minPrice={filters.minPrice}
-            maxPrice={filters.maxPrice}
-            onFilterChange={(newFilters) => {
-              setFilters(newFilters);
-              setPage(1);
-              setProducts([]);
-            }}
-          />
-        )}
 
+          {/* trust strip (spec 1348-1353) — real store promises only */}
+          <Box className={web.trustRow}>
+            {trustItems.map(({ icon: Icon, title, subtitle }) => (
+              <Box key={title} className={web.trustCard}>
+                <Box className={web.trustIconBox}>
+                  <Icon size={22} />
+                </Box>
+                <Box>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustTitle}`}
+                  >
+                    {title}
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${web.trustSub}`}
+                  >
+                    {subtitle}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* shop by category (spec 1356-1366) */}
+          {webCategories.length > 0 && (
+            <Box className={web.sectionGap}>
+              <Box className={web.sectionHead}>
+                <Typography
+                  className={`${fontClassName.className} ${web.sectionTitle}`}
+                >
+                  {t('shopByCategory')}
+                </Typography>
+                <Link href="/category" className={web.viewAll}>
+                  {t('viewAll')}
+                  <ArrowRight size={16} />
+                </Link>
+              </Box>
+              <Box className={web.categoryGrid}>
+                {webCategories.map((category) => (
+                  <Box
+                    key={category.id}
+                    className={web.categoryTile}
+                    onClick={() => {
+                      if (
+                        category.successorCategories == null ||
+                        category.successorCategories.length === 0
+                      ) {
+                        setContextProducts([]);
+                        router.push(`/product-category/${category.slug}`);
+                      } else {
+                        router.push(`/category/${category.slug}`);
+                      }
+                    }}
+                  >
+                    <CategoryImage
+                      initialImgUrl={category.imgUrl}
+                      className={web.categoryTileImg}
+                    />
+                    <Typography
+                      className={`${fontClassName.className} ${web.categoryTileName}`}
+                    >
+                      {parseName(
+                        category.name,
+                        router.locale ?? DEFAULT_LOCALE,
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* new arrivals grid — the design's "Recommended for you" slot (spec 1383-1390) */}
+          <Box className={web.sectionHead}>
+            <Typography
+              className={`${fontClassName.className} ${web.sectionTitle}`}
+            >
+              {t('newProducts')}
+            </Typography>
+            <Link href="/product" className={web.viewAll}>
+              {t('viewAll')}
+              <ArrowRight size={16} />
+            </Link>
+          </Box>
+          {isLoading && <ProductGridSkeleton count={10} />}
+          <Box className={web.productGrid}>
+            {gridProducts.map((product) => (
+              <ProductCard
+                product={product}
+                key={product.id}
+                cartProps={{ cartAction: 'add' }}
+              />
+            ))}
+          </Box>
+          {products.length === 0 && !isLoading && (
+            <Typography
+              className={`${fontClassName.className} ${web.emptyText}`}
+            >
+              {t('noProductsFound')}
+            </Typography>
+          )}
+        </Box>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout showHomeHeader>
+      <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
+        <PromoBannerSection banners={banners} />
+        <PopularCategoriesSection categories={categories} />
+      </Box>
+      <Box className="flex flex-row gap-6 w-full">
         <Box className={homePageClasses.main[platform]}>
           <Box className="w-full">
             <Box
               display="flex"
               justifyContent="space-between"
               alignItems="center"
-              mb={2}
-              sx={{
-                position: platform === 'web' ? 'sticky' : 'static',
-                top: platform === 'web' ? '0px' : 'auto',
-                zIndex: 10,
-                backgroundColor: '#fff',
-                paddingTop: '20px',
-                paddingBottom: '8px',
-              }}
+              mb={1.5}
             >
               <Typography
-                className={`${interClassname.className} ${homePageClasses.newProductsTitle[platform]}`}
+                className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
               >
-                {searchKeyword
-                  ? t('searchResultsFor', { keyword: searchKeyword })
-                  : t('newProducts')}
+                {t('newProducts')}
               </Typography>
-              {platform === 'web' && (
-                <SortDropdown
-                  value={filters.sortBy}
-                  onChange={(val) => {
-                    setFilters({ sortBy: val });
-                    setPage(1);
-                    setProducts([]);
-                  }}
-                />
-              )}
-              {platform === 'mobile' && (
-                <IconButton
-                  onClick={() => setMobileFilterOpen(true)}
-                  sx={{ ml: 'auto' }}
-                >
-                  <CardMedia
-                    component="img"
-                    src="/icons/filter.svg"
-                    sx={{ width: 30, height: 30 }}
-                  />
-                </IconButton>
-              )}
             </Box>
 
-            {isLoading && page === 1 && <ProductGridSkeleton count={8} />}
+            {isLoading && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
               {products.length > 0 &&
                 products.map((product, idx) => (
@@ -423,70 +431,9 @@ export default function Home({
             {products.length === 0 && !isLoading && (
               <Typography>{t('noProductsFound')}</Typography>
             )}
-            {isLoading && page > 1 && (
-              <Box className="flex justify-center items-center py-4">
-                <CircularProgress />
-              </Box>
-            )}
           </Box>
         </Box>
       </Box>
-      <div id="load-more-products" />
-      <Dialog
-        fullScreen
-        open={mobileFilterOpen}
-        onClose={() => setMobileFilterOpen(false)}
-        TransitionComponent={SlideTransition}
-      >
-        <Box className="flex flex-col h-full bg-white">
-          <Box className="flex items-center justify-between p-4 border-b">
-            <IconButton onClick={() => setMobileFilterOpen(false)}>
-              <ArrowBackIosIcon />
-            </IconButton>
-            <Typography variant="h6" fontWeight={600}>
-              {t('filter') || 'Filter'}
-            </Typography>
-            <Box sx={{ width: 40 }} />
-          </Box>
-          <Box className="flex-1 overflow-auto p-4">
-            <FilterSidebar
-              variant="mobile"
-              categories={categories}
-              selectedCategoryIds={localFilters.categoryIds}
-              selectedBrandIds={localFilters.brandIds}
-              minPrice={localFilters.minPrice}
-              maxPrice={localFilters.maxPrice}
-              sortBy={localFilters.sortBy}
-              onFilterChange={(newFilters) => {
-                setLocalFilters((prev) => ({ ...prev, ...newFilters }));
-              }}
-            />
-          </Box>
-          <Box sx={{ p: 2, borderTop: '1px solid #f5f5f5' }}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => {
-                setFilters(localFilters);
-                setPage(1);
-                setProducts([]);
-                setMobileFilterOpen(false);
-              }}
-              sx={{
-                bgcolor: '#191919',
-                borderRadius: 2,
-                py: 1.5,
-                fontSize: '16px',
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': { bgcolor: '#000' },
-              }}
-            >
-              {t('apply') || 'Apply'}
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
     </Layout>
   );
 }

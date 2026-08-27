@@ -11,9 +11,9 @@ export function ProductCardSkeleton() {
         minHeight: platform === 'web' ? '427px' : '45vw',
         mx: '8px',
         my: platform === 'web' ? '15px' : '8px',
-        borderRadius: '10px',
+        borderRadius: '16px',
         overflow: 'hidden',
-        border: '1px solid #f0f0f0',
+        border: '1px solid #F0EFF4',
         flexShrink: 0,
       }}
     >
@@ -22,7 +22,7 @@ export function ProductCardSkeleton() {
         sx={{
           height: platform === 'web' ? '315px' : '45vw',
           width: '100%',
-          bgcolor: '#ebebeb',
+          bgcolor: '#F5F5F8',
         }}
         animation="wave"
       />
@@ -64,8 +64,8 @@ export function BannerSkeleton() {
       sx={{
         width: '100%',
         aspectRatio: platform === 'web' ? '3 / 1' : '2 / 1',
-        borderRadius: platform === 'web' ? '16px' : '12px',
-        bgcolor: '#ebebeb',
+        borderRadius: '20px',
+        bgcolor: '#F5F5F8',
       }}
     />
   );
@@ -128,7 +128,7 @@ export function CartItemSkeleton() {
         display: 'flex',
         gap: 2,
         py: 2,
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid #ECECF1',
         alignItems: 'center',
       }}
     >
@@ -167,7 +167,7 @@ export function CartPageSkeleton({ count = 4 }: { count?: number }) {
 // --- Orders list ---
 export function OrderCardSkeleton() {
   return (
-    <Box sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid #f0f0f0' }}>
+    <Box sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid #ECECF1' }}>
       <Box
         sx={{
           display: 'flex',
@@ -198,7 +198,7 @@ export function OrderTableRowSkeleton() {
         display: 'flex',
         gap: 2,
         py: 1.5,
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid #ECECF1',
       }}
     >
       {[2, 1, 1.5, 1, 1].map((flex, i) => (

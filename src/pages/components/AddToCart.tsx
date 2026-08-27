@@ -1,26 +1,35 @@
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { ShoppingCart } from '@mui/icons-material';
+import { Box, IconButton, Input, Snackbar, Typography } from '@mui/material';
 import {
-  Alert,
-  Box,
-  CardMedia,
-  IconButton,
-  Input,
-  Snackbar,
-  Typography,
-} from '@mui/material';
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
 import { Suspense, useCallback, useState } from 'react';
 
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import { mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
-import { img, interClassname } from '@/styles/theme';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { fontClassName } from '@/styles/theme';
 import CircularProgress from '@mui/material/CircularProgress';
+
+const snackbarIcon = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertTriangle,
+  info: Info,
+};
 
 export default function AddToCart({
   productId,
@@ -29,6 +38,7 @@ export default function AddToCart({
   cartItemId = undefined,
   price,
   selectedVariant,
+  variantLabel,
   onDelete,
   setTotalPrice,
 }: AddToCartProps) {
@@ -39,6 +49,7 @@ export default function AddToCart({
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const router = useRouter();
 
   const addCartItems = async () => {
     if (price.includes('null')) {
@@ -73,6 +84,7 @@ export default function AddToCart({
         setSnackbarMessage({
           message: 'addToCartSuccess',
           severity: 'success',
+          variantLabel,
         });
       } else {
         setSnackbarOpen(true);
@@ -184,38 +196,61 @@ export default function AddToCart({
   return (
     <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
-        {/* cartIcon */}
+        {/* cartButton */}
         {cartAction === 'add' && (
-          <Box className={addToCartClasses.cartIcon.box}>
-            <IconButton
-              type="submit"
-              onClick={addCartItems}
-              className={addToCartClasses.cartIcon.iButton}
+          <IconButton
+            disableRipple
+            type="submit"
+            onClick={addCartItems}
+            // the web variant is icon-only, so the label has to live here
+            aria-label={t('addToCart')}
+            title={t('addToCart')}
+            className={addToCartClasses.cartButton.button[platform]}
+          >
+            <ShoppingCart
+              className={addToCartClasses.cartButton.icon[platform]}
+            />
+            <Typography
+              className={`${fontClassName.className} ${addToCartClasses.cartButton.text[platform]}`}
             >
-              <ShoppingCart
-                className={addToCartClasses.cartIcon.fSize[platform]}
-              />
-            </IconButton>
-          </Box>
+              {t('addToCart')}
+            </Typography>
+          </IconButton>
         )}
 
         {cartAction === 'delete' && (
           <Box className={addToCartClasses.circIcon.box[platform]}>
+            {/* line total — first in the DOM for the web column's price/stepper/
+                remove order; hidden on mobile, so the row there is unchanged */}
+            <Box className={addToCartClasses.price[platform]}>
+              <Typography
+                className={`${fontClassName.className} ${addToCartClasses.priceText[platform]}`}
+              >
+                {quantity * Number(price)} TMT
+              </Typography>
+              {quantity > 1 && !Number.isNaN(Number(price)) && (
+                <Typography
+                  className={`${fontClassName.className} ${addToCartClasses.unitText[platform]}`}
+                >
+                  {quantity} × {Number(price)} TMT
+                </Typography>
+              )}
+            </Box>
+
             <Box className={addToCartClasses.quanChange[platform]}>
               {/* removeButton */}
               <IconButton
                 disableRipple
+                className={addToCartClasses.stepperButton[platform]}
                 onClick={handleProductQuantity('remove')}
               >
-                <RemoveIcon
-                  className={addToCartClasses.circIcon.fSize[platform]}
-                />
+                <Minus className={addToCartClasses.circIcon.minus[platform]} />
               </IconButton>
               {/* quantityInput */}
               <Input
                 name="quantity"
                 inputProps={{ min: 1 }}
-                className={`${addToCartClasses.inputDet[platform]} ${interClassname.className}`}
+                className={`${addToCartClasses.inputDet[platform]} ${fontClassName.className}`}
                 value={quantity}
                 disableUnderline
                 onChange={(e) => {
@@ -233,19 +268,13 @@ export default function AddToCart({
               />
 
               {/* addButton */}
-              <IconButton disableRipple onClick={handleProductQuantity('add')}>
-                <AddIcon
-                  className={addToCartClasses.circIcon.fSize[platform]}
-                />
-              </IconButton>
-            </Box>
-
-            <Box className={addToCartClasses.price[platform]}>
-              <Typography
-                className={`${interClassname.className} ${addToCartClasses.priceText[platform]}`}
+              <IconButton
+                disableRipple
+                className={addToCartClasses.stepperButton[platform]}
+                onClick={handleProductQuantity('add')}
               >
-                {quantity * Number(price)} TMT
-              </Typography>
+                <Plus className={addToCartClasses.circIcon.plus[platform]} />
+              </IconButton>
             </Box>
 
             {/* delete button */}
@@ -261,11 +290,15 @@ export default function AddToCart({
                   deleteCartItems(cartItemId);
                 }}
               >
-                <CardMedia
-                  component="img"
-                  src={img.trash[platform]}
+                <Trash2
                   className={addToCartClasses.deleteButton.deleteIcon[platform]}
                 />
+                {/* web spells the action out (spec 1589); mobile stays icon-only */}
+                <Typography
+                  className={`${fontClassName.className} ${addToCartClasses.deleteButton.label[platform]}`}
+                >
+                  {t('remove')}
+                </Typography>
               </IconButton>
             </Box>
           </Box>
@@ -273,34 +306,42 @@ export default function AddToCart({
 
         {cartAction === 'detail' && (
           <Box className={addToCartClasses.detail.box[platform]}>
-            <Box className={addToCartClasses.detail.bg[platform]}>
-              <Box className="flex flex-row w-[10vw] h-[2.9vw] justify-between items-center">
+            <Box
+              className={addToCartClasses.detail.bg[platform]}
+              sx={
+                platform === 'mobile'
+                  ? { paddingBottom: `${mobileBottomNavHeight}px` }
+                  : undefined
+              }
+            >
+              <Box className={addToCartClasses.detail.stepper[platform]}>
                 {/* removeButton */}
                 <IconButton
                   onClick={handleProductQuantity('quantityRemove')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <RemoveIcon
-                    className={addToCartClasses.detail.quantityButton}
-                  />
+                  <Minus className={addToCartClasses.detail.quantityMinus} />
                 </IconButton>
 
                 {/* quantityInput */}
                 <Input
                   name="quantity"
                   inputProps={{ min: 1 }}
-                  className={`${addToCartClasses.input[platform]} ${interClassname.className}`}
+                  className={`${addToCartClasses.input[platform]} ${fontClassName.className}`}
                   value={quantity}
                   disableUnderline
                   onChange={(e) => {
                     const newQuantity = Number(e.target.value);
                     setQuantity(newQuantity);
-                    setTotalPrice(
-                      (cur) =>
-                        cur -
-                        quantity * Number(price) +
-                        newQuantity * Number(price),
-                    );
+                    // optional: the product page renders this control without a
+                    // running total, only the cart page passes a setter
+                    if (setTotalPrice)
+                      setTotalPrice(
+                        (cur) =>
+                          cur -
+                          quantity * Number(price) +
+                          newQuantity * Number(price),
+                      );
                   }}
                 />
 
@@ -309,7 +350,7 @@ export default function AddToCart({
                   onClick={handleProductQuantity('quantityAdd')}
                   className={addToCartClasses.iconButton[platform]}
                 >
-                  <AddIcon className={addToCartClasses.detail.quantityButton} />
+                  <Plus className={addToCartClasses.detail.quantityPlus} />
                 </IconButton>
               </Box>
 
@@ -319,8 +360,11 @@ export default function AddToCart({
                 onClick={addCartItems}
                 disableRipple
               >
+                <ShoppingCart
+                  className={addToCartClasses.detail.cartIcon[platform]}
+                />
                 <Typography
-                  className={`${interClassname.className} ${addToCartClasses.detail.addToCartText[platform]}`}
+                  className={`${fontClassName.className} ${addToCartClasses.detail.addToCartText[platform]}`}
                 >
                   {t('addToCart')}
                 </Typography>
@@ -333,22 +377,50 @@ export default function AddToCart({
       {/* snackbarPop-ups */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
+        disableWindowBlurListener
         onClose={(_, reason) => {
           if (reason === 'clickaway') {
             return;
           }
           setSnackbarOpen(false);
         }}
+        sx={
+          platform === 'mobile'
+            ? { bottom: `${mobileBottomNavHeight + 8}px !important` }
+            : undefined
+        }
       >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage?.severity}
-          variant="filled"
-          className="w-100%"
-        >
-          {snackbarMessage?.message && t(snackbarMessage.message)}
-        </Alert>
+        <Box className={snackbarClasses.pill}>
+          {snackbarMessage?.severity &&
+            (() => {
+              const Icon = snackbarIcon[snackbarMessage.severity];
+              return (
+                <Icon
+                  size={20}
+                  className={snackbarClasses.icon[snackbarMessage.severity]}
+                />
+              );
+            })()}
+          <Typography
+            className={`${fontClassName.className} ${snackbarClasses.message}`}
+          >
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+            {snackbarMessage?.variantLabel &&
+              ` · ${snackbarMessage.variantLabel}`}
+          </Typography>
+          {snackbarMessage?.message === 'addToCartSuccess' && (
+            <span
+              className={`${fontClassName.className} ${snackbarClasses.viewLink}`}
+              onClick={() => {
+                setSnackbarOpen(false);
+                router.push('/cart');
+              }}
+            >
+              {t('view')}
+            </span>
+          )}
+        </Box>
       </Snackbar>
     </Box>
   );

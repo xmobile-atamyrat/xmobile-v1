@@ -6,6 +6,7 @@ import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
+import { fill, muted, navy } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
@@ -52,7 +53,7 @@ const ChatWindow = () => {
 
   if (!currentSession) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center', color: '#838383' }}>
+      <Box sx={{ p: 3, textAlign: 'center', color: muted }}>
         <Typography sx={{ fontSize: '14px' }}>
           {t('chatNoActiveSession')}
         </Typography>
@@ -66,7 +67,7 @@ const ChatWindow = () => {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        backgroundColor: '#F9F9F9',
+        backgroundColor: fill,
       }}
     >
       {/* Messages Area */}
@@ -89,7 +90,7 @@ const ChatWindow = () => {
               sx={{
                 textTransform: 'none',
                 fontSize: '13px',
-                color: '#FF624C',
+                color: navy,
               }}
             >
               {t('chatLoadOlderMessages')}
@@ -101,7 +102,7 @@ const ChatWindow = () => {
             <Typography
               sx={{
                 textAlign: 'center',
-                color: '#9E9E9E',
+                color: muted,
                 mt: 4,
                 fontSize: '14px',
               }}
@@ -130,12 +131,12 @@ const ChatWindow = () => {
                   >
                     <Typography
                       sx={{
-                        px: 2,
-                        py: 0.4,
-                        bgcolor: 'grey.300',
-                        color: 'text.secondary',
+                        px: 1.5,
+                        py: 0.5,
+                        bgcolor: '#ECEBF1',
+                        color: muted,
                         borderRadius: '999px',
-                        fontSize: '12px',
+                        fontSize: '11px',
                       }}
                     >
                       {date.toLocaleDateString()}
@@ -181,12 +182,12 @@ const ChatWindow = () => {
           sx={{
             p: 1.5,
             textAlign: 'center',
-            backgroundColor: '#FFF3E0',
-            borderTop: '1px solid #FFE0B2',
+            backgroundColor: '#FEF6E7',
+            borderTop: '1px solid #FCE8BE',
           }}
         >
           <Typography
-            sx={{ fontSize: '13px', color: '#E65100', fontWeight: 500 }}
+            sx={{ fontSize: '13px', color: '#C98A00', fontWeight: 500 }}
           >
             {isAdminView ? t('chatReadOnlyMode') : t('chatSessionClosed')}
           </Typography>

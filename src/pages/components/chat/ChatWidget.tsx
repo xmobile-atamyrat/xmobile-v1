@@ -4,10 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChatIcon from '@mui/icons-material/Chat';
-import CloseIcon from '@mui/icons-material/Close';
-import SettingsOverscanIcon from '@mui/icons-material/SettingsOverscan';
+import { colors, fill, hairline, ink, muted, navy, red } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -20,11 +17,14 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
+import { ArrowLeft, Headset, MessageCircle, Maximize2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ChatSessionList from './ChatSessionList';
 import ChatWindow from './ChatWindow';
+
+const ONLINE_GREEN = '#1F9A5A';
 
 const ChatWidget = () => {
   const { user } = useUserContext();
@@ -86,7 +86,12 @@ const ChatWidget = () => {
 
   const handleToggle = () => {
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user/signin');
+      return;
+    }
+    // Non-admin users get the full chat page, not the floating popup.
+    if (!isAdmin) {
+      router.push('/chat');
       return;
     }
     setIsOpen((prev) => !prev);
@@ -128,99 +133,141 @@ const ChatWidget = () => {
   };
 
   const renderHeader = () => {
-    if (currentSession) {
-      const title = isAdmin
-        ? `${currentSession.users?.find((u) => u.grade === 'FREE')?.name || t('chatGuest')}`
-        : t('chatCustomerSupport');
+    const inSession = !!currentSession;
+    const showAvatar = !isAdmin || inSession;
+    const online = isConnected;
 
-      return (
-        <Box
-          className={chatClasses.header.container[platform]}
-          sx={{
-            backgroundColor: '#FF624C',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            minHeight: '64px',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {isAdmin && (
-              <IconButton
-                size="small"
-                onClick={handleBackToSessionList}
-                sx={{ color: 'white' }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            )}
-            <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-              {title}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={handleExpand}
-              sx={{ color: 'white' }}
-              title="Expand to full screen"
-            >
-              <SettingsOverscanIcon fontSize="small" />
-            </IconButton>
-            {canManageSession && (
-              <Button
-                size="small"
-                variant="text"
-                onClick={handleEndSession}
-                sx={{
-                  color: 'white',
-                  minWidth: 'auto',
-                  fontSize: '13px',
-                  textTransform: 'none',
-                }}
-              >
-                {t('chatEndButton')}
-              </Button>
-            )}
-            {platform === 'mobile' && (
-              <IconButton
-                size="small"
-                onClick={handleToggle}
-                sx={{ color: 'white' }}
-              >
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-        </Box>
-      );
+    let title: string;
+    if (inSession && isAdmin) {
+      title =
+        currentSession?.users?.find((u) => u.grade === 'FREE')?.name ||
+        t('chatGuest');
+    } else if (isAdmin) {
+      title = t('chatAdminDashboard');
+    } else {
+      title = t('chatCustomerSupport');
     }
 
     return (
       <Box
         className={chatClasses.header.container[platform]}
         sx={{
-          backgroundColor: '#FF624C',
-          color: 'white',
+          backgroundColor: '#fff',
+          borderBottom: `1px solid ${hairline}`,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: 1.5,
           flexShrink: 0,
           minHeight: '64px',
         }}
       >
-        <Typography sx={{ fontSize: '15px', fontWeight: 600 }}>
-          {isAdmin ? t('chatAdminDashboard') : t('chatSupportChat')}
-        </Typography>
+        {inSession && isAdmin && (
+          <Box
+            component="button"
+            onClick={handleBackToSessionList}
+            aria-label="Back"
+            sx={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              borderRadius: '999px',
+              backgroundColor: fill,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ArrowLeft size={20} color={navy} />
+          </Box>
+        )}
+
+        {showAvatar && (
+          <Box
+            sx={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}
+          >
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                backgroundColor: navy,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Headset size={22} color="#fff" />
+            </Box>
+            {online && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 11,
+                  height: 11,
+                  borderRadius: '999px',
+                  backgroundColor: ONLINE_GREEN,
+                  border: '2px solid #fff',
+                }}
+              />
+            )}
+          </Box>
+        )}
+
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography
+            noWrap
+            sx={{ fontSize: '15px', fontWeight: 700, color: ink }}
+          >
+            {title}
+          </Typography>
+          {showAvatar && (
+            <Typography
+              sx={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: online ? ONLINE_GREEN : muted,
+              }}
+            >
+              {online ? t('chatOnline') : t('chatConnecting')}
+            </Typography>
+          )}
+        </Box>
+
+        {canManageSession && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={handleEndSession}
+            sx={{
+              color: red,
+              minWidth: 'auto',
+              fontSize: '13px',
+              fontWeight: 600,
+              textTransform: 'none',
+            }}
+          >
+            {t('chatEndButton')}
+          </Button>
+        )}
+        <IconButton
+          size="small"
+          onClick={handleExpand}
+          sx={{ color: navy, flexShrink: 0 }}
+          title="Expand to full screen"
+        >
+          <Maximize2 size={18} />
+        </IconButton>
         {platform === 'mobile' && (
           <IconButton
             size="small"
             onClick={handleToggle}
-            sx={{ color: 'white' }}
+            sx={{ color: navy, flexShrink: 0 }}
           >
-            <CloseIcon />
+            <X size={20} />
           </IconButton>
         )}
       </Box>
@@ -253,7 +300,7 @@ const ChatWidget = () => {
           gap: 2,
         }}
       >
-        <Typography align="center" sx={{ fontSize: '14px', color: '#1B1B1B' }}>
+        <Typography align="center" sx={{ fontSize: '14px', color: '#17161D' }}>
           {t('chatNeedHelpPrompt')}
         </Typography>
         <Button
@@ -261,7 +308,7 @@ const ChatWidget = () => {
           onClick={handleStartChatUser}
           disabled={loading || !isConnected}
           sx={{
-            backgroundColor: '#FF624C',
+            backgroundColor: navy,
             color: 'white',
             textTransform: 'none',
             borderRadius: '8px',
@@ -269,7 +316,7 @@ const ChatWidget = () => {
             fontWeight: 500,
             px: 3,
             '&:hover': {
-              backgroundColor: '#EC4D38',
+              backgroundColor: colors.buttonHoverBg,
             },
           }}
         >
@@ -290,15 +337,15 @@ const ChatWidget = () => {
         onClick={handleToggle}
         className={chatClasses.widget.fab[platform]}
         sx={{
-          backgroundColor: '#FF624C',
+          backgroundColor: navy,
           color: 'white',
           zIndex: 1400,
           '&:hover': {
-            backgroundColor: '#EC4D38',
+            backgroundColor: colors.buttonHoverBg,
           },
         }}
       >
-        {isOpen ? <CloseIcon /> : <ChatIcon />}
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </Fab>
 
       <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
@@ -353,7 +400,7 @@ const ChatWidget = () => {
           onClose={() => setSessionClosed(false)}
           severity="info"
           variant="filled"
-          sx={{ backgroundColor: '#ff624c', color: '#fff' }}
+          sx={{ backgroundColor: navy, color: '#fff' }}
         >
           {t('chatSessionClosedByAdmin')}
         </Alert>

@@ -4,27 +4,27 @@ import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import AccountNav from '@/pages/user/components/AccountNav';
 import { ordersIndexClasses } from '@/styles/classMaps/orders/index';
-import { interClassname } from '@/styles/theme';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import { fontClassName } from '@/styles/theme';
 import {
   Alert,
   Box,
-  Button,
-  IconButton,
+  ButtonBase,
   Pagination,
   Snackbar,
+  TextField,
   Typography,
 } from '@mui/material';
-import { UserOrder, UserOrderStatus } from '@prisma/client';
+import { UserOrderStatus } from '@prisma/client';
+import { ArrowLeft } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import OrderCard from './components/OrderCard';
-import OrderFilters from './components/OrderFilters';
-import OrderTable from './components/OrderTable';
-import { getUserOrdersList } from './lib/apiUtils';
+import OrderWebCard from './components/OrderWebCard';
+import { getUserOrdersList, UserOrderWithItems } from './lib/apiUtils';
 
 export const getStaticProps = (async (context) => {
   return {
@@ -34,7 +34,16 @@ export const getStaticProps = (async (context) => {
   };
 }) satisfies GetStaticProps<object>;
 
-type TabType = 'ongoing' | 'completed';
+type TabType = 'all' | 'ongoing' | 'completed';
+
+// What each tab means in real `UserOrderStatus` terms. Cancelled orders sit
+// under "Completed" (they are finished, just not delivered) — the semantics
+// step 43 already shipped on mobile.
+const TAB_STATUSES: Record<TabType, UserOrderStatus[] | undefined> = {
+  all: undefined,
+  ongoing: ['PENDING', 'IN_PROGRESS'],
+  completed: ['COMPLETED', 'USER_CANCELLED', 'ADMIN_CANCELLED'],
+};
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -43,24 +52,19 @@ export default function OrdersPage() {
   const t = useTranslations();
   const platform = usePlatform();
 
-  const [orders, setOrders] = useState<UserOrder[]>([]);
+  const [orders, setOrders] = useState<UserOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
 
-  // Mobile tabs
-  const [activeTab, setActiveTab] = useState<TabType>('ongoing');
+  // Status tabs — pills on web (spec 1758), the segmented row on mobile
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
-  // Web filters
-  const [status, setStatus] = useState<UserOrderStatus | undefined>();
-  const [dateFrom, setDateFrom] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date.toISOString().split('T')[0];
-  });
-  const [dateTo, setDateTo] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  // Web-only date range. Both bounds start empty so the default view is the
+  // user's whole history, matching mobile; the old 30-day default silently hid
+  // every older order behind a control the mockup doesn't even have.
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -68,21 +72,21 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [, setTotal] = useState(0);
 
-  // Determine status filter based on platform and tab
-  const getStatusFilter = (): UserOrderStatus | undefined => {
-    if (platform === 'mobile') {
-      return activeTab === 'ongoing'
-        ? undefined // Will filter in frontend
-        : undefined; // Will filter in frontend
-    }
-    return status;
+  // Web filters in the `where` clause so the tab and the pagination agree;
+  // mobile keeps its existing post-fetch filtering.
+  const getStatusFilter = (): UserOrderStatus[] | undefined =>
+    platform === 'web' ? TAB_STATUSES[activeTab] : undefined;
+
+  const filterByTab = (list: UserOrderWithItems[]) => {
+    const allowed = TAB_STATUSES[activeTab];
+    return allowed ? list.filter((o) => allowed.includes(o.status)) : list;
   };
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
       if (!user) {
-        const guestResp = await fetchWithoutCreds<UserOrder[]>(
+        const guestResp = await fetchWithoutCreds<UserOrderWithItems[]>(
           '/api/guest/order',
           'GET',
         );
@@ -95,23 +99,9 @@ export default function OrdersPage() {
           return;
         }
 
-        let guestOrders = guestResp.data || [];
-        if (platform === 'mobile') {
-          if (activeTab === 'ongoing') {
-            guestOrders = guestOrders.filter(
-              (o) => o.status === 'PENDING' || o.status === 'IN_PROGRESS',
-            );
-          } else {
-            guestOrders = guestOrders.filter(
-              (o) =>
-                o.status === 'COMPLETED' ||
-                o.status === 'USER_CANCELLED' ||
-                o.status === 'ADMIN_CANCELLED',
-            );
-          }
-        } else if (status) {
-          guestOrders = guestOrders.filter((o) => o.status === status);
-        }
+        // The guest endpoint returns the whole (unpaginated) list, so the tab
+        // is applied here on both platforms.
+        const guestOrders = filterByTab(guestResp.data || []);
 
         setOrders(guestOrders);
         setTotalPages(1);
@@ -133,23 +123,11 @@ export default function OrdersPage() {
       });
 
       if (result.success && result.data) {
-        let filteredOrders = result.data.orders;
-
-        // Apply tab filtering on mobile
-        if (platform === 'mobile') {
-          if (activeTab === 'ongoing') {
-            filteredOrders = filteredOrders.filter(
-              (o) => o.status === 'PENDING' || o.status === 'IN_PROGRESS',
-            );
-          } else {
-            filteredOrders = filteredOrders.filter(
-              (o) =>
-                o.status === 'COMPLETED' ||
-                o.status === 'USER_CANCELLED' ||
-                o.status === 'ADMIN_CANCELLED',
-            );
-          }
-        }
+        // Web already filtered server-side via `getStatusFilter`.
+        const filteredOrders =
+          platform === 'mobile'
+            ? filterByTab(result.data.orders)
+            : result.data.orders;
 
         setOrders(filteredOrders);
         setTotalPages(result.data.pagination.totalPages);
@@ -183,14 +161,12 @@ export default function OrdersPage() {
     setPage(1);
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, status, dateFrom, dateTo]);
+  }, [activeTab, dateFrom, dateTo]);
 
+  const hasDateFilter = dateFrom !== '' || dateTo !== '';
   const handleClearFilters = () => {
-    setStatus(undefined);
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    setDateFrom(date.toISOString().split('T')[0]);
-    setDateTo(new Date().toISOString().split('T')[0]);
+    setDateFrom('');
+    setDateTo('');
     setPage(1);
   };
 
@@ -198,144 +174,232 @@ export default function OrdersPage() {
     router.push('/user');
   };
 
+  const tabs: { key: TabType; label: string }[] = [
+    { key: 'all', label: t('all') },
+    { key: 'ongoing', label: t('ongoing') },
+    { key: 'completed', label: t('completed') },
+  ];
+
+  const snackbar = (
+    <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={6000}
+      onClose={() => setSnackbarOpen(false)}
+    >
+      <Alert
+        onClose={() => setSnackbarOpen(false)}
+        severity={snackbarMessage?.severity}
+        variant="filled"
+      >
+        {snackbarMessage?.message && t(snackbarMessage.message)}
+      </Alert>
+    </Snackbar>
+  );
+
+  // The mockup's compact date box (48px/radius-12/2px navy focus), the same
+  // field shape step 56 gave the checkout form.
+  const dateFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      height: '38px',
+      borderRadius: '10px',
+      backgroundColor: '#fff',
+      fontSize: '13px',
+      '& fieldset': { borderColor: '#ECECF1' },
+      '&:hover fieldset': { borderColor: '#20166E' },
+      '&.Mui-focused fieldset': { borderColor: '#20166E', borderWidth: '2px' },
+    },
+  };
+
+  // Desktop order history (spec 1725-1790): account rail + status pills + cards.
+  if (platform === 'web') {
+    return (
+      <Layout handleHeaderBackButton={handleBackButton}>
+        <Box className={ordersIndexClasses.web.grid}>
+          <AccountNav active="orders" />
+          <Box className={ordersIndexClasses.web.col}>
+            <Box className={ordersIndexClasses.web.headRow}>
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.web.title}`}
+              >
+                {t('myOrders')}
+              </Typography>
+              <Box className={ordersIndexClasses.web.tabs}>
+                {tabs.map((tab) => (
+                  <ButtonBase
+                    key={tab.key}
+                    disableRipple
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`${fontClassName.className} ${
+                      ordersIndexClasses.web.tab
+                    } ${
+                      activeTab === tab.key
+                        ? ordersIndexClasses.web.tabActive
+                        : ordersIndexClasses.web.tabIdle
+                    }`}
+                  >
+                    {tab.label}
+                  </ButtonBase>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Not in the mockup, kept because it is a real capability the web
+                page already had — just no longer a 30-day default. */}
+            <Box className={ordersIndexClasses.web.filterBar}>
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.web.filterLabel}`}
+              >
+                {t('dateFrom')}
+              </Typography>
+              <TextField
+                type="date"
+                size="small"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                sx={dateFieldSx}
+              />
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.web.filterDash}`}
+              >
+                —
+              </Typography>
+              <TextField
+                type="date"
+                size="small"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                sx={dateFieldSx}
+              />
+              {hasDateFilter && (
+                <ButtonBase
+                  disableRipple
+                  onClick={handleClearFilters}
+                  className={`${fontClassName.className} ${ordersIndexClasses.web.clear}`}
+                >
+                  {t('clearAll')}
+                </ButtonBase>
+              )}
+            </Box>
+
+            {loading && <OrderListSkeleton count={5} />}
+
+            {!loading && orders.length === 0 && (
+              <Box className={ordersIndexClasses.web.empty}>
+                <Typography
+                  className={`${fontClassName.className} ${ordersIndexClasses.web.emptyText}`}
+                >
+                  {t('noOrdersFound')}
+                </Typography>
+              </Box>
+            )}
+
+            {!loading && orders.length > 0 && (
+              <>
+                <Box className={ordersIndexClasses.web.list}>
+                  {orders.map((order) => (
+                    <OrderWebCard key={order.id} order={order} />
+                  ))}
+                </Box>
+                {totalPages > 1 && (
+                  <Box className={ordersIndexClasses.web.pagination}>
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      onChange={(_, value) => setPage(value)}
+                      color="primary"
+                    />
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        </Box>
+        {snackbar}
+      </Layout>
+    );
+  }
+
   return (
     <Layout handleHeaderBackButton={handleBackButton}>
       <Box className={ordersIndexClasses.container[platform]}>
-        {/* Title */}
-        <Box className="flex items-center mb-4">
-          {platform === 'mobile' && (
-            <IconButton onClick={handleBackButton}>
-              <ArrowBackIosIcon />
-            </IconButton>
-          )}
-          <Box className="flex w-full justify-center">
-            <Typography
-              className={`${interClassname.className} ${ordersIndexClasses.title[platform]}`}
-            >
-              {t('myOrders')}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Mobile Tabs */}
+        {/* Mobile header + tabs */}
         {platform === 'mobile' && (
-          <Box className={ordersIndexClasses.tabs.mobile}>
-            <Button
-              className={`${ordersIndexClasses.tab.mobile} ${
-                activeTab === 'ongoing'
-                  ? ordersIndexClasses.tabActive.mobile
-                  : ordersIndexClasses.tabInactive.mobile
-              }`}
-              onClick={() => setActiveTab('ongoing')}
-              sx={{
-                backgroundColor:
-                  activeTab === 'ongoing' ? '#1c1b1b' : 'transparent',
-                color: activeTab === 'ongoing' ? 'white' : '#1c1b1b',
-                '&:hover': {
-                  backgroundColor:
-                    activeTab === 'ongoing' ? '#1c1b1b' : 'transparent',
-                },
-                textTransform: 'none',
-              }}
-            >
-              <Typography
-                className={`${interClassname.className} font-medium text-[16px]`}
+          <Box className={ordersIndexClasses.headerWrap.mobile}>
+            <Box className="flex items-center gap-3.5">
+              <button
+                type="button"
+                onClick={handleBackButton}
+                className={ordersIndexClasses.backButton.mobile}
+                aria-label="back"
               >
-                {t('ongoing')}
-              </Typography>
-            </Button>
-            <Button
-              className={`${ordersIndexClasses.tab.mobile} ${
-                activeTab === 'completed'
-                  ? ordersIndexClasses.tabActive.mobile
-                  : ordersIndexClasses.tabInactive.mobile
-              }`}
-              onClick={() => setActiveTab('completed')}
-              sx={{
-                backgroundColor:
-                  activeTab === 'completed' ? '#1c1b1b' : 'transparent',
-                color: activeTab === 'completed' ? 'white' : '#1c1b1b',
-                '&:hover': {
-                  backgroundColor:
-                    activeTab === 'completed' ? '#1c1b1b' : 'transparent',
-                },
-                textTransform: 'none',
-              }}
-            >
+                <ArrowLeft size={20} className="text-[#20166E]" />
+              </button>
               <Typography
-                className={`${interClassname.className} font-medium text-[16px]`}
+                className={`${fontClassName.className} ${ordersIndexClasses.title.mobile}`}
               >
-                {t('completed')}
+                {t('myOrders')}
               </Typography>
-            </Button>
+            </Box>
+            <Box className={ordersIndexClasses.tabs.mobile}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`${fontClassName.className} ${
+                    ordersIndexClasses.tab.mobile
+                  } ${
+                    activeTab === tab.key
+                      ? ordersIndexClasses.tabActive.mobile
+                      : ordersIndexClasses.tabInactive.mobile
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </Box>
           </Box>
         )}
 
-        {/* Web Filters */}
-        {platform === 'web' && (
-          <OrderFilters
-            status={status}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onStatusChange={setStatus}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
-            onClear={handleClearFilters}
-          />
-        )}
+        {/* Content */}
+        <Box className={ordersIndexClasses.content[platform]}>
+          {/* Loading */}
+          {loading && <OrderListSkeleton count={5} />}
 
-        {/* Loading */}
-        {loading && <OrderListSkeleton count={5} />}
+          {/* Empty State */}
+          {!loading && orders.length === 0 && (
+            <Box className={ordersIndexClasses.emptyState[platform]}>
+              <Typography
+                className={`${fontClassName.className} ${ordersIndexClasses.emptyStateText[platform]}`}
+              >
+                {t('noOrdersFound')}
+              </Typography>
+            </Box>
+          )}
 
-        {/* Empty State */}
-        {!loading && orders.length === 0 && (
-          <Box className={ordersIndexClasses.emptyState[platform]}>
-            <Typography className={interClassname.className}>
-              {t('noOrdersFound')}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Orders List */}
-        {!loading && orders.length > 0 && (
-          <>
-            {platform === 'web' ? (
-              <OrderTable orders={orders} />
-            ) : (
+          {/* Orders List */}
+          {!loading && orders.length > 0 && (
+            <>
               <Box>
                 {orders.map((order) => (
                   <OrderCard key={order.id} order={order} />
                 ))}
               </Box>
-            )}
 
-            {/* Pagination */}
-            <Box className={ordersIndexClasses.pagination[platform]}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, value) => setPage(value)}
-                color="primary"
-              />
-            </Box>
-          </>
-        )}
+              {/* Pagination */}
+              <Box className={ordersIndexClasses.pagination[platform]}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(_, value) => setPage(value)}
+                  color="primary"
+                />
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage?.severity}
-          variant="filled"
-        >
-          {snackbarMessage?.message && t(snackbarMessage.message)}
-        </Alert>
-      </Snackbar>
+      {snackbar}
     </Layout>
   );
 }
