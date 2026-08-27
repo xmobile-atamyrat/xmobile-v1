@@ -1,10 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import {
-  HIGHEST_LEVEL_CATEGORY_ID,
-  LOCALE_COOKIE_NAME,
-} from '@/pages/lib/constants';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import { getCookie, parseName, setCookie } from '@/pages/lib/utils';
 
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
@@ -14,6 +11,7 @@ import {
   BadgeHelp,
   Bell,
   ChevronDown,
+  ChevronUp,
   Globe,
   MapPin,
   Menu as MenuIcon,
@@ -25,7 +23,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import CategoryList from '@/pages/components/Drawer';
+import CategoryMegaMenu from '@/pages/components/CategoryMegaMenu';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -35,15 +33,12 @@ import {
   EditCategoriesProps,
   ExtendedCategory,
 } from '@/pages/lib/types';
-import { drawerClasses } from '@/styles/classMaps/components/drawer';
 import { fontClassName } from '@/styles/theme';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 // lucide 1.x dropped brand glyphs, so Instagram stays on the MUI icon.
 import InstagramIcon from '@mui/icons-material/Instagram';
-import { CardMedia, Menu, Paper, Select, Tooltip } from '@mui/material';
+import { CardMedia, Paper, Select } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
@@ -162,14 +157,12 @@ export default function CustomAppBar({
   ];
   const [menuStatus, setMenuStatus] = useState(false);
   const { categories, setSelectedCategoryId } = useCategoryContext();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
 
-  const handleMenuButton = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-    setMenuStatus(true);
-  };
+  // Both "All categories" triggers (search scope + category bar) toggle the one
+  // mega menu, which drops from the bottom of the header rather than anchoring.
+  const handleMenuButton = () => setMenuStatus((isOpen) => !isOpen);
 
   useEffect(() => {
     if (router.locale && router.locale !== router.defaultLocale) {
@@ -269,7 +262,7 @@ export default function CustomAppBar({
           showFilter: Boolean(onHomeFilterClick),
           onFilterClick: onHomeFilterClick
             ? () => onHomeFilterClick()
-            : (e) => handleMenuButton(e),
+            : undefined,
         })}
       </Box>
     );
@@ -441,11 +434,16 @@ export default function CustomAppBar({
           >
             <button
               type="button"
+              aria-expanded={menuStatus}
               className={`${web.searchScope} ${fontClassName.className}`}
               onClick={handleMenuButton}
             >
               {t('allCategory')}
-              <ChevronDown className="w-4 h-4" />
+              {menuStatus ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
             <Box className={web.searchField}>
               <Search className="w-[18px] h-[18px] text-muted flex-shrink-0" />
@@ -511,7 +509,10 @@ export default function CustomAppBar({
         <Box className={`${web.bleed} ${web.categoryBar}`}>
           <button
             type="button"
-            className={`${web.categoryMenuButton} ${fontClassName.className}`}
+            aria-expanded={menuStatus}
+            className={`${web.categoryMenuButton} ${
+              menuStatus ? web.categoryMenuButtonOpen : ''
+            } ${fontClassName.className}`}
             onClick={handleMenuButton}
           >
             <MenuIcon className="w-[18px] h-[18px]" />
@@ -535,47 +536,15 @@ export default function CustomAppBar({
           </Box>
         </Box>
 
-        {/* Shared category menu: opened by both "All categories" triggers above */}
-        <Menu
+        {/* Shared mega menu: opened by both "All categories" triggers above */}
+        <CategoryMegaMenu
+          categories={categories}
           open={menuStatus}
           onClose={() => setMenuStatus(false)}
-          anchorEl={anchorEl}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          TransitionProps={{ exit: false }}
-        >
-          {categories?.length > 0 && (
-            <Box className={`${drawerClasses.box}`}>
-              <CategoryList
-                categories={categories}
-                setEditCategoriesModal={setEditCategoriesModal}
-                setDeleteCategoriesModal={setDeleteCategoriesModal}
-                closeDrawer={() => setMenuStatus(false)}
-                isDrawerOpen={menuStatus}
-              />
-            </Box>
-          )}
-          {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
-            <Paper className={drawerClasses.paper}>
-              <Tooltip title="Edit categories">
-                <IconButton
-                  onClick={() => {
-                    setSelectedCategoryId(HIGHEST_LEVEL_CATEGORY_ID);
-                    setEditCategoriesModal({
-                      open: true,
-                      dialogType: 'add',
-                    });
-                  }}
-                >
-                  <AddCircleIcon
-                    className={drawerClasses.addCircleIcon[platform]}
-                    color="primary"
-                  />
-                </IconButton>
-              </Tooltip>
-            </Paper>
-          )}
-        </Menu>
+          onNavigate={goToCategory}
+          setEditCategoriesModal={setEditCategoriesModal}
+          setDeleteCategoriesModal={setDeleteCategoriesModal}
+        />
       </AppBar>
     </Box>
   );

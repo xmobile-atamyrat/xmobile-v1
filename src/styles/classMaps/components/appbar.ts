@@ -132,6 +132,8 @@ export const appbarClasses = {
       'h-[52px] bg-white border-b border-[#F0EFF4] flex flex-row items-center gap-2',
     categoryMenuButton:
       'flex flex-row items-center gap-2 h-[36px] px-4 bg-navy text-white rounded-[10px] text-[14px] font-semibold flex-shrink-0 hover:bg-[#1A1258] transition-colors',
+    // Open state (spec :2253): the tab squares off into the mega menu below it.
+    categoryMenuButtonOpen: 'rounded-b-none',
     categoryList:
       'flex flex-row items-center gap-1 ml-2 min-w-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]',
     categoryChip:
