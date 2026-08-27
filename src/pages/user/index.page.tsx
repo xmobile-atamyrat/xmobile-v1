@@ -34,6 +34,8 @@ import {
   Check,
   ChevronRight,
   Download,
+  FileDown,
+  FileSpreadsheet,
   FolderTree,
   Headphones,
   Images,
@@ -41,6 +43,7 @@ import {
   LogOut,
   Package,
   Palette,
+  RotateCcw,
   ScrollText,
   ShieldCheck,
   Trash2,
@@ -174,6 +177,9 @@ export default function Profile() {
     { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const isAdmin = user && ['SUPERUSER', 'ADMIN'].includes(user.grade);
+  // Bulk import/export rewrites the whole catalog, so its link is superuser-only.
+  // Staff get the read-only price list export instead.
+  const isSuperuser = user?.grade === 'SUPERUSER';
 
   useEffect(() => {
     if (router.locale && router.locale !== router.defaultLocale) {
@@ -296,6 +302,21 @@ export default function Profile() {
       onClick: () => router.push('/product/update-colors'),
     },
     {
+      icon: <FileDown className={profileClasses.icon.primary} />,
+      label: t('downloadPriceList'),
+      onClick: () => router.push('/product/price-list'),
+    },
+    // Bulk import/export rewrites the whole catalog — superusers only.
+    ...(isSuperuser
+      ? [
+          {
+            icon: <FileSpreadsheet className={profileClasses.icon.primary} />,
+            label: t('bulkEditProducts'),
+            onClick: () => router.push('/product/bulk-edit'),
+          },
+        ]
+      : []),
+    {
       icon: <FolderTree className={profileClasses.icon.primary} />,
       label: t('categoryHierarchy'),
       onClick: () => router.push('/user/category-hierarchy'),
@@ -326,6 +347,11 @@ export default function Profile() {
             icon: <Download className={profileClasses.icon.primary} />,
             label: t('appVersions'),
             onClick: () => router.push('/admin/app-version'),
+          },
+          {
+            icon: <RotateCcw className={profileClasses.icon.primary} />,
+            label: t('pushRetryConfig'),
+            onClick: () => router.push('/admin/push-retry-config'),
           },
         ]
       : []),

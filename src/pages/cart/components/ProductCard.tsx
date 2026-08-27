@@ -12,16 +12,20 @@ import { AddToCartProps } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { resolveVariantDisplay } from '@/pages/product/utils';
 import { cartProductCardClasses } from '@/styles/classMaps/cart/productCard';
-import { fontClassName } from '@/styles/theme';
+import { fontClassName, muted } from '@/styles/theme';
 import { Box, Card, CardMedia, Divider, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useState } from 'react';
 
-// use lazy() to not to load the same compononets and functions in AddToCart
-const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
+// next/dynamic (not React.lazy) so the chunk suspends inside its own boundary
+// rather than relying on an ancestor <Suspense> that may not be there.
+const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
+  loading: () => <CircularProgress />,
+});
 
 interface ProductCardProps {
   product?: Product;
@@ -129,19 +133,34 @@ export default function CartProductCard({
                   />
                 )}
               </Box>
-              {product?.price?.includes('[') ? (
-                <CircularProgress
-                  className={cartProductCardClasses.circProgress[platform]}
-                />
-              ) : (
+              {/* This card has no out-of-stock badge, so the price slot carries
+                  the label rather than going blank */}
+              {product.isOutOfStock ? (
                 <Typography
-                  className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]}`}
+                  color={muted}
+                  className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]} uppercase`}
                 >
-                  {product?.price}
-                  <span className={cartProductCardClasses.priceUnit[platform]}>
-                    {t('manat')}
-                  </span>
+                  {t('outOfStock')}
                 </Typography>
+              ) : (
+                <>
+                  {product?.price?.includes('[') ? (
+                    <CircularProgress
+                      className={cartProductCardClasses.circProgress[platform]}
+                    />
+                  ) : (
+                    <Typography
+                      className={`${fontClassName.className} ${cartProductCardClasses.typo2[platform]}`}
+                    >
+                      {product?.price}
+                      <span
+                        className={cartProductCardClasses.priceUnit[platform]}
+                      >
+                        {t('manat')}
+                      </span>
+                    </Typography>
+                  )}
+                </>
               )}
             </Box>
             {cartProps.cartAction === 'delete' && (

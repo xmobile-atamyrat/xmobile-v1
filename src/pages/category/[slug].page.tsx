@@ -108,10 +108,12 @@ export const getStaticProps: GetStaticProps = async ({
       }
     }
 
-    // Fetch the specific category
+    // Fetch the specific category, localized to this route's locale
     const { success, data: categoryData }: ResponseApi<ExtendedCategory> =
       await (
-        await fetch(`${BASE_URL}/api/category?categorySlug=${categorySlug}`)
+        await fetch(
+          `${BASE_URL}/api/category?categorySlug=${categorySlug}&locale=${locale}`,
+        )
       ).json();
 
     if (!success || !categoryData) {
@@ -125,7 +127,7 @@ export const getStaticProps: GetStaticProps = async ({
       success: allSuccess,
       data: allCategories,
     }: ResponseApi<ExtendedCategory[]> = await (
-      await fetch(`${BASE_URL}/api/category`)
+      await fetch(`${BASE_URL}/api/category?locale=${locale}`)
     ).json();
 
     let parentCategory: ExtendedCategory | null = null;
@@ -286,9 +288,9 @@ export default function CategoryPage({
           <CategoryCard
             name=""
             initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
+            href={`/product-category/${category.slug}`}
             onClick={() => {
               setProducts([]);
-              router.push(`/product-category/${category.slug}`);
             }}
           />
           {/* Subcategories */}
@@ -299,9 +301,7 @@ export default function CategoryPage({
                 name={name}
                 initialImgUrl={imgUrl ?? undefined}
                 key={id}
-                onClick={() => {
-                  router.push(`/category/${slug}`);
-                }}
+                href={`/category/${slug}`}
               />
             );
           })}

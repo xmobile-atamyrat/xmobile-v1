@@ -4,6 +4,7 @@ import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
+import { Prisma } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
@@ -17,6 +18,19 @@ const RegisterTokenSchema = z.object({
 const DeleteTokenSchema = z.object({
   token: z.string().min(1, 'Token is required'),
 });
+
+// Devices registered via the app's WebView bridge are tagged `APP:...`
+// (see getDeviceInfo in fcmClient.ts); everything else is a browser subscription.
+const isMobileDevice = (deviceInfo: string) => deviceInfo.startsWith('APP:');
+
+function isDeviceInfoUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002' &&
+    (error.meta?.target as string[] | undefined)?.includes('deviceInfo') ===
+      true
+  );
+}
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
@@ -89,12 +103,45 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
 
       // SCENARIO 3: Token doesn't exist, DeviceInfo doesn't exist → CREATE
-      // Use upsert on token to safely handle concurrent requests (TOCTOU race condition)
-      await dbClient.fCMToken.upsert({
-        where: { token },
-        update: { deviceInfo, userId },
-        create: { userId, token, deviceInfo },
-      });
+      // Mobile app push takes priority over browser push: a user shouldn't get
+      // the same notification twice (once on the phone app, once in the browser).
+      if (isMobileDevice(deviceInfo)) {
+        // New app subscription overrides any browser subscriptions for this user.
+        await dbClient.fCMToken.deleteMany({
+          where: { userId, NOT: { deviceInfo: { startsWith: 'APP:' } } },
+        });
+      } else {
+        const hasMobileDevice = await dbClient.fCMToken.findFirst({
+          where: { userId, deviceInfo: { startsWith: 'APP:' } },
+        });
+        if (hasMobileDevice) {
+          // User already gets push via the app; silently skip the browser subscription.
+          return res.status(200).json({
+            success: true,
+            message: 'Mobile app subscription already active for this user',
+          });
+        }
+      }
+
+      try {
+        // Use upsert on token to safely handle concurrent requests (TOCTOU race condition)
+        await dbClient.fCMToken.upsert({
+          where: { token },
+          update: { deviceInfo, userId },
+          create: { userId, token, deviceInfo },
+        });
+      } catch (error) {
+        if (!isDeviceInfoUniqueViolation(error)) {
+          throw error;
+        }
+        // Lost the race: a concurrent request just registered this deviceInfo
+        // (e.g. duplicate registration calls firing back-to-back). Converge on
+        // the same outcome as the "deviceInfo already exists" path above.
+        await dbClient.fCMToken.update({
+          where: { deviceInfo },
+          data: { token, userId },
+        });
+      }
 
       return res.status(201).json({
         success: true,

@@ -17,6 +17,11 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
+  getListSnapshot,
+  listKey,
+  useListRestoration,
+} from '@/pages/lib/listRestoration';
+import {
   buildPaginationItems,
   getTotalPages,
   PAGINATION_ELLIPSIS,
@@ -49,7 +54,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ArrowLeft, ChevronLeft, ChevronRight, SearchX, X } from 'lucide-react';
-import { Color } from '@prisma/client';
+import { Color, Product } from '@prisma/client';
 import { TransitionProps } from '@mui/material/transitions';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -72,16 +77,24 @@ interface ProductGridContentProps {
   landingCategoryId?: string;
   category?: ExtendedCategory | null;
   categoryPath?: ExtendedCategory[];
+  // Server-fetched first page so product links are in the SSR HTML, not the skeleton.
+  initialProducts?: Product[];
 }
 
 export default function ProductGridContent({
   landingCategoryId,
   category,
   categoryPath = [],
+  initialProducts,
 }: ProductGridContentProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  const hasInitialProducts = (initialProducts?.length ?? 0) > 0;
+  // Snapshot read once at mount so a back-nav restores the loaded list + scroll.
+  const [restored] = useState(() => getListSnapshot(listKey()));
+  const [isLoading, setIsLoading] = useState(
+    restored ? false : !hasInitialProducts,
+  );
+  const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
+  const [page, setPage] = useState(restored?.page ?? 0);
   const { categories: allCategories } = useCategoryContext();
   const { products, setProducts, searchKeyword, setSearchKeyword } =
     useProductContext();
@@ -127,6 +140,18 @@ export default function ProductGridContent({
   const platform = usePlatform();
 
   const { filters, setFilters } = useProductFilters();
+
+  const { restoringRef } = useListRestoration(
+    { products, page, hasMore },
+    restored,
+  );
+
+  // Seed the shared product context from the snapshot on a restoring mount.
+  // The reset effect below is skipped while restoring, so it won't clobber this.
+  useEffect(() => {
+    if (restored) setProducts(restored.products);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Any filter/sort change invalidates the current page. Resetting in the same
   // batch as setFilters keeps it to one refetch (a reset-on-change effect would
@@ -313,6 +338,11 @@ export default function ProductGridContent({
   ]);
 
   useEffect(() => {
+    // Skip the page-1 reset while restoring a snapshot (incl. the filters-hydration
+    // rerun) so the restored list isn't wiped. loadMoreProducts is independent,
+    // so infinite scroll keeps working. Later filter changes clear the guard and
+    // reset normally.
+    if (restoringRef.current) return;
     setProducts([]);
     setPage(0);
     setHasMore(true);
@@ -333,6 +363,7 @@ export default function ProductGridContent({
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
+          locale: router.locale,
         };
 
         if (searchKeyword) {
@@ -389,6 +420,7 @@ export default function ProductGridContent({
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
+        locale: router.locale,
       };
 
       if (searchKeyword) {
@@ -445,7 +477,10 @@ export default function ProductGridContent({
     }
   };
 
-  if (!router.isReady) return null;
+  // The /product browse page reads its category from the URL query (client-only,
+  // needs router.isReady). A landing page gets landingCategoryId as a prop, so it
+  // can render its seeded grid during SSR for indexing.
+  if (!landingCategoryId && !router.isReady) return null;
 
   let titleText = t('allProducts') || 'All Products';
   if (category) {
@@ -453,6 +488,11 @@ export default function ProductGridContent({
   } else if (searchKeyword) {
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
+
+  // products resets to [] on every fetch, so fall back to the seeded first
+  // page to keep links in the SSR HTML.
+  const displayProducts =
+    products.length > 0 ? products : initialProducts ?? [];
 
   // Real total for the current query (all pages); fall back to the loaded
   // count until the count request resolves.
@@ -796,13 +836,13 @@ export default function ProductGridContent({
                 </Box>
               )}
               {(() => {
-                if (isLoading && products.length === 0) {
+                if (isLoading && displayProducts.length === 0) {
                   return <ProductGridSkeleton count={8} />;
                 }
                 const isAdmin = ['SUPERUSER', 'ADMIN'].includes(
                   user?.grade || '',
                 );
-                if (products.length === 0 && !isAdmin) {
+                if (displayProducts.length === 0 && !isAdmin) {
                   return (
                     <Box className={productIndexPageClasses.emptyState.wrap}>
                       <Box
@@ -842,7 +882,7 @@ export default function ProductGridContent({
                         }
                       />
                     )}
-                    {products.map((product, idx) => (
+                    {displayProducts.map((product, idx) => (
                       <ProductCard
                         product={product}
                         key={idx}

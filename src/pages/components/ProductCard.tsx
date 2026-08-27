@@ -29,11 +29,18 @@ import {
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useState } from 'react';
 
-// use lazy() to not to load the same compononets and functions in AddToCart
-const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
+// next/dynamic (not React.lazy) so the chunk suspends inside its own boundary.
+// A bare lazy() here has no ancestor <Suspense>, and this card now renders
+// underneath the _app splash overlay, so a cold chunk load crashes hydration
+// and the splash never dismisses.
+const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
+  loading: () => <CircularProgress />,
+});
 
 interface ProductCardProps {
   product?: ExtendedProduct;
@@ -86,9 +93,13 @@ export default function ProductCard({
     })();
   }, [initialProduct]);
 
+  // Out-of-stock products show no price; the badge on the image carries the
+  // state instead.
   const priceNode =
     // eslint-disable-next-line no-nested-ternary
-    product == null ? null : product.price?.includes('[') ? (
+    product == null || product.isOutOfStock ? null : product.price?.includes(
+        '[',
+      ) ? (
       <CircularProgress className={productCardClasses.circProgress[platform]} />
     ) : (
       <Typography
@@ -105,6 +116,8 @@ export default function ProductCard({
     product != null &&
     cartProps.cartAction === 'add' &&
     !product.isOutOfStock ? (
+      // Rendered outside the card's anchors, but keep the click contained so a
+      // future wrapper can't turn "add to cart" into a navigation.
       <Box onClick={(e) => e.stopPropagation()}>
         <AddToCart
           productId={product.id}
@@ -120,41 +133,45 @@ export default function ProductCard({
   return (
     <Card className={productCardClasses.card[platform]} elevation={0}>
       {product != null ? (
-        <Box
-          className={productCardClasses.boxes.main}
-          onClick={() => {
-            setSelectedProduct(initialProduct);
-            router.push(`/product/${product.slug}`);
-          }}
-        >
-          {cardImageSrc != null && (
-            <Box className={productCardClasses.boxes.img[platform]}>
-              <CardMedia
-                component="img"
-                image={cardImageSrc}
-                alt={product?.name}
-                className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.onerror = null;
-                  el.src = PRODUCT_IMAGE_FALLBACK;
-                }}
-              />
-              {product.isOutOfStock && (
-                <Box
-                  className={`absolute top-2 left-2 bg-white/90 border border-[#ECECF1] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
-                >
-                  <Typography
-                    className={`font-semibold text-[#8B8A98] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+        <Box className={productCardClasses.boxes.main}>
+          {/* Image and title are separate anchors so the product name is still
+              crawlable link text. The quick-add button must stay OUTSIDE any
+              anchor: a <button> inside an <a> is invalid HTML and breaks
+              hydration, which leaves the _app splash overlay stuck. */}
+          <Link
+            href={`/product/${product.slug}`}
+            onClick={() => setSelectedProduct(initialProduct)}
+            className="block text-inherit no-underline"
+          >
+            {cardImageSrc != null && (
+              <Box className={productCardClasses.boxes.img[platform]}>
+                <CardMedia
+                  component="img"
+                  image={cardImageSrc}
+                  alt={product?.name}
+                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    el.onerror = null;
+                    el.src = PRODUCT_IMAGE_FALLBACK;
+                  }}
+                />
+                {product.isOutOfStock && (
+                  <Box
+                    className={`absolute top-2 left-2 bg-white/90 border border-[#ECECF1] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
                   >
-                    {t('outOfStock')}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          )}
+                    <Typography
+                      className={`font-semibold text-[#8B8A98] uppercase tracking-wider ${platform === 'web' ? 'text-[11px]' : 'text-[9px]'}`}
+                    >
+                      {t('outOfStock')}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Link>
           <Box className={productCardClasses.boxes.detail[platform]}>
             {product.brand?.name != null && (
               <Typography
@@ -163,14 +180,20 @@ export default function ProductCard({
                 {product.brand.name}
               </Typography>
             )}
-            <Typography
-              className={`${fontClassName.className} ${productCardClasses.typo[platform]}`}
+            <Link
+              href={`/product/${product.slug}`}
+              onClick={() => setSelectedProduct(initialProduct)}
+              className="text-inherit no-underline"
             >
-              {parseName(product.name, router.locale ?? 'tk')}
-            </Typography>
+              <Typography
+                className={`${fontClassName.className} ${productCardClasses.typo[platform]}`}
+              >
+                {parseName(product.name, router.locale ?? 'tk')}
+              </Typography>
+            </Link>
             {platform === 'web' ? (
-              // price left, compact quick-add circle right (design's card has no
-              // full-width CTA — the icon carries the action)
+              // price left, compact quick-add circle right (design's card has
+              // no full-width CTA — the icon carries the action)
               <Box className={productCardClasses.footerRow}>
                 {priceNode}
                 {quickAdd}
@@ -180,7 +203,7 @@ export default function ProductCard({
             )}
           </Box>
           {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
-            <Box onClick={(e) => e.stopPropagation()}>
+            <Box>
               <AddToCart
                 productId={product.id}
                 cartAction={cartProps?.cartAction}

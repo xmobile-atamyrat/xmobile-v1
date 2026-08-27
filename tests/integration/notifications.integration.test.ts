@@ -134,4 +134,81 @@ describe('Notifications API (integration)', () => {
 
     await prisma.inAppNotification.delete({ where: { id: notif.id } });
   });
+
+  it('retry worker never marks a read notification as failed, even aged past the window', async () => {
+    const session = await signupTestUser('notif-retry-read');
+    const withToken = await signupTestUser('notif-retry-token');
+    await prisma.fCMToken.create({
+      data: {
+        userId: withToken.userId,
+        token: `test-token-${withToken.userId}`,
+        deviceInfo: `test-device-${withToken.userId}`,
+      },
+    });
+    const old = new Date(Date.now() - 25 * 60 * 60 * 1000); // past the 24h window
+
+    // Read + PENDING + aged: the user saw it, so it must NOT be "permanently failed".
+    const read = await prisma.inAppNotification.create({
+      data: {
+        userId: session.userId,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Read',
+        content: 'seen by user',
+        isRead: true,
+        deliveryStatus: 'PENDING',
+        createdAt: old,
+      },
+    });
+    // Unread + PENDING + aged, user has no FCM tokens: expires quietly —
+    // FAILED with the non-alertable "no FCM tokens" classification.
+    const unread = await prisma.inAppNotification.create({
+      data: {
+        userId: session.userId,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Unread',
+        content: 'never delivered',
+        isRead: false,
+        deliveryStatus: 'PENDING',
+        createdAt: old,
+      },
+    });
+    // Unread + PENDING + aged, user HAS a token: a genuine push failure,
+    // the alertable "retry window expired" case.
+    const unreadWithToken = await prisma.inAppNotification.create({
+      data: {
+        userId: withToken.userId,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Unread with token',
+        content: 'never delivered despite token',
+        isRead: false,
+        deliveryStatus: 'PENDING',
+        createdAt: old,
+      },
+    });
+
+    const { runNotificationRetryInner } = await import(
+      '../../scripts/batch-runner/jobs/notification-retry'
+    );
+    await runNotificationRetryInner();
+
+    const readAfter = await prisma.inAppNotification.findUnique({
+      where: { id: read.id },
+    });
+    const unreadAfter = await prisma.inAppNotification.findUnique({
+      where: { id: unread.id },
+    });
+    const unreadWithTokenAfter = await prisma.inAppNotification.findUnique({
+      where: { id: unreadWithToken.id },
+    });
+
+    expect(readAfter?.deliveryStatus).toBe('SENT');
+    expect(unreadAfter?.deliveryStatus).toBe('FAILED');
+    expect(unreadAfter?.lastError).toBe('no FCM tokens');
+    expect(unreadWithTokenAfter?.deliveryStatus).toBe('FAILED');
+    expect(unreadWithTokenAfter?.lastError).toBe('retry window expired');
+
+    await prisma.inAppNotification.deleteMany({
+      where: { id: { in: [read.id, unread.id, unreadWithToken.id] } },
+    });
+  });
 });

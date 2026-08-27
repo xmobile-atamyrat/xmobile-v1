@@ -1,0 +1,251 @@
+# Build and deploy Next.js app to VM (Telekom Cloud).
+# Tar files on VM are named by commit hash: xmobile-staging-<short-sha>.tar.gz
+# Resolve ref to short_sha, then check if that tar exists on VM; if so, skip build and only deploy.
+
+name: Staging Build and Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_ref:
+        description: 'Branch name or commit hash to deploy'
+        required: true
+        default: 'staging'
+
+env:
+  TAR_DIR_ON_VM: /home/ubuntu/tar-file/staging
+  APP_DIR_ON_VM: /home/ubuntu/xmobile-staging
+  TAR_FILES_TO_KEEP: 1
+  # Firebase Build Variables (Required for Next.js NEXT_PUBLIC_ variables)
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+  NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
+  NEXT_PUBLIC_APP_ENV: staging
+
+jobs:
+  resolve:
+    name: Resolve ref
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_ref }}
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: resolve
+    outputs:
+      short_sha: ${{ needs.resolve.outputs.short_sha }}
+      tar_exists: ${{ steps.check.outputs.tar_exists }}
+    steps:
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Check if tar exists on VM
+        id: check
+        run: |
+          SHORT_SHA="${{ needs.resolve.outputs.short_sha }}"
+          TAR_NAME="xmobile-staging-${SHORT_SHA}.tar.gz"
+          if ssh deploy-vm "test -f ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME} && tar -tzf ${{ env.TAR_DIR_ON_VM }}/${TAR_NAME} >/dev/null 2>&1"; then
+            echo "tar_exists=true" >> $GITHUB_OUTPUT
+            echo "Tar already on VM and is valid, skipping build: ${TAR_NAME}"
+          else
+            echo "tar_exists=false" >> $GITHUB_OUTPUT
+            echo "Tar not on VM or invalid, will build and upload: ${TAR_NAME}"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.tar_exists != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_ref }}
+
+      - name: Get short SHA
+        if: steps.check.outputs.tar_exists != 'true'
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        if: steps.check.outputs.tar_exists != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        if: steps.check.outputs.tar_exists != 'true'
+        run: yarn install --frozen-lockfile
+
+      - name: Generate Prisma client
+        if: steps.check.outputs.tar_exists != 'true'
+        run: npx prisma generate
+
+      - name: Build Next.js and WS server
+        if: steps.check.outputs.tar_exists != 'true'
+        run: |
+          yarn build
+          yarn build:ws
+
+      - name: Create tar layout (app/xmobile-staging/...)
+        if: steps.check.outputs.tar_exists != 'true'
+        run: |
+          mkdir -p app/xmobile-staging
+          for item in src scripts prisma public node_modules .next dist package.json yarn.lock next.config.mjs tsconfig.json tsconfig.ws.json tailwind.config.ts .eslintrc.json; do
+            cp -a "$item" app/xmobile-staging/
+          done
+
+      - name: Create archive
+        if: steps.check.outputs.tar_exists != 'true'
+        run: |
+          TAR_NAME="xmobile-staging-${{ steps.sha.outputs.short_sha }}.tar.gz"
+          tar -czf "$TAR_NAME" app
+          echo "TAR_NAME=$TAR_NAME" >> $GITHUB_ENV
+
+      - name: Upload tar artifact
+        if: steps.check.outputs.tar_exists != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-tar-${{ needs.resolve.outputs.short_sha }}
+          path: ${{ env.TAR_NAME }}
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - name: Setup SSH key and config
+        env:
+          VM_SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          VM_SSH_KEY_PASSPHRASE: ${{ secrets.VM_SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VM_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          if [ -n "$VM_SSH_KEY_PASSPHRASE" ]; then
+            echo 'echo "$VM_SSH_KEY_PASSPHRASE"' > ~/.ssh/askpass.sh
+            chmod +x ~/.ssh/askpass.sh
+            export SSH_ASKPASS=~/.ssh/askpass.sh
+            export SSH_ASKPASS_REQUIRE=force
+            export DISPLAY=:0
+          fi
+          ssh-add ~/.ssh/id_rsa
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+      - name: Configure SSH for VM
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << EOF
+          Host deploy-vm
+            HostName $VM_HOST
+            User $VM_USER
+            Port $VM_SSH_PORT
+            StrictHostKeyChecking accept-new
+          EOF
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_PORT: ${{ secrets.VM_SSH_PORT }}
+
+      - name: Download artifact
+        if: needs.build.outputs.tar_exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-tar-${{ needs.build.outputs.short_sha }}
+
+      - name: Upload tar to VM
+        if: needs.build.outputs.tar_exists == 'false'
+        run: |
+          TAR_NAME="xmobile-staging-${{ needs.build.outputs.short_sha }}.tar.gz"
+          scp "$TAR_NAME" deploy-vm:${{ env.TAR_DIR_ON_VM }}/
+
+      - name: Deploy on VM (extract, copy, db, build, restart)
+        env:
+          TAR_DIR_ON_VM: ${{ env.TAR_DIR_ON_VM }}
+          APP_DIR_ON_VM: ${{ env.APP_DIR_ON_VM }}
+        run: |
+          SHORT_SHA="${{ needs.build.outputs.short_sha }}"
+          TAR_NAME="xmobile-staging-${SHORT_SHA}.tar.gz"
+
+          ssh deploy-vm "set -e
+            cd $TAR_DIR_ON_VM
+            tar -xf $TAR_NAME
+
+            cd $APP_DIR_ON_VM
+            rm -rf src && mv $TAR_DIR_ON_VM/app/xmobile-staging/src .
+            rm -rf scripts && mv $TAR_DIR_ON_VM/app/xmobile-staging/scripts .
+            rm -rf prisma && mv $TAR_DIR_ON_VM/app/xmobile-staging/prisma .
+            yarn db:generate-prod
+            yarn db:migrate-prod
+            rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-staging/node_modules .
+            rm -rf public && mv $TAR_DIR_ON_VM/app/xmobile-staging/public .
+            rm -rf .next && mv $TAR_DIR_ON_VM/app/xmobile-staging/.next .
+            rm -rf dist && mv $TAR_DIR_ON_VM/app/xmobile-staging/dist .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/package.json .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/yarn.lock .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/next.config.mjs .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/tsconfig.json .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/tsconfig.ws.json .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/tailwind.config.ts .
+            mv $TAR_DIR_ON_VM/app/xmobile-staging/.eslintrc.json .
+
+            /home/ubuntu/xmobile-staging/scripts/staging_scripts/restart-server.sh
+
+            cd $TAR_DIR_ON_VM
+            rm -rf app
+          "
+
+      - name: Prune old tar files on VM
+        run: |
+          KEEP="${{ env.TAR_FILES_TO_KEEP }}"
+          TAIL_FROM=$((KEEP + 1))
+          ssh deploy-vm "cd ${{ env.TAR_DIR_ON_VM }} && ls -t xmobile-staging-*.tar.gz 2>/dev/null | tail -n +${TAIL_FROM} | xargs -r rm -f"

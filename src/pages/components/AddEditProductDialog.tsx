@@ -50,6 +50,7 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  ListSubheader,
   MenuItem,
   Select,
   Switch,
@@ -66,6 +67,72 @@ interface AddEditProductDialogProps {
   args: AddEditProductProps;
   snackbarErrorHandler?: (message: string) => void;
   setProduct?: (product: Product) => void;
+}
+
+// Searchable price dropdown: a Select with a filter box pinned to the top of
+// the menu. Used for both the base price and per-variant prices.
+function PriceSelect({
+  value,
+  onChange,
+  priceOptions,
+  sx,
+}: {
+  value: string; // selected priceId, or '' for none
+  onChange: (priceId: string) => void;
+  priceOptions: Prices[];
+  sx?: object;
+}) {
+  const t = useTranslations();
+  const [search, setSearch] = useState('');
+  const filtered = priceOptions.filter((p) =>
+    `${p.name} ${p.priceInTmt}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  return (
+    <Select
+      size="small"
+      displayEmpty
+      value={value}
+      sx={sx}
+      onChange={(e) => onChange(e.target.value)}
+      onClose={() => setSearch('')}
+      MenuProps={{
+        autoFocus: false,
+        PaperProps: { style: { maxHeight: 320 } },
+      }}
+      renderValue={(selected) => {
+        const p = priceOptions.find((o) => o.id === selected);
+        return p ? (
+          `${p.name} — ${p.priceInTmt} ${t('manat')}`
+        ) : (
+          <em>{t('price')}</em>
+        );
+      }}
+    >
+      <ListSubheader sx={{ p: 1 }}>
+        <TextField
+          size="small"
+          autoFocus
+          fullWidth
+          placeholder={t('search')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            // Let the menu handle Escape; swallow the rest so the Select's
+            // built-in type-ahead doesn't hijack typing.
+            if (e.key !== 'Escape') e.stopPropagation();
+          }}
+        />
+      </ListSubheader>
+      <MenuItem value="">
+        <em>{t('price')}</em>
+      </MenuItem>
+      {filtered.map((priceOpt) => (
+        <MenuItem value={priceOpt.id} key={priceOpt.id}>
+          {priceOpt.name} — {priceOpt.priceInTmt} {t('manat')}
+        </MenuItem>
+      ))}
+    </Select>
+  );
 }
 
 export default function AddEditProductDialog({
@@ -132,6 +199,16 @@ export default function AddEditProductDialog({
 
   const [colorOptions, setColorOptions] = useState<Color[]>([]);
   const [priceOptions, setPriceOptions] = useState<Prices[]>([]);
+  // Base price is stored as "[priceId]" when it references a catalog price, or
+  // a legacy literal string. Keep the raw value so an untouched legacy literal
+  // is preserved on save; the select only edits the catalog reference.
+  const [basePrice, setBasePrice] = useState(price ?? '');
+  const basePriceId = basePrice.match(squareBracketRegex)?.[1] ?? '';
+  // A legacy product stored a literal price string instead of a "[priceId]" ref.
+  // The select only edits catalog refs, so surface the literal (otherwise it
+  // renders as a blank field while the hidden input silently keeps the value).
+  const legacyLiteralPrice =
+    basePrice && !basePrice.match(squareBracketRegex) ? basePrice : '';
 
   const loadBrands = async () => {
     const data = await fetchBrands();
@@ -444,76 +521,27 @@ export default function AddEditProductDialog({
                 defaultValue={parsedProductName.en ?? ''}
               />
             </Box>
-            <Box>
-              <Typography>{t('productDescription')}</Typography>
-              <TextField
-                label={t('inRussian')}
-                type="text"
-                name="productDescriptionInRussian"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
+            <Box className="w-full">
+              <Typography>{t('price')}</Typography>
+              <PriceSelect
+                value={basePriceId}
+                onChange={(selectedId) =>
+                  setBasePrice(selectedId ? `[${selectedId}]` : '')
                 }
-                defaultValue={
-                  parsedProductDescription.ru ?? defaultProductDescRu
-                }
+                priceOptions={priceOptions}
+                sx={{ minWidth: 200 }}
               />
-              <TextField
-                label={t('inTurkmen')}
-                type="text"
-                name="productDescriptionInTurkmen"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.tk ?? defaultProductDescTk
-                }
-              />
-              <TextField
-                label={t('inTurkish')}
-                type="text"
-                name="productDescriptionInTurkish"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.tr ?? defaultProductDescTr
-                }
-              />
-              <TextField
-                label={t('inCharjov')}
-                type="text"
-                name="productDescriptionInCharjov"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.ch ?? defaultProductDescCh
-                }
-              />
-              <TextField
-                label={t('inEnglish')}
-                type="text"
-                name="productDescriptionInEnglish"
-                multiline
-                className={
-                  addEditProductDialogClasses.textField.usual[platform]
-                }
-                defaultValue={
-                  parsedProductDescription.en ?? defaultProductDescEn
-                }
-              />
+              {legacyLiteralPrice && (
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ display: 'block', mt: 0.5 }}
+                >
+                  {t('price')}: {legacyLiteralPrice}
+                </Typography>
+              )}
+              <input type="hidden" name="price" value={basePrice} />
             </Box>
-            <TextField
-              label={t('price')}
-              type="text"
-              name="price"
-              className={addEditProductDialogClasses.textField.price[platform]}
-              defaultValue={price ?? ''}
-            />
 
             <FormControlLabel
               control={
@@ -711,30 +739,16 @@ export default function AddEditProductDialog({
                       setTags(newTags);
                     }}
                   />
-                  <Select
-                    size="small"
-                    displayEmpty
+                  <PriceSelect
                     value={priceId}
-                    sx={{ minWidth: 150 }}
-                    onChange={(event) => {
+                    onChange={(selectedId) => {
                       const newTags = [...tags];
-                      newTags[index] = composeTag(
-                        spec,
-                        event.target.value,
-                        colorId,
-                      );
+                      newTags[index] = composeTag(spec, selectedId, colorId);
                       setTags(newTags);
                     }}
-                  >
-                    <MenuItem value="">
-                      <em>{t('price')}</em>
-                    </MenuItem>
-                    {priceOptions.map((priceOpt) => (
-                      <MenuItem value={priceOpt.id} key={priceOpt.id}>
-                        {priceOpt.name} — {priceOpt.priceInTmt} {t('manat')}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    priceOptions={priceOptions}
+                    sx={{ minWidth: 150 }}
+                  />
                   <Select
                     size="small"
                     displayEmpty
@@ -783,6 +797,68 @@ export default function AddEditProductDialog({
                 {t('add')}
               </Button>
             </Box>
+          </Box>
+          <Box
+            className={addEditProductDialogClasses.box.flex.descGrid[platform]}
+          >
+            <Typography className="col-span-full">
+              {t('productDescription')}
+            </Typography>
+            <TextField
+              label={t('inRussian')}
+              type="text"
+              name="productDescriptionInRussian"
+              multiline
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
+              defaultValue={parsedProductDescription.ru ?? defaultProductDescRu}
+            />
+            <TextField
+              label={t('inTurkmen')}
+              type="text"
+              name="productDescriptionInTurkmen"
+              multiline
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
+              defaultValue={parsedProductDescription.tk ?? defaultProductDescTk}
+            />
+            <TextField
+              label={t('inTurkish')}
+              type="text"
+              name="productDescriptionInTurkish"
+              multiline
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
+              defaultValue={parsedProductDescription.tr ?? defaultProductDescTr}
+            />
+            <TextField
+              label={t('inCharjov')}
+              type="text"
+              name="productDescriptionInCharjov"
+              multiline
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
+              defaultValue={parsedProductDescription.ch ?? defaultProductDescCh}
+            />
+            <TextField
+              label={t('inEnglish')}
+              type="text"
+              name="productDescriptionInEnglish"
+              multiline
+              minRows={4}
+              className={
+                addEditProductDialogClasses.textField.description[platform]
+              }
+              defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
+            />
           </Box>
           <Box className={addEditProductDialogClasses.box.flex.pad}>
             <Box className={addEditProductDialogClasses.box.flex.col}>

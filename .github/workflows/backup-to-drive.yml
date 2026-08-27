@@ -1,12 +1,19 @@
-# Daily backup: independent jobs (DB, images, script logs) so VM/network issues in one don't block the others.
+# Backup: independent jobs (DB, images, script logs) so VM/network issues in one don't block the others.
 # Each job: backup on VM → copy to runner → upload to Google Drive → prune → VM cleanup (DB/images: delete artifact; logs: truncate nginx logs).
-# Schedule: midnight UTC. Manual run: Actions → Daily Backup to Drive → Run workflow.
+# Schedule: DB every 3h; images + script logs once daily at midnight UTC (gated by the cron expression
+# that triggered the run, so a delayed midnight run is still treated as the daily one).
+# Manual run: Actions → Daily Backup to Drive → Run workflow (runs everything, DB included).
+# NOTE: the workflow name is matched literally by retry-failed-backup.yml — do not rename without updating it.
 name: Daily Backup to Drive
 
 on:
   workflow_dispatch:
   schedule:
+    # Daily tick: DB + images + script logs.
     - cron: '0 0 * * *'
+    # Intraday DB-only ticks. Hours listed explicitly (not */3) so 00:00 is not matched
+    # by two cron entries — GitHub starts a separate run per matching expression.
+    - cron: '0 3,6,9,12,15,18,21 * * *'
 
 env:
   BACKUP_DIR_ON_VM_DB: /home/ubuntu/db_backup
@@ -18,6 +25,13 @@ jobs:
     name: Backup DB to Drive
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Runs every 3h, so a slow run can still be in flight when the next tick fires. Queue them:
+    # the job regenerates and then deletes db_backup.sql on the VM, and two overlapping runs
+    # would race on that single file. Never cancel in progress — a cancelled run leaves the
+    # dump behind on the VM and uploads nothing.
+    concurrency:
+      group: backup-db
+      cancel-in-progress: false
 
     steps:
       - name: Setup SSH key and config
@@ -74,6 +88,9 @@ jobs:
         env:
           GDRIVE_OAUTH_TOKEN: ${{ secrets.GDRIVE_OAUTH_TOKEN }}
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          # True on the midnight tick and on manual runs. Derived from the cron expression rather
+          # than the clock, so a GitHub-delayed 00:00 run is still treated as the daily one.
+          IS_DAILY: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *' }}
         run: |
           mkdir -p ~/.config/rclone
           GDRIVE_FOLDER_ID=$(echo "$GDRIVE_FOLDER_ID" | tr -d '\n\r' | xargs)
@@ -91,10 +108,21 @@ jobs:
 
           BACKUP_DATE=$(date -u +%Y-%m-%d)
           REMOTE_PATH="gdrive:${BACKUP_DATE}"
-          echo "Uploading db_backup.sql to $REMOTE_PATH"
-          rclone copy backup/db_backup.sql "$REMOTE_PATH/" -v
+          if [ "$IS_DAILY" = "true" ]; then
+            # Canonical name for the day. scripts/apply-backup.sh and apply-backup-local.sh
+            # both expect backup/db_backup.sql, so the daily dump keeps that exact filename.
+            DEST_NAME=db_backup.sql
+          else
+            DEST_NAME="db_backup_$(date -u +%H%M).sql"
+          fi
+          echo "Uploading db_backup.sql to $REMOTE_PATH/$DEST_NAME"
+          # copyto, not copy: copy takes a destination directory and keeps the source filename,
+          # so it cannot rename. Without the rename every intraday run would overwrite the same object.
+          rclone copyto backup/db_backup.sql "$REMOTE_PATH/$DEST_NAME" -v
 
+      # Daily only: pruning issues rclone purge, and running it on all 8 ticks is redundant.
       - name: Prune old backups
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
         run: |
           FOLDERS=$(rclone lsd gdrive: 2>/dev/null | awk '{print $NF}' | sort)
           COUNT=$(echo "$FOLDERS" | grep -c . || true)
@@ -117,6 +145,9 @@ jobs:
   backup-images:
     name: Backup images to Drive
     runs-on: ubuntu-latest
+    # Daily only — images change far more slowly than the DB. A job-level `if` that evaluates
+    # false allocates no runner, so the intraday ticks cost nothing here.
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
     timeout-minutes: 45
 
     steps:
@@ -217,6 +248,9 @@ jobs:
   backup-logs:
     name: Backup script logs to Drive
     runs-on: ubuntu-latest
+    # Daily only — this job truncates the nginx logs after upload, so running it every 3h
+    # would shred the log history into 8 fragments a day.
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
     timeout-minutes: 45
 
     steps:

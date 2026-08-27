@@ -22,6 +22,7 @@ export const fetchProducts = async ({
   productId,
   productSlug,
   page,
+  locale,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -33,6 +34,12 @@ export const fetchProducts = async ({
   productId?: string;
   productSlug?: string;
   page?: number;
+  /**
+   * When set, the API strips names/descriptions down to this locale.
+   * Leave unset for admin flows that need the raw multi-locale JSON
+   * (e.g. AddEditProductDialog pre-filling all language fields).
+   */
+  locale?: string;
 }): Promise<ExtendedProduct[]> => {
   let url = `${BASE_URL}/api/product?page=${page || 1}`;
 
@@ -59,6 +66,7 @@ export const fetchProducts = async ({
   appendParam('productSlug', productSlug);
   appendParam('searchKeyword', searchKeyword);
   appendParam('sortBy', sortBy);
+  appendParam('locale', locale);
 
   const { success, data, message }: ResponseApi<ExtendedProduct[]> = await (
     await fetch(url)

@@ -1,3 +1,7 @@
+import {
+  CategoryOption,
+  categoryMenuItems,
+} from '@/pages/product/components/categoryOptions';
 import { parsePrice } from '@/pages/product/utils';
 import { LoadingButton } from '@mui/lab';
 import {
@@ -7,6 +11,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
   useMediaQuery,
   useTheme,
@@ -20,14 +28,17 @@ interface AddPriceProps {
     name: string,
     priceInDollars: string,
     priceInManat: string,
+    categoryId: string | null,
   ) => Promise<boolean>;
   dollarRate: number;
+  categoryOptions: CategoryOption[];
 }
 
 export default function AddPrice({
   handleClose,
   handleCreate,
   dollarRate,
+  categoryOptions,
 }: AddPriceProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
@@ -36,6 +47,8 @@ export default function AddPrice({
   const [name, setName] = useState('');
   const [valueInDollars, setValueInDollars] = useState('');
   const [valueInManat, setValueInManat] = useState('');
+  // Optional: a price may be created uncategorized and assigned from the table.
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   return (
     <Dialog open onClose={handleClose}>
       <DialogTitle>{t('addPrice')}</DialogTitle>
@@ -87,6 +100,19 @@ export default function AddPrice({
             }}
             required
           />
+          <FormControl sx={{ width: isMdUp ? '450px' : '250px' }} size="medium">
+            <InputLabel>{t('category')}</InputLabel>
+            <Select
+              label={t('category')}
+              value={categoryId ?? ''}
+              onChange={(e) =>
+                setCategoryId(e.target.value === '' ? null : e.target.value)
+              }
+            >
+              <MenuItem value="">{t('noCategory')}</MenuItem>
+              {categoryMenuItems(categoryOptions)}
+            </Select>
+          </FormControl>
         </Box>
       </DialogContent>
       <DialogActions>
@@ -106,6 +132,7 @@ export default function AddPrice({
               name,
               valueInDollars,
               valueInManat,
+              categoryId,
             );
             if (success) handleClose();
             setLoading(false);

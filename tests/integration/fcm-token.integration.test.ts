@@ -221,6 +221,82 @@ describe('FCM token API (integration)', () => {
     expect(res._getStatusCode()).toBe(400);
   });
 
+  it('browser subscription is silently skipped when a mobile device is already registered', async () => {
+    const session = await signupTestUser('fcm-pri-a');
+    const handler = (await import('@/pages/api/fcm/token.page')).default;
+    const appDevice = `APP:${Date.now()}`;
+    const webDevice = `WEB:${Date.now()}`;
+
+    const app = createMocks({
+      method: 'POST',
+      url: '/api/fcm/token',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: { token: `app-tok-${Date.now()}`, deviceInfo: appDevice },
+    });
+    await handler(
+      app.req as unknown as NextApiRequest,
+      app.res as unknown as NextApiResponse,
+    );
+    expect(app.res._getStatusCode()).toBe(201);
+
+    const web = createMocks({
+      method: 'POST',
+      url: '/api/fcm/token',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: { token: `web-tok-${Date.now()}`, deviceInfo: webDevice },
+    });
+    await handler(
+      web.req as unknown as NextApiRequest,
+      web.res as unknown as NextApiResponse,
+    );
+    expect(web.res._getStatusCode()).toBe(200);
+
+    const rows = await prisma.fCMToken.findMany({
+      where: { userId: session.userId },
+    });
+    expect(rows.map((r) => r.deviceInfo)).toEqual([appDevice]);
+
+    await prisma.fCMToken.deleteMany({ where: { userId: session.userId } });
+  });
+
+  it('mobile subscription overrides an existing browser subscription for the same user', async () => {
+    const session = await signupTestUser('fcm-pri-b');
+    const handler = (await import('@/pages/api/fcm/token.page')).default;
+    const webDevice = `WEB:${Date.now()}`;
+    const appDevice = `APP:${Date.now()}`;
+
+    const web = createMocks({
+      method: 'POST',
+      url: '/api/fcm/token',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: { token: `web-tok-${Date.now()}`, deviceInfo: webDevice },
+    });
+    await handler(
+      web.req as unknown as NextApiRequest,
+      web.res as unknown as NextApiResponse,
+    );
+    expect(web.res._getStatusCode()).toBe(201);
+
+    const app = createMocks({
+      method: 'POST',
+      url: '/api/fcm/token',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: { token: `app-tok-${Date.now()}`, deviceInfo: appDevice },
+    });
+    await handler(
+      app.req as unknown as NextApiRequest,
+      app.res as unknown as NextApiResponse,
+    );
+    expect(app.res._getStatusCode()).toBe(201);
+
+    const rows = await prisma.fCMToken.findMany({
+      where: { userId: session.userId },
+    });
+    expect(rows.map((r) => r.deviceInfo)).toEqual([appDevice]);
+
+    await prisma.fCMToken.deleteMany({ where: { userId: session.userId } });
+  });
+
   it('DELETE returns 404 for unknown token', async () => {
     const session = await signupTestUser('fcm-404');
     const handler = (await import('@/pages/api/fcm/token.page')).default;

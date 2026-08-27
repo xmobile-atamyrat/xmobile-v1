@@ -1,22 +1,38 @@
 import Layout from '@/pages/components/Layout';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
+  applyPendingEdits,
+  collectCategorySubtreeIds,
   debounce,
+  filterPricesByCategories,
+  filterPricesWithoutCategory,
+  filterPricesWithoutProduct,
+  NO_CATEGORY_FILTER,
+  NO_PRODUCT_FILTER,
   parsePrice,
+  PRICE_CATEGORY_IDX,
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
   PRICE_MANAT_IDX,
   PRICE_NAME_IDX,
+  PriceSortKey,
   processPrices,
+  sortPrices,
   TableData,
+  tmtFromUsd,
 } from '@/pages/product/utils';
 import {
   Alert,
   Box,
   Button,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Snackbar,
   Table,
   TableBody,
@@ -37,10 +53,15 @@ import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import AddPrice from '@/pages/product/components/AddPrice';
+import {
+  categoryMenuItems,
+  flattenCategories,
+} from '@/pages/product/components/categoryOptions';
+import PriceCategoryCell from '@/pages/product/components/PriceCategoryCell';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -56,9 +77,14 @@ export default function UpdatePrices() {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const [tableData, setTableData] = useState<TableData>([]);
+  // Pending edits keyed by price id. Row-index keying corrupts across
+  // sort/filter/search re-ordering, so we key by the stable price id instead.
   const [updatedPrices, setUpdatedPrices] = useState<
-    { [key: number]: Partial<Prices> }[]
-  >([]);
+    Record<string, Partial<Prices>>
+  >({});
+  // Mirror of updatedPrices read by the derive effect to overlay pending edits
+  // without adding updatedPrices to its deps (which would re-sort mid-typing).
+  const updatedPricesRef = useRef<Record<string, Partial<Prices>>>({});
   const [hoveredPrice, setHoveredPrice] = useState<number>();
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
@@ -67,8 +93,52 @@ export default function UpdatePrices() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [searchKeyword, setSearchKeyword] = useState('');
+  // Raw master list of all fetched prices (retains updatedAt for sorting).
+  // The rendered `tableData` is derived from this via sort/filter below, so the
+  // existing edit-by-row-index logic on `tableData` stays untouched.
+  const [allPrices, setAllPrices] = useState<Prices[]>([]);
+  const [priceCategoryMap, setPriceCategoryMap] = useState<
+    Record<string, string[]>
+  >({});
+  const [sortKey, setSortKey] = useState<PriceSortKey>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const { user, accessToken } = useUserContext();
+  const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
+
+  // Flattened category tree (id + localized name + depth), shared by the filter,
+  // the per-row pickers, and the AddPrice dialog.
+  const flattenedCats = useMemo(
+    () => flattenCategories(categories, router.locale ?? 'tk'),
+    [categories, router.locale],
+  );
+
+  // Derive the rendered table from the master list + active sort/filter, then
+  // overlay any typed-but-unsaved edits (keyed by price id) so re-sorting,
+  // filtering, or searching preserves pending edits instead of dropping them.
+  useEffect(() => {
+    const isSentinel =
+      categoryFilter === NO_PRODUCT_FILTER ||
+      categoryFilter === NO_CATEGORY_FILTER;
+    const subtreeIds =
+      categoryFilter && !isSentinel
+        ? collectCategorySubtreeIds(categories, categoryFilter)
+        : new Set<string>();
+    let filtered: Prices[];
+    if (categoryFilter === NO_PRODUCT_FILTER) {
+      filtered = filterPricesWithoutProduct(allPrices, priceCategoryMap);
+    } else if (categoryFilter === NO_CATEGORY_FILTER) {
+      filtered = filterPricesWithoutCategory(allPrices);
+    } else {
+      filtered = filterPricesByCategories(allPrices, subtreeIds);
+    }
+    setTableData(
+      applyPendingEdits(
+        processPrices(sortPrices(filtered, sortKey)),
+        updatedPricesRef.current,
+      ),
+    );
+  }, [allPrices, priceCategoryMap, sortKey, categoryFilter, categories]);
 
   useEffect(() => {
     if (accessToken) {
@@ -80,13 +150,22 @@ export default function UpdatePrices() {
         });
 
         if (pricesResponse.success && pricesResponse.data != null) {
-          setTableData(processPrices(pricesResponse.data));
+          setAllPrices(pricesResponse.data);
         } else {
           console.error(pricesResponse.message);
           setSnackbarMessage({
             message: 'fetchPricesError',
             severity: 'error',
           });
+        }
+
+        const mapResponse = await fetchWithCreds<Record<string, string[]>>({
+          accessToken,
+          path: '/api/prices/categories',
+          method: 'GET',
+        });
+        if (mapResponse.success && mapResponse.data != null) {
+          setPriceCategoryMap(mapResponse.data);
         }
 
         const dollarRateResponse = await fetchWithCreds<DollarRate>({
@@ -129,8 +208,21 @@ export default function UpdatePrices() {
           return;
         }
 
-        const currPrice: Partial<Prices> = updatedPrices[rowIndex] || {};
-        currPrice.id = row[PRICE_ID_IDX] as string;
+        if (
+          (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
+          !(dollarRate > 0)
+        ) {
+          setSnackbarOpen(true);
+          setSnackbarMessage({
+            message: 'dollarRateNotLoaded',
+            severity: 'error',
+          });
+          return;
+        }
+
+        const priceId = row[PRICE_ID_IDX] as string;
+        const currPrice: Partial<Prices> = { id: priceId };
+
         if (cellIndex === PRICE_MANAT_IDX) {
           currPrice.priceInTmt = value;
           currPrice.price = parsePrice(
@@ -138,20 +230,22 @@ export default function UpdatePrices() {
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          currPrice.priceInTmt = Math.ceil(
-            parseFloat(value) * dollarRate,
+          currPrice.priceInTmt = tmtFromUsd(
+            parseFloat(value),
+            dollarRate,
           ).toString();
         } else if (cellIndex === PRICE_NAME_IDX) {
           currPrice.name = value;
         }
 
-        setUpdatedPrices((prevPrices) => ({
-          ...prevPrices,
-          [rowIndex]: {
-            ...prevPrices[rowIndex],
-            ...currPrice,
-          },
-        }));
+        setUpdatedPrices((prevPrices) => {
+          const next = {
+            ...prevPrices,
+            [priceId]: { ...prevPrices[priceId], ...currPrice },
+          };
+          updatedPricesRef.current = next;
+          return next;
+        });
 
         setTableData((prevData) => {
           const newData = prevData.map((prevRow, index) => {
@@ -159,7 +253,7 @@ export default function UpdatePrices() {
               return prevRow.map((cell, idx) => {
                 if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
-                    Math.ceil(parseFloat(value) * dollarRate).toString(),
+                    tmtFromUsd(parseFloat(value), dollarRate).toString(),
                   );
                 }
                 if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
@@ -180,6 +274,33 @@ export default function UpdatePrices() {
     [dollarRate],
   );
 
+  // A category pick is a discrete event, so unlike handlePriceUpdate it needs no
+  // debounce. It records the edit in the same id-keyed pending map, which makes
+  // the Save button appear and rides along in the existing batched PUT.
+  const handleCategoryChange = useCallback(
+    (priceId: string, categoryId: string | null) => {
+      setUpdatedPrices((prevPrices) => {
+        const next = {
+          ...prevPrices,
+          [priceId]: { ...prevPrices[priceId], id: priceId, categoryId },
+        };
+        updatedPricesRef.current = next;
+        return next;
+      });
+
+      setTableData((prevData) =>
+        prevData.map((row, index) =>
+          index > 0 && row[PRICE_ID_IDX] === priceId
+            ? row.map((cell, idx) =>
+                idx === PRICE_CATEGORY_IDX ? categoryId : cell,
+              )
+            : row,
+        ),
+      );
+    },
+    [],
+  );
+
   const handleSearch = useCallback(
     async (keyword: string) => {
       try {
@@ -189,7 +310,7 @@ export default function UpdatePrices() {
           method: 'GET',
         });
         if (success) {
-          setTableData(processPrices(data));
+          setAllPrices(data ?? []);
         } else {
           setSnackbarOpen(true);
           setSnackbarMessage({
@@ -256,7 +377,10 @@ export default function UpdatePrices() {
                       });
 
                       if (success) {
-                        setTableData(processPrices(data.updatedPrices));
+                        // Write to the master list (not tableData directly) so a
+                        // later sort/filter/search re-derive keeps the recalculated
+                        // manat values instead of reverting to stale allPrices.
+                        setAllPrices(data.updatedPrices);
                         setSnackbarOpen(true);
                         setSnackbarMessage({
                           message: 'rateUpdated',
@@ -286,14 +410,59 @@ export default function UpdatePrices() {
 
             {/* search, add price, save */}
             <Box className={`flex flex-col gap-2 w-full max-w-[600px]`}>
-              <Box className="w-full">
-                {SearchBar({
-                  handleSearch,
-                  setSearchKeyword,
-                  searchPlaceholder: t('search'),
-                  searchKeyword,
-                  width: '100%',
-                })}
+              <Box className="w-full flex flex-row gap-2 items-center">
+                <Box className="flex-1">
+                  {SearchBar({
+                    handleSearch,
+                    setSearchKeyword,
+                    searchPlaceholder: t('search'),
+                    searchKeyword,
+                    width: '100%',
+                  })}
+                </Box>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>{t('sortBy')}</InputLabel>
+                  <Select
+                    label={t('sortBy')}
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as PriceSortKey)}
+                  >
+                    <MenuItem value="">{t('default')}</MenuItem>
+                    <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
+                    <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
+                    <MenuItem value="dollarAsc">
+                      {t('dollarsLowToHigh')}
+                    </MenuItem>
+                    <MenuItem value="dollarDesc">
+                      {t('dollarsHighToLow')}
+                    </MenuItem>
+                    <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
+                    <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
+                    <MenuItem value="editedRecent">
+                      {t('recentlyEdited')}
+                    </MenuItem>
+                    <MenuItem value="editedStale">
+                      {t('longestNotEdited')}
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>{t('category')}</InputLabel>
+                  <Select
+                    label={t('category')}
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                  >
+                    <MenuItem value="">{t('allCategories')}</MenuItem>
+                    <MenuItem value={NO_CATEGORY_FILTER}>
+                      {t('noCategory')}
+                    </MenuItem>
+                    <MenuItem value={NO_PRODUCT_FILTER}>
+                      {t('noProduct')}
+                    </MenuItem>
+                    {categoryMenuItems(flattenedCats)}
+                  </Select>
+                </FormControl>
               </Box>
               <Box className="flex flex-row gap-2 w-full">
                 <Button
@@ -323,13 +492,23 @@ export default function UpdatePrices() {
                           path: `/api/prices`,
                           method: 'PUT',
                           body: {
-                            pricePairs: Object.keys(updatedPrices).map(
-                              (key) => updatedPrices[parseInt(key, 10)],
-                            ),
+                            pricePairs: Object.values(updatedPrices),
                           },
                         });
 
                         if (success) {
+                          // Fold saved edits into the master list so re-derives
+                          // keep showing them, then clear pending state (hides
+                          // the Save button and stops re-saving stale edits).
+                          setAllPrices((prev) =>
+                            prev.map((p) =>
+                              updatedPrices[p.id]
+                                ? { ...p, ...updatedPrices[p.id] }
+                                : p,
+                            ),
+                          );
+                          setUpdatedPrices({});
+                          updatedPricesRef.current = {};
                           setSnackbarOpen(true);
                           setSnackbarMessage({
                             message: 'pricesUpdated',
@@ -358,7 +537,7 @@ export default function UpdatePrices() {
               </Box>
             </Box>
           </Box>
-          {tableData.length > 0 && (
+          {tableData.length > 1 && (
             <Table>
               <TableHead>
                 <TableRow>
@@ -385,7 +564,10 @@ export default function UpdatePrices() {
                     {row.map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={cellIndex !== PRICE_ID_IDX}
+                        contentEditable={
+                          cellIndex !== PRICE_ID_IDX &&
+                          cellIndex !== PRICE_CATEGORY_IDX
+                        }
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
@@ -436,7 +618,21 @@ export default function UpdatePrices() {
                               <ContentCopyIcon color="primary" />
                             </IconButton>
                           )}
-                        {cell}
+                        {cellIndex === PRICE_CATEGORY_IDX ? (
+                          <PriceCategoryCell
+                            priceId={row[PRICE_ID_IDX] as string}
+                            value={(cell as string | null) ?? null}
+                            options={flattenedCats}
+                            emptyLabel={t('noCategory')}
+                            dirty={
+                              'categoryId' in
+                              (updatedPrices[row[PRICE_ID_IDX] as string] ?? {})
+                            }
+                            onChange={handleCategoryChange}
+                          />
+                        ) : (
+                          cell
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -483,12 +679,9 @@ export default function UpdatePrices() {
                     method: 'DELETE',
                   });
                   if (success) {
-                    setTableData((prevData) => {
-                      const newData = prevData.filter(
-                        (row) => row[PRICE_ID_IDX] !== selectedPrice,
-                      );
-                      return newData;
-                    });
+                    setAllPrices((prev) =>
+                      prev.filter((p) => p.id !== selectedPrice),
+                    );
                     setSnackbarOpen(true);
                     setSnackbarMessage({
                       message: 'priceDeleteSuccess',
@@ -519,10 +712,12 @@ export default function UpdatePrices() {
             <AddPrice
               handleClose={() => setShowCreatePriceDialog(false)}
               dollarRate={dollarRate}
+              categoryOptions={flattenedCats}
               handleCreate={async (
                 name: string,
                 priceInDollars: string,
                 priceInManat: string,
+                categoryId: string | null,
               ): Promise<boolean> => {
                 if (
                   name === '' ||
@@ -536,12 +731,7 @@ export default function UpdatePrices() {
                   });
                   return false;
                 }
-                let exists = false;
-                tableData.forEach((row) => {
-                  if (row[PRICE_NAME_IDX] === name) {
-                    exists = true;
-                  }
-                });
+                const exists = allPrices.some((p) => p.name === name);
                 if (exists) {
                   setSnackbarOpen(true);
                   setSnackbarMessage({
@@ -559,18 +749,16 @@ export default function UpdatePrices() {
                       name,
                       price: priceInDollars,
                       priceInTmt: priceInManat,
+                      categoryId,
                     },
                   });
 
-                  if (success) {
-                    setTableData((prevData) => {
-                      const newData = [
-                        prevData[0],
-                        [name, priceInDollars, priceInManat, data!.id],
-                        ...prevData.slice(1),
-                      ];
-                      return newData;
-                    });
+                  if (success && data != null) {
+                    setAllPrices((prev) => [data, ...prev]);
+                    // A brand-new price is referenced by no product yet, and may
+                    // carry no category either, so an active filter would hide
+                    // it. Clear the filter so it stays visible.
+                    setCategoryFilter('');
                     setSnackbarOpen(true);
                     setSnackbarMessage({
                       message: 'priceCreateSuccess',

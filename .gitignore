@@ -45,7 +45,6 @@ db/
 #mobile
 google-services.json
 googleservice-info.plist
-**/res/mipmap*/
 **/release
 # iOS locks and workspace
 mobile/ios/Podfile.lock
@@ -73,6 +72,7 @@ categories.yaml
 *.xlsx
 .env
 .env.local
+.env.staging
 db_backup.sql
 backup/
 backup-data.sh

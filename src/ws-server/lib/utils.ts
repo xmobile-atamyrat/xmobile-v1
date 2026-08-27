@@ -2,6 +2,7 @@ import dbClient from '@/lib/dbClient';
 import { ChatMessageProps, InAppNotification } from '@/pages/lib/types';
 import {
   createFCMNotificationPayload,
+  recordNotificationDelivery,
   sendFCMNotificationToUser,
 } from '@/lib/fcm/fcmService';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
@@ -256,6 +257,7 @@ export async function sendNotificationWithFCMFallback(
 
     if (fcmResult.success && fcmResult.tokensSent > 0) {
       // FCM succeeded, notification sent
+      await recordNotificationDelivery(notification.id, true);
       return true;
     }
 
@@ -280,17 +282,20 @@ export async function sendNotificationWithFCMFallback(
       });
 
       if (sentToAtLeastOne) {
+        await recordNotificationDelivery(notification.id, true);
         return true;
       }
     }
 
     // Both FCM and WebSocket failed, notification remains in DB for next connection
+    await recordNotificationDelivery(notification.id, false);
     return false;
   } catch (error) {
     console.error(
       `Error sending notification ${notification.id} to user ${userId}:`,
       error,
     );
+    await recordNotificationDelivery(notification.id, false);
     return false;
   }
 }
@@ -520,7 +525,10 @@ export async function sendNotificationToWebSocketServer(
     }
 
     const result = await response.json();
-    return result.success === true;
+    // success is always true on a 200; only sentCount tells us the user was
+    // actually connected. Returning true on sentCount 0 would mark undelivered
+    // notifications SENT and rob the retry job of anything to retry.
+    return result.sentCount > 0;
   } catch (error) {
     console.error('Error sending notification to WebSocket server:', error);
     return false;

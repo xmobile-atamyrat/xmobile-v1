@@ -13,8 +13,9 @@ import {
   POPULAR_CATEGORIES_SECTION_MAX,
   POPULAR_ROOT_LIMIT_CODE,
 } from '@/pages/lib/popularCategoriesLayout';
+import { localeOptions } from '@/pages/lib/constants';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
-import { slugify } from '@/pages/lib/utils';
+import { sanitizeCategoryLocale, slugify } from '@/pages/lib/utils';
 import { Category } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -111,7 +112,14 @@ async function recursivelyGetCategories(
 async function handleGetCategory(query: {
   categoryId?: string;
   categorySlug?: string;
+  locale?: string | string[];
 }): Promise<{ resp: ResponseApi; status: number }> {
+  // Opt-in response localization: without a valid `locale`, responses keep the
+  // raw multi-locale JSON blobs (admin edit flows depend on receiving them).
+  const activeLocale =
+    typeof query.locale === 'string' && localeOptions.includes(query.locale)
+      ? query.locale
+      : undefined;
   if (query.categoryId == null && query.categorySlug == null) {
     const categories = await dbClient.category.findMany({
       where: {
@@ -121,13 +129,32 @@ async function handleGetCategory(query: {
       orderBy: categorySiblingOrderBy,
     });
     const nestedCategories = await recursivelyGetCategories(categories);
-    return { resp: { success: true, data: nestedCategories }, status: 200 };
+    return {
+      resp: {
+        success: true,
+        data: activeLocale
+          ? nestedCategories.map((cat) =>
+              sanitizeCategoryLocale(cat, activeLocale),
+            )
+          : nestedCategories,
+      },
+      status: 200,
+    };
   }
   const category = await getCategory(
     query.categoryId as string,
     query.categorySlug as string,
   );
-  return { resp: { success: true, data: category }, status: 200 };
+  return {
+    resp: {
+      success: true,
+      data:
+        activeLocale && category
+          ? sanitizeCategoryLocale(category, activeLocale)
+          : category,
+    },
+    status: 200,
+  };
 }
 
 async function handlePostCategory(req: NextApiRequest) {

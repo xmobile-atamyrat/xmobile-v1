@@ -10,10 +10,15 @@ import {
   IMG_COMPRESSION_OPTIONS,
   PRODUCTS_PER_PAGE,
   SORT_OPTIONS,
+  localeOptions,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import { parseVariantTag } from '@/pages/product/utils';
-import { slugify } from '@/pages/lib/utils';
+import {
+  sanitizeProductLocale,
+  sanitizeProductsLocale,
+  slugify,
+} from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
 import fs from 'fs';
 import multiparty from 'multiparty';
@@ -298,6 +303,7 @@ async function handleGetProduct(query: {
   sortBy?: SortOption;
   count?: string;
   facets?: string;
+  locale?: string | string[];
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
     searchKeyword,
@@ -313,6 +319,7 @@ async function handleGetProduct(query: {
     sortBy,
     count,
     facets,
+    locale,
   } = query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
@@ -322,6 +329,12 @@ async function handleGetProduct(query: {
   // usable facet list omit categoryIds, so every category in the result set is
   // still represented once one of them is selected.
   const wantCategoryFacets = facets === 'categories';
+  // Opt-in response localization: without a valid `locale`, responses keep the
+  // raw multi-locale JSON blobs (admin edit flows depend on receiving them).
+  const activeLocale =
+    typeof locale === 'string' && localeOptions.includes(locale)
+      ? locale
+      : undefined;
   const parsedPage = parseInt(page || '1', 10);
   const skip = (parsedPage - 1) * productsPerPage;
 
@@ -360,7 +373,15 @@ async function handleGetProduct(query: {
       };
     }
 
-    return { resp: { success: true, data: product }, status: 200 };
+    return {
+      resp: {
+        success: true,
+        data: activeLocale
+          ? sanitizeProductLocale(product, activeLocale)
+          : product,
+      },
+      status: 200,
+    };
   }
 
   const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
@@ -500,7 +521,12 @@ async function handleGetProduct(query: {
   );
 
   return {
-    resp: { success: true, data: productsWithDisplayPrice },
+    resp: {
+      success: true,
+      data: activeLocale
+        ? sanitizeProductsLocale(productsWithDisplayPrice, activeLocale)
+        : productsWithDisplayPrice,
+    },
     status: 200,
   };
 }

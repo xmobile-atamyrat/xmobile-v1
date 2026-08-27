@@ -79,14 +79,20 @@ import {
   XCircle,
 } from 'lucide-react';
 import { GetStaticPaths, GetStaticProps } from 'next';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { lazy, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
-const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
+// next/dynamic (not React.lazy) so the chunk suspends inside its own boundary.
+// A bare lazy() here has no ancestor <Suspense>, so a slow/cold chunk load
+// crashes hydration and the _app splash overlay never dismisses.
+const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
+  loading: () => <CircularProgress />,
+});
 
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async (context) => {
@@ -132,7 +138,7 @@ export const getStaticProps: GetStaticProps = async ({
     }
 
     // Fetch the specific product at build time
-    const products = await fetchProducts({ productSlug });
+    const products = await fetchProducts({ productSlug, locale });
     const product = products && products.length > 0 ? products[0] : null;
 
     if (!product) {
@@ -250,6 +256,8 @@ interface ProductPageProps {
 
 // Admin "edit product" prefill — identical on both platforms, so it lives here
 // rather than being spelled out inside each branch's IconButton.
+// `source` must be the RAW record (name/description still multi-locale JSON):
+// AddEditProductDialog JSON.parses both to fill its per-language fields.
 function buildEditProductDialogProps(source: Product): AddEditProductProps {
   return {
     open: true,
@@ -274,7 +282,7 @@ function buildEditProductDialogProps(source: Product): AddEditProductProps {
 }
 
 export default function Product({ product: initialProduct }: ProductPageProps) {
-  const [product, setProduct] = useState<Product | null>();
+  const [product, setProduct] = useState<Product | null>(initialProduct);
   const router = useRouter();
   const t = useTranslations();
   const { user, accessToken } = useUserContext();
@@ -288,9 +296,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const { setProducts } = useProductContext();
   const { categories: allCategories, selectedCategoryId } =
     useCategoryContext();
-  const [addEditProductDialog, setAddEditProductDialog] =
-    useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const [description, setDescription] = useState<{ [key: string]: string[] }>();
   const [categoryPath, setCategoryPath] = useState<ExtendedCategory[]>([]);
   const { network } = useNetworkContext();
 
@@ -392,6 +397,28 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
 
   // Brand name (real data — included by getStaticProps, not on the base type)
   const brandName = (product as ExtendedProduct | null)?.brand?.name;
+
+  const description = useMemo(() => {
+    const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
+    if (desc == null || desc === '') return undefined;
+
+    const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
+    const result: { [key: string]: string } = {};
+
+    for (let i = 0; i < paragraphs.length; i += 2) {
+      if (i >= paragraphs.length || i + 1 >= paragraphs.length) break;
+      const header = paragraphs[i].trim();
+      const content = paragraphs[i + 1].trim();
+      result[header] = content;
+    }
+
+    const descObj: { [key: string]: string[] } = {};
+    Object.keys(result).forEach((key) => {
+      descObj[key] = result[key].split('\n').filter(Boolean);
+    });
+
+    return descObj;
+  }, [product?.description, router.locale]);
 
   // Split description sections into short (spec cards) vs long (prose) using the
   // same >35-char heuristic as the web sidebar. Drives the mobile mockup layout.
@@ -512,27 +539,26 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     setCategoryPath(path);
   }, [product?.categoryId, allCategories]);
 
-  useEffect(() => {
-    const desc = parseName(product?.description ?? '{}', router.locale ?? 'tk');
-    if (desc == null || desc === '') return;
+  const [addEditProductDialog, setAddEditProductDialog] =
+    useState<AddEditProductProps>({ open: false, imageUrls: [] });
 
-    const paragraphs = desc.split(/\[(.*?)\]/).filter(Boolean);
-    const result: { [key: string]: string } = {};
-
-    for (let i = 0; i < paragraphs.length; i += 2) {
-      if (i >= paragraphs.length || i + 1 >= paragraphs.length) break;
-      const header = paragraphs[i].trim();
-      const content = paragraphs[i + 1].trim();
-      result[header] = content;
+  // Page props are single-locale — getStaticProps fetches with `locale`, so the
+  // API hands back name/description already parsed down to one language. The
+  // edit form needs every language, so re-fetch the raw record (no locale)
+  // before opening it.
+  const openEditProductDialog = useCallback(async () => {
+    if (initialProduct == null) return;
+    try {
+      const rawResults = await fetchProducts({ productId: initialProduct.id });
+      const rawProduct = rawResults?.[0];
+      if (rawProduct == null) return;
+      setAddEditProductDialog(buildEditProductDialogProps(rawProduct));
+    } catch (error) {
+      console.error(error);
+      setSnackbarOpen(true);
+      setSnackbarMessage({ message: 'serverError', severity: 'error' });
     }
-
-    const descObj: { [key: string]: string[] } = {};
-    Object.keys(result).forEach((key) => {
-      descObj[key] = result[key].split('\n').filter(Boolean);
-    });
-
-    setDescription(descObj);
-  }, [product?.description, router.locale]);
+  }, [initialProduct]);
 
   useEffect(() => {
     // accessToken is intentionally left out as GET /api/prices and /api/prices/rate is public
@@ -600,14 +626,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           <Box className={detailPageClasses.boxes.sideInfo.web}>
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <Box className="flex flex-row justify-end -mt-2">
-                <IconButton
-                  onClick={() => {
-                    if (initialProduct == null) return;
-                    setAddEditProductDialog(
-                      buildEditProductDialogProps(initialProduct),
-                    );
-                  }}
-                >
+                <IconButton onClick={openEditProductDialog}>
                   <EditIcon color="primary" fontSize="medium" />
                 </IconButton>
                 <IconButton
@@ -725,28 +744,32 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
 
           {/* buy box — spec 1528 */}
           <Box className={detailPageClasses.boxes.buyBox.web}>
-            <Box className={detailPageClasses.buyBox.priceRow}>
-              {priceIsLoading ? (
-                <CircularProgress
-                  className={detailPageClasses.circProgress.web}
-                />
-              ) : (
-                <>
-                  <Typography
-                    className={`${fontClassName.className} ${detailPageClasses.buyBox.price}`}
-                  >
-                    {priceIsNull ? t('nullPrice') : displayPrice}
-                  </Typography>
-                  {!priceIsNull && (
+            {/* Out-of-stock products never show a price; the stock pill below
+                carries the state instead. */}
+            {!product.isOutOfStock && (
+              <Box className={detailPageClasses.buyBox.priceRow}>
+                {priceIsLoading ? (
+                  <CircularProgress
+                    className={detailPageClasses.circProgress.web}
+                  />
+                ) : (
+                  <>
                     <Typography
-                      className={`${fontClassName.className} ${detailPageClasses.buyBox.priceUnit}`}
+                      className={`${fontClassName.className} ${detailPageClasses.buyBox.price}`}
                     >
-                      {t('manat')}
+                      {priceIsNull ? t('nullPrice') : displayPrice}
                     </Typography>
-                  )}
-                </>
-              )}
-            </Box>
+                    {!priceIsNull && (
+                      <Typography
+                        className={`${fontClassName.className} ${detailPageClasses.buyBox.priceUnit}`}
+                      >
+                        {t('manat')}
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </Box>
+            )}
 
             <Box
               className={`${fontClassName.className} ${
@@ -850,14 +873,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           <Box className={detailPageClasses.boxes.main.mobile}>
             {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
               <Box>
-                <IconButton
-                  onClick={() => {
-                    if (initialProduct == null) return;
-                    setAddEditProductDialog(
-                      buildEditProductDialogProps(initialProduct),
-                    );
-                  }}
-                >
+                <IconButton onClick={openEditProductDialog}>
                   <EditIcon color="primary" fontSize="medium" />
                 </IconButton>
                 <IconButton
@@ -930,31 +946,34 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 >
                   {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
                 </Typography>
-                <Box className="flex items-baseline gap-2 mt-[10px]">
-                  {displayPrice == null || displayPrice?.includes('[') ? (
-                    <CircularProgress
-                      className={detailPageClasses.circProgress.mobile}
-                    />
-                  ) : (
-                    <>
-                      <Typography
-                        className={`${fontClassName.className} text-[26px] font-bold text-navy leading-none`}
-                      >
-                        {displayPrice === '' || displayPrice.includes('null')
-                          ? t('nullPrice')
-                          : displayPrice}
-                      </Typography>
-                      {displayPrice !== '' &&
-                        !displayPrice.includes('null') && (
-                          <Typography
-                            className={`${fontClassName.className} text-[13px] font-medium text-muted`}
-                          >
-                            {t('manat')}
-                          </Typography>
-                        )}
-                    </>
-                  )}
-                </Box>
+                {/* Out-of-stock products never show a price. */}
+                {!product.isOutOfStock && (
+                  <Box className="flex items-baseline gap-2 mt-[10px]">
+                    {displayPrice == null || displayPrice?.includes('[') ? (
+                      <CircularProgress
+                        className={detailPageClasses.circProgress.mobile}
+                      />
+                    ) : (
+                      <>
+                        <Typography
+                          className={`${fontClassName.className} text-[26px] font-bold text-navy leading-none`}
+                        >
+                          {displayPrice === '' || displayPrice.includes('null')
+                            ? t('nullPrice')
+                            : displayPrice}
+                        </Typography>
+                        {displayPrice !== '' &&
+                          !displayPrice.includes('null') && (
+                            <Typography
+                              className={`${fontClassName.className} text-[13px] font-medium text-muted`}
+                            >
+                              {t('manat')}
+                            </Typography>
+                          )}
+                      </>
+                    )}
+                  </Box>
+                )}
               </Box>
 
               {specOptions.length > 0 && (

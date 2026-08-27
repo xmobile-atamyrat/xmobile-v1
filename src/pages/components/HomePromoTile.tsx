@@ -97,7 +97,8 @@ export default function HomePromoTile({ product, tone }: HomePromoTileProps) {
         <Typography className={`${fontClassName.className} ${cls.title}`}>
           {parseName(product.name, router.locale ?? 'tk')}
         </Typography>
-        {price != null && (
+        {/* Out-of-stock products never show a price. */}
+        {price != null && !product.isOutOfStock && (
           <Typography className={`${fontClassName.className} ${cls.price}`}>
             {price}
             <span className={cls.priceUnit}>{t('manat')}</span>
