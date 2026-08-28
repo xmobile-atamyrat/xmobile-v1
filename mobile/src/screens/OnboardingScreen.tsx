@@ -6,12 +6,14 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NAVY = '#20166E';
 const RED = '#E41E2B';
@@ -53,10 +55,16 @@ const SLIDES = [
 ];
 
 function OnboardingScreen({ onDone }: { onDone: () => void }) {
-  const { width } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const isLast = index === SLIDES.length - 1;
+
+  // The container is padded by the horizontal insets, so a page is narrower
+  // than the window. Paging math has to use the padded width or the pager
+  // desyncs from the dots on devices with a side cutout.
+  const width = windowWidth - insets.left - insets.right;
 
   const finish = () => {
     AsyncStorage.setItem(ONBOARDING_SEEN_KEY, 'true').catch(() => {});
@@ -76,7 +84,25 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+      ]}
+    >
+      {/* The screen is always white, so the bars must always be dark —
+          App.tsx flips to light-content in dark mode, which would make the
+          status bar icons invisible here. */}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
       <View style={styles.topBar}>
         {!isLast && (
           <TouchableOpacity onPress={finish}>
