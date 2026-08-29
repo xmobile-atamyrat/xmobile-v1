@@ -9,6 +9,10 @@ export const REFRESH_TOKEN_EXPIRY = '10y';
 export const ACCESS_TOKEN_EXPIRY = '8h';
 export const REFRESH_TOKEN_EXPIRY_COOKIE = 60 * 60 * 24 * 365 * 10; // 10 years
 export const GUEST_SESSION_EXPIRY_COOKIE = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
+// Default lifetime for client-written cookies (currently NEXT_LOCALE). Without
+// one the browser makes them session cookies, so a language choice was lost on
+// every app restart.
+export const COOKIE_EXPIRY_SECONDS = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
 
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 

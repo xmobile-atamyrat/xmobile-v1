@@ -7,8 +7,10 @@ import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
 import { fetchNewProducts, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { isSecureRequest } from '@/pages/api/utils/requestScheme';
 import {
   BUSINESS_NAME,
+  COOKIE_EXPIRY_SECONDS,
   DEFAULT_LOCALE,
   LOCALE_COOKIE_NAME,
   LOCALE_TO_OG_LOCALE,
@@ -50,8 +52,9 @@ const web = homePageClasses.web;
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
-  let locale =
+  const cookieLocale =
     cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
+  let locale = cookieLocale;
   let ip =
     context.req.headers['x-real-ip'] ||
     context.req.headers['x-forwarded-for'] ||
@@ -85,14 +88,22 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // Ensure we have a locale for cookie setting/persistence
   const finalLocale = locale || routeLocale || DEFAULT_LOCALE;
 
-  context.res.setHeader(
-    'Set-Cookie',
-    serialize(LOCALE_COOKIE_NAME, finalLocale, {
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-    }),
-  );
+  // Only refresh a locale the user (or the native wrapper) actually chose.
+  // Persisting a GeoIP guess would make it indistinguishable from a real
+  // choice and pin that visitor to the guess for the next ten years.
+  if (cookieLocale != null) {
+    context.res.setHeader(
+      'Set-Cookie',
+      serialize(LOCALE_COOKIE_NAME, finalLocale, {
+        // Staging runs a production build over plain HTTP, where a Secure
+        // cookie is silently discarded -- follow the real request scheme.
+        secure: isSecureRequest(context.req),
+        path: '/',
+        sameSite: 'lax',
+        maxAge: COOKIE_EXPIRY_SECONDS,
+      }),
+    );
+  }
 
   try {
     messages = (await import(`../i18n/${routeLocale}.json`)).default;
