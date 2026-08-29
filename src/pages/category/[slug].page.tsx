@@ -26,8 +26,11 @@ import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import { homePageClasses } from '@/styles/classMaps';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
-import { Box, Typography } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
+import { ArrowLeft } from 'lucide-react';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -261,52 +264,67 @@ export default function CategoryPage({
   };
 
   return (
-    <Layout handleHeaderBackButton={handleHeaderBackButton}>
-      <Box className={categoryIdClasses.boxes.main[platform]}>
-        <SimpleBreadcrumbs categoryPath={categoryPath} />
-        <Box className={categoryIdClasses.boxes.header[platform]}>
-          {category && (
-            <>
-              <Typography
-                component={platform === 'web' ? 'h1' : 'p'}
-                className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
-              >
-                {parseName(category.name, router.locale ?? 'ru')}
-              </Typography>
-              {category.successorCategories.length > 0 && (
-                <Typography
-                  className={`${fontClassName.className} ${categoryIdClasses.subtitle[platform]}`}
-                >
-                  {`${category.successorCategories.length} ${t('categories')}`}
-                </Typography>
-              )}
-            </>
-          )}
-        </Box>
-        <Box className={homePageClasses.card[platform]}>
-          {/* All Products card - show in every category */}
-          <CategoryCard
-            name=""
-            initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
-            href={`/product-category/${category.slug}`}
-            onClick={() => {
-              setProducts([]);
-            }}
-          />
-          {/* Subcategories */}
-          {category.successorCategories.map((subCategory) => {
-            const { imgUrl, name, id, slug } = subCategory;
-            return (
-              <CategoryCard
-                name={name}
-                initialImgUrl={imgUrl ?? undefined}
-                key={id}
-                href={`/category/${slug}`}
-              />
-            );
-          })}
-        </Box>
+    <Box>
+      {/* The mobile Appbar renders nothing off the home screen, so the
+          handleHeaderBackButton it receives below only reaches the web header.
+          Mirror ProductGridContent and draw our own row -- both classes are
+          `hidden` on web, so the web header keeps its single back button. */}
+      <Box className={productIndexPageClasses.boxes.appbar[platform]}>
+        <IconButton
+          aria-label="Back"
+          className={appbarClasses.backButtonCircle[platform]}
+          onClick={handleHeaderBackButton}
+        >
+          <ArrowLeft className={appbarClasses.backIconCircle[platform]} />
+        </IconButton>
       </Box>
-    </Layout>
+      <Layout handleHeaderBackButton={handleHeaderBackButton}>
+        <Box className={categoryIdClasses.boxes.main[platform]}>
+          <SimpleBreadcrumbs categoryPath={categoryPath} />
+          <Box className={categoryIdClasses.boxes.header[platform]}>
+            {category && (
+              <>
+                <Typography
+                  component={platform === 'web' ? 'h1' : 'p'}
+                  className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
+                >
+                  {parseName(category.name, router.locale ?? 'ru')}
+                </Typography>
+                {category.successorCategories.length > 0 && (
+                  <Typography
+                    className={`${fontClassName.className} ${categoryIdClasses.subtitle[platform]}`}
+                  >
+                    {`${category.successorCategories.length} ${t('categories')}`}
+                  </Typography>
+                )}
+              </>
+            )}
+          </Box>
+          <Box className={homePageClasses.card[platform]}>
+            {/* All Products card - show in every category */}
+            <CategoryCard
+              name=""
+              initialImgUrl={ALL_PRODUCTS_CATEGORY_CARD}
+              href={`/product-category/${category.slug}`}
+              onClick={() => {
+                setProducts([]);
+              }}
+            />
+            {/* Subcategories */}
+            {category.successorCategories.map((subCategory) => {
+              const { imgUrl, name, id, slug } = subCategory;
+              return (
+                <CategoryCard
+                  name={name}
+                  initialImgUrl={imgUrl ?? undefined}
+                  key={id}
+                  href={`/category/${slug}`}
+                />
+              );
+            })}
+          </Box>
+        </Box>
+      </Layout>
+    </Box>
   );
 }
