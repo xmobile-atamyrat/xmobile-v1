@@ -17,7 +17,9 @@ export const detailPageClasses = {
     },
     video: {
       web: 'flex flex-row h-auto mt-4 justify-center items-center',
-      mobile: 'flex mt-[30px] mb-[-40px] flex-row justify-center items-center',
+      // The -40px bottom margin used to pull the title block up over these
+      // icons; gap-2 keeps the row itself from crowding on narrow screens.
+      mobile: 'flex mt-[30px] gap-2 flex-row justify-center items-center',
     },
     sideInfo: {
       web: 'col-start-1 row-start-2 xl:col-start-2 xl:row-start-1 flex flex-col min-w-0',
