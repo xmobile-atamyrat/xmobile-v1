@@ -1,6 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight, ShieldCheck, Truck, Zap } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Image,
   LayoutChangeEvent,
@@ -14,6 +20,9 @@ import {
   View,
 } from 'react-native';
 
+import { SupportedLocale } from '../i18n/locale';
+import { getStrings } from '../i18n/strings';
+
 const NAVY = '#20166E';
 const RED = '#E41E2B';
 const GREEN = '#1F9A5A';
@@ -26,45 +35,47 @@ export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
 // Route in the web app that the "Hasaba gir" link hands off to.
 const SIGN_IN_PATH = '/user/signin';
 
-const SLIDES = [
+// Visuals only -- the copy lives in src/i18n/strings.ts and is zipped in by
+// index below. `id` is the React key: titles used to serve as keys, but they
+// change with the locale, which would remount every slide on a language change.
+const SLIDE_VISUALS = [
   {
+    id: 'fast-shopping',
     image: require('../assets/images/onboarding/fast-shopping.jpg'),
     Icon: Zap,
     iconColor: RED,
-    badge: 'Sekuntlarda satyn alyň',
-    title: 'Çalt söwda, hiç bir kynçylyksyz',
-    description:
-      'Müňlerçe hakyky önüm elimiziň astynda. Tapyň, deňeşdiriň we birnäçe basyşda satyn alyň.',
   },
   {
+    id: 'buyer-protection',
     image: require('../assets/images/onboarding/buyer-protection.jpg'),
     Icon: ShieldCheck,
     iconColor: GREEN,
-    badge: 'Alyjynyň goragy',
-    title: 'Ygtybarly sargytlar hemişe',
-    description:
-      'Goralan töleg, barlanan satyjylar we her satyn almada resmi kepillik. Doly ynam bilen söwda ediň.',
   },
   {
+    id: 'fast-delivery',
     image: require('../assets/images/onboarding/fast-delivery.jpg'),
     Icon: Truck,
     iconColor: RED,
-    badge: 'Aşgabatda şol gün eltip berme',
-    title: 'Çalt eltip berme, gapyňyza çenli',
-    description:
-      'Hakyky wagtda yzarlamak we şäher boýunça şol gün eltip berme. Sargydyňyz size gerek wagtynda gelýär.',
   },
-];
+] as const;
 
 function OnboardingScreen({
+  locale,
   onDone,
 }: {
+  locale: SupportedLocale;
   onDone: (landingPath?: string) => void;
 }) {
+  const t = getStrings(locale).onboarding;
+  const slides = useMemo(
+    () => SLIDE_VISUALS.map((visual, i) => ({ ...visual, ...t.slides[i] })),
+    [t],
+  );
+
   const { width: windowWidth } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
-  const isLast = index === SLIDES.length - 1;
+  const isLast = index === slides.length - 1;
 
   // A page is as wide as the pager, not as wide as the window -- an ancestor
   // pads for the safe area, so on a device with a side cutout the two differ
@@ -138,7 +149,7 @@ function OnboardingScreen({
       <View style={styles.topBar}>
         {!isLast && (
           <TouchableOpacity onPress={() => finish()}>
-            <Text style={styles.skip}>Geç</Text>
+            <Text style={styles.skip}>{t.skip}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -152,8 +163,8 @@ function OnboardingScreen({
         onScrollEndDrag={handleScrollEnd}
         style={styles.scroll}
       >
-        {SLIDES.map(slide => (
-          <View key={slide.title} style={[styles.slide, { width }]}>
+        {slides.map(slide => (
+          <View key={slide.id} style={[styles.slide, { width }]}>
             <View style={styles.imageWrap}>
               <Image
                 source={slide.image}
@@ -184,19 +195,19 @@ function OnboardingScreen({
               onPress={() => finish()}
               activeOpacity={0.85}
             >
-              <Text style={styles.ctaButtonText}>Başla</Text>
+              <Text style={styles.ctaButtonText}>{t.cta}</Text>
             </TouchableOpacity>
             <View style={styles.signInRow}>
-              <Text style={styles.signInPrompt}>Hasabyňyz barmy? </Text>
+              <Text style={styles.signInPrompt}>{t.signInPrompt}</Text>
               <TouchableOpacity onPress={() => finish(SIGN_IN_PATH)}>
-                <Text style={styles.signInLink}>Hasaba gir</Text>
+                <Text style={styles.signInLink}>{t.signInLink}</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <View style={styles.navRow}>
             <View style={styles.dots}>
-              {SLIDES.map((_, i) => (
+              {slides.map((_, i) => (
                 <View
                   key={i}
                   style={i === index ? styles.dotActive : styles.dotInactive}
