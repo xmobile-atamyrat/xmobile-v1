@@ -13,6 +13,7 @@ import React, {
 import {
   Animated,
   BackHandler,
+  DevSettings,
   Linking,
   PermissionsAndroid,
   Platform,
@@ -22,8 +23,9 @@ import {
   View,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { resolveLocale } from '../i18n/locale';
+import { getStrings } from '../i18n/strings';
 import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
 const NAVY = '#20166E';
@@ -149,7 +151,6 @@ function LoadingView() {
 }
 
 function WebAppScreen() {
-  const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
@@ -159,6 +160,18 @@ function WebAppScreen() {
   );
   const [isReady, setIsReady] = useState(false);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+
+  // Language for the native screens (onboarding, offline, error). A stored
+  // NEXT_LOCALE -- an explicit pick in the web app's language switcher -- always
+  // wins; otherwise we read the OS language. Detection is re-run each launch
+  // rather than written back to storage, so it stays a guess we can revise when
+  // the user changes their phone's language, and never masquerades as a choice.
+  const locale = useMemo(() => resolveLocale(storedLocale), [storedLocale]);
+  const t = useMemo(() => getStrings(locale).app, [locale]);
+
+  // Path the WebView opens on. Onboarding sets this when the user leaves via
+  // the sign-in link so they land on sign-in instead of the home page.
+  const [initialPath, setInitialPath] = useState('');
   const [isOffline, setIsOffline] = useState(false);
   const [hasWebviewError, setHasWebviewError] = useState(false);
   const canGoBackRef = useRef(false);
@@ -436,12 +449,12 @@ function WebAppScreen() {
     const loadStoredData = async () => {
       try {
         const token = await AsyncStorage.getItem('REFRESH_TOKEN');
-        const locale = await AsyncStorage.getItem('NEXT_LOCALE');
+        const savedLocale = await AsyncStorage.getItem('NEXT_LOCALE');
         const guestSession = await AsyncStorage.getItem('GUEST_SESSION_ID');
         const seenOnboarding = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
 
         setStoredToken(token);
-        setStoredLocale(locale);
+        setStoredLocale(savedLocale);
         setStoredGuestSession(guestSession);
         setHasSeenOnboarding(!!seenOnboarding);
 
@@ -510,18 +523,38 @@ function WebAppScreen() {
     checkAndReload();
   }, []);
 
+  // Onboarding is native-only and shows exactly once, on the first launch after
+  // install -- nothing in the web app can trigger it, and there is deliberately
+  // no way back into it in a release build. That leaves it untestable without a
+  // reinstall, so expose a replay in the in-app dev menu (shake / Cmd+D).
+  // __DEV__ only: no release build has this entry.
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+    DevSettings.addMenuItem('Show onboarding again', async () => {
+      await AsyncStorage.removeItem(ONBOARDING_SEEN_KEY);
+      setInitialPath('');
+      setHasSeenOnboarding(false);
+    });
+  }, []);
+
   const cookieInjectionJS = useMemo(() => {
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isSecureOrigin ? '; Secure' : '';
 
+    // Sits outside the auth branches on purpose. This used to be written only
+    // when a token existed, so a fresh install -- always the logged-out branch,
+    // and the only time onboarding runs -- handed the WebView no locale at all
+    // and the web app fell back to its Russian default. The native screens
+    // would then be in one language and the page that followed in another.
+    // `locale` is always set, since resolveLocale() ends at DEFAULT_LOCALE.
+    const localeCookie = `document.cookie = "NEXT_LOCALE=${locale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`;
+
     if (storedToken) {
       return `
         document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";
-        ${
-          storedLocale
-            ? `document.cookie = "NEXT_LOCALE=${storedLocale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`
-            : ''
-        }
+        ${localeCookie}
         true;
       `;
     } else {
@@ -532,10 +565,11 @@ function WebAppScreen() {
             ? `document.cookie = "REFRESH_TOKEN=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";`
             : ''
         }
+        ${localeCookie}
         true;
       `;
     }
-  }, [storedToken, storedLocale, cookieDomain]);
+  }, [storedToken, locale, cookieDomain]);
 
   useEffect(() => {
     if (cookieInjectionJS && webViewRef.current) {
@@ -548,31 +582,26 @@ function WebAppScreen() {
   }
 
   if (!hasSeenOnboarding) {
-    return <OnboardingScreen onDone={() => setHasSeenOnboarding(true)} />;
+    return (
+      <OnboardingScreen
+        locale={locale}
+        onDone={landingPath => {
+          setInitialPath(landingPath ?? '');
+          setHasSeenOnboarding(true);
+        }}
+      />
+    );
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
-          paddingRight: insets.right,
-        },
-      ]}
-    >
+    <View style={styles.container}>
       {isOffline ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
             <WifiOff width={52} height={52} color={ICON_MUTED} />
           </View>
-          <Text style={styles.stateTitle}>Internet baglanyşygy ýok</Text>
-          <Text style={styles.stateBody}>
-            Wi-Fi ýa-da mobil internetiňizi barlaň we täzeden synanyşyň.
-            Sebediňiz ýatda saklandy.
-          </Text>
+          <Text style={styles.stateTitle}>{t.offlineTitle}</Text>
+          <Text style={styles.stateBody}>{t.offlineBody}</Text>
           <TouchableOpacity
             activeOpacity={0.85}
             style={styles.stateButton}
@@ -584,7 +613,7 @@ function WebAppScreen() {
             }}
           >
             <RefreshCw width={18} height={18} color="#ffffff" />
-            <Text style={styles.stateButtonText}>Täzeden synanyş</Text>
+            <Text style={styles.stateButtonText}>{t.retry}</Text>
           </TouchableOpacity>
         </View>
       ) : hasWebviewError ? (
@@ -592,10 +621,8 @@ function WebAppScreen() {
           <View style={[styles.iconCircle, { backgroundColor: RED_TINT }]}>
             <ServerCrash width={50} height={50} color={RED} />
           </View>
-          <Text style={styles.stateTitle}>Näsazlyk ýüze çykdy</Text>
-          <Text style={styles.stateBody}>
-            Bu sahypany häzir ýükläp bolmady. Birazdan täzeden synanyşyň.
-          </Text>
+          <Text style={styles.stateTitle}>{t.errorTitle}</Text>
+          <Text style={styles.stateBody}>{t.errorBody}</Text>
           <TouchableOpacity
             activeOpacity={0.85}
             style={[styles.stateButton, styles.stateButtonSpaced]}
@@ -606,15 +633,13 @@ function WebAppScreen() {
             }}
           >
             <RefreshCw width={18} height={18} color="#ffffff" />
-            <Text style={styles.stateButtonText}>Täzeden synanyş</Text>
+            <Text style={styles.stateButtonText}>{t.retry}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => Linking.openURL(`tel:${SUPPORT_PHONE}`)}
           >
-            <Text style={styles.stateSupportText}>
-              Goldaw gullugyna ýüz tutuň
-            </Text>
+            <Text style={styles.stateSupportText}>{t.supportLink}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -622,14 +647,7 @@ function WebAppScreen() {
           {activeNotification && (
             <TouchableOpacity
               activeOpacity={0.95}
-              style={[
-                styles.fcmBanner,
-                {
-                  top: insets.top + 12,
-                  left: insets.left + 12,
-                  right: insets.right + 12,
-                },
-              ]}
+              style={styles.fcmBanner}
               onPress={() => {
                 if (activeNotification.data) {
                   handleNotificationNavigationFromData(activeNotification.data);
@@ -650,7 +668,7 @@ function WebAppScreen() {
           <WebView
             key={isDevMode ? 'dev' : 'prod'}
             ref={webViewRef}
-            source={{ uri: baseUrl }}
+            source={{ uri: `${baseUrl}${initialPath}` }}
             sharedCookiesEnabled={true}
             thirdPartyCookiesEnabled={true}
             cacheEnabled={true}
@@ -897,6 +915,11 @@ const styles = StyleSheet.create({
   },
   fcmBanner: {
     position: 'absolute',
+    // Offsets are inset-free: AppFrame already pads past the system bars, so
+    // this is 12pt in from the safe area rather than from the screen edge.
+    top: 12,
+    left: 12,
+    right: 12,
     zIndex: 100,
     backgroundColor: '#ffffff',
     borderRadius: 14,

@@ -1,8 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight, ShieldCheck, Truck, Zap } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Image,
+  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
@@ -13,6 +20,9 @@ import {
   View,
 } from 'react-native';
 
+import { SupportedLocale } from '../i18n/locale';
+import { getStrings } from '../i18n/strings';
+
 const NAVY = '#20166E';
 const RED = '#E41E2B';
 const GREEN = '#1F9A5A';
@@ -22,46 +32,100 @@ const DOT_INACTIVE = '#E4E3EB';
 
 export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
 
-const SLIDES = [
+// Route in the web app that the "Hasaba gir" link hands off to.
+const SIGN_IN_PATH = '/user/signin';
+
+// Visuals only -- the copy lives in src/i18n/strings.ts and is zipped in by
+// index below. `id` is the React key: titles used to serve as keys, but they
+// change with the locale, which would remount every slide on a language change.
+const SLIDE_VISUALS = [
   {
-    image: require('../assets/images/onboarding/fast-shopping.png'),
+    id: 'fast-shopping',
+    image: require('../assets/images/onboarding/fast-shopping.jpg'),
     Icon: Zap,
     iconColor: RED,
-    badge: 'Sekuntlarda satyn alyň',
-    title: 'Çalt söwda, hiç bir kynçylyksyz',
-    description:
-      'Müňlerçe hakyky önüm elimiziň astynda. Tapyň, deňeşdiriň we birnäçe basyşda satyn alyň.',
   },
   {
-    image: require('../assets/images/onboarding/buyer-protection.png'),
+    id: 'buyer-protection',
+    image: require('../assets/images/onboarding/buyer-protection.jpg'),
     Icon: ShieldCheck,
     iconColor: GREEN,
-    badge: 'Alyjynyň goragy',
-    title: 'Ygtybarly sargytlar hemişe',
-    description:
-      'Goralan töleg, barlanan satyjylar we her satyn almada resmi kepillik. Doly ynam bilen söwda ediň.',
   },
   {
-    image: require('../assets/images/onboarding/fast-delivery.png'),
+    id: 'fast-delivery',
+    image: require('../assets/images/onboarding/fast-delivery.jpg'),
     Icon: Truck,
     iconColor: RED,
-    badge: 'Aşgabatda şol gün eltip berme',
-    title: 'Çalt eltip berme, gapyňyza çenli',
-    description:
-      'Hakyky wagtda yzarlamak we şäher boýunça şol gün eltip berme. Sargydyňyz size gerek wagtynda gelýär.',
   },
-];
+] as const;
 
-function OnboardingScreen({ onDone }: { onDone: () => void }) {
-  const { width } = useWindowDimensions();
+function OnboardingScreen({
+  locale,
+  onDone,
+}: {
+  locale: SupportedLocale;
+  onDone: (landingPath?: string) => void;
+}) {
+  const t = getStrings(locale).onboarding;
+  const slides = useMemo(
+    () => SLIDE_VISUALS.map((visual, i) => ({ ...visual, ...t.slides[i] })),
+    [t],
+  );
+
+  const { width: windowWidth } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
-  const isLast = index === SLIDES.length - 1;
+  const isLast = index === slides.length - 1;
 
-  const finish = () => {
-    AsyncStorage.setItem(ONBOARDING_SEEN_KEY, 'true').catch(() => {});
-    onDone();
+  // A page is as wide as the pager, not as wide as the window -- an ancestor
+  // pads for the safe area, so on a device with a side cutout the two differ
+  // and the pager would desync from the dots. Measuring means this stays right
+  // no matter who adds padding above us. windowWidth is only the first-frame
+  // guess, replaced as soon as layout runs.
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const width = measuredWidth || windowWidth;
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    setMeasuredWidth(e.nativeEvent.layout.width);
   };
+
+  // Rotating the device changes the page width, which leaves the saved scroll
+  // offset pointing into the middle of a page -- two half-slides, dots on the
+  // wrong one. Re-anchor to the current slide whenever the width changes.
+  //
+  // The index is read through a ref so this depends on width alone. Depending
+  // on the index state as well would re-run it on every swipe, and an instant
+  // scrollTo landing mid-snap turns the paging animation into a jump.
+  const indexRef = useRef(0);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      x: indexRef.current * width,
+      animated: false,
+    });
+  }, [width]);
+
+  const isFinishingRef = useRef(false);
+
+  const finish = useCallback(
+    async (landingPath?: string) => {
+      // The await below yields, so a double tap could otherwise call onDone twice.
+      if (isFinishingRef.current) {
+        return;
+      }
+      isFinishingRef.current = true;
+
+      try {
+        await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
+      } catch (error) {
+        // Still let the user through -- trapping them on the intro is worse
+        // than replaying it. But say so: swallowing this silently means
+        // onboarding reappears on every launch with nothing to explain why.
+        console.warn('Failed to persist onboarding state:', error);
+      }
+      onDone(landingPath);
+    },
+    [onDone],
+  );
 
   const goNext = () => {
     if (isLast) {
@@ -71,16 +135,21 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
     scrollRef.current?.scrollTo({ x: (index + 1) * width, animated: true });
   };
 
+  // Both handlers are needed. onMomentumScrollEnd covers flicks; a slow drag
+  // released without a flick never starts momentum, so on its own it would
+  // leave the dots pointing at the previous slide.
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+    const next = Math.round(e.nativeEvent.contentOffset.x / width);
+    indexRef.current = next;
+    setIndex(next);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
         {!isLast && (
-          <TouchableOpacity onPress={finish}>
-            <Text style={styles.skip}>Geç</Text>
+          <TouchableOpacity onPress={() => finish()}>
+            <Text style={styles.skip}>{t.skip}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -89,11 +158,13 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        onLayout={handleLayout}
         onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
         style={styles.scroll}
       >
-        {SLIDES.map(slide => (
-          <View key={slide.title} style={[styles.slide, { width }]}>
+        {slides.map(slide => (
+          <View key={slide.id} style={[styles.slide, { width }]}>
             <View style={styles.imageWrap}>
               <Image
                 source={slide.image}
@@ -121,22 +192,22 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
           <>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={finish}
+              onPress={() => finish()}
               activeOpacity={0.85}
             >
-              <Text style={styles.ctaButtonText}>Başla</Text>
+              <Text style={styles.ctaButtonText}>{t.cta}</Text>
             </TouchableOpacity>
             <View style={styles.signInRow}>
-              <Text style={styles.signInPrompt}>Hasabyňyz barmy? </Text>
-              <TouchableOpacity onPress={finish}>
-                <Text style={styles.signInLink}>Hasaba gir</Text>
+              <Text style={styles.signInPrompt}>{t.signInPrompt}</Text>
+              <TouchableOpacity onPress={() => finish(SIGN_IN_PATH)}>
+                <Text style={styles.signInLink}>{t.signInLink}</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <View style={styles.navRow}>
             <View style={styles.dots}>
-              {SLIDES.map((_, i) => (
+              {slides.map((_, i) => (
                 <View
                   key={i}
                   style={i === index ? styles.dotActive : styles.dotInactive}
@@ -172,6 +243,11 @@ const styles = StyleSheet.create({
   imageWrap: {
     width: '100%',
     height: 340,
+    // Yoga defaults flexShrink to 0, so on a short screen (iPhone SE) the fixed
+    // 340 plus the text overflowed the centred slide and clipped at both ends.
+    // Shrinking gives the height back to the text; resizeMode="cover" just
+    // crops a little more.
+    flexShrink: 1,
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#F5F5F8',
