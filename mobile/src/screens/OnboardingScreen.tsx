@@ -1,19 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight, ShieldCheck, Truck, Zap } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Image,
+  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NAVY = '#20166E';
 const RED = '#E41E2B';
@@ -23,6 +22,9 @@ const MUTED = '#8B8A98';
 const DOT_INACTIVE = '#E4E3EB';
 
 export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
+
+// Route in the web app that the "Hasaba gir" link hands off to.
+const SIGN_IN_PATH = '/user/signin';
 
 const SLIDES = [
   {
@@ -54,22 +56,65 @@ const SLIDES = [
   },
 ];
 
-function OnboardingScreen({ onDone }: { onDone: () => void }) {
+function OnboardingScreen({
+  onDone,
+}: {
+  onDone: (landingPath?: string) => void;
+}) {
   const { width: windowWidth } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const isLast = index === SLIDES.length - 1;
 
-  // The container is padded by the horizontal insets, so a page is narrower
-  // than the window. Paging math has to use the padded width or the pager
-  // desyncs from the dots on devices with a side cutout.
-  const width = windowWidth - insets.left - insets.right;
+  // A page is as wide as the pager, not as wide as the window -- an ancestor
+  // pads for the safe area, so on a device with a side cutout the two differ
+  // and the pager would desync from the dots. Measuring means this stays right
+  // no matter who adds padding above us. windowWidth is only the first-frame
+  // guess, replaced as soon as layout runs.
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const width = measuredWidth || windowWidth;
 
-  const finish = () => {
-    AsyncStorage.setItem(ONBOARDING_SEEN_KEY, 'true').catch(() => {});
-    onDone();
+  const handleLayout = (e: LayoutChangeEvent) => {
+    setMeasuredWidth(e.nativeEvent.layout.width);
   };
+
+  // Rotating the device changes the page width, which leaves the saved scroll
+  // offset pointing into the middle of a page -- two half-slides, dots on the
+  // wrong one. Re-anchor to the current slide whenever the width changes.
+  //
+  // The index is read through a ref so this depends on width alone. Depending
+  // on the index state as well would re-run it on every swipe, and an instant
+  // scrollTo landing mid-snap turns the paging animation into a jump.
+  const indexRef = useRef(0);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      x: indexRef.current * width,
+      animated: false,
+    });
+  }, [width]);
+
+  const isFinishingRef = useRef(false);
+
+  const finish = useCallback(
+    async (landingPath?: string) => {
+      // The await below yields, so a double tap could otherwise call onDone twice.
+      if (isFinishingRef.current) {
+        return;
+      }
+      isFinishingRef.current = true;
+
+      try {
+        await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, 'true');
+      } catch (error) {
+        // Still let the user through -- trapping them on the intro is worse
+        // than replaying it. But say so: swallowing this silently means
+        // onboarding reappears on every launch with nothing to explain why.
+        console.warn('Failed to persist onboarding state:', error);
+      }
+      onDone(landingPath);
+    },
+    [onDone],
+  );
 
   const goNext = () => {
     if (isLast) {
@@ -79,33 +124,20 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
     scrollRef.current?.scrollTo({ x: (index + 1) * width, animated: true });
   };
 
+  // Both handlers are needed. onMomentumScrollEnd covers flicks; a slow drag
+  // released without a flick never starts momentum, so on its own it would
+  // leave the dots pointing at the previous slide.
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+    const next = Math.round(e.nativeEvent.contentOffset.x / width);
+    indexRef.current = next;
+    setIndex(next);
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
-          paddingRight: insets.right,
-        },
-      ]}
-    >
-      {/* The screen is always white, so the bars must always be dark —
-          App.tsx flips to light-content in dark mode, which would make the
-          status bar icons invisible here. */}
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="transparent"
-        translucent
-      />
+    <View style={styles.container}>
       <View style={styles.topBar}>
         {!isLast && (
-          <TouchableOpacity onPress={finish}>
+          <TouchableOpacity onPress={() => finish()}>
             <Text style={styles.skip}>Geç</Text>
           </TouchableOpacity>
         )}
@@ -115,7 +147,9 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        onLayout={handleLayout}
         onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
         style={styles.scroll}
       >
         {SLIDES.map(slide => (
@@ -147,14 +181,14 @@ function OnboardingScreen({ onDone }: { onDone: () => void }) {
           <>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={finish}
+              onPress={() => finish()}
               activeOpacity={0.85}
             >
               <Text style={styles.ctaButtonText}>Başla</Text>
             </TouchableOpacity>
             <View style={styles.signInRow}>
               <Text style={styles.signInPrompt}>Hasabyňyz barmy? </Text>
-              <TouchableOpacity onPress={finish}>
+              <TouchableOpacity onPress={() => finish(SIGN_IN_PATH)}>
                 <Text style={styles.signInLink}>Hasaba gir</Text>
               </TouchableOpacity>
             </View>
@@ -198,6 +232,11 @@ const styles = StyleSheet.create({
   imageWrap: {
     width: '100%',
     height: 340,
+    // Yoga defaults flexShrink to 0, so on a short screen (iPhone SE) the fixed
+    // 340 plus the text overflowed the centred slide and clipped at both ends.
+    // Shrinking gives the height back to the text; resizeMode="cover" just
+    // crops a little more.
+    flexShrink: 1,
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#F5F5F8',
