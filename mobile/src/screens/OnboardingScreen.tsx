@@ -26,7 +26,7 @@ export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
 
 const SLIDES = [
   {
-    image: require('../assets/images/onboarding/fast-shopping.png'),
+    image: require('../assets/images/onboarding/fast-shopping.jpg'),
     Icon: Zap,
     iconColor: RED,
     badge: 'Sekuntlarda satyn alyň',
@@ -35,7 +35,7 @@ const SLIDES = [
       'Müňlerçe hakyky önüm elimiziň astynda. Tapyň, deňeşdiriň we birnäçe basyşda satyn alyň.',
   },
   {
-    image: require('../assets/images/onboarding/buyer-protection.png'),
+    image: require('../assets/images/onboarding/buyer-protection.jpg'),
     Icon: ShieldCheck,
     iconColor: GREEN,
     badge: 'Alyjynyň goragy',
@@ -44,7 +44,7 @@ const SLIDES = [
       'Goralan töleg, barlanan satyjylar we her satyn almada resmi kepillik. Doly ynam bilen söwda ediň.',
   },
   {
-    image: require('../assets/images/onboarding/fast-delivery.png'),
+    image: require('../assets/images/onboarding/fast-delivery.jpg'),
     Icon: Truck,
     iconColor: RED,
     badge: 'Aşgabatda şol gün eltip berme',
