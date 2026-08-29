@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
+import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import {
   ACCESS_SECRET,
   generateTokens,
@@ -61,7 +62,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+        `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
       return res.status(200).json({
@@ -113,7 +114,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=0; Path=/`,
+        `${AUTH_REFRESH_COOKIE_NAME}=; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=0; Path=/`,
       );
 
       return res.status(200).json({ success: true });

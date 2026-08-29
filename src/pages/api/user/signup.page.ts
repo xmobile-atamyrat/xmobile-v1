@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
+import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import { generateTokens } from '@/pages/api/utils/tokenUtils';
 import {
   AUTH_REFRESH_COOKIE_NAME,
@@ -53,7 +54,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
       return res.status(200).json({
