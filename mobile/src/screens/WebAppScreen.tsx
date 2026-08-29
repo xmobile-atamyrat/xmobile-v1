@@ -13,6 +13,7 @@ import React, {
 import {
   Animated,
   BackHandler,
+  DevSettings,
   Linking,
   PermissionsAndroid,
   Platform,
@@ -22,7 +23,6 @@ import {
   View,
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
@@ -143,7 +143,6 @@ function LoadingView() {
 }
 
 function WebAppScreen() {
-  const insets = useSafeAreaInsets();
   const webViewRef = React.useRef<WebView>(null);
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
@@ -153,6 +152,9 @@ function WebAppScreen() {
   );
   const [isReady, setIsReady] = useState(false);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  // Path the WebView opens on. Onboarding sets this when the user leaves via
+  // "Hasaba gir" so they land on sign-in instead of the home page.
+  const [initialPath, setInitialPath] = useState('');
   const [isOffline, setIsOffline] = useState(false);
   const [hasWebviewError, setHasWebviewError] = useState(false);
   const canGoBackRef = useRef(false);
@@ -503,6 +505,22 @@ function WebAppScreen() {
     checkAndReload();
   }, []);
 
+  // Onboarding is native-only and shows exactly once, on the first launch after
+  // install -- nothing in the web app can trigger it, and there is deliberately
+  // no way back into it in a release build. That leaves it untestable without a
+  // reinstall, so expose a replay in the in-app dev menu (shake / Cmd+D).
+  // __DEV__ only: no release build has this entry.
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+    DevSettings.addMenuItem('Show onboarding again', async () => {
+      await AsyncStorage.removeItem(ONBOARDING_SEEN_KEY);
+      setInitialPath('');
+      setHasSeenOnboarding(false);
+    });
+  }, []);
+
   const cookieInjectionJS = useMemo(() => {
     const domainAttr = cookieDomain ? `; domain=${cookieDomain}` : '';
     const secureAttr = isDevMode ? '' : '; Secure';
@@ -541,21 +559,18 @@ function WebAppScreen() {
   }
 
   if (!hasSeenOnboarding) {
-    return <OnboardingScreen onDone={() => setHasSeenOnboarding(true)} />;
+    return (
+      <OnboardingScreen
+        onDone={landingPath => {
+          setInitialPath(landingPath ?? '');
+          setHasSeenOnboarding(true);
+        }}
+      />
+    );
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
-          paddingRight: insets.right,
-        },
-      ]}
-    >
+    <View style={styles.container}>
       {isOffline ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
@@ -615,14 +630,7 @@ function WebAppScreen() {
           {activeNotification && (
             <TouchableOpacity
               activeOpacity={0.95}
-              style={[
-                styles.fcmBanner,
-                {
-                  top: insets.top + 12,
-                  left: insets.left + 12,
-                  right: insets.right + 12,
-                },
-              ]}
+              style={styles.fcmBanner}
               onPress={() => {
                 if (activeNotification.data) {
                   handleNotificationNavigationFromData(activeNotification.data);
@@ -643,7 +651,7 @@ function WebAppScreen() {
           <WebView
             key={isDevMode ? 'dev' : 'prod'}
             ref={webViewRef}
-            source={{ uri: baseUrl }}
+            source={{ uri: `${baseUrl}${initialPath}` }}
             sharedCookiesEnabled={true}
             thirdPartyCookiesEnabled={true}
             cacheEnabled={true}
@@ -890,6 +898,11 @@ const styles = StyleSheet.create({
   },
   fcmBanner: {
     position: 'absolute',
+    // Offsets are inset-free: AppFrame already pads past the system bars, so
+    // this is 12pt in from the safe area rather than from the screen edge.
+    top: 12,
+    left: 12,
+    right: 12,
     zIndex: 100,
     backgroundColor: '#ffffff',
     borderRadius: 14,
