@@ -148,7 +148,15 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
+  prices          Prices[]
+
   isOutOfStock    Boolean     @default(false)
+  // When `isOutOfStock` last flipped false -> true; cleared when it flips back.
+  // Deliberately not `updatedAt`, which is bumped by unrelated edits — most
+  // notably the currency job rewriting every price. The yearly cleanup of
+  // long-dead products measures its cutoff against this column, so it must only
+  // move on a real transition.
+  outOfStockAt    DateTime?
   colors          Color[]
 
   promoBanners    PromoBanner[]
@@ -160,6 +168,7 @@ model Product {
 
   @@index([brandId])
   @@index([deletedAt])
+  @@index([outOfStockAt])
 }
 
 model GuestCartItem {
@@ -200,11 +209,26 @@ model Prices {
   category        Category?   @relation(references: [id], fields: [categoryId], onDelete: SetNull)
   categoryId      String?
 
+  // Owning product. A price belongs to at most one product; the product's
+  // `price` ("[priceId]") and `tags` ("spec [priceId]{colorId}") may only
+  // reference prices linked here. SetNull so a price outlives its product and
+  // simply becomes unassigned, matching the category relation above.
+  product         Product?    @relation(references: [id], fields: [productId], onDelete: SetNull)
+  productId       String?
+
+  // Stock lives on the price, not just the product: one variant can sell out
+  // while its siblings are still available, and each variant is one price.
+  // A product is out of stock exactly when every price it owns is — see
+  // src/lib/outOfStock.ts for the two cascade directions.
+  isOutOfStock    Boolean     @default(false)
+  outOfStockAt    DateTime?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([price])
   @@index([categoryId])
+  @@index([productId])
 }
 
 model Color {
