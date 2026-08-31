@@ -20,11 +20,15 @@ const RATE_CELL = '$B$1';
 const PRICE_HEADER = ['Name', 'USD', 'TMT'];
 const LAST_COLUMN = 3;
 
+/**
+ * One banner-and-table block in the sheet. Both download modes produce these:
+ * a category section carries its ancestor path, a brand section a single name.
+ */
 export interface PriceListSection {
-  categoryId: string;
-  categoryName: string;
-  /** Ancestors first, the category itself last — `['Earphones', 'Apple']`. */
-  categoryPath: string[];
+  sectionId: string;
+  sectionName: string;
+  /** Ancestors first, the section itself last — `['Earphones', 'Apple']`. */
+  sectionPath: string[];
   prices: Prices[];
 }
 
@@ -93,6 +97,56 @@ export const toggleAllCategories = (
   return all.every((id) => selected.has(id)) ? [] : all;
 };
 
+/** A brand as the dropdown, the sheet banner and the file name show it. */
+export interface BrandOption {
+  id: string;
+  name: string;
+}
+
+/** Sentinel value for the brand dropdown's select-all row — never a brand id. */
+export const ALL_BRANDS_OPTION = '__all_brands__';
+
+/** The brand dropdown's select-all row: fills, or clears once already full. */
+export const toggleAllBrands = (
+  brands: BrandOption[],
+  previous: string[],
+): string[] => {
+  const all = brands.map((brand) => brand.id);
+  const selected = new Set(previous);
+  return all.every((id) => selected.has(id)) ? [] : all;
+};
+
+/**
+ * Groups prices into one section per selected brand.
+ *
+ * Brands do not nest, so unlike categories there is no deepest owner to break a
+ * tie: a price two selected brands both sell is listed under each of them.
+ * Prices no branded product references are never exported, and a reference to a
+ * price that has since been deleted is skipped.
+ */
+export const buildBrandPriceSections = (
+  prices: Prices[],
+  brands: BrandOption[],
+  selectedIds: string[],
+  brandPriceIds: Record<string, string[]>,
+): PriceListSection[] => {
+  const selected = new Set(selectedIds);
+  const priceById = new Map(prices.map((price) => [price.id, price]));
+
+  return brands
+    .filter((brand) => selected.has(brand.id))
+    .map((brand) => ({
+      sectionId: brand.id,
+      sectionName: brand.name,
+      sectionPath: [brand.name],
+      prices: (brandPriceIds[brand.id] ?? [])
+        .map((id) => priceById.get(id))
+        .filter((price): price is Prices => price != null)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .filter((section) => section.prices.length > 0);
+};
+
 // The categories a person actually picked: a selected category whose ancestor
 // is also selected only got there through the cascade above, so naming the
 // file after it would repeat what the parent already says.
@@ -117,6 +171,13 @@ const selectionRootNames = (
   return names;
 };
 
+const stampedFileName = (names: string[], date: Date): string => {
+  const stamp = dayMonthYearFromDate(date);
+  return names.length === 0
+    ? `prices ${stamp}`
+    : `${names.join(', ')} ${stamp}`;
+};
+
 /**
  * The name the download box starts with: the picked categories, then the date.
  * Editable on the page, so this is only a starting point.
@@ -126,12 +187,20 @@ export const defaultPriceListFileName = (
   selectedIds: string[],
   locale: string,
   date: Date,
+): string =>
+  stampedFileName(selectionRootNames(categories, selectedIds, locale), date);
+
+/** The same starting point for brand mode: the picked brands, then the date. */
+export const defaultBrandPriceListFileName = (
+  brands: BrandOption[],
+  selectedIds: string[],
+  date: Date,
 ): string => {
-  const names = selectionRootNames(categories, selectedIds, locale);
-  const stamp = dayMonthYearFromDate(date);
-  return names.length === 0
-    ? `prices ${stamp}`
-    : `${names.join(', ')} ${stamp}`;
+  const selected = new Set(selectedIds);
+  return stampedFileName(
+    brands.filter((brand) => selected.has(brand.id)).map((brand) => brand.name),
+    date,
+  );
 };
 
 // Category names carry `/` and `:` (locale-tagged names, model numbers), which
@@ -213,9 +282,9 @@ export const buildPriceSections = (
     .map((id) => {
       const path = pathById.get(id) ?? [];
       return {
-        categoryId: id,
-        categoryName: path[path.length - 1] ?? '',
-        categoryPath: path,
+        sectionId: id,
+        sectionName: path[path.length - 1] ?? '',
+        sectionPath: path,
         prices: [...grouped.get(id)!].sort((a, b) =>
           a.name.localeCompare(b.name),
         ),
@@ -277,7 +346,7 @@ export async function buildPriceListBlob(
   let row = 3; // row 2 stays blank, separating the rate from the first section
   sections.forEach((section, index) => {
     if (index > 0) row += 1; // blank row between sections
-    const isRoot = section.categoryPath.length <= 1;
+    const isRoot = section.sectionPath.length <= 1;
     // The whole row is tinted, not just the merged text, so the colour survives
     // in viewers that drop the merge and reads as a band across the sheet.
     fillRow(
@@ -286,7 +355,7 @@ export async function buildPriceListBlob(
       LAST_COLUMN,
       isRoot ? ROOT_BANNER_FILL : NESTED_BANNER_FILL,
     );
-    sheet.getCell(`A${row}`).value = section.categoryPath.join(PATH_SEPARATOR);
+    sheet.getCell(`A${row}`).value = section.sectionPath.join(PATH_SEPARATOR);
     sheet.getCell(`A${row}`).font = bannerFont(isRoot);
     sheet.mergeCells(`A${row}:C${row}`);
     row += 1;
