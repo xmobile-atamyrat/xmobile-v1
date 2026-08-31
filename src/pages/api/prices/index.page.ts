@@ -1,15 +1,31 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
+import { syncProductOutOfStockFromPrices } from '@/lib/outOfStock';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
 import { ResponseApi } from '@/pages/lib/types';
-import { Prices } from '@prisma/client';
+import { Prices, Prisma } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/prices/index.page.ts';
 const squareBracketRegex = /\[([^\]]+)\]/;
+
+// A price belongs to at most one product, so connecting one that another
+// product already owns has to be refused rather than silently stealing it —
+// the previous owner's `price`/`tags` strings would keep pointing at a price
+// that is no longer in its connected list. Returns an error message when the
+// assignment is not allowed, or null when it is.
+export function priceAssignmentError(
+  current: { productId: string | null },
+  requestedProductId: string | null,
+): string | null {
+  if (requestedProductId == null) return null; // disconnecting is always fine
+  if (current.productId == null) return null; // unowned, free to claim
+  if (current.productId === requestedProductId) return null; // no-op
+  return 'This price is already connected to another product. Disconnect it there first.';
+}
 
 export async function getPrice(priceId: string): Promise<Prices | null> {
   if (priceId != null) {
@@ -52,21 +68,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         });
       }
 
-      const { name, price, priceInTmt, categoryId } = body;
+      const { name, price, priceInTmt, categoryId, productId } = body;
       if (name == null || price == null || priceInTmt == null) {
         return res.status(400).json({
           success: false,
           message: 'Missing required fields',
         });
       }
+      // A brand-new price has no owner yet, so it can always take the requested
+      // product; an invalid id is caught by the foreign key.
       const newPrice = await dbClient.prices.create({
         data: {
           name,
           price,
           priceInTmt,
           categoryId: categoryId ?? null,
+          productId: productId ?? null,
         },
       });
+
+      // A new price starts in stock, so attaching one to an out-of-stock
+      // product brings that product back — same rule as any other price edit.
+      if (newPrice.productId != null) {
+        await syncProductOutOfStockFromPrices(newPrice.productId);
+      }
 
       return res.status(200).json({
         success: true,
@@ -82,39 +107,40 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     }
   } else if (method === 'GET') {
     try {
-      const { id, searchKeyword } = req.query;
+      const { id, searchKeyword, productId, unassigned } = req.query;
       if (id != null) {
         const price = await getPrice(id as string);
         return res.status(200).json({ success: true, data: price });
       }
-      if (searchKeyword != null) {
-        const prices = await dbClient.prices.findMany({
-          where: {
-            OR: [
-              {
-                name: {
-                  contains: searchKeyword as string,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                price: {
-                  contains: searchKeyword as string,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                priceInTmt: {
-                  contains: searchKeyword as string,
-                  mode: 'insensitive',
-                },
-              },
-            ],
-          },
-        });
-        return res.status(200).json({ success: true, data: prices });
+
+      // Composable filters: `productId` scopes to one product's connected
+      // prices (the product form's picker), `unassigned` to prices no product
+      // owns yet (the connect-price search), either optionally narrowed by
+      // `searchKeyword`.
+      const where: Prisma.PricesWhereInput = {};
+      if (productId != null) {
+        where.productId = productId as string;
+      } else if (unassigned === 'true') {
+        where.productId = null;
       }
+      if (searchKeyword != null) {
+        where.OR = [
+          { name: { contains: searchKeyword as string, mode: 'insensitive' } },
+          { price: { contains: searchKeyword as string, mode: 'insensitive' } },
+          {
+            priceInTmt: {
+              contains: searchKeyword as string,
+              mode: 'insensitive',
+            },
+          },
+        ];
+      }
+
       const prices = await dbClient.prices.findMany({
+        where,
+        // The owning product travels with each row so the price table can label
+        // and grey out taken prices without a second round-trip.
+        include: { product: { select: { id: true, name: true } } },
         orderBy: { name: 'asc' },
       });
       return res.status(200).json({ success: true, data: prices });
@@ -133,6 +159,38 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           success: false,
           message: 'No data provided',
         });
+      }
+
+      // Every row's prior state, read once. Three things below need it: the
+      // reassignment check, the out-of-stock transition, and working out which
+      // products to re-derive afterwards. Validating up front also means a
+      // rejected pair cannot leave earlier pairs half-applied.
+      const current = await dbClient.prices.findMany({
+        where: { id: { in: pricePairs.map((price) => price.id as string) } },
+        select: { id: true, productId: true, isOutOfStock: true },
+      });
+      const currentById = new Map(current.map((price) => [price.id, price]));
+
+      const missing = pricePairs.find(
+        (price) => !currentById.has(price.id as string),
+      );
+      if (missing != null) {
+        return res
+          .status(404)
+          .json({ success: false, message: `Price ${missing.id} not found` });
+      }
+
+      const rejected = pricePairs
+        .filter((price) => 'productId' in price)
+        .map((price) =>
+          priceAssignmentError(
+            currentById.get(price.id as string)!,
+            price.productId ?? null,
+          ),
+        )
+        .find((error) => error != null);
+      if (rejected != null) {
+        return res.status(409).json({ success: false, message: rejected });
       }
 
       await Promise.all(
@@ -164,12 +222,55 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           if ('categoryId' in price) {
             data.categoryId = price.categoryId ?? null;
           }
+          // Same presence-keyed treatment: an explicit null disconnects the
+          // price from its product.
+          if ('productId' in price) {
+            data.productId = price.productId ?? null;
+          }
+          // Only a real transition is written, so re-saving a price that is
+          // already out of stock leaves `outOfStockAt` — the cleanup deadline —
+          // where it was. Deliberately not cleared by an ordinary edit: the
+          // currency job rewrites every price row, and doing so would silently
+          // bring the whole catalog back in stock.
+          if ('isOutOfStock' in price) {
+            const wasOutOfStock = currentById.get(
+              price.id as string,
+            )!.isOutOfStock;
+            const nowOutOfStock = price.isOutOfStock === true;
+            if (nowOutOfStock !== wasOutOfStock) {
+              data.isOutOfStock = nowOutOfStock;
+              data.outOfStockAt = nowOutOfStock ? new Date() : null;
+            }
+          }
           const updatedPrice = await dbClient.prices.update({
             where: { id: price.id },
             data,
           });
           return updatedPrice;
         }),
+      );
+
+      // A price's stock state or ownership changing can change its product's
+      // stock state, so the affected products are re-derived. Both the old and
+      // the new owner are included: moving a price out of a product changes
+      // what is left behind as much as what receives it. Pairs that only touch
+      // name/price/category are skipped, keeping bulk price edits — the common
+      // case — free of extra queries.
+      const affectedProductIds = new Set<string>();
+      pricePairs.forEach((price) => {
+        if (!('isOutOfStock' in price) && !('productId' in price)) return;
+        const previousProductId = currentById.get(
+          price.id as string,
+        )!.productId;
+        if (previousProductId != null) {
+          affectedProductIds.add(previousProductId);
+        }
+        if (price.productId != null) affectedProductIds.add(price.productId);
+      });
+      await Promise.all(
+        [...affectedProductIds].map((affectedId) =>
+          syncProductOutOfStockFromPrices(affectedId),
+        ),
       );
 
       return res.status(200).json({
@@ -195,6 +296,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       const deletedPrice = await dbClient.prices.delete({
         where: { id: id as string },
       });
+      // Removing a price changes what its product's stock state is derived
+      // from. Without this, deleting the last sold-out price of a product whose
+      // remaining prices are in stock leaves the product marked out of stock —
+      // with `outOfStockAt` still counting down toward the retention job — until
+      // the nightly sync happens to run.
+      if (deletedPrice.productId != null) {
+        await syncProductOutOfStockFromPrices(deletedPrice.productId);
+      }
       return res.status(200).json({
         success: true,
         message: 'Price deleted',
