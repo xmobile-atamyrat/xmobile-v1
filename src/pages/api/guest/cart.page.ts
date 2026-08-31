@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { unavailableVariantTags } from '@/lib/variantStock';
 import addCors from '@/pages/api/utils/addCors';
 import { getOrCreateGuestSessionId } from '@/pages/api/utils/guestSession';
 import { ResponseApi } from '@/pages/lib/types';
@@ -40,7 +41,19 @@ export default async function handler(
         },
         include: { product: true },
       });
-      return res.status(200).json({ success: true, data: cartItems });
+
+      // Same variant-level stock resolution as the signed-in cart — a guest
+      // must not be shown a buyable price for a sold-out variant either.
+      const unavailable = await unavailableVariantTags(
+        cartItems.map((item) => item.selectedVariant),
+      );
+      const data = cartItems.map((item) => ({
+        ...item,
+        variantOutOfStock:
+          item.selectedVariant != null && unavailable.has(item.selectedVariant),
+      }));
+
+      return res.status(200).json({ success: true, data });
     } catch (error) {
       console.error(filepath, error);
       return res.status(500).json({

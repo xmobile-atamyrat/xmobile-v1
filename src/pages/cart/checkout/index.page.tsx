@@ -6,7 +6,8 @@ import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
+import { CartItemWithProduct } from '@/pages/lib/types';
+import { isCartLineOutOfStock, parseName } from '@/pages/lib/utils';
 import {
   computeProductPrice,
   resolveVariantDisplay,
@@ -27,7 +28,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { CartItem, Color, Prices, Product } from '@prisma/client';
+import { Color, Prices } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -49,9 +50,7 @@ export default function CheckoutPage() {
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
-  >([]);
+  const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -74,16 +73,16 @@ export default function CheckoutPage() {
   // Fetch cart items. Returns the fresh list so callers can react to it —
   // the order handler needs it to recover from a stale out-of-stock cart.
   const loadCartItems = useCallback(async (): Promise<
-    (CartItem & { product: Product })[] | null
+    CartItemWithProduct[] | null
   > => {
     try {
       const { success, data, message } = user
-        ? await fetchWithCreds<(CartItem & { product: Product })[]>({
+        ? await fetchWithCreds<CartItemWithProduct[]>({
             accessToken,
             path: `/api/cart?userId=${user.id}`,
             method: 'GET',
           })
-        : await fetchWithoutCreds<(CartItem & { product: Product })[]>(
+        : await fetchWithoutCreds<CartItemWithProduct[]>(
             '/api/guest/cart',
             'GET',
           );
@@ -180,7 +179,7 @@ export default function CheckoutPage() {
         // Out-of-stock items can't be ordered, so they don't count toward the total
         const sum = cartItems.reduce(
           (acc, item) =>
-            item.product.outOfStockAt != null
+            isCartLineOutOfStock(item)
               ? acc
               : acc + (prices[item.id] || 0) * item.quantity,
           0,
@@ -195,9 +194,7 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItemsSignature, accessToken, user]);
 
-  const outOfStockItems = cartItems.filter(
-    (item) => item.product.outOfStockAt != null,
-  );
+  const outOfStockItems = cartItems.filter(isCartLineOutOfStock);
 
   // Removes every out-of-stock item so the order can go through
   const handleRemoveOutOfStockItems = async () => {
@@ -284,7 +281,7 @@ export default function CheckoutPage() {
         // A product went out of stock after this page loaded, so local state
         // can't name the offender — refetch before opening the dialog
         const fresh = await loadCartItems();
-        if (fresh?.some((item) => item.product.outOfStockAt != null)) {
+        if (fresh?.some(isCartLineOutOfStock)) {
           setShowOutOfStockDialog(true);
         } else {
           setSnackbarOpen(true);
@@ -301,7 +298,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const getItemPrice = (item: CartItem & { product: Product }): number =>
+  const getItemPrice = (item: CartItemWithProduct): number =>
     itemPrices[item.id] ?? 0;
 
   return (
