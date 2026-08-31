@@ -409,7 +409,6 @@
   "noProduct": "Без товара",
   "noCategory": "Без категории",
   "connectedPrices": "Привязанные цены",
-  "connectPriceHint": "Привяжите цену ниже, чтобы выбрать её здесь",
   "priceStillInUse": "Эта цена используется в основной цене или варианте. Сначала очистите её.",
   "connectPriceError": "Не удалось обновить привязку цены.",
   "sortBy": "Сортировать по",
@@ -574,5 +573,16 @@
   "productsOverview": "Обзор товаров",
   "selectCategory": "Выберите категорию",
   "categoryRequired": "Пожалуйста, выберите категорию",
-  "outOfStockOnly": "Только нет в наличии"
+  "outOfStockOnly": "Только нет в наличии",
+  "productsUpdated": "Товары успешно обновлены!",
+  "updateProductsError": "Не удалось обновить товары.",
+  "allBrands": "Все бренды",
+  "noBrand": "Без бренда",
+  "missingPriceOnly": "Только без цены",
+  "brokenPriceLink": "Битая ссылка на цену",
+  "noPrice": "Нет цены",
+  "lastEdited": "Изменено",
+  "selectCategoryFirst": "Сначала выберите категорию товара",
+  "takenBy": "занята",
+  "noPricesInCategory": "В этой категории нет цен"
 }

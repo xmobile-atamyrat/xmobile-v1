@@ -3,6 +3,7 @@ import {
   CartItem,
   Category,
   DollarRate,
+  Prices,
   Product,
   User,
   UserRole,
@@ -459,4 +460,12 @@ export interface PageSeoData {
 export type CartItemWithProduct = CartItem & {
   product: Product;
   variantOutOfStock?: boolean;
+};
+
+// A price as /api/prices returns it, carrying the product that owns it (null
+// when unassigned). The product form's picker needs the owner to grey out
+// prices another product already holds and name the culprit, which is why the
+// endpoint includes it rather than making the client resolve ids.
+export type PriceWithOwner = Prices & {
+  product?: { id: string; name: string } | null;
 };

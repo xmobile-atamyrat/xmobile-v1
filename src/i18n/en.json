@@ -406,7 +406,6 @@
   "noProduct": "No product",
   "noCategory": "No category",
   "connectedPrices": "Connected prices",
-  "connectPriceHint": "Connect a price below to choose one here",
   "priceStillInUse": "This price is used by the base price or a variant. Clear that first.",
   "connectPriceError": "Could not update the price connection.",
   "sortBy": "Sort by",
@@ -571,5 +570,16 @@
   "productsOverview": "Products overview",
   "selectCategory": "Select a category",
   "categoryRequired": "Please select a category",
-  "outOfStockOnly": "Out of stock only"
+  "outOfStockOnly": "Out of stock only",
+  "productsUpdated": "Products updated successfully!",
+  "updateProductsError": "Could not update products.",
+  "allBrands": "All brands",
+  "noBrand": "No brand",
+  "missingPriceOnly": "Missing price only",
+  "brokenPriceLink": "Broken price link",
+  "noPrice": "No price",
+  "lastEdited": "Last edited",
+  "selectCategoryFirst": "Select a product category first",
+  "takenBy": "taken by",
+  "noPricesInCategory": "No prices in this category"
 }

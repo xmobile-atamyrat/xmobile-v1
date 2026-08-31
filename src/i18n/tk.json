@@ -408,7 +408,6 @@
   "noProduct": "Haryt ýok",
   "noCategory": "Kategoriýa ýok",
   "connectedPrices": "Baglanyşdyrylan bahalar",
-  "connectPriceHint": "Bu ýerde saýlamak üçin aşakdan baha baglanyşdyryň",
   "priceStillInUse": "Bu baha esasy bahada ýa-da wariantda ulanylýar. Ilki ony aýryň.",
   "connectPriceError": "Baha baglanyşygyny täzeläp bolmady.",
   "sortBy": "Tertiple",
@@ -573,5 +572,16 @@
   "productsOverview": "Harytlara syn",
   "selectCategory": "Kategoriýa saýlaň",
   "categoryRequired": "Haýyş, kategoriýa saýlaň",
-  "outOfStockOnly": "Diňe gutaranlar"
+  "outOfStockOnly": "Diňe gutaranlar",
+  "productsUpdated": "Harytlar üstünlikli täzelendi!",
+  "updateProductsError": "Harytlary täzeläp bolmady",
+  "allBrands": "Ähli brendler",
+  "noBrand": "Brend ýok",
+  "missingPriceOnly": "Diňe bahasy ýoklar",
+  "brokenPriceLink": "Baha salgysy döwük",
+  "noPrice": "Baha ýok",
+  "lastEdited": "Üýtgedilen",
+  "selectCategoryFirst": "Ilki haryt kategoriýasyny saýlaň",
+  "takenBy": "eýesi",
+  "noPricesInCategory": "Bu kategoriýada baha ýok"
 }

@@ -406,7 +406,6 @@
   "noProduct": "Ürün yok",
   "noCategory": "Kategori yok",
   "connectedPrices": "Bağlı fiyatlar",
-  "connectPriceHint": "Burada seçmek için aşağıdan bir fiyat bağlayın",
   "priceStillInUse": "Bu fiyat temel fiyatta veya bir varyantta kullanılıyor. Önce onu temizleyin.",
   "connectPriceError": "Fiyat bağlantısı güncellenemedi.",
   "sortBy": "Sırala",
@@ -572,5 +571,16 @@
   "productsOverview": "Ürünlere genel bakış",
   "selectCategory": "Kategori seçin",
   "categoryRequired": "Lütfen bir kategori seçin",
-  "outOfStockOnly": "Sadece stokta olmayanlar"
+  "outOfStockOnly": "Sadece stokta olmayanlar",
+  "productsUpdated": "Ürünler başarıyla güncellendi!",
+  "updateProductsError": "Ürünler güncellenemedi.",
+  "allBrands": "Tüm markalar",
+  "noBrand": "Marka yok",
+  "missingPriceOnly": "Sadece fiyatı olmayanlar",
+  "brokenPriceLink": "Bozuk fiyat bağlantısı",
+  "noPrice": "Fiyat yok",
+  "lastEdited": "Son düzenleme",
+  "selectCategoryFirst": "Önce bir ürün kategorisi seçin",
+  "takenBy": "sahibi",
+  "noPricesInCategory": "Bu kategoride fiyat yok"
 }
