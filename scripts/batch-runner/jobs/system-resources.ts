@@ -1,3 +1,6 @@
+// TODO: Separate tracking for each metric. Currently we track all metrics together
+// which may lead to missed alerts if one metric recovers while others remain high.
+
 import fs from 'fs';
 import os from 'os';
 import { sendSlackAlert } from 'scripts/batch-runner/jobs/utils';
