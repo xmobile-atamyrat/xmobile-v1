@@ -63,7 +63,7 @@ import {
   categoryMenuItems,
   flattenCategories,
 } from '@/pages/product/components/categoryOptions';
-import PriceCategoryCell from '@/pages/product/components/PriceCategoryCell';
+import CategoryCell from '@/pages/product/components/CategoryCell';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -632,8 +632,8 @@ export default function UpdatePrices() {
                         {(() => {
                           if (cellIndex === PRICE_CATEGORY_IDX) {
                             return (
-                              <PriceCategoryCell
-                                priceId={row[PRICE_ID_IDX] as string}
+                              <CategoryCell
+                                id={row[PRICE_ID_IDX] as string}
                                 value={(cell as string | null) ?? null}
                                 options={flattenedCats}
                                 emptyLabel={t('noCategory')}
