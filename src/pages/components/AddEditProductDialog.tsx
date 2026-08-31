@@ -60,7 +60,7 @@ import {
 import type { Color, Prices, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AddEditProductDialogProps {
   handleClose: () => void;
@@ -198,7 +198,15 @@ export default function AddEditProductDialog({
   const [editBrandName, setEditBrandName] = useState('');
 
   const [colorOptions, setColorOptions] = useState<Color[]>([]);
+  // Only prices connected to this product can back its base price or a variant
+  // tag, so the pickers below offer this list rather than the whole catalog.
   const [priceOptions, setPriceOptions] = useState<Prices[]>([]);
+  // Connect-a-price search state. A price already owned by another product is
+  // not offered at all (the API refuses to move it), so the search asks for
+  // unassigned prices only.
+  const [priceSearch, setPriceSearch] = useState('');
+  const [priceSearchResults, setPriceSearchResults] = useState<Prices[]>([]);
+  const [connectError, setConnectError] = useState('');
   // Base price is stored as "[priceId]" when it references a catalog price, or
   // a legacy literal string. Keep the raw value so an untouched legacy literal
   // is preserved on save; the select only edits the catalog reference.
@@ -222,9 +230,102 @@ export default function AddEditProductDialog({
   useEffect(() => {
     (async () => {
       setColorOptions(await fetchColors());
-      setPriceOptions(await fetchPrices());
+      // A product being created has no id yet, so it starts with nothing
+      // connected; picks made below are staged and written after it is created.
+      if (id != null) setPriceOptions(await fetchPrices({ productId: id }));
     })();
-  }, []);
+  }, [id]);
+
+  // Every keystroke used to fire its own request and write whatever came back,
+  // so a slow early response could land after a newer one and repopulate the
+  // list with results for a prefix the admin had already typed past. The
+  // counter retires superseded requests; the debounce keeps a fast typist from
+  // opening one per character in the first place.
+  const priceSearchSeq = useRef(0);
+  const priceSearchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(() => () => clearTimeout(priceSearchTimer.current), []);
+
+  const runPriceSearch = (keyword: string) => {
+    clearTimeout(priceSearchTimer.current);
+    priceSearchTimer.current = setTimeout(async () => {
+      priceSearchSeq.current += 1;
+      const seq = priceSearchSeq.current;
+      const results = await fetchPrices({
+        unassigned: true,
+        searchKeyword: keyword,
+      });
+      if (seq !== priceSearchSeq.current) return;
+      setPriceSearchResults(results);
+    }, 300);
+  };
+
+  const searchUnassignedPrices = (keyword: string) => {
+    setPriceSearch(keyword);
+    if (keyword.trim() === '') {
+      // Bumping the counter retires anything already in flight, so a late
+      // response cannot refill the list the admin just cleared.
+      priceSearchSeq.current += 1;
+      setPriceSearchResults([]);
+      return;
+    }
+    runPriceSearch(keyword.trim());
+  };
+
+  // Writes the link immediately for an existing product. For a new one the
+  // price is only held in local state and linked after the product is created.
+  const connectPrice = async (priceToConnect: Prices) => {
+    setConnectError('');
+    if (id != null) {
+      const { success, message } = await fetchWithCreds<Prices>({
+        accessToken,
+        path: '/api/prices',
+        method: 'PUT',
+        body: { pricePairs: [{ id: priceToConnect.id, productId: id }] },
+      });
+      if (!success) {
+        setConnectError(message ?? t('connectPriceError'));
+        return;
+      }
+    }
+    setPriceOptions((prev) =>
+      prev.some((p) => p.id === priceToConnect.id)
+        ? prev
+        : [...prev, priceToConnect],
+    );
+    setPriceSearchResults((prev) =>
+      prev.filter((p) => p.id !== priceToConnect.id),
+    );
+  };
+
+  // Disconnecting a price that the base price or a variant still points at
+  // would leave those strings referencing a price no longer in the product's
+  // list, so the reference has to be cleared first.
+  const disconnectPrice = async (priceId: string) => {
+    setConnectError('');
+    const usedByTag = tags.some(
+      (tag) => tag.match(squareBracketRegex)?.[1] === priceId,
+    );
+    if (basePriceId === priceId || usedByTag) {
+      setConnectError(t('priceStillInUse'));
+      return;
+    }
+    if (id != null) {
+      const { success, message } = await fetchWithCreds<Prices>({
+        accessToken,
+        path: '/api/prices',
+        method: 'PUT',
+        body: { pricePairs: [{ id: priceId, productId: null }] },
+      });
+      if (!success) {
+        setConnectError(message ?? t('connectPriceError'));
+        return;
+      }
+    }
+    setPriceOptions((prev) => prev.filter((p) => p.id !== priceId));
+  };
 
   // A variant tag is "<spec> [priceId]{colorId}". Price and color are picked
   // from dropdowns; only the spec text is free-typed.
@@ -322,10 +423,14 @@ export default function AddEditProductDialog({
     }
   };
 
+  // Seeds the category when the dialog is opened from a category page without
+  // one of its own. An explicit categoryId always wins: every edit passes the
+  // product's real category, and browsing to a category beforehand must not
+  // silently move the product being edited into it.
   useEffect(() => {
-    if (selectedCategoryId == null) return;
+    if (selectedCategoryId == null || initCategoryId != null) return;
     setCategoryId(selectedCategoryId);
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, initCategoryId]);
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
@@ -400,7 +505,12 @@ export default function AddEditProductDialog({
         component="form"
         onSubmit={async (event) => {
           event.preventDefault();
-          if (categoryId == null) return;
+          // The API rejects an unknown category, so catch the empty pick here
+          // and say why instead of surfacing a "category not found" error.
+          if (!categoryId) {
+            if (snackbarErrorHandler) snackbarErrorHandler('categoryRequired');
+            return;
+          }
 
           setLoading(true);
 
@@ -430,6 +540,33 @@ export default function AddEditProductDialog({
               selectedProductId: id,
               isOutOfStock,
             });
+            // A new product only got its id just now, so the prices staged in
+            // priceOptions are linked here. Editing an existing product writes
+            // each link as it is made, so there is nothing left to do.
+            if (id == null && priceOptions.length > 0) {
+              const { success, message } = await fetchWithCreds({
+                accessToken,
+                path: '/api/prices',
+                method: 'PUT',
+                body: {
+                  pricePairs: priceOptions.map((p) => ({
+                    id: p.id,
+                    productId: updatedProduct.id,
+                  })),
+                },
+              });
+              // The product's `price` and `tags` already reference these ids,
+              // so a rejected link (another admin claimed one first) leaves it
+              // pointing at prices it does not own — the exact state the
+              // reassignment guard exists to prevent. Reported rather than
+              // thrown: the product itself was created, so the state below
+              // still has to be applied, and only a human can resolve which
+              // product should keep the contested price.
+              if (!success && snackbarErrorHandler) {
+                snackbarErrorHandler(message ?? 'connectPriceError');
+              }
+            }
+
             setSelectedProduct(updatedProduct);
             if (setProduct) {
               setProduct(updatedProduct);
@@ -456,23 +593,31 @@ export default function AddEditProductDialog({
         </DialogTitle>
         <DialogContent sx={{ padding: 0 }}>
           <Box className={addEditProductDialogClasses.box.flex.gapP}>
-            {categoryId && (
-              <Box className={addEditProductDialogClasses.box.flex.gap}>
-                <Typography>{t('category')}</Typography>
-                <Select
-                  value={categoryId}
-                  onChange={(e) => {
-                    setCategoryId(e.target.value);
-                  }}
-                >
-                  {flattenedCats.map((cat) => (
-                    <MenuItem value={cat.id} key={cat.id}>
-                      {parseName(cat.name, router.locale)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Box>
-            )}
+            {/* Always rendered: a product added from a page with no category
+                of its own (the products overview) has nothing to inherit, so
+                the category has to be pickable here. */}
+            <Box className={addEditProductDialogClasses.box.flex.gap}>
+              <Typography>
+                {t('category')}
+                <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <Select
+                value={categoryId}
+                displayEmpty
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                }}
+              >
+                <MenuItem value="" disabled>
+                  {t('selectCategory')}
+                </MenuItem>
+                {flattenedCats.map((cat) => (
+                  <MenuItem value={cat.id} key={cat.id}>
+                    {parseName(cat.name, router.locale)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
 
             <Box className="w-full">
               <Typography>
@@ -540,7 +685,66 @@ export default function AddEditProductDialog({
                   {t('price')}: {legacyLiteralPrice}
                 </Typography>
               )}
+              {priceOptions.length === 0 && (
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ display: 'block', mt: 0.5 }}
+                >
+                  {t('connectPriceHint')}
+                </Typography>
+              )}
               <input type="hidden" name="price" value={basePrice} />
+            </Box>
+
+            {/* Connected prices: the pool the base price and variant pickers
+                draw from. Search only surfaces prices no product owns yet. */}
+            <Box className="w-full">
+              <Typography>{t('connectedPrices')}</Typography>
+              {priceOptions.map((connected) => (
+                <Box
+                  key={connected.id}
+                  className="flex flex-row items-center justify-between"
+                  sx={{ py: 0.25 }}
+                >
+                  <Typography variant="body2">
+                    {connected.name} — {connected.priceInTmt} {t('manat')}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => disconnectPrice(connected.id)}
+                  >
+                    <DeleteOutlined color="error" fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <TextField
+                size="small"
+                fullWidth
+                sx={{ mt: 1 }}
+                placeholder={t('search')}
+                value={priceSearch}
+                onChange={(e) => searchUnassignedPrices(e.target.value)}
+              />
+              {priceSearchResults.map((result) => (
+                <Box
+                  key={result.id}
+                  className="flex flex-row items-center justify-between"
+                  sx={{ py: 0.25 }}
+                >
+                  <Typography variant="body2">
+                    {result.name} — {result.priceInTmt} {t('manat')}
+                  </Typography>
+                  <Button size="small" onClick={() => connectPrice(result)}>
+                    {t('add')}
+                  </Button>
+                </Box>
+              ))}
+              {connectError && (
+                <Typography variant="caption" color="error">
+                  {connectError}
+                </Typography>
+              )}
             </Box>
 
             <FormControlLabel

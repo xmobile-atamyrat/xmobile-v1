@@ -8,8 +8,10 @@ import {
   collectCategorySubtreeIds,
   debounce,
   filterPricesByCategories,
+  filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  isEditablePriceCell,
   NO_CATEGORY_FILTER,
   NO_PRODUCT_FILTER,
   parsePrice,
@@ -18,6 +20,8 @@ import {
   PRICE_ID_IDX,
   PRICE_MANAT_IDX,
   PRICE_NAME_IDX,
+  PRICE_OUT_OF_STOCK_IDX,
+  PRICE_UPDATED_IDX,
   PriceSortKey,
   processPrices,
   sortPrices,
@@ -28,6 +32,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   FormControl,
   IconButton,
   InputLabel,
@@ -40,6 +45,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
   Typography,
   useMediaQuery,
   useTheme,
@@ -59,7 +65,6 @@ import {
 } from '@/pages/product/components/categoryOptions';
 import PriceCategoryCell from '@/pages/product/components/PriceCategoryCell';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -97,11 +102,9 @@ export default function UpdatePrices() {
   // The rendered `tableData` is derived from this via sort/filter below, so the
   // existing edit-by-row-index logic on `tableData` stays untouched.
   const [allPrices, setAllPrices] = useState<Prices[]>([]);
-  const [priceCategoryMap, setPriceCategoryMap] = useState<
-    Record<string, string[]>
-  >({});
   const [sortKey, setSortKey] = useState<PriceSortKey>('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [outOfStockOnly, setOutOfStockOnly] = useState(false);
   const { user, accessToken } = useUserContext();
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
@@ -126,19 +129,22 @@ export default function UpdatePrices() {
         : new Set<string>();
     let filtered: Prices[];
     if (categoryFilter === NO_PRODUCT_FILTER) {
-      filtered = filterPricesWithoutProduct(allPrices, priceCategoryMap);
+      filtered = filterPricesWithoutProduct(allPrices);
     } else if (categoryFilter === NO_CATEGORY_FILTER) {
       filtered = filterPricesWithoutCategory(allPrices);
     } else {
       filtered = filterPricesByCategories(allPrices, subtreeIds);
     }
+    // Stacks on whichever filter ran above rather than replacing it, so
+    // "out of stock" narrows the current category instead of leaving it.
+    if (outOfStockOnly) filtered = filterPricesOutOfStock(filtered);
     setTableData(
       applyPendingEdits(
         processPrices(sortPrices(filtered, sortKey)),
         updatedPricesRef.current,
       ),
     );
-  }, [allPrices, priceCategoryMap, sortKey, categoryFilter, categories]);
+  }, [allPrices, sortKey, categoryFilter, categories, outOfStockOnly]);
 
   useEffect(() => {
     if (accessToken) {
@@ -157,15 +163,6 @@ export default function UpdatePrices() {
             message: 'fetchPricesError',
             severity: 'error',
           });
-        }
-
-        const mapResponse = await fetchWithCreds<Record<string, string[]>>({
-          accessToken,
-          path: '/api/prices/categories',
-          method: 'GET',
-        });
-        if (mapResponse.success && mapResponse.data != null) {
-          setPriceCategoryMap(mapResponse.data);
         }
 
         const dollarRateResponse = await fetchWithCreds<DollarRate>({
@@ -293,6 +290,33 @@ export default function UpdatePrices() {
           index > 0 && row[PRICE_ID_IDX] === priceId
             ? row.map((cell, idx) =>
                 idx === PRICE_CATEGORY_IDX ? categoryId : cell,
+              )
+            : row,
+        ),
+      );
+    },
+    [],
+  );
+
+  // Same discrete-event shape again. Nothing cascades client-side: the owning
+  // product's own flag is re-derived by the server when the batched PUT lands,
+  // so the product column here can lag until the next load.
+  const handleOutOfStockChange = useCallback(
+    (priceId: string, isOutOfStock: boolean) => {
+      setUpdatedPrices((prevPrices) => {
+        const next = {
+          ...prevPrices,
+          [priceId]: { ...prevPrices[priceId], id: priceId, isOutOfStock },
+        };
+        updatedPricesRef.current = next;
+        return next;
+      });
+
+      setTableData((prevData) =>
+        prevData.map((row, index) =>
+          index > 0 && row[PRICE_ID_IDX] === priceId
+            ? row.map((cell, idx) =>
+                idx === PRICE_OUT_OF_STOCK_IDX ? isOutOfStock : cell,
               )
             : row,
         ),
@@ -463,6 +487,15 @@ export default function UpdatePrices() {
                     {categoryMenuItems(flattenedCats)}
                   </Select>
                 </FormControl>
+                <ToggleButton
+                  size="small"
+                  color="error"
+                  value="outOfStockOnly"
+                  selected={outOfStockOnly}
+                  onChange={() => setOutOfStockOnly((prev) => !prev)}
+                >
+                  {t('outOfStockOnly')}
+                </ToggleButton>
               </Box>
               <Box className="flex flex-row gap-2 w-full">
                 <Button
@@ -561,16 +594,21 @@ export default function UpdatePrices() {
                       setHoveredPrice(undefined);
                     }}
                   >
-                    {row.map((cell, cellIndex) => (
+                    {/* The id trails every row as the edit key and is not a
+                        column, so only the header's worth of cells is drawn. */}
+                    {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={
-                          cellIndex !== PRICE_ID_IDX &&
-                          cellIndex !== PRICE_CATEGORY_IDX
-                        }
+                        contentEditable={isEditablePriceCell(cellIndex)}
                         suppressContentEditableWarning
                         key={cellIndex}
                         onInput={(e) => {
+                          // The out-of-stock checkbox is a real <input>, so its
+                          // native input event bubbles into this cell handler.
+                          // Letting it through submits an empty value: an
+                          // invalidPrice error on every toggle, and a price
+                          // typed within the shared debounce window is lost.
+                          if (!isEditablePriceCell(cellIndex)) return;
                           handlePriceUpdate(
                             e.currentTarget.textContent,
                             cellIndex,
@@ -591,48 +629,65 @@ export default function UpdatePrices() {
                               <DeleteIcon color="error" />
                             </IconButton>
                           )}
-                        {cellIndex === PRICE_ID_IDX &&
-                          hoveredPrice === rowIndex && (
-                            <IconButton
-                              className="absolute -left-4 top-1"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(
-                                    cell as string,
-                                  );
-                                  setSnackbarOpen(true);
-                                  setSnackbarMessage({
-                                    message: 'copied',
-                                    severity: 'success',
-                                  });
-                                } catch (error) {
-                                  console.error(error);
-                                  setSnackbarOpen(true);
-                                  setSnackbarMessage({
-                                    message: 'copyFailed',
-                                    severity: 'error',
-                                  });
+                        {(() => {
+                          if (cellIndex === PRICE_CATEGORY_IDX) {
+                            return (
+                              <PriceCategoryCell
+                                priceId={row[PRICE_ID_IDX] as string}
+                                value={(cell as string | null) ?? null}
+                                options={flattenedCats}
+                                emptyLabel={t('noCategory')}
+                                dirty={
+                                  'categoryId' in
+                                  (updatedPrices[row[PRICE_ID_IDX] as string] ??
+                                    {})
                                 }
-                              }}
-                            >
-                              <ContentCopyIcon color="primary" />
-                            </IconButton>
-                          )}
-                        {cellIndex === PRICE_CATEGORY_IDX ? (
-                          <PriceCategoryCell
-                            priceId={row[PRICE_ID_IDX] as string}
-                            value={(cell as string | null) ?? null}
-                            options={flattenedCats}
-                            emptyLabel={t('noCategory')}
-                            dirty={
-                              'categoryId' in
-                              (updatedPrices[row[PRICE_ID_IDX] as string] ?? {})
-                            }
-                            onChange={handleCategoryChange}
-                          />
-                        ) : (
-                          cell
-                        )}
+                                onChange={handleCategoryChange}
+                              />
+                            );
+                          }
+                          if (cellIndex === PRICE_UPDATED_IDX) {
+                            // ISO date, not a locale format: the table spans
+                            // five locales and an admin scanning for stale
+                            // prices needs one shape they can compare at a
+                            // glance.
+                            return (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {typeof cell === 'string'
+                                  ? cell.slice(0, 10)
+                                  : ''}
+                              </Typography>
+                            );
+                          }
+                          if (cellIndex === PRICE_OUT_OF_STOCK_IDX) {
+                            const priceId = row[PRICE_ID_IDX] as string;
+                            return (
+                              <Checkbox
+                                size="small"
+                                checked={cell === true}
+                                onChange={(e) =>
+                                  handleOutOfStockChange(
+                                    priceId,
+                                    e.target.checked,
+                                  )
+                                }
+                                // Matches the dirty affordance the category and
+                                // product cells use: a pending edit is coloured
+                                // until the batched save clears it.
+                                color={
+                                  'isOutOfStock' in
+                                  (updatedPrices[priceId] ?? {})
+                                    ? 'warning'
+                                    : 'primary'
+                                }
+                              />
+                            );
+                          }
+                          return cell;
+                        })()}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -755,10 +810,11 @@ export default function UpdatePrices() {
 
                   if (success && data != null) {
                     setAllPrices((prev) => [data, ...prev]);
-                    // A brand-new price is referenced by no product yet, and may
-                    // carry no category either, so an active filter would hide
-                    // it. Clear the filter so it stays visible.
+                    // A brand-new price may carry no category and is always in
+                    // stock, so either active filter would hide it. Clear both
+                    // so it stays visible.
                     setCategoryFilter('');
+                    setOutOfStockOnly(false);
                     setSnackbarOpen(true);
                     setSnackbarMessage({
                       message: 'priceCreateSuccess',
