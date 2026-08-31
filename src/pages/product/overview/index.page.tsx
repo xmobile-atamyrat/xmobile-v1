@@ -1,23 +1,31 @@
+import BASE_URL from '@/lib/ApiEndpoints';
 import Layout from '@/pages/components/Layout';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import { AdminProductListItem } from '@/pages/api/product/admin-list.page';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchBrands, fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
   mobileAppBarHeight,
   squareBracketRegex,
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { AddEditProductProps, SnackbarProps } from '@/pages/lib/types';
+import {
+  AddEditProductProps,
+  ResponseApi,
+  SnackbarProps,
+} from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import CategoryCell from '@/pages/product/components/CategoryCell';
 import {
   categoryMenuItems,
   flattenCategories,
 } from '@/pages/product/components/categoryOptions';
 import {
   filterOverviewProducts,
+  NO_BRAND_FILTER,
+  OverviewSortKey,
   sortOverviewProducts,
 } from '@/pages/product/overview/lib';
 import AddIcon from '@mui/icons-material/Add';
@@ -26,6 +34,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   FormControl,
   IconButton,
@@ -44,6 +53,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -70,9 +80,20 @@ export default function ProductsOverview() {
   const fetchWithCreds = useFetchWithCreds();
 
   const [products, setProducts] = useState<AdminProductListItem[]>([]);
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
+  const [missingPriceOnly, setMissingPriceOnly] = useState(false);
+  const [sortKey, setSortKey] = useState<OverviewSortKey>('nameAsc');
+  // Pending category/stock edits keyed by product id, mirroring update-prices:
+  // a row edit is staged here and only written on Save, so a row full of
+  // half-finished picks can't leave the list mid-request.
+  const [updatedProducts, setUpdatedProducts] = useState<
+    Record<string, { categoryId?: string; isOutOfStock?: boolean }>
+  >({});
+  const [savingEdits, setSavingEdits] = useState(false);
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -106,19 +127,123 @@ export default function ProductsOverview() {
     loadProducts();
   }, [accessToken]);
 
-  const visibleProducts = useMemo(
-    () =>
-      sortOverviewProducts(
-        filterOverviewProducts(products, {
-          searchKeyword,
-          categoryId: categoryFilter,
-          outOfStockOnly,
-          locale: router.locale ?? 'tk',
+  useEffect(() => {
+    (async () => setBrands(await fetchBrands()))();
+  }, []);
+
+  // Pending edits are overlaid before filtering (not after, unlike
+  // update-prices) so flipping a row's stock or category updates its place in
+  // the "out of stock only" / category-filtered view immediately rather than
+  // only once Save lands.
+  const visibleProducts = useMemo(() => {
+    const withPendingEdits = products.map((product) =>
+      updatedProducts[product.id]
+        ? { ...product, ...updatedProducts[product.id] }
+        : product,
+    );
+    return sortOverviewProducts(
+      filterOverviewProducts(withPendingEdits, {
+        searchKeyword,
+        categoryId: categoryFilter,
+        outOfStockOnly,
+        brandId: brandFilter,
+        missingPriceOnly,
+        locale: router.locale ?? 'tk',
+      }),
+      router.locale ?? 'tk',
+      sortKey,
+    );
+  }, [
+    products,
+    updatedProducts,
+    searchKeyword,
+    categoryFilter,
+    outOfStockOnly,
+    brandFilter,
+    missingPriceOnly,
+    sortKey,
+    router.locale,
+  ]);
+
+  const handleCategoryChange = (
+    productId: string,
+    categoryId: string | null,
+  ) => {
+    if (categoryId == null) return; // a product always needs a category
+    setUpdatedProducts((prev) => ({
+      ...prev,
+      [productId]: { ...prev[productId], categoryId },
+    }));
+  };
+
+  const handleOutOfStockChange = (productId: string, isOutOfStock: boolean) => {
+    setUpdatedProducts((prev) => ({
+      ...prev,
+      [productId]: { ...prev[productId], isOutOfStock },
+    }));
+  };
+
+  // Each row is its own multipart PUT (the product API isn't a batch JSON
+  // endpoint like /api/prices), fired in parallel and only for the fields the
+  // admin actually touched — an omitted field is left untouched server-side,
+  // which is what keeps this from clobbering images, tags, or the base price.
+  const saveProductEdits = async () => {
+    const edits = Object.entries(updatedProducts);
+    if (edits.length === 0) return;
+    setSavingEdits(true);
+    try {
+      const results = await Promise.all(
+        edits.map(async ([productId, edit]) => {
+          const formData = new FormData();
+          if (edit.categoryId != null) {
+            formData.append('categoryId', edit.categoryId);
+          }
+          if (edit.isOutOfStock != null) {
+            formData.append('isOutOfStock', String(edit.isOutOfStock));
+          }
+          const response = await fetch(
+            `${BASE_URL}/api/product?productId=${productId}`,
+            { method: 'PUT', body: formData },
+          );
+          const json: ResponseApi<Product> = await response.json();
+          return { productId, ...json };
         }),
-        router.locale ?? 'tk',
-      ),
-    [products, searchKeyword, categoryFilter, outOfStockOnly, router.locale],
-  );
+      );
+
+      const succeeded = results.filter((result) => result.success);
+      setProducts((prev) =>
+        prev.map((product) => {
+          const result = succeeded.find((r) => r.productId === product.id);
+          return result?.data
+            ? {
+                ...product,
+                categoryId: result.data.categoryId,
+                isOutOfStock: result.data.isOutOfStock,
+                // The row really was just edited, so the "recently edited" sort
+                // has to see it move rather than keep the pre-save timestamp.
+                updatedAt: new Date(result.data.updatedAt).toISOString(),
+              }
+            : product;
+        }),
+      );
+      setUpdatedProducts((prev) => {
+        const remaining = { ...prev };
+        succeeded.forEach(({ productId }) => delete remaining[productId]);
+        return remaining;
+      });
+
+      if (succeeded.length < results.length) {
+        notify('updateProductsError', 'error');
+      } else {
+        notify('productsUpdated', 'success');
+      }
+    } catch (error) {
+      console.error(error);
+      notify('updateProductsError', 'error');
+    } finally {
+      setSavingEdits(false);
+    }
+  };
 
   // The list payload is deliberately thin, so opening the edit form needs the
   // full record — raw multi-locale names included, which is why it skips the
@@ -190,7 +315,7 @@ export default function ProductsOverview() {
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 sx={{ minWidth: 240 }}
               />
-              <FormControl size="small" sx={{ minWidth: 240 }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>{t('category')}</InputLabel>
                 <Select
                   label={t('category')}
@@ -199,6 +324,43 @@ export default function ProductsOverview() {
                 >
                   <MenuItem value="">{t('allCategories')}</MenuItem>
                   {categoryMenuItems(flattenedCats)}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>{t('brand')}</InputLabel>
+                <Select
+                  label={t('brand')}
+                  value={brandFilter}
+                  onChange={(e) => setBrandFilter(e.target.value)}
+                >
+                  <MenuItem value="">{t('allBrands')}</MenuItem>
+                  <MenuItem value={NO_BRAND_FILTER}>{t('noBrand')}</MenuItem>
+                  {brands.map((brand) => (
+                    <MenuItem value={brand.id} key={brand.id}>
+                      {brand.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 170 }}>
+                <InputLabel>{t('sortBy')}</InputLabel>
+                <Select
+                  label={t('sortBy')}
+                  value={sortKey}
+                  onChange={(e) =>
+                    setSortKey(e.target.value as OverviewSortKey)
+                  }
+                >
+                  <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
+                  <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
+                  <MenuItem value="editedRecent">
+                    {t('recentlyEdited')}
+                  </MenuItem>
+                  <MenuItem value="editedStale">
+                    {t('longestNotEdited')}
+                  </MenuItem>
+                  <MenuItem value="priceAsc">{t('manatLowToHigh')}</MenuItem>
+                  <MenuItem value="priceDesc">{t('manatHighToLow')}</MenuItem>
                 </Select>
               </FormControl>
               <ToggleButton
@@ -210,6 +372,24 @@ export default function ProductsOverview() {
               >
                 {t('outOfStockOnly')}
               </ToggleButton>
+              <ToggleButton
+                size="small"
+                color="warning"
+                value="missingPriceOnly"
+                selected={missingPriceOnly}
+                onChange={() => setMissingPriceOnly((prev) => !prev)}
+              >
+                {t('missingPriceOnly')}
+              </ToggleButton>
+              {Object.keys(updatedProducts).length > 0 && (
+                <Button
+                  variant="contained"
+                  disabled={savingEdits}
+                  onClick={saveProductEdits}
+                >
+                  {t('save')}
+                </Button>
+              )}
             </Box>
 
             <Table size="small">
@@ -217,7 +397,10 @@ export default function ProductsOverview() {
                 <TableRow>
                   <TableCell>{t('productName')}</TableCell>
                   <TableCell>{t('category')}</TableCell>
-                  <TableCell>{t('connectedPrices')}</TableCell>
+                  <TableCell>{t('brand')}</TableCell>
+                  <TableCell>{t('price')}</TableCell>
+                  <TableCell>{t('outOfStock')}</TableCell>
+                  <TableCell>{t('lastEdited')}</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -225,24 +408,73 @@ export default function ProductsOverview() {
                 {visibleProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <Box className="flex flex-row items-center gap-2">
-                        {parseName(product.name, router.locale ?? 'tk')}
-                        {product.isOutOfStock && (
-                          <Chip
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                            label={t('outOfStock')}
-                          />
-                        )}
-                      </Box>
+                      {parseName(product.name, router.locale ?? 'tk')}
                     </TableCell>
                     <TableCell>
-                      {flattenedCats.find(
-                        (cat) => cat.id === product.categoryId,
-                      )?.name ?? t('noCategory')}
+                      <CategoryCell
+                        id={product.id}
+                        value={product.categoryId}
+                        options={flattenedCats}
+                        emptyLabel={t('noCategory')}
+                        allowEmpty={false}
+                        dirty={
+                          'categoryId' in (updatedProducts[product.id] ?? {})
+                        }
+                        onChange={handleCategoryChange}
+                      />
                     </TableCell>
-                    <TableCell>{product.priceCount}</TableCell>
+                    <TableCell>
+                      {brands.find((brand) => brand.id === product.brandId)
+                        ?.name ?? (
+                        <Typography variant="body2" color="text.disabled">
+                          {t('noBrand')}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {/* A dead reference is called out rather than shown as a
+                          blank: it renders as a permanent spinner on the
+                          storefront, so it needs fixing, not just filling in. */}
+                      {product.basePriceIssue == null ? (
+                        `${product.basePriceTmt} ${t('manat')}`
+                      ) : (
+                        <Chip
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          label={
+                            product.basePriceIssue === 'danglingRef'
+                              ? t('brokenPriceLink')
+                              : t('noPrice')
+                          }
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Checkbox
+                        size="small"
+                        checked={product.isOutOfStock}
+                        onChange={(e) =>
+                          handleOutOfStockChange(product.id, e.target.checked)
+                        }
+                        // Matches the dirty affordance the category cell uses:
+                        // a pending edit is coloured until the save clears it.
+                        color={
+                          'isOutOfStock' in (updatedProducts[product.id] ?? {})
+                            ? 'warning'
+                            : 'primary'
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {/* ISO, not a locale format: the table spans five locales
+                          and an admin scanning for stale rows needs one shape
+                          they can compare at a glance. Same call the price
+                          table's updated column makes. */}
+                      <Typography variant="body2" color="text.secondary">
+                        {product.updatedAt.slice(0, 10)}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       {/* Connecting prices lives in the edit form, so this row
                           only opens that one dialog. */}
