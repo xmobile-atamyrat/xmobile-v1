@@ -1,5 +1,6 @@
 import {
   Brand,
+  CartItem,
   Category,
   DollarRate,
   Product,
@@ -450,3 +451,12 @@ export interface PageSeoData {
   organizationJsonLd?: Record<string, any>;
   localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
 }
+
+// A cart line as /api/cart returns it. `variantOutOfStock` is resolved
+// server-side from the price the selected variant points at — a product can be
+// available while the specific variant in the cart is not, so both flags have
+// to be checked before letting the line through to checkout.
+export type CartItemWithProduct = CartItem & {
+  product: Product;
+  variantOutOfStock?: boolean;
+};

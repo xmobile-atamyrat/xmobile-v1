@@ -629,3 +629,11 @@ export const slugify = (text: string): string => {
     .replace(/[-\s]+/g, '-') // Replace spaces and hyphens with single hyphen
     .replace(/-+$/, ''); // Remove trailing hyphens
 };
+
+// A cart line is unbuyable when its product is out of stock or the specific
+// variant it points at is. Both flags matter: an available phone can have a
+// sold-out 512GB variant, and that variant is what the line refers to.
+export const isCartLineOutOfStock = (item: {
+  product: { isOutOfStock: boolean };
+  variantOutOfStock?: boolean;
+}): boolean => item.product.isOutOfStock || item.variantOutOfStock === true;

@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { sendFCMWithCallbackFallback } from '@/lib/fcm/fcmService';
+import { unavailableVariantTags } from '@/lib/variantStock';
 import { getColor } from '@/pages/api/colors/index.page';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
@@ -46,6 +47,28 @@ export interface GetOrdersFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+/**
+ * Whether any cart item is unbuyable — either its product is out of stock, or
+ * the specific variant the user picked is.
+ *
+ * The product-level check alone stopped being sufficient once stock moved onto
+ * `Prices`: a phone can be perfectly available while its 512GB variant is not,
+ * and that variant is what the cart item points at.
+ */
+export async function cartHasOutOfStockItem(
+  cartItems: Array<{
+    selectedVariant?: string | null;
+    product: { isOutOfStock: boolean };
+  }>,
+): Promise<boolean> {
+  if (cartItems.some((item) => item.product.isOutOfStock)) return true;
+
+  const unavailable = await unavailableVariantTags(
+    cartItems.map((item) => item.selectedVariant),
+  );
+  return unavailable.size > 0;
 }
 
 async function buildOrderItemsData(
@@ -116,7 +139,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
 
   // Reject rather than silently drop: dropping would place an order missing
   // items the user believed they were buying
-  if (cartItems.some((item) => item.product.outOfStockAt != null)) {
+  if (await cartHasOutOfStockItem(cartItems)) {
     throw new Error(OUT_OF_STOCK_ERROR);
   }
 
@@ -235,7 +258,7 @@ export async function createGuestOrder(
 
   // Reject rather than silently drop: dropping would place an order missing
   // items the user believed they were buying
-  if (cartItems.some((item) => item.product.outOfStockAt != null)) {
+  if (await cartHasOutOfStockItem(cartItems)) {
     throw new Error(OUT_OF_STOCK_ERROR);
   }
 
