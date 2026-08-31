@@ -37,7 +37,8 @@ function getMemoryUsagePercent(): number {
   });
 
   if (!total || !available) {
-    throw new Error(
+    sendSlackAlert(
+      SLACK_BOT_NAME,
       'Failed to parse /proc/meminfo. Ensure execution on a Linux host.',
     );
   }
@@ -166,9 +167,6 @@ async function runSystemResourceCheck(): Promise<void> {
 
   consecutiveLowChecks += 1;
   consecutiveHighChecks = 0;
-  console.log(
-    `[SystemResources] Resources normal (${consecutiveLowChecks}/${RECOVERY_CONSECUTIVE_CHECKS}). CPU=${snapshot.cpuPercent.toFixed(1)}%, Memory=${snapshot.memoryPercent.toFixed(1)}%, DiskSpace=${snapshot.diskSpacePercent.toFixed(1)}%, DiskInodes=${snapshot.diskInodePercent.toFixed(1)}%`,
-  );
 
   if (alertActive && consecutiveLowChecks >= RECOVERY_CONSECUTIVE_CHECKS) {
     alertActive = false;
