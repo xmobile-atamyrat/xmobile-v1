@@ -134,9 +134,26 @@ export const fetchColors = async (): Promise<Color[]> => {
   return data;
 };
 
-export const fetchPrices = async (): Promise<Prices[]> => {
+/**
+ * Prices, optionally narrowed. `productId` returns just that product's
+ * connected prices (what the product form's pickers offer); `unassigned`
+ * returns prices no product owns yet (what the connect-price search offers).
+ * No options -> the whole price list, as before.
+ */
+export const fetchPrices = async (options?: {
+  productId?: string;
+  unassigned?: boolean;
+  searchKeyword?: string;
+}): Promise<Prices[]> => {
+  const params = new URLSearchParams();
+  if (options?.productId != null) params.set('productId', options.productId);
+  if (options?.unassigned) params.set('unassigned', 'true');
+  if (options?.searchKeyword)
+    params.set('searchKeyword', options.searchKeyword);
+  const query = params.toString();
+
   const { success, data, message }: ResponseApi<Prices[]> = await (
-    await fetch(`${BASE_URL}/api/prices`)
+    await fetch(`${BASE_URL}/api/prices${query ? `?${query}` : ''}`)
   ).json();
 
   if (!success || data == null) {

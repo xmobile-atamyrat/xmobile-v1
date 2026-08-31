@@ -1,18 +1,20 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
-import { squareBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
-import { parseVariantTag } from '@/pages/product/utils';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/prices/categories.page.ts';
 
-// Returns a map of priceId -> categoryIds of the products that reference it.
-// Prices carry no category link; the relationship is implicit in each product's
-// `price` ([priceId]) and its `tags` (each "spec [priceId]{colorId}"). The
-// update-prices page uses this to filter prices by category. Mirrors the
-// derive-from-products approach in api/product/filters.page.ts.
+// Returns a map of priceId -> categoryIds of the products that own it, read
+// from the Prices.productId relation. Kept as its own endpoint rather than
+// folded into Prices.categoryId because the two are deliberately allowed to
+// diverge — see the note on NO_CATEGORY_FILTER in src/pages/product/utils.ts.
+//
+// No in-repo caller left: the update-prices page now filters on the price's own
+// category. Kept for the mobile clients, which still read it. Note it derives
+// from Prices.productId, so it returns {} until the product-price backfill has
+// been applied.
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -25,28 +27,17 @@ export default async function handler(
   }
 
   try {
-    const products = await dbClient.product.findMany({
-      where: whereActiveProduct,
-      select: { price: true, tags: true, categoryId: true },
+    const prices = await dbClient.prices.findMany({
+      where: { product: whereActiveProduct },
+      select: { id: true, product: { select: { categoryId: true } } },
     });
 
-    const sets: Record<string, Set<string>> = {};
-    const add = (priceId: string, categoryId: string) => {
-      (sets[priceId] ??= new Set()).add(categoryId);
-    };
-
-    products.forEach(({ price, tags, categoryId }) => {
-      const priceMatch = price?.match(squareBracketRegex);
-      if (priceMatch) add(priceMatch[1], categoryId);
-      tags.forEach((tag) => {
-        const { priceId } = parseVariantTag(tag);
-        if (priceId) add(priceId, categoryId);
-      });
-    });
-
+    // Each price has at most one owning product, so every entry holds exactly
+    // one category id — the array shape is kept for the consumers that already
+    // treat this as a list.
     const map: Record<string, string[]> = {};
-    Object.keys(sets).forEach((priceId) => {
-      map[priceId] = [...sets[priceId]];
+    prices.forEach(({ id, product }) => {
+      if (product != null) map[id] = [product.categoryId];
     });
 
     return res.status(200).json({ success: true, data: map });
