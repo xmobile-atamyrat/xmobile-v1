@@ -3,6 +3,8 @@ import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
 import { fetchColors } from '@/pages/lib/apis';
+import { CartItemWithProduct } from '@/pages/lib/types';
+import { isCartLineOutOfStock } from '@/pages/lib/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -19,7 +21,7 @@ import {
   Link,
   Typography,
 } from '@mui/material';
-import { CartItem, Color, Prices, Product } from '@prisma/client';
+import { Color, Prices } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -36,9 +38,7 @@ export const getStaticProps = (async (context) => {
 
 export default function CartPage() {
   const { user, accessToken, isLoading } = useUserContext();
-  const [cartItems, setCartItems] = useState<
-    (CartItem & { product: Product })[]
-  >([]);
+  const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
   const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
@@ -63,12 +63,12 @@ export default function CartPage() {
       if (isLoading) return;
       try {
         const { success, data, message } = user
-          ? await fetchWithCreds<(CartItem & { product: Product })[]>({
+          ? await fetchWithCreds<CartItemWithProduct[]>({
               accessToken,
               path: `/api/cart?userId=${user.id}`,
               method: 'GET',
             })
-          : await fetchWithoutCreds<(CartItem & { product: Product })[]>(
+          : await fetchWithoutCreds<CartItemWithProduct[]>(
               '/api/guest/cart',
               'GET',
             );
@@ -129,16 +129,14 @@ export default function CartPage() {
     let totPrice = 0;
     cartItems.forEach((item) => {
       // Out-of-stock items can't be ordered, so they don't count toward the total
-      if (item.product.outOfStockAt != null) return;
+      if (isCartLineOutOfStock(item)) return;
       if (!Number.isNaN(Number(item.product.price)))
         totPrice += Number(item.product.price) * item.quantity;
     });
     setTotalPrice(totPrice);
   }, [cartItems]);
 
-  const outOfStockItems = cartItems.filter(
-    (item) => item.product.outOfStockAt != null,
-  );
+  const outOfStockItems = cartItems.filter(isCartLineOutOfStock);
 
   const handleCheckoutClick = () => {
     if (outOfStockItems.length > 0) {
@@ -261,6 +259,7 @@ export default function CartPage() {
                 {cartItems.map((cartItem) => (
                   <CartProductCard
                     product={cartItem?.product}
+                    variantOutOfStock={cartItem?.variantOutOfStock}
                     key={cartItem?.id}
                     selectedVariant={cartItem?.selectedVariant}
                     colorsMap={colorsMap}
