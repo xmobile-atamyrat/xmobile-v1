@@ -47,9 +47,10 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import {
-  computePrice,
+  fetchPriceRow,
   computeProductPriceTags,
   parseVariantTag,
+  pickVariantColorForSpec,
 } from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -285,6 +286,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       specText: string;
       colorId?: string;
       priceTmt?: string;
+      isOutOfStock: boolean;
     }[]
   >([]);
   // Selection is two-dimensional: a spec (e.g. "128GB 12GB RAM") and a color
@@ -305,15 +307,32 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       const resolved = await Promise.all(
         (initialProduct.tags ?? []).map(async (raw) => {
           const { specText, priceId, colorId } = parseVariantTag(raw);
-          const priceTmt = priceId
-            ? await computePrice({ priceId, accessToken, fetchWithCreds })
-            : undefined;
-          return { raw, specText, colorId, priceTmt };
+          // One row per variant carries both its price and its stock state, so
+          // a single sold-out variant can be greyed out without the whole
+          // product being marked out of stock.
+          const price = priceId
+            ? await fetchPriceRow({ priceId, accessToken, fetchWithCreds })
+            : null;
+          return {
+            raw,
+            specText,
+            colorId,
+            priceTmt: price?.priceInTmt,
+            // No resolvable price means nothing to charge, so the variant is
+            // unbuyable rather than free: this covers a tag whose price row was
+            // deleted and a tag that never carried a reference at all. The
+            // server reaches the same verdict in unavailableVariantTags.
+            isOutOfStock: price == null || price.outOfStockAt != null,
+          };
         }),
       );
       setVariants(resolved);
-      setSelectedSpec(resolved[0]?.specText);
-      setSelectedColorId(resolved[0]?.colorId);
+      // Open on something the user can actually buy; fall back to the first
+      // variant when every one of them is sold out.
+      const firstAvailable =
+        resolved.find((variant) => !variant.isOutOfStock) ?? resolved[0];
+      setSelectedSpec(firstAvailable?.specText);
+      setSelectedColorId(firstAvailable?.colorId);
     })();
     // accessToken intentionally omitted: prices are public
   }, [initialProduct]);
@@ -341,21 +360,52 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     [variants, selectedSpec],
   );
 
+  // A spec is sold out only when every colour of it is — one available colour
+  // keeps the spec chip selectable.
+  const soldOutSpecs = useMemo(
+    () =>
+      new Set(
+        specOptions.filter((spec) =>
+          variants
+            .filter((v) => v.specText === spec)
+            .every((v) => v.isOutOfStock),
+        ),
+      ),
+    [specOptions, variants],
+  );
+  // Colours of the selected spec that are sold out. Rendered with the same
+  // disabled treatment as a colour the spec never had.
+  const soldOutColorIds = useMemo(
+    () =>
+      new Set(
+        variants
+          .filter((v) => v.specText === selectedSpec && v.isOutOfStock)
+          .map((v) => v.colorId)
+          .filter(Boolean),
+      ),
+    [variants, selectedSpec],
+  );
+
   const selectedVariant =
     variants.find(
       (v) => v.specText === selectedSpec && v.colorId === selectedColorId,
     ) ?? variants.find((v) => v.specText === selectedSpec);
 
-  // Pick a valid color when switching spec
+  // Pick a valid color when switching spec, preferring one that is in stock.
+  // Keeping the current colour is only correct when that spec/colour pair is
+  // actually buyable, which is why this cannot just check "does the new spec
+  // have this colour".
   const handleSelectSpec = (spec: string) => {
     setSelectedSpec(spec);
-    const colorsForSpec = variants
-      .filter((v) => v.specText === spec)
-      .map((v) => v.colorId);
-    if (!colorsForSpec.includes(selectedColorId)) {
-      setSelectedColorId(colorsForSpec[0]);
-    }
+    setSelectedColorId(
+      pickVariantColorForSpec(variants, spec, selectedColorId),
+    );
   };
+
+  // The product's own flag still wins — it covers products with no variants at
+  // all — but a sold-out variant now blocks checkout on its own.
+  const selectionOutOfStock =
+    product?.outOfStockAt != null || selectedVariant?.isOutOfStock === true;
 
   // Price shown / sent to cart: selected variant's price when variants exist,
   // otherwise the product's base resolved price.
@@ -595,8 +645,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               </Typography>
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />
-            {/* Out-of-stock products show no price; the out-of-stock pill carries the state */}
-            {product.outOfStockAt == null && (
+            {/* Out-of-stock selections show no price; the out-of-stock pill
+                carries the state. Follows the selected variant, so switching to
+                a sold-out colour hides the price rather than quoting one that
+                cannot be bought. */}
+            {!selectionOutOfStock && (
               <Box className={detailPageClasses.price[platform]}>
                 {displayPrice == null || displayPrice?.includes('[') ? (
                   <CircularProgress
@@ -626,16 +679,19 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   {t('tags')}
                 </Typography>
                 <Box className="flex flex-row flex-wrap gap-2">
-                  {specOptions.map((spec) => (
-                    <Box
-                      key={spec}
-                      onClick={() => handleSelectSpec(spec)}
-                      className={interClassname.className}
-                      sx={chipSx(spec === selectedSpec, false)}
-                    >
-                      {spec}
-                    </Box>
-                  ))}
+                  {specOptions.map((spec) => {
+                    const soldOut = soldOutSpecs.has(spec);
+                    return (
+                      <Box
+                        key={spec}
+                        onClick={() => !soldOut && handleSelectSpec(spec)}
+                        className={interClassname.className}
+                        sx={chipSx(spec === selectedSpec && !soldOut, soldOut)}
+                      >
+                        {spec}
+                      </Box>
+                    );
+                  })}
                 </Box>
               </Box>
 
@@ -651,7 +707,11 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   <Box className="flex flex-row flex-wrap gap-2">
                     {colorOptions.map((colorId) => {
                       const color = colorsMap.get(colorId);
-                      const available = availableColorIds.has(colorId);
+                      // Not offered for this spec and sold out for this spec
+                      // get the same treatment: you cannot pick either.
+                      const available =
+                        availableColorIds.has(colorId) &&
+                        !soldOutColorIds.has(colorId);
                       const isSel = colorId === selectedColorId && available;
                       return (
                         <Box
@@ -719,7 +779,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
           )}
           {platform === 'web' &&
-            (product.outOfStockAt != null ? (
+            (selectionOutOfStock ? (
               <Box className="mt-[2vw]">
                 <Box className="max-w-[20vw] h-[3.5vw] bg-[#e8e8e8] rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
                   <Typography
@@ -780,7 +840,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         </Box>
       )}
       {platform === 'mobile' &&
-        (product.outOfStockAt != null ? (
+        (selectionOutOfStock ? (
           <Box className="w-full fixed bottom-0 left-0 right-0 z-10">
             <Box className="bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)] flex items-center justify-center pt-4">
               <Box className="w-[88.7vw] bg-[#e8e8e8] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center mx-auto">

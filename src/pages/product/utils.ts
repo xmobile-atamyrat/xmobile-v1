@@ -7,11 +7,18 @@ import * as XLSX from 'xlsx';
 
 const regex = /(".*?"|[^",]+|(?<=,)(?=,)|(?<=,)$|^,)/g;
 export type TableData = (string | number | boolean | null)[][];
+// Column order for the update-prices table: the name and the two figures being
+// edited lead, then the row's category, stock state and how stale it is. The id
+// trails every data row as the stable edit key but is never drawn — the table
+// renders `row.slice(0, PRICE_ID_IDX)`, which is why the header row is exactly
+// one cell shorter than a data row.
 export const PRICE_NAME_IDX = 0;
 export const PRICE_DOLLAR_IDX = 1;
 export const PRICE_MANAT_IDX = 2;
 export const PRICE_CATEGORY_IDX = 3;
-export const PRICE_ID_IDX = 4;
+export const PRICE_OUT_OF_STOCK_IDX = 4;
+export const PRICE_UPDATED_IDX = 5;
+export const PRICE_ID_IDX = 6;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -128,18 +135,72 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
 
 // The category cell holds the raw categoryId, not a display name: resolving the
 // localized name needs the category tree, which lives in the page's context.
+// `updatedAt` is normalized to an ISO string because it arrives as a Date from
+// Prisma but as a string once it has been through JSON.
+/**
+ * Whether a price-table column accepts typed text.
+ *
+ * The row's `onInput` handler is bound to every cell, but only these three are
+ * `contentEditable`. The rest render widgets — a category select, an
+ * out-of-stock checkbox — whose own native events bubble up to that same
+ * handler, so the two have to agree on one definition of "editable".
+ */
+export const isEditablePriceCell = (cellIndex: number): boolean =>
+  cellIndex === PRICE_NAME_IDX ||
+  cellIndex === PRICE_DOLLAR_IDX ||
+  cellIndex === PRICE_MANAT_IDX;
+
+export interface VariantStockChoice {
+  specText: string;
+  colorId?: string;
+  isOutOfStock: boolean;
+}
+
+/**
+ * Which colour to select after the shopper switches to `spec`.
+ *
+ * Keeping the current colour is only right when the *combination* is buyable:
+ * a colour can exist for the new spec and still be sold out in it, which used
+ * to leave the page showing an out-of-stock pill while other colours of that
+ * same spec were sitting there available. So the current colour is kept only
+ * when in stock, otherwise the first in-stock colour of the spec wins.
+ *
+ * When every colour of the spec is sold out there is nothing better to move to,
+ * so the current colour stands and the page renders its sold-out state.
+ */
+export const pickVariantColorForSpec = (
+  variants: VariantStockChoice[],
+  spec: string,
+  currentColorId?: string,
+): string | undefined => {
+  const forSpec = variants.filter((variant) => variant.specText === spec);
+  const current = forSpec.find((variant) => variant.colorId === currentColorId);
+
+  if (current != null && !current.isOutOfStock) return current.colorId;
+
+  const firstAvailable = forSpec.find((variant) => !variant.isOutOfStock);
+  if (firstAvailable != null) return firstAvailable.colorId;
+
+  return (current ?? forSpec[0])?.colorId;
+};
+
 export const processPrices = (prices: Prices[]): TableData => {
   const processedPrices = prices.map(
-    ({ id, name, price, priceInTmt, categoryId }) => [
+    ({ id, name, price, priceInTmt, categoryId, isOutOfStock, updatedAt }) => [
       name,
       price,
       parsePrice(priceInTmt),
       categoryId,
+      isOutOfStock,
+      updatedAt != null ? new Date(updatedAt).toISOString() : null,
       id,
     ],
   ) as TableData;
 
-  return [['Name', 'Dollars', 'Manat', 'Category', 'ID'], ...processedPrices];
+  return [
+    ['Name', 'Dollars', 'Manat', 'Category', 'Out of stock', 'Updated'],
+    ...processedPrices,
+  ];
 };
 
 export const isPriceValid = (price: string): boolean => {
@@ -166,6 +227,8 @@ export const applyPendingEdits = (
     // edit whose value is null, which a `!= null` guard would silently drop.
     if ('categoryId' in edit)
       next[PRICE_CATEGORY_IDX] = edit.categoryId ?? null;
+    if ('isOutOfStock' in edit)
+      next[PRICE_OUT_OF_STOCK_IDX] = edit.isOutOfStock ?? false;
     return next;
   });
 
@@ -240,13 +303,16 @@ export const NO_CATEGORY_FILTER = '__noCategory__';
 export const filterPricesWithoutCategory = (prices: Prices[]): Prices[] =>
   prices.filter((p) => p.categoryId == null);
 
-// Prices referenced by no product (absent or empty in the category map).
-// Backs the "no product" option in the update-prices category filter.
-export const filterPricesWithoutProduct = (
-  prices: Prices[],
-  priceCategoryMap: Record<string, string[]>,
-): Prices[] =>
-  prices.filter((p) => (priceCategoryMap[p.id] ?? []).length === 0);
+// Prices no product owns. Backs the "no product" option in the update-prices
+// category filter — a direct read of the Prices.productId relation, rather than
+// the map that used to be derived by scanning every product's price/tag strings.
+export const filterPricesWithoutProduct = (prices: Prices[]): Prices[] =>
+  prices.filter((p) => p.productId == null);
+
+// Prices an admin has marked sold out. Backs the update-prices "out of stock
+// only" toggle, mirroring the same filter on the products overview.
+export const filterPricesOutOfStock = (prices: Prices[]): Prices[] =>
+  prices.filter((p) => p.isOutOfStock);
 
 // Collects a category id plus all descendant ids from the nested category tree
 // (as returned by /api/category). Used to make a category filter include the
@@ -281,6 +347,27 @@ export const collectCategorySubtreeIds = (
 // to memoize into sessionStorage with nothing to invalidate it, so any price
 // edit (bulk upload, /product/update-prices, the product dialog) stayed
 // invisible for the rest of the tab's session — including in the cart.
+export const fetchPriceRow = async ({
+  accessToken,
+  fetchWithCreds,
+  priceId,
+}: {
+  priceId: string;
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<Prices | null> => {
+  const { success, data } = await fetchWithCreds<Prices>({
+    accessToken,
+    path: `/api/prices?id=${priceId}`,
+    method: 'GET',
+  });
+
+  return success && data ? data : null;
+};
+
+// Null when the reference points at a price that no longer exists. It used to
+// return the id itself, which is how a raw uuid ended up on the product card
+// and in variant labels once a price row was deleted.
 export const computePrice = async ({
   accessToken,
   fetchWithCreds,
@@ -289,21 +376,54 @@ export const computePrice = async ({
   priceId: string;
   accessToken: string;
   fetchWithCreds: FetchWithCredsType;
-}): Promise<string> => {
-  const { success, data } = await fetchWithCreds<Prices>({
-    accessToken,
-    path: `/api/prices?id=${priceId}`,
-    method: 'GET',
-  });
+}): Promise<string | null> => {
+  const price = await fetchPriceRow({ accessToken, fetchWithCreds, priceId });
+  return price?.priceInTmt ?? null;
+};
 
-  if (success && data) {
-    return data.priceInTmt;
-  }
-  return priceId;
+// The cheapest variant a customer could actually buy, or null if there is none.
+// Sold-out variants are skipped: advertising a price nobody can order is worse
+// than showing none at all. The stored string is returned verbatim rather than
+// the number it was compared by, so the card shows what the admin typed.
+const cheapestSellableVariantPrice = async ({
+  accessToken,
+  fetchWithCreds,
+  tags,
+}: {
+  tags: string[];
+  accessToken: string;
+  fetchWithCreds: FetchWithCredsType;
+}): Promise<string | null> => {
+  const priceIds = (tags ?? [])
+    .map((tag) => tag.match(squareBracketRegex)?.[1])
+    .filter((priceId): priceId is string => priceId != null);
+  if (priceIds.length === 0) return null;
+
+  const rows = await Promise.all(
+    priceIds.map((priceId) =>
+      fetchPriceRow({ priceId, accessToken, fetchWithCreds }),
+    ),
+  );
+  const sellable = rows.filter(
+    (row): row is Prices => row != null && !row.isOutOfStock,
+  );
+  if (sellable.length === 0) return null;
+
+  return sellable.reduce((cheapest, row) =>
+    parsePrice(row.priceInTmt) < parsePrice(cheapest.priceInTmt)
+      ? row
+      : cheapest,
+  ).priceInTmt;
 };
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
-// If {value} doesn't exist, computePrice function is used for safety
+// If {value} doesn't exist, computePrice function is used for safety.
+//
+// When the base reference resolves to nothing the product still has to show
+// something honest, so it falls back to its cheapest sellable variant, and
+// failing that reports itself out of stock — which every consumer (both product
+// cards, the cart line, the checkout total) already knows how to render. Both
+// fallbacks sit behind a failed lookup, so the ordinary path is still one fetch.
 export const computeProductPrice = async ({
   accessToken,
   fetchWithCreds,
@@ -319,13 +439,29 @@ export const computeProductPrice = async ({
 
   if (priceMatchValue != null && priceMatchId != null) {
     processedProduct.price = priceMatchValue[1];
-  } else if (priceMatchId != null) {
-    processedProduct.price = await computePrice({
-      priceId: priceMatchId[1],
-      accessToken,
-      fetchWithCreds,
-    });
+    return processedProduct;
   }
+
+  // A legacy literal price is a usable value, so it is left exactly as stored.
+  if (priceMatchId == null) return processedProduct;
+
+  const resolved = await computePrice({
+    priceId: priceMatchId[1],
+    accessToken,
+    fetchWithCreds,
+  });
+  if (resolved != null) {
+    processedProduct.price = resolved;
+    return processedProduct;
+  }
+
+  const fallback = await cheapestSellableVariantPrice({
+    tags: product.tags,
+    accessToken,
+    fetchWithCreds,
+  });
+  processedProduct.price = fallback ?? '';
+  if (fallback == null) processedProduct.isOutOfStock = true;
 
   return processedProduct;
 };
@@ -358,6 +494,11 @@ export const computeProductPriceTags = async ({
             fetchWithCreds,
           });
 
+          // An unresolvable reference is dropped rather than substituted: the
+          // raw id used to end up in the variant label the customer reads.
+          if (price == null) {
+            return tag.replace(`[${idTag}]`, '').replace(/\s+/g, ' ').trim();
+          }
           return tag.replace(`[${idTag}]`, price);
         }
         return tag;
