@@ -1,8 +1,8 @@
 import { getSlack } from '@/lib/slack';
 
 export async function sendSlackAlert(
-  message: string,
   slackBotName: string,
+  message: string,
 ): Promise<void> {
   try {
     const slack = getSlack(slackBotName);
