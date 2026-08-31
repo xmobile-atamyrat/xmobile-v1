@@ -4,10 +4,11 @@ Central process that runs all periodic (cron/interval) jobs. Deploy once; it run
 
 ## Jobs
 
-| Job              | Schedule   | Description |
-|------------------|------------|-------------|
-| healthcheck      | Every 5s   | Pings `/api/ping`; Slack on down/recovery |
-| telekom-balance  | Daily 09:00| Fetches Telekom balance; Slack if below `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` |
+| Job              | Schedule    | Description                                                                                                     |
+| ---------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| healthcheck      | Every 5s    | Pings `/api/ping`; Slack on down/recovery                                                                       |
+| telekom-balance  | Daily 09:00 | Fetches Telekom balance; Slack if below `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT`                                   |
+| system-resources | Every 1m    | Checks CPU/memory/disk; Slack once after 3 consecutive high checks; recovery after 5 consecutive healthy checks |
 
 ## Adding a job
 
