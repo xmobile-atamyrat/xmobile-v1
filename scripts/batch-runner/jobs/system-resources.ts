@@ -158,7 +158,7 @@ async function runSystemResourceCheck(): Promise<void> {
       alertActive = true;
       await sendSlackAlert(
         SLACK_BOT_NAME,
-        `*System resources high*\n${triggeredMetrics.join('\n')}\n\nCurrent snapshot:\n- CPU: ${snapshot.cpuPercent.toFixed(1)}%\n- Memory: ${snapshot.memoryPercent.toFixed(1)}%\n- Disk Space: ${snapshot.diskSpacePercent.toFixed(1)}%\n- Disk Inodes: ${snapshot.diskInodePercent.toFixed(1)}%`,
+        `*System resources high*\n${triggeredMetrics.join('\n')}\n`,
       );
     }
 
