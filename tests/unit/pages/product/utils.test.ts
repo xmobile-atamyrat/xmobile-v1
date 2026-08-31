@@ -5,18 +5,31 @@ import {
   applyPendingEdits,
   collectCategorySubtreeIds,
   computePrice,
+  computeProductPrice,
+  computeProductPriceTags,
   debounce,
   filterPricesByCategories,
+  filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  isEditablePriceCell,
   isPriceValid,
   parseOrderVariant,
   parsePrice,
   parseVariantTag,
+  pickVariantColorForSpec,
+  PRICE_CATEGORY_IDX,
+  PRICE_DOLLAR_IDX,
+  PRICE_ID_IDX,
+  PRICE_MANAT_IDX,
+  PRICE_NAME_IDX,
+  PRICE_OUT_OF_STOCK_IDX,
+  PRICE_UPDATED_IDX,
   processPrices,
   resolveVariantDisplay,
   tmtFromUsd,
 } from '@/pages/product/utils';
+import { Product } from '@prisma/client';
 import { ExtendedCategory } from '@/pages/lib/types';
 
 describe('parsePrice', () => {
@@ -66,29 +79,83 @@ describe('processPrices', () => {
         price: '10',
         priceInTmt: '35.50',
         categoryId: 'c1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        productId: 'prod-1',
+        isOutOfStock: false,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-02-03T04:05:06.000Z'),
       } as Prices,
     ];
     const table = processPrices(rows);
-    expect(table[0]).toEqual(['Name', 'Dollars', 'Manat', 'Category', 'ID']);
-    expect(table[1]).toEqual(['A', '10', 35.5, 'c1', 'p1']);
+    expect(table[0]).toEqual([
+      'Name',
+      'Dollars',
+      'Manat',
+      'Category',
+      'Out of stock',
+      'Updated',
+    ]);
+    expect(table[1]).toEqual([
+      'A',
+      '10',
+      35.5,
+      'c1',
+      false,
+      '2026-02-03T04:05:06.000Z',
+      'p1',
+    ]);
+  });
+
+  it('carries the id past the last rendered column', () => {
+    // The table draws `row.slice(0, PRICE_ID_IDX)`, so the header is one cell
+    // shorter than a data row on purpose: the id rides along as the edit key
+    // without ever being drawn.
+    const table = processPrices([
+      { id: 'p1', name: 'A', price: '10', priceInTmt: '35' },
+    ] as Prices[]);
+    expect(table[0]).toHaveLength(PRICE_ID_IDX);
+    expect(table[1][PRICE_ID_IDX]).toBe('p1');
+    expect(table[1].slice(0, PRICE_ID_IDX)).not.toContain('p1');
   });
 
   it('emits a null category cell for an uncategorized price', () => {
     const table = processPrices([
-      { id: 'p1', name: 'A', price: '10', priceInTmt: '35', categoryId: null },
+      {
+        id: 'p1',
+        name: 'A',
+        price: '10',
+        priceInTmt: '35',
+        categoryId: null,
+        productId: null,
+        isOutOfStock: true,
+        updatedAt: new Date('2026-02-03T04:05:06.000Z'),
+      },
     ] as Prices[]);
-    expect(table[1]).toEqual(['A', '10', 35, null, 'p1']);
+    expect(table[1]).toEqual([
+      'A',
+      '10',
+      35,
+      null,
+      true,
+      '2026-02-03T04:05:06.000Z',
+      'p1',
+    ]);
+  });
+
+  it('emits a null updated cell rather than an invalid date', () => {
+    const table = processPrices([
+      { id: 'p1', name: 'A', price: '10', priceInTmt: '35' },
+    ] as Prices[]);
+    expect(table[1][PRICE_UPDATED_IDX]).toBeNull();
   });
 });
 
 describe('applyPendingEdits', () => {
-  // [Name, Dollars, Manat, Category, ID]
+  // [Name, Dollars, Manat, Category, Out of stock, Updated, ID]
+  const updated = '2026-02-03T04:05:06.000Z';
   const table = [
-    ['Name', 'Dollars', 'Manat', 'Category', 'ID'],
-    ['A', '10', 200, 'c1', 'p1'],
-    ['B', '20', 400, null, 'p2'],
+    ['Name', 'Dollars', 'Manat', 'Category', 'Out of stock', 'Updated'],
+    ['A', '10', 200, 'c1', false, updated, 'p1'],
+    ['B', '20', 400, null, false, updated, 'p2'],
   ];
 
   it('passes rows through unchanged when there are no edits', () => {
@@ -100,8 +167,16 @@ describe('applyPendingEdits', () => {
       p2: { id: 'p2', name: 'B-edited', price: '25', priceInTmt: '500' },
     });
     // p1 untouched, p2 gets name/dollar/manat from the edit (manat parsed)
-    expect(result[1]).toEqual(['A', '10', 200, 'c1', 'p1']);
-    expect(result[2]).toEqual(['B-edited', '25', 500, null, 'p2']);
+    expect(result[1]).toEqual(['A', '10', 200, 'c1', false, updated, 'p1']);
+    expect(result[2]).toEqual([
+      'B-edited',
+      '25',
+      500,
+      null,
+      false,
+      updated,
+      'p2',
+    ]);
   });
 
   it('does not leak an edit onto a different price after re-ordering', () => {
@@ -110,15 +185,17 @@ describe('applyPendingEdits', () => {
     const result = applyPendingEdits(reordered, {
       p1: { id: 'p1', priceInTmt: '999' },
     });
-    expect(result[1]).toEqual(['B', '20', 400, null, 'p2']); // p2 untouched
-    expect(result[2]).toEqual(['A', '10', 999, 'c1', 'p1']); // edit follows p1
+    // p2 untouched
+    expect(result[1]).toEqual(['B', '20', 400, null, false, updated, 'p2']);
+    // follows p1
+    expect(result[2]).toEqual(['A', '10', 999, 'c1', false, updated, 'p1']);
   });
 
   it('overlays a category assignment', () => {
     const result = applyPendingEdits(table, {
       p2: { id: 'p2', categoryId: 'c9' },
     });
-    expect(result[2]).toEqual(['B', '20', 400, 'c9', 'p2']);
+    expect(result[2]).toEqual(['B', '20', 400, 'c9', false, updated, 'p2']);
   });
 
   it('applies an explicit clear-to-null category edit', () => {
@@ -126,24 +203,86 @@ describe('applyPendingEdits', () => {
     const result = applyPendingEdits(table, {
       p1: { id: 'p1', categoryId: null },
     });
-    expect(result[1]).toEqual(['A', '10', 200, null, 'p1']);
+    expect(result[1]).toEqual(['A', '10', 200, null, false, updated, 'p1']);
+  });
+
+  it('overlays an out-of-stock edit', () => {
+    const result = applyPendingEdits(table, {
+      p2: { id: 'p2', isOutOfStock: true },
+    });
+    expect(result[2]).toEqual(['B', '20', 400, null, true, updated, 'p2']);
+  });
+
+  it('applies an explicit back-in-stock edit', () => {
+    // Same presence-keyed distinction as category: `false` is an edit, not an
+    // absent field.
+    const outOfStockTable = [
+      table[0],
+      ['A', '10', 200, 'c1', true, updated, 'p1'],
+      table[2],
+    ];
+    const result = applyPendingEdits(outOfStockTable, {
+      p1: { id: 'p1', isOutOfStock: false },
+    });
+    expect(result[1]).toEqual(['A', '10', 200, 'c1', false, updated, 'p1']);
+  });
+
+  it('ignores a productId edit now that the table has no product column', () => {
+    const result = applyPendingEdits(table, {
+      p1: { id: 'p1', productId: 'prod-9' },
+    });
+    expect(result[1]).toEqual(table[1]);
+  });
+});
+
+describe('filterPricesOutOfStock', () => {
+  it('keeps only the prices marked sold out', () => {
+    const prices = [
+      { id: 'p1', isOutOfStock: true },
+      { id: 'p2', isOutOfStock: false },
+      { id: 'p3', isOutOfStock: true },
+    ] as Prices[];
+    expect(filterPricesOutOfStock(prices).map((p) => p.id)).toEqual([
+      'p1',
+      'p3',
+    ]);
+  });
+
+  it('returns an empty list when everything is in stock', () => {
+    expect(
+      filterPricesOutOfStock([{ id: 'p1', isOutOfStock: false }] as Prices[]),
+    ).toEqual([]);
   });
 });
 
 describe('filterPricesWithoutProduct', () => {
-  const prices = [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }] as Prices[];
+  it('keeps only prices no product owns', () => {
+    const prices = [
+      { id: 'p1', productId: 'prod-1' },
+      { id: 'p2', productId: null },
+      { id: 'p3', productId: null },
+    ] as Prices[];
 
-  it('keeps prices absent from the map or mapped to no category', () => {
-    const result = filterPricesWithoutProduct(prices, {
-      p1: ['c1'],
-      p2: [], // referenced by no product
-      // p3 absent entirely
-    });
+    const result = filterPricesWithoutProduct(prices);
     expect(result.map((p) => p.id)).toEqual(['p2', 'p3']);
   });
 
-  it('returns all prices when the map is empty', () => {
-    expect(filterPricesWithoutProduct(prices, {})).toEqual(prices);
+  it('returns all prices when none are connected', () => {
+    const prices = [
+      { id: 'p1', productId: null },
+      { id: 'p2', productId: null },
+    ] as Prices[];
+
+    expect(filterPricesWithoutProduct(prices)).toEqual(prices);
+  });
+
+  it('returns nothing when every price is connected', () => {
+    const prices = [
+      { id: 'p1', productId: 'prod-1' },
+      { id: 'p2', productId: 'prod-2' },
+    ] as Prices[];
+
+    expect(filterPricesWithoutProduct(prices)).toEqual([]);
   });
 });
 
@@ -359,5 +498,213 @@ describe('computePrice', () => {
     expect(await computePrice(args)).toBe('2680');
     // a bulk upload changed the stored price in between
     expect(await computePrice(args)).toBe('1176000');
+  });
+
+  it('returns null instead of echoing the id back when the price is gone', async () => {
+    // The old fallback returned the id, which is what put a raw uuid on the
+    // product card once a price row was deleted.
+    const fetchWithCreds = vi.fn(async () => ({ success: true, data: null }));
+
+    expect(
+      await computePrice({
+        priceId: 'deleted-price',
+        accessToken: '',
+        fetchWithCreds: fetchWithCreds as never,
+      }),
+    ).toBeNull();
+  });
+});
+
+// Serves a price row per id, standing in for GET /api/prices?id=... An id with
+// no entry answers the way the API does for a deleted price: success, no data.
+const priceFetcher = (rows: Record<string, Partial<Prices>>) =>
+  vi.fn(async ({ path }: { path: string }) => ({
+    success: true,
+    data: (rows[path.split('id=')[1]] ?? null) as Prices,
+  }));
+
+const productWith = (fields: Partial<Product>): Product =>
+  ({
+    id: 'prod-1',
+    price: null,
+    tags: [],
+    isOutOfStock: false,
+    ...fields,
+  }) as Product;
+
+describe('computeProductPrice', () => {
+  it('prefers the inline {value} and never fetches', async () => {
+    const fetchWithCreds = priceFetcher({});
+    const result = await computeProductPrice({
+      product: productWith({ price: '[p1]{350}' }),
+      accessToken: '',
+      fetchWithCreds: fetchWithCreds as never,
+    });
+
+    expect(result.price).toBe('350');
+    expect(fetchWithCreds).not.toHaveBeenCalled();
+  });
+
+  it('resolves a bare [priceId] base reference', async () => {
+    const result = await computeProductPrice({
+      product: productWith({ price: '[p1]' }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        p1: { priceInTmt: '350', isOutOfStock: false },
+      }) as never,
+    });
+
+    expect(result.price).toBe('350');
+    expect(result.isOutOfStock).toBe(false);
+  });
+
+  it('falls back to the cheapest sellable variant when the base reference dangles', async () => {
+    const result = await computeProductPrice({
+      product: productWith({
+        price: '[deleted]',
+        tags: ['256gb [p2]{c1}', '128gb [p3]{c1}'],
+      }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        p2: { priceInTmt: '900', isOutOfStock: false },
+        p3: { priceInTmt: '700', isOutOfStock: false },
+      }) as never,
+    });
+
+    expect(result.price).toBe('700');
+    expect(result.isOutOfStock).toBe(false);
+  });
+
+  it('does not advertise a sold-out variant as the fallback price', async () => {
+    const result = await computeProductPrice({
+      product: productWith({
+        price: '[deleted]',
+        tags: ['256gb [p2]{c1}', '128gb [p3]{c1}'],
+      }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        // The cheaper one cannot be bought, so the dearer one is the real price.
+        p2: { priceInTmt: '900', isOutOfStock: false },
+        p3: { priceInTmt: '700', isOutOfStock: true },
+      }) as never,
+    });
+
+    expect(result.price).toBe('900');
+  });
+
+  it('marks the product out of stock when no reference resolves at all', async () => {
+    const result = await computeProductPrice({
+      product: productWith({ price: '[deleted]', tags: ['128gb [gone]{c1}'] }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({}) as never,
+    });
+
+    expect(result.price).toBe('');
+    expect(result.isOutOfStock).toBe(true);
+  });
+
+  it('leaves a legacy literal price untouched', async () => {
+    const fetchWithCreds = priceFetcher({});
+    const result = await computeProductPrice({
+      product: productWith({ price: '1200' }),
+      accessToken: '',
+      fetchWithCreds: fetchWithCreds as never,
+    });
+
+    expect(result.price).toBe('1200');
+    expect(result.isOutOfStock).toBe(false);
+    expect(fetchWithCreds).not.toHaveBeenCalled();
+  });
+});
+
+describe('computeProductPriceTags', () => {
+  it('substitutes the resolved price into each variant tag', async () => {
+    const result = await computeProductPriceTags({
+      product: productWith({ price: '[p1]{350}', tags: ['128gb [p2]{c1}'] }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({ p2: { priceInTmt: '700' } }) as never,
+    });
+
+    expect(result.tags).toEqual(['128gb 700{c1}']);
+  });
+
+  it('strips an unresolvable reference rather than showing the raw id', async () => {
+    const result = await computeProductPriceTags({
+      product: productWith({ price: '[p1]{350}', tags: ['128gb [gone]{c1}'] }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({}) as never,
+    });
+
+    expect(result.tags).toEqual(['128gb {c1}']);
+    expect(result.tags[0]).not.toContain('gone');
+  });
+});
+
+describe('pickVariantColorForSpec', () => {
+  const v = (specText: string, colorId: string, isOutOfStock = false) => ({
+    specText,
+    colorId,
+    isOutOfStock,
+  });
+
+  it('keeps the current colour when the new spec still sells it', () => {
+    const variants = [v('128gb', 'red'), v('256gb', 'red'), v('256gb', 'blue')];
+
+    expect(pickVariantColorForSpec(variants, '256gb', 'red')).toBe('red');
+  });
+
+  it('re-picks when the new spec never had the current colour', () => {
+    const variants = [v('128gb', 'red'), v('256gb', 'blue')];
+
+    expect(pickVariantColorForSpec(variants, '256gb', 'red')).toBe('blue');
+  });
+
+  // The bug this guards: the colour exists for the new spec but that exact
+  // combination is sold out, so the page showed an out-of-stock pill while a
+  // different colour of the same spec was sitting there buyable.
+  it('re-picks when the current colour is sold out for the new spec', () => {
+    const variants = [
+      v('128gb', 'red'),
+      v('256gb', 'red', true),
+      v('256gb', 'blue'),
+    ];
+
+    expect(pickVariantColorForSpec(variants, '256gb', 'red')).toBe('blue');
+  });
+
+  it('keeps the sold-out colour when every colour of the spec is sold out', () => {
+    const variants = [v('256gb', 'red', true), v('256gb', 'blue', true)];
+
+    expect(pickVariantColorForSpec(variants, '256gb', 'red')).toBe('red');
+  });
+
+  it('falls back to the first colour of the spec when nothing is selected', () => {
+    const variants = [v('256gb', 'red', true), v('256gb', 'blue', true)];
+
+    expect(pickVariantColorForSpec(variants, '256gb', undefined)).toBe('red');
+  });
+
+  it('returns undefined for a spec with no variants', () => {
+    expect(pickVariantColorForSpec([v('128gb', 'red')], '512gb', 'red')).toBe(
+      undefined,
+    );
+  });
+});
+
+describe('isEditablePriceCell', () => {
+  it('accepts the three text columns the admin types into', () => {
+    expect(isEditablePriceCell(PRICE_NAME_IDX)).toBe(true);
+    expect(isEditablePriceCell(PRICE_DOLLAR_IDX)).toBe(true);
+    expect(isEditablePriceCell(PRICE_MANAT_IDX)).toBe(true);
+  });
+
+  // The out-of-stock cell holds a real checkbox whose native input event
+  // bubbles to the row's text-edit handler. Treating it as editable submitted
+  // an empty value: an invalidPrice error on every toggle, and — because the
+  // handler is one shared debounce — a price typed moments earlier was dropped.
+  it('rejects the widget columns that only bubble their own events', () => {
+    expect(isEditablePriceCell(PRICE_CATEGORY_IDX)).toBe(false);
+    expect(isEditablePriceCell(PRICE_OUT_OF_STOCK_IDX)).toBe(false);
+    expect(isEditablePriceCell(PRICE_UPDATED_IDX)).toBe(false);
   });
 });
