@@ -1,10 +1,14 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
+import withAuth, {
+  AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { parseVariantTag } from '@/pages/product/utils';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { UserRole } from '@prisma/client';
+import type { NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/prices/categories.page.ts';
 
@@ -13,8 +17,8 @@ const filepath = 'src/pages/api/prices/categories.page.ts';
 // `price` ([priceId]) and its `tags` (each "spec [priceId]{colorId}"). The
 // update-prices page uses this to filter prices by category. Mirrors the
 // derive-from-products approach in api/product/filters.page.ts.
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
   addCors(res);
@@ -22,6 +26,10 @@ export default async function handler(
     return res
       .status(405)
       .json({ success: false, message: 'Method not allowed' });
+  }
+
+  if (req.grade !== UserRole.ADMIN && req.grade !== UserRole.SUPERUSER) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 
   try {
@@ -57,3 +65,5 @@ export default async function handler(
       .json({ success: false, message: (error as Error).message });
   }
 }
+
+export default withAuth(handler);

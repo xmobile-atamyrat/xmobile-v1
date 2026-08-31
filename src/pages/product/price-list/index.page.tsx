@@ -2,16 +2,20 @@ import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { SnackbarProps } from '@/pages/lib/types';
+import { BrandProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { flattenCategories } from '@/pages/product/components/categoryOptions';
 import {
+  ALL_BRANDS_OPTION,
   ALL_CATEGORIES_OPTION,
+  buildBrandPriceSections,
   buildPriceListBlob,
   buildPriceSections,
   cascadeCategorySelection,
+  defaultBrandPriceListFileName,
   defaultPriceListFileName,
   priceListFileName,
+  toggleAllBrands,
   toggleAllCategories,
 } from '@/pages/product/price-list/lib';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -27,6 +31,8 @@ import {
   Select,
   Snackbar,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
   useTheme,
@@ -45,6 +51,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
+/** Which grouping the page exports by — one dropdown is shown at a time. */
+type PriceListMode = 'category' | 'brand';
+
 export default function PriceList() {
   const router = useRouter();
   const theme = useTheme();
@@ -55,7 +64,15 @@ export default function PriceList() {
   const fetchWithCreds = useFetchWithCreds();
   const [allPrices, setAllPrices] = useState<Prices[]>([]);
   const [dollarRate, setDollarRate] = useState<number | null>(null);
+  const [mode, setMode] = useState<PriceListMode>('category');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<BrandProps[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  // brandId -> ids of the prices that brand's products reference, derived
+  // server-side because prices carry no brand of their own.
+  const [brandPriceIds, setBrandPriceIds] = useState<Record<string, string[]>>(
+    {},
+  );
   const [fileName, setFileName] = useState('');
   const [fileNameEdited, setFileNameEdited] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -103,6 +120,38 @@ export default function PriceList() {
           console.error(rateResponse.message);
           showSnackbar('fetchDollarRateError', 'error');
         }
+
+        // Brand mode needs both halves: the brands to list, and the map saying
+        // which prices each one reaches. One failing makes the mode unusable,
+        // so a single message covers them.
+        const [brandsResponse, brandPricesResponse] = await Promise.all([
+          fetchWithCreds<BrandProps[]>({
+            accessToken,
+            path: '/api/brand',
+            method: 'GET',
+          }),
+          fetchWithCreds<Record<string, string[]>>({
+            accessToken,
+            path: '/api/prices/brands',
+            method: 'GET',
+          }),
+        ]);
+        if (
+          brandsResponse.success &&
+          brandsResponse.data != null &&
+          brandPricesResponse.success &&
+          brandPricesResponse.data != null
+        ) {
+          setBrands(
+            [...brandsResponse.data].sort((a, b) =>
+              a.name.localeCompare(b.name),
+            ),
+          );
+          setBrandPriceIds(brandPricesResponse.data);
+        } else {
+          console.error(brandsResponse.message ?? brandPricesResponse.message);
+          showSnackbar('fetchBrandsError', 'error');
+        }
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -110,13 +159,29 @@ export default function PriceList() {
 
   const sections = useMemo(
     () =>
-      buildPriceSections(
-        allPrices,
-        categories,
-        selectedCategories,
-        router.locale ?? 'tk',
-      ),
-    [allPrices, categories, selectedCategories, router.locale],
+      mode === 'brand'
+        ? buildBrandPriceSections(
+            allPrices,
+            brands,
+            selectedBrands,
+            brandPriceIds,
+          )
+        : buildPriceSections(
+            allPrices,
+            categories,
+            selectedCategories,
+            router.locale ?? 'tk',
+          ),
+    [
+      mode,
+      allPrices,
+      brands,
+      selectedBrands,
+      brandPriceIds,
+      categories,
+      selectedCategories,
+      router.locale,
+    ],
   );
 
   const priceCount = sections.reduce(
@@ -126,13 +191,22 @@ export default function PriceList() {
 
   const suggestedFileName = useMemo(
     () =>
-      defaultPriceListFileName(
-        categories,
-        selectedCategories,
-        router.locale ?? 'tk',
-        new Date(),
-      ),
-    [categories, selectedCategories, router.locale],
+      mode === 'brand'
+        ? defaultBrandPriceListFileName(brands, selectedBrands, new Date())
+        : defaultPriceListFileName(
+            categories,
+            selectedCategories,
+            router.locale ?? 'tk',
+            new Date(),
+          ),
+    [
+      mode,
+      brands,
+      selectedBrands,
+      categories,
+      selectedCategories,
+      router.locale,
+    ],
   );
 
   // The box follows the selection until it is typed in, and then stops: a name
@@ -178,67 +252,147 @@ export default function PriceList() {
             {t('downloadPriceList')}
           </Typography>
           <Typography fontSize={isMdUp ? 16 : 14}>
-            {t('priceListDescription')}
+            {t(
+              mode === 'brand'
+                ? 'priceListDescriptionBrands'
+                : 'priceListDescription',
+            )}
           </Typography>
 
-          <FormControl sx={{ maxWidth: 480 }} size="small">
-            <InputLabel>{t('categories')}</InputLabel>
-            <Select
-              multiple
-              value={selectedCategories}
-              label={t('categories')}
-              onChange={(event) =>
-                setSelectedCategories((previous) => {
-                  const next =
-                    typeof event.target.value === 'string'
-                      ? event.target.value.split(',')
-                      : event.target.value;
-                  // The select-all row is not a category: it never reaches the
-                  // cascade, it replaces the selection outright.
-                  return next.includes(ALL_CATEGORIES_OPTION)
-                    ? toggleAllCategories(categories, previous)
-                    : cascadeCategorySelection(categories, previous, next);
-                })
-              }
-              renderValue={(selected) =>
-                flattenedCats
-                  .filter((option) => selected.includes(option.id))
-                  .map((option) => option.name)
-                  .join(', ')
-              }
-            >
-              <MenuItem value={ALL_CATEGORIES_OPTION} divider>
-                <Checkbox
-                  checked={
-                    flattenedCats.length > 0 &&
-                    selectedCategories.length === flattenedCats.length
-                  }
-                  indeterminate={
-                    selectedCategories.length > 0 &&
-                    selectedCategories.length < flattenedCats.length
-                  }
-                  size="small"
-                />
-                <ListItemText
-                  primary={t('selectAllCategories')}
-                  primaryTypographyProps={{ fontWeight: 600 }}
-                />
-              </MenuItem>
-              {flattenedCats.map((option) => (
-                <MenuItem
-                  key={option.id}
-                  value={option.id}
-                  sx={{ pl: 2 + option.depth * 1.5 }}
-                >
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={mode}
+            // `null` arrives when the active button is clicked again; keeping
+            // the current mode stops the page from having no grouping at all.
+            onChange={(_, next: PriceListMode | null) =>
+              setMode((previous) => next ?? previous)
+            }
+            sx={{ width: 'fit-content' }}
+          >
+            <ToggleButton value="category" sx={{ textTransform: 'none' }}>
+              {t('priceListByCategory')}
+            </ToggleButton>
+            <ToggleButton value="brand" sx={{ textTransform: 'none' }}>
+              {t('priceListByBrand')}
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          {mode === 'brand' ? (
+            <FormControl sx={{ maxWidth: 480 }} size="small">
+              <InputLabel>{t('brands')}</InputLabel>
+              <Select
+                multiple
+                value={selectedBrands}
+                label={t('brands')}
+                onChange={(event) =>
+                  setSelectedBrands((previous) => {
+                    const next =
+                      typeof event.target.value === 'string'
+                        ? event.target.value.split(',')
+                        : event.target.value;
+                    // Brands do not nest, so there is no cascade here: the
+                    // select-all row is the only value that is not a brand id.
+                    return next.includes(ALL_BRANDS_OPTION)
+                      ? toggleAllBrands(brands, previous)
+                      : next;
+                  })
+                }
+                renderValue={(selected) =>
+                  brands
+                    .filter((brand) => selected.includes(brand.id))
+                    .map((brand) => brand.name)
+                    .join(', ')
+                }
+              >
+                <MenuItem value={ALL_BRANDS_OPTION} divider>
                   <Checkbox
-                    checked={selectedCategories.includes(option.id)}
+                    checked={
+                      brands.length > 0 &&
+                      selectedBrands.length === brands.length
+                    }
+                    indeterminate={
+                      selectedBrands.length > 0 &&
+                      selectedBrands.length < brands.length
+                    }
                     size="small"
                   />
-                  <ListItemText primary={option.name} />
+                  <ListItemText
+                    primary={t('selectAllBrands')}
+                    primaryTypographyProps={{ fontWeight: 600 }}
+                  />
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {brands.map((brand) => (
+                  <MenuItem key={brand.id} value={brand.id}>
+                    <Checkbox
+                      checked={selectedBrands.includes(brand.id)}
+                      size="small"
+                    />
+                    <ListItemText primary={brand.name} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : (
+            <FormControl sx={{ maxWidth: 480 }} size="small">
+              <InputLabel>{t('categories')}</InputLabel>
+              <Select
+                multiple
+                value={selectedCategories}
+                label={t('categories')}
+                onChange={(event) =>
+                  setSelectedCategories((previous) => {
+                    const next =
+                      typeof event.target.value === 'string'
+                        ? event.target.value.split(',')
+                        : event.target.value;
+                    // The select-all row is not a category: it never reaches the
+                    // cascade, it replaces the selection outright.
+                    return next.includes(ALL_CATEGORIES_OPTION)
+                      ? toggleAllCategories(categories, previous)
+                      : cascadeCategorySelection(categories, previous, next);
+                  })
+                }
+                renderValue={(selected) =>
+                  flattenedCats
+                    .filter((option) => selected.includes(option.id))
+                    .map((option) => option.name)
+                    .join(', ')
+                }
+              >
+                <MenuItem value={ALL_CATEGORIES_OPTION} divider>
+                  <Checkbox
+                    checked={
+                      flattenedCats.length > 0 &&
+                      selectedCategories.length === flattenedCats.length
+                    }
+                    indeterminate={
+                      selectedCategories.length > 0 &&
+                      selectedCategories.length < flattenedCats.length
+                    }
+                    size="small"
+                  />
+                  <ListItemText
+                    primary={t('selectAllCategories')}
+                    primaryTypographyProps={{ fontWeight: 600 }}
+                  />
+                </MenuItem>
+                {flattenedCats.map((option) => (
+                  <MenuItem
+                    key={option.id}
+                    value={option.id}
+                    sx={{ pl: 2 + option.depth * 1.5 }}
+                  >
+                    <Checkbox
+                      checked={selectedCategories.includes(option.id)}
+                      size="small"
+                    />
+                    <ListItemText primary={option.name} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             label={t('priceListFileName')}
@@ -253,10 +407,15 @@ export default function PriceList() {
           />
 
           <Typography fontSize={isMdUp ? 16 : 14}>
-            {t('priceListSelectedCount', {
-              prices: priceCount,
-              categories: sections.length,
-            })}
+            {mode === 'brand'
+              ? t('priceListSelectedCountBrands', {
+                  prices: priceCount,
+                  brands: sections.length,
+                })
+              : t('priceListSelectedCount', {
+                  prices: priceCount,
+                  categories: sections.length,
+                })}
           </Typography>
 
           <Box className="flex flex-row gap-2">

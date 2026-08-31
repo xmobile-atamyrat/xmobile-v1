@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ExtendedCategory } from '@/pages/lib/types';
+import { collectBrandPriceIds } from '@/pages/product/price-list/brandPrices';
 import {
+  buildBrandPriceSections,
   buildPriceListBlob,
   buildPriceSections,
   cascadeCategorySelection,
+  defaultBrandPriceListFileName,
   defaultPriceListFileName,
   priceListFileName,
   PRICE_LIST_SHEET_NAME,
+  toggleAllBrands,
   toggleAllCategories,
 } from '@/pages/product/price-list/lib';
 import type { Prices } from '@prisma/client';
@@ -67,7 +71,7 @@ describe('buildPriceSections', () => {
     );
 
     expect(sections).toHaveLength(1);
-    expect(sections[0].categoryId).toBe('phones');
+    expect(sections[0].sectionId).toBe('phones');
     expect(sections[0].prices.map((p) => p.id)).toEqual(['a']);
   });
 
@@ -79,7 +83,7 @@ describe('buildPriceSections', () => {
       'tk',
     );
 
-    expect(sections.map((s) => s.categoryId)).toEqual(['iphone']);
+    expect(sections.map((s) => s.sectionId)).toEqual(['iphone']);
     expect(sections[0].prices.map((p) => p.id)).toEqual(['a']);
   });
 
@@ -111,7 +115,7 @@ describe('buildPriceSections', () => {
       'tk',
     );
 
-    expect(sections.map((s) => s.categoryId)).toEqual(['phones', 'tablets']);
+    expect(sections.map((s) => s.sectionId)).toEqual(['phones', 'tablets']);
   });
 
   it('drops a selected category that has no prices', () => {
@@ -122,7 +126,7 @@ describe('buildPriceSections', () => {
       'tk',
     );
 
-    expect(sections.map((s) => s.categoryId)).toEqual(['phones']);
+    expect(sections.map((s) => s.sectionId)).toEqual(['phones']);
   });
 
   it('excludes prices with no category of their own', () => {
@@ -144,7 +148,7 @@ describe('buildPriceSections', () => {
       'tk',
     );
 
-    expect(sections[0].categoryPath).toEqual(['tk:phones', 'tk:iphone']);
+    expect(sections[0].sectionPath).toEqual(['tk:phones', 'tk:iphone']);
   });
 
   it('localizes the section name from the category name', () => {
@@ -160,7 +164,7 @@ describe('buildPriceSections', () => {
       'en',
     );
 
-    expect(sections[0].categoryName).toBe('Phones');
+    expect(sections[0].sectionName).toBe('Phones');
   });
 });
 
@@ -373,5 +377,212 @@ describe('buildPriceListBlob', () => {
 
     expect(sheet.getCell('B1').value).toBe(null);
     expect(sheet.getCell('C5').value).toBe(1960);
+  });
+});
+
+const brands = [
+  { id: 'apple', name: 'Apple' },
+  { id: 'samsung', name: 'Samsung' },
+];
+
+describe('collectBrandPriceIds', () => {
+  it('reads the price a product points at through its price field', () => {
+    expect(
+      collectBrandPriceIds([
+        { brandId: 'apple', price: '[pr1]{100}', tags: [] },
+      ]),
+    ).toEqual({ apple: ['pr1'] });
+  });
+
+  it('reads a bare price id, the older product price format', () => {
+    expect(
+      collectBrandPriceIds([{ brandId: 'apple', price: 'pr1', tags: [] }]),
+    ).toEqual({ apple: ['pr1'] });
+  });
+
+  it('reads the price each variant tag points at', () => {
+    expect(
+      collectBrandPriceIds([
+        {
+          brandId: 'apple',
+          price: null,
+          tags: ['128gb 8gb ram [pr1]{c1}', '256gb 12gb ram [pr2]{c2}'],
+        },
+      ]),
+    ).toEqual({ apple: ['pr1', 'pr2'] });
+  });
+
+  it('lists a price once per brand even when several products share it', () => {
+    expect(
+      collectBrandPriceIds([
+        { brandId: 'apple', price: '[pr1]{100}', tags: ['a [pr1]{c1}'] },
+        { brandId: 'apple', price: '[pr1]{100}', tags: [] },
+      ]),
+    ).toEqual({ apple: ['pr1'] });
+  });
+
+  it('keeps a shared price under each brand that references it', () => {
+    expect(
+      collectBrandPriceIds([
+        { brandId: 'apple', price: '[pr1]{100}', tags: [] },
+        { brandId: 'samsung', price: '[pr1]{100}', tags: [] },
+      ]),
+    ).toEqual({ apple: ['pr1'], samsung: ['pr1'] });
+  });
+
+  it('ignores products that have no brand', () => {
+    expect(
+      collectBrandPriceIds([{ brandId: null, price: '[pr1]{100}', tags: [] }]),
+    ).toEqual({});
+  });
+
+  it('ignores a product that references no price at all', () => {
+    expect(
+      collectBrandPriceIds([
+        { brandId: 'apple', price: null, tags: ['128gb'] },
+      ]),
+    ).toEqual({});
+  });
+});
+
+describe('toggleAllBrands', () => {
+  it('selects every brand when none are selected', () => {
+    expect(toggleAllBrands(brands, [])).toEqual(['apple', 'samsung']);
+  });
+
+  it('selects the rest when only some are selected', () => {
+    expect(toggleAllBrands(brands, ['samsung'])).toEqual(['apple', 'samsung']);
+  });
+
+  it('clears the selection when every brand is already selected', () => {
+    expect(toggleAllBrands(brands, ['apple', 'samsung'])).toEqual([]);
+  });
+});
+
+describe('buildBrandPriceSections', () => {
+  const brandPrices = { apple: ['a'], samsung: ['b'] };
+
+  it('groups the prices a brand references into its own section', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' }), price({ id: 'b' })],
+      brands,
+      ['apple'],
+      brandPrices,
+    );
+
+    expect(sections).toHaveLength(1);
+    expect(sections[0].sectionId).toBe('apple');
+    expect(sections[0].prices.map((p) => p.id)).toEqual(['a']);
+  });
+
+  it('banners a brand section with the brand name alone', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' })],
+      brands,
+      ['apple'],
+      brandPrices,
+    );
+
+    expect(sections[0].sectionName).toBe('Apple');
+    expect(sections[0].sectionPath).toEqual(['Apple']);
+  });
+
+  it('orders sections by the brand list, not by selection order', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' }), price({ id: 'b' })],
+      brands,
+      ['samsung', 'apple'],
+      brandPrices,
+    );
+
+    expect(sections.map((s) => s.sectionId)).toEqual(['apple', 'samsung']);
+  });
+
+  it('sorts prices by name within a section', () => {
+    const sections = buildBrandPriceSections(
+      [
+        price({ id: 'b', name: '256gb 12gb ram' }),
+        price({ id: 'a', name: '128gb 8gb ram' }),
+      ],
+      brands,
+      ['apple'],
+      { apple: ['a', 'b'] },
+    );
+
+    expect(sections[0].prices.map((p) => p.name)).toEqual([
+      '128gb 8gb ram',
+      '256gb 12gb ram',
+    ]);
+  });
+
+  it('drops a selected brand that references no price', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' })],
+      brands,
+      ['apple', 'samsung'],
+      { apple: ['a'] },
+    );
+
+    expect(sections.map((s) => s.sectionId)).toEqual(['apple']);
+  });
+
+  // Brands do not nest, so there is no deepest owner to break the tie the way
+  // overlapping categories do: a price both brands sell belongs to both.
+  it('repeats a shared price under every selected brand that references it', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' })],
+      brands,
+      ['apple', 'samsung'],
+      { apple: ['a'], samsung: ['a'] },
+    );
+
+    expect(sections.map((s) => s.prices.map((p) => p.id))).toEqual([
+      ['a'],
+      ['a'],
+    ]);
+  });
+
+  it('excludes a price no branded product references', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' }), price({ id: 'orphan' })],
+      brands,
+      ['apple'],
+      brandPrices,
+    );
+
+    expect(sections[0].prices.map((p) => p.id)).toEqual(['a']);
+  });
+
+  it('ignores a referenced price id that no longer exists', () => {
+    const sections = buildBrandPriceSections(
+      [price({ id: 'a' })],
+      brands,
+      ['apple'],
+      { apple: ['a', 'deleted'] },
+    );
+
+    expect(sections[0].prices.map((p) => p.id)).toEqual(['a']);
+  });
+});
+
+describe('defaultBrandPriceListFileName', () => {
+  const date = new Date(2026, 7, 15);
+
+  it('names the file after the picked brand', () => {
+    expect(defaultBrandPriceListFileName(brands, ['apple'], date)).toBe(
+      'Apple 15-08-2026',
+    );
+  });
+
+  it('joins the picked brands in brand-list order', () => {
+    expect(
+      defaultBrandPriceListFileName(brands, ['samsung', 'apple'], date),
+    ).toBe('Apple, Samsung 15-08-2026');
+  });
+
+  it('falls back to a generic name when nothing is picked', () => {
+    expect(defaultBrandPriceListFileName(brands, [], date)).toBe(
+      'prices 15-08-2026',
+    );
   });
 });
