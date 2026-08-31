@@ -408,6 +408,10 @@
   "allCategories": "Все категории",
   "noProduct": "Без товара",
   "noCategory": "Без категории",
+  "connectedPrices": "Привязанные цены",
+  "connectPriceHint": "Привяжите цену ниже, чтобы выбрать её здесь",
+  "priceStillInUse": "Эта цена используется в основной цене или варианте. Сначала очистите её.",
+  "connectPriceError": "Не удалось обновить привязку цены.",
   "sortBy": "Сортировать по",
   "brandDeleteConfirm": "Вы уверены, что хотите удалить бренд \"{name}\"? Связь с продуктами будет удалена.",
   "createBrandError": "Не удалось создать бренд",
@@ -563,5 +567,12 @@
   "outOfStockInCartTitle": "В корзине есть товары не в наличии",
   "outOfStockInCartDescription": "Этих товаров нет в наличии. Удалите их из корзины, чтобы продолжить оплату.",
   "removeOutOfStockItems": "Удалить их",
-  "backToCart": "Вернуться в корзину"
+  "backToCart": "Вернуться в корзину",
+  "prices": "Цены",
+  "close": "Закрыть",
+  "fetchProductsError": "Не удалось загрузить товары.",
+  "productsOverview": "Обзор товаров",
+  "selectCategory": "Выберите категорию",
+  "categoryRequired": "Пожалуйста, выберите категорию",
+  "outOfStockOnly": "Только нет в наличии"
 }

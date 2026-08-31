@@ -405,6 +405,10 @@
   "allCategories": "Tüm kategoriler",
   "noProduct": "Ürün yok",
   "noCategory": "Kategori yok",
+  "connectedPrices": "Bağlı fiyatlar",
+  "connectPriceHint": "Burada seçmek için aşağıdan bir fiyat bağlayın",
+  "priceStillInUse": "Bu fiyat temel fiyatta veya bir varyantta kullanılıyor. Önce onu temizleyin.",
+  "connectPriceError": "Fiyat bağlantısı güncellenemedi.",
   "sortBy": "Sırala",
   "brandDeleteConfirm": "\"{name}\" markasını silmek istediğinizden emin misiniz? Ürünlerin bağlantısı kaldırılacak.",
   "createBrandError": "Marka oluşturulamadı",
@@ -464,7 +468,6 @@
   "privacyPolicyCollectChat1": "Sohbet mesajları (içerik, zaman damgaları)",
   "privacyPolicyCollectChat2": "Destek oturumları geçmişi",
   "privacyPolicyCollectChat3": "Operatör/müşteri temsilcisi iletişimleri",
-
   "privacyPolicyPurposeTitle": "Bilgilerinizi Nasıl Kullanıyoruz",
   "privacyPolicyPurpose1": "Uygulamanın temel işlevselliğini sağlamak ve iyileştirmek",
   "privacyPolicyPurpose2": "Hesabınızı oluşturmak ve yönetmek",
@@ -562,5 +565,12 @@
   "outOfStockInCartTitle": "Sepetinizde stokta olmayan ürünler var",
   "outOfStockInCartDescription": "Bu ürünler stokta yok. Ödemeye devam etmek için onları sepetinizden çıkarın.",
   "removeOutOfStockItems": "Onları çıkar",
-  "backToCart": "Sepete dön"
+  "backToCart": "Sepete dön",
+  "prices": "Fiyatlar",
+  "close": "Kapat",
+  "fetchProductsError": "Ürünler yüklenemedi.",
+  "productsOverview": "Ürünlere genel bakış",
+  "selectCategory": "Kategori seçin",
+  "categoryRequired": "Lütfen bir kategori seçin",
+  "outOfStockOnly": "Sadece stokta olmayanlar"
 }

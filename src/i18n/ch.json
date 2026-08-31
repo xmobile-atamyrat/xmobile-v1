@@ -407,6 +407,10 @@
   "allCategories": "Ähli kategoriýalar",
   "noProduct": "Haryt ýok",
   "noCategory": "Kategoriýa ýok",
+  "connectedPrices": "Baglanyşdyrylan bahalar",
+  "connectPriceHint": "Bu ýerde saýlamak üçin aşakdan baha baglanyşdyryň",
+  "priceStillInUse": "Bu baha esasy bahada ýa-da wariantda ulanylýar. Ilki ony aýryň.",
+  "connectPriceError": "Baha baglanyşygyny täzeläp bolmady.",
   "sortBy": "Sortirowka",
   "brandDeleteConfirm": "\"{name}\" brendini öçürmäk islotranyňyza uwerenmi? Towarlar bilän baglanyşyk aýrylady.",
   "createBrandError": "Brend dörädip bolmady",
@@ -562,5 +566,12 @@
   "outOfStockInCartTitle": "Sebediňizde skladda ýok harytlar",
   "outOfStockInCartDescription": "Bu harytlar skladda ýok. Töleg bilen dowam etmek üçin olary sebediňizden aýyryň.",
   "removeOutOfStockItems": "Olary aýyr",
-  "backToCart": "Sebede dolan"
+  "backToCart": "Sebede dolan",
+  "prices": "Bahalar",
+  "close": "Ýap",
+  "fetchProductsError": "Harytlary alyp bolmady.",
+  "productsOverview": "Harytlara syn",
+  "selectCategory": "Kategoriýa saýlaň",
+  "categoryRequired": "Haýyş, kategoriýa saýlaň",
+  "outOfStockOnly": "Diňe gutaranlar"
 }

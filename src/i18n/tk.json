@@ -407,6 +407,10 @@
   "allCategories": "Ähli kategoriýalar",
   "noProduct": "Haryt ýok",
   "noCategory": "Kategoriýa ýok",
+  "connectedPrices": "Baglanyşdyrylan bahalar",
+  "connectPriceHint": "Bu ýerde saýlamak üçin aşakdan baha baglanyşdyryň",
+  "priceStillInUse": "Bu baha esasy bahada ýa-da wariantda ulanylýar. Ilki ony aýryň.",
+  "connectPriceError": "Baha baglanyşygyny täzeläp bolmady.",
   "sortBy": "Tertiple",
   "brandDeleteConfirm": "\"{name}\" brendini pozmak isleýändigiňize ynanýarsyňyzmy? Harytlar bilen baglanyşyk aýrylar.",
   "createBrandError": "Brend döredip bolmady",
@@ -466,7 +470,6 @@
   "privacyPolicyCollectChat1": "Çat hatlary (mazmuny, wagt ştampalary)",
   "privacyPolicyCollectChat2": "Goldaw sessiýalarynyň taryhy",
   "privacyPolicyCollectChat3": "Operator/müşderi wekili habarlaşmalar",
-
   "privacyPolicyPurposeTitle": "Maglumatlaryňyzy Nähili Ulanýarys",
   "privacyPolicyPurpose1": "Programmanyň esasy işini üpjün etmek we gowulandyrmak",
   "privacyPolicyPurpose2": "Hasabyňyzy döretmek we dolandyrmak",
@@ -563,5 +566,12 @@
   "outOfStockInCartTitle": "Sebediňizde elýeter däl harytlar",
   "outOfStockInCartDescription": "Bu harytlar elýeter däl. Töleg bilen dowam etmek üçin olary sebediňizden aýyryň.",
   "removeOutOfStockItems": "Olary aýyr",
-  "backToCart": "Sebede dolan"
+  "backToCart": "Sebede dolan",
+  "prices": "Bahalar",
+  "close": "Ýap",
+  "fetchProductsError": "Harytlary ýüklemekde ýalňyşlyk ýüze çykdy.",
+  "productsOverview": "Harytlara syn",
+  "selectCategory": "Kategoriýa saýlaň",
+  "categoryRequired": "Haýyş, kategoriýa saýlaň",
+  "outOfStockOnly": "Diňe gutaranlar"
 }

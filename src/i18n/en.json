@@ -405,6 +405,10 @@
   "allCategories": "All categories",
   "noProduct": "No product",
   "noCategory": "No category",
+  "connectedPrices": "Connected prices",
+  "connectPriceHint": "Connect a price below to choose one here",
+  "priceStillInUse": "This price is used by the base price or a variant. Clear that first.",
+  "connectPriceError": "Could not update the price connection.",
   "sortBy": "Sort by",
   "brandDeleteConfirm": "Are you sure you want to delete brand \"{name}\"? Products will be unlinked.",
   "createBrandError": "Failed to create brand",
@@ -560,5 +564,12 @@
   "outOfStockInCartTitle": "Out-of-stock items in your cart",
   "outOfStockInCartDescription": "These products are out of stock. Remove them from your cart to continue with payment.",
   "removeOutOfStockItems": "Remove them",
-  "backToCart": "Back to cart"
+  "backToCart": "Back to cart",
+  "prices": "Prices",
+  "close": "Close",
+  "fetchProductsError": "Error fetching products.",
+  "productsOverview": "Products overview",
+  "selectCategory": "Select a category",
+  "categoryRequired": "Please select a category",
+  "outOfStockOnly": "Out of stock only"
 }
