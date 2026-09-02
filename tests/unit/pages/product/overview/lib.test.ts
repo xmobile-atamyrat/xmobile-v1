@@ -1,7 +1,9 @@
 import type { AdminProductListItem } from '@/pages/api/product/admin-list.page';
 import {
+  buildProductEditFields,
   filterOverviewProducts,
   NO_BRAND_FILTER,
+  resolveBrandSelection,
   sortOverviewProducts,
 } from '@/pages/product/overview/lib';
 import { describe, expect, it } from 'vitest';
@@ -274,5 +276,96 @@ describe('sortOverviewProducts', () => {
     sortOverviewProducts(products, 'en');
 
     expect(products.map(({ id }) => id)).toEqual(['z', 'a']);
+  });
+});
+
+describe('buildProductEditFields', () => {
+  it('sends nothing for an edit that touched nothing', () => {
+    expect(buildProductEditFields({})).toEqual([]);
+  });
+
+  it('sends only the fields the admin actually touched', () => {
+    expect(buildProductEditFields({ categoryId: 'phones' })).toEqual([
+      ['categoryId', 'phones'],
+    ]);
+  });
+
+  it('stringifies the stock flag in both directions', () => {
+    expect(buildProductEditFields({ isOutOfStock: true })).toEqual([
+      ['isOutOfStock', 'true'],
+    ]);
+    expect(buildProductEditFields({ isOutOfStock: false })).toEqual([
+      ['isOutOfStock', 'false'],
+    ]);
+  });
+
+  it('sends a picked brand as its id', () => {
+    expect(buildProductEditFields({ brandId: 'apple' })).toEqual([
+      ['brandId', 'apple'],
+    ]);
+  });
+
+  // The PUT handler reads `fields.brandId[0] || null`, so an empty string is
+  // what unlinks a brand. Omitting the field would leave the old brand in place.
+  it('sends an empty string to clear the brand rather than omitting it', () => {
+    expect(buildProductEditFields({ brandId: null })).toEqual([
+      ['brandId', ''],
+    ]);
+  });
+
+  it('combines every touched field in one payload', () => {
+    expect(
+      buildProductEditFields({
+        categoryId: 'phones',
+        brandId: null,
+        isOutOfStock: true,
+      }),
+    ).toEqual([
+      ['categoryId', 'phones'],
+      ['brandId', ''],
+      ['isOutOfStock', 'true'],
+    ]);
+  });
+});
+
+describe('resolveBrandSelection', () => {
+  const brands = [
+    { id: 'apple', name: 'Apple' },
+    { id: 'samsung', name: 'Samsung' },
+  ];
+
+  it('does nothing for blank input', () => {
+    expect(resolveBrandSelection(brands, '')).toEqual({ kind: 'noop' });
+    expect(resolveBrandSelection(brands, '   ')).toEqual({ kind: 'noop' });
+  });
+
+  it('reuses an existing brand instead of creating a duplicate', () => {
+    expect(resolveBrandSelection(brands, 'Apple')).toEqual({
+      kind: 'existing',
+      id: 'apple',
+    });
+  });
+
+  // Brand.name is uniquely indexed, so a case- or whitespace-only variation
+  // would be rejected by the database rather than quietly deduped.
+  it('matches an existing brand regardless of case and surrounding space', () => {
+    expect(resolveBrandSelection(brands, '  sAmSuNg ')).toEqual({
+      kind: 'existing',
+      id: 'samsung',
+    });
+  });
+
+  it('asks for creation under the trimmed name when nothing matches', () => {
+    expect(resolveBrandSelection(brands, '  Xiaomi ')).toEqual({
+      kind: 'create',
+      name: 'Xiaomi',
+    });
+  });
+
+  it('creates against an empty brand list', () => {
+    expect(resolveBrandSelection([], 'Nokia')).toEqual({
+      kind: 'create',
+      name: 'Nokia',
+    });
   });
 });

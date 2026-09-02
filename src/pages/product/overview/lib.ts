@@ -8,6 +8,66 @@ import { parseName } from '@/pages/lib/utils';
  */
 export const NO_BRAND_FILTER = '__noBrand__';
 
+/**
+ * A row's staged, not-yet-saved edits. A key being absent means "untouched",
+ * which is what lets one save leave images, tags and the base price alone; a
+ * present `brandId` of `null` is an explicit "unlink the brand".
+ */
+export interface ProductEdit {
+  categoryId?: string;
+  brandId?: string | null;
+  isOutOfStock?: boolean;
+}
+
+/**
+ * Turns staged edits into the multipart fields PUT /api/product expects.
+ *
+ * Kept separate from the page because the empty-string rule is easy to get
+ * wrong and invisible until a brand refuses to clear: the handler reads
+ * `fields.brandId[0] || null`, so `''` unlinks the brand while omitting the
+ * field leaves the old one attached.
+ */
+export function buildProductEditFields(edit: ProductEdit): [string, string][] {
+  const fields: [string, string][] = [];
+  if (edit.categoryId != null) fields.push(['categoryId', edit.categoryId]);
+  // `in` rather than a null check: null is a meaningful value here, and only
+  // the key's absence means the admin never touched the brand.
+  if ('brandId' in edit) fields.push(['brandId', edit.brandId ?? '']);
+  if (edit.isOutOfStock != null) {
+    fields.push(['isOutOfStock', String(edit.isOutOfStock)]);
+  }
+  return fields;
+}
+
+/** What typing a brand name into a row should actually do. */
+export type BrandSelection =
+  | { kind: 'existing'; id: string }
+  | { kind: 'create'; name: string }
+  | { kind: 'noop' };
+
+/**
+ * Decides whether a typed brand name means "pick this one" or "make a new one".
+ *
+ * `Brand.name` is uniquely indexed, so posting "apple" when "Apple" exists is a
+ * database error rather than a second brand. Matching case-insensitively on the
+ * already-loaded list turns that into a silent, correct pick — the same rule
+ * AddEditProductDialog's brand box applies.
+ */
+export function resolveBrandSelection(
+  brands: { id: string; name: string }[],
+  rawName: string,
+): BrandSelection {
+  const name = rawName.trim();
+  if (name === '') return { kind: 'noop' };
+
+  const existing = brands.find(
+    (brand) => brand.name.toLowerCase() === name.toLowerCase(),
+  );
+  return existing
+    ? { kind: 'existing', id: existing.id }
+    : { kind: 'create', name };
+}
+
 export type OverviewSortKey =
   | 'nameAsc'
   | 'nameDesc'
