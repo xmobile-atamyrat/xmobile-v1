@@ -12,20 +12,24 @@ import {
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   AddEditProductProps,
+  BrandProps,
   ResponseApi,
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { parseName } from '@/pages/lib/utils';
-import CategoryCell from '@/pages/product/components/CategoryCell';
+import { addEditBrand, parseName } from '@/pages/lib/utils';
+import SelectCell from '@/pages/product/components/SelectCell';
 import {
   categoryMenuItems,
   flattenCategories,
 } from '@/pages/product/components/categoryOptions';
 import {
+  buildProductEditFields,
   filterOverviewProducts,
   NO_BRAND_FILTER,
   OverviewSortKey,
+  ProductEdit,
+  resolveBrandSelection,
   sortOverviewProducts,
 } from '@/pages/product/overview/lib';
 import AddIcon from '@mui/icons-material/Add';
@@ -57,7 +61,7 @@ import { Product } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -87,11 +91,11 @@ export default function ProductsOverview() {
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
   const [missingPriceOnly, setMissingPriceOnly] = useState(false);
   const [sortKey, setSortKey] = useState<OverviewSortKey>('nameAsc');
-  // Pending category/stock edits keyed by product id, mirroring update-prices:
-  // a row edit is staged here and only written on Save, so a row full of
-  // half-finished picks can't leave the list mid-request.
+  // Pending category/brand/stock edits keyed by product id, mirroring
+  // update-prices: a row edit is staged here and only written on Save, so a row
+  // full of half-finished picks can't leave the list mid-request.
   const [updatedProducts, setUpdatedProducts] = useState<
-    Record<string, { categoryId?: string; isOutOfStock?: boolean }>
+    Record<string, ProductEdit>
   >({});
   const [savingEdits, setSavingEdits] = useState(false);
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -165,23 +169,71 @@ export default function ProductsOverview() {
     router.locale,
   ]);
 
-  const handleCategoryChange = (
-    productId: string,
-    categoryId: string | null,
-  ) => {
-    if (categoryId == null) return; // a product always needs a category
-    setUpdatedProducts((prev) => ({
-      ...prev,
-      [productId]: { ...prev[productId], categoryId },
-    }));
-  };
+  // The row cells are memoized, so these have to keep a stable identity across
+  // renders or every keystroke in the search box would re-render all of them.
+  const handleCategoryChange = useCallback(
+    (productId: string, categoryId: string | null) => {
+      if (categoryId == null) return; // a product always needs a category
+      setUpdatedProducts((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], categoryId },
+      }));
+    },
+    [],
+  );
 
-  const handleOutOfStockChange = (productId: string, isOutOfStock: boolean) => {
-    setUpdatedProducts((prev) => ({
-      ...prev,
-      [productId]: { ...prev[productId], isOutOfStock },
-    }));
-  };
+  // Unlike a category, a brand is optional: null is a real choice here, staged
+  // as an explicit null so the save knows to unlink rather than skip the field.
+  const handleBrandChange = useCallback(
+    (productId: string, brandId: string | null) => {
+      setUpdatedProducts((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], brandId },
+      }));
+    },
+    [],
+  );
+
+  // Brands are created immediately rather than staged with the row: the row
+  // edit stores a brand id, so the brand has to exist before there is anything
+  // to stage. Returning the id hands the cell what it needs to select it.
+  const handleCreateBrand = useCallback(
+    async (name: string): Promise<string | null> => {
+      const selection = resolveBrandSelection(brands, name);
+      if (selection.kind === 'noop') return null;
+      // Typing the name of a brand that already exists picks it instead of
+      // failing on the unique index.
+      if (selection.kind === 'existing') return selection.id;
+      if (!accessToken) return null;
+
+      const res = await addEditBrand({
+        type: 'add',
+        name: selection.name,
+        accessToken,
+        fetchWithCreds,
+      });
+      const created = res.data as BrandProps | undefined;
+      if (!res.success || created == null) {
+        notify('createBrandError', 'error');
+        return null;
+      }
+      // Added locally rather than refetched: the brand column resolves ids to
+      // names off this list, so the new row would render blank until a reload.
+      setBrands((prev) => [...prev, { id: created.id, name: created.name }]);
+      return created.id;
+    },
+    [brands, accessToken, fetchWithCreds],
+  );
+
+  const handleOutOfStockChange = useCallback(
+    (productId: string, isOutOfStock: boolean) => {
+      setUpdatedProducts((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], isOutOfStock },
+      }));
+    },
+    [],
+  );
 
   // Each row is its own multipart PUT (the product API isn't a batch JSON
   // endpoint like /api/prices), fired in parallel and only for the fields the
@@ -195,12 +247,9 @@ export default function ProductsOverview() {
       const results = await Promise.all(
         edits.map(async ([productId, edit]) => {
           const formData = new FormData();
-          if (edit.categoryId != null) {
-            formData.append('categoryId', edit.categoryId);
-          }
-          if (edit.isOutOfStock != null) {
-            formData.append('isOutOfStock', String(edit.isOutOfStock));
-          }
+          buildProductEditFields(edit).forEach(([key, fieldValue]) =>
+            formData.append(key, fieldValue),
+          );
           const response = await fetch(
             `${BASE_URL}/api/product?productId=${productId}`,
             { method: 'PUT', body: formData },
@@ -218,6 +267,7 @@ export default function ProductsOverview() {
             ? {
                 ...product,
                 categoryId: result.data.categoryId,
+                brandId: result.data.brandId,
                 isOutOfStock: result.data.isOutOfStock,
                 // The row really was just edited, so the "recently edited" sort
                 // has to see it move rather than keep the pre-save timestamp.
@@ -411,7 +461,7 @@ export default function ProductsOverview() {
                       {parseName(product.name, router.locale ?? 'tk')}
                     </TableCell>
                     <TableCell>
-                      <CategoryCell
+                      <SelectCell
                         id={product.id}
                         value={product.categoryId}
                         options={flattenedCats}
@@ -424,12 +474,21 @@ export default function ProductsOverview() {
                       />
                     </TableCell>
                     <TableCell>
-                      {brands.find((brand) => brand.id === product.brandId)
-                        ?.name ?? (
-                        <Typography variant="body2" color="text.disabled">
-                          {t('noBrand')}
-                        </Typography>
-                      )}
+                      {/* Unlike the category, a brand can be cleared — the
+                          column is nullable — and a missing one can be filled
+                          in by typing a new name rather than opening the
+                          product form just to add a brand. */}
+                      <SelectCell
+                        id={product.id}
+                        value={product.brandId}
+                        options={brands}
+                        emptyLabel={t('noBrand')}
+                        dirty={'brandId' in (updatedProducts[product.id] ?? {})}
+                        onChange={handleBrandChange}
+                        onCreate={handleCreateBrand}
+                        createLabel={t('addNewBrand')}
+                        createPlaceholder={t('brandName')}
+                      />
                     </TableCell>
                     <TableCell>
                       {/* A dead reference is called out rather than shown as a
