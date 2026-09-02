@@ -27,6 +27,45 @@ export function priceAssignmentError(
   return 'This price is already connected to another product. Disconnect it there first.';
 }
 
+// Composable filters for GET. `productId` scopes to one product's connected
+// prices, `unassigned` to prices no product owns yet (the connect-price
+// search), `categoryId` to the product form's picker pool, and `searchKeyword`
+// narrows whichever of those applies.
+export function pricesWhere(query: {
+  productId?: string;
+  unassigned?: string;
+  categoryId?: string;
+  searchKeyword?: string;
+}): Prisma.PricesWhereInput {
+  const where: Prisma.PricesWhereInput = {};
+  if (query.productId != null) {
+    where.productId = query.productId;
+  } else if (query.unassigned === 'true') {
+    where.productId = null;
+  }
+  // Independent of the owner filters above: the picker wants every price in the
+  // category, taken ones included, so it can show them greyed out with the
+  // product holding them. Uncategorized prices come along too — a price with no
+  // category belongs nowhere in particular, so it is fair game for any product
+  // rather than stranded out of reach of every picker.
+  //
+  // Lives in `AND` rather than as a second `OR`: `searchKeyword` below owns the
+  // top-level `OR`, and a `where` object only has room for one of them.
+  if (query.categoryId != null && query.categoryId !== '') {
+    where.AND = [
+      { OR: [{ categoryId: query.categoryId }, { categoryId: null }] },
+    ];
+  }
+  if (query.searchKeyword != null) {
+    where.OR = [
+      { name: { contains: query.searchKeyword, mode: 'insensitive' } },
+      { price: { contains: query.searchKeyword, mode: 'insensitive' } },
+      { priceInTmt: { contains: query.searchKeyword, mode: 'insensitive' } },
+    ];
+  }
+  return where;
+}
+
 export async function getPrice(priceId: string): Promise<Prices | null> {
   if (priceId != null) {
     const priceMatch = priceId?.match(squareBracketRegex);
@@ -114,35 +153,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         return res.status(200).json({ success: true, data: price });
       }
 
-      // Composable filters: `productId` scopes to one product's connected
-      // prices, `unassigned` to prices no product owns yet (the connect-price
-      // search), `categoryId` to one category (the product form's picker, which
-      // offers the category the product itself sits in), any of them optionally
-      // narrowed by `searchKeyword`.
-      const where: Prisma.PricesWhereInput = {};
-      if (productId != null) {
-        where.productId = productId as string;
-      } else if (unassigned === 'true') {
-        where.productId = null;
-      }
-      // Independent of the owner filters above: the picker wants every price in
-      // the category, taken ones included, so it can show them greyed out with
-      // the product holding them.
-      if (categoryId != null && categoryId !== '') {
-        where.categoryId = categoryId as string;
-      }
-      if (searchKeyword != null) {
-        where.OR = [
-          { name: { contains: searchKeyword as string, mode: 'insensitive' } },
-          { price: { contains: searchKeyword as string, mode: 'insensitive' } },
-          {
-            priceInTmt: {
-              contains: searchKeyword as string,
-              mode: 'insensitive',
-            },
-          },
-        ];
-      }
+      const where = pricesWhere({
+        productId: productId as string | undefined,
+        unassigned: unassigned as string | undefined,
+        categoryId: categoryId as string | undefined,
+        searchKeyword: searchKeyword as string | undefined,
+      });
 
       const prices = await dbClient.prices.findMany({
         where,

@@ -64,7 +64,7 @@ import {
 import type { Color, Prices, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface AddEditProductDialogProps {
   handleClose: () => void;
@@ -76,11 +76,11 @@ interface AddEditProductDialogProps {
 // Searchable price dropdown: a Select with a filter box pinned to the top of
 // the menu. Used for both the base price and per-variant prices.
 //
-// The options are every price in the product's category. A price another
-// product already owns is listed but not selectable — the reassignment guard on
-// PUT /api/prices would refuse it anyway, and showing it with the owner's name
-// answers "why isn't the price I just made showing up" far better than hiding
-// it does.
+// The options are every price in the product's category plus every price left
+// uncategorized. A price another product already owns is listed but not
+// selectable — the reassignment guard on PUT /api/prices would refuse it
+// anyway, and showing it with the owner's name answers "why isn't the price I
+// just made showing up" far better than hiding it does.
 function PriceSelect({
   value,
   onChange,
@@ -250,9 +250,10 @@ export default function AddEditProductDialog({
   const [editBrandName, setEditBrandName] = useState('');
 
   const [colorOptions, setColorOptions] = useState<Color[]>([]);
-  // Every price sitting in the product's own category — the pool the pickers
-  // offer. Refetched whenever the category changes, because that is what
-  // decides which prices are on the table.
+  // The pool the pickers offer: every price sitting in the product's own
+  // category, plus every price that has no category. Refetched whenever the
+  // category changes, because that is what decides which prices are on the
+  // table.
   const [categoryPrices, setCategoryPrices] = useState<PriceWithOwner[]>([]);
   // The prices this product owns. A price connected before the product was
   // moved between categories can live outside `categoryPrices`, so the two are
@@ -260,13 +261,6 @@ export default function AddEditProductDialog({
   // price from the list would strand a base price or variant tag still
   // pointing at it.
   const [connectedPrices, setConnectedPrices] = useState<PriceWithOwner[]>([]);
-  // Connect-a-price search state. This is the escape hatch for linking a price
-  // from *outside* the product's category; it asks for unassigned prices only,
-  // since the API refuses to move one that is already owned.
-  const [priceSearch, setPriceSearch] = useState('');
-  const [priceSearchResults, setPriceSearchResults] = useState<
-    PriceWithOwner[]
-  >([]);
   const [connectError, setConnectError] = useState('');
   // Base price is stored as "[priceId]" when it references a catalog price, or
   // a legacy literal string. Keep the raw value so an untouched legacy literal
@@ -315,44 +309,6 @@ export default function AddEditProductDialog({
     return [...merged.values()];
   }, [categoryPrices, connectedPrices]);
 
-  // Every keystroke used to fire its own request and write whatever came back,
-  // so a slow early response could land after a newer one and repopulate the
-  // list with results for a prefix the admin had already typed past. The
-  // counter retires superseded requests; the debounce keeps a fast typist from
-  // opening one per character in the first place.
-  const priceSearchSeq = useRef(0);
-  const priceSearchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-
-  useEffect(() => () => clearTimeout(priceSearchTimer.current), []);
-
-  const runPriceSearch = (keyword: string) => {
-    clearTimeout(priceSearchTimer.current);
-    priceSearchTimer.current = setTimeout(async () => {
-      priceSearchSeq.current += 1;
-      const seq = priceSearchSeq.current;
-      const results = await fetchPrices({
-        unassigned: true,
-        searchKeyword: keyword,
-      });
-      if (seq !== priceSearchSeq.current) return;
-      setPriceSearchResults(results);
-    }, 300);
-  };
-
-  const searchUnassignedPrices = (keyword: string) => {
-    setPriceSearch(keyword);
-    if (keyword.trim() === '') {
-      // Bumping the counter retires anything already in flight, so a late
-      // response cannot refill the list the admin just cleared.
-      priceSearchSeq.current += 1;
-      setPriceSearchResults([]);
-      return;
-    }
-    runPriceSearch(keyword.trim());
-  };
-
   // Writes the link immediately for an existing product. For a new one the
   // price is only held in local state and linked after the product is created.
   const connectPrice = async (
@@ -376,14 +332,11 @@ export default function AddEditProductDialog({
         ? prev
         : [...prev, priceToConnect],
     );
-    setPriceSearchResults((prev) =>
-      prev.filter((p) => p.id !== priceToConnect.id),
-    );
     return true;
   };
 
   // Picking a price for the base price or a variant is what connects it. The
-  // pickers offer the whole category, but the product's `price`/`tags` may only
+  // pickers offer more than this product owns, but its `price`/`tags` may only
   // reference prices it owns, so the reference and the link have to be made
   // together — otherwise choosing a price would write a string pointing at a
   // row this product has no claim on. Returns false when the link was refused,
@@ -401,41 +354,6 @@ export default function AddEditProductDialog({
   const pricePickerBlocked = !categoryId;
   const reportPickerBlocked = () => {
     setConnectError(t('selectCategoryFirst'));
-  };
-
-  // Disconnecting a price that the base price or a variant still points at
-  // would leave those strings referencing a price no longer in the product's
-  // list, so the reference has to be cleared first.
-  const disconnectPrice = async (priceId: string) => {
-    setConnectError('');
-    const usedByTag = tags.some(
-      (tag) => tag.match(squareBracketRegex)?.[1] === priceId,
-    );
-    if (basePriceId === priceId || usedByTag) {
-      setConnectError(t('priceStillInUse'));
-      return;
-    }
-    if (id != null) {
-      const { success, message } = await fetchWithCreds<Prices>({
-        accessToken,
-        path: '/api/prices',
-        method: 'PUT',
-        body: { pricePairs: [{ id: priceId, productId: null }] },
-      });
-      if (!success) {
-        setConnectError(message ?? t('connectPriceError'));
-        return;
-      }
-    }
-    setConnectedPrices((prev) => prev.filter((p) => p.id !== priceId));
-    // The price is unowned again, so the category list has to stop showing this
-    // product as its holder — otherwise it would render greyed out until the
-    // dialog is reopened.
-    setCategoryPrices((prev) =>
-      prev.map((option) =>
-        option.id === priceId ? { ...option, product: null } : option,
-      ),
-    );
   };
 
   // A variant tag is "<spec> [priceId]{colorId}". Price and color are picked
@@ -816,57 +734,14 @@ export default function AddEditProductDialog({
               <input type="hidden" name="price" value={basePrice} />
             </Box>
 
-            {/* The prices this product owns. The pickers above draw from the
-                whole category, connecting as they go; this list is where an
-                admin sees what got claimed, drops one, or searches for a price
-                from outside the category to pull in. */}
-            <Box className="w-full">
-              <Typography>{t('connectedPrices')}</Typography>
-              {connectedPrices.map((connected) => (
-                <Box
-                  key={connected.id}
-                  className="flex flex-row items-center justify-between"
-                  sx={{ py: 0.25 }}
-                >
-                  <Typography variant="body2">
-                    {connected.name} — {connected.priceInTmt} {t('manat')}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => disconnectPrice(connected.id)}
-                  >
-                    <DeleteOutlined color="error" fontSize="small" />
-                  </IconButton>
-                </Box>
-              ))}
-              <TextField
-                size="small"
-                fullWidth
-                sx={{ mt: 1 }}
-                placeholder={t('search')}
-                value={priceSearch}
-                onChange={(e) => searchUnassignedPrices(e.target.value)}
-              />
-              {priceSearchResults.map((result) => (
-                <Box
-                  key={result.id}
-                  className="flex flex-row items-center justify-between"
-                  sx={{ py: 0.25 }}
-                >
-                  <Typography variant="body2">
-                    {result.name} — {result.priceInTmt} {t('manat')}
-                  </Typography>
-                  <Button size="small" onClick={() => connectPrice(result)}>
-                    {t('add')}
-                  </Button>
-                </Box>
-              ))}
-              {connectError && (
-                <Typography variant="caption" color="error">
-                  {connectError}
-                </Typography>
-              )}
-            </Box>
+            {/* Connecting a price is a side effect of picking it above, so
+                there is no list to manage here — only the failures that
+                silently leave a picker unchanged need saying out loud. */}
+            {connectError && (
+              <Typography variant="caption" color="error" className="w-full">
+                {connectError}
+              </Typography>
+            )}
 
             <FormControlLabel
               control={
