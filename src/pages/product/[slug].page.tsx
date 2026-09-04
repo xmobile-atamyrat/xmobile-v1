@@ -494,7 +494,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     videoUrls: rawProduct.videoUrls,
                     brandId: rawProduct.brandId,
                     categoryId: rawProduct.categoryId,
-                    isOutOfStock: rawProduct.isOutOfStock,
+                    isOutOfStock: rawProduct.outOfStockAt != null,
                   });
                 } catch (error) {
                   console.error(error);
@@ -596,7 +596,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
             <Divider className={detailPageClasses.divider[platform]} />
             {/* Out-of-stock products show no price; the out-of-stock pill carries the state */}
-            {!product.isOutOfStock && (
+            {product.outOfStockAt == null && (
               <Box className={detailPageClasses.price[platform]}>
                 {displayPrice == null || displayPrice?.includes('[') ? (
                   <CircularProgress
@@ -719,7 +719,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             </Box>
           )}
           {platform === 'web' &&
-            (product.isOutOfStock ? (
+            (product.outOfStockAt != null ? (
               <Box className="mt-[2vw]">
                 <Box className="max-w-[20vw] h-[3.5vw] bg-[#e8e8e8] rounded-[10px] py-[16px] px-[2vw] flex items-center justify-center">
                   <Typography
@@ -780,7 +780,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
         </Box>
       )}
       {platform === 'mobile' &&
-        (product.isOutOfStock ? (
+        (product.outOfStockAt != null ? (
           <Box className="w-full fixed bottom-0 left-0 right-0 z-10">
             <Box className="bg-white rounded-t-[40px] px-6 pb-[60px] shadow-[0px_-16px_40px_0px_rgba(0,0,0,0.03)] flex items-center justify-center pt-4">
               <Box className="w-[88.7vw] bg-[#e8e8e8] h-[clamp(20px,_11.2vw,_52px)] rounded-[15px] px-[10px] flex items-center justify-center mx-auto">
