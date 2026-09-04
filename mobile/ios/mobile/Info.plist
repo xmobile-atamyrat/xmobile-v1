@@ -31,12 +31,20 @@
 	     NSExceptionDomains keys must be domain names, not IP addresses,
 	     so arbitrary loads is the only workable escape hatch here.
 	     Internal TestFlight testers skip Beta App Review, so this never
-	     reaches an Apple reviewer. MUST NOT reach main. -->
+	     reaches an Apple reviewer. MUST NOT reach main.
+
+	     NSAllowsLocalNetworking (which React Native ships in its template)
+	     is deliberately absent. On iOS 10+ the mere presence of it, or of
+	     NSAllowsArbitraryLoadsInWebContent / NSAllowsArbitraryLoadsForMedia,
+	     makes the system ignore NSAllowsArbitraryLoads and fall back to its
+	     default of NO, which blocked the staging origin while this file still
+	     read as though cleartext were allowed. Arbitrary loads is a superset
+	     of local networking, so dropping the key costs the Metro and
+	     localhost:3003 debug traffic nothing. Android has no equivalent
+	     precedence rule, so this failed on iOS only. Do not re-add the key. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>RCTNewArchEnabled</key>
