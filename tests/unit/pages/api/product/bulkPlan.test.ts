@@ -51,7 +51,7 @@ const makeCurrent = (
   tags: ['128gb [vp1]{col1}', '256gb [vp2]'],
   brandId: null,
   categoryId: 'cat0',
-  isOutOfStock: false,
+  outOfStockAt: null,
   videoUrls: [],
   ...over,
 });
@@ -395,10 +395,11 @@ describe('planProductUpdate empty cells and booleans', () => {
     const plan = planProductUpdate(
       productRow({ outOfStock: raw }),
       undefined,
-      makeCurrent({ isOutOfStock: !expected }), // differ so the value is emitted
+      // differ so the value is emitted
+      makeCurrent({ outOfStockAt: expected ? null : new Date() }),
       makeRefs(),
     );
-    expect(plan.data?.isOutOfStock).toBe(expected);
+    expect(plan.data?.outOfStockAt != null).toBe(expected);
   });
 
   it('rejects an unparseable Out of Stock value', () => {
@@ -573,7 +574,7 @@ describe('planProductUpdate skips unchanged values', () => {
       makeCurrent({
         categoryId: 'cat1',
         brandId: 'brand1',
-        isOutOfStock: true,
+        outOfStockAt: new Date(),
         videoUrls: ['https://a.mp4'],
       }),
       makeRefs(),

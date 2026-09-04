@@ -180,7 +180,7 @@ export default function CheckoutPage() {
         // Out-of-stock items can't be ordered, so they don't count toward the total
         const sum = cartItems.reduce(
           (acc, item) =>
-            item.product.isOutOfStock
+            item.product.outOfStockAt != null
               ? acc
               : acc + (prices[item.id] || 0) * item.quantity,
           0,
@@ -195,7 +195,9 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartItemsSignature, accessToken, user]);
 
-  const outOfStockItems = cartItems.filter((item) => item.product.isOutOfStock);
+  const outOfStockItems = cartItems.filter(
+    (item) => item.product.outOfStockAt != null,
+  );
 
   // Removes every out-of-stock item so the order can go through
   const handleRemoveOutOfStockItems = async () => {
@@ -282,7 +284,7 @@ export default function CheckoutPage() {
         // A product went out of stock after this page loaded, so local state
         // can't name the offender — refetch before opening the dialog
         const fresh = await loadCartItems();
-        if (fresh?.some((item) => item.product.isOutOfStock)) {
+        if (fresh?.some((item) => item.product.outOfStockAt != null)) {
           setShowOutOfStockDialog(true);
         } else {
           setSnackbarOpen(true);

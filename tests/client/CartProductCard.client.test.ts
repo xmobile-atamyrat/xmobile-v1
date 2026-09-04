@@ -43,7 +43,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     videoUrls: [],
     categoryId: 'cat-1',
     brandId: null,
-    isOutOfStock: false,
+    outOfStockAt: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -134,8 +134,8 @@ describe('CartProductCard — out-of-stock price slot', () => {
     } as never);
   });
 
-  it('replaces the price with an out-of-stock label when isOutOfStock is true', async () => {
-    renderCard(null, makeProduct({ isOutOfStock: true, price: '5.00' }));
+  it('replaces the price with an out-of-stock label when out of stock', async () => {
+    renderCard(null, makeProduct({ outOfStockAt: new Date(), price: '5.00' }));
 
     await waitFor(() => {
       expect(screen.getByText('Out of stock')).toBeInTheDocument();
@@ -143,8 +143,8 @@ describe('CartProductCard — out-of-stock price slot', () => {
     expect(screen.queryByText(/5\.00/)).not.toBeInTheDocument();
   });
 
-  it('renders the price when isOutOfStock is false', async () => {
-    renderCard(null, makeProduct({ isOutOfStock: false, price: '5.00' }));
+  it('renders the price when in stock', async () => {
+    renderCard(null, makeProduct({ outOfStockAt: null, price: '5.00' }));
 
     await waitFor(() => {
       expect(screen.getByText(/5\.00/)).toBeInTheDocument();

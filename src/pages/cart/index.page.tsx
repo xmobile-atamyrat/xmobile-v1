@@ -129,14 +129,16 @@ export default function CartPage() {
     let totPrice = 0;
     cartItems.forEach((item) => {
       // Out-of-stock items can't be ordered, so they don't count toward the total
-      if (item.product.isOutOfStock) return;
+      if (item.product.outOfStockAt != null) return;
       if (!Number.isNaN(Number(item.product.price)))
         totPrice += Number(item.product.price) * item.quantity;
     });
     setTotalPrice(totPrice);
   }, [cartItems]);
 
-  const outOfStockItems = cartItems.filter((item) => item.product.isOutOfStock);
+  const outOfStockItems = cartItems.filter(
+    (item) => item.product.outOfStockAt != null,
+  );
 
   const handleCheckoutClick = () => {
     if (outOfStockItems.length > 0) {
