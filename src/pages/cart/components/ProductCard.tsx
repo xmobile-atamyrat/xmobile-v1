@@ -127,7 +127,7 @@ export default function CartProductCard({
               </Box>
               {/* This card has no out-of-stock badge, so the price slot carries
                   the label rather than going blank */}
-              {product.isOutOfStock ? (
+              {product.outOfStockAt != null ? (
                 <Typography
                   color="#9e9e9e"
                   className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]} uppercase`}

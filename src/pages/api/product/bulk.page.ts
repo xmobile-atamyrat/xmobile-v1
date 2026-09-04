@@ -214,7 +214,7 @@ export interface ProductUpdatePlan {
     name?: string;
     categoryId?: string;
     brandId?: string;
-    isOutOfStock?: boolean;
+    outOfStockAt?: Date | null;
     videoUrls?: string[];
     cachedPrice?: number;
   };
@@ -285,7 +285,7 @@ export interface CurrentProductState {
   tags: string[];
   brandId: string | null;
   categoryId: string;
-  isOutOfStock: boolean;
+  outOfStockAt: Date | null;
   videoUrls: string[];
 }
 
@@ -363,7 +363,8 @@ export function planProductUpdate(
     const parsed = parseBoolCell(outOfStock);
     if (parsed == null)
       productError(`invalid Out of Stock value "${outOfStock}"`);
-    else if (parsed !== currentProduct.isOutOfStock) data.isOutOfStock = parsed;
+    else if (parsed !== (currentProduct.outOfStockAt != null))
+      data.outOfStockAt = parsed ? new Date() : null;
   }
 
   const videoUrls = cellText(productRow.videoUrls);
@@ -814,11 +815,12 @@ export function buildProductDiff(
       to: lookups.brandNameById.get(data.brandId) ?? data.brandId,
     });
   }
-  if (data.isOutOfStock != null) {
+  // `undefined`, not null: null is a real planned value here (back in stock).
+  if (data.outOfStockAt !== undefined) {
     fields.push({
       label: 'Out of Stock',
-      from: String(current.isOutOfStock),
-      to: String(data.isOutOfStock),
+      from: String(current.outOfStockAt != null),
+      to: String(data.outOfStockAt != null),
     });
   }
   if (data.videoUrls != null) {
@@ -966,7 +968,7 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
       brand: product.brand?.name ?? '',
       priceUsd: basePrice?.price ?? '',
       priceTmt: basePrice?.priceInTmt ?? '',
-      isOutOfStock: product.isOutOfStock,
+      isOutOfStock: product.outOfStockAt != null,
       videoUrls: product.videoUrls.join(' | '),
     });
 
