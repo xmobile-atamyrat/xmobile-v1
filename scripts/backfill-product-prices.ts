@@ -71,40 +71,42 @@ export function deriveProductPrices(products: ProductRef[]): DerivedProducts {
 
 export interface ProductStockRef {
   id: string;
-  isOutOfStock: boolean;
+  outOfStockAt: Date | null;
 }
 
 export interface PriceStockRef {
   id: string;
   productId: string | null;
-  isOutOfStock: boolean;
+  outOfStockAt: Date | null;
 }
 
 /**
- * Picks the prices that have to inherit their product's out-of-stock flag.
+ * Picks the prices that have to inherit their product's out-of-stock state.
  *
  * Before this migration, "out of stock" only existed on the product. The new
- * `Prices.isOutOfStock` column defaults to false, so without this step every
- * sold-out product is owned by prices that all claim to be in stock — and the
- * first run of the upward sync (or the first price edit) would derive the
- * product back into stock and lose which products were sold out.
+ * `Prices.outOfStockAt` column starts null, so without this step every sold-out
+ * product is owned by prices that all claim to be in stock — and the first run
+ * of the upward sync (or the first price edit) would derive the product back
+ * into stock and lose which products were sold out.
  *
  * Runs after the linking phase, since it can only see prices that already have
- * a `productId`. Prices already marked out of stock are skipped so a re-run
- * writes nothing and never re-stamps `outOfStockAt`.
+ * a `productId`. Prices already out of stock are skipped so a re-run writes
+ * nothing and never re-stamps `outOfStockAt`.
  */
 export function planPriceStockBackfill(
   products: ProductStockRef[],
   prices: PriceStockRef[],
 ): string[] {
   const soldOut = new Set(
-    products.filter(({ isOutOfStock }) => isOutOfStock).map(({ id }) => id),
+    products
+      .filter(({ outOfStockAt }) => outOfStockAt != null)
+      .map(({ id }) => id),
   );
 
   return prices
     .filter(
-      ({ productId, isOutOfStock }) =>
-        productId != null && !isOutOfStock && soldOut.has(productId),
+      ({ productId, outOfStockAt }) =>
+        productId != null && outOfStockAt == null && soldOut.has(productId),
     )
     .map(({ id }) => id);
 }
@@ -137,7 +139,7 @@ async function main() {
           name: true,
           price: true,
           tags: true,
-          isOutOfStock: true,
+          outOfStockAt: true,
         },
       }),
       dbClient.prices.findMany({
@@ -145,7 +147,7 @@ async function main() {
           id: true,
           name: true,
           productId: true,
-          isOutOfStock: true,
+          outOfStockAt: true,
         },
       }),
     ]);
@@ -268,23 +270,23 @@ async function main() {
     // projection above.
     //
     // This has to happen before the out-of-stock sync job ever runs. The new
-    // Prices.isOutOfStock column defaults to false, so until it is filled every
+    // Prices.outOfStockAt column starts null, so until it is filled every
     // sold-out product looks like it owns nothing but in-stock prices — and the
     // upward rule would derive the whole catalog back into stock, losing which
     // products were sold out in the first place.
     const linkedPrices = await dbClient.prices.findMany({
-      select: { id: true, productId: true, isOutOfStock: true },
+      select: { id: true, productId: true, outOfStockAt: true },
     });
     const stockPlan = planPriceStockBackfill(products, linkedPrices);
 
     if (stockPlan.length === 0) {
-      console.log('  ✅ No price stock flags to carry over.');
+      console.log('  ✅ No price stock to carry over.');
       return;
     }
 
     const { count } = await dbClient.prices.updateMany({
-      where: { id: { in: stockPlan }, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: new Date() },
+      where: { id: { in: stockPlan }, outOfStockAt: null },
+      data: { outOfStockAt: new Date() },
     });
     console.log(`  ✅ Marked ${count} prices out of stock from their product.`);
   } catch (error) {
