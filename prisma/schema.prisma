@@ -150,7 +150,6 @@ model Product {
 
   prices          Prices[]
 
-  isOutOfStock    Boolean     @default(false)
   outOfStockAt    DateTime?
 
   colors          Color[]
@@ -208,7 +207,6 @@ model Prices {
   product         Product?    @relation(references: [id], fields: [productId], onDelete: SetNull)
   productId       String?
 
-  isOutOfStock    Boolean     @default(false)
   outOfStockAt    DateTime?
 
   createdAt       DateTime    @default(now())
