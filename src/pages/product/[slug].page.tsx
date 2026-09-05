@@ -18,6 +18,7 @@ import {
   LOCALE_TO_OG_LOCALE,
   squareBracketRegex,
 } from '@/pages/lib/constants';
+import { useTmtRate } from '@/pages/lib/DollarRateContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   getAbsoluteProductMediaUrl,
@@ -49,7 +50,9 @@ import { isUUID, parseName } from '@/pages/lib/utils';
 import {
   computePrice,
   computeProductPriceTags,
+  oldManatFromTmt,
   parseVariantTag,
+  usdFromTmt,
 } from '@/pages/product/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
@@ -275,6 +278,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, [product?.imgUrls, network]);
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const tmtRate = useTmtRate();
   const [dialogStatus, setDialogStatus] = useState(false);
   const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
 
@@ -362,6 +366,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   const displayPrice =
     variants.length > 0 ? selectedVariant?.priceTmt ?? '' : product?.price;
 
+  // "Köne pul" toggle: shows the same amount in pre-redenomination manat.
+  const [showOldMoney, setShowOldMoney] = useState(false);
+
+  // Both derive from displayPrice, so they track the selected variant. Each is
+  // null while the price is an unresolved [priceId], on call, or — for USD —
+  // before the rate loads; the corresponding element is then not rendered.
+  const priceUsd = usdFromTmt(displayPrice ?? '', tmtRate);
+  const priceOldManat = oldManatFromTmt(displayPrice ?? '');
+
   // Pill/chip styling: selected = red border+text, disabled = grey, else dark
   const chipSx = (selected: boolean, disabled: boolean) => {
     let tone = '#191919';
@@ -385,6 +398,30 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       transition: 'border-color 0.15s, color 0.15s',
     };
   };
+
+  // Sits inline after the manat price on web, but on its own line under the USD
+  // figure on mobile, where the price column is too narrow to hold all three.
+  const oldMoneyToggle = (
+    <Box
+      component="button"
+      type="button"
+      aria-pressed={showOldMoney}
+      onClick={() => setShowOldMoney((shown) => !shown)}
+      className={interClassname.className}
+      sx={{
+        ...chipSx(showOldMoney, false),
+        alignSelf: platform === 'mobile' ? 'flex-end' : 'flex-start',
+        px: 1.25,
+        py: 0.5,
+        fontSize: '13px',
+        borderRadius: '8px',
+        backgroundColor: 'transparent',
+        fontFamily: 'inherit',
+      }}
+    >
+      {t('oldMoney')}
+    </Box>
+  );
 
   const handleDialogClose = () => {
     setDialogStatus(false);
@@ -603,13 +640,46 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     className={detailPageClasses.circProgress[platform]}
                   />
                 ) : (
-                  <Typography
-                    className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
-                  >
-                    {displayPrice === '' || displayPrice.includes('null')
-                      ? t('nullPrice')
-                      : `${displayPrice} ${t('manat')}`}
-                  </Typography>
+                  <>
+                    <Box className={detailPageClasses.priceRow[platform]}>
+                      <Typography
+                        className={`${detailPageClasses.typographs.price[platform]} ${interClassname.className}`}
+                      >
+                        {displayPrice === '' || displayPrice.includes('null')
+                          ? t('nullPrice')
+                          : `${displayPrice} ${t('manat')}`}
+                      </Typography>
+                      {/* Old money is offered only for a real amount: there is
+                          nothing to convert on a "price on call" product */}
+                      {priceOldManat != null && (
+                        <>
+                          {/* Hidden rather than unmounted: removing it from the
+                              flow shrinks the price column, which shoves the
+                              product name sideways on every toggle */}
+                          <Typography
+                            aria-hidden={!showOldMoney}
+                            className={`${detailPageClasses.typographs.priceOldMoney[platform]} ${interClassname.className}`}
+                            sx={{
+                              visibility: showOldMoney ? 'visible' : 'hidden',
+                            }}
+                          >
+                            {priceOldManat}
+                          </Typography>
+                          {platform === 'web' && oldMoneyToggle}
+                        </>
+                      )}
+                    </Box>
+                    {priceUsd != null && (
+                      <Typography
+                        className={`${detailPageClasses.typographs.priceUsd[platform]} ${interClassname.className}`}
+                      >
+                        {priceUsd} USD
+                      </Typography>
+                    )}
+                    {platform === 'mobile' &&
+                      priceOldManat != null &&
+                      oldMoneyToggle}
+                  </>
                 )}
               </Box>
             )}

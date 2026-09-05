@@ -1,3 +1,4 @@
+import { useTmtRate } from '@/pages/lib/DollarRateContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   getProductMediaUrl,
@@ -10,7 +11,7 @@ import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { computeProductPrice } from '@/pages/product/utils';
+import { computeProductPrice, usdFromTmt } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import { colors, interClassname } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -53,6 +54,14 @@ export default function ProductCard({
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const tmtRate = useTmtRate();
+
+  // null while the price is still an unresolved [priceId], unparseable, or
+  // before the rate loads — in each case the USD line is simply not rendered.
+  const priceUsd = useMemo(
+    () => (product?.price == null ? null : usdFromTmt(product.price, tmtRate)),
+    [product?.price, tmtRate],
+  );
 
   const cardImageSrc = useMemo(() => {
     const raw = product?.imgUrls[0];
@@ -126,12 +135,21 @@ export default function ProductCard({
                     className={productCardClasses.circProgress[platform]}
                   />
                 ) : (
-                  <Typography
-                    color={colors.mainWebMobile[platform]}
-                    className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
-                  >
-                    {product?.price} {t('manat')}
-                  </Typography>
+                  <>
+                    <Typography
+                      color={colors.mainWebMobile[platform]}
+                      className={`${interClassname.className} ${productCardClasses.typo2[platform]}`}
+                    >
+                      {product?.price} {t('manat')}
+                    </Typography>
+                    {priceUsd != null && (
+                      <Typography
+                        className={`${interClassname.className} ${productCardClasses.typo2Usd[platform]}`}
+                      >
+                        {priceUsd} USD
+                      </Typography>
+                    )}
+                  </>
                 ))}
             </Box>
           </Link>
