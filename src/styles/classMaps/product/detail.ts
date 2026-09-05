@@ -46,14 +46,32 @@ export const detailPageClasses = {
     mobile: 'w-[24px] h-[24px]',
   },
   price: {
-    web: 'w-[24.3vw] h-auto my-4 flex',
-    mobile: 'h-auto my-4 flex',
+    web: 'w-[24.3vw] h-auto my-4 flex flex-col gap-[0.3vw]',
+    // Mobile shares its row with the product name, so the price column is
+    // right-aligned against the screen edge rather than left-ragged mid-row.
+    mobile: 'h-auto my-4 flex flex-col items-end gap-1 text-right',
+  },
+  // Manat price, old-money value and the "köne pul" toggle share one row; the
+  // USD line sits under them.
+  priceRow: {
+    web: 'flex flex-row flex-wrap items-center gap-[0.8vw]',
+    mobile: 'flex flex-row flex-wrap items-center justify-end gap-2 text-right',
   },
   typographs: {
     price: {
       web: 'font-[700] text-[2.9vw] leading-[3.5vw] tracking-0 text-[#ff624c]',
       mobile:
         'font-bold text-[clamp(13px,_4.2vw,_25px)] flex items-center capitalize',
+    },
+    priceUsd: {
+      web: 'font-[500] text-[clamp(12px,_1.15vw,_20px)] leading-[1.5] text-[#303030] opacity-[65%]',
+      mobile:
+        'font-medium text-[clamp(11px,_3.2vw,_17px)] leading-[1.5] text-[#303030] opacity-[65%]',
+    },
+    priceOldMoney: {
+      web: 'font-[600] text-[clamp(13px,_1.5vw,_26px)] leading-[1.3] text-[#303030] opacity-[75%]',
+      mobile:
+        'font-semibold text-[clamp(11px,_3.4vw,_19px)] leading-[1.3] text-[#303030] opacity-[75%]',
     },
     font: {
       web: 'text-[clamp(12px,_1.05vw,_20px)] max-w-[17vw]',
