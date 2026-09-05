@@ -10,12 +10,14 @@ import {
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
   isPriceValid,
+  oldManatFromTmt,
   parseOrderVariant,
   parsePrice,
   parseVariantTag,
   processPrices,
   resolveVariantDisplay,
   tmtFromUsd,
+  usdFromTmt,
 } from '@/pages/product/utils';
 import { ExtendedCategory } from '@/pages/lib/types';
 
@@ -40,6 +42,53 @@ describe('tmtFromUsd', () => {
     expect(tmtFromUsd(50, 19.6)).toBe(980);
     // 100 * 19.6 === 1960.0000000000002
     expect(tmtFromUsd(100, 19.6)).toBe(1960);
+  });
+});
+
+describe('usdFromTmt', () => {
+  it('inverts tmtFromUsd back to whole dollars', () => {
+    expect(usdFromTmt('980', 19.6)).toBe(50);
+    expect(usdFromTmt(1960, 19.6)).toBe(100);
+  });
+
+  it('rounds to the nearest dollar', () => {
+    expect(usdFromTmt('1200', 19.6)).toBe(61); // 61.224
+    expect(usdFromTmt('371', 19.6)).toBe(19); // 18.928
+  });
+
+  it('returns null for a missing or non-positive rate', () => {
+    expect(usdFromTmt('1200', 0)).toBeNull();
+    expect(usdFromTmt('1200', -19.6)).toBeNull();
+    expect(usdFromTmt('1200', undefined)).toBeNull();
+  });
+
+  it('returns null for an unparseable price', () => {
+    expect(usdFromTmt('', 19.6)).toBeNull();
+    expect(usdFromTmt('null', 19.6)).toBeNull();
+    expect(usdFromTmt(null as unknown as string, 19.6)).toBeNull();
+  });
+});
+
+describe('oldManatFromTmt', () => {
+  it('multiplies by 5000 and groups with commas', () => {
+    expect(oldManatFromTmt(1200)).toBe('6,000,000');
+    expect(oldManatFromTmt('850')).toBe('4,250,000');
+    expect(oldManatFromTmt(49)).toBe('245,000');
+  });
+
+  it('groups with commas regardless of the host locale', () => {
+    // Intl would render "6 000 000" under ru-RU if the locale were left implicit
+    expect(oldManatFromTmt(1200)).toBe('6,000,000');
+  });
+
+  it('rounds legacy fractional manat prices to a whole old-manat amount', () => {
+    expect(oldManatFromTmt('35.50')).toBe('177,500');
+  });
+
+  it('returns null for an unparseable price', () => {
+    expect(oldManatFromTmt('')).toBeNull();
+    expect(oldManatFromTmt('null')).toBeNull();
+    expect(oldManatFromTmt(null as unknown as string)).toBeNull();
   });
 });
 

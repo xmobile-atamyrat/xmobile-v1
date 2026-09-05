@@ -71,6 +71,41 @@ export const parsePrice = (price: string): number => {
 export const tmtFromUsd = (usd: number, rate: number): number =>
   Math.ceil(parseFloat((usd * rate).toFixed(6)));
 
+// 1 new manat = 5000 old manat (the 2009 redenomination).
+export const OLD_MANAT_MULTIPLIER = 5000;
+
+// Pinned to en-US so the grouping stays "6,000,000" in every locale: the site's
+// own `ru` would otherwise format it "6 000 000", which is not the shape
+// shoppers recognise old prices in.
+const oldManatFormatter = new Intl.NumberFormat('en-US');
+
+const toFiniteAmount = (value: string | number): number | null => {
+  const parsed = typeof value === 'number' ? value : parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+// Inverse of tmtFromUsd, for showing the USD equivalent of a TMT price the
+// client already has. Deriving it beats reading Prices.price: it needs no
+// per-card request, and it stays consistent with the manat actually displayed
+// even where an admin edited priceInTmt away from its dollar value. The ceil in
+// tmtFromUsd means the result can land a dollar off what the admin typed.
+// Returns null (render nothing) when the rate has not loaded yet.
+export const usdFromTmt = (
+  tmt: string | number,
+  rate: number | undefined,
+): number | null => {
+  const amount = toFiniteAmount(tmt);
+  if (amount == null || !Number.isFinite(rate) || rate <= 0) return null;
+  return Math.round(amount / rate);
+};
+
+// The same price in pre-redenomination manat, e.g. 1200 -> "6,000,000".
+export const oldManatFromTmt = (tmt: string | number): string | null => {
+  const amount = toFiniteAmount(tmt);
+  if (amount == null) return null;
+  return oldManatFormatter.format(Math.round(amount * OLD_MANAT_MULTIPLIER));
+};
+
 export interface ParsedVariantTag {
   specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
   priceId?: string; // referenced Prices id, from [..]
