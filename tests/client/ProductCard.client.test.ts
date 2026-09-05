@@ -3,6 +3,7 @@
 import ProductCard from '@/pages/components/ProductCard';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useTmtRate } from '@/pages/lib/DollarRateContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { computeProductPrice } from '@/pages/product/utils';
@@ -29,8 +30,15 @@ vi.mock('@/pages/lib/fetch', () => ({
   useFetchWithCreds: vi.fn(),
 }));
 
-vi.mock('@/pages/product/utils', () => ({
+// Only computeProductPrice is stubbed: the card's USD line goes through the
+// real usdFromTmt, so these tests exercise the actual conversion.
+vi.mock('@/pages/product/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/pages/product/utils')>()),
   computeProductPrice: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/DollarRateContext', () => ({
+  useTmtRate: vi.fn(),
 }));
 
 vi.mock('@/pages/components/AddToCart', () => ({
@@ -74,6 +82,9 @@ describe('ProductCard', () => {
     });
 
     vi.mocked(useFetchWithCreds).mockReturnValue(vi.fn() as never);
+
+    // Default to "rates not loaded yet"; the USD tests set a rate explicitly.
+    vi.mocked(useTmtRate).mockReturnValue(undefined);
 
     vi.mocked(computeProductPrice).mockImplementation(
       async ({ product }) => product,
@@ -143,5 +154,43 @@ describe('ProductCard', () => {
     await waitFor(() => {
       expect(screen.getByText(/5\.00/)).toBeInTheDocument();
     });
+  });
+
+  it('shows the USD equivalent under the manat price', async () => {
+    vi.mocked(useTmtRate).mockReturnValue(19.6);
+    renderCard(makeProduct({ price: '1200' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('61 USD')).toBeInTheDocument();
+    });
+  });
+
+  it('omits the USD line until the rate has loaded', async () => {
+    vi.mocked(useTmtRate).mockReturnValue(undefined);
+    renderCard(makeProduct({ price: '1200' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/1200/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
+  });
+
+  it('omits the USD line while the price is still an unresolved price id', async () => {
+    vi.mocked(useTmtRate).mockReturnValue(19.6);
+    renderCard(makeProduct({ price: '[price-1]' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('hides the USD line when the product is out of stock', async () => {
+    vi.mocked(useTmtRate).mockReturnValue(19.6);
+    renderCard(makeProduct({ isOutOfStock: true, price: '1200' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Out of stock')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
   });
 });

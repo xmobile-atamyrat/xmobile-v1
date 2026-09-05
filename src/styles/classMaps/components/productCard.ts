@@ -25,6 +25,10 @@ export const productCardClasses = {
     mobile:
       'font-medium text-[14px] leading-none tracking-normal text-[#1b1b1b]',
   },
+  typo2Usd: {
+    web: 'font-medium text-[14px] leading-[20px] text-[#6b6b6b]',
+    mobile: 'font-normal text-[11px] leading-[16px] text-[#6b6b6b]',
+  },
   typo3: {
     web: 'flex justify-center text-center text-xl font-medium',
     mobile: 'flex justify-center text-center text-lg font-medium',
