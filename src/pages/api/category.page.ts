@@ -6,6 +6,11 @@ import {
 } from '@/lib/categoryHierarchy';
 import dbClient from '@/lib/dbClient';
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
+import { revalidateInBackground } from '@/lib/revalidate';
+import {
+  categoryRevalidationPaths,
+  productRevalidationPaths,
+} from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
@@ -284,6 +289,12 @@ async function handleEditCategory(req: NextApiRequest) {
     message?: string;
     status: number;
     data?: Category;
+    /**
+     * The parent before the edit. Reparenting changes the subcategory grid of
+     * the parent it left as well as the one it joined, and only the form parser
+     * still holds the pre-update row.
+     */
+    previousPredecessorId?: string | null;
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
@@ -362,7 +373,12 @@ async function handleEditCategory(req: NextApiRequest) {
         },
         data,
       });
-      resolve({ success: true, data: category, status: 200 });
+      resolve({
+        success: true,
+        data: category,
+        status: 200,
+        previousPredecessorId: existingCat.predecessorId,
+      });
     });
   });
   const res = await promise;
@@ -394,6 +410,14 @@ export default async function handler(
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
+      if (success && data) {
+        // The new category's own pages have no cache entry yet and stay lazily
+        // generated; what changed is the parent's subcategory grid.
+        revalidateInBackground(
+          res,
+          await categoryRevalidationPaths([data.predecessorId]),
+        );
+      }
       return res.status(status).json(retData);
     } catch (error) {
       console.error(filepath, error);
@@ -413,10 +437,24 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      const { status, success, data, message } = await handleEditCategory(req);
+      const { status, success, data, message, previousPredecessorId } =
+        await handleEditCategory(req);
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
+      if (success && data) {
+        // Own pages, plus both parents' grids — deduped when nothing moved.
+        // Product pages under this category carry its name in their breadcrumb
+        // too, but that cascade is left to the TTL rather than fanned out here.
+        revalidateInBackground(
+          res,
+          await categoryRevalidationPaths([
+            data.id,
+            data.predecessorId,
+            previousPredecessorId,
+          ]),
+        );
+      }
       return res.status(status).json(retData);
     } catch (error) {
       console.error(filepath, error);
@@ -452,6 +490,13 @@ export default async function handler(
           deletedAt: null,
         },
         select: { id: true, brandId: true },
+      });
+
+      // Read while the row is still active; the subtree lookups below are
+      // unscoped by `deletedAt` and stay valid after the transaction.
+      const parent = await dbClient.category.findUnique({
+        where: { id: categoryId as string },
+        select: { predecessorId: true },
       });
 
       const brandIds = new Set(
@@ -501,6 +546,19 @@ export default async function handler(
       });
 
       await Promise.all([...brandIds].map((bid) => syncBrandProductCount(bid)));
+
+      // The one place products are fanned out: a category delete soft-deletes
+      // everything under it, and those product pages would otherwise keep
+      // serving deleted products until the TTL expires.
+      revalidateInBackground(res, [
+        ...(await categoryRevalidationPaths([
+          ...subtreeIds,
+          parent?.predecessorId,
+        ])),
+        ...(await productRevalidationPaths(
+          productsToSoftDelete.map((p) => p.id),
+        )),
+      ]);
 
       return res.status(200).json({ success: true });
     } catch (error) {

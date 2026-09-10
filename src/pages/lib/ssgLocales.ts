@@ -1,7 +1,7 @@
 import type { GetStaticPathsContext } from 'next';
 
 /** Fallback if `context.locales` is empty (keep in sync with `next.config` `i18n.locales`). */
-const STATIC_PATH_LOCALES = ['en', 'ru', 'tk', 'ch', 'tr'] as const;
+export const STATIC_PATH_LOCALES = ['en', 'ru', 'tk', 'ch', 'tr'] as const;
 
 /**
  * One `{ params: { slug }, locale }` per slug × locale so SSG runs for every locale at build time.
