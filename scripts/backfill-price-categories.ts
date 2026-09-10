@@ -28,8 +28,8 @@ export interface DerivedCategories {
   ambiguous: Map<string, string[]>;
 }
 
-// Kept in sync with src/pages/api/prices/categories.page.ts, which derives the
-// same map at request time. Duplicated rather than imported from
+// Matches the bracket syntax the product form writes into `price` and `tags`.
+// Duplicated rather than imported from
 // @/pages/lib/constants because this script runs without tsconfig-paths, and
 // the obvious alternative — parseVariantTag in src/pages/product/utils.ts —
 // drags xlsx and papaparse into a database migration.

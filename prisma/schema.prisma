@@ -148,7 +148,10 @@ model Product {
   tags            String[]
   videoUrls       String[]
 
-  isOutOfStock    Boolean     @default(false)
+  prices          Prices[]
+
+  outOfStockAt    DateTime?
+
   colors          Color[]
 
   promoBanners    PromoBanner[]
@@ -160,6 +163,7 @@ model Product {
 
   @@index([brandId])
   @@index([deletedAt])
+  @@index([outOfStockAt])
 }
 
 model GuestCartItem {
@@ -200,11 +204,17 @@ model Prices {
   category        Category?   @relation(references: [id], fields: [categoryId], onDelete: SetNull)
   categoryId      String?
 
+  product         Product?    @relation(references: [id], fields: [productId], onDelete: SetNull)
+  productId       String?
+
+  outOfStockAt    DateTime?
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([price])
   @@index([categoryId])
+  @@index([productId])
 }
 
 model Color {

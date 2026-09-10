@@ -91,7 +91,7 @@ export default function ProductCard({
                   component="img"
                   image={cardImageSrc}
                   alt={product?.name}
-                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
+                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.outOfStockAt != null ? ' grayscale opacity-60' : ''}`}
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
@@ -100,7 +100,7 @@ export default function ProductCard({
                     el.src = PRODUCT_IMAGE_FALLBACK;
                   }}
                 />
-                {product.isOutOfStock && (
+                {product.outOfStockAt != null && (
                   <Box
                     className={`absolute top-2 left-2 bg-white/90 border border-[#e0e0e0] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
                   >
@@ -120,7 +120,7 @@ export default function ProductCard({
                 {parseName(product.name, router.locale ?? 'tk')}
               </Typography>
               {/* Out-of-stock products show no price; the badge carries the state */}
-              {!product.isOutOfStock &&
+              {product.outOfStockAt == null &&
                 (product?.price?.includes('[') ? (
                   <CircularProgress
                     className={productCardClasses.circProgress[platform]}
@@ -135,18 +135,19 @@ export default function ProductCard({
                 ))}
             </Box>
           </Link>
-          {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
-            <Box>
-              <AddToCart
-                productId={product.id}
-                cartAction={cartProps?.cartAction}
-                quantity={cartProps?.quantity}
-                cartItemId={cartProps?.cartItemId}
-                onDelete={cartProps?.onDelete}
-                setTotalPrice={() => undefined}
-              />
-            </Box>
-          )}
+          {cartProps.cartAction === 'delete' &&
+            product.outOfStockAt == null && (
+              <Box>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  onDelete={cartProps?.onDelete}
+                  setTotalPrice={() => undefined}
+                />
+              </Box>
+            )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">

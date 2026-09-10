@@ -435,23 +435,29 @@ async function handleGetProduct(query: {
     }
   }
 
+  // In-stock first. `nulls: 'first'` is required: Postgres sorts ASC as NULLS
+  // LAST, which would bury every available product below the sold-out ones.
+  const inStockFirst = {
+    outOfStockAt: { sort: 'asc', nulls: 'first' },
+  } satisfies Prisma.ProductOrderByWithRelationInput;
+
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
-    { isOutOfStock: 'asc' },
+    inStockFirst,
     { createdAt: 'desc' },
   ]; // default
   if (sortBy) {
     switch (sortBy) {
       case SORT_OPTIONS.PRICE_ASC:
-        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'asc' }];
+        orderBy = [inStockFirst, { cachedPrice: 'asc' }];
         break;
       case SORT_OPTIONS.PRICE_DESC:
-        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'desc' }];
+        orderBy = [inStockFirst, { cachedPrice: 'desc' }];
         break;
       case SORT_OPTIONS.A_Z:
-        orderBy = [{ isOutOfStock: 'asc' }, { name: 'asc' }];
+        orderBy = [inStockFirst, { name: 'asc' }];
         break;
       case SORT_OPTIONS.NEWEST:
-        orderBy = [{ isOutOfStock: 'asc' }, { createdAt: 'desc' }];
+        orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
       default:
         break;
@@ -532,10 +538,6 @@ async function handleEditProduct(
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
       }
-      if (fields.isOutOfStock?.length > 0) {
-        data.isOutOfStock = fields.isOutOfStock[0] === 'true';
-      }
-
       const currProduct = await dbClient.product.findFirst({
         where: {
           id: productId as string,
@@ -551,6 +553,16 @@ async function handleEditProduct(
         );
         resolve({ success: false, message: 'Product not found', status: 404 });
         return;
+      }
+
+      // Stamp only on a real transition. The form posts this field on every
+      // save, so re-saving an already sold-out product must not push out the
+      // date any retention window is measured against.
+      if (fields.isOutOfStock?.length > 0) {
+        const requested = fields.isOutOfStock[0] === 'true';
+        if (requested !== (currProduct.outOfStockAt != null)) {
+          data.outOfStockAt = requested ? new Date() : null;
+        }
       }
 
       const deleteImageUrls = fields.deleteImageUrls

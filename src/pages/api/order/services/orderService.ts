@@ -116,7 +116,7 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
 
   // Reject rather than silently drop: dropping would place an order missing
   // items the user believed they were buying
-  if (cartItems.some((item) => item.product.isOutOfStock)) {
+  if (cartItems.some((item) => item.product.outOfStockAt != null)) {
     throw new Error(OUT_OF_STOCK_ERROR);
   }
 
@@ -235,7 +235,7 @@ export async function createGuestOrder(
 
   // Reject rather than silently drop: dropping would place an order missing
   // items the user believed they were buying
-  if (cartItems.some((item) => item.product.isOutOfStock)) {
+  if (cartItems.some((item) => item.product.outOfStockAt != null)) {
     throw new Error(OUT_OF_STOCK_ERROR);
   }
 
