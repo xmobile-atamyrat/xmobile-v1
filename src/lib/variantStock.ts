@@ -49,7 +49,7 @@ export async function unavailableVariantTags(
 
   const priceIds = [...tagsByPriceId.keys()];
   const sellable = await dbClient.prices.findMany({
-    where: { id: { in: priceIds }, isOutOfStock: false },
+    where: { id: { in: priceIds }, outOfStockAt: null },
     select: { id: true },
   });
   const sellableIds = new Set(sellable.map(({ id }) => id));

@@ -60,10 +60,10 @@ export interface GetOrdersFilters {
 export async function cartHasOutOfStockItem(
   cartItems: Array<{
     selectedVariant?: string | null;
-    product: { isOutOfStock: boolean };
+    product: { outOfStockAt: Date | null };
   }>,
 ): Promise<boolean> {
-  if (cartItems.some((item) => item.product.isOutOfStock)) return true;
+  if (cartItems.some((item) => item.product.outOfStockAt != null)) return true;
 
   const unavailable = await unavailableVariantTags(
     cartItems.map((item) => item.selectedVariant),

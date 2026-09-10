@@ -55,7 +55,7 @@ describe('unavailableVariantTags', () => {
 
     expect(mockPricesFindMany).toHaveBeenCalledTimes(1);
     expect(mockPricesFindMany).toHaveBeenCalledWith({
-      where: { id: { in: ['price-1', 'price-2'] }, isOutOfStock: false },
+      where: { id: { in: ['price-1', 'price-2'] }, outOfStockAt: null },
       select: { id: true },
     });
     expect([...result]).toEqual(['b [price-2]{c2}']);
@@ -94,7 +94,7 @@ describe('unavailableVariantTags', () => {
     ]);
 
     expect(mockPricesFindMany).toHaveBeenCalledWith({
-      where: { id: { in: ['price-1'] }, isOutOfStock: false },
+      where: { id: { in: ['price-1'] }, outOfStockAt: null },
       select: { id: true },
     });
     expect([...result]).toEqual(['black [price-1]{c1}', 'white [price-1]{c2}']);

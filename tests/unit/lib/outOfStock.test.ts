@@ -48,6 +48,10 @@ import {
 } from '@/lib/outOfStock';
 
 const PRODUCT = 'prod-iphone';
+const SOLD_OUT: { outOfStockAt: Date | null } = {
+  outOfStockAt: new Date('2026-01-01'),
+};
+const IN_STOCK: { outOfStockAt: Date | null } = { outOfStockAt: null };
 
 describe('deriveProductOutOfStock', () => {
   it('derives nothing for a product with no connected prices', () => {
@@ -55,19 +59,12 @@ describe('deriveProductOutOfStock', () => {
   });
 
   it('is out of stock only when every price is', () => {
-    expect(
-      deriveProductOutOfStock([{ isOutOfStock: true }, { isOutOfStock: true }]),
-    ).toBe(true);
+    expect(deriveProductOutOfStock([SOLD_OUT, SOLD_OUT])).toBe(true);
   });
 
   it('is in stock while any single price remains', () => {
-    expect(
-      deriveProductOutOfStock([
-        { isOutOfStock: true },
-        { isOutOfStock: false },
-      ]),
-    ).toBe(false);
-    expect(deriveProductOutOfStock([{ isOutOfStock: false }])).toBe(false);
+    expect(deriveProductOutOfStock([SOLD_OUT, IN_STOCK])).toBe(false);
+    expect(deriveProductOutOfStock([IN_STOCK])).toBe(false);
   });
 });
 
@@ -85,12 +82,12 @@ describe('setProductOutOfStock', () => {
     await setProductOutOfStock(PRODUCT, true);
 
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: PRODUCT, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: expect.any(Date) },
+      where: { id: PRODUCT, outOfStockAt: null },
+      data: { outOfStockAt: expect.any(Date) },
     });
     expect(mockPricesUpdateMany).toHaveBeenCalledWith({
-      where: { productId: PRODUCT, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: expect.any(Date) },
+      where: { productId: PRODUCT, outOfStockAt: null },
+      data: { outOfStockAt: expect.any(Date) },
     });
   });
 
@@ -98,22 +95,22 @@ describe('setProductOutOfStock', () => {
     await setProductOutOfStock(PRODUCT, false);
 
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: PRODUCT, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: { id: PRODUCT, outOfStockAt: { not: null } },
+      data: { outOfStockAt: null },
     });
     expect(mockPricesUpdateMany).toHaveBeenCalledWith({
-      where: { productId: PRODUCT, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: { productId: PRODUCT, outOfStockAt: { not: null } },
+      data: { outOfStockAt: null },
     });
   });
 
   it('guards the write on the previous state so a repeat call cannot re-stamp', async () => {
     await setProductOutOfStock(PRODUCT, true);
 
-    // The `isOutOfStock: false` in the where clause is what makes this safe to
-    // run twice: the second call matches no rows and outOfStockAt stands.
+    // The `outOfStockAt: null` in the where clause is what makes this safe to
+    // run twice: the second call matches no rows and the first stamp stands.
     const [{ where }] = mockProductUpdateMany.mock.calls[0];
-    expect(where.isOutOfStock).toBe(false);
+    expect(where.outOfStockAt).toBeNull();
   });
 
   it('writes the product and its prices atomically', async () => {
@@ -137,30 +134,24 @@ describe('syncProductOutOfStockFromPrices', () => {
   });
 
   it('marks the product out of stock once its last price is', async () => {
-    mockPricesFindMany.mockResolvedValue([
-      { isOutOfStock: true },
-      { isOutOfStock: true },
-    ]);
+    mockPricesFindMany.mockResolvedValue([SOLD_OUT, SOLD_OUT]);
 
     await syncProductOutOfStockFromPrices(PRODUCT);
 
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: PRODUCT, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: expect.any(Date) },
+      where: { id: PRODUCT, outOfStockAt: null },
+      data: { outOfStockAt: expect.any(Date) },
     });
   });
 
   it('brings the product back as soon as one price is in stock', async () => {
-    mockPricesFindMany.mockResolvedValue([
-      { isOutOfStock: true },
-      { isOutOfStock: false },
-    ]);
+    mockPricesFindMany.mockResolvedValue([SOLD_OUT, IN_STOCK]);
 
     await syncProductOutOfStockFromPrices(PRODUCT);
 
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: PRODUCT, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: { id: PRODUCT, outOfStockAt: { not: null } },
+      data: { outOfStockAt: null },
     });
   });
 });
@@ -176,10 +167,10 @@ describe('syncAllProductsOutOfStock', () => {
 
   it('writes nothing when every product already matches its prices', async () => {
     mockProductFindMany.mockResolvedValue([
-      { id: 'a', isOutOfStock: true, prices: [{ isOutOfStock: true }] },
-      { id: 'b', isOutOfStock: false, prices: [{ isOutOfStock: false }] },
+      { id: 'a', ...SOLD_OUT, prices: [SOLD_OUT] },
+      { id: 'b', ...IN_STOCK, prices: [IN_STOCK] },
       // No prices to derive from — an admin's manual flag is left standing.
-      { id: 'c', isOutOfStock: true, prices: [] },
+      { id: 'c', ...SOLD_OUT, prices: [] },
     ]);
 
     const result = await syncAllProductsOutOfStock();
@@ -191,29 +182,24 @@ describe('syncAllProductsOutOfStock', () => {
 
   it('corrects drifted products in both directions and reports the counts', async () => {
     mockProductFindMany.mockResolvedValue([
-      {
-        id: 'stale-in-stock',
-        isOutOfStock: false,
-        prices: [{ isOutOfStock: true }],
-      },
-      {
-        id: 'stale-out-of-stock',
-        isOutOfStock: true,
-        prices: [{ isOutOfStock: false }, { isOutOfStock: true }],
-      },
-      { id: 'correct', isOutOfStock: false, prices: [{ isOutOfStock: false }] },
+      { id: 'stale-in-stock', ...IN_STOCK, prices: [SOLD_OUT] },
+      { id: 'stale-out-of-stock', ...SOLD_OUT, prices: [IN_STOCK, SOLD_OUT] },
+      { id: 'correct', ...IN_STOCK, prices: [IN_STOCK] },
     ]);
 
     const result = await syncAllProductsOutOfStock();
 
     expect(result).toEqual({ markedOutOfStock: 1, markedInStock: 1 });
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['stale-in-stock'] }, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: expect.any(Date) },
+      where: { id: { in: ['stale-in-stock'] }, outOfStockAt: null },
+      data: { outOfStockAt: expect.any(Date) },
     });
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['stale-out-of-stock'] }, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: {
+        id: { in: ['stale-out-of-stock'] },
+        outOfStockAt: { not: null },
+      },
+      data: { outOfStockAt: null },
     });
   });
 });
@@ -239,19 +225,13 @@ describe('outOfStockCascade', () => {
 
 describe('initialOutOfStockFields', () => {
   it('leaves a new in-stock product without a timestamp', () => {
-    expect(initialOutOfStockFields(false)).toEqual({
-      isOutOfStock: false,
-      outOfStockAt: null,
-    });
+    expect(initialOutOfStockFields(false)).toEqual({ outOfStockAt: null });
   });
 
   // A product created sold-out still has to be visible to the retention job,
   // which only considers rows carrying a real outOfStockAt.
   it('stamps a new product created out of stock', () => {
-    const fields = initialOutOfStockFields(true);
-
-    expect(fields.isOutOfStock).toBe(true);
-    expect(fields.outOfStockAt).toBeInstanceOf(Date);
+    expect(initialOutOfStockFields(true).outOfStockAt).toBeInstanceOf(Date);
   });
 });
 
@@ -275,10 +255,8 @@ describe('retireLongOutOfStockProducts', () => {
 
     const [{ where }] = mockProductFindMany.mock.calls[0];
     expect(where.deletedAt).toBeNull();
-    expect(where.isOutOfStock).toBe(true);
-    // Rows predating the column have no timestamp; "unknown age" must never be
-    // treated as "old enough to delete".
-    expect(where.outOfStockAt.not).toBeNull();
+    // A range bound does both halves of the job: it selects rows old enough to
+    // retire, and an in-stock row — outOfStockAt null — can never match it.
     expect(where.outOfStockAt.lt).toBeInstanceOf(Date);
   });
 

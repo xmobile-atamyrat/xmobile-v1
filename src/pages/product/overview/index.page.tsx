@@ -268,7 +268,7 @@ export default function ProductsOverview() {
                 ...product,
                 categoryId: result.data.categoryId,
                 brandId: result.data.brandId,
-                isOutOfStock: result.data.isOutOfStock,
+                isOutOfStock: result.data.outOfStockAt != null,
                 // The row really was just edited, so the "recently edited" sort
                 // has to see it move rather than keep the pre-save timestamp.
                 updatedAt: new Date(result.data.updatedAt).toISOString(),
@@ -319,7 +319,7 @@ export default function ProductsOverview() {
         videoUrls: rawProduct.videoUrls,
         brandId: rawProduct.brandId,
         categoryId: rawProduct.categoryId,
-        isOutOfStock: rawProduct.isOutOfStock,
+        isOutOfStock: rawProduct.outOfStockAt != null,
       });
     } catch (error) {
       console.error(error);

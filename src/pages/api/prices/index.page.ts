@@ -191,7 +191,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // rejected pair cannot leave earlier pairs half-applied.
       const current = await dbClient.prices.findMany({
         where: { id: { in: pricePairs.map((price) => price.id as string) } },
-        select: { id: true, productId: true, isOutOfStock: true },
+        select: { id: true, productId: true, outOfStockAt: true },
       });
       const currentById = new Map(current.map((price) => [price.id, price]));
 
@@ -257,12 +257,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           // currency job rewrites every price row, and doing so would silently
           // bring the whole catalog back in stock.
           if ('isOutOfStock' in price) {
-            const wasOutOfStock = currentById.get(
-              price.id as string,
-            )!.isOutOfStock;
+            const wasOutOfStock =
+              currentById.get(price.id as string)!.outOfStockAt != null;
             const nowOutOfStock = price.isOutOfStock === true;
             if (nowOutOfStock !== wasOutOfStock) {
-              data.isOutOfStock = nowOutOfStock;
               data.outOfStockAt = nowOutOfStock ? new Date() : null;
             }
           }

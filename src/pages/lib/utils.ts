@@ -634,6 +634,7 @@ export const slugify = (text: string): string => {
 // variant it points at is. Both flags matter: an available phone can have a
 // sold-out 512GB variant, and that variant is what the line refers to.
 export const isCartLineOutOfStock = (item: {
-  product: { isOutOfStock: boolean };
+  product: { outOfStockAt: Date | null };
   variantOutOfStock?: boolean;
-}): boolean => item.product.isOutOfStock || item.variantOutOfStock === true;
+}): boolean =>
+  item.product.outOfStockAt != null || item.variantOutOfStock === true;
