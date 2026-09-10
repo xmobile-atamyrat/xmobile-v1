@@ -2,10 +2,11 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import {
   BrandProps,
   ExtendedProduct,
+  PriceWithOwner,
   PromoBannerData,
   ResponseApi,
 } from '@/pages/lib/types';
-import { Color, Prices, Product } from '@prisma/client';
+import { Color, Product } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
@@ -134,9 +135,29 @@ export const fetchColors = async (): Promise<Color[]> => {
   return data;
 };
 
-export const fetchPrices = async (): Promise<Prices[]> => {
-  const { success, data, message }: ResponseApi<Prices[]> = await (
-    await fetch(`${BASE_URL}/api/prices`)
+/**
+ * Prices, optionally narrowed. `productId` returns just that product's
+ * connected prices; `unassigned` returns prices no product owns yet (what the
+ * connect-price search offers); `categoryId` returns every price in one
+ * category, taken ones included, which is what the product form's picker shows.
+ * No options -> the whole price list, as before.
+ */
+export const fetchPrices = async (options?: {
+  productId?: string;
+  unassigned?: boolean;
+  searchKeyword?: string;
+  categoryId?: string;
+}): Promise<PriceWithOwner[]> => {
+  const params = new URLSearchParams();
+  if (options?.productId != null) params.set('productId', options.productId);
+  if (options?.unassigned) params.set('unassigned', 'true');
+  if (options?.searchKeyword)
+    params.set('searchKeyword', options.searchKeyword);
+  if (options?.categoryId != null) params.set('categoryId', options.categoryId);
+  const query = params.toString();
+
+  const { success, data, message }: ResponseApi<PriceWithOwner[]> = await (
+    await fetch(`${BASE_URL}/api/prices${query ? `?${query}` : ''}`)
   ).json();
 
   if (!success || data == null) {

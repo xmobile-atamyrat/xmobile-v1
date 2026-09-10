@@ -25,6 +25,9 @@ const AddToCart = lazy(() => import('@/pages/components/AddToCart'));
 
 interface ProductCardProps {
   product?: Product;
+  // Set when the specific variant on this cart line is sold out while the
+  // product itself is still available; renders the same out-of-stock treatment.
+  variantOutOfStock?: boolean;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
   selectedVariant?: string | null;
@@ -33,6 +36,7 @@ interface ProductCardProps {
 
 export default function CartProductCard({
   product,
+  variantOutOfStock,
   cartProps,
   selectedVariant,
   colorsMap,
@@ -127,7 +131,7 @@ export default function CartProductCard({
               </Box>
               {/* This card has no out-of-stock badge, so the price slot carries
                   the label rather than going blank */}
-              {product.outOfStockAt != null ? (
+              {product.outOfStockAt != null || variantOutOfStock ? (
                 <Typography
                   color="#9e9e9e"
                   className={`${interClassname.className} ${cartProductCardClasses.typo2[platform]} uppercase`}

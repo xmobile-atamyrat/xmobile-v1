@@ -1,7 +1,9 @@
 import {
   Brand,
+  CartItem,
   Category,
   DollarRate,
+  Prices,
   Product,
   User,
   UserRole,
@@ -450,3 +452,20 @@ export interface PageSeoData {
   organizationJsonLd?: Record<string, any>;
   localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
 }
+
+// A cart line as /api/cart returns it. `variantOutOfStock` is resolved
+// server-side from the price the selected variant points at — a product can be
+// available while the specific variant in the cart is not, so both flags have
+// to be checked before letting the line through to checkout.
+export type CartItemWithProduct = CartItem & {
+  product: Product;
+  variantOutOfStock?: boolean;
+};
+
+// A price as /api/prices returns it, carrying the product that owns it (null
+// when unassigned). The product form's picker needs the owner to grey out
+// prices another product already holds and name the culprit, which is why the
+// endpoint includes it rather than making the client resolve ids.
+export type PriceWithOwner = Prices & {
+  product?: { id: string; name: string } | null;
+};
