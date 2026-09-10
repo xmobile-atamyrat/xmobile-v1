@@ -22,6 +22,9 @@ import {
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+// Creating a price no longer offers a product to attach it to: connecting a
+// price to a product happens in one place now, the product's own edit form,
+// which is the only one that can refuse to break a reference still in use.
 interface AddPriceProps {
   handleClose: () => void;
   handleCreate: (

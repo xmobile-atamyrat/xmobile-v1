@@ -1,6 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import {
+  initialOutOfStockFields,
+  outOfStockCascade,
+  setProductOutOfStock,
+} from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
@@ -224,6 +229,10 @@ async function createProduct(
           ],
           price: fields.price?.[0],
           cachedPrice,
+          // A product can be created already sold out. The timestamp travels
+          // with the flag so the retention job, which ignores rows without one,
+          // can see it from day one.
+          ...initialOutOfStockFields(fields.isOutOfStock?.[0] === 'true'),
         },
       });
 
@@ -538,6 +547,16 @@ async function handleEditProduct(
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
       }
+      // Not folded into `data`: out-of-stock has to cascade to the product's
+      // connected prices and stamp `outOfStockAt` only on a real transition,
+      // both of which setProductOutOfStock owns. Applied after the main update,
+      // and only when the flag really moved — the form posts this field on
+      // every save, so its presence says nothing about the admin's intent.
+      let requestedOutOfStock: boolean | undefined;
+      if (fields.isOutOfStock?.length > 0) {
+        requestedOutOfStock = fields.isOutOfStock[0] === 'true';
+      }
+
       const currProduct = await dbClient.product.findFirst({
         where: {
           id: productId as string,
@@ -555,15 +574,10 @@ async function handleEditProduct(
         return;
       }
 
-      // Stamp only on a real transition. The form posts this field on every
-      // save, so re-saving an already sold-out product must not push out the
-      // date any retention window is measured against.
-      if (fields.isOutOfStock?.length > 0) {
-        const requested = fields.isOutOfStock[0] === 'true';
-        if (requested !== (currProduct.outOfStockAt != null)) {
-          data.outOfStockAt = requested ? new Date() : null;
-        }
-      }
+      const outOfStockUpdate = outOfStockCascade(
+        requestedOutOfStock,
+        currProduct.outOfStockAt != null,
+      );
 
       const deleteImageUrls = fields.deleteImageUrls
         ? JSON.parse(fields.deleteImageUrls[0])
@@ -613,12 +627,21 @@ async function handleEditProduct(
         }
       }
 
-      const product = await dbClient.product.update({
+      let product = await dbClient.product.update({
         where: {
           id: productId as string,
         },
         data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
       });
+
+      if (outOfStockUpdate != null) {
+        await setProductOutOfStock(product.id, outOfStockUpdate);
+        // Re-read so the response carries the flag and timestamp the cascade
+        // settled on rather than the pre-cascade row.
+        product = await dbClient.product.findUniqueOrThrow({
+          where: { id: product.id },
+        });
+      }
 
       if (currProduct.brandId) {
         await syncBrandProductCount(currProduct.brandId);
