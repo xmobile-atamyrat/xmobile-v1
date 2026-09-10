@@ -39,7 +39,7 @@ describe('Out-of-stock product API (integration)', () => {
         tags: [],
         videoUrls: [],
         price: priceRef,
-        isOutOfStock: false,
+        outOfStockAt: null,
       },
     });
     inStockProductId = inStock.id;
@@ -53,7 +53,7 @@ describe('Out-of-stock product API (integration)', () => {
         tags: [],
         videoUrls: [],
         price: priceRef,
-        isOutOfStock: true,
+        outOfStockAt: new Date(),
       },
     });
     outOfStockProductId = outOfStock.id;
@@ -65,7 +65,7 @@ describe('Out-of-stock product API (integration)', () => {
     teardownIntegrationWorker();
   });
 
-  it('GET /api/product?productId returns isOutOfStock: true for an out-of-stock product', async () => {
+  it('GET /api/product?productId returns outOfStockAt for an out-of-stock product', async () => {
     const session = await signupTestUser('oos-get');
     const handler = (await import('@/pages/api/product/index.page')).default;
     const { req, res } = createMocks({
@@ -83,7 +83,7 @@ describe('Out-of-stock product API (integration)', () => {
     expect(res._getStatusCode()).toBe(200);
     const json = JSON.parse(res._getData() as string);
     expect(json.success).toBe(true);
-    expect(json.data.isOutOfStock).toBe(true);
+    expect(json.data.outOfStockAt).not.toBeNull();
   });
 
   it('GET /api/product?categoryId lists in-stock products before out-of-stock ones', async () => {
@@ -104,7 +104,7 @@ describe('Out-of-stock product API (integration)', () => {
     expect(res._getStatusCode()).toBe(200);
     const products = JSON.parse(res._getData() as string).data as {
       id: string;
-      isOutOfStock: boolean;
+      outOfStockAt: string | null;
     }[];
 
     const inStockIdx = products.findIndex((p) => p.id === inStockProductId);
