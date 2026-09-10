@@ -118,9 +118,9 @@ export const getStaticProps: GetStaticProps = async ({
       ).json();
 
     if (!success || !categoryData) {
-      return {
-        notFound: true,
-      };
+      // Without `revalidate` the 404 is cached indefinitely, so a category
+      // created later at this slug would stay unreachable.
+      return { notFound: true, revalidate: 600 };
     }
 
     // Fetch all categories to find parent
@@ -221,13 +221,11 @@ export const getStaticProps: GetStaticProps = async ({
         messages,
         seoData,
       },
-      revalidate: 300, // regenerate static pages every 5 minutes
+      revalidate: 600, // regenerate static pages every 10 minutes
     };
   } catch (error) {
     console.error('Error fetching category during build:', error);
-    return {
-      notFound: true,
-    };
+    return { notFound: true, revalidate: 600 };
   }
 };
 
