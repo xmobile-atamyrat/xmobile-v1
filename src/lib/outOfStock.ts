@@ -3,22 +3,23 @@ import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 
 /**
- * Out-of-stock state lives on both `Product` and `Prices`. The two are kept
- * consistent by one rule, applied in the two directions it can be triggered
- * from:
+ * Out-of-stock state lives on both `Product` and `Prices`, as a nullable
+ * `outOfStockAt`: a timestamp means sold out, null means available. The two are
+ * kept consistent by one rule, applied in the two directions it can be
+ * triggered from:
  *
  *   a product is out of stock exactly when every price it owns is out of stock
  *
  * - `setProductOutOfStock` — an admin flips the product; the state cascades
  *   down to all of its connected prices.
- * - `syncProductOutOfStockFromPrices` — a price's own flag changed; the
+ * - `syncProductOutOfStockFromPrices` — a price's own state changed; the
  *   product's is re-derived from the prices it owns.
  *
  * Neither function calls the other, so a cascade cannot loop: the first writes
  * downward only, the second upward only.
  *
  * Products with no connected prices are left alone in the upward direction —
- * there is nothing to derive from, so an admin's manual flag stands. Note the
+ * there is nothing to derive from, so an admin's manual state stands. Note the
  * corollary of the rule for products that *do* have prices: putting a single
  * price back in stock puts the product back in stock, even if the product was
  * marked out of stock by hand. Price state wins, because it is the more
@@ -27,8 +28,9 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
  * `outOfStockAt` is written only on a real transition. It is what the yearly
  * cleanup measures its cutoff against, so re-saving a row that is already out
  * of stock must not push that deadline out. Each transition is expressed as the
- * `where` clause of an `updateMany` rather than a read-then-write, which makes
- * every call here idempotent and safe against a concurrent writer.
+ * `where` clause of an `updateMany` rather than a read-then-write — matching on
+ * `outOfStockAt: null` going out of stock, and on `{ not: null }` coming back —
+ * which makes every call here idempotent and safe against a concurrent writer.
  */
 
 /**
@@ -36,14 +38,14 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
  * Returns null when the product owns no prices and nothing can be derived.
  */
 export function deriveProductOutOfStock(
-  prices: { isOutOfStock: boolean }[],
+  prices: { outOfStockAt: Date | null }[],
 ): boolean | null {
   if (prices.length === 0) return null;
-  return prices.every((price) => price.isOutOfStock);
+  return prices.every((price) => price.outOfStockAt != null);
 }
 
 /**
- * Whether a product edit should cascade its stock flag down onto its prices,
+ * Whether a product edit should cascade its stock state down onto its prices,
  * and with what value. Null means "leave the prices alone".
  *
  * The product form posts `isOutOfStock` on every save, so the field being
@@ -63,20 +65,17 @@ export function outOfStockCascade(
 }
 
 /**
- * The stock columns a freshly created product starts with.
+ * The stock column a freshly created product starts with.
  *
- * Kept here because the pairing is the invariant, not the two fields: a product
- * created out of stock needs `outOfStockAt` set in the same breath, or the
- * retention job — which ignores rows with no timestamp — would never see it.
+ * Kept here rather than inlined at the call site because it is the one place
+ * that turns the form's boolean into the column: a product created out of stock
+ * needs a real `outOfStockAt`, or the retention job — which ignores rows with
+ * no timestamp — would never see it.
  */
 export function initialOutOfStockFields(isOutOfStock: boolean): {
-  isOutOfStock: boolean;
   outOfStockAt: Date | null;
 } {
-  return {
-    isOutOfStock,
-    outOfStockAt: isOutOfStock ? new Date() : null,
-  };
+  return { outOfStockAt: isOutOfStock ? new Date() : null };
 }
 
 /**
@@ -93,12 +92,12 @@ export async function setProductOutOfStock(
     const now = new Date();
     await dbClient.$transaction([
       dbClient.product.updateMany({
-        where: { id: productId, isOutOfStock: false },
-        data: { isOutOfStock: true, outOfStockAt: now },
+        where: { id: productId, outOfStockAt: null },
+        data: { outOfStockAt: now },
       }),
       dbClient.prices.updateMany({
-        where: { productId, isOutOfStock: false },
-        data: { isOutOfStock: true, outOfStockAt: now },
+        where: { productId, outOfStockAt: null },
+        data: { outOfStockAt: now },
       }),
     ]);
     return;
@@ -106,23 +105,23 @@ export async function setProductOutOfStock(
 
   await dbClient.$transaction([
     dbClient.product.updateMany({
-      where: { id: productId, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: { id: productId, outOfStockAt: { not: null } },
+      data: { outOfStockAt: null },
     }),
     dbClient.prices.updateMany({
-      where: { productId, isOutOfStock: true },
-      data: { isOutOfStock: false, outOfStockAt: null },
+      where: { productId, outOfStockAt: { not: null } },
+      data: { outOfStockAt: null },
     }),
   ]);
 }
 
-/** Re-derives one product's flag from the prices it owns. */
+/** Re-derives one product's state from the prices it owns. */
 export async function syncProductOutOfStockFromPrices(
   productId: string,
 ): Promise<void> {
   const prices = await dbClient.prices.findMany({
     where: { productId },
-    select: { isOutOfStock: true },
+    select: { outOfStockAt: true },
   });
 
   const derived = deriveProductOutOfStock(prices);
@@ -130,15 +129,15 @@ export async function syncProductOutOfStockFromPrices(
 
   if (derived) {
     await dbClient.product.updateMany({
-      where: { id: productId, isOutOfStock: false },
-      data: { isOutOfStock: true, outOfStockAt: new Date() },
+      where: { id: productId, outOfStockAt: null },
+      data: { outOfStockAt: new Date() },
     });
     return;
   }
 
   await dbClient.product.updateMany({
-    where: { id: productId, isOutOfStock: true },
-    data: { isOutOfStock: false, outOfStockAt: null },
+    where: { id: productId, outOfStockAt: { not: null } },
+    data: { outOfStockAt: null },
   });
 }
 
@@ -150,24 +149,24 @@ export interface OutOfStockSyncResult {
 /**
  * The same upward rule applied to the whole catalog, for the daily batch.
  * Bulk-shaped rather than a loop over `syncProductOutOfStockFromPrices`: one
- * read of every active product's price flags, then at most two writes.
+ * read of every active product's price state, then at most two writes.
  */
 export async function syncAllProductsOutOfStock(): Promise<OutOfStockSyncResult> {
   const products = await dbClient.product.findMany({
     where: whereActiveProduct,
     select: {
       id: true,
-      isOutOfStock: true,
-      prices: { select: { isOutOfStock: true } },
+      outOfStockAt: true,
+      prices: { select: { outOfStockAt: true } },
     },
   });
 
   const toMarkOutOfStock: string[] = [];
   const toMarkInStock: string[] = [];
 
-  products.forEach(({ id, isOutOfStock, prices }) => {
+  products.forEach(({ id, outOfStockAt, prices }) => {
     const derived = deriveProductOutOfStock(prices);
-    if (derived == null || derived === isOutOfStock) return;
+    if (derived == null || derived === (outOfStockAt != null)) return;
     (derived ? toMarkOutOfStock : toMarkInStock).push(id);
   });
 
@@ -176,16 +175,16 @@ export async function syncAllProductsOutOfStock(): Promise<OutOfStockSyncResult>
   if (toMarkOutOfStock.length > 0) {
     writes.push(
       dbClient.product.updateMany({
-        where: { id: { in: toMarkOutOfStock }, isOutOfStock: false },
-        data: { isOutOfStock: true, outOfStockAt: now },
+        where: { id: { in: toMarkOutOfStock }, outOfStockAt: null },
+        data: { outOfStockAt: now },
       }),
     );
   }
   if (toMarkInStock.length > 0) {
     writes.push(
       dbClient.product.updateMany({
-        where: { id: { in: toMarkInStock }, isOutOfStock: true },
-        data: { isOutOfStock: false, outOfStockAt: null },
+        where: { id: { in: toMarkInStock }, outOfStockAt: { not: null } },
+        data: { outOfStockAt: null },
       }),
     );
   }
@@ -211,9 +210,10 @@ export interface OutOfStockCleanupResult {
  * brand recount — so a product retired by the batch is indistinguishable from
  * one an admin deleted by hand.
  *
- * `outOfStockAt: { not: null }` matters: rows that went out of stock before that
- * column existed have no timestamp, and a missing date must not read as
- * "infinitely old". They stay until someone touches their stock state again.
+ * The single `outOfStockAt: { lt: cutoff }` does both halves of the selection:
+ * it picks the rows old enough to retire, and an in-stock product — whose
+ * `outOfStockAt` is null — can never satisfy a range bound, so no separate
+ * "and it is actually sold out" filter is needed.
  */
 export async function retireLongOutOfStockProducts(
   retentionDays: number,
@@ -223,8 +223,7 @@ export async function retireLongOutOfStockProducts(
   const candidates = await dbClient.product.findMany({
     where: {
       deletedAt: null,
-      isOutOfStock: true,
-      outOfStockAt: { not: null, lt: cutoff },
+      outOfStockAt: { lt: cutoff },
     },
     select: { id: true, brandId: true },
   });

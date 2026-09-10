@@ -99,7 +99,7 @@ export default async function handler(
         name: true,
         categoryId: true,
         brandId: true,
-        isOutOfStock: true,
+        outOfStockAt: true,
         updatedAt: true,
         price: true,
       },
@@ -131,7 +131,7 @@ export default async function handler(
         name,
         categoryId: catId,
         brandId,
-        isOutOfStock,
+        outOfStockAt,
         updatedAt,
         price,
       }) => ({
@@ -139,7 +139,9 @@ export default async function handler(
         name,
         categoryId: catId,
         brandId,
-        isOutOfStock,
+        // The column is a timestamp so the retention job can measure against
+        // it; the table only ever asks the yes/no question.
+        isOutOfStock: outOfStockAt != null,
         updatedAt: updatedAt.toISOString(),
         ...resolveBasePrice(price, pricesById),
       }),

@@ -186,12 +186,12 @@ export const pickVariantColorForSpec = (
 
 export const processPrices = (prices: Prices[]): TableData => {
   const processedPrices = prices.map(
-    ({ id, name, price, priceInTmt, categoryId, isOutOfStock, updatedAt }) => [
+    ({ id, name, price, priceInTmt, categoryId, outOfStockAt, updatedAt }) => [
       name,
       price,
       parsePrice(priceInTmt),
       categoryId,
-      isOutOfStock,
+      outOfStockAt != null,
       updatedAt != null ? new Date(updatedAt).toISOString() : null,
       id,
     ],
@@ -207,12 +207,17 @@ export const isPriceValid = (price: string): boolean => {
   return /^[0-9]*\.?[0-9]+$/.test(price);
 };
 
+// A pending edit is column-shaped apart from stock, which stays a boolean all
+// the way from the checkbox to the PUT body: `outOfStockAt` is the server's to
+// stamp, and a client inventing one would overwrite the retention deadline.
+export type PriceEdit = Partial<Prices> & { isOutOfStock?: boolean };
+
 // Overlays typed-but-unsaved edits onto derived table rows. Edits are keyed by
 // price id (not row index) so re-sorting/filtering/searching can never merge one
 // price's pending values onto another. The header row is passed through.
 export const applyPendingEdits = (
   data: TableData,
-  edits: Record<string, Partial<Prices>>,
+  edits: Record<string, PriceEdit>,
 ): TableData =>
   data.map((row, index) => {
     if (index === 0) return row; // header
@@ -312,7 +317,7 @@ export const filterPricesWithoutProduct = (prices: Prices[]): Prices[] =>
 // Prices an admin has marked sold out. Backs the update-prices "out of stock
 // only" toggle, mirroring the same filter on the products overview.
 export const filterPricesOutOfStock = (prices: Prices[]): Prices[] =>
-  prices.filter((p) => p.isOutOfStock);
+  prices.filter((p) => p.outOfStockAt != null);
 
 // Collects a category id plus all descendant ids from the nested category tree
 // (as returned by /api/category). Used to make a category filter include the
@@ -405,7 +410,7 @@ const cheapestSellableVariantPrice = async ({
     ),
   );
   const sellable = rows.filter(
-    (row): row is Prices => row != null && !row.isOutOfStock,
+    (row): row is Prices => row != null && row.outOfStockAt == null,
   );
   if (sellable.length === 0) return null;
 
@@ -461,7 +466,9 @@ export const computeProductPrice = async ({
     fetchWithCreds,
   });
   processedProduct.price = fallback ?? '';
-  if (fallback == null) processedProduct.isOutOfStock = true;
+  // Stamped on the copy only, never persisted: consumers read this column for
+  // null-ness alone, so the value just has to be a date, not the real one.
+  if (fallback == null) processedProduct.outOfStockAt = new Date();
 
   return processedProduct;
 };

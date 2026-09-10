@@ -80,7 +80,7 @@ describe('processPrices', () => {
         priceInTmt: '35.50',
         categoryId: 'c1',
         productId: 'prod-1',
-        isOutOfStock: false,
+        outOfStockAt: null,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         updatedAt: new Date('2026-02-03T04:05:06.000Z'),
       } as Prices,
@@ -126,7 +126,7 @@ describe('processPrices', () => {
         priceInTmt: '35',
         categoryId: null,
         productId: null,
-        isOutOfStock: true,
+        outOfStockAt: new Date('2026-02-01T00:00:00.000Z'),
         updatedAt: new Date('2026-02-03T04:05:06.000Z'),
       },
     ] as Prices[]);
@@ -238,9 +238,9 @@ describe('applyPendingEdits', () => {
 describe('filterPricesOutOfStock', () => {
   it('keeps only the prices marked sold out', () => {
     const prices = [
-      { id: 'p1', isOutOfStock: true },
-      { id: 'p2', isOutOfStock: false },
-      { id: 'p3', isOutOfStock: true },
+      { id: 'p1', outOfStockAt: new Date('2026-01-01T00:00:00.000Z') },
+      { id: 'p2', outOfStockAt: null },
+      { id: 'p3', outOfStockAt: new Date('2026-01-01T00:00:00.000Z') },
     ] as Prices[];
     expect(filterPricesOutOfStock(prices).map((p) => p.id)).toEqual([
       'p1',
@@ -250,7 +250,7 @@ describe('filterPricesOutOfStock', () => {
 
   it('returns an empty list when everything is in stock', () => {
     expect(
-      filterPricesOutOfStock([{ id: 'p1', isOutOfStock: false }] as Prices[]),
+      filterPricesOutOfStock([{ id: 'p1', outOfStockAt: null }] as Prices[]),
     ).toEqual([]);
   });
 });
@@ -528,7 +528,7 @@ const productWith = (fields: Partial<Product>): Product =>
     id: 'prod-1',
     price: null,
     tags: [],
-    isOutOfStock: false,
+    outOfStockAt: null,
     ...fields,
   }) as Product;
 
@@ -550,12 +550,12 @@ describe('computeProductPrice', () => {
       product: productWith({ price: '[p1]' }),
       accessToken: '',
       fetchWithCreds: priceFetcher({
-        p1: { priceInTmt: '350', isOutOfStock: false },
+        p1: { priceInTmt: '350', outOfStockAt: null },
       }) as never,
     });
 
     expect(result.price).toBe('350');
-    expect(result.isOutOfStock).toBe(false);
+    expect(result.outOfStockAt).toBeNull();
   });
 
   it('falls back to the cheapest sellable variant when the base reference dangles', async () => {
@@ -566,13 +566,13 @@ describe('computeProductPrice', () => {
       }),
       accessToken: '',
       fetchWithCreds: priceFetcher({
-        p2: { priceInTmt: '900', isOutOfStock: false },
-        p3: { priceInTmt: '700', isOutOfStock: false },
+        p2: { priceInTmt: '900', outOfStockAt: null },
+        p3: { priceInTmt: '700', outOfStockAt: null },
       }) as never,
     });
 
     expect(result.price).toBe('700');
-    expect(result.isOutOfStock).toBe(false);
+    expect(result.outOfStockAt).toBeNull();
   });
 
   it('does not advertise a sold-out variant as the fallback price', async () => {
@@ -584,8 +584,11 @@ describe('computeProductPrice', () => {
       accessToken: '',
       fetchWithCreds: priceFetcher({
         // The cheaper one cannot be bought, so the dearer one is the real price.
-        p2: { priceInTmt: '900', isOutOfStock: false },
-        p3: { priceInTmt: '700', isOutOfStock: true },
+        p2: { priceInTmt: '900', outOfStockAt: null },
+        p3: {
+          priceInTmt: '700',
+          outOfStockAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
       }) as never,
     });
 
@@ -600,7 +603,7 @@ describe('computeProductPrice', () => {
     });
 
     expect(result.price).toBe('');
-    expect(result.isOutOfStock).toBe(true);
+    expect(result.outOfStockAt).toBeInstanceOf(Date);
   });
 
   it('leaves a legacy literal price untouched', async () => {
@@ -612,7 +615,7 @@ describe('computeProductPrice', () => {
     });
 
     expect(result.price).toBe('1200');
-    expect(result.isOutOfStock).toBe(false);
+    expect(result.outOfStockAt).toBeNull();
     expect(fetchWithCreds).not.toHaveBeenCalled();
   });
 });
