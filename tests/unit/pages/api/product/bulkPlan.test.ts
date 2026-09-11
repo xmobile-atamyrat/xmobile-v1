@@ -82,7 +82,12 @@ describe('planProductUpdate variants', () => {
         spec: '128gb',
         colorId: 'col2',
         priceId: 'vp1',
-        price: { name: '128gb White', usd: '100', tmt: '2000' },
+        price: {
+          name: '128gb White',
+          usd: '100',
+          tmt: '2000',
+          display: '2000',
+        },
       },
     ]);
   });
@@ -99,7 +104,7 @@ describe('planProductUpdate variants', () => {
         spec: '512gb',
         colorId: undefined,
         priceId: undefined,
-        price: { name: '512gb', usd: '200', tmt: '4000' },
+        price: { name: '512gb', usd: '200', tmt: '4000', display: '4000' },
       },
     ]);
   });
@@ -211,7 +216,12 @@ describe('planStandalonePrice', () => {
       variantRow({ productId: '', spec: '512gb', priceUsd: '200' }),
       makeRefs(),
     );
-    expect(result).toEqual({ name: '512gb', usd: '200', tmt: '4000' });
+    expect(result).toEqual({
+      name: '512gb',
+      usd: '200',
+      tmt: '4000',
+      display: '4000',
+    });
   });
 
   it('appends the color to the name when given', () => {
@@ -224,7 +234,12 @@ describe('planStandalonePrice', () => {
       }),
       makeRefs(),
     );
-    expect(result).toEqual({ name: '512gb Gold', usd: '200', tmt: '4000' });
+    expect(result).toEqual({
+      name: '512gb Gold',
+      usd: '200',
+      tmt: '4000',
+      display: '4000',
+    });
   });
 
   it('errors on an empty spec', () => {
@@ -310,8 +325,10 @@ describe('planProductUpdate prices', () => {
       name: 'iPhone 15',
       usd: '1000',
       tmt: '20000',
+      display: '20000',
     });
-    expect(plan.data?.cachedPrice).toBe(1000);
+    // cachedPrice caches the shown manat, not the dollars.
+    expect(plan.data?.cachedPrice).toBe(20000);
   });
 
   it('converts TMT-only to USD with parsePrice(tmt / rate)', () => {
@@ -366,7 +383,8 @@ describe('planProductUpdate prices', () => {
     );
     expect(plan.basePrice?.priceId).toBeUndefined();
     expect(plan.basePrice?.name).toBe('iPhone 15');
-    expect(plan.data?.cachedPrice).toBe(50);
+    // 50 USD at rate 20 -> 1000 exact -> 1000 shown.
+    expect(plan.data?.cachedPrice).toBe(1000);
   });
 });
 
@@ -588,7 +606,11 @@ describe('planProductUpdate skips unchanged values', () => {
       productRow({ priceUsd: '100', priceTmt: '2000' }),
       undefined,
       makeCurrent(),
-      makeRefs({ priceById: new Map([['bp1', { usd: '100', tmt: '2000' }]]) }),
+      makeRefs({
+        priceById: new Map([
+          ['bp1', { usd: '100', tmt: '2000', display: '2000' }],
+        ]),
+      }),
     );
     expect(plan.errors).toEqual([]);
     expect(plan.basePrice).toBeUndefined();
@@ -604,7 +626,9 @@ describe('planProductUpdate skips unchanged values', () => {
       makeCurrent(),
       makeRefs({
         rate: 19.6,
-        priceById: new Map([['bp1', { usd: '50', tmt: '980' }]]),
+        priceById: new Map([
+          ['bp1', { usd: '50', tmt: '980', display: '980' }],
+        ]),
       }),
     );
     expect(plan.errors).toEqual([]);
@@ -616,13 +640,18 @@ describe('planProductUpdate skips unchanged values', () => {
       productRow({ priceUsd: '100' }), // TMT derived = 2000 at rate 20
       undefined,
       makeCurrent(),
-      makeRefs({ priceById: new Map([['bp1', { usd: '100', tmt: '1800' }]]) }),
+      makeRefs({
+        priceById: new Map([
+          ['bp1', { usd: '100', tmt: '1800', display: '1800' }],
+        ]),
+      }),
     );
     expect(plan.basePrice).toEqual({
       priceId: 'bp1',
       name: 'iPhone 15',
       usd: '100',
       tmt: '2000',
+      display: '2000',
     });
   });
 
@@ -631,7 +660,11 @@ describe('planProductUpdate skips unchanged values', () => {
       productRow(),
       [variantRow({ spec: '128gb', priceUsd: '50', color: 'Black' })],
       makeCurrent(),
-      makeRefs({ priceById: new Map([['vp1', { usd: '50', tmt: '1000' }]]) }),
+      makeRefs({
+        priceById: new Map([
+          ['vp1', { usd: '50', tmt: '1000', display: '1000' }],
+        ]),
+      }),
     );
     expect(plan.tags).toEqual([
       { spec: '128gb', colorId: 'col1', priceId: 'vp1', price: undefined },
@@ -719,7 +752,16 @@ describe('planPriceRows', () => {
         ['laptops', 'cat2'],
       ]),
       priceMetaById: new Map([
-        ['pr1', { name: '128GB', usd: '100', tmt: '2000', categoryId: 'cat1' }],
+        [
+          'pr1',
+          {
+            name: '128GB',
+            usd: '100',
+            tmt: '2000',
+            display: '2000',
+            categoryId: 'cat1',
+          },
+        ],
       ]),
     });
 
@@ -861,7 +903,13 @@ describe('planPriceRows', () => {
     );
 
     expect(plan.creates).toEqual([
-      { name: '512GB', usd: '400', tmt: '8000', categoryId: 'cat2' },
+      {
+        name: '512GB',
+        usd: '400',
+        tmt: '8000',
+        display: '8000',
+        categoryId: 'cat2',
+      },
     ]);
   });
 
