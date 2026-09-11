@@ -1,7 +1,13 @@
 import type { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
-import { collectCategorySubtreeIds, tmtFromUsd } from '@/pages/product/utils';
+import {
+  displayPriceOf,
+  displayTmtFromUsd,
+  tmtFromUsd,
+  type PriceRowLike,
+} from '@/pages/lib/priceDisplay';
+import { collectCategorySubtreeIds } from '@/pages/product/utils';
 import {
   bannerFont,
   fillRow,
@@ -17,8 +23,9 @@ export const PRICE_LIST_SHEET_NAME = 'Prices';
 
 const RATE_LABEL = 'USD rate';
 const RATE_CELL = '$B$1';
-const PRICE_HEADER = ['Name', 'USD', 'TMT'];
-const LAST_COLUMN = 3;
+// TMT is the exact conversion; Display is what the storefront quotes.
+const PRICE_HEADER = ['Name', 'USD', 'TMT', 'Display'];
+const LAST_COLUMN = 4;
 
 /**
  * One banner-and-table block in the sheet. Both download modes produce these:
@@ -313,16 +320,41 @@ function styleSheet(worksheet: ExcelJS.Worksheet) {
 function tmtCell(
   row: number,
   usd: number,
-  storedTmt: string,
+  price: PriceRowLike,
   rate: number | null,
 ): ExcelJS.CellValue {
   if (rate == null || Number.isNaN(usd)) {
-    const stored = Number(storedTmt);
-    return Number.isNaN(stored) ? storedTmt : stored;
+    const stored = Number(price.priceInTmt);
+    return Number.isNaN(stored) ? price.priceInTmt : stored;
   }
   return {
     formula: `ROUNDUP(B${row}*${RATE_CELL},0)`,
     result: tmtFromUsd(usd, rate),
+  };
+}
+
+// A live formula while the stored value is what the rule would produce, so
+// retyping the rate in B1 recalculates the sheet. A hand-pinned price is written
+// as a literal instead, since no formula reproduces it.
+function displayCell(
+  row: number,
+  usd: number,
+  price: PriceRowLike,
+  rate: number | null,
+): ExcelJS.CellValue {
+  const shown = displayPriceOf(price);
+  const stored = Number(shown);
+
+  if (rate == null || Number.isNaN(usd)) {
+    return Number.isNaN(stored) ? shown : stored;
+  }
+
+  const derived = displayTmtFromUsd(usd, rate);
+  if (!Number.isNaN(stored) && stored !== derived) return stored;
+
+  return {
+    formula: `CEILING(C${row},10)`,
+    result: derived,
   };
 }
 
@@ -357,7 +389,7 @@ export async function buildPriceListBlob(
     );
     sheet.getCell(`A${row}`).value = section.sectionPath.join(PATH_SEPARATOR);
     sheet.getCell(`A${row}`).font = bannerFont(isRoot);
-    sheet.mergeCells(`A${row}:C${row}`);
+    sheet.mergeCells(`A${row}:D${row}`);
     row += 1;
 
     fillRow(sheet, row, LAST_COLUMN, HEADER_FILL);
@@ -372,12 +404,8 @@ export async function buildPriceListBlob(
       const usd = Number(price.price);
       sheet.getCell(`A${row}`).value = price.name;
       sheet.getCell(`B${row}`).value = Number.isNaN(usd) ? price.price : usd;
-      sheet.getCell(`C${row}`).value = tmtCell(
-        row,
-        usd,
-        price.priceInTmt,
-        rate,
-      );
+      sheet.getCell(`C${row}`).value = tmtCell(row, usd, price, rate);
+      sheet.getCell(`D${row}`).value = displayCell(row, usd, price, rate);
       row += 1;
     });
   });
