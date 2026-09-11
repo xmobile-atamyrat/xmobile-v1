@@ -289,6 +289,9 @@ describe('buildPriceListBlob', () => {
   const sections = () =>
     buildPriceSections([price({ id: 'a' })], tree, ['phones'], 'tk');
 
+  const sectionsFor = (over: Partial<Prices>) =>
+    buildPriceSections([price({ id: 'a', ...over })], tree, ['phones'], 'tk');
+
   it('writes the dollar rate into B1 so every TMT cell can reference it', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
 
@@ -306,20 +309,9 @@ describe('buildPriceListBlob', () => {
     });
   });
 
-  it('adds a Display column rounding the exact manat up to the nearest 10', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
-
-    expect(sheet.getCell('D4').value).toBe('Display');
-    // Derived, so it stays a live formula off the TMT cell beside it.
-    expect(sheet.getCell('D5').value).toEqual({
-      formula: 'CEILING(C5,10)',
-      result: 1960,
-    });
-  });
-
-  it('writes a hand-pinned display price as a literal, not a formula', async () => {
-    // No formula reproduces a pinned figure, so writing one would silently
-    // overwrite the admin's choice the moment Excel recalculated.
+  // The sheet is the exact-conversion view an admin reconciles against; the
+  // rounded figure the storefront quotes is not part of it.
+  it('writes no fourth column beside the TMT one', async () => {
     const sheet = await readSheet(
       await buildPriceListBlob(
         sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1350' }),
@@ -327,13 +319,11 @@ describe('buildPriceListBlob', () => {
       ),
     );
 
-    expect(sheet.getCell('D5').value).toBe(1350);
+    expect(sheet.getCell('D4').value).toBe(null);
+    expect(sheet.getCell('D5').value).toBe(null);
   });
 
-  const sectionsFor = (over: Partial<Prices>) =>
-    buildPriceSections([price({ id: 'a', ...over })], tree, ['phones'], 'tk');
-
-  it('writes the stored display price when there is no rate to compute against', async () => {
+  it('writes the stored TMT literal when there is no rate to compute against', async () => {
     const sheet = await readSheet(
       await buildPriceListBlob(
         sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1290' }),
@@ -342,19 +332,6 @@ describe('buildPriceListBlob', () => {
     );
 
     expect(sheet.getCell('C5').value).toBe(1283);
-    expect(sheet.getCell('D5').value).toBe(1290);
-  });
-
-  it('falls back to the exact manat when no display price is stored yet', async () => {
-    const sheet = await readSheet(
-      await buildPriceListBlob(
-        sectionsFor({ priceInTmt: '1283', displayPriceTmt: null }),
-        null,
-      ),
-    );
-
-    expect(sheet.getCell('C5').value).toBe(1283);
-    expect(sheet.getCell('D5').value).toBe(1283);
   });
 
   it('lays out a category banner above a Name/USD/TMT header', async () => {
