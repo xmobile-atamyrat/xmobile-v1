@@ -17,6 +17,11 @@ import {
   localeOptions,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
+import {
+  cachedPriceFrom,
+  displayPriceOf,
+  displayPriceOrNull,
+} from '@/pages/lib/priceDisplay';
 import { parseVariantTag } from '@/pages/product/utils';
 import {
   sanitizeProductLocale,
@@ -206,9 +211,8 @@ async function createProduct(
         return;
       }
 
-      const cachedPrice = parseFloat(
-        (await getPrice(fields.price?.[0]))?.price ?? '0',
-      );
+      const basePriceRow = await getPrice(fields.price?.[0]);
+      const cachedPrice = cachedPriceFrom(basePriceRow);
       const productTags: string[] = fields.tags
         ? JSON.parse(fields.tags[0])
         : [];
@@ -262,7 +266,11 @@ async function getProduct(
   // product.price = [id]{value}
   const productPrice = await getPrice(product?.price as string);
   if (product) {
-    product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+    // `?? undefined` keeps the dangling-reference shape: a missing price has
+    // always interpolated as "{undefined}", and the PDP keys off that text.
+    product.price = `${product?.price}{${
+      displayPriceOrNull(productPrice) ?? undefined
+    }}`;
   }
 
   return product;
@@ -419,19 +427,14 @@ async function handleGetProduct(query: {
     where.name = { contains: searchKeyword, mode: 'insensitive' };
   }
 
-  // minPrice/maxPrice are provided in TMT, convert to usd
+  // Both bounds and cachedPrice are the shown manat, so they compare directly.
   if (minPrice || maxPrice) {
-    const dollarRate = await dbClient.dollarRate.findFirst({
-      where: { currency: 'TMT' },
-    });
-    const rate = dollarRate?.rate || 1;
-
     if (minPrice) {
       const minTmt = parseFloat(minPrice);
       if (!Number.isNaN(minTmt)) {
         const currentFilter =
           typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, gte: minTmt / rate };
+        where.cachedPrice = { ...currentFilter, gte: minTmt };
       }
     }
     if (maxPrice) {
@@ -439,7 +442,7 @@ async function handleGetProduct(query: {
       if (!Number.isNaN(maxTmt)) {
         const currentFilter =
           typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, lte: maxTmt / rate };
+        where.cachedPrice = { ...currentFilter, lte: maxTmt };
       }
     }
   }
@@ -485,7 +488,7 @@ async function handleGetProduct(query: {
     products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
       if (productPrice) {
-        product.price = `${product.price}{${productPrice.priceInTmt}}`;
+        product.price = `${product.price}{${displayPriceOf(productPrice)}}`;
       }
       return product;
     }),
@@ -530,9 +533,8 @@ async function handleEditProduct(
       }
       if (fields.price?.length > 0) {
         data.price = fields.price[0];
-        data.cachedPrice = parseFloat(
-          (await getPrice(fields.price[0]))?.price ?? '0',
-        );
+        const basePriceRow = await getPrice(fields.price[0]);
+        data.cachedPrice = cachedPriceFrom(basePriceRow);
       }
       if (fields.brandId?.length > 0) {
         data.brandId = fields.brandId[0] || null;
