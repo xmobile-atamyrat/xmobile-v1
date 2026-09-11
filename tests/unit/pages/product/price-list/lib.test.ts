@@ -299,10 +299,62 @@ describe('buildPriceListBlob', () => {
     const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
 
     // row 1 rate, row 2 blank, row 3 category banner, row 4 header, row 5 price
+    // The TMT column stays the exact conversion an admin reconciles against.
     expect(sheet.getCell('C5').value).toEqual({
       formula: 'ROUNDUP(B5*$B$1,0)',
       result: 1960,
     });
+  });
+
+  it('adds a Display column rounding the exact manat up to the nearest 10', async () => {
+    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
+
+    expect(sheet.getCell('D4').value).toBe('Display');
+    // Derived, so it stays a live formula off the TMT cell beside it.
+    expect(sheet.getCell('D5').value).toEqual({
+      formula: 'CEILING(C5,10)',
+      result: 1960,
+    });
+  });
+
+  it('writes a hand-pinned display price as a literal, not a formula', async () => {
+    // No formula reproduces a pinned figure, so writing one would silently
+    // overwrite the admin's choice the moment Excel recalculated.
+    const sheet = await readSheet(
+      await buildPriceListBlob(
+        sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1350' }),
+        19.6,
+      ),
+    );
+
+    expect(sheet.getCell('D5').value).toBe(1350);
+  });
+
+  const sectionsFor = (over: Partial<Prices>) =>
+    buildPriceSections([price({ id: 'a', ...over })], tree, ['phones'], 'tk');
+
+  it('writes the stored display price when there is no rate to compute against', async () => {
+    const sheet = await readSheet(
+      await buildPriceListBlob(
+        sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1290' }),
+        null,
+      ),
+    );
+
+    expect(sheet.getCell('C5').value).toBe(1283);
+    expect(sheet.getCell('D5').value).toBe(1290);
+  });
+
+  it('falls back to the exact manat when no display price is stored yet', async () => {
+    const sheet = await readSheet(
+      await buildPriceListBlob(
+        sectionsFor({ priceInTmt: '1283', displayPriceTmt: null }),
+        null,
+      ),
+    );
+
+    expect(sheet.getCell('C5').value).toBe(1283);
+    expect(sheet.getCell('D5').value).toBe(1283);
   });
 
   it('lays out a category banner above a Name/USD/TMT header', async () => {
