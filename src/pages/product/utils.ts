@@ -1,4 +1,9 @@
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
+import {
+  displayPriceOf,
+  displayPriceOrNull,
+  parsePrice,
+} from '@/pages/lib/priceDisplay';
 import { ExtendedCategory, FetchWithCredsType } from '@/pages/lib/types';
 import { Color, Prices, Product } from '@prisma/client';
 import Papa, { ParseResult } from 'papaparse';
@@ -7,18 +12,20 @@ import * as XLSX from 'xlsx';
 
 const regex = /(".*?"|[^",]+|(?<=,)(?=,)|(?<=,)$|^,)/g;
 export type TableData = (string | number | boolean | null)[][];
-// Column order for the update-prices table: the name and the two figures being
-// edited lead, then the row's category, stock state and how stale it is. The id
+// Column order for the update-prices table: the name and the three figures
+// being edited lead, then the row's category, stock state and how stale it is.
+// The id
 // trails every data row as the stable edit key but is never drawn — the table
 // renders `row.slice(0, PRICE_ID_IDX)`, which is why the header row is exactly
 // one cell shorter than a data row.
 export const PRICE_NAME_IDX = 0;
 export const PRICE_DOLLAR_IDX = 1;
 export const PRICE_MANAT_IDX = 2;
-export const PRICE_CATEGORY_IDX = 3;
-export const PRICE_OUT_OF_STOCK_IDX = 4;
-export const PRICE_UPDATED_IDX = 5;
-export const PRICE_ID_IDX = 6;
+export const PRICE_DISPLAY_IDX = 3;
+export const PRICE_CATEGORY_IDX = 4;
+export const PRICE_OUT_OF_STOCK_IDX = 5;
+export const PRICE_UPDATED_IDX = 6;
+export const PRICE_ID_IDX = 7;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -67,16 +74,9 @@ export const handleFileUpload = (
   }
 };
 
-export const parsePrice = (price: string): number => {
-  if (price == null) return 0;
-  return parseFloat(parseFloat(price).toFixed(2));
-};
-
-// The single USD -> TMT rounding rule: prices are always whole manat, rounded
-// up. The toFixed absorbs IEEE-754 error before the ceil — 50 * 19.6 is
-// 980.0000000000001, which a bare Math.ceil would bill as 981.
-export const tmtFromUsd = (usd: number, rate: number): number =>
-  Math.ceil(parseFloat((usd * rate).toFixed(6)));
+// Re-exported because the rest of the app imports them from here, and that
+// module must stay free of the papaparse/xlsx imports above.
+export { parsePrice, tmtFromUsd } from '@/pages/lib/priceDisplay';
 
 export interface ParsedVariantTag {
   specText: string; // tag text with [..] and {..} stripped, e.g. "128gb storage 12gb ram"
@@ -140,7 +140,7 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
 /**
  * Whether a price-table column accepts typed text.
  *
- * The row's `onInput` handler is bound to every cell, but only these three are
+ * The row's `onInput` handler is bound to every cell, but only these four are
  * `contentEditable`. The rest render widgets — a category select, an
  * out-of-stock checkbox — whose own native events bubble up to that same
  * handler, so the two have to agree on one definition of "editable".
@@ -148,7 +148,8 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
 export const isEditablePriceCell = (cellIndex: number): boolean =>
   cellIndex === PRICE_NAME_IDX ||
   cellIndex === PRICE_DOLLAR_IDX ||
-  cellIndex === PRICE_MANAT_IDX;
+  cellIndex === PRICE_MANAT_IDX ||
+  cellIndex === PRICE_DISPLAY_IDX;
 
 export interface VariantStockChoice {
   specText: string;
@@ -185,20 +186,27 @@ export const pickVariantColorForSpec = (
 };
 
 export const processPrices = (prices: Prices[]): TableData => {
-  const processedPrices = prices.map(
-    ({ id, name, price, priceInTmt, categoryId, outOfStockAt, updatedAt }) => [
-      name,
-      price,
-      parsePrice(priceInTmt),
-      categoryId,
-      outOfStockAt != null,
-      updatedAt != null ? new Date(updatedAt).toISOString() : null,
-      id,
-    ],
-  ) as TableData;
+  const processedPrices = prices.map((row) => [
+    row.name,
+    row.price,
+    parsePrice(row.priceInTmt),
+    parsePrice(displayPriceOf(row)),
+    row.categoryId,
+    row.outOfStockAt != null,
+    row.updatedAt != null ? new Date(row.updatedAt).toISOString() : null,
+    row.id,
+  ]) as TableData;
 
   return [
-    ['Name', 'Dollars', 'Manat', 'Category', 'Out of stock', 'Updated'],
+    [
+      'Name',
+      'Dollars',
+      'Manat',
+      'Display',
+      'Category',
+      'Out of stock',
+      'Updated',
+    ],
     ...processedPrices,
   ];
 };
@@ -228,6 +236,8 @@ export const applyPendingEdits = (
     if (edit.price != null) next[PRICE_DOLLAR_IDX] = edit.price;
     if (edit.priceInTmt != null)
       next[PRICE_MANAT_IDX] = parsePrice(edit.priceInTmt);
+    if (edit.displayPriceTmt != null)
+      next[PRICE_DISPLAY_IDX] = parsePrice(edit.displayPriceTmt);
     // Keyed on presence, not null-ness: clearing a category is a legitimate
     // edit whose value is null, which a `!= null` guard would silently drop.
     if ('categoryId' in edit)
@@ -247,6 +257,8 @@ export type PriceSortKey =
   | 'dollarDesc'
   | 'manatAsc'
   | 'manatDesc'
+  | 'displayAsc'
+  | 'displayDesc'
   | 'editedRecent'
   | 'editedStale';
 
@@ -271,6 +283,14 @@ export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
     case 'manatDesc':
       return sorted.sort(
         (a, b) => parsePrice(b.priceInTmt) - parsePrice(a.priceInTmt),
+      );
+    case 'displayAsc':
+      return sorted.sort(
+        (a, b) => parsePrice(displayPriceOf(a)) - parsePrice(displayPriceOf(b)),
+      );
+    case 'displayDesc':
+      return sorted.sort(
+        (a, b) => parsePrice(displayPriceOf(b)) - parsePrice(displayPriceOf(a)),
       );
     case 'editedRecent':
       return sorted.sort((a, b) => editedTime(b) - editedTime(a));
@@ -383,7 +403,7 @@ export const computePrice = async ({
   fetchWithCreds: FetchWithCredsType;
 }): Promise<string | null> => {
   const price = await fetchPriceRow({ accessToken, fetchWithCreds, priceId });
-  return price?.priceInTmt ?? null;
+  return displayPriceOrNull(price);
 };
 
 // The cheapest variant a customer could actually buy, or null if there is none.
@@ -414,11 +434,15 @@ const cheapestSellableVariantPrice = async ({
   );
   if (sellable.length === 0) return null;
 
-  return sellable.reduce((cheapest, row) =>
-    parsePrice(row.priceInTmt) < parsePrice(cheapest.priceInTmt)
-      ? row
-      : cheapest,
-  ).priceInTmt;
+  // Compared on the shown figure: two variants whose exact prices differ can
+  // round to the same one.
+  return displayPriceOf(
+    sellable.reduce((cheapest, row) =>
+      parsePrice(displayPriceOf(row)) < parsePrice(displayPriceOf(cheapest))
+        ? row
+        : cheapest,
+    ),
+  );
 };
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.

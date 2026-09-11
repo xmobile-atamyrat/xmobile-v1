@@ -19,6 +19,7 @@ import {
   parseVariantTag,
   pickVariantColorForSpec,
   PRICE_CATEGORY_IDX,
+  PRICE_DISPLAY_IDX,
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
   PRICE_MANAT_IDX,
@@ -26,6 +27,7 @@ import {
   PRICE_OUT_OF_STOCK_IDX,
   PRICE_UPDATED_IDX,
   processPrices,
+  sortPrices,
   resolveVariantDisplay,
   tmtFromUsd,
 } from '@/pages/product/utils';
@@ -90,13 +92,16 @@ describe('processPrices', () => {
       'Name',
       'Dollars',
       'Manat',
+      'Display',
       'Category',
       'Out of stock',
       'Updated',
     ]);
+    // No displayPriceTmt stored, so Display falls back to the exact figure.
     expect(table[1]).toEqual([
       'A',
       '10',
+      35.5,
       35.5,
       'c1',
       false,
@@ -134,6 +139,7 @@ describe('processPrices', () => {
       'A',
       '10',
       35,
+      35,
       null,
       true,
       '2026-02-03T04:05:06.000Z',
@@ -150,12 +156,20 @@ describe('processPrices', () => {
 });
 
 describe('applyPendingEdits', () => {
-  // [Name, Dollars, Manat, Category, Out of stock, Updated, ID]
+  // [Name, Dollars, Manat, Display, Category, Out of stock, Updated, ID]
   const updated = '2026-02-03T04:05:06.000Z';
   const table = [
-    ['Name', 'Dollars', 'Manat', 'Category', 'Out of stock', 'Updated'],
-    ['A', '10', 200, 'c1', false, updated, 'p1'],
-    ['B', '20', 400, null, false, updated, 'p2'],
+    [
+      'Name',
+      'Dollars',
+      'Manat',
+      'Display',
+      'Category',
+      'Out of stock',
+      'Updated',
+    ],
+    ['A', '10', 200, 200, 'c1', false, updated, 'p1'],
+    ['B', '20', 400, 400, null, false, updated, 'p2'],
   ];
 
   it('passes rows through unchanged when there are no edits', () => {
@@ -164,14 +178,30 @@ describe('applyPendingEdits', () => {
 
   it('overlays an edit only onto the row with the matching price id', () => {
     const result = applyPendingEdits(table, {
-      p2: { id: 'p2', name: 'B-edited', price: '25', priceInTmt: '500' },
+      p2: {
+        id: 'p2',
+        name: 'B-edited',
+        price: '25',
+        priceInTmt: '500',
+        displayPriceTmt: '510',
+      },
     });
-    // p1 untouched, p2 gets name/dollar/manat from the edit (manat parsed)
-    expect(result[1]).toEqual(['A', '10', 200, 'c1', false, updated, 'p1']);
+    // p1 untouched, p2 gets name/dollar/manat/display from the edit
+    expect(result[1]).toEqual([
+      'A',
+      '10',
+      200,
+      200,
+      'c1',
+      false,
+      updated,
+      'p1',
+    ]);
     expect(result[2]).toEqual([
       'B-edited',
       '25',
       500,
+      510,
       null,
       false,
       updated,
@@ -186,16 +216,43 @@ describe('applyPendingEdits', () => {
       p1: { id: 'p1', priceInTmt: '999' },
     });
     // p2 untouched
-    expect(result[1]).toEqual(['B', '20', 400, null, false, updated, 'p2']);
-    // follows p1
-    expect(result[2]).toEqual(['A', '10', 999, 'c1', false, updated, 'p1']);
+    expect(result[1]).toEqual([
+      'B',
+      '20',
+      400,
+      400,
+      null,
+      false,
+      updated,
+      'p2',
+    ]);
+    // follows p1; the display cell is its own edit, so it stays put
+    expect(result[2]).toEqual([
+      'A',
+      '10',
+      999,
+      200,
+      'c1',
+      false,
+      updated,
+      'p1',
+    ]);
   });
 
   it('overlays a category assignment', () => {
     const result = applyPendingEdits(table, {
       p2: { id: 'p2', categoryId: 'c9' },
     });
-    expect(result[2]).toEqual(['B', '20', 400, 'c9', false, updated, 'p2']);
+    expect(result[2]).toEqual([
+      'B',
+      '20',
+      400,
+      400,
+      'c9',
+      false,
+      updated,
+      'p2',
+    ]);
   });
 
   it('applies an explicit clear-to-null category edit', () => {
@@ -203,14 +260,23 @@ describe('applyPendingEdits', () => {
     const result = applyPendingEdits(table, {
       p1: { id: 'p1', categoryId: null },
     });
-    expect(result[1]).toEqual(['A', '10', 200, null, false, updated, 'p1']);
+    expect(result[1]).toEqual([
+      'A',
+      '10',
+      200,
+      200,
+      null,
+      false,
+      updated,
+      'p1',
+    ]);
   });
 
   it('overlays an out-of-stock edit', () => {
     const result = applyPendingEdits(table, {
       p2: { id: 'p2', isOutOfStock: true },
     });
-    expect(result[2]).toEqual(['B', '20', 400, null, true, updated, 'p2']);
+    expect(result[2]).toEqual(['B', '20', 400, 400, null, true, updated, 'p2']);
   });
 
   it('applies an explicit back-in-stock edit', () => {
@@ -218,13 +284,22 @@ describe('applyPendingEdits', () => {
     // absent field.
     const outOfStockTable = [
       table[0],
-      ['A', '10', 200, 'c1', true, updated, 'p1'],
+      ['A', '10', 200, 200, 'c1', true, updated, 'p1'],
       table[2],
     ];
     const result = applyPendingEdits(outOfStockTable, {
       p1: { id: 'p1', isOutOfStock: false },
     });
-    expect(result[1]).toEqual(['A', '10', 200, 'c1', false, updated, 'p1']);
+    expect(result[1]).toEqual([
+      'A',
+      '10',
+      200,
+      200,
+      'c1',
+      false,
+      updated,
+      'p1',
+    ]);
   });
 
   it('ignores a productId edit now that the table has no product column', () => {
@@ -498,6 +573,7 @@ describe('computePrice', () => {
     expect(await computePrice(args)).toBe('2680');
     // a bulk upload changed the stored price in between
     expect(await computePrice(args)).toBe('1176000');
+    // (no displayPriceTmt on these rows, so both fall back to priceInTmt)
   });
 
   it('returns null instead of echoing the id back when the price is gone', async () => {
@@ -543,6 +619,47 @@ describe('computeProductPrice', () => {
 
     expect(result.price).toBe('350');
     expect(fetchWithCreds).not.toHaveBeenCalled();
+  });
+
+  it('resolves the rounded display price, not the exact manat figure', async () => {
+    const result = await computeProductPrice({
+      product: productWith({ price: '[p1]' }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        p1: {
+          priceInTmt: '1283',
+          displayPriceTmt: '1290',
+          outOfStockAt: null,
+        },
+      }) as never,
+    });
+
+    expect(result.price).toBe('1290');
+  });
+
+  it('picks the cheapest variant by its displayed price', async () => {
+    const result = await computeProductPrice({
+      product: productWith({
+        price: '[deleted]',
+        tags: ['256gb [p2]{c1}', '128gb [p3]{c1}'],
+      }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        p2: {
+          priceInTmt: '1283',
+          displayPriceTmt: '1290',
+          outOfStockAt: null,
+        },
+        p3: {
+          priceInTmt: '1288',
+          displayPriceTmt: '1290',
+          outOfStockAt: null,
+        },
+      }) as never,
+    });
+
+    // Both show 1290; the exact 1283 must not leak out as the card price.
+    expect(result.price).toBe('1290');
   });
 
   it('resolves a bare [priceId] base reference', async () => {
@@ -695,10 +812,12 @@ describe('pickVariantColorForSpec', () => {
 });
 
 describe('isEditablePriceCell', () => {
-  it('accepts the three text columns the admin types into', () => {
+  it('accepts the four text columns the admin types into', () => {
     expect(isEditablePriceCell(PRICE_NAME_IDX)).toBe(true);
     expect(isEditablePriceCell(PRICE_DOLLAR_IDX)).toBe(true);
     expect(isEditablePriceCell(PRICE_MANAT_IDX)).toBe(true);
+    // The shown price is pinned by typing over it, so it edits like the rest.
+    expect(isEditablePriceCell(PRICE_DISPLAY_IDX)).toBe(true);
   });
 
   // The out-of-stock cell holds a real checkbox whose native input event
@@ -709,5 +828,48 @@ describe('isEditablePriceCell', () => {
     expect(isEditablePriceCell(PRICE_CATEGORY_IDX)).toBe(false);
     expect(isEditablePriceCell(PRICE_OUT_OF_STOCK_IDX)).toBe(false);
     expect(isEditablePriceCell(PRICE_UPDATED_IDX)).toBe(false);
+  });
+});
+
+describe('sortPrices by displayed price', () => {
+  const row = (id: string, tmt: string, display: string | null): Prices =>
+    ({
+      id,
+      name: id,
+      price: '1',
+      priceInTmt: tmt,
+      displayPriceTmt: display,
+      updatedAt: new Date(),
+    }) as Prices;
+
+  const rows = [
+    row('a', '1283', '1290'),
+    row('b', '1300', '1200'), // pinned below its exact price
+    row('c', '900', null), // not computed yet -> falls back to 900
+  ];
+
+  it('orders ascending by the shown price', () => {
+    expect(sortPrices(rows, 'displayAsc').map((p) => p.id)).toEqual([
+      'c',
+      'b',
+      'a',
+    ]);
+  });
+
+  it('orders descending by the shown price', () => {
+    expect(sortPrices(rows, 'displayDesc').map((p) => p.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('leaves the exact-manat sort reading the exact column', () => {
+    // Guard: the two sorts must not collapse into one.
+    expect(sortPrices(rows, 'manatAsc').map((p) => p.id)).toEqual([
+      'c',
+      'a',
+      'b',
+    ]);
   });
 });
