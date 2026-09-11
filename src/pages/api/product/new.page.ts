@@ -3,6 +3,7 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { ResponseApi } from '@/pages/lib/types';
+import { displayPriceOrNull } from '@/pages/lib/priceDisplay';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/product/new.page.ts';
@@ -40,7 +41,10 @@ async function handleGetNewProducts(query: {
     const productsWithPrices = await Promise.all(
       products.map(async (product) => {
         const productPrice = await getPrice(product?.price as string);
-        product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+        // `?? undefined` preserves the "{undefined}" text for a dangling ref.
+        product.price = `${product?.price}{${
+          displayPriceOrNull(productPrice) ?? undefined
+        }}`;
         return product;
       }),
     );

@@ -12,6 +12,7 @@ import {
   fetchProducts,
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { displayPriceOrNull } from '@/pages/lib/priceDisplay';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
   curlyBracketRegex,
@@ -317,7 +318,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
             raw,
             specText,
             colorId,
-            priceTmt: price?.priceInTmt,
+            priceTmt: displayPriceOrNull(price) ?? undefined,
             // No resolvable price means nothing to charge, so the variant is
             // unbuyable rather than free: this covers a tag whose price row was
             // deleted and a tag that never carried a reference at all. The
