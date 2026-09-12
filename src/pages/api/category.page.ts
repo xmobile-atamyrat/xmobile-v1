@@ -411,11 +411,14 @@ export default async function handler(
       if (message) retData.message = message;
       if (data) retData.data = data;
       if (success && data) {
-        // The new category's own pages have no cache entry yet and stay lazily
-        // generated; what changed is the parent's subcategory grid.
-        revalidateInBackground(
-          res,
-          await categoryRevalidationPaths([data.predecessorId]),
+        // The parent's subcategory grid gained an entry. The new category's own
+        // pages are included too: anything that probed this slug before the
+        // category existed left behind a `notFound` entry, which both catalog
+        // pages now cache for 600s. `unstable_onlyGenerated` skips the slug when
+        // no such entry exists, so this costs nothing in the common case.
+        const created = data;
+        revalidateInBackground(res, () =>
+          categoryRevalidationPaths([created.id, created.predecessorId]),
         );
       }
       return res.status(status).json(retData);
@@ -446,11 +449,11 @@ export default async function handler(
         // Own pages, plus both parents' grids — deduped when nothing moved.
         // Product pages under this category carry its name in their breadcrumb
         // too, but that cascade is left to the TTL rather than fanned out here.
-        revalidateInBackground(
-          res,
-          await categoryRevalidationPaths([
-            data.id,
-            data.predecessorId,
+        const edited = data;
+        revalidateInBackground(res, () =>
+          categoryRevalidationPaths([
+            edited.id,
+            edited.predecessorId,
             previousPredecessorId,
           ]),
         );
@@ -550,7 +553,7 @@ export default async function handler(
       // The one place products are fanned out: a category delete soft-deletes
       // everything under it, and those product pages would otherwise keep
       // serving deleted products until the TTL expires.
-      revalidateInBackground(res, [
+      revalidateInBackground(res, async () => [
         ...(await categoryRevalidationPaths([
           ...subtreeIds,
           parent?.predecessorId,

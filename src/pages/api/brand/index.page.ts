@@ -80,7 +80,7 @@ async function handler(
         data: { name },
       });
 
-      revalidateInBackground(res, await brandProductPaths(id));
+      revalidateInBackground(res, () => brandProductPaths(id));
 
       return res.status(200).json({ success: true, data: brand });
     }
@@ -94,7 +94,9 @@ async function handler(
       }
 
       // Collected before the delete: the products' `brandId` is about to be
-      // cleared, so afterwards there is nothing left to look them up by.
+      // cleared, so afterwards there is nothing left to look them up by. Eager
+      // rather than deferred for that reason — and safe to leave eager, since
+      // nothing has been mutated yet when it runs.
       const paths = await brandProductPaths(id);
 
       await dbClient.brand.delete({

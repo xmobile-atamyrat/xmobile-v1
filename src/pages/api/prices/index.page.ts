@@ -158,9 +158,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // product brings that product back — same rule as any other price edit.
       if (newPrice.productId != null) {
         await syncProductOutOfStockFromPrices(newPrice.productId);
-        revalidateInBackground(
-          res,
-          await productRevalidationPaths([newPrice.productId]),
+        revalidateInBackground(res, () =>
+          productRevalidationPaths([newPrice.productId]),
         );
       }
 
@@ -336,9 +335,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // Bulk edits from /product/price-list overshoot the batch cap and are
       // skipped inside revalidateInBackground, which is intended for them.
       const priceIds = pricePairs.map((price) => price.id as string);
-      revalidateInBackground(
-        res,
-        await productRevalidationPaths([
+      revalidateInBackground(res, async () =>
+        productRevalidationPaths([
           ...priceRevalidationProductIds(pricePairs, currentById),
           ...(await productIdsReferencingPrices(priceIds)),
         ]),
@@ -378,9 +376,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // Runs whether or not the FK was set: a product's `price` string still
       // carries the bracket reference after the row is gone, which is exactly
       // the dangling state its cached page needs to be rebuilt out of.
-      revalidateInBackground(
-        res,
-        await productRevalidationPaths([
+      revalidateInBackground(res, async () =>
+        productRevalidationPaths([
           deletedPrice.productId,
           ...(await productIdsReferencingPrices([deletedPrice.id])),
         ]),

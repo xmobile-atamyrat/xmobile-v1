@@ -111,12 +111,25 @@ export async function revalidatePaths(
 /**
  * Fire-and-forget wrapper for API handlers: returns immediately so the admin's
  * save is never held up by — or failed by — a regeneration.
+ *
+ * Prefer the thunk form at any call site that runs after the mutation has
+ * committed. Resolving targets means querying the catalog, and an `await` on
+ * that inside the handler's `try` puts a connection blip or statement timeout
+ * on the path to the handler's `catch` — turning a save that already landed
+ * into a 500, which is exactly what this module exists to prevent. Passing the
+ * thunk moves that query off the handler's promise chain and under the same
+ * catch as the regeneration itself.
  */
 export function revalidateInBackground(
   res: Revalidatable,
-  paths: string[],
+  paths: string[] | (() => string[] | Promise<string[]>),
 ): void {
-  revalidatePaths(res, paths).catch((error) => {
-    console.warn('revalidateInBackground: batch failed:', error);
-  });
+  // Deferred rather than called inline, so a thunk that throws synchronously
+  // lands here too instead of in the caller.
+  Promise.resolve()
+    .then(() => (typeof paths === 'function' ? paths() : paths))
+    .then((resolved) => revalidatePaths(res, resolved))
+    .catch((error) => {
+      console.warn('revalidateInBackground: batch failed:', error);
+    });
 }
