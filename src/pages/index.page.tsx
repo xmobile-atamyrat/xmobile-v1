@@ -17,6 +17,7 @@ import {
   POST_SOVIET_COUNTRIES,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { pushProductSearch } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   generateHreflangLinks,
@@ -261,7 +262,7 @@ export default function Home({
       if (searchKeyword) setSearchKeyword('');
       return;
     }
-    if (searchKeyword) router.push('/product');
+    if (searchKeyword) pushProductSearch(router, searchKeyword);
   }, [searchKeyword, router, setSearchKeyword]);
 
   useEffect(() => {

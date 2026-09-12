@@ -1,6 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { fetchBrands } from '@/pages/lib/apis';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { pushProductSearch } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   addRecentSearch,
@@ -64,8 +65,10 @@ export default function SearchPage() {
     const q = term.trim();
     if (!q) return;
     setRecent(addRecentSearch(q));
+    // Context is seeded too so the results page's field is already filled on
+    // its first paint; the URL is what the listing actually reads.
     setSearchKeyword(q);
-    router.push('/product');
+    pushProductSearch(router, q);
   };
 
   if (platform === 'web') return null;

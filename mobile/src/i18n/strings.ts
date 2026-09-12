@@ -9,6 +9,11 @@ type SlideStrings = {
 export type Strings = {
   onboarding: {
     skip: string;
+    /**
+     * Primary footer CTA on the last slide. This is the sign-up action (it
+     * hands off to /user/signup), so the wording is the web app's `signup`
+     * string per locale -- keep the two in sync rather than inventing copy.
+     */
     cta: string;
     signInPrompt: string;
     signInLink: string;
@@ -29,7 +34,7 @@ export type Strings = {
 const tk: Strings = {
   onboarding: {
     skip: 'Geç',
-    cta: 'Başla',
+    cta: 'Täze hasap döret',
     signInPrompt: 'Hasabyňyz barmy? ',
     signInLink: 'Hasaba gir',
     slides: [
@@ -67,7 +72,7 @@ const tk: Strings = {
 const ru: Strings = {
   onboarding: {
     skip: 'Пропустить',
-    cta: 'Начать',
+    cta: 'Зарегистрироваться',
     signInPrompt: 'Уже есть аккаунт? ',
     signInLink: 'Войти',
     slides: [
@@ -106,7 +111,7 @@ const ru: Strings = {
 const en: Strings = {
   onboarding: {
     skip: 'Skip',
-    cta: 'Get started',
+    cta: 'Sign up',
     signInPrompt: 'Already have an account? ',
     signInLink: 'Sign in',
     slides: [
@@ -144,7 +149,7 @@ const en: Strings = {
 const tr: Strings = {
   onboarding: {
     skip: 'Geç',
-    cta: 'Başla',
+    cta: 'Kayıt ol',
     signInPrompt: 'Hesabınız var mı? ',
     signInLink: 'Giriş yap',
     slides: [

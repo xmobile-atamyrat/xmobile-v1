@@ -29,6 +29,10 @@ import {
 import { SearchBar } from '@/pages/components/Appbar';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
+import {
+  readSearchKeyword,
+  replaceProductSearch,
+} from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
@@ -96,14 +100,20 @@ export default function ProductGridContent({
   const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
   const [page, setPage] = useState(restored?.page ?? 0);
   const { categories: allCategories } = useCategoryContext();
-  const { products, setProducts, searchKeyword, setSearchKeyword } =
-    useProductContext();
-  // Editable search field on the results page. Debounced into the shared
-  // context so the grid refetches without a network call per keystroke.
-  const [localSearchKeyword, setLocalSearchKeyword] = useState(
-    searchKeyword ?? '',
-  );
+  const { products, setProducts, setSearchKeyword } = useProductContext();
+  const router = useRouter();
+  // The URL owns the active search term (see productSearch.ts). Reading it from
+  // the query rather than from context is what keeps a search and an unfiltered
+  // browse on separate list-restoration entries -- sharing one entry is what
+  // made the listing come back with the wrong products after a back-nav.
+  const searchKeyword = readSearchKeyword(router.query);
+  // Editable search field on the results page (mobile). Debounced into the URL
+  // so the grid refetches without a navigation per keystroke.
+  const [localSearchKeyword, setLocalSearchKeyword] = useState(searchKeyword);
   const isFirstSearchRun = useRef(true);
+  // The term this component last wrote to the URL, so the adopt-effect below
+  // can tell its own write echoing back from a genuinely external change.
+  const lastPushedKeywordRef = useRef<string | null>(null);
   // Total number of products matching the current query (all pages), so the
   // header count reflects the real total rather than the loaded page.
   const [totalCount, setTotalCount] = useState<number | null>(null);
@@ -136,7 +146,6 @@ export default function ProductGridContent({
   });
 
   const t = useTranslations();
-  const router = useRouter();
   const platform = usePlatform();
 
   const { filters, setFilters } = useProductFilters();
@@ -193,7 +202,7 @@ export default function ProductGridContent({
       .catch(() => setColors([]));
   }, [platform]);
 
-  // Debounce the editable search field into context (skip the mount run so we
+  // Debounce the editable search field into the URL (skip the mount run so we
   // don't clobber a keyword handed off from the home page).
   useEffect(() => {
     if (isFirstSearchRun.current) {
@@ -201,12 +210,31 @@ export default function ProductGridContent({
       return undefined;
     }
     const handler = setTimeout(() => {
+      const next = localSearchKeyword.trim();
+      if (next === searchKeyword) return;
+      lastPushedKeywordRef.current = next;
       setWebPage(1);
-      setSearchKeyword(localSearchKeyword);
+      replaceProductSearch(router, next);
     }, 500);
     return () => clearTimeout(handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSearchKeyword]);
+
+  // Take on a term that changed outside this field: the header search, a
+  // back/forward navigation, or a shared link. Skipped while the URL is merely
+  // echoing back this component's own debounced write, which would otherwise
+  // overwrite anything typed during the 500ms wait.
+  useEffect(() => {
+    if (searchKeyword === lastPushedKeywordRef.current) return;
+    setLocalSearchKeyword(searchKeyword);
+  }, [searchKeyword]);
+
+  // Keep the shared context in step with the URL. The header's search field
+  // seeds from it, and the home page reads it to decide whether to bounce to
+  // the listing, so a stale value there causes visible misbehaviour.
+  useEffect(() => {
+    setSearchKeyword(searchKeyword || undefined);
+  }, [searchKeyword, setSearchKeyword]);
 
   useEffect(() => {
     if (mobileFilterOpen) {
@@ -337,12 +365,25 @@ export default function ProductGridContent({
     landingCategoryId,
   ]);
 
+  // Monotonic token identifying the newest product query. `filters` gets a fresh
+  // object identity on every router.query change, so this effect legitimately
+  // re-fires and overlaps itself; without a token the slowest response won
+  // regardless of age. That is what made the list order look random between
+  // loads -- an older page-1 response landing on top of newer results, or an
+  // infinite-scroll page appending onto a list the reset below had emptied.
+  // Bumped only here: loadMoreProducts continues the same query and merely
+  // checks that its token is still current before committing.
+  const requestGenerationRef = useRef(0);
+
   useEffect(() => {
     // Skip the page-1 reset while restoring a snapshot (incl. the filters-hydration
     // rerun) so the restored list isn't wiped. loadMoreProducts is independent,
     // so infinite scroll keeps working. Later filter changes clear the guard and
     // reset normally.
     if (restoringRef.current) return;
+    requestGenerationRef.current += 1;
+    const generation = requestGenerationRef.current;
+    const isCurrent = () => generation === requestGenerationRef.current;
     setProducts([]);
     setPage(0);
     setHasMore(true);
@@ -372,17 +413,24 @@ export default function ProductGridContent({
 
         // Total match count for the header (independent of pagination).
         fetchProductsCount(fetchProductsParams)
-          .then(setTotalCount)
-          .catch(() => setTotalCount(null));
+          .then((total) => {
+            if (isCurrent()) setTotalCount(total);
+          })
+          .catch(() => {
+            if (isCurrent()) setTotalCount(null);
+          });
 
         const newProducts = await fetchProducts(fetchProductsParams);
+        // A newer query started while this one was in flight; its results are
+        // the ones the user is waiting for, so drop these rather than overwrite.
+        if (!isCurrent()) return;
         setProducts(newProducts);
         setPrevProducts(newProducts);
         // Cache for back-navigation optimization
         if (effectiveCategoryIds.length === 1) {
           setPrevCategory(effectiveCategoryIds[0]);
         }
-        setPrevSearchKeyword(searchKeyword);
+        setPrevSearchKeyword(searchKeyword || undefined);
         setPage(requestedPage);
 
         if (newProducts.length === 0) {
@@ -391,7 +439,9 @@ export default function ProductGridContent({
       } catch (error) {
         console.error('Failed to load products:', error);
       } finally {
-        setIsLoading(false);
+        // Only the newest query owns the spinner; a superseded one clearing it
+        // would hide the load that is still running.
+        if (isCurrent()) setIsLoading(false);
       }
     })();
   }, [
@@ -409,6 +459,13 @@ export default function ProductGridContent({
 
   const loadMoreProducts = useCallback(async () => {
     if (isLoading || !hasMore) return;
+    // Continues the query that is already on screen, so it inherits the current
+    // token instead of bumping it. If a filter/search change resets the list
+    // while this page is in flight, the token moves on and the append is dropped
+    // -- appending page N onto a freshly reset list is what produced duplicated
+    // and out-of-order cards.
+    const generation = requestGenerationRef.current;
+    const isCurrent = () => generation === requestGenerationRef.current;
     setIsLoading(true);
 
     try {
@@ -428,6 +485,7 @@ export default function ProductGridContent({
       }
 
       const newProducts = await fetchProducts(fetchProductsParams);
+      if (!isCurrent()) return;
       setProducts((prev) => {
         const updated = [...prev, ...newProducts];
         setPrevProducts(updated);
@@ -441,7 +499,7 @@ export default function ProductGridContent({
     } catch (error) {
       console.error('Failed to load products:', error);
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
