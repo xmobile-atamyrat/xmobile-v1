@@ -200,6 +200,7 @@ model Prices {
   name            String
   price           String    
   priceInTmt      String      @default("0")
+  displayPriceTmt String?
 
   category        Category?   @relation(references: [id], fields: [categoryId], onDelete: SetNull)
   categoryId      String?
