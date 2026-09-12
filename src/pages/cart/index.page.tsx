@@ -3,6 +3,7 @@ import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
 import { fetchColors } from '@/pages/lib/apis';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { CartItemWithProduct } from '@/pages/lib/types';
 import { isCartLineOutOfStock } from '@/pages/lib/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
@@ -97,7 +98,7 @@ export default function CartPage() {
                 if (priceResp.success && priceResp.data?.priceInTmt) {
                   computedProduct = {
                     ...item.product,
-                    price: priceResp.data.priceInTmt,
+                    price: displayPriceOf(priceResp.data),
                   };
                 }
               } else if (user && accessToken) {

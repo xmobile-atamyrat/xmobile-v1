@@ -4,6 +4,7 @@ import { unavailableVariantTags } from '@/lib/variantStock';
 import { getColor } from '@/pages/api/colors/index.page';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { parseVariantTag } from '@/pages/product/utils';
 import {
   createNotificationForOrderStatusUpdate,
@@ -71,7 +72,7 @@ export async function cartHasOutOfStockItem(
   return unavailable.size > 0;
 }
 
-async function buildOrderItemsData(
+export async function buildOrderItemsData(
   cartItems: Array<{
     quantity: number;
     productId: string;
@@ -89,7 +90,7 @@ async function buildOrderItemsData(
         if (priceMatch) {
           const price = await getPrice(priceMatch[1]);
           if (price && price.priceInTmt) {
-            productPrice = price.priceInTmt;
+            productPrice = displayPriceOf(price);
           }
         }
       }

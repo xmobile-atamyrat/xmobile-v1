@@ -2,6 +2,7 @@ import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -158,7 +159,8 @@ export default function CheckoutPage() {
                     'GET',
                   );
             if (priceResp.success && priceResp.data?.priceInTmt) {
-              unitPrice = parseFloat(priceResp.data.priceInTmt) || 0;
+              // Must match what calculateTotalPrice charges server-side.
+              unitPrice = parseFloat(displayPriceOf(priceResp.data)) || 0;
             }
           } else if (user && accessToken) {
             const computedProduct = await computeProductPrice({
