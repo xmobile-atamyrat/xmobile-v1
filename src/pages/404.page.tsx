@@ -1,6 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import { pushProductSearch } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -77,7 +78,7 @@ export default function Custom404() {
     const query = keyword.trim();
     if (!query) return;
     setSearchKeyword(query);
-    router.push('/product');
+    pushProductSearch(router, query);
   };
 
   return (
