@@ -1,4 +1,10 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
+import {
+  isProductListingRoute,
+  pushProductSearch,
+  readSearchKeyword,
+  replaceProductSearch,
+} from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
@@ -137,10 +143,12 @@ export default function CustomAppBar({
   const t = useTranslations();
   const { searchKeyword, setSearchKeyword, setProducts } = useProductContext();
   // Layout (and with it this Appbar) remounts on every navigation, so seed the
-  // field from the shared keyword — otherwise the header search goes blank the
-  // moment it lands on the results page.
+  // field from the active keyword — otherwise the header search goes blank the
+  // moment it lands on the results page. The URL wins over context: on a cold
+  // load of a shared /product?searchKeyword=… link the context is still empty
+  // at this point, since the grid only mirrors it in after mount.
   const [localSearchKeyword, setLocalSearchKeyword] = useState(
-    searchKeyword ?? '',
+    () => readSearchKeyword(router.query) || searchKeyword || '',
   );
   // This Appbar mounts on every page (Layout), returning null on non-home
   // mobile pages *after* hooks run. Skip the first debounce so an unused
@@ -181,6 +189,12 @@ export default function CustomAppBar({
     }
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
+      // On a listing page the grid reads the term from the URL, so retarget the
+      // current URL in place. Anywhere else (home) the context write above is
+      // what gets picked up and bounced to the listing.
+      if (isProductListingRoute(router.pathname)) {
+        replaceProductSearch(router, localSearchKeyword);
+      }
     }, 500);
 
     return () => {
@@ -277,7 +291,7 @@ export default function CustomAppBar({
     const keyword = localSearchKeyword.trim();
     if (!keyword) return;
     setSearchKeyword(keyword);
-    router.push('/product');
+    pushProductSearch(router, keyword);
   };
 
   // Same branch the categories index uses: leaf categories go straight to the
