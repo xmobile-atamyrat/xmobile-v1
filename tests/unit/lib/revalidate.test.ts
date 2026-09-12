@@ -161,4 +161,54 @@ describe('revalidateInBackground', () => {
 
     expect(res.revalidate).toHaveBeenCalledTimes(1);
   });
+
+  it('resolves a thunk and revalidates what it returns', async () => {
+    const res = makeRes();
+
+    revalidateInBackground(res, async () => ['/en/product/a', '/ru/product/a']);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(res.revalidate).toHaveBeenCalledTimes(2);
+  });
+
+  it('swallows a thunk that throws, so target resolution cannot fail a save', async () => {
+    const res = makeRes();
+
+    expect(() =>
+      revalidateInBackground(res, () => {
+        throw new Error('connection reset');
+      }),
+    ).not.toThrow();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(res.revalidate).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('swallows a thunk that rejects', async () => {
+    const res = makeRes();
+
+    revalidateInBackground(res, () =>
+      Promise.reject(new Error('statement timeout')),
+    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(res.revalidate).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('does not run the thunk synchronously, so the handler returns first', () => {
+    const res = makeRes();
+    const thunk = vi.fn(async () => ['/en/product/a']);
+
+    revalidateInBackground(res, thunk);
+
+    expect(thunk).not.toHaveBeenCalled();
+  });
 });
