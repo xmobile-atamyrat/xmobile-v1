@@ -32,7 +32,14 @@ const DOT_INACTIVE = '#E4E3EB';
 
 export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
 
-// Route in the web app that the "Hasaba gir" link hands off to.
+// Routes in the web app that the footer controls hand off to.
+//
+// The primary CTA goes to sign-up, not into the catalogue: onboarding is only
+// ever shown on a first launch, so almost nobody reaching it has an account
+// yet, and auth tokens don't expire -- a user who signs up here effectively
+// never sees a login screen again. Sign-in stays as the secondary link for the
+// minority who are reinstalling.
+const SIGN_UP_PATH = '/user/signup';
 const SIGN_IN_PATH = '/user/signin';
 
 // Visuals only -- the copy lives in src/i18n/strings.ts and is zipped in by
@@ -192,7 +199,7 @@ function OnboardingScreen({
           <>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={() => finish()}
+              onPress={() => finish(SIGN_UP_PATH)}
               activeOpacity={0.85}
             >
               <Text style={styles.ctaButtonText}>{t.cta}</Text>
@@ -237,7 +244,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  skip: { fontSize: 14, fontWeight: '600', color: MUTED },
+  // NAVY, not MUTED: MUTED is this file's non-interactive body-copy grey
+  // (description, signInPrompt), and at ~3.4:1 on white it read as a disabled
+  // control -- reported as such from the field. Interactive text here is NAVY
+  // (see signInLink), which is unambiguous on every renderer; Android rasterizes
+  // weight 600 thinner than iOS, which is why the grey only looked dead on some
+  // devices.
+  skip: { fontSize: 14, fontWeight: '600', color: NAVY },
   scroll: { flex: 1 },
   slide: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
   imageWrap: {
