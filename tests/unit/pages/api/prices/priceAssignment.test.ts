@@ -55,7 +55,8 @@ describe('pricesWhere', () => {
     expect(where.AND).toEqual([
       { OR: [{ categoryId: PHONES }, { categoryId: null }] },
     ]);
-    expect(where.OR).toHaveLength(3);
+    // name, price, priceInTmt, displayPriceTmt
+    expect(where.OR).toHaveLength(4);
   });
 
   test('productId wins over unassigned', () => {

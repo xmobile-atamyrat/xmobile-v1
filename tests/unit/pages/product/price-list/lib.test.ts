@@ -289,6 +289,9 @@ describe('buildPriceListBlob', () => {
   const sections = () =>
     buildPriceSections([price({ id: 'a' })], tree, ['phones'], 'tk');
 
+  const sectionsFor = (over: Partial<Prices>) =>
+    buildPriceSections([price({ id: 'a', ...over })], tree, ['phones'], 'tk');
+
   it('writes the dollar rate into B1 so every TMT cell can reference it', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
 
@@ -299,10 +302,36 @@ describe('buildPriceListBlob', () => {
     const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
 
     // row 1 rate, row 2 blank, row 3 category banner, row 4 header, row 5 price
+    // The TMT column stays the exact conversion an admin reconciles against.
     expect(sheet.getCell('C5').value).toEqual({
       formula: 'ROUNDUP(B5*$B$1,0)',
       result: 1960,
     });
+  });
+
+  // The sheet is the exact-conversion view an admin reconciles against; the
+  // rounded figure the storefront quotes is not part of it.
+  it('writes no fourth column beside the TMT one', async () => {
+    const sheet = await readSheet(
+      await buildPriceListBlob(
+        sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1350' }),
+        19.6,
+      ),
+    );
+
+    expect(sheet.getCell('D4').value).toBe(null);
+    expect(sheet.getCell('D5').value).toBe(null);
+  });
+
+  it('writes the stored TMT literal when there is no rate to compute against', async () => {
+    const sheet = await readSheet(
+      await buildPriceListBlob(
+        sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1290' }),
+        null,
+      ),
+    );
+
+    expect(sheet.getCell('C5').value).toBe(1283);
   });
 
   it('lays out a category banner above a Name/USD/TMT header', async () => {

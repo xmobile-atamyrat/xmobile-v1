@@ -1,7 +1,8 @@
 import type { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
-import { collectCategorySubtreeIds, tmtFromUsd } from '@/pages/product/utils';
+import { tmtFromUsd } from '@/pages/lib/priceDisplay';
+import { collectCategorySubtreeIds } from '@/pages/product/utils';
 import {
   bannerFont,
   fillRow,
@@ -17,6 +18,8 @@ export const PRICE_LIST_SHEET_NAME = 'Prices';
 
 const RATE_LABEL = 'USD rate';
 const RATE_CELL = '$B$1';
+// TMT is the exact conversion. The rounded figure the storefront quotes is
+// deliberately absent: this sheet is the price an admin reconciles against.
 const PRICE_HEADER = ['Name', 'USD', 'TMT'];
 const LAST_COLUMN = 3;
 

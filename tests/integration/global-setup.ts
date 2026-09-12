@@ -33,6 +33,30 @@ export default async function globalSetup(project: TestProject) {
       tags: [],
       videoUrls: [],
       price: `[${price.id}]`,
+      cachedPrice: 99.99,
+    },
+  });
+
+  // The price above has no displayPriceTmt, covering the fallback; this one
+  // carries a rounded figure.
+  const roundedPrice = await prisma.prices.create({
+    data: {
+      name: 'Integration rounded price',
+      price: '65.42',
+      priceInTmt: '1283',
+      displayPriceTmt: '1290',
+    },
+  });
+  const roundedProduct = await prisma.product.create({
+    data: {
+      slug: 'integration-rounded-phone',
+      name: '{"en":"Integration rounded phone"}',
+      categoryId: cat.id,
+      imgUrls: [],
+      tags: [],
+      videoUrls: [],
+      price: `[${roundedPrice.id}]`,
+      cachedPrice: 1290,
     },
   });
 
@@ -44,6 +68,7 @@ export default async function globalSetup(project: TestProject) {
     priceId: price.id,
     productId: product.id,
     productSlug: product.slug!,
+    roundedProductSlug: roundedProduct.slug!,
   };
 
   project.provide('integrationDatabaseUrl', databaseUrl);

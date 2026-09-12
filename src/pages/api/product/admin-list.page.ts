@@ -3,6 +3,7 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prisma } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -118,11 +119,11 @@ export default async function handler(
       referencedPriceIds.length > 0
         ? await dbClient.prices.findMany({
             where: { id: { in: [...new Set(referencedPriceIds)] } },
-            select: { id: true, priceInTmt: true },
+            select: { id: true, priceInTmt: true, displayPriceTmt: true },
           })
         : [];
     const pricesById = new Map(
-      prices.map(({ id, priceInTmt }) => [id, priceInTmt]),
+      prices.map((price) => [price.id, displayPriceOf(price)]),
     );
 
     const data: AdminProductListItem[] = products.map(

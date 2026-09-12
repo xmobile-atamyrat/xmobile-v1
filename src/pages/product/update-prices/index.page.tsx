@@ -16,6 +16,7 @@ import {
   NO_PRODUCT_FILTER,
   parsePrice,
   PRICE_CATEGORY_IDX,
+  PRICE_DISPLAY_IDX,
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
   PRICE_MANAT_IDX,
@@ -28,6 +29,11 @@ import {
   TableData,
   tmtFromUsd,
 } from '@/pages/product/utils';
+import {
+  displayTmtFromUsd,
+  pricesFromUsd,
+  roundToDisplayTmt,
+} from '@/pages/lib/priceDisplay';
 import {
   Alert,
   Box,
@@ -221,16 +227,25 @@ export default function UpdatePrices() {
         const currPrice: Partial<Prices> = { id: priceId };
 
         if (cellIndex === PRICE_MANAT_IDX) {
+          // An admin who wants a different shown price types it into the
+          // Display column instead.
           currPrice.priceInTmt = value;
+          currPrice.displayPriceTmt = roundToDisplayTmt(
+            parseFloat(value),
+          ).toString();
           currPrice.price = parsePrice(
             (parseFloat(value) / dollarRate).toString(),
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          currPrice.priceInTmt = tmtFromUsd(
-            parseFloat(value),
-            dollarRate,
-          ).toString();
+          Object.assign(
+            currPrice,
+            pricesFromUsd(parseFloat(value), dollarRate),
+          );
+        } else if (cellIndex === PRICE_DISPLAY_IDX) {
+          // Only this field: pinning what is shown must not disturb the dollar
+          // price the business actually prices in.
+          currPrice.displayPriceTmt = value;
         } else if (cellIndex === PRICE_NAME_IDX) {
           currPrice.name = value;
         }
@@ -257,6 +272,18 @@ export default function UpdatePrices() {
                   return parsePrice(
                     (parseFloat(value) / dollarRate).toString(),
                   );
+                }
+                if (
+                  cellIndex === PRICE_DOLLAR_IDX &&
+                  idx === PRICE_DISPLAY_IDX
+                ) {
+                  return displayTmtFromUsd(parseFloat(value), dollarRate);
+                }
+                if (
+                  cellIndex === PRICE_MANAT_IDX &&
+                  idx === PRICE_DISPLAY_IDX
+                ) {
+                  return roundToDisplayTmt(parseFloat(value));
                 }
                 return cell;
               });
@@ -462,6 +489,10 @@ export default function UpdatePrices() {
                     </MenuItem>
                     <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
                     <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
+                    {/* Not localized, matching this table's hardcoded English
+                        column headers. */}
+                    <MenuItem value="displayAsc">Display ↑</MenuItem>
+                    <MenuItem value="displayDesc">Display ↓</MenuItem>
                     <MenuItem value="editedRecent">
                       {t('recentlyEdited')}
                     </MenuItem>

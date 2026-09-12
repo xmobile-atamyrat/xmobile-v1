@@ -10,6 +10,7 @@ import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { parseName } from '@/pages/lib/utils';
 import { ResponseApi } from '@/pages/lib/types';
+import { displayPriceOf, displayTmtFromUsd } from '@/pages/lib/priceDisplay';
 import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
 import { Prisma, Product } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -115,6 +116,7 @@ export interface NewPrice {
   name: string;
   usd: string;
   tmt: string;
+  display: string;
   categoryId: string | null; // the banner the row was typed under
 }
 
@@ -126,6 +128,7 @@ export interface PriceUpdate {
     name?: string;
     price?: string;
     priceInTmt?: string;
+    displayPriceTmt?: string;
     categoryId?: string | null;
   };
   changes: FieldChange[];
@@ -181,6 +184,7 @@ export interface PriceMeta {
   name: string;
   usd: string;
   tmt: string;
+  display: string;
   categoryId: string | null;
 }
 
@@ -188,7 +192,7 @@ export interface PlanRefs {
   categoryIdBySlug: Map<string, string>; // keyed lowercase
   brandIdByLowerName: Map<string, string>;
   colorIdByLowerName: Map<string, string>;
-  priceById: Map<string, { usd: string; tmt: string }>; // current stored prices
+  priceById: Map<string, { usd: string; tmt: string; display: string }>; // current stored prices
   // Everything a Variants row needs to decide whether it changed anything. Kept
   // apart from priceById, which only the product planner reads.
   priceMetaById: Map<string, PriceMeta>;
@@ -199,6 +203,7 @@ export interface PlannedPrice {
   name: string; // name for a newly created Prices row
   usd: string;
   tmt: string;
+  display: string;
 }
 
 export interface PlannedVariant {
@@ -243,12 +248,13 @@ function parsePriceCell(raw: string): number | undefined {
 }
 
 // USD/TMT cell pair -> final stored strings, using the update-prices page math.
-// null = both cells empty (leave unchanged).
+// null = both cells empty (leave unchanged). A sheet stating an explicit TMT is
+// pinning it, so only a USD-derived price gets rounded.
 function resolvePriceCells(
   usdCell: string,
   tmtCell: string,
   rate: number | null,
-): { usd: string; tmt: string } | { error: string } | null {
+): { usd: string; tmt: string; display: string } | { error: string } | null {
   if (usdCell === '' && tmtCell === '') return null;
   const usd = usdCell === '' ? undefined : parsePriceCell(usdCell);
   const tmt = tmtCell === '' ? undefined : parsePriceCell(tmtCell);
@@ -257,9 +263,11 @@ function resolvePriceCells(
   if (tmtCell !== '' && tmt == null)
     return { error: `invalid TMT price "${tmtCell}"` };
   if (usd != null && tmt != null) {
+    const pinned = String(parsePrice(String(tmt)));
     return {
       usd: String(parsePrice(String(usd))),
-      tmt: String(parsePrice(String(tmt))),
+      tmt: pinned,
+      display: pinned,
     };
   }
   if (rate == null || rate <= 0) {
@@ -271,11 +279,14 @@ function resolvePriceCells(
     return {
       usd: String(parsePrice(String(usd))),
       tmt: String(tmtFromUsd(usd, rate)),
+      display: String(displayTmtFromUsd(usd, rate)),
     };
   }
+  const pinned = String(parsePrice(String(tmt)));
   return {
     usd: String(parsePrice(String((tmt as number) / rate))),
-    tmt: String(parsePrice(String(tmt))),
+    tmt: pinned,
+    display: pinned,
   };
 }
 
@@ -292,13 +303,14 @@ export interface CurrentProductState {
 // A resolved price equals what's already stored -> nothing to write. Compared
 // numerically so "1000" vs "1000.00" (or an integer TMT) don't read as changes.
 function priceUnchanged(
-  resolved: { usd: string; tmt: string },
-  current: { usd: string; tmt: string } | undefined,
+  resolved: { usd: string; tmt: string; display: string },
+  current: { usd: string; tmt: string; display: string } | undefined,
 ): boolean {
   return (
     current != null &&
     Number(resolved.usd) === Number(current.usd) &&
-    Number(resolved.tmt) === Number(current.tmt)
+    Number(resolved.tmt) === Number(current.tmt) &&
+    Number(resolved.display) === Number(current.display)
   );
 }
 
@@ -401,7 +413,7 @@ export function planProductUpdate(
           name: englishName,
           ...baseResolved,
         };
-        data.cachedPrice = parseFloat(baseResolved.usd);
+        data.cachedPrice = parseFloat(baseResolved.display);
       }
     }
   }
@@ -662,7 +674,7 @@ export function planPriceRows(
       cellText(row.priceTmt),
       refs.rate,
     );
-    let resolved: { usd: string; tmt: string } | null = null;
+    let resolved: { usd: string; tmt: string; display: string } | null = null;
     if (resolvedOrError != null) {
       if ('error' in resolvedOrError) {
         rowError(row.row, resolvedOrError.error);
@@ -680,6 +692,7 @@ export function planPriceRows(
     if (resolved != null && !priceUnchanged(resolved, meta)) {
       data.price = resolved.usd;
       data.priceInTmt = resolved.tmt;
+      data.displayPriceTmt = resolved.display;
       changes.push({
         label: 'Price',
         from: `${meta.usd} / ${meta.tmt}`,
@@ -1025,18 +1038,19 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
 // table instead of one non-indexable LIKE scan per price. Runs outside the
 // per-product transactions: cachedPrice is a read cache, so a brief lag before
 // it catches up is acceptable, and it's rebuilt from the committed price values.
-async function syncCachedPrices(priceUsdById: Map<string, number>) {
+async function syncCachedPrices(priceDisplayById: Map<string, number>) {
   const values = Prisma.join(
-    [...priceUsdById].map(
-      ([id, usd]) => Prisma.sql`(${id}::text, ${usd}::double precision)`,
+    [...priceDisplayById].map(
+      ([id, display]) =>
+        Prisma.sql`(${id}::text, ${display}::double precision)`,
     ),
   );
   // pid is a uuid (no % or _), so it needs no LIKE escaping; [ ] are literal in
   // Postgres LIKE, matching the "[id]" base-price format.
   await dbClient.$executeRaw`
     UPDATE "Product" AS p
-    SET "cachedPrice" = v.usd
-    FROM (VALUES ${values}) AS v(pid, usd)
+    SET "cachedPrice" = v.display
+    FROM (VALUES ${values}) AS v(pid, display)
     WHERE p."deletedAt" IS NULL
       AND (p."price" = v.pid OR p."price" LIKE '%[' || v.pid || ']%')
   `;
@@ -1049,21 +1063,24 @@ async function applyProductPlan(
   target: Product,
   plan: ProductUpdatePlan,
   brandsToSync: Set<string>,
-): Promise<{ changed: boolean; updatedPrices: { id: string; usd: number }[] }> {
+): Promise<{
+  changed: boolean;
+  updatedPrices: { id: string; display: number }[];
+}> {
   const data: Prisma.ProductUncheckedUpdateInput = { ...plan.data };
-  const updatedPrices: { id: string; usd: number }[] = [];
+  const updatedPrices: { id: string; display: number }[] = [];
 
   if (plan.basePrice != null) {
-    const { priceId, name, usd, tmt } = plan.basePrice;
+    const { priceId, name, usd, tmt, display } = plan.basePrice;
     if (priceId != null) {
       await db.prices.update({
         where: { id: priceId },
-        data: { price: usd, priceInTmt: tmt },
+        data: { price: usd, priceInTmt: tmt, displayPriceTmt: display },
       });
-      updatedPrices.push({ id: priceId, usd: parseFloat(usd) });
+      updatedPrices.push({ id: priceId, display: parseFloat(display) });
     } else {
       const created = await db.prices.create({
-        data: { name, price: usd, priceInTmt: tmt },
+        data: { name, price: usd, priceInTmt: tmt, displayPriceTmt: display },
       });
       data.price = `[${created.id}]`;
     }
@@ -1079,11 +1096,15 @@ async function applyProductPlan(
           // eslint-disable-next-line no-await-in-loop
           await db.prices.update({
             where: { id: priceId },
-            data: { price: variant.price.usd, priceInTmt: variant.price.tmt },
+            data: {
+              price: variant.price.usd,
+              priceInTmt: variant.price.tmt,
+              displayPriceTmt: variant.price.display,
+            },
           });
           updatedPrices.push({
             id: priceId,
-            usd: parseFloat(variant.price.usd),
+            display: parseFloat(variant.price.display),
           });
         } else {
           // eslint-disable-next-line no-await-in-loop
@@ -1092,6 +1113,7 @@ async function applyProductPlan(
               name: variant.price.name,
               price: variant.price.usd,
               priceInTmt: variant.price.tmt,
+              displayPriceTmt: variant.price.display,
             },
           });
           priceId = created.id;
@@ -1208,6 +1230,7 @@ async function handleImport(
       name: true,
       price: true,
       priceInTmt: true,
+      displayPriceTmt: true,
       categoryId: true,
     },
   });
@@ -1225,7 +1248,11 @@ async function handleImport(
     priceById: new Map(
       prices.map((price) => [
         price.id,
-        { usd: price.price, tmt: price.priceInTmt },
+        {
+          usd: price.price,
+          tmt: price.priceInTmt,
+          display: displayPriceOf(price),
+        },
       ]),
     ),
     priceMetaById: new Map(
@@ -1235,6 +1262,7 @@ async function handleImport(
           name: price.name,
           usd: price.price,
           tmt: price.priceInTmt,
+          display: displayPriceOf(price),
           categoryId: price.categoryId,
         },
       ]),
@@ -1387,7 +1415,7 @@ async function handleImport(
 
   let updatedCount = 0;
   const brandsToSync = new Set<string>();
-  const priceUsdById = new Map<string, number>();
+  const priceDisplayById = new Map<string, number>();
   for (let i = 0; i < planned.length; i += 1) {
     const { productRow, target, plan } = planned[i];
     try {
@@ -1402,7 +1430,9 @@ async function handleImport(
       if (changed) updatedCount += 1;
       // Record only committed price changes; a rolled-back product is skipped,
       // so its stale price never reaches the cachedPrice sync.
-      updatedPrices.forEach(({ id, usd }) => priceUsdById.set(id, usd));
+      updatedPrices.forEach(({ id, display }) =>
+        priceDisplayById.set(id, display),
+      );
     } catch (error) {
       console.error(filepath, error);
       errors.push({
@@ -1426,8 +1456,8 @@ async function handleImport(
         data: update.data,
       });
       updatedPriceCount += 1;
-      if (update.data.price != null) {
-        priceUsdById.set(update.id, Number(update.data.price));
+      if (update.data.displayPriceTmt != null) {
+        priceDisplayById.set(update.id, Number(update.data.displayPriceTmt));
       }
     } catch (error) {
       console.error(filepath, error);
@@ -1441,8 +1471,8 @@ async function handleImport(
 
   // One pass over the products table for all changed prices, instead of a
   // non-indexable LIKE scan per price inside each transaction.
-  if (priceUsdById.size > 0) {
-    await syncCachedPrices(priceUsdById);
+  if (priceDisplayById.size > 0) {
+    await syncCachedPrices(priceDisplayById);
   }
 
   await Promise.all(
@@ -1451,11 +1481,17 @@ async function handleImport(
 
   let createdPriceCount = 0;
   for (let i = 0; i < newPrices.length; i += 1) {
-    const { name, usd, tmt, categoryId } = newPrices[i];
+    const { name, usd, tmt, display, categoryId } = newPrices[i];
     try {
       // eslint-disable-next-line no-await-in-loop
       await dbClient.prices.create({
-        data: { name, price: usd, priceInTmt: tmt, categoryId },
+        data: {
+          name,
+          price: usd,
+          priceInTmt: tmt,
+          displayPriceTmt: display,
+          categoryId,
+        },
       });
       createdPriceCount += 1;
     } catch (error) {

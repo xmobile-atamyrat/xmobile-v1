@@ -1,6 +1,7 @@
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { fetchBrands, fetchColors, fetchPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import {
   curlyBracketRegex,
   squareBracketRegex,
@@ -106,7 +107,9 @@ function PriceSelect({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const filtered = priceOptions.filter((p) =>
-    `${p.name} ${p.priceInTmt}`.toLowerCase().includes(search.toLowerCase()),
+    `${p.name} ${p.priceInTmt} ${displayPriceOf(p)}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
 
   // Null when the price is free to take (unowned, or owned by this product).
@@ -143,7 +146,7 @@ function PriceSelect({
       renderValue={(selected) => {
         const p = priceOptions.find((o) => o.id === selected);
         return p ? (
-          `${p.name} — ${p.priceInTmt} ${t('manat')}`
+          `${p.name} — ${displayPriceOf(p)} ${t('manat')}`
         ) : (
           <em>{t('price')}</em>
         );
@@ -175,7 +178,7 @@ function PriceSelect({
             key={priceOpt.id}
             disabled={owner != null}
           >
-            {priceOpt.name} — {priceOpt.priceInTmt} {t('manat')}
+            {priceOpt.name} — {displayPriceOf(priceOpt)} {t('manat')}
             {owner != null && ` (${t('takenBy')} ${owner})`}
           </MenuItem>
         );
