@@ -14,6 +14,7 @@ import {
   POPULAR_ROOT_LIMIT_CODE,
 } from '@/pages/lib/popularCategoriesLayout';
 import { localeOptions } from '@/pages/lib/constants';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
 import { sanitizeCategoryLocale, slugify } from '@/pages/lib/utils';
 import { Category } from '@prisma/client';
@@ -68,7 +69,7 @@ export async function getCategory(
     category.products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
       if (productPrice != null)
-        product.price = `${product.price}{${productPrice?.priceInTmt}}`;
+        product.price = `${product.price}{${displayPriceOf(productPrice)}}`;
 
       return product;
     }),
