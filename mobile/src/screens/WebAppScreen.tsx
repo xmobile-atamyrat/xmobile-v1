@@ -39,11 +39,79 @@ const ICON_MUTED = '#B6B5C2';
 // XMobile support line — matches SUPPORT_PHONES[0] in src/pages/support.page.tsx
 const SUPPORT_PHONE = '+99361004933';
 
-// STAGING ONLY: staging is served over plain HTTP from a bare IP, so the
-// origin is not secure. Cookies must be host-only (no domain attribute, which
-// RFC 6265 forbids for IP hosts) and must not carry the Secure flag, or the
-// WebView drops them and guest/refresh sessions silently break.
+// STAGING ONLY: staging terminates no TLS on either of its origins, so neither
+// is a secure context. Cookies must be host-only and must not carry the Secure
+// flag, or the WebView drops them and guest/refresh sessions silently break.
 const isSecureOrigin = false;
+
+/**
+ * Which origin the WebView loads, and the cookie names that go with it.
+ *
+ * The staging box answers on two origins: dev.xmobile.com.tm (through nginx on
+ * :80) and 216.250.13.115:3001 (Next directly). Same machine, same database --
+ * but not the same origin, and that difference matters twice over.
+ *
+ * 1. The web bundle calls BASE_URL, which is http://dev.xmobile.com.tm (see
+ *    src/lib/ApiEndpoints.ts). Loading the WebView from the bare IP made every
+ *    one of those calls cross-origin, so the session cookie rode along as a
+ *    third-party cookie -- something WKWebView and Chrome are each free to
+ *    drop. Loading from the same host makes the whole thing same-origin.
+ *
+ * 2. The server namespaces its session cookies by request host: on
+ *    dev.xmobile.com.tm it writes GUEST_SESSION_ID_DEV, on the bare IP it
+ *    writes GUEST_SESSION_ID. (Staging is a subdomain of production served
+ *    without TLS, and a browser will not let an insecure origin overwrite a
+ *    name held as Secure elsewhere in the domain tree -- so staging needs names
+ *    production never writes.) Whichever origin we load, the cookies we set by
+ *    hand have to use that origin's names.
+ *
+ * NAMESPACED_HOSTS below MUST stay in step with src/pages/lib/cookieNames.ts.
+ */
+const GUEST_SESSION_COOKIE_NAME = 'GUEST_SESSION_ID';
+const AUTH_REFRESH_COOKIE_NAME = 'REFRESH_TOKEN';
+const NAMESPACED_HOSTS = new Set(['dev.xmobile.com.tm']);
+const COOKIE_NAMESPACE_SUFFIX = '_DEV';
+
+/**
+ * Origins to try, best first -- so this is also the fallback order. Release
+ * builds lead with the host the web bundle itself calls; the bare IP is the
+ * escape hatch for a DNS failure on the carrier, or nginx down while Next is
+ * up. Metro builds talk to a dev server and have nothing to fall back to.
+ */
+const ORIGINS = __DEV__
+  ? ['http://localhost:3003']
+  : ['http://dev.xmobile.com.tm', 'http://216.250.13.115:3001'];
+
+/** Hostname of an origin, minus scheme, port and casing. */
+function hostnameOf(origin: string): string {
+  return origin
+    .replace(/^[a-z]+:\/\//i, '')
+    .split('/')[0]
+    .split(':')[0]
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Every name a cookie may be sitting under for this origin, most specific
+ * first.
+ *
+ * Reads have to accept the unsuffixed name too: an install that ran before the
+ * WebView moved to dev.xmobile.com.tm stored its session under the shared name,
+ * and the server still honours that name as a fallback. Without this an upgrade
+ * would silently orphan an existing guest cart.
+ */
+function cookieNameCandidates(baseName: string, origin: string): string[] {
+  const suffix = NAMESPACED_HOSTS.has(hostnameOf(origin))
+    ? COOKIE_NAMESPACE_SUFFIX
+    : '';
+  return suffix ? [`${baseName}${suffix}`, baseName] : [baseName];
+}
+
+/** The name this origin's server reads and writes. */
+function cookieNameFor(baseName: string, origin: string): string {
+  return cookieNameCandidates(baseName, origin)[0];
+}
 
 /**
  * Cross-platform notification permission check.
@@ -207,14 +275,51 @@ function WebAppScreen() {
   // Dev mode is determined automatically by React Native's __DEV__ flag.
   // __DEV__ = true in debug/Metro builds, false in release/production builds.
   const isDevMode = __DEV__;
-  const baseUrl = isDevMode
-    ? 'http://localhost:3003'
-    : 'http://216.250.13.115:3001';
+
+  const [originIndex, setOriginIndex] = useState(0);
+  const baseUrl = ORIGINS[Math.min(originIndex, ORIGINS.length - 1)];
+
+  // Names this origin's server reads and writes. They differ per host, so they
+  // have to be derived rather than hardcoded.
+  const guestCookieName = cookieNameFor(GUEST_SESSION_COOKIE_NAME, baseUrl);
+  const refreshCookieName = cookieNameFor(AUTH_REFRESH_COOKIE_NAME, baseUrl);
+
+  /**
+   * A load failed on the current origin. Step to the next candidate rather than
+   * showing the error screen; only the last one failing is a real error.
+   *
+   * Changing baseUrl remounts the WebView (it is the `key`), which is what
+   * actually retries the load.
+   */
+  const handleLoadFailure = useCallback(
+    (reason: string, detail: unknown) => {
+      if (originIndex < ORIGINS.length - 1) {
+        console.warn(
+          `WebView ${reason} on ${baseUrl}, falling back to ${
+            ORIGINS[originIndex + 1]
+          }:`,
+          detail,
+        );
+        setOriginIndex(originIndex + 1);
+        return;
+      }
+      console.warn(`WebView ${reason} on ${baseUrl}:`, detail);
+      setHasWebviewError(true);
+    },
+    [baseUrl, originIndex],
+  );
 
   const persistGuestSessionFromCookie = useCallback(async () => {
     try {
       const cookies = await CookieManager.get(baseUrl, true);
-      const guestSession = cookies?.GUEST_SESSION_ID?.value;
+      // An install predating the move to dev.xmobile.com.tm stored its session
+      // under the unsuffixed name, so accept that too rather than stranding it.
+      const guestSession = cookieNameCandidates(
+        GUEST_SESSION_COOKIE_NAME,
+        baseUrl,
+      )
+        .map(name => cookies?.[name]?.value)
+        .find(value => value != null);
       if (guestSession) {
         await AsyncStorage.setItem('GUEST_SESSION_ID', guestSession);
         setStoredGuestSession(guestSession);
@@ -437,8 +542,11 @@ function WebAppScreen() {
       // isConnected will be false when there's no internet interface connection
       const offline = state.isConnected === false;
       setIsOffline(offline);
-      // If internet comes back, clear the webview error so it can retry rendering
+      // If internet comes back, clear the webview error so it can retry
+      // rendering -- from the preferred origin, since a fallback taken while
+      // the connection was down says nothing about which host is reachable now.
       if (!offline) {
+        setOriginIndex(0);
         setHasWebviewError(false);
       }
     });
@@ -463,7 +571,7 @@ function WebAppScreen() {
           const expiresAt = new Date();
           expiresAt.setFullYear(expiresAt.getFullYear() + 10);
           await CookieManager.set(baseUrl, {
-            name: 'GUEST_SESSION_ID',
+            name: guestCookieName,
             value: guestSession,
             path: '/',
             domain,
@@ -480,9 +588,13 @@ function WebAppScreen() {
     };
 
     loadStoredData();
-  }, [baseUrl, isDevMode]);
+  }, [baseUrl, guestCookieName, isDevMode]);
 
-  // STAGING ONLY: host-only cookies on the bare-IP origin, dev included.
+  // STAGING ONLY: host-only cookies, every origin. On the bare IP a domain
+  // attribute is forbidden outright (RFC 6265 has no domain matching for IP
+  // hosts); on dev.xmobile.com.tm one would be actively harmful, since scoping
+  // to the parent domain is what lets production's Secure cookies collide with
+  // staging's in the first place.
   const cookieDomain: string | null = null;
 
   useEffect(() => {
@@ -493,7 +605,7 @@ function WebAppScreen() {
         const expiresAt = new Date();
         expiresAt.setFullYear(expiresAt.getFullYear() + 10);
         await CookieManager.set(baseUrl, {
-          name: 'GUEST_SESSION_ID',
+          name: guestCookieName,
           value: storedGuestSession,
           path: '/',
           domain,
@@ -506,7 +618,7 @@ function WebAppScreen() {
       }
     };
     syncStoredGuestSessionCookie();
-  }, [storedGuestSession, baseUrl, isDevMode]);
+  }, [storedGuestSession, baseUrl, guestCookieName, isDevMode]);
 
   useEffect(() => {
     const checkAndReload = async () => {
@@ -552,24 +664,39 @@ function WebAppScreen() {
     const localeCookie = `document.cookie = "NEXT_LOCALE=${locale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`;
 
     if (storedToken) {
+      // Written under this origin's name. The server prefers the namespaced
+      // cookie when both are present, so writing the shared name on a
+      // namespaced host would leave a rotated token in place and this one
+      // ignored.
       return `
-        document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";
+        document.cookie = "${refreshCookieName}=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";
         ${localeCookie}
         true;
       `;
     } else {
+      // Signing out has to clear every name the token can live under -- missing
+      // one leaves a cookie the server would still honour.
+      const clearRefresh = cookieNameCandidates(
+        AUTH_REFRESH_COOKIE_NAME,
+        baseUrl,
+      )
+        .flatMap(name =>
+          [
+            `document.cookie = "${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";`,
+            cookieDomain
+              ? `document.cookie = "${name}=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";`
+              : '',
+          ].filter(Boolean),
+        )
+        .join('\n        ');
+
       return `
-        document.cookie = "REFRESH_TOKEN=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";
-        ${
-          cookieDomain
-            ? `document.cookie = "REFRESH_TOKEN=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureAttr}; SameSite=Strict";`
-            : ''
-        }
+        ${clearRefresh}
         ${localeCookie}
         true;
       `;
     }
-  }, [storedToken, locale, cookieDomain]);
+  }, [storedToken, locale, cookieDomain, refreshCookieName, baseUrl]);
 
   useEffect(() => {
     if (cookieInjectionJS && webViewRef.current) {
@@ -629,6 +756,9 @@ function WebAppScreen() {
             onPress={() => {
               // WebView is unmounted while this state shows, so there's no ref to
               // reload() — remounting it against the same uri is the retry.
+              // Start the origin list over: the preferred host may be back, and
+              // if it is not the fallback chain runs again from the top.
+              setOriginIndex(0);
               setHasWebviewError(false);
             }}
           >
@@ -666,7 +796,9 @@ function WebAppScreen() {
             </TouchableOpacity>
           )}
           <WebView
-            key={isDevMode ? 'dev' : 'prod'}
+            // Keyed on the origin so switching to the fallback remounts the
+            // WebView against a clean cookie jar and navigation stack.
+            key={baseUrl}
             ref={webViewRef}
             source={{ uri: `${baseUrl}${initialPath}` }}
             sharedCookiesEnabled={true}
@@ -685,12 +817,26 @@ function WebAppScreen() {
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
             onError={syntheticEvent => {
-              const { nativeEvent } = syntheticEvent;
-              console.warn('WebView error: ', nativeEvent);
-              setHasWebviewError(true);
+              handleLoadFailure('error', syntheticEvent.nativeEvent);
             }}
             onHttpError={syntheticEvent => {
               const { nativeEvent } = syntheticEvent;
+              // A DNS or TCP failure surfaces through onError, but nginx up and
+              // Next down answers 502 -- a load failure the other handler never
+              // sees. Only the document itself counts: on Android this handler
+              // also fires for subresources, and a 404 on some asset deep in the
+              // page is not a reason to change origin. Trailing slashes are
+              // normalised away because the WebView reports the resolved URL
+              // ("http://host/") while initialPath is usually "".
+              const stripSlash = (url: string) => url.replace(/\/+$/, '');
+              if (
+                stripSlash(nativeEvent.url ?? '') ===
+                  stripSlash(`${baseUrl}${initialPath}`) &&
+                nativeEvent.statusCode >= 500
+              ) {
+                handleLoadFailure('HTTP error', nativeEvent);
+                return;
+              }
               console.warn('WebView HTTP error: ', nativeEvent);
             }}
             onMessage={async event => {
