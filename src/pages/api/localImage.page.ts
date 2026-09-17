@@ -13,7 +13,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const {
     query: { imgUrl, network },
     method,

@@ -11,7 +11,7 @@ async function handler(
   req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi<BrandProps[] | any>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   try {
     const { method, body, query } = req;
     const { grade } = req;

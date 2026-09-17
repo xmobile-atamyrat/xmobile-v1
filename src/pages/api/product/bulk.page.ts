@@ -1481,7 +1481,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return;
   // SUPERUSER-only in both directions: import writes the whole catalog, and the
   // export is its round-trip half. Staff who only need prices use
   // /api/prices via the /product/price-list page instead.

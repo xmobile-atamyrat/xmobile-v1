@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AUTH_REFRESH_COOKIE_NAME } from '../constants';
+import { readAuthRefreshCookieWith } from '../cookieNames';
 import {
   ensureNativeFCMTokenRegisteredInWebView,
   FCM_TOKEN_REGISTERED_USER_KEY,
@@ -18,7 +18,7 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
     if (!isWebView()) return undefined;
 
     const syncAuthState = () => {
-      const refreshToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
+      const refreshToken = readAuthRefreshCookieWith(getCookie);
       const nextLocale = getCookie('NEXT_LOCALE');
 
       if (user && accessToken) {
@@ -36,7 +36,7 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
         wasLoggedIn.current = false;
 
         const currentToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
-        const storedAccessToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
+        const storedAccessToken = readAuthRefreshCookieWith(getCookie);
 
         if (currentToken && storedAccessToken) {
           unregisterFCMToken(currentToken, storedAccessToken).catch((err) => {

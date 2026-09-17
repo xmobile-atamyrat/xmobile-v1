@@ -9,7 +9,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 const filepath = 'src/pages/api/procurement/order/index.page.ts';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { userId, method } = req as AuthenticatedRequest;
   const user = await dbClient.user.findUnique({
     where: { id: userId },

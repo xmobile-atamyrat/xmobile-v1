@@ -1,3 +1,4 @@
+import { WS_BASE_URL } from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   createContext,
@@ -89,11 +90,7 @@ export const WebSocketContextProvider = ({
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     if (!accessToken) return;
 
-    const wsBase =
-      process.env.NODE_ENV === 'production'
-        ? `wss://xmobile.com.tm`
-        : process.env.NEXT_PUBLIC_WS_URL;
-    const wsUrl = `${wsBase}/ws/?accessToken=${accessToken}`;
+    const wsUrl = `${WS_BASE_URL}/ws/?accessToken=${accessToken}`;
 
     try {
       const socket = new WebSocket(wsUrl);

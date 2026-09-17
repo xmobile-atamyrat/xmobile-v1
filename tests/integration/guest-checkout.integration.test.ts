@@ -121,6 +121,48 @@ describe('Guest checkout flow (integration)', () => {
     expect(JSON.parse(emptyCart.res._getData() as string).data.length).toBe(0);
   });
 
+  // The staging bug end to end: an add answered 200 and the cart still read
+  // back empty, because the session cookie staging issued could not be stored
+  // under a name production already holds as Secure on the parent domain.
+  // Replay the browser's half of it -- send back only what the handler set.
+  it('round-trips a guest cart on the staging host', async () => {
+    const guestCartHandler = (await import('@/pages/api/guest/cart.page'))
+      .default;
+    const stagingHost = { host: 'dev.xmobile.com.tm' };
+
+    const add = createMocks({
+      method: 'POST',
+      url: '/api/guest/cart',
+      headers: stagingHost,
+      body: { productId, quantity: 3 },
+    });
+    await guestCartHandler(
+      add.req as unknown as NextApiRequest,
+      add.res as unknown as NextApiResponse,
+    );
+    expect(add.res._getStatusCode()).toBe(200);
+
+    const setCookie = add.res.getHeader('Set-Cookie') as string;
+    const [name, value] = setCookie.split(';')[0].split('=');
+    expect(name).not.toBe('GUEST_SESSION_ID');
+
+    const list = createMocks({
+      method: 'GET',
+      url: '/api/guest/cart',
+      headers: stagingHost,
+      cookies: { [name]: value },
+    });
+    await guestCartHandler(
+      list.req as unknown as NextApiRequest,
+      list.res as unknown as NextApiResponse,
+    );
+    const items = JSON.parse(list.res._getData() as string).data;
+    expect(items.length).toBe(1);
+    expect(items[0].quantity).toBe(3);
+
+    await prisma.guestCartItem.deleteMany({ where: { guestSessionId: value } });
+  });
+
   it('allows guest to cancel own order and blocks other guest session', async () => {
     const guestCartHandler = (await import('@/pages/api/guest/cart.page'))
       .default;

@@ -32,7 +32,7 @@ export async function getPrice(priceId: string): Promise<Prices | null> {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method, userId } = req as AuthenticatedRequest;
 
   if (method !== 'GET') {

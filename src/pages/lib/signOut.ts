@@ -1,7 +1,5 @@
-import {
-  AUTH_REFRESH_COOKIE_NAME,
-  LOCALE_COOKIE_NAME,
-} from '@/pages/lib/constants';
+import { authRefreshCookieNames } from '@/pages/lib/cookieNames';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import {
   FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
@@ -30,7 +28,9 @@ export async function clearSessionOnDevice(accessToken?: string) {
     }
   }
 
-  deleteCookie(AUTH_REFRESH_COOKIE_NAME);
+  // Both names: on a namespaced host a leftover copy under the shared name
+  // would sign the user straight back in.
+  authRefreshCookieNames().forEach(deleteCookie);
   deleteCookie(LOCALE_COOKIE_NAME);
   localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
   localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);

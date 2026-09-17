@@ -10,11 +10,8 @@ import type {
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
 import Layout from '@/pages/components/Layout';
-import {
-  appBarHeight,
-  AUTH_REFRESH_COOKIE_NAME,
-  mobileAppBarHeight,
-} from '@/pages/lib/constants';
+import { readAuthRefreshCookie } from '@/pages/lib/cookieNames';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -61,7 +58,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const home = {
     redirect: { destination: `/${context.locale || 'ru'}/`, permanent: false },
   };
-  const refreshToken = context.req.cookies[AUTH_REFRESH_COOKIE_NAME];
+  const refreshToken = readAuthRefreshCookie(context.req.cookies, context.req);
   if (!refreshToken) return home;
   try {
     const decoded = await verifyToken(refreshToken, REFRESH_SECRET);

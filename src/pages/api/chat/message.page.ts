@@ -14,7 +14,7 @@ async function handler(
   req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
 
   const { method } = req;
   if (method === 'PATCH') {

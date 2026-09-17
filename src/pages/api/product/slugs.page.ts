@@ -9,7 +9,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<string[]>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
 
   if (req.method !== 'GET') {
     console.error(`${filepath}: Method not allowed`);

@@ -11,11 +11,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  addCors(res);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
+  if (addCors(req, res)) return undefined;
 
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });

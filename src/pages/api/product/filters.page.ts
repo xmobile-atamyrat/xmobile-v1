@@ -12,7 +12,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   if (req.method !== 'GET') {
     return res
       .status(405)

@@ -1,11 +1,8 @@
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
 import Layout from '@/pages/components/Layout';
-import {
-  appBarHeight,
-  AUTH_REFRESH_COOKIE_NAME,
-  mobileAppBarHeight,
-} from '@/pages/lib/constants';
+import { readAuthRefreshCookie } from '@/pages/lib/cookieNames';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { colors, fontClassName } from '@/styles/theme';
@@ -51,7 +48,7 @@ const DEFAULTS: Config = {
 };
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const refreshToken = ctx.req.cookies[AUTH_REFRESH_COOKIE_NAME];
+  const refreshToken = readAuthRefreshCookie(ctx.req.cookies, ctx.req);
   if (!refreshToken)
     return {
       redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },

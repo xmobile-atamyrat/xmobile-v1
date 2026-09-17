@@ -1,9 +1,11 @@
+import addCors from '@/pages/api/utils/addCors';
 import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import { ACCESS_SECRET, generateTokens } from '@/pages/api/utils/tokenUtils';
 import {
-  AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+  authRefreshCookieName,
+  readAuthRefreshCookie,
+} from '@/pages/lib/cookieNames';
+import { REFRESH_TOKEN_EXPIRY_COOKIE } from '@/pages/lib/constants';
 import { UserRole } from '@prisma/client';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
@@ -43,6 +45,14 @@ const withAuth = (
   ) => Promise<void> | void,
 ): NextApiHandler => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
+    // A preflight never carries credentials, so it can only 401 here -- and a
+    // preflight that is not a 2xx blocks the real request from being sent.
+    // Answer it before authenticating; the request it clears still has to pass.
+    if (req.method === 'OPTIONS') {
+      addCors(req, res);
+      return undefined;
+    }
+
     if (
       BYPASS_AUTH_PATHS.includes(req.url?.split('?')[0]) &&
       BYPASS_AUTH_METHODS.includes(req.method)
@@ -51,7 +61,7 @@ const withAuth = (
     }
 
     const authHeader = req.headers.authorization;
-    const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
+    const refreshToken = readAuthRefreshCookie(req.cookies, req);
 
     if ((!authHeader || !authHeader.startsWith('Bearer ')) && !refreshToken) {
       return res
@@ -87,7 +97,7 @@ const withAuth = (
 
           res.setHeader(
             'Set-Cookie',
-            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+            `${authRefreshCookieName(req)}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
           );
           res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           const originalResponse = await handler(

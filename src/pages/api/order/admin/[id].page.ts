@@ -14,7 +14,7 @@ import { checkAdmin } from '../utils/checkAdmin';
 const filepath = 'src/pages/api/order/admin/[id].page.ts';
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method, query, body } = req;
   const { userId } = req as AuthenticatedRequest;
   const orderId = query.id as string;

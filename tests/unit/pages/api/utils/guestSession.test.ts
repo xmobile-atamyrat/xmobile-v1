@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { describe, expect, it, vi } from 'vitest';
 
 import { GUEST_SESSION_COOKIE_NAME } from '@/pages/lib/constants';
+import { guestSessionCookieName } from '@/pages/lib/cookieNames';
 
 import { getOrCreateGuestSessionId } from '@/pages/api/utils/guestSession';
 
@@ -73,6 +74,41 @@ describe('getOrCreateGuestSessionId', () => {
     const second = getOrCreateGuestSessionId(req, res);
 
     expect(second).toBe(first);
+  });
+
+  // Staging is a subdomain of production served over plain HTTP. A browser
+  // refuses to let it write a cookie whose name production already holds as
+  // Secure, so the shared name was dropped and every request started over.
+  it('writes a staging-only cookie name on the staging host', () => {
+    const { req, res, setHeader } = makeReqRes({
+      headers: { host: 'dev.xmobile.com.tm' },
+    });
+
+    const id = getOrCreateGuestSessionId(req, res);
+    const cookie = setCookieValue(setHeader);
+
+    expect(cookie).not.toContain(`${GUEST_SESSION_COOKIE_NAME}=${id}`);
+    expect(cookie).toContain(`${guestSessionCookieName(req)}=${id}`);
+  });
+
+  it('round-trips the session it just issued on the staging host', () => {
+    const { req, res } = makeReqRes({
+      headers: { host: 'dev.xmobile.com.tm' },
+    });
+
+    const first = getOrCreateGuestSessionId(req, res);
+
+    expect(getOrCreateGuestSessionId(req, res)).toBe(first);
+  });
+
+  it('still honours a session issued under the shared name', () => {
+    const { req, res, setHeader } = makeReqRes({
+      headers: { host: 'dev.xmobile.com.tm' },
+      cookies: { [GUEST_SESSION_COOKIE_NAME]: 'issued-before-the-fix' },
+    });
+
+    expect(getOrCreateGuestSessionId(req, res)).toBe('issued-before-the-fix');
+    expect(setHeader).not.toHaveBeenCalled();
   });
 
   it('scopes the cookie to the whole site and gives it a lifetime', () => {

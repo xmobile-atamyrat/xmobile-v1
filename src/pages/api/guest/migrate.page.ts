@@ -2,7 +2,7 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
-import { GUEST_SESSION_COOKIE_NAME } from '@/pages/lib/constants';
+import { readGuestSessionCookie } from '@/pages/lib/cookieNames';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { migrateGuestDataToUser } from '../order/services/orderService';
@@ -13,7 +13,7 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<{ migrated: boolean }>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method } = req;
   const { userId } = req as AuthenticatedRequest;
 
@@ -24,7 +24,7 @@ async function handler(
   }
 
   try {
-    const guestSessionId = req.cookies[GUEST_SESSION_COOKIE_NAME];
+    const guestSessionId = readGuestSessionCookie(req.cookies, req);
     if (!guestSessionId || !userId) {
       return res.status(200).json({ success: true, data: { migrated: false } });
     }

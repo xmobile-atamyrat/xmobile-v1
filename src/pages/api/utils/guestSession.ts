@@ -1,8 +1,9 @@
-import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import {
-  GUEST_SESSION_COOKIE_NAME,
-  GUEST_SESSION_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+  guestSessionCookieName,
+  readGuestSessionCookie,
+} from '@/pages/lib/cookieNames';
+import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
+import { GUEST_SESSION_EXPIRY_COOKIE } from '@/pages/lib/constants';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 function generateGuestSessionId(): string {
@@ -20,15 +21,16 @@ export function getOrCreateGuestSessionId(
   req: NextApiRequest,
   res: NextApiResponse,
 ): string {
-  const existing = req.cookies[GUEST_SESSION_COOKIE_NAME];
+  const existing = readGuestSessionCookie(req.cookies, req);
   if (existing) return existing;
 
+  const cookieName = guestSessionCookieName(req);
   const guestSessionId = generateGuestSessionId();
   res.setHeader(
     'Set-Cookie',
-    `${GUEST_SESSION_COOKIE_NAME}=${guestSessionId}; HttpOnly; ${secureCookieAttr(req)}SameSite=Lax; Max-Age=${GUEST_SESSION_EXPIRY_COOKIE}; Path=/`,
+    `${cookieName}=${guestSessionId}; HttpOnly; ${secureCookieAttr(req)}SameSite=Lax; Max-Age=${GUEST_SESSION_EXPIRY_COOKIE}; Path=/`,
   );
-  req.cookies[GUEST_SESSION_COOKIE_NAME] = guestSessionId;
+  req.cookies[cookieName] = guestSessionId;
 
   return guestSessionId;
 }

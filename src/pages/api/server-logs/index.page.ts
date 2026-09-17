@@ -13,7 +13,7 @@ async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<string[]>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method } = req;
   const { userId } = req as AuthenticatedRequest;
 

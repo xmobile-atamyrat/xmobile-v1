@@ -8,9 +8,11 @@ import {
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
 import {
-  AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+  authRefreshCookieName,
+  authRefreshCookieNames,
+  readAuthRefreshCookie,
+} from '@/pages/lib/cookieNames';
+import { REFRESH_TOKEN_EXPIRY_COOKIE } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -21,12 +23,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<{ accessToken: string; user: User }>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method } = req;
 
   if (method === 'GET') {
     try {
-      const refreshToken = req.cookies[AUTH_REFRESH_COOKIE_NAME];
+      const refreshToken = readAuthRefreshCookie(req.cookies, req);
       if (!refreshToken) {
         console.error(`${filepath}: No refresh token found`);
         return res.status(401).json({
@@ -62,7 +64,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+        `${authRefreshCookieName(req)}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
       return res.status(200).json({
@@ -114,7 +116,12 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=0; Path=/`,
+        // Clear every name the token may be stored under -- on a namespaced
+        // host a leftover copy under the shared name would still authenticate.
+        authRefreshCookieNames(req).map(
+          (name) =>
+            `${name}=; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=0; Path=/`,
+        ),
       );
 
       return res.status(200).json({ success: true });

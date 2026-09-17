@@ -33,7 +33,7 @@ function isDeviceInfoUniqueViolation(error: unknown): boolean {
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method, body } = req;
   const { userId } = req as AuthenticatedRequest;
 
