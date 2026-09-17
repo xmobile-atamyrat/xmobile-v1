@@ -196,7 +196,7 @@ async function handler(
   req: AuthenticatedRequest,
   res: NextApiResponse<ResponseApi>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
 
   if (req.method !== 'POST') {
     return res

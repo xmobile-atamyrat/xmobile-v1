@@ -13,7 +13,7 @@ const filepath = 'src/pages/api/prices/rate.page.ts';
 const CURRENCY_LIST = Object.values(CURRENCY);
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method, userId, query } = req as AuthenticatedRequest;
 
   if (method !== 'GET') {

@@ -2,10 +2,8 @@ import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import { generateTokens } from '@/pages/api/utils/tokenUtils';
-import {
-  AUTH_REFRESH_COOKIE_NAME,
-  REFRESH_TOKEN_EXPIRY_COOKIE,
-} from '@/pages/lib/constants';
+import { authRefreshCookieName } from '@/pages/lib/cookieNames';
+import { REFRESH_TOKEN_EXPIRY_COOKIE } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
@@ -17,7 +15,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi<{ accessToken: string; user: User }>>,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method } = req;
   if (method === 'POST') {
     try {
@@ -54,7 +52,7 @@ export default async function handler(
 
       res.setHeader(
         'Set-Cookie',
-        `${AUTH_REFRESH_COOKIE_NAME}=${refreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+        `${authRefreshCookieName(req)}=${refreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
       return res.status(200).json({

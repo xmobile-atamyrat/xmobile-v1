@@ -11,7 +11,7 @@ import { getAdminOrdersQuerySchema } from '../validators/orderValidators';
 const filepath = 'src/pages/api/order/admin/index.page.ts';
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   const { method, query } = req;
   const { userId } = req as AuthenticatedRequest;
 

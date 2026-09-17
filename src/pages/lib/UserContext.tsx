@@ -1,4 +1,4 @@
-import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { readAuthRefreshCookieWith } from '@/pages/lib/cookieNames';
 import { useWebViewSync } from '@/pages/lib/hooks/useWebViewSync';
 import {
   ProtectedUser,
@@ -36,7 +36,7 @@ export default function UserContextProvider({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
+    if (readAuthRefreshCookieWith(getCookie) != null) {
       (async () => {
         try {
           const response: ResponseApi<{ accessToken: string; user: User }> =

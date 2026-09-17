@@ -4,11 +4,8 @@ import AddEditBannerDialog from '@/pages/components/AddEditBannerDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import { deleteBanner, fetchAllBanners } from '@/pages/lib/apis';
-import {
-  appBarHeight,
-  AUTH_REFRESH_COOKIE_NAME,
-  mobileAppBarHeight,
-} from '@/pages/lib/constants';
+import { readAuthRefreshCookie } from '@/pages/lib/cookieNames';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import {
   getBannerMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
@@ -42,7 +39,7 @@ import { useCallback, useEffect, useState } from 'react';
 type SnackbarSeverity = 'error' | 'warning' | 'success';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const refreshToken = ctx.req.cookies[AUTH_REFRESH_COOKIE_NAME];
+  const refreshToken = readAuthRefreshCookie(ctx.req.cookies, ctx.req);
   const redirectHome = {
     redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
   };

@@ -5,10 +5,8 @@ import {
   generateTokens,
   REFRESH_SECRET,
 } from '@/pages/api/utils/tokenUtils';
-import {
-  AUTH_REFRESH_COOKIE_NAME,
-  CHAT_MESSAGES_PAGE_SIZE,
-} from '@/pages/lib/constants';
+import { readAuthRefreshCookie } from '@/pages/lib/cookieNames';
+import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { ChatMessage } from '@/pages/lib/types';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import {
@@ -91,7 +89,7 @@ const authenticateConnection = async (
     if (accessTokenError.name === 'TokenExpiredError') {
       try {
         const cookies = cookie.parse(request.headers?.cookie);
-        const refreshToken = cookies[AUTH_REFRESH_COOKIE_NAME];
+        const refreshToken = readAuthRefreshCookie(cookies, request);
 
         const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
 

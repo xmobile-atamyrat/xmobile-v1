@@ -20,7 +20,7 @@ const CreateCartItem = FormSchema.omit({ cartItemId: true });
 const EditCartItem = FormSchema.omit({ productId: true });
 
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
-  addCors(res);
+  if (addCors(req, res)) return;
   const data = req.body;
   const { userId } = req as AuthenticatedRequest;
 

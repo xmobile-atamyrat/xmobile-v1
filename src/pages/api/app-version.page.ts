@@ -11,7 +11,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  addCors(res);
+  if (addCors(req, res)) return undefined;
   if (req.method === 'GET') {
     try {
       const appVersion = await dbClient.appVersion.findUnique({
