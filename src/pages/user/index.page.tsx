@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bell,
+  Boxes,
   Check,
   ChevronRight,
   Download,
@@ -291,6 +292,11 @@ export default function Profile() {
       : '';
 
   const adminRows: MenuRow[] = [
+    {
+      icon: <Boxes className={profileClasses.icon.primary} />,
+      label: t('productsOverview'),
+      onClick: () => router.push('/product/overview'),
+    },
     {
       icon: <Upload className={profileClasses.icon.primary} />,
       label: t('updatePrices'),

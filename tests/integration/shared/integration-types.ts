@@ -4,4 +4,5 @@ export type IntegrationCatalog = {
   priceId: string;
   productId: string;
   productSlug: string;
+  roundedProductSlug: string;
 };

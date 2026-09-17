@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { getPrice } from '@/pages/api/prices/index.page';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { PrismaClient } from '@prisma/client';
 
 const squareBracketRegex = /\[([^\]]+)\]/;
@@ -83,7 +84,7 @@ export async function calculateTotalPrice(
       const price = await getPrice(priceId);
       if (!price || !price.priceInTmt) return 0;
 
-      const itemPrice = parseFloat(price.priceInTmt);
+      const itemPrice = parseFloat(displayPriceOf(price));
       if (Number.isNaN(itemPrice)) return 0;
 
       return itemPrice * item.quantity;

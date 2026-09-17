@@ -4,6 +4,8 @@ import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
+import { displayPriceOrNull } from '@/pages/lib/priceDisplay';
+import { Prisma } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/product/new.page.ts';
@@ -21,7 +23,13 @@ async function handleGetNewProducts(query: {
     // Home never surfaces out-of-stock products, so they're excluded here
     // rather than client-side — otherwise a page of 20 could come back mostly
     // empty after filtering.
-    const whereInStock = { ...whereActiveProduct, isOutOfStock: false };
+    // Annotated rather than inferred: `strict` is off, so a bare `null` widens
+    // to `any` and the whole literal stops being checked against the schema —
+    // which is how a stale `isOutOfStock: false` survived the column's removal.
+    const whereInStock: Prisma.ProductWhereInput = {
+      ...whereActiveProduct,
+      outOfStockAt: null,
+    };
 
     // Build the where clause for search filtering
     const where = searchKeyword
@@ -46,7 +54,10 @@ async function handleGetNewProducts(query: {
     const productsWithPrices = await Promise.all(
       products.map(async (product) => {
         const productPrice = await getPrice(product?.price as string);
-        product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+        // `?? undefined` preserves the "{undefined}" text for a dangling ref.
+        product.price = `${product?.price}{${
+          displayPriceOrNull(productPrice) ?? undefined
+        }}`;
         return product;
       }),
     );

@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { unavailableVariantTags } from '@/lib/variantStock';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -77,7 +78,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         include: { product: true },
       });
 
-      res.status(200).json({ success: true, data: cartItems });
+      // Stock lives on the price as well as the product, so each line carries
+      // its own variant's state. Resolved here rather than in the client so the
+      // cart never has to fetch a price row per item to know what it can buy.
+      const unavailable = await unavailableVariantTags(
+        cartItems.map((item) => item.selectedVariant),
+      );
+      const itemsWithStock = cartItems.map((item) => ({
+        ...item,
+        variantOutOfStock:
+          item.selectedVariant != null && unavailable.has(item.selectedVariant),
+      }));
+
+      res.status(200).json({ success: true, data: itemsWithStock });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({

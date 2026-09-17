@@ -97,9 +97,8 @@ export default function ProductCard({
   // state instead.
   const priceNode =
     // eslint-disable-next-line no-nested-ternary
-    product == null || product.isOutOfStock ? null : product.price?.includes(
-        '[',
-      ) ? (
+    product == null ||
+    product.outOfStockAt != null ? null : product.price?.includes('[') ? (
       <CircularProgress className={productCardClasses.circProgress[platform]} />
     ) : (
       <Typography
@@ -115,7 +114,7 @@ export default function ProductCard({
   const quickAdd =
     product != null &&
     cartProps.cartAction === 'add' &&
-    !product.isOutOfStock ? (
+    product.outOfStockAt == null ? (
       // Rendered outside the card's anchors, but keep the click contained so a
       // future wrapper can't turn "add to cart" into a navigation.
       <Box onClick={(e) => e.stopPropagation()}>
@@ -149,7 +148,7 @@ export default function ProductCard({
                   component="img"
                   image={cardImageSrc}
                   alt={product?.name}
-                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.isOutOfStock ? ' grayscale opacity-60' : ''}`}
+                  className={`${productCardClasses.cardMedia[platform]} transition-all duration-200${product.outOfStockAt != null ? ' grayscale opacity-60' : ''}`}
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
@@ -158,7 +157,7 @@ export default function ProductCard({
                     el.src = PRODUCT_IMAGE_FALLBACK;
                   }}
                 />
-                {product.isOutOfStock && (
+                {product.outOfStockAt != null && (
                   <Box
                     className={`absolute top-2 left-2 bg-white/90 border border-[#ECECF1] rounded-full ${platform === 'web' ? 'px-2.5 py-0.5' : 'px-1.5 py-0'}`}
                   >
@@ -202,18 +201,19 @@ export default function ProductCard({
               priceNode
             )}
           </Box>
-          {cartProps.cartAction === 'delete' && !product.isOutOfStock && (
-            <Box>
-              <AddToCart
-                productId={product.id}
-                cartAction={cartProps?.cartAction}
-                quantity={cartProps?.quantity}
-                cartItemId={cartProps?.cartItemId}
-                onDelete={cartProps?.onDelete}
-                setTotalPrice={() => undefined}
-              />
-            </Box>
-          )}
+          {cartProps.cartAction === 'delete' &&
+            product.outOfStockAt == null && (
+              <Box>
+                <AddToCart
+                  productId={product.id}
+                  cartAction={cartProps?.cartAction}
+                  quantity={cartProps?.quantity}
+                  cartItemId={cartProps?.cartItemId}
+                  onDelete={cartProps?.onDelete}
+                  setTotalPrice={() => undefined}
+                />
+              </Box>
+            )}
         </Box>
       ) : (
         <Box className="w-full h-full flex flex-col justify-between">

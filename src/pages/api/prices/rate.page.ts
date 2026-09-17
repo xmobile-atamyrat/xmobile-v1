@@ -3,8 +3,8 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import { pricesFromUsd } from '@/pages/lib/priceDisplay';
 import { ResponseApi } from '@/pages/lib/types';
-import { tmtFromUsd } from '@/pages/product/utils';
 import { CURRENCY } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -109,14 +109,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           orderBy: { name: 'asc' },
         });
         updatedPrices = await Promise.all(
-          prices.map(({ id, price }) =>
-            dbClient.prices.update({
+          prices.map(({ id, price }) => {
+            const usd = parseFloat(price);
+            // A non-numeric legacy price used to write the string "NaN".
+            if (!Number.isFinite(usd)) {
+              return dbClient.prices.findUniqueOrThrow({ where: { id } });
+            }
+            return dbClient.prices.update({
               where: { id },
-              data: {
-                priceInTmt: tmtFromUsd(parseFloat(price), rate).toString(),
-              },
-            }),
-          ),
+              data: pricesFromUsd(usd, rate),
+            });
+          }),
         );
       }
 
