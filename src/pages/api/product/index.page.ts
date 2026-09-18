@@ -1,6 +1,11 @@
 import dbClient from '@/lib/dbClient';
 import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import {
+  initialOutOfStockFields,
+  outOfStockCascade,
+  setProductOutOfStock,
+} from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
@@ -13,6 +18,11 @@ import {
   localeOptions,
 } from '@/pages/lib/constants';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
+import {
+  cachedPriceFrom,
+  displayPriceOf,
+  displayPriceOrNull,
+} from '@/pages/lib/priceDisplay';
 import { parseVariantTag } from '@/pages/product/utils';
 import {
   sanitizeProductLocale,
@@ -202,9 +212,8 @@ async function createProduct(
         return;
       }
 
-      const cachedPrice = parseFloat(
-        (await getPrice(fields.price?.[0]))?.price ?? '0',
-      );
+      const basePriceRow = await getPrice(fields.price?.[0]);
+      const cachedPrice = cachedPriceFrom(basePriceRow);
       const productTags: string[] = fields.tags
         ? JSON.parse(fields.tags[0])
         : [];
@@ -225,6 +234,10 @@ async function createProduct(
           ],
           price: fields.price?.[0],
           cachedPrice,
+          // A product can be created already sold out. The timestamp travels
+          // with the flag so the retention job, which ignores rows without one,
+          // can see it from day one.
+          ...initialOutOfStockFields(fields.isOutOfStock?.[0] === 'true'),
         },
       });
 
@@ -254,7 +267,11 @@ async function getProduct(
   // product.price = [id]{value}
   const productPrice = await getPrice(product?.price as string);
   if (product) {
-    product.price = `${product?.price}{${productPrice?.priceInTmt}}`;
+    // `?? undefined` keeps the dangling-reference shape: a missing price has
+    // always interpolated as "{undefined}", and the PDP keys off that text.
+    product.price = `${product?.price}{${
+      displayPriceOrNull(productPrice) ?? undefined
+    }}`;
   }
 
   return product;
@@ -426,19 +443,14 @@ async function handleGetProduct(query: {
     where.name = { contains: searchKeyword, mode: 'insensitive' };
   }
 
-  // minPrice/maxPrice are provided in TMT, convert to usd
+  // Both bounds and cachedPrice are the shown manat, so they compare directly.
   if (minPrice || maxPrice) {
-    const dollarRate = await dbClient.dollarRate.findFirst({
-      where: { currency: 'TMT' },
-    });
-    const rate = dollarRate?.rate || 1;
-
     if (minPrice) {
       const minTmt = parseFloat(minPrice);
       if (!Number.isNaN(minTmt)) {
         const currentFilter =
           typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, gte: minTmt / rate };
+        where.cachedPrice = { ...currentFilter, gte: minTmt };
       }
     }
     if (maxPrice) {
@@ -446,7 +458,7 @@ async function handleGetProduct(query: {
       if (!Number.isNaN(maxTmt)) {
         const currentFilter =
           typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, lte: maxTmt / rate };
+        where.cachedPrice = { ...currentFilter, lte: maxTmt };
       }
     }
   }
@@ -479,23 +491,29 @@ async function handleGetProduct(query: {
     };
   }
 
+  // In-stock first. `nulls: 'first'` is required: Postgres sorts ASC as NULLS
+  // LAST, which would bury every available product below the sold-out ones.
+  const inStockFirst = {
+    outOfStockAt: { sort: 'asc', nulls: 'first' },
+  } satisfies Prisma.ProductOrderByWithRelationInput;
+
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
-    { isOutOfStock: 'asc' },
+    inStockFirst,
     { createdAt: 'desc' },
   ]; // default
   if (sortBy) {
     switch (sortBy) {
       case SORT_OPTIONS.PRICE_ASC:
-        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'asc' }];
+        orderBy = [inStockFirst, { cachedPrice: 'asc' }];
         break;
       case SORT_OPTIONS.PRICE_DESC:
-        orderBy = [{ isOutOfStock: 'asc' }, { cachedPrice: 'desc' }];
+        orderBy = [inStockFirst, { cachedPrice: 'desc' }];
         break;
       case SORT_OPTIONS.A_Z:
-        orderBy = [{ isOutOfStock: 'asc' }, { name: 'asc' }];
+        orderBy = [inStockFirst, { name: 'asc' }];
         break;
       case SORT_OPTIONS.NEWEST:
-        orderBy = [{ isOutOfStock: 'asc' }, { createdAt: 'desc' }];
+        orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
       default:
         break;
@@ -514,7 +532,7 @@ async function handleGetProduct(query: {
     products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
       if (productPrice) {
-        product.price = `${product.price}{${productPrice.priceInTmt}}`;
+        product.price = `${product.price}{${displayPriceOf(productPrice)}}`;
       }
       return product;
     }),
@@ -559,9 +577,8 @@ async function handleEditProduct(
       }
       if (fields.price?.length > 0) {
         data.price = fields.price[0];
-        data.cachedPrice = parseFloat(
-          (await getPrice(fields.price[0]))?.price ?? '0',
-        );
+        const basePriceRow = await getPrice(fields.price[0]);
+        data.cachedPrice = cachedPriceFrom(basePriceRow);
       }
       if (fields.brandId?.length > 0) {
         data.brandId = fields.brandId[0] || null;
@@ -576,8 +593,14 @@ async function handleEditProduct(
       if (fields.videoUrls?.length > 0) {
         data.videoUrls = JSON.parse(fields.videoUrls[0]);
       }
+      // Not folded into `data`: out-of-stock has to cascade to the product's
+      // connected prices and stamp `outOfStockAt` only on a real transition,
+      // both of which setProductOutOfStock owns. Applied after the main update,
+      // and only when the flag really moved — the form posts this field on
+      // every save, so its presence says nothing about the admin's intent.
+      let requestedOutOfStock: boolean | undefined;
       if (fields.isOutOfStock?.length > 0) {
-        data.isOutOfStock = fields.isOutOfStock[0] === 'true';
+        requestedOutOfStock = fields.isOutOfStock[0] === 'true';
       }
 
       const currProduct = await dbClient.product.findFirst({
@@ -596,6 +619,11 @@ async function handleEditProduct(
         resolve({ success: false, message: 'Product not found', status: 404 });
         return;
       }
+
+      const outOfStockUpdate = outOfStockCascade(
+        requestedOutOfStock,
+        currProduct.outOfStockAt != null,
+      );
 
       const deleteImageUrls = fields.deleteImageUrls
         ? JSON.parse(fields.deleteImageUrls[0])
@@ -645,12 +673,21 @@ async function handleEditProduct(
         }
       }
 
-      const product = await dbClient.product.update({
+      let product = await dbClient.product.update({
         where: {
           id: productId as string,
         },
         data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
       });
+
+      if (outOfStockUpdate != null) {
+        await setProductOutOfStock(product.id, outOfStockUpdate);
+        // Re-read so the response carries the flag and timestamp the cascade
+        // settled on rather than the pre-cascade row.
+        product = await dbClient.product.findUniqueOrThrow({
+          where: { id: product.id },
+        });
+      }
 
       if (currProduct.brandId) {
         await syncBrandProductCount(currProduct.brandId);
