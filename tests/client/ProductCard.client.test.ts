@@ -50,7 +50,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     videoUrls: [],
     categoryId: 'cat-1',
     brandId: null,
-    isOutOfStock: false,
+    outOfStockAt: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -96,40 +96,40 @@ describe('ProductCard', () => {
     );
   }
 
-  it('shows out-of-stock overlay when isOutOfStock is true', async () => {
-    renderCard(makeProduct({ isOutOfStock: true }));
+  it('shows out-of-stock overlay when out of stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: new Date() }));
 
     await waitFor(() => {
       expect(screen.getByText('Out of stock')).toBeInTheDocument();
     });
   });
 
-  it('does not show out-of-stock overlay when isOutOfStock is false', async () => {
-    renderCard(makeProduct({ isOutOfStock: false }));
+  it('does not show out-of-stock overlay when in stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: null }));
 
     await waitFor(() => {
       expect(screen.queryByText('Out of stock')).not.toBeInTheDocument();
     });
   });
 
-  it('hides the cart delete button when isOutOfStock is true', async () => {
-    renderCard(makeProduct({ isOutOfStock: true }), 'delete');
+  it('hides the cart delete button when out of stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: new Date() }), 'delete');
 
     await waitFor(() => {
       expect(screen.queryByTestId('add-to-cart')).not.toBeInTheDocument();
     });
   });
 
-  it('renders the cart delete button when isOutOfStock is false', async () => {
-    renderCard(makeProduct({ isOutOfStock: false }), 'delete');
+  it('renders the cart delete button when in stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: null }), 'delete');
 
     await waitFor(() => {
       expect(screen.getByTestId('add-to-cart')).toBeInTheDocument();
     });
   });
 
-  it('hides the price when isOutOfStock is true', async () => {
-    renderCard(makeProduct({ isOutOfStock: true, price: '5.00' }));
+  it('hides the price when out of stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: new Date(), price: '5.00' }));
 
     await waitFor(() => {
       expect(screen.getByText('Out of stock')).toBeInTheDocument();
@@ -137,8 +137,8 @@ describe('ProductCard', () => {
     expect(screen.queryByText(/5\.00/)).not.toBeInTheDocument();
   });
 
-  it('shows the price when isOutOfStock is false', async () => {
-    renderCard(makeProduct({ isOutOfStock: false, price: '5.00' }));
+  it('shows the price when in stock', async () => {
+    renderCard(makeProduct({ outOfStockAt: null, price: '5.00' }));
 
     await waitFor(() => {
       expect(screen.getByText(/5\.00/)).toBeInTheDocument();

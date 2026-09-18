@@ -7,6 +7,7 @@ vi.mock('@/pages/api/prices/index.page', () => ({
 
 import { getPrice } from '@/pages/api/prices/index.page';
 import { calculateTotalPrice } from '@/pages/api/order/utils/orderUtils';
+import { displayPriceOf } from '@/pages/lib/priceDisplay';
 
 describe('calculateTotalPrice', () => {
   beforeEach(() => {
@@ -73,5 +74,65 @@ describe('calculateTotalPrice', () => {
     expect(
       await calculateTotalPrice([{ product: { price: '[x]' }, quantity: 3 }]),
     ).toBe('0.00');
+  });
+
+  it('charges the rounded display price, not priceInTmt', async () => {
+    vi.mocked(getPrice).mockResolvedValue({
+      priceInTmt: '1283',
+      displayPriceTmt: '1290',
+    } as Prices);
+
+    expect(
+      await calculateTotalPrice([{ product: { price: '[a]' }, quantity: 2 }]),
+    ).toBe('2580.00');
+  });
+
+  it('falls back to priceInTmt when the display price is not computed yet', async () => {
+    vi.mocked(getPrice).mockResolvedValue({
+      priceInTmt: '10.50',
+      displayPriceTmt: null,
+    } as Prices);
+
+    expect(
+      await calculateTotalPrice([{ product: { price: '[a]' }, quantity: 2 }]),
+    ).toBe('21.00');
+  });
+
+  it('falls back to priceInTmt when the display price is a stored zero', async () => {
+    vi.mocked(getPrice).mockResolvedValue({
+      priceInTmt: '1283',
+      displayPriceTmt: '0',
+    } as Prices);
+
+    expect(
+      await calculateTotalPrice([{ product: { price: '[a]' }, quantity: 1 }]),
+    ).toBe('1283.00');
+  });
+
+  // Fails the moment a reader switches back to priceInTmt or the fallback rule
+  // changes.
+  it('total always equals the sum of the shown prices', async () => {
+    const fixtures = [
+      { priceInTmt: '1283', displayPriceTmt: '1290', quantity: 2 },
+      { priceInTmt: '47', displayPriceTmt: null, quantity: 1 }, // not computed
+      { priceInTmt: '1290', displayPriceTmt: '1290', quantity: 3 }, // pinned
+    ];
+    fixtures.forEach((row) =>
+      vi.mocked(getPrice).mockResolvedValueOnce(row as unknown as Prices),
+    );
+
+    const total = await calculateTotalPrice(
+      fixtures.map((row, index) => ({
+        product: { price: `[p${index}]` },
+        quantity: row.quantity,
+      })),
+    );
+
+    const shown = fixtures.reduce(
+      (sum, row) => sum + Number(displayPriceOf(row)) * row.quantity,
+      0,
+    );
+    expect(Number(total)).toBe(shown);
+    expect(total).toBe('6497.00');
   });
 });

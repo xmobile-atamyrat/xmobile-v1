@@ -15,6 +15,7 @@ describe('Public catalog & health API (integration)', () => {
   let categoryId: string;
   let categorySlug: string;
   let priceId: string;
+  let roundedProductSlug: string;
 
   beforeAll(async () => {
     const { catalog } = await prepareIntegrationWorker();
@@ -23,6 +24,7 @@ describe('Public catalog & health API (integration)', () => {
     categoryId = catalog.categoryId;
     categorySlug = catalog.categorySlug;
     priceId = catalog.priceId;
+    roundedProductSlug = catalog.roundedProductSlug;
   }, 180_000);
 
   afterAll(async () => {
@@ -139,6 +141,28 @@ describe('Public catalog & health API (integration)', () => {
     expect(String(json.data.price)).toContain('{99.99}');
   });
 
+  // The seeded price stores 1283 exact / 1290 shown, so this proves the
+  // decoration the product card renders carries the rounded figure.
+  it('GET /api/product?productSlug decorates with the rounded display price', async () => {
+    const session = await signupTestUser('shop-rounded');
+    const product = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      query: { productSlug: roundedProductSlug },
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    await product(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const json = JSON.parse(res._getData() as string);
+    expect(json.success).toBe(true);
+    expect(String(json.data.price)).toContain('{1290}');
+    expect(String(json.data.price)).not.toContain('1283');
+  });
+
   it('GET /api/product rejects invalid productId format', async () => {
     const session = await signupTestUser('badid');
     const product = (await import('@/pages/api/product/index.page')).default;
@@ -174,6 +198,49 @@ describe('Public catalog & health API (integration)', () => {
     expect(json.success).toBe(true);
     const list = json.data as { id: string }[];
     expect(list.some((p) => p.id === productId)).toBe(true);
+  });
+
+  // Seeded at 1283 exact / 1290 shown, so these ranges straddle the gap: a
+  // filter matching on the exact manat gets both of them wrong.
+  it('GET /api/product?minPrice filters on the shown price, not the exact one', async () => {
+    const session = await signupTestUser('filter-min');
+    const product = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      query: { categoryId, page: '1', minPrice: '1285', maxPrice: '1295' },
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    await product(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const json = JSON.parse(res._getData() as string);
+    expect(json.success).toBe(true);
+    const list = json.data as { slug: string }[];
+    // 1290 is inside [1285, 1295]; 1283 would not have been.
+    expect(list.some((p) => p.slug === roundedProductSlug)).toBe(true);
+  });
+
+  it('GET /api/product?maxPrice excludes a product whose shown price is above it', async () => {
+    const session = await signupTestUser('filter-max');
+    const product = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      query: { categoryId, page: '1', maxPrice: '1285' },
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    await product(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const json = JSON.parse(res._getData() as string);
+    const list = json.data as { slug: string }[];
+    // Shown at 1290, so it is out — even though its exact manat is 1283.
+    expect(list.some((p) => p.slug === roundedProductSlug)).toBe(false);
   });
 
   it('GET /api/app-version returns semver defaults when no row exists', async () => {

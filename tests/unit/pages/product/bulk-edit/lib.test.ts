@@ -538,3 +538,60 @@ describe('bulk-edit TMT formula caches its result', () => {
     expect(tmt.result).toBe(363);
   });
 });
+
+// This workbook deliberately stayed on the exact manat when displayPriceTmt was
+// introduced: parseWorkbook reads cells by fixed index, the TMT column is the
+// round-tripped exact price, and tmtCell detects a hand-pinned price by asking
+// whether the formula reproduces the stored TMT — round that formula to 10 and
+// every row looks pinned, exporting the whole catalog as frozen literals. The
+// price-list export is the one that shows rounded prices.
+describe('bulk-edit stays on the exact manat price', () => {
+  it('keeps the ROUNDUP-to-1 formula rather than the storefront CEILING-to-10', async () => {
+    const sheet = await loadSheet(
+      await build({ products: [product(DECIMAL_USD)] }),
+      PRODUCTS_SHEET_NAME,
+    );
+    const tmt = sheet.getCell('F2').value as ExcelJS.CellFormulaValue;
+
+    expect(tmt.formula).toBe('ROUNDUP(E2*19.6,0)');
+    expect(tmt.formula).not.toContain('CEILING');
+    // 363, not the 370 the storefront would show for the same price.
+    expect(tmt.result).toBe(363);
+  });
+
+  it('keeps the column layout the import parser indexes into', async () => {
+    const products = await loadSheet(await build(), PRODUCTS_SHEET_NAME);
+    const variants = await loadSheet(await build(), VARIANTS_SHEET_NAME);
+
+    expect(products.getRow(1).values).toEqual([
+      undefined,
+      'ID',
+      'Slug',
+      'Category Slug',
+      'Brand',
+      'Price USD',
+      'Price TMT',
+      'Out of Stock',
+      'Video URLs',
+    ]);
+    // The Variants sheet leads with a category banner, so its header sits
+    // below it rather than on row 1.
+    let headerRow = 0;
+    variants.eachRow((row, index) => {
+      if (headerRow === 0 && row.getCell(1).value === 'Price ID') {
+        headerRow = index;
+      }
+    });
+    expect(headerRow).toBeGreaterThan(0);
+    expect(variants.getRow(headerRow).values).toEqual([
+      undefined,
+      'Price ID',
+      'Product ID',
+      'Product Name',
+      'Spec',
+      'Price USD',
+      'Price TMT',
+      'Color',
+    ]);
+  });
+});
