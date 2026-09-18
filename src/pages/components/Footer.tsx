@@ -1,4 +1,5 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { SUPPORT_EMAIL, SUPPORT_PHONES } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
@@ -36,8 +37,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-const phoneNumbers = ['+99361004933', '+99371211717', '+99342230620'];
-const supportEmail = 'xmobile.tkm@gmail.com';
 const mapsUrl = 'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76';
 
 const navItems = [
@@ -280,13 +279,13 @@ export default function Footer() {
               <Box className={web.contactRow}>
                 <Phone className={web.contactIcon} strokeWidth={1.75} />
                 <Box className={web.contactStack}>
-                  {phoneNumbers.map((phone) => (
+                  {SUPPORT_PHONES.map((phone) => (
                     <a
-                      key={phone}
-                      href={`tel:${phone}`}
+                      key={phone.dial}
+                      href={`tel:${phone.dial}`}
                       className={`${fontClassName.className} ${web.contactLink}`}
                     >
-                      {phone}
+                      {phone.display}
                     </a>
                   ))}
                 </Box>
@@ -294,10 +293,10 @@ export default function Footer() {
               <Box className={web.contactRow}>
                 <Mail className={web.contactIcon} strokeWidth={1.75} />
                 <a
-                  href={`mailto:${supportEmail}`}
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className={`${fontClassName.className} ${web.contactLink}`}
                 >
-                  {supportEmail}
+                  {SUPPORT_EMAIL}
                 </a>
               </Box>
               <Box className={web.contactRow}>

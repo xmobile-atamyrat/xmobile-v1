@@ -1,5 +1,10 @@
 import Layout from '@/pages/components/Layout';
-import { LOCALE_COOKIE_NAME, LOCALE_TO_OG_LOCALE } from '@/pages/lib/constants';
+import {
+  LOCALE_COOKIE_NAME,
+  LOCALE_TO_OG_LOCALE,
+  SUPPORT_EMAIL,
+  SUPPORT_PHONES,
+} from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
@@ -28,9 +33,6 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
-
-const SUPPORT_EMAIL = 'xmobile.tkm@gmail.com';
-const SUPPORT_PHONES = ['+99361004933', '+99371211717', '+99342230620'];
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   let messages = {};
@@ -208,7 +210,7 @@ export default function SupportPage() {
                     </Typography>
                   </Link>
                   <a
-                    href={`tel:${SUPPORT_PHONES[0]}`}
+                    href={`tel:${SUPPORT_PHONES[0].dial}`}
                     className={supportClasses.support.heroCall}
                   >
                     <Phone className={supportClasses.support.heroIconCall} />
@@ -220,7 +222,7 @@ export default function SupportPage() {
                     <Typography
                       className={`${fontClassName.className} ${supportClasses.support.heroSubtitleCall}`}
                     >
-                      {SUPPORT_PHONES[0]}
+                      {SUPPORT_PHONES[0].display}
                     </Typography>
                   </a>
                 </Box>
@@ -251,8 +253,8 @@ export default function SupportPage() {
                   </a>
                   {SUPPORT_PHONES.map((phone) => (
                     <a
-                      key={phone}
-                      href={`tel:${phone}`}
+                      key={phone.dial}
+                      href={`tel:${phone.dial}`}
                       className={supportClasses.support.row}
                     >
                       <span className={supportClasses.support.rowIcon}>
@@ -261,12 +263,12 @@ export default function SupportPage() {
                       <Typography
                         className={`${fontClassName.className} ${supportClasses.support.rowLabel}`}
                       >
-                        {t('supportPhoneLabel')}
+                        {t(phone.labelKey)}
                       </Typography>
                       <Typography
                         className={`${fontClassName.className} ${supportClasses.support.rowValue}`}
                       >
-                        {phone}
+                        {phone.display}
                       </Typography>
                     </a>
                   ))}
@@ -294,6 +296,11 @@ export default function SupportPage() {
                     </Typography>
                   </Box>
                 </Box>
+                <Typography
+                  className={`${fontClassName.className} ${supportClasses.support.hoursNote}`}
+                >
+                  {t('supportHoursTimezone')}
+                </Typography>
 
                 <Typography
                   className={`${fontClassName.className} ${supportClasses.support.faqLabel}`}
@@ -330,25 +337,22 @@ export default function SupportPage() {
                     </MuiLink>
                   </Typography>
 
-                  <Typography
-                    className={`${fontClassName.className} ${supportClasses.p[platform]}`}
-                  >
-                    <strong>{t('supportPhoneLabel')}:</strong>
-                  </Typography>
                   <ul className={supportClasses.boxes.list[platform]}>
                     {SUPPORT_PHONES.map((phone) => (
                       <li
-                        key={phone}
+                        key={phone.dial}
                         className={supportClasses.boxes.listItem[platform]}
                       >
                         <Typography
                           className={`${fontClassName.className} ${supportClasses.p[platform]}`}
                         >
+                          <strong>{t(phone.labelKey)}</strong>
+                          {' — '}
                           <MuiLink
-                            href={`tel:${phone}`}
+                            href={`tel:${phone.dial}`}
                             className={supportClasses.link}
                           >
-                            {phone}
+                            {phone.display}
                           </MuiLink>
                         </Typography>
                       </li>
@@ -358,7 +362,7 @@ export default function SupportPage() {
                   <Typography
                     className={`${fontClassName.className} ${supportClasses.p[platform]}`}
                   >
-                    {t('supportChatNote')}{' '}
+                    {t('supportChatNote')}:{' '}
                     <Link href="/chat" className={supportClasses.link}>
                       {t('supportChatLink')}
                     </Link>
@@ -380,7 +384,7 @@ export default function SupportPage() {
                   <Typography
                     className={`${fontClassName.className} ${supportClasses.p[platform]}`}
                   >
-                    {t('supportHoursTime')}
+                    {t('supportHoursTime')} {t('supportHoursTimezone')}
                   </Typography>
                 </Box>
 

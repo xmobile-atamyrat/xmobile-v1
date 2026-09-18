@@ -7,7 +7,7 @@ import {
 } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
+import { LOCALE_COOKIE_NAME, SUPPORT_PHONES } from '@/pages/lib/constants';
 import { getCookie, parseName, setCookie } from '@/pages/lib/utils';
 
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
@@ -52,9 +52,8 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
-// Real store line — same number the footer contact block already lists.
-const HEADER_PHONE = '+99361004933';
-const HEADER_PHONE_DISPLAY = '(+993) 61 004933';
+// Real store line — the primary of the three in SUPPORT_PHONES.
+const [HEADER_PHONE] = SUPPORT_PHONES;
 
 interface CustomAppBarProps {
   showHomeHeader?: boolean;
@@ -327,11 +326,11 @@ export default function CustomAppBar({
           </Box>
           <Box className={web.utilityGroup}>
             <a
-              href={`tel:${HEADER_PHONE}`}
+              href={`tel:${HEADER_PHONE.dial}`}
               className={`${web.utilityItem} ${web.utilityItemPhone}`}
             >
               <Phone className={web.utilityIcon} />
-              {HEADER_PHONE_DISPLAY}
+              {HEADER_PHONE.display}
             </a>
             <button
               type="button"

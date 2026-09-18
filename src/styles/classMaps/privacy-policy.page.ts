@@ -103,5 +103,8 @@ export const privacyPolicyClasses = {
     rowValue: 'text-[13px] text-muted',
     faqLabel:
       'text-[12px] font-bold uppercase tracking-[0.06em] text-muted mb-[10px] mt-1',
+    // Timezone sits under the hours card, not inside the row — inline it squeezed the
+    // day label ("Ежедневно") into a second line on narrow screens.
+    hoursNote: 'text-[12px] text-muted -mt-[14px] mb-5 px-1',
   },
 };

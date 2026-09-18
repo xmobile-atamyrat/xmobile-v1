@@ -14,6 +14,31 @@ export const GUEST_SESSION_EXPIRY_COOKIE = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 ye
 // every app restart.
 export const COOKIE_EXPIRY_SECONDS = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
 
+// Single source of truth for the store's phone lines, previously copy-pasted into
+// Footer, Appbar, the chat header and the support page — each with its own display
+// format. `dial` stays unspaced (spaces in a tel: URI are unreliable on some Android
+// dialers); `display` is the grouped form shown to the user. `labelKey` says which
+// line is which, so the support page stops printing "Телефон" three times.
+export const SUPPORT_PHONES = [
+  {
+    labelKey: 'supportPhoneMainLabel',
+    dial: '+99361004933',
+    display: '+993 61 00 49 33',
+  },
+  {
+    labelKey: 'supportPhoneAltLabel',
+    dial: '+99371211717',
+    display: '+993 71 21 17 17',
+  },
+  {
+    labelKey: 'supportPhoneStoreLabel',
+    dial: '+99342230620',
+    display: '+993 422 30 620',
+  },
+] as const;
+
+export const SUPPORT_EMAIL = 'xmobile.tkm@gmail.com';
+
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const BANNER_IMAGE_WIDTH = 1600; // px
