@@ -1,4 +1,6 @@
 import dbClient from '@/lib/dbClient';
+import { revalidateInBackground } from '@/lib/revalidate';
+import { productRevalidationPaths } from '@/lib/revalidateTargets';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -6,6 +8,20 @@ import withAuth, {
 import { BrandProps, ResponseApi } from '@/pages/lib/types';
 import { UserRole } from '@prisma/client';
 import { NextApiResponse } from 'next';
+
+/**
+ * A brand has no page of its own — its name is baked into each product's
+ * `<title>` and JSON-LD — so a rename or delete has to reach the product pages
+ * to show up at all. Brands with more than ~25 products overshoot the batch cap
+ * and fall back to the TTL, which renames are rare enough to tolerate.
+ */
+async function brandProductPaths(brandId: string): Promise<string[]> {
+  const products = await dbClient.product.findMany({
+    where: { brandId, deletedAt: null },
+    select: { id: true },
+  });
+  return productRevalidationPaths(products.map((product) => product.id));
+}
 
 async function handler(
   req: AuthenticatedRequest,
@@ -64,6 +80,8 @@ async function handler(
         data: { name },
       });
 
+      revalidateInBackground(res, () => brandProductPaths(id));
+
       return res.status(200).json({ success: true, data: brand });
     }
 
@@ -75,9 +93,17 @@ async function handler(
           .json({ success: false, message: 'ID is required' });
       }
 
+      // Collected before the delete: the products' `brandId` is about to be
+      // cleared, so afterwards there is nothing left to look them up by. Eager
+      // rather than deferred for that reason — and safe to leave eager, since
+      // nothing has been mutated yet when it runs.
+      const paths = await brandProductPaths(id);
+
       await dbClient.brand.delete({
         where: { id },
       });
+
+      revalidateInBackground(res, paths);
 
       return res.status(200).json({ success: true, message: 'Deleted' });
     }
