@@ -7,6 +7,11 @@ import {
   setProductOutOfStock,
 } from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { revalidateInBackground } from '@/lib/revalidate';
+import {
+  categoryListingPaths,
+  productRevalidationPaths,
+} from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import {
@@ -64,6 +69,12 @@ interface CreateProductReturnType {
   message?: string;
   status: number;
   data?: Product;
+  /**
+   * Edit only. The category the product sat in before the edit — moving a
+   * product between categories changes the listing page it left as well as the
+   * one it joined, and only the form parser still has the pre-update row.
+   */
+  previousCategoryId?: string | null;
 }
 
 // changes url from images/products/img -> images/compressed/products/img
@@ -652,7 +663,12 @@ async function handleEditProduct(
         await syncBrandProductCount(product.brandId);
       }
 
-      resolve({ success: true, data: product, status: 200 });
+      resolve({
+        success: true,
+        data: product,
+        status: 200,
+        previousCategoryId: currProduct.categoryId,
+      });
     });
   });
   const res = await promise;
@@ -668,6 +684,14 @@ export default async function handler(
   if (method === 'POST') {
     try {
       const retData = await createProduct(req);
+      if (retData.success && retData.data != null) {
+        // Captured outside the thunk: the `!= null` narrowing above doesn't
+        // survive into a deferred callback.
+        const created = retData.data;
+        revalidateInBackground(res, () =>
+          productRevalidationPaths([created.id]),
+        );
+      }
       return res.status(retData.status).json(retData);
     } catch (error) {
       console.error(filepath, error);
@@ -740,6 +764,12 @@ export default async function handler(
         await syncBrandProductCount(existing.brandId);
       }
 
+      // The lookup is unscoped by `deletedAt`, so the now soft-deleted row still
+      // resolves — which is what rebuilds its cached page into a 404.
+      revalidateInBackground(res, () =>
+        productRevalidationPaths([existing.id]),
+      );
+
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error(filepath, error);
@@ -758,6 +788,16 @@ export default async function handler(
 
     try {
       const retData = await handleEditProduct(req);
+      if (retData.success && retData.data != null) {
+        // Both categories: the listing the product left loses a card, the one
+        // it joined gains one. `previousCategoryId` is deduped away when the
+        // product didn't move.
+        const edited = retData.data;
+        revalidateInBackground(res, async () => [
+          ...(await productRevalidationPaths([edited.id])),
+          ...(await categoryListingPaths([retData.previousCategoryId])),
+        ]);
+      }
       return res.status(retData.status).json(retData);
     } catch (error) {
       console.error(filepath, error);

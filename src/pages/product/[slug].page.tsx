@@ -138,7 +138,7 @@ export const getStaticProps: GetStaticProps = async ({
     const product = products && products.length > 0 ? products[0] : null;
 
     if (!product) {
-      return { notFound: true, revalidate: 300 };
+      return { notFound: true, revalidate: 600 };
     }
 
     // Load messages first so they can be used for SEO generation
@@ -233,7 +233,7 @@ export const getStaticProps: GetStaticProps = async ({
         seoData,
         messages,
       },
-      revalidate: 300, // regenerate static pages every 5 minutes
+      revalidate: 600, // regenerate static pages every 10 minutes
     };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : '';
@@ -242,7 +242,7 @@ export const getStaticProps: GetStaticProps = async ({
     } else {
       console.error('Error fetching product during build:', error);
     }
-    return { notFound: true, revalidate: 300 };
+    return { notFound: true, revalidate: 600 };
   }
 };
 

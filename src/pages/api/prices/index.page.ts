@@ -1,6 +1,11 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
 import { syncProductOutOfStockFromPrices } from '@/lib/outOfStock';
+import { revalidateInBackground } from '@/lib/revalidate';
+import {
+  productIdsReferencingPrices,
+  productRevalidationPaths,
+} from '@/lib/revalidateTargets';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -26,6 +31,29 @@ export function priceAssignmentError(
   if (current.productId == null) return null; // unowned, free to claim
   if (current.productId === requestedProductId) return null; // no-op
   return 'This price is already connected to another product. Disconnect it there first.';
+}
+
+/**
+ * Products whose cached pages a batch of price edits invalidates.
+ *
+ * Deliberately wider than the out-of-stock resync's `affectedProductIds`: that
+ * set only tracks stock and ownership because those are the only things that
+ * re-derive a product row. A plain amount change writes nothing to the product,
+ * but it still moves the JSON-LD price on its detail page and the price in the
+ * grid its category listing seeds. Old and new owner both count — moving a price
+ * off a product changes what is left behind as much as what receives it.
+ */
+export function priceRevalidationProductIds(
+  pricePairs: Partial<Prices>[],
+  currentById: Map<string, { productId: string | null }>,
+): string[] {
+  const productIds = new Set<string>();
+  pricePairs.forEach((price) => {
+    const previousProductId = currentById.get(price.id as string)?.productId;
+    if (previousProductId != null) productIds.add(previousProductId);
+    if (price.productId != null) productIds.add(price.productId);
+  });
+  return [...productIds];
 }
 
 // Composable filters for GET. `productId` scopes to one product's connected
@@ -145,6 +173,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // product brings that product back — same rule as any other price edit.
       if (newPrice.productId != null) {
         await syncProductOutOfStockFromPrices(newPrice.productId);
+        revalidateInBackground(res, () =>
+          productRevalidationPaths([newPrice.productId]),
+        );
       }
 
       return res.status(200).json({
@@ -330,6 +361,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         ),
       );
 
+      // Two sources, because a price reaches its product two ways. The FK side
+      // has to come from `currentById` — the pre-update read — so a pair that
+      // disconnects a price still rebuilds the owner it just left. The string
+      // side is resolved live, and is the only link for a price whose FK was
+      // never backfilled.
+      //
+      // Bulk edits from /product/price-list overshoot the batch cap and are
+      // skipped inside revalidateInBackground, which is intended for them.
+      const priceIds = pricePairs.map((price) => price.id as string);
+      revalidateInBackground(res, async () =>
+        productRevalidationPaths([
+          ...priceRevalidationProductIds(pricePairs, currentById),
+          ...(await productIdsReferencingPrices(priceIds)),
+        ]),
+      );
+
       return res.status(200).json({
         success: true,
         message: 'Prices updated',
@@ -361,6 +408,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       if (deletedPrice.productId != null) {
         await syncProductOutOfStockFromPrices(deletedPrice.productId);
       }
+      // Runs whether or not the FK was set: a product's `price` string still
+      // carries the bracket reference after the row is gone, which is exactly
+      // the dangling state its cached page needs to be rebuilt out of.
+      revalidateInBackground(res, async () =>
+        productRevalidationPaths([
+          deletedPrice.productId,
+          ...(await productIdsReferencingPrices([deletedPrice.id])),
+        ]),
+      );
       return res.status(200).json({
         success: true,
         message: 'Price deleted',
