@@ -208,6 +208,9 @@ model Prices {
   product         Product?    @relation(references: [id], fields: [productId], onDelete: SetNull)
   productId       String?
 
+  dollarRate      DollarRate? @relation(references: [id], fields: [dollarRateId], onDelete: SetNull)
+  dollarRateId    Int?
+
   outOfStockAt    DateTime?
 
   createdAt       DateTime    @default(now())
@@ -216,6 +219,7 @@ model Prices {
   @@index([price])
   @@index([categoryId])
   @@index([productId])
+  @@index([dollarRateId])
 }
 
 model Color {
@@ -245,13 +249,16 @@ model DollarRate {
   rate                Float
   currency            CURRENCY      @default(TMT)
   name                String        @default("Manat")
+  isDefault           Boolean       @default(false)
 
+  prices              Prices[]
   procurementOrders   ProcurementOrder[]
 
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
-  @@unique([currency])
+  @@unique([currency, name])
+  @@index([isDefault])
 }
 
 model ChatSession {
@@ -404,11 +411,14 @@ model ProcurementOrder {
   prices                  ProcurementSupplierProductPrice[]  @relation("ProcurementOrderValue")
   productQuantities       ProcurementOrderProductQuantity[]  @relation("ProcurementOrderProductQuantity")
   
-  currency                  CURRENCY                 @default(TMT)                  
-  dollarRate                DollarRate             @relation(fields: [currency], references: [currency], onDelete: Cascade)
+  currency                  CURRENCY                 @default(TMT)
+  dollarRate                DollarRate?              @relation(fields: [dollarRateId], references: [id], onDelete: SetNull)
+  dollarRateId              Int?
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
+
+  @@index([dollarRateId])
 }
 
 model ProcurementOrderSupplier {
