@@ -1,6 +1,7 @@
 import ChatSessionList from '@/pages/components/chat/ChatSessionList';
 import ChatWindow from '@/pages/components/chat/ChatWindow';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { SUPPORT_PHONES } from '@/pages/lib/constants';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
@@ -24,8 +25,8 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 
-// Store support line (primary of the three in Footer/support), dialed from the chat header
-const STORE_PHONE = '+99361004933';
+// Store support line (primary of the three in SUPPORT_PHONES), dialed from the chat header
+const [STORE_PHONE] = SUPPORT_PHONES;
 const ONLINE_GREEN = '#1F9A5A';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -418,9 +419,9 @@ export default function ChatPage() {
         ) : (
           <IconButton
             component="a"
-            href={`tel:${STORE_PHONE}`}
+            href={`tel:${STORE_PHONE.dial}`}
             size="small"
-            aria-label={STORE_PHONE}
+            aria-label={STORE_PHONE.display}
             sx={{ color: navy, flexShrink: 0 }}
           >
             <Phone size={20} />
