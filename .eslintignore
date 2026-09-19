@@ -6,3 +6,4 @@ tests/unit/
 vitest.config.ts
 vitest.unit.config.ts
 vitest.client.config.ts
+xmobile-app-redesign/

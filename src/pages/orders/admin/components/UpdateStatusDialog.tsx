@@ -1,4 +1,4 @@
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import {
   Button,
   Dialog,
@@ -79,7 +79,7 @@ export default function UpdateStatusDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle className={interClassname.className}>
+      <DialogTitle className={fontClassName.className}>
         {t('updateStatus')}
       </DialogTitle>
       <DialogContent>

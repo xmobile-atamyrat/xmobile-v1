@@ -2,8 +2,9 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { simpleBreadcrumbsClasses } from '@/styles/classMaps/components/simpleBreadcrumbs';
-import { interClassname, units } from '@/styles/theme';
+import { fontClassName, muted, units } from '@/styles/theme';
 import { Box, Breadcrumbs, Link, Typography } from '@mui/material';
+import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
@@ -31,7 +32,7 @@ export default function SimpleBreadcrumbs({
       }}
     >
       <Breadcrumbs
-        separator="|"
+        separator={<ChevronRight size={14} color={muted} />}
         maxItems={units.breadcrumbs[platform]}
         className={simpleBreadcrumbsClasses.breadcrumbs[platform]}
       >
@@ -42,7 +43,7 @@ export default function SimpleBreadcrumbs({
           className={simpleBreadcrumbsClasses.link}
         >
           <Typography
-            className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
+            className={`${fontClassName.className} ${simpleBreadcrumbsClasses.text}`}
           >
             {t('home')}
           </Typography>
@@ -59,7 +60,7 @@ export default function SimpleBreadcrumbs({
                 className={simpleBreadcrumbsClasses.link}
               >
                 <Typography
-                  className={`${interClassname.className} ${simpleBreadcrumbsClasses.text}`}
+                  className={`${fontClassName.className} ${simpleBreadcrumbsClasses.text}`}
                 >
                   {parseName(cat.name, router.locale ?? 'ru')}
                 </Typography>
@@ -69,7 +70,7 @@ export default function SimpleBreadcrumbs({
 
         {currentProductName ? (
           <Typography
-            className={`${interClassname.className} ${simpleBreadcrumbsClasses.productName[platform]} mx-2`}
+            className={`${fontClassName.className} ${simpleBreadcrumbsClasses.productName[platform]} mx-1`}
             aria-current="page"
             title={parseName(currentProductName, router.locale ?? 'ru')}
           >

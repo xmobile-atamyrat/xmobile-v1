@@ -1,3 +1,4 @@
+import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import {
   GUEST_SESSION_COOKIE_NAME,
   GUEST_SESSION_EXPIRY_COOKIE,
@@ -25,7 +26,7 @@ export function getOrCreateGuestSessionId(
   const guestSessionId = generateGuestSessionId();
   res.setHeader(
     'Set-Cookie',
-    `${GUEST_SESSION_COOKIE_NAME}=${guestSessionId}; HttpOnly; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Lax; Max-Age=${GUEST_SESSION_EXPIRY_COOKIE}; Path=/`,
+    `${GUEST_SESSION_COOKIE_NAME}=${guestSessionId}; HttpOnly; ${secureCookieAttr(req)}SameSite=Lax; Max-Age=${GUEST_SESSION_EXPIRY_COOKIE}; Path=/`,
   );
   req.cookies[GUEST_SESSION_COOKIE_NAME] = guestSessionId;
 

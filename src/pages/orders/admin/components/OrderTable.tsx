@@ -1,6 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { userOrdersComponentClasses } from '@/styles/classMaps/userOrders/components';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import {
   Table,
   TableBody,
@@ -50,27 +50,27 @@ export default function OrderTable({ orders }: OrderTableProps) {
         <TableHead>
           <TableRow>
             <TableCell>
-              <Typography className={interClassname.className} fontWeight={600}>
+              <Typography className={fontClassName.className} fontWeight={600}>
                 {t('orderNumber')}
               </Typography>
             </TableCell>
             <TableCell>
-              <Typography className={interClassname.className} fontWeight={600}>
+              <Typography className={fontClassName.className} fontWeight={600}>
                 {t('userName')}
               </Typography>
             </TableCell>
             <TableCell>
-              <Typography className={interClassname.className} fontWeight={600}>
+              <Typography className={fontClassName.className} fontWeight={600}>
                 {t('orderStatus')}
               </Typography>
             </TableCell>
             <TableCell>
-              <Typography className={interClassname.className} fontWeight={600}>
+              <Typography className={fontClassName.className} fontWeight={600}>
                 {t('orderTotal')}
               </Typography>
             </TableCell>
             <TableCell>
-              <Typography className={interClassname.className} fontWeight={600}>
+              <Typography className={fontClassName.className} fontWeight={600}>
                 {t('createdAt')}
               </Typography>
             </TableCell>
@@ -84,12 +84,12 @@ export default function OrderTable({ orders }: OrderTableProps) {
               onClick={() => router.push(`/orders/admin/${order.id}`)}
             >
               <TableCell>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {order.orderNumber}
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {order.user?.name || '-'}
                 </Typography>
               </TableCell>
@@ -97,12 +97,12 @@ export default function OrderTable({ orders }: OrderTableProps) {
                 <OrderStatusBadge status={order.status} />
               </TableCell>
               <TableCell>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {order.totalPrice} TMT
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {formatDate(order.createdAt)}
                 </Typography>
               </TableCell>

@@ -205,6 +205,14 @@ export async function unregisterFCMToken(
 }
 
 /**
+ * Whether notifications are currently enabled on this device (token registered).
+ */
+export function isNotificationsEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+}
+
+/**
  * Request notification permission
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
@@ -522,4 +530,59 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
       error,
     );
   }
+}
+
+/**
+ * Enable notifications on this device: request permission, then register the FCM
+ * token. Returns true if a token ends up registered. Shared by the profile
+ * Notifications toggle and reuses the same flow the headless FcmManager runs.
+ */
+export async function enableNotifications(
+  accessToken: string,
+  userId: string,
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  if (isWebView()) {
+    const status = await requestNativeNotificationPermission();
+    if (status !== 'GRANTED') return false;
+    await ensureNativeFCMTokenRegisteredInWebView(userId, accessToken);
+    return !!localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+  }
+
+  const permission = await requestNotificationPermission();
+  if (permission !== 'granted') return false;
+
+  const token = await getFCMToken();
+  if (!token) return false;
+
+  const registered = await registerFCMToken(
+    token,
+    accessToken,
+    getDeviceInfo(),
+  );
+  if (registered) {
+    localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
+  }
+  return registered;
+}
+
+/**
+ * Disable notifications on this device: unregister the token and clear local FCM
+ * state. Browser permission cannot be revoked programmatically, so token
+ * presence (not permission) is the source of truth for "enabled".
+ */
+export async function disableNotifications(accessToken: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const token = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+  if (token) {
+    try {
+      await unregisterFCMToken(token, accessToken);
+    } catch (error) {
+      console.error('[FCM] Failed to unregister on disable:', error);
+    }
+  }
+  localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
 }

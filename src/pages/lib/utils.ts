@@ -2,8 +2,10 @@ import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
 import {
   BANNER_IMAGE_WIDTH,
+  COOKIE_EXPIRY_SECONDS,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
+  RED_COLOR,
   X_MOBILE_DOMAIN,
   HIGHEST_LEVEL_CATEGORY_ID,
 } from '@/pages/lib/constants';
@@ -70,6 +72,12 @@ export const theme = createTheme({
   palette: {
     primary: {
       main: LOGO_COLOR,
+    },
+    secondary: {
+      main: RED_COLOR,
+    },
+    error: {
+      main: RED_COLOR,
     },
   },
 });
@@ -530,12 +538,46 @@ export const getCookie = (name: string): string | undefined => {
   return cookies[name];
 };
 
+/**
+ * Expire any copy of `name` scoped to an ancestor of the current route.
+ *
+ * Cookies written before `setCookie` defaulted to `Path=/` were scoped by the
+ * browser to the current directory (RFC 6265). Those narrower copies are sent
+ * ahead of the site-wide one and would keep shadowing it on the routes where
+ * they were created, so clear them as we write.
+ */
+const expirePathScopedCopies = (name: string) => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  let path = '';
+  segments.forEach((segment) => {
+    path += `/${segment}`;
+    document.cookie = cookie.serialize(name, '', { path, maxAge: 0 });
+  });
+};
+
 export const setCookie = (
   name: string,
   value: string,
   options?: CookieSerializeOptions,
 ) => {
-  const serializedCookie = cookie.serialize(name, value, options);
+  // Without an explicit `path` the browser scopes the cookie to the current
+  // directory, so a language picked on /product-category/x was invisible to
+  // the home page. Default to a site-wide, persistent cookie; callers can
+  // still override either attribute.
+  const resolvedOptions: CookieSerializeOptions = {
+    path: '/',
+    maxAge: COOKIE_EXPIRY_SECONDS,
+    sameSite: 'lax',
+    ...options,
+  };
+
+  if (resolvedOptions.path === '/') {
+    expirePathScopedCopies(name);
+  }
+
+  const serializedCookie = cookie.serialize(name, value, resolvedOptions);
   document.cookie = serializedCookie;
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('cookie-change'));

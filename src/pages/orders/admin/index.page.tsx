@@ -5,7 +5,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { userOrdersIndexClasses } from '@/styles/classMaps/userOrders';
-import { interClassname } from '@/styles/theme';
+import { fontClassName } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -169,7 +169,7 @@ export default function UserOrdersPage() {
         >
           <Box className={userOrdersIndexClasses.header[platform]}>
             <Typography
-              className={`${interClassname.className} ${userOrdersIndexClasses.title[platform]}`}
+              className={`${fontClassName.className} ${userOrdersIndexClasses.title[platform]}`}
             >
               {t('userOrders')}
             </Typography>
@@ -194,7 +194,7 @@ export default function UserOrdersPage() {
           )}
           {!loading && orders.length === 0 && (
             <Box className={userOrdersIndexClasses.emptyState[platform]}>
-              <Typography className={interClassname.className}>
+              <Typography className={fontClassName.className}>
                 {t('noOrdersFound')}
               </Typography>
             </Box>
@@ -212,7 +212,7 @@ export default function UserOrdersPage() {
 
               <Box className={userOrdersIndexClasses.pagination[platform]}>
                 <Box className="flex flex-row items-center gap-2">
-                  <Typography className={interClassname.className}>
+                  <Typography className={fontClassName.className}>
                     {t('itemsPerPage')}:
                   </Typography>
                   <Select
@@ -237,7 +237,7 @@ export default function UserOrdersPage() {
                   color="primary"
                 />
 
-                <Typography className={interClassname.className}>
+                <Typography className={fontClassName.className}>
                   {t('page')} {page} {t('of')} {totalPages} ({total}{' '}
                   {t('total').toLowerCase()})
                 </Typography>

@@ -4,10 +4,10 @@ import CustomAppBar from '@/pages/components/Appbar';
 import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Footer from '@/pages/components/Footer';
-import NotificationPermissionBanner from '@/pages/components/NotificationPermissionBanner';
+import FcmManager from '@/pages/components/FcmManager';
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { MAIN_BG_COLOR } from '@/pages/lib/constants';
+import { MAIN_BG_COLOR, mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -20,22 +20,33 @@ import {
 import { useUserContext } from '@/pages/lib/UserContext';
 import { deleteCategory } from '@/pages/lib/utils';
 import { layoutClasses } from '@/styles/classMaps/components/layout';
-import { Alert, Box, Snackbar } from '@mui/material';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { fontClassName } from '@/styles/theme';
+import { Box, Snackbar, Typography } from '@mui/material';
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
+
+const snackbarIcon = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertTriangle,
+};
 
 type SnackbarSeverity = 'success' | 'error' | 'warning';
 
 interface LayoutProps {
   children: ReactNode;
   handleHeaderBackButton?: () => void;
-  showSearch?: boolean;
+  showHomeHeader?: boolean;
+  onHomeFilterClick?: () => void;
 }
 
 export default function Layout({
   children,
   handleHeaderBackButton,
-  showSearch = false,
+  showHomeHeader = false,
+  onHomeFilterClick,
 }: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
@@ -71,16 +82,28 @@ export default function Layout({
     <Box className={layoutClasses.main[platform]}>
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
-        showSearch={showSearch}
+        showHomeHeader={showHomeHeader}
+        onHomeFilterClick={onHomeFilterClick}
         setDeleteCategoriesModal={setDeleteCategoriesModal}
         setEditCategoriesModal={setEditCategoriesModal}
       />
-      <NotificationPermissionBanner />
+      <FcmManager />
       <Box
         component="main"
-        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col justify-between`}
+        className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col`}
       >
-        {children}
+        <Box
+          className="flex-1 flex flex-col w-full"
+          // clearance for the fixed mobile bottom nav (Footer.tsx) so page
+          // content is never hidden behind it, +16px breathing room
+          sx={
+            platform === 'mobile'
+              ? { paddingBottom: `${mobileBottomNavHeight + 16}px` }
+              : undefined
+          }
+        >
+          {children}
+        </Box>
         <Footer />
       </Box>
       {editCategoriesModal.open && (
@@ -172,16 +195,32 @@ export default function Layout({
       )}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={3000}
+        disableWindowBlurListener
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        sx={
+          platform === 'mobile'
+            ? { bottom: `${mobileBottomNavHeight + 8}px !important` }
+            : undefined
+        }
       >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
+        <Box className={snackbarClasses.pill}>
+          {(() => {
+            const Icon = snackbarIcon[snackbar.severity];
+            return (
+              <Icon
+                size={20}
+                className={snackbarClasses.icon[snackbar.severity]}
+              />
+            );
+          })()}
+          <Typography
+            className={`${fontClassName.className} ${snackbarClasses.message}`}
+          >
+            {snackbar.message}
+          </Typography>
+        </Box>
       </Snackbar>
       <ChatWidget />
     </Box>
