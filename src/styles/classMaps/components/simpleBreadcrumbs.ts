@@ -1,16 +1,16 @@
 export const simpleBreadcrumbsClasses = {
   mainBox: {
-    web: 'w-full flex items-center mb-[32px]',
+    web: 'w-full flex items-center mb-[12px]',
     mobile: 'w-full flex items-center',
   },
-  link: 'flex flex-row justify-center items-center gap-1 no-underline mx-2',
+  link: 'flex flex-row justify-center items-center gap-1 no-underline mx-1',
   breadcrumbs: {
-    web: 'flex flex-row',
+    web: 'flex flex-row items-center',
     mobile: 'hidden',
   },
-  text: 'no-underline text-[#303030] text-[16px] leading-[24px] tracking-normal cursor-pointer',
+  text: 'no-underline text-[#8B8A98] text-[13px] leading-[18px] tracking-normal cursor-pointer',
   productName: {
-    web: 'text-[#303030] text-[16px] leading-[30px] tracking-normal font-semibold cursor-pointer',
+    web: 'text-[#20166E] text-[13px] leading-[18px] tracking-normal font-semibold cursor-pointer',
     mobile: 'hidden',
   },
   mt: {

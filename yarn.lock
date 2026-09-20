@@ -5844,6 +5844,11 @@ lru-memoizer@^2.2.0:
     lodash.clonedeep "^4.5.0"
     lru-cache "6.0.0"
 
+lucide-react@^1.23.0:
+  version "1.23.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-1.23.0.tgz#b198ed361405f7f9fe7335168d98315fbede0015"
+  integrity sha512-38BpJcD0JhFosxHApP/BYsBetLpQFRoTRzEzstM/XCc3jsAG7wqaY1lgVwxiUe3xqYE+lNxo2PkCmYwXWrwwIw==
+
 lz-string@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/lz-string/-/lz-string-1.5.0.tgz#c1ab50f77887b712621201ba9fd4e3a6ed099941"

@@ -8,7 +8,7 @@ import {
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import {
   Alert,
@@ -157,7 +157,7 @@ export default function AppVersionAdminPage({
           <Typography
             fontWeight={700}
             fontSize={isMdUp ? 22 : 18}
-            className={interClassname.className}
+            className={fontClassName.className}
           >
             {t('appVersions')}
           </Typography>
@@ -170,7 +170,7 @@ export default function AppVersionAdminPage({
           <Typography
             fontWeight={600}
             fontSize={isMdUp ? 16 : 14}
-            className={interClassname.className}
+            className={fontClassName.className}
           >
             {t('appVersionHardMin')}
           </Typography>
@@ -190,7 +190,7 @@ export default function AppVersionAdminPage({
           <Typography
             fontWeight={600}
             fontSize={isMdUp ? 16 : 14}
-            className={interClassname.className}
+            className={fontClassName.className}
           >
             {t('appVersionSoftMin')}
           </Typography>
@@ -209,7 +209,7 @@ export default function AppVersionAdminPage({
           <Typography
             fontSize={isMdUp ? 13 : 12}
             color="text.secondary"
-            className={interClassname.className}
+            className={fontClassName.className}
             fontStyle="italic"
           >
             {t('appVersionFormatDesc')}
