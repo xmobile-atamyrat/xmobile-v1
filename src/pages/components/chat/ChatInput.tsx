@@ -1,7 +1,8 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import SendIcon from '@mui/icons-material/Send';
+import { fill, hairline, navy } from '@/styles/theme';
 import { Box, CircularProgress, IconButton, TextField } from '@mui/material';
+import { Send } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -47,7 +48,7 @@ const ChatInput = ({ onSendMessage, disabled, isSending }: ChatInputProps) => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        borderTop: '1px solid #E6E6E6',
+        borderTop: `1px solid ${hairline}`,
         backgroundColor: '#fff',
       }}
     >
@@ -73,8 +74,8 @@ const ChatInput = ({ onSendMessage, disabled, isSending }: ChatInputProps) => {
         disabled={disabled || isSending}
         sx={{
           '& .MuiOutlinedInput-root': {
-            borderRadius: '20px',
-            backgroundColor: '#F6F6F6',
+            borderRadius: '999px',
+            backgroundColor: fill,
             border: 'none',
             fontSize: { xs: '13px', sm: '14px' },
             '& fieldset': { border: 'none' },
@@ -89,15 +90,15 @@ const ChatInput = ({ onSendMessage, disabled, isSending }: ChatInputProps) => {
         disabled={!message.trim() || disabled}
         sx={{
           borderRadius: '50%',
-          backgroundColor: '#FF624C',
+          backgroundColor: navy,
           color: '#fff',
-          '&:hover': { backgroundColor: '#FF624C' },
+          '&:hover': { backgroundColor: navy },
           '&.Mui-disabled': { backgroundColor: '#D0D5DD', color: '#fff' },
         }}
       >
-        <SendIcon sx={{ fontSize: { xs: '18px', sm: '20px' } }} />
+        <Send size={18} />
       </IconButton>
-      {isSending && <CircularProgress size={20} sx={{ color: '#FF624C' }} />}
+      {isSending && <CircularProgress size={20} sx={{ color: navy }} />}
     </Box>
   );
 };

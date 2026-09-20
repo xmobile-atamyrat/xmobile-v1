@@ -1,10 +1,18 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
+import AuthBrandPanel from '@/pages/user/components/AuthBrandPanel';
 import { emailCheck } from '@/pages/user/utils';
 import { signinClasses } from '@/styles/classMaps/user/signin';
-import { colors, interClassname, units } from '@/styles/theme';
-import { ArrowBackIos, Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  colors,
+  fontClassName,
+  hairline,
+  muted,
+  navy,
+  red,
+} from '@/styles/theme';
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, UserRound } from 'lucide-react';
 import {
   Box,
   Button,
@@ -54,251 +62,238 @@ export default function Signin() {
     return null;
   }
 
+  // Shared field styling — both inputs render identically (design 52px/radius-12,
+  // hairline border, navy on focus). See XMobile.dc.html:862-865, 2127-2129.
+  const fieldSx = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: '#fff',
+      borderRadius: '12px',
+      height: platform === 'web' ? '52px' : '54px',
+      fontSize: '15px',
+      '& fieldset': { borderColor: hairline, borderWidth: '1.5px' },
+      '&:hover fieldset': { borderColor: navy },
+      '&.Mui-focused fieldset': { borderColor: navy, borderWidth: '1.5px' },
+    },
+    '& .MuiInputBase-input::placeholder': { color: muted, opacity: 1 },
+  };
+
   return (
     <Box className={signinClasses.boxes.page[platform]}>
-      <Link href="/user/sign_in_up">
-        <ArrowBackIos
-          className={`${signinClasses.link[platform]}`}
-          style={{ color: colors.blackText }}
-        />
-      </Link>
-      <Box className={signinClasses.boxes.main[platform]}>
-        <CardMedia
-          component="img"
-          src="/logo/xmobile-processed-logo.png"
-          className={signinClasses.boxes.logo[platform]}
-        />
-        <Box className={signinClasses.boxes.label[platform]}>
+      {platform === 'web' && <AuthBrandPanel />}
+      <Box className={signinClasses.boxes.formPane[platform]}>
+        <Link href="/user" className={signinClasses.backButton[platform]}>
+          <ArrowLeft size={20} color={navy} />
+        </Link>
+        <Box className={signinClasses.boxes.main[platform]}>
+          <CardMedia
+            component="img"
+            src="/logo/xmobile-processed-logo.png"
+            className={signinClasses.boxes.logo[platform]}
+          />
           <Typography
-            color={colors.blackText}
-            variant="h3"
-            className={`${signinClasses.h3[platform]} ${interClassname.className}`}
+            className={`${signinClasses.h3[platform]} ${fontClassName.className}`}
+            style={{ color: colors.blackText }}
           >
             {t('signin')}
           </Typography>
-        </Box>
-        <Paper
-          className={signinClasses.paper[platform]}
-          elevation={0}
-          square={false}
-          component="form"
-          noValidate
-          onSubmit={async (event) => {
-            event.preventDefault();
+          <Typography
+            className={`${signinClasses.subtitle[platform]} ${fontClassName.className}`}
+            style={{ color: muted }}
+          >
+            {platform === 'web' ? (
+              // Mockup:2125 — web moves the sign-up cross-link up under the
+              // title; mobile keeps it in the footer row below the form.
+              <>
+                {`${t('dontHaveAccount')} `}
+                <Link href="/user/signup" className={signinClasses.crossLink}>
+                  {t('createAccount')}
+                </Link>
+              </>
+            ) : (
+              t('signinSubtitle')
+            )}
+          </Typography>
+          <Paper
+            className={signinClasses.paper[platform]}
+            elevation={0}
+            square={false}
+            component="form"
+            noValidate
+            onSubmit={async (event) => {
+              event.preventDefault();
 
-            if (errorMessage) setErrorMessage(undefined);
+              if (errorMessage) setErrorMessage(undefined);
 
-            const formData = new FormData(event.currentTarget);
-            const { email, password } = Object.fromEntries(formData.entries());
+              const formData = new FormData(event.currentTarget);
+              const { email, password } = Object.fromEntries(
+                formData.entries(),
+              );
 
-            const emailMessage = emailCheck(String(email));
-            if (emailMessage) {
-              setErrorMessage(emailMessage);
-              return;
-            }
-            if (!password) {
-              setErrorMessage('errorPasswordInput');
-              return;
-            }
-            try {
-              const {
-                success,
-                data,
-                message,
-              }: ResponseApi<{ accessToken: string; user: User }> = await (
-                await fetch('/api/user/signin', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email, password }),
-                })
-              ).json();
-              if (message != null) {
-                setErrorMessage(message);
-              } else if (success && data != null) {
-                setUser(data.user);
-                setAccessToken(data.accessToken);
-                await fetch('/api/guest/migrate', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${data.accessToken}`,
-                  },
-                  credentials: 'include',
-                });
-                router.push('/');
+              const emailMessage = emailCheck(String(email));
+              if (emailMessage) {
+                setErrorMessage(emailMessage);
+                return;
               }
-            } catch (error) {
-              if (error.name === 'JsonWebTokenError') {
-                console.error((error as Error).message);
-                setErrorMessage('authError');
-              } else setErrorMessage((error as Error).message);
-            }
-          }}
-        >
-          <Box className={signinClasses.boxes.input[platform]}>
-            <Box component="label" className={signinClasses.label[platform]}>
-              <Typography
-                component="span"
-                className={`font-bold ${interClassname.className}`}
-                color={colors.blackText}
+              if (!password) {
+                setErrorMessage('errorPasswordInput');
+                return;
+              }
+              try {
+                const {
+                  success,
+                  data,
+                  message,
+                }: ResponseApi<{ accessToken: string; user: User }> = await (
+                  await fetch('/api/user/signin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                  })
+                ).json();
+                if (message != null) {
+                  setErrorMessage(message);
+                } else if (success && data != null) {
+                  setUser(data.user);
+                  setAccessToken(data.accessToken);
+                  await fetch('/api/guest/migrate', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${data.accessToken}`,
+                    },
+                    credentials: 'include',
+                  });
+                  router.push('/');
+                }
+              } catch (error) {
+                if (error.name === 'JsonWebTokenError') {
+                  console.error((error as Error).message);
+                  setErrorMessage('authError');
+                } else setErrorMessage((error as Error).message);
+              }
+            }}
+          >
+            <Box className={signinClasses.boxes.input[platform]}>
+              <Box
+                component="label"
+                className={`${signinClasses.label[platform]} ${fontClassName.className}`}
+                style={{ color: navy }}
               >
-                {`${t('email')} `}
-              </Typography>
-              <Typography
-                component="span"
-                fontWeight="bold"
-                color={colors.main}
-                className={interClassname.className}
-              >
-                *
-              </Typography>
-            </Box>
-            <TextField
-              fullWidth
-              required
-              placeholder={t('emailPlaceholder')}
-              type="email"
-              name="email"
-              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: '10px',
-                  height: units.inputHeight[platform],
-                  fontSize: units.inputFontSize[platform],
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  '& fieldset': {
-                    borderColor: colors.border[platform],
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  fontSize: units.inputFontSize[platform],
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: colors.placeholder,
-                  opacity: 1,
-                },
-              }}
-            />
-          </Box>
-          <Box className={`${signinClasses.boxes.input[platform]} mt-[25px]`}>
-            <Box component="label" className={signinClasses.label[platform]}>
-              <Typography
-                component="span"
-                className={`font-bold ${interClassname.className}`}
-                color={colors.blackText}
-              >
-                {`${t('password')} `}
-              </Typography>
-              <Typography
-                component="span"
-                fontWeight="bold"
-                color={colors.main}
-                className={interClassname.className}
-              >
-                *
-              </Typography>
-            </Box>
-            <TextField
-              fullWidth
-              required
-              placeholder={t('passwordPlaceholder')}
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              className={`${interClassname.className} ${signinClasses.textField[platform]}`}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'white',
-                  borderRadius: '10px',
-                  height: units.inputHeight[platform],
-                  fontSize: units.inputFontSize[platform],
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  '& fieldset': {
-                    borderColor: colors.border[platform],
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.borderHover[platform],
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  paddingX: '13px',
-                  paddingY: '16px',
-                  fontSize: units.inputFontSize[platform],
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: colors.placeholder,
-                  opacity: 1,
-                },
-              }}
-            />
-          </Box>
-          {errorMessage != null && (
-            <Typography
-              color={colors.blackText}
-              className={`${signinClasses.error[platform]} ${interClassname.className} opacity-85`}
-            >
-              {t(errorMessage)}
-            </Typography>
-          )}
-          <Box className={signinClasses.boxes.links[platform]}>
-            <Box className={signinClasses.boxes.button[platform]}>
-              <Button
+                {t('email')}
+              </Box>
+              <TextField
                 fullWidth
-                variant="contained"
-                size="large"
-                type="submit"
-                disableElevation
-                className={`${signinClasses.buttonSubmit[platform]} ${interClassname.className}`}
-                sx={{
-                  backgroundColor: colors.main,
-                  '&:hover': {
-                    backgroundColor: colors.buttonHoverBg,
-                  },
-                  '&:focus': {
-                    backgroundColor: colors.buttonHoverBg,
-                  },
+                required
+                placeholder={t('emailPlaceholder')}
+                type="email"
+                name="email"
+                className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Mail size={18} color={muted} />
+                    </InputAdornment>
+                  ),
                 }}
-              >
-                {t('signin')}
-              </Button>
+                sx={fieldSx}
+              />
             </Box>
-            <Box className={signinClasses.boxes.text[platform]}>
+            <Box className={signinClasses.boxes.input[platform]}>
+              <Box
+                component="label"
+                className={`${signinClasses.label[platform]} ${fontClassName.className}`}
+                style={{ color: '#4A4959' }}
+              >
+                {t('password')}
+              </Box>
+              <TextField
+                fullWidth
+                required
+                placeholder={t('passwordPlaceholder')}
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock size={18} color={muted} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} color={muted} />
+                        ) : (
+                          <Eye size={18} color={muted} />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                className={`${fontClassName.className} ${signinClasses.textField[platform]}`}
+                sx={fieldSx}
+              />
+            </Box>
+            {errorMessage != null && (
               <Typography
-                className={`${signinClasses.typography} ${interClassname.className}`}
+                className={`${signinClasses.error[platform]} ${fontClassName.className}`}
+                style={{ color: red }}
               >
-                {t('dontHaveAccount')}
+                {t(errorMessage)}
               </Typography>
-              <Button
-                className={`${interClassname.className} ${signinClasses.buttonRedirect}`}
-                onClick={() => router.push('/user/signup')}
+            )}
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              type="submit"
+              disableElevation
+              className={`${signinClasses.buttonSubmit[platform]} ${fontClassName.className}`}
+              sx={{
+                backgroundColor: colors.main,
+                '&:hover': { backgroundColor: colors.buttonHoverBg },
+                '&:focus': { backgroundColor: colors.buttonHoverBg },
+              }}
+            >
+              {t('signin')}
+            </Button>
+            <Box className={signinClasses.divider}>
+              <span className={signinClasses.dividerLine} />
+              <span
+                className={`${signinClasses.dividerText} ${fontClassName.className}`}
               >
-                {t('signup')}
-              </Button>
+                {t('or')}
+              </span>
+              <span className={signinClasses.dividerLine} />
             </Box>
-          </Box>
-        </Paper>
+            <Button
+              fullWidth
+              disableRipple
+              onClick={() => router.push('/')}
+              className={`${signinClasses.guestButton} ${fontClassName.className}`}
+            >
+              <UserRound size={18} color={navy} />
+              {t('continueAsGuest')}
+            </Button>
+          </Paper>
+        </Box>
+        <Box className={signinClasses.boxes.text[platform]}>
+          <Typography
+            className={`${signinClasses.typography} ${fontClassName.className}`}
+            style={{ color: muted }}
+          >
+            {t('dontHaveAccount')}
+          </Typography>
+          <Button
+            className={`${fontClassName.className} ${signinClasses.buttonRedirect}`}
+            style={{ color: navy }}
+            onClick={() => router.push('/user/signup')}
+          >
+            {t('signup')}
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

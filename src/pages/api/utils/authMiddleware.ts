@@ -1,3 +1,4 @@
+import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import { ACCESS_SECRET, generateTokens } from '@/pages/api/utils/tokenUtils';
 import {
   AUTH_REFRESH_COOKIE_NAME,
@@ -86,7 +87,7 @@ const withAuth = (
 
           res.setHeader(
             'Set-Cookie',
-            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
           );
           res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           const originalResponse = await handler(

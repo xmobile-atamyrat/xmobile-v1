@@ -87,7 +87,7 @@ export function useProductFilters(
 
       router.push(
         {
-          pathname: router.pathname === '/' ? '/product' : router.pathname, // Redirect home to /product when filters applied
+          pathname: router.pathname, // Stay on the current page (home filters its own grid)
           query,
         },
         undefined,

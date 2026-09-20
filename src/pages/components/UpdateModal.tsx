@@ -1,9 +1,10 @@
-import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
+import { buttonClasses } from '@/styles/classMaps/components/button';
+import { fontClassName, ink, muted, navy } from '@/styles/theme';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Typography from '@mui/material/Typography';
+import { Download } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface UpdateModalProps {
@@ -34,7 +35,7 @@ export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
       onClose={isHard ? undefined : onDismiss}
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: '16px',
           p: 1,
           maxWidth: 340,
           textAlign: 'center',
@@ -43,43 +44,48 @@ export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
     >
       <DialogContent>
         <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-          <SystemUpdateAltIcon sx={{ fontSize: 56, color: '#d32f2f' }} />
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: '999px',
+              bgcolor: '#F0EEF9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Download size={28} color={navy} />
+          </Box>
 
-          <Typography variant="h6" fontWeight={700}>
+          <Typography
+            className={fontClassName.className}
+            sx={{ fontSize: '16px', fontWeight: 700, color: ink }}
+          >
             {isHard ? t('hardUpdate') : t('softUpdate')}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            className={fontClassName.className}
+            sx={{ fontSize: '13px', lineHeight: 1.5, color: muted }}
+          >
             {isHard ? t('hardUpdateDescription') : t('softUpdateDescription')}
           </Typography>
 
-          <Button
-            variant="contained"
-            fullWidth
+          <button
             onClick={handleUpdate}
-            sx={{
-              backgroundColor: '#d32f2f',
-              '&:hover': { backgroundColor: '#b71c1c' },
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-            }}
+            className={`${fontClassName.className} ${buttonClasses.primary.mobile}`}
           >
             {t('update')}
-          </Button>
+          </button>
 
           {!isHard && (
-            <Button
-              variant="text"
-              fullWidth
+            <button
               onClick={onDismiss}
-              sx={{
-                color: 'text.secondary',
-                textTransform: 'none',
-              }}
+              className={`${fontClassName.className} ${buttonClasses.textLink} w-full`}
             >
               {t('remindLater')}
-            </Button>
+            </button>
           )}
         </Box>
       </DialogContent>

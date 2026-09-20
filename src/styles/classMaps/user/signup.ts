@@ -1,66 +1,84 @@
 export const signupClasses = {
   boxes: {
     page: {
-      web: 'w-full h-full flex flex-col items-center p-0',
-      mobile: 'w-full h-full flex flex-col justify-start',
+      // Mockup XMobile.dc.html:2143-2163 mirrors sign-in: form pane on the
+      // left, brand panel on the right. Not wrapped in <Layout>, so this page
+      // owns its own viewport height.
+      web: 'w-full min-h-screen flex flex-row bg-white',
+      mobile: 'w-full min-h-full flex flex-col bg-white px-7 pt-3 pb-10',
+    },
+    formPane: {
+      web: 'flex-1 flex flex-col items-center justify-center p-[48px] relative',
+      mobile: 'contents',
     },
     logo: {
       web: 'w-0',
-      mobile: 'w-[230px] mb-[30px] mt-[60px]',
+      mobile: 'w-[132px] mb-7',
     },
     main: {
-      web: 'w-[clamp(590px,_31vw,_1500px)] h-auto flex flex-col mt-[75px] items-center justify-center',
-      mobile: 'w-full flex flex-col items-center',
-    },
-    label: {
-      web: 'flex mb-[40px]',
-      mobile: 'flex mb-[18px]',
+      // 400px column (mockup:2144) widened to 460px: our form keeps all five
+      // real fields, and the name/phone row splits in two at this width.
+      web: 'w-full max-w-[460px] flex flex-col',
+      mobile: 'w-full flex flex-col mt-2',
     },
     input: {
-      web: 'w-full h-[100px]',
-      mobile: 'w-full h-[75px]',
+      web: 'w-full mb-4 min-w-0',
+      mobile: 'w-full mb-4',
+    },
+    // Mockup:2147 pairs two short fields on one row; ours are name + phone.
+    // `items-end` because "Номер телефона (необязательно)" wraps to two lines
+    // at this column width — without it the phone input sits a line lower than
+    // the name input. Bottom-aligning the cells keeps the two inputs level.
+    inputRow: {
+      web: 'w-full grid grid-cols-2 gap-[14px] items-end',
+      mobile: 'contents',
     },
     inputs: {
-      web: 'min-h-[473px]',
-      mobile: 'flex flex-col w-full justify-center items-center',
+      web: 'w-full',
+      mobile: 'flex flex-col w-full',
     },
     text: {
-      web: 'flex flex-row justify-center items-center mt-[26px]',
-      mobile: 'hidden',
+      // Web shows "Already have one? Sign in" under the title (mockup:2146).
+      web: 'hidden',
+      mobile: 'w-full flex flex-row justify-center items-center mt-auto pt-6',
     },
-    button:
-      'flex flex-col gap-2 relative min-h-[70px] justify-center items-center',
     links: {
-      web: 'w-full flex flex-col mt-[50px] mb-[20px]',
-      mobile: 'w-full flex flex-col mt-[40px]',
+      web: 'w-full flex flex-col mt-4',
+      mobile: 'w-full flex flex-col mt-4',
     },
+  },
+  backButton: {
+    web: 'absolute left-6 top-6 w-10 h-10 rounded-full bg-fill flex items-center justify-center no-underline',
+    mobile:
+      'w-10 h-10 rounded-full bg-fill flex items-center justify-center no-underline mb-4',
   },
   paper: {
-    web: `flex flex-col w-full h-auto rounded-[25px] px-[36px] pt-[48px] mb-[25px]`,
-    mobile: 'flex flex-col w-[95%] h-[450px] rounded-[16px] p-2 gap-1',
+    web: 'flex flex-col w-full bg-transparent',
+    mobile: 'flex flex-col w-full bg-transparent',
   },
   buttonSubmit: {
-    web: `normal-case font-bold w-[512px] min-h-[78px] text-[20px] leading-[30px] rounded-[10px] px-[179px] py-[24px]`,
-    mobile: `normal-case font-[500] w-full h-[48px] rounded-[12px] text-[16px] leading-[24px] tracking-[0]`,
-  },
-  buttonRedirect: 'normal-case px-2 text-[#1b1b1b] font-bold text-[16px]',
-  link: {
-    web: 'absolute left-4 top-4 font-base font-light text-[36px] no-underline',
+    web: 'normal-case font-bold w-full h-[54px] rounded-[14px] text-[16px] mt-2',
     mobile:
-      'absolute left-4 top-4 font-base font-light text-[24px] no-underline',
+      'normal-case font-semibold w-full h-[54px] rounded-[15px] text-[16px] mt-2',
   },
-  label: {
-    web: 'mb-[22px] text-[20px] leading-[30px] tracking-normal',
-    mobile: '',
-  },
+  buttonRedirect: 'normal-case px-1 font-bold text-[14px] min-w-0',
   h3: {
-    web: 'font-bold text-[56px] leading-[68px] tracking-[0]',
-    mobile: 'font-bold text-[24px] leading-[100%] tracking-[0]',
+    web: 'font-extrabold text-[28px] leading-[34px] tracking-[-0.02em] mb-2',
+    mobile: 'font-bold text-[28px] leading-[34px] tracking-[-0.02em] mb-2',
   },
-  typography: 'normal-case text-[16px]',
+  subtitle: {
+    web: 'text-[15px] leading-[1.5] mb-6',
+    mobile: 'text-[15px] leading-[1.5] mb-7',
+  },
+  crossLink: 'text-[15px] font-bold text-navy no-underline hover:underline',
+  label: {
+    web: 'mb-2 text-[12px] font-semibold w-full',
+    mobile: 'mb-2 text-[12px] font-semibold',
+  },
+  typography: 'normal-case text-[14px]',
   error: {
-    web: 'flex justify-end text-[16px] mb-[30px] mt-[-35px]',
-    mobile: 'flex  mb-[10px] mt-[-25px] justify-center text-[14px]',
+    web: 'flex text-[14px] mt-3',
+    mobile: 'flex text-[14px] mt-3',
   },
   tooltip: {
     web: 'w-[330px] text-[13px]',

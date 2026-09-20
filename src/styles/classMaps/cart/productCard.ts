@@ -1,60 +1,76 @@
 export const cartProductCardClasses = {
+  // Spec 1589: white card, hairline border, radius 16, 18px padding — replaces
+  // the old table row (the PRODUCT/PRICE/QUANTITY/TOTAL header is hidden now).
   card: {
-    web: 'w-[95vw] min-w-[850px] h-[13.5vw] flex flex-row mt-[3vw] border border-transparent hover:border-[1px] hover:border-[#30303025] overflow-visible',
-    mobile: 'flex flex-row w-[88.7vw] min-h-[110px] gap-[12px]',
+    web: 'w-full flex flex-row bg-white border border-hairline rounded-2xl p-[18px] hover:shadow-[0_6px_20px_rgba(20,16,60,0.05)] transition-shadow duration-200',
+    mobile:
+      'flex flex-row w-full min-h-[110px] gap-[12px] bg-white rounded-2xl p-3 mb-[10px] shadow-[0_2px_10px_rgba(20,16,60,0.04)]',
   },
   boxes: {
     main: {
-      web: 'relative h-full w-full flex flex-row items-center',
-      mobile: 'relative h-full w-full flex flex-row items-start',
+      web: 'relative w-full flex flex-row items-center gap-[18px] cursor-pointer',
+      mobile: 'relative h-full w-full flex flex-row items-start cursor-pointer',
     },
     detail: {
-      web: 'flex flex-col justify-center items-start w-[24vw] ml-[1vw]',
-      mobile: 'flex flex-col justify-start items-start w-[260px] h-auto',
+      web: 'flex flex-col justify-center items-start w-full min-w-0',
+      // no fixed width: variant tags carry the full product name, so this column
+      // has to wrap to whatever the card leaves it (~208px at 360, ~180 at 320)
+      mobile: 'flex flex-col justify-start items-start w-full min-w-0 h-auto',
     },
     img: {
-      web: 'flex w-[14vw] h-[11vw] justify-center border-[1px] border-[#f0f0f0] items-center ml-[3vw] flex-shrink-0',
+      web: 'flex w-24 h-24 justify-center bg-fill rounded-xl items-center flex-shrink-0 overflow-hidden',
       mobile:
-        'flex min-w-[88px] h-[110px] rounded-[12px] border-[1px] border-[#f5f5f5] justify-center items-center',
+        'flex min-w-[84px] h-[84px] rounded-xl bg-[#F5F5F8] justify-center items-center flex-shrink-0',
     },
   },
   typo: {
-    web: 'text-[clamp(16px,_1.041vw,_20px)] font-semibold leading-[30px] mt-[16px] whitespace-normal break-words',
-    mobile: 'text-[14px] font-medium text-[#1b1b1b]',
+    web: 'text-[16px] font-bold leading-[1.35] mt-[2px] mb-[4px] whitespace-normal break-words line-clamp-2 text-ink',
+    mobile: 'text-[14px] font-semibold leading-[1.3] text-[#17161D]',
   },
+  // Web hides the unit price: the right-hand column (AddToCart, cartAction
+  // "delete") owns the money for this line so the qty-aware total is the only
+  // number shown, matching the mockup's single 18px navy price.
   typo2: {
-    web: 'font-regular text-[clamp(16px,_1vw,_20px)] leading-[30px] tracking-normal my-auto w-[14vw]',
+    web: 'hidden',
     mobile:
-      'font-medium text-[16px] leading-full tracking-normal text-[#1b1b1b] mt-[5px]',
+      'font-bold text-[16px] leading-none tracking-normal text-[#20166E] mt-[10px]',
+  },
+  priceUnit: {
+    web: 'hidden',
+    mobile: 'text-[10px] font-normal text-[#8B8A98] ml-1',
   },
   typo3: {
     web: 'flex justify-center text-center text-xl font-medium',
     mobile: 'flex justify-center text-center text-lg font-medium',
   },
+  // Spec 1589 shows a brand eyebrow; the cart API returns a bare `Product`
+  // (no brand relation), so the already-fetched category name fills the slot.
   categoryName: {
-    web: 'font-regular text-[14px] leading-[20px] tracking-normal text-[#303030]',
+    web: 'font-semibold text-[11px] leading-[16px] uppercase tracking-[0.08em] text-muted',
     mobile: 'hidden',
   },
   circProgress: {
-    web: 'w-[30px] h-[30px] mr-[190px]',
+    web: 'w-[24px] h-[24px] mt-2',
     mobile: 'w-[24px] h-[24px]',
   },
   cardActions: 'w-full flex justify-center items-end',
   cardMedia: {
-    web: 'h-[7vw] max-h-[120px] w-auto p-0 rounded-[5px] justify-center',
-    mobile: 'h-[70px] w-auto max-w-[88px]',
+    web: 'w-full h-full object-contain p-1',
+    mobile: 'h-[70px] w-auto max-w-[84px] object-contain',
   },
   info: {
-    web: 'flex w-full h-[294px] items-center',
-    mobile:
-      'ml-[8vw] h-auto min-w-[280px] flex flex-row flex-wrap justify-between',
+    web: 'flex flex-1 min-w-0 flex-row items-center justify-between gap-[18px]',
+    // column, not flex-wrap: the details used to be pushed onto their own line by
+    // a fixed 260px width, which overflowed narrow screens. Stacking is explicit.
+    mobile: 'ml-3 h-auto min-w-0 flex-1 flex flex-col justify-start gap-2',
   },
   divider: {
     web: 'hidden',
-    mobile: 'my-[16px] color-[#afafaf] h-[1px] opacity-30',
+    mobile: 'hidden',
   },
   det2: {
-    web: 'flex flex-row m-0 p-0',
-    mobile: 'flex flex-col',
+    web: 'flex flex-col flex-1 min-w-0 m-0 p-0',
+    // min-w-0 lets this shrink below its text's min-content width
+    mobile: 'flex flex-col min-w-0 w-full',
   },
 };

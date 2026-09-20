@@ -12,7 +12,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { homePageClasses } from '@/styles/classMaps';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
@@ -140,7 +140,7 @@ function CategoryTreeRow({
         }}
       >
         <Typography
-          className={interClassname.className}
+          className={fontClassName.className}
           sx={{ flex: 1, minWidth: 0, fontWeight: depth === 0 ? 600 : 400 }}
           fontSize={15}
         >
@@ -295,7 +295,7 @@ export default function CategoryHierarchyPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.push('/user/sign_in_up');
+      router.push('/user/signin');
       return;
     }
     if (!['ADMIN', 'SUPERUSER'].includes(user.grade)) {
@@ -447,7 +447,7 @@ export default function CategoryHierarchyPage() {
             </IconButton>
             <Box className="flex w-full justify-center">
               <Typography
-                className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+                className={`${fontClassName.className} ${homePageClasses.categoriesText[platform]}`}
               >
                 {t('categoryHierarchy')}
               </Typography>
@@ -482,7 +482,7 @@ export default function CategoryHierarchyPage() {
     );
   } else if (loadError) {
     treePanel = (
-      <Typography color="error" className={interClassname.className}>
+      <Typography color="error" className={fontClassName.className}>
         {loadError}
       </Typography>
     );
@@ -499,7 +499,7 @@ export default function CategoryHierarchyPage() {
       >
         {categories.length === 0 ? (
           <Typography
-            className={interClassname.className}
+            className={fontClassName.className}
             sx={{ p: 2 }}
             color="text.secondary"
           >
@@ -554,7 +554,7 @@ export default function CategoryHierarchyPage() {
           </IconButton>
           <Box className="flex w-full justify-center">
             <Typography
-              className={`${interClassname.className} ${homePageClasses.categoriesText[platform]}`}
+              className={`${fontClassName.className} ${homePageClasses.categoriesText[platform]}`}
             >
               {t('categoryHierarchy')}
             </Typography>
@@ -568,7 +568,7 @@ export default function CategoryHierarchyPage() {
           <Typography
             fontWeight={700}
             fontSize={isMdUp ? 22 : 18}
-            className={interClassname.className}
+            className={fontClassName.className}
           >
             {t('categoryHierarchy')}
           </Typography>
@@ -577,7 +577,7 @@ export default function CategoryHierarchyPage() {
         <Typography
           variant="body2"
           color="text.secondary"
-          className={interClassname.className}
+          className={fontClassName.className}
           sx={{ lineHeight: 1.5 }}
         >
           {t('categoryHierarchySubtitle')}
@@ -595,14 +595,14 @@ export default function CategoryHierarchyPage() {
         maxWidth="sm"
         PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        <DialogTitle className={interClassname.className}>
+        <DialogTitle className={fontClassName.className}>
           {t('changeCategoryParent')}
         </DialogTitle>
         <DialogContent>
           <Typography
             variant="body2"
             color="text.secondary"
-            className={interClassname.className}
+            className={fontClassName.className}
             sx={{ mb: 2 }}
           >
             {parentDialogCat ? parseName(parentDialogCat.name, locale) : ''}
@@ -655,7 +655,7 @@ export default function CategoryHierarchyPage() {
         <Alert
           severity={snackbarSeverity}
           onClose={() => setSnackbarOpen(false)}
-          className={interClassname.className}
+          className={fontClassName.className}
         >
           {snackbarMessage}
         </Alert>

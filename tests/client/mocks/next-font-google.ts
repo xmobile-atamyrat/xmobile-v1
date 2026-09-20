@@ -5,3 +5,10 @@ export function Inter() {
     style: { fontFamily: 'Inter, sans-serif' },
   };
 }
+
+export function Onest() {
+  return {
+    className: 'onest-mock',
+    style: { fontFamily: 'Onest, sans-serif' },
+  };
+}

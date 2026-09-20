@@ -54,6 +54,7 @@ describe('Footer navigation (web category links)', () => {
       setSelectedProduct: vi.fn(),
       searchKeyword: undefined,
       setSearchKeyword: vi.fn(),
+      colorsMap: new Map(),
     });
 
     vi.mocked(useUserContext).mockReturnValue({

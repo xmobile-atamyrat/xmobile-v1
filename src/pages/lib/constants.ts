@@ -9,6 +9,35 @@ export const REFRESH_TOKEN_EXPIRY = '10y';
 export const ACCESS_TOKEN_EXPIRY = '8h';
 export const REFRESH_TOKEN_EXPIRY_COOKIE = 60 * 60 * 24 * 365 * 10; // 10 years
 export const GUEST_SESSION_EXPIRY_COOKIE = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
+// Default lifetime for client-written cookies (currently NEXT_LOCALE). Without
+// one the browser makes them session cookies, so a language choice was lost on
+// every app restart.
+export const COOKIE_EXPIRY_SECONDS = REFRESH_TOKEN_EXPIRY_COOKIE; // 10 years
+
+// Single source of truth for the store's phone lines, previously copy-pasted into
+// Footer, Appbar, the chat header and the support page — each with its own display
+// format. `dial` stays unspaced (spaces in a tel: URI are unreliable on some Android
+// dialers); `display` is the grouped form shown to the user. `labelKey` says which
+// line is which, so the support page stops printing "Телефон" three times.
+export const SUPPORT_PHONES = [
+  {
+    labelKey: 'supportPhoneMainLabel',
+    dial: '+99361004933',
+    display: '+993 61 00 49 33',
+  },
+  {
+    labelKey: 'supportPhoneAltLabel',
+    dial: '+99371211717',
+    display: '+993 71 21 17 17',
+  },
+  {
+    labelKey: 'supportPhoneStoreLabel',
+    dial: '+99342230620',
+    display: '+993 422 30 620',
+  },
+] as const;
+
+export const SUPPORT_EMAIL = 'xmobile.tkm@gmail.com';
 
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
@@ -19,6 +48,11 @@ export const CHAT_MESSAGES_PAGE_SIZE = 50;
 export const appBarHeight = 64;
 
 export const mobileAppBarHeight = 56;
+
+// Single source of truth for the fixed bottom nav's height, so the two
+// sticky bars that stack above it (CheckoutSummary, AddToCart buy bar)
+// reserve clearance from one number instead of three independent guesses.
+export const mobileBottomNavHeight = 64;
 
 export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
@@ -35,9 +69,10 @@ export const MAIN_BG_COLOR = '#FFF';
 
 export const DEFAULT_MUI_COLOR = '#1976d2';
 
-export const LOGO_COLOR = '#1976d2';
+export const LOGO_COLOR = '#20166E';
 export const LOGO_COLOR_LIGHT = '#1d72c2';
 export const LOGO_COLOR_ORANGE = '#ff6f00';
+export const RED_COLOR = '#E41E2B';
 /**
  * #221765 -> original
  * #4B4090
@@ -128,6 +163,10 @@ export const SORT_OPTIONS = {
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;
+
+// Page size for the product grid. Shared so the web pagination control derives
+// the same page count the API pages by — see api/product/index.page.ts.
+export const PRODUCTS_PER_PAGE = 20;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart

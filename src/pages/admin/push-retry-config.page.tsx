@@ -8,7 +8,7 @@ import {
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { colors, interClassname } from '@/styles/theme';
+import { colors, fontClassName } from '@/styles/theme';
 import ReplayIcon from '@mui/icons-material/Replay';
 import {
   Alert,
@@ -144,7 +144,7 @@ export default function PushRetryConfigPage({ initialConfig }: Props) {
       <Typography
         fontWeight={600}
         fontSize={isMdUp ? 16 : 14}
-        className={interClassname.className}
+        className={fontClassName.className}
       >
         {label}
       </Typography>
@@ -225,7 +225,7 @@ export default function PushRetryConfigPage({ initialConfig }: Props) {
           <Typography
             fontWeight={700}
             fontSize={isMdUp ? 22 : 18}
-            className={interClassname.className}
+            className={fontClassName.className}
           >
             {t('pushRetryConfig')}
           </Typography>
@@ -263,7 +263,7 @@ export default function PushRetryConfigPage({ initialConfig }: Props) {
           <Typography
             fontSize={isMdUp ? 13 : 12}
             color="text.secondary"
-            className={interClassname.className}
+            className={fontClassName.className}
             fontStyle="italic"
           >
             {t('pushRetryDesc')}
