@@ -35,6 +35,9 @@ interface SelectCellProps {
   onCreate?: (name: string) => Promise<string | null>;
   createLabel?: string;
   createPlaceholder?: string;
+  // Wide enough for a category path by default. Columns holding short labels
+  // pass something narrower so the table does not carry dead space.
+  minWidth?: number;
 }
 
 // Sentinel for the "create a new one" row. Real ids are uuids, so this cannot
@@ -57,6 +60,7 @@ function SelectCell({
   onCreate,
   createLabel,
   createPlaceholder,
+  minWidth = 200,
 }: SelectCellProps) {
   const [mode, setMode] = useState<'idle' | 'select' | 'create'>('idle');
   const [draftName, setDraftName] = useState('');
@@ -96,7 +100,7 @@ function SelectCell({
       <TextField
         autoFocus
         size="small"
-        sx={{ minWidth: 200 }}
+        sx={{ minWidth }}
         placeholder={createPlaceholder}
         value={draftName}
         onChange={(e) => setDraftName(e.target.value)}
@@ -122,7 +126,7 @@ function SelectCell({
         sx={{
           cursor: 'pointer',
           // Matches the dropdown's width so the column does not jump on click.
-          minWidth: 200,
+          minWidth,
           color: name == null ? 'text.disabled' : 'text.primary',
           fontWeight: dirty ? 600 : 400,
           '&:hover': { textDecoration: 'underline' },
@@ -134,7 +138,7 @@ function SelectCell({
   }
 
   return (
-    <FormControl size="small" sx={{ minWidth: 200 }}>
+    <FormControl size="small" sx={{ minWidth }}>
       <Select
         defaultOpen
         value={value ?? ''}

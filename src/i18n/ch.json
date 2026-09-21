@@ -643,5 +643,22 @@
   "lastEdited": "Üýtgedilen",
   "selectCategoryFirst": "Ilki haryt kategoriýasyny saýlaň",
   "takenBy": "eýesi",
-  "noPricesInCategory": "Bu kategoriýada baha ýok"
+  "noPricesInCategory": "Bu kategoriýada baha ýok",
+  "rate": "汇率",
+  "allRates": "所有汇率",
+  "addRate": "添加汇率",
+  "rateName": "汇率名称",
+  "defaultRate": "默认汇率",
+  "confirmRateRecalculate": "按此汇率重新计算 {count} 个价格？",
+  "assignToRate": "指定汇率",
+  "confirmAssignToRate": "将筛选出的 {count} 个价格移至「{name}」汇率？",
+  "confirmDeleteRate": "删除「{name}」汇率？其价格将移至默认汇率。",
+  "deleteRate": "删除汇率",
+  "rateCreated": "汇率已添加",
+  "rateCreateFailed": "添加汇率失败",
+  "rateDeleted": "汇率已删除",
+  "rateDeleteFailed": "删除汇率失败",
+  "pricesAssigned": "价格已移至该汇率",
+  "assignPricesError": "价格移动失败",
+  "confirmDefaultRateRecalculate": "按此汇率重新计算全部 {count} 个价格？所有价格将回到默认汇率。"
 }
