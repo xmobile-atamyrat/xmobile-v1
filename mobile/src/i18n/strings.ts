@@ -26,6 +26,8 @@ export type Strings = {
     retry: string;
     errorTitle: string;
     errorBody: string;
+    certificateBody: string;
+    vpnHint: string;
     supportLink: string;
   };
 };
@@ -65,6 +67,10 @@ const tk: Strings = {
     retry: 'Täzeden synanyş',
     errorTitle: 'Näsazlyk ýüze çykdy',
     errorBody: 'Bu sahypany häzir ýükläp bolmady. Birazdan täzeden synanyşyň.',
+    certificateBody:
+      'Howpsuz baglanyşyk gurnap bolmady. Toruňyz şifrlenen maglumaty barlaýan bolmagy mümkin — bu köplenç köpçülik ýa-da iş Wi-Fi torlarynda bolýar.',
+    vpnHint:
+      'Eger VPN ýa-da gizlin geçiriji ulanýan bolsaňyz, ony öçürip görüň.',
     supportLink: 'Goldaw gullugyna ýüz tutuň',
   },
 };
@@ -104,6 +110,10 @@ const ru: Strings = {
     errorTitle: 'Произошла ошибка',
     errorBody:
       'Не удалось загрузить эту страницу. Попробуйте ещё раз чуть позже.',
+    certificateBody:
+      'Не удалось установить защищённое соединение. Возможно, ваша сеть проверяет зашифрованный трафик — это часто бывает в публичных и корпоративных сетях Wi-Fi.',
+    vpnHint:
+      'Если вы используете VPN или «Частный узел», попробуйте отключить его.',
     supportLink: 'Обратиться в поддержку',
   },
 };
@@ -142,6 +152,9 @@ const en: Strings = {
     retry: 'Try again',
     errorTitle: 'Something went wrong',
     errorBody: 'This page could not be loaded right now. Try again shortly.',
+    certificateBody:
+      'A secure connection could not be established. Your network may be inspecting encrypted traffic — this is common on public and corporate Wi-Fi.',
+    vpnHint: 'If you are using a VPN or Private Relay, try turning it off.',
     supportLink: 'Contact support',
   },
 };
@@ -181,6 +194,9 @@ const tr: Strings = {
     errorTitle: 'Bir sorun oluştu',
     errorBody:
       'Bu sayfa şu anda yüklenemedi. Lütfen biraz sonra tekrar deneyin.',
+    certificateBody:
+      'Güvenli bağlantı kurulamadı. Ağınız şifreli trafiği inceliyor olabilir — bu, genel ve kurumsal Wi-Fi ağlarında sık görülür.',
+    vpnHint: 'VPN veya Özel Dolaşım kullanıyorsanız, kapatmayı deneyin.',
     supportLink: 'Destek ekibine başvurun',
   },
 };
