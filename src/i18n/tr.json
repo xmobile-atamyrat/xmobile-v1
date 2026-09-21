@@ -642,5 +642,22 @@
   "lastEdited": "Son düzenleme",
   "selectCategoryFirst": "Önce bir ürün kategorisi seçin",
   "takenBy": "sahibi",
-  "noPricesInCategory": "Bu kategoride fiyat yok"
+  "noPricesInCategory": "Bu kategoride fiyat yok",
+  "rate": "Kur",
+  "allRates": "Tüm kurlar",
+  "addRate": "Kur ekle",
+  "rateName": "Kur adı",
+  "defaultRate": "Varsayılan kur",
+  "confirmRateRecalculate": "{count} fiyat bu kura göre yeniden hesaplansın mı?",
+  "assignToRate": "Kura ata",
+  "confirmAssignToRate": "Filtrelenen {count} fiyat «{name}» kuruna taşınsın mı?",
+  "confirmDeleteRate": "«{name}» kuru silinsin mi? Fiyatları varsayılan kura taşınır.",
+  "deleteRate": "Kuru sil",
+  "rateCreated": "Kur eklendi",
+  "rateCreateFailed": "Kur eklenemedi",
+  "rateDeleted": "Kur silindi",
+  "rateDeleteFailed": "Kur silinemedi",
+  "pricesAssigned": "Fiyatlar kura taşındı",
+  "assignPricesError": "Fiyatlar taşınamadı",
+  "confirmDefaultRateRecalculate": "Tüm {count} fiyat bu kura göre yeniden hesaplansın mı? Tüm fiyatlar varsayılan kura döner."
 }

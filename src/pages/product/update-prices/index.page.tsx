@@ -8,6 +8,7 @@ import {
   collectCategorySubtreeIds,
   debounce,
   filterPricesByCategories,
+  filterPricesByRate,
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
@@ -22,6 +23,7 @@ import {
   PRICE_MANAT_IDX,
   PRICE_NAME_IDX,
   PRICE_OUT_OF_STOCK_IDX,
+  PRICE_RATE_IDX,
   PRICE_UPDATED_IDX,
   PriceSortKey,
   processPrices,
@@ -34,6 +36,7 @@ import {
   pricesFromUsd,
   roundToDisplayTmt,
 } from '@/pages/lib/priceDisplay';
+import { findDefaultRate, rateForPrice } from '@/lib/dollarRates';
 import {
   Alert,
   Box,
@@ -45,6 +48,11 @@ import {
   MenuItem,
   Select,
   Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Table,
   TableBody,
   TableCell,
@@ -82,6 +90,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
+// Sentinel for the filter dropdown's "create a rate" row. Real values are
+// stringified ids, so this cannot collide with one.
+const ADD_RATE_OPTION = '__add_rate__';
+
 export default function UpdatePrices() {
   const router = useRouter();
   const theme = useTheme();
@@ -100,7 +112,18 @@ export default function UpdatePrices() {
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
-  const [dollarRate, setDollarRate] = useState(0);
+  const [rates, setRates] = useState<DollarRate[]>([]);
+  // '' is "all rates"; otherwise the stringified id of the rate being filtered
+  // to, which is also the rate the editor above the table edits.
+  const [rateFilter, setRateFilter] = useState('');
+  const [rateDraft, setRateDraft] = useState('');
+  const [showRateConfirm, setShowRateConfirm] = useState(false);
+  const [showAddRateDialog, setShowAddRateDialog] = useState(false);
+  const [showDeleteRateDialog, setShowDeleteRateDialog] = useState(false);
+  const [newRateName, setNewRateName] = useState('');
+  const [newRateValue, setNewRateValue] = useState('');
+  const [bulkRateId, setBulkRateId] = useState('');
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -115,12 +138,44 @@ export default function UpdatePrices() {
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
 
+  // The rate the filter is pinned to, or null for "all rates".
+  const selectedRate = useMemo(
+    () => rates.find((rate) => String(rate.id) === rateFilter) ?? null,
+    [rates, rateFilter],
+  );
+  // What the editor above the table edits: the filtered rate, or the default
+  // when no filter is set, so the control is never pointed at nothing.
+  const editingRate = selectedRate ?? findDefaultRate(rates);
+  // Options for the per-row picker and the bulk control. The number rides in the
+  // label because an admin picking a rate is picking a number, not a word.
+  const rateOptions = useMemo(
+    () =>
+      rates.map((rate) => ({
+        id: String(rate.id),
+        name: `${rate.name} (${rate.rate})`,
+      })),
+    [rates],
+  );
+  // How many prices the editor is about to rewrite, shown in its confirmation.
+  // The default rate rewrites the whole table, not just the rows filed under it.
+  const editingRateCount = useMemo(
+    () =>
+      editingRate?.isDefault
+        ? allPrices.length
+        : filterPricesByRate(allPrices, editingRate).length,
+    [allPrices, editingRate],
+  );
+
   // Flattened category tree (id + localized name + depth), shared by the filter,
   // the per-row pickers, and the AddPrice dialog.
   const flattenedCats = useMemo(
     () => flattenCategories(categories, router.locale ?? 'tk'),
     [categories, router.locale],
   );
+
+  useEffect(() => {
+    setRateDraft(editingRate == null ? '' : String(editingRate.rate));
+  }, [editingRate?.id, editingRate?.rate]);
 
   // Derive the rendered table from the master list + active sort/filter, then
   // overlay any typed-but-unsaved edits (keyed by price id) so re-sorting,
@@ -144,13 +199,23 @@ export default function UpdatePrices() {
     // Stacks on whichever filter ran above rather than replacing it, so
     // "out of stock" narrows the current category instead of leaving it.
     if (outOfStockOnly) filtered = filterPricesOutOfStock(filtered);
+    // Stacks last, so "prices on this rate" always narrows whatever is already
+    // on screen rather than replacing it.
+    filtered = filterPricesByRate(filtered, selectedRate);
     setTableData(
       applyPendingEdits(
         processPrices(sortPrices(filtered, sortKey)),
         updatedPricesRef.current,
       ),
     );
-  }, [allPrices, sortKey, categoryFilter, categories, outOfStockOnly]);
+  }, [
+    allPrices,
+    sortKey,
+    categoryFilter,
+    categories,
+    outOfStockOnly,
+    selectedRate,
+  ]);
 
   useEffect(() => {
     if (accessToken) {
@@ -171,13 +236,19 @@ export default function UpdatePrices() {
           });
         }
 
-        const dollarRateResponse = await fetchWithCreds<DollarRate>({
+        const dollarRateResponse = await fetchWithCreds<DollarRate[]>({
           accessToken,
-          path: `/api/prices/rate?currency=TMT`,
+          path: `/api/prices/rate`,
           method: 'GET',
         });
         if (dollarRateResponse.success && dollarRateResponse.data != null) {
-          setDollarRate(dollarRateResponse.data.rate);
+          // The other currencies in the table belong to procurement and are
+          // never offered as a price rate.
+          setRates(
+            dollarRateResponse.data.filter(
+              (rate) => String(rate.currency) === 'TMT',
+            ),
+          );
         } else {
           console.error(dollarRateResponse.message);
           setSnackbarMessage({
@@ -211,9 +282,17 @@ export default function UpdatePrices() {
           return;
         }
 
+        // Each row converts at its own rate, so a price filed under "Bazar"
+        // shows Bazar manat the moment it is typed rather than the default's.
+        const rowRate =
+          rateForPrice(
+            { dollarRateId: (row[PRICE_RATE_IDX] as number | null) ?? null },
+            rates,
+          )?.rate ?? 0;
+
         if (
           (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
-          !(dollarRate > 0)
+          !(rowRate > 0)
         ) {
           setSnackbarOpen(true);
           setSnackbarMessage({
@@ -234,14 +313,11 @@ export default function UpdatePrices() {
             parseFloat(value),
           ).toString();
           currPrice.price = parsePrice(
-            (parseFloat(value) / dollarRate).toString(),
+            (parseFloat(value) / rowRate).toString(),
           ).toString();
         } else if (cellIndex === PRICE_DOLLAR_IDX) {
           currPrice.price = value;
-          Object.assign(
-            currPrice,
-            pricesFromUsd(parseFloat(value), dollarRate),
-          );
+          Object.assign(currPrice, pricesFromUsd(parseFloat(value), rowRate));
         } else if (cellIndex === PRICE_DISPLAY_IDX) {
           // Only this field: pinning what is shown must not disturb the dollar
           // price the business actually prices in.
@@ -265,19 +341,17 @@ export default function UpdatePrices() {
               return prevRow.map((cell, idx) => {
                 if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                   return parsePrice(
-                    tmtFromUsd(parseFloat(value), dollarRate).toString(),
+                    tmtFromUsd(parseFloat(value), rowRate).toString(),
                   );
                 }
                 if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
-                  return parsePrice(
-                    (parseFloat(value) / dollarRate).toString(),
-                  );
+                  return parsePrice((parseFloat(value) / rowRate).toString());
                 }
                 if (
                   cellIndex === PRICE_DOLLAR_IDX &&
                   idx === PRICE_DISPLAY_IDX
                 ) {
-                  return displayTmtFromUsd(parseFloat(value), dollarRate);
+                  return displayTmtFromUsd(parseFloat(value), rowRate);
                 }
                 if (
                   cellIndex === PRICE_MANAT_IDX &&
@@ -295,7 +369,7 @@ export default function UpdatePrices() {
       },
       500,
     ),
-    [dollarRate],
+    [rates],
   );
 
   // A category pick is a discrete event, so unlike handlePriceUpdate it needs no
@@ -317,6 +391,34 @@ export default function UpdatePrices() {
           index > 0 && row[PRICE_ID_IDX] === priceId
             ? row.map((cell, idx) =>
                 idx === PRICE_CATEGORY_IDX ? categoryId : cell,
+              )
+            : row,
+        ),
+      );
+    },
+    [],
+  );
+
+  // Same discrete-event shape as a category pick. The manat figures are not
+  // recomputed here: the server re-derives them from the row's dollars when the
+  // batched PUT lands, which keeps one rule for the conversion.
+  const handleRateChange = useCallback(
+    (priceId: string, rateId: string | null) => {
+      const dollarRateId = rateId == null ? null : Number(rateId);
+      setUpdatedPrices((prevPrices) => {
+        const next = {
+          ...prevPrices,
+          [priceId]: { ...prevPrices[priceId], id: priceId, dollarRateId },
+        };
+        updatedPricesRef.current = next;
+        return next;
+      });
+
+      setTableData((prevData) =>
+        prevData.map((row, index) =>
+          index > 0 && row[PRICE_ID_IDX] === priceId
+            ? row.map((cell, idx) =>
+                idx === PRICE_RATE_IDX ? dollarRateId : cell,
               )
             : row,
         ),
@@ -351,6 +453,34 @@ export default function UpdatePrices() {
     },
     [],
   );
+
+  // Server-side repricing rewrites manat figures under the table, so the page
+  // re-reads rather than patching rows, and drops pending edits: saving those
+  // afterwards would push pre-recalculation numbers back over fresh ones.
+  const refreshAfterReprice = useCallback(async () => {
+    setUpdatedPrices({});
+    updatedPricesRef.current = {};
+    const [pricesResponse, ratesResponse] = await Promise.all([
+      fetchWithCreds<Prices[]>({
+        accessToken,
+        path: '/api/prices',
+        method: 'GET',
+      }),
+      fetchWithCreds<DollarRate[]>({
+        accessToken,
+        path: '/api/prices/rate',
+        method: 'GET',
+      }),
+    ]);
+    if (pricesResponse.success && pricesResponse.data != null) {
+      setAllPrices(pricesResponse.data);
+    }
+    if (ratesResponse.success && ratesResponse.data != null) {
+      setRates(
+        ratesResponse.data.filter((rate) => String(rate.currency) === 'TMT'),
+      );
+    }
+  }, [accessToken]);
 
   const handleSearch = useCallback(
     async (keyword: string) => {
@@ -394,74 +524,40 @@ export default function UpdatePrices() {
           className="flex flex-col gap-8 w-full h-full"
         >
           <Box className={`flex flex-col w-full justify-center gap-4 pl-2`}>
-            {/* dollar rate */}
+            {/* the rate being edited: the filtered one, or the default */}
             <Box className={`w-full flex flex-row justify-start items-center`}>
-              <Box className="flex flex-row gap-2 items-center justify-center">
+              <Box className="flex flex-row gap-2 items-center justify-center flex-wrap">
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                  $1 =
+                  {editingRate?.name ?? t('defaultRate')}: $1 =
                 </Typography>
                 <TextField
-                  value={dollarRate}
+                  value={rateDraft}
                   type="number"
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value);
-                    if (Number.isNaN(value)) return;
-                    setDollarRate(value);
-                  }}
+                  disabled={editingRate == null}
+                  onChange={(e) => setRateDraft(e.target.value)}
                 />
                 <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                   manat
                 </Typography>
                 <IconButton
-                  onClick={async () => {
-                    try {
-                      const { success, data } = await fetchWithCreds<{
-                        updatedPrices: Prices[];
-                      }>({
-                        accessToken,
-                        path: `/api/prices/rate`,
-                        method: 'PUT',
-                        body: {
-                          rate: dollarRate,
-                          currency: 'TMT',
-                        },
-                      });
-
-                      if (success) {
-                        // Write to the master list (not tableData directly) so a
-                        // later sort/filter/search re-derive keeps the recalculated
-                        // manat values instead of reverting to stale allPrices.
-                        setAllPrices(data.updatedPrices);
-                        setSnackbarOpen(true);
-                        setSnackbarMessage({
-                          message: 'rateUpdated',
-                          severity: 'success',
-                        });
-                      } else {
-                        setSnackbarOpen(true);
-                        setSnackbarMessage({
-                          message: 'updateRateError',
-                          severity: 'error',
-                        });
-                      }
-                    } catch (error) {
-                      console.error(error);
-                      setSnackbarOpen(true);
-                      setSnackbarMessage({
-                        message: 'updateRateError',
-                        severity: 'error',
-                      });
-                    }
-                  }}
+                  disabled={editingRate == null || !(parseFloat(rateDraft) > 0)}
+                  onClick={() => setShowRateConfirm(true)}
                 >
                   <CheckCircleOutlineIcon color={'success'} />
                 </IconButton>
+                {/* The default rate has no delete: every other rate falls back
+                    to it, and the server refuses to remove it. */}
+                {editingRate != null && !editingRate.isDefault && (
+                  <IconButton onClick={() => setShowDeleteRateDialog(true)}>
+                    <DeleteIcon color="error" />
+                  </IconButton>
+                )}
               </Box>
             </Box>
 
             {/* search, add price, save */}
-            <Box className={`flex flex-col gap-2 w-full max-w-[600px]`}>
-              <Box className="w-full flex flex-row gap-2 items-center">
+            <Box className={`flex flex-col gap-2 w-full max-w-[900px]`}>
+              <Box className="w-full flex flex-row flex-wrap gap-2 items-center">
                 <Box className="flex-1">
                   {SearchBar({
                     handleSearch,
@@ -518,17 +614,49 @@ export default function UpdatePrices() {
                     {categoryMenuItems(flattenedCats)}
                   </Select>
                 </FormControl>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>{t('rate')}</InputLabel>
+                  <Select
+                    label={t('rate')}
+                    value={rateFilter}
+                    onChange={(e) => {
+                      // The create row is a command, not a filter value, so it
+                      // opens the dialog and leaves the selection alone.
+                      if (e.target.value === ADD_RATE_OPTION) {
+                        setNewRateName('');
+                        setNewRateValue('');
+                        setShowAddRateDialog(true);
+                        return;
+                      }
+                      setRateFilter(e.target.value);
+                    }}
+                  >
+                    <MenuItem value="">{t('allRates')}</MenuItem>
+                    {rates.map((rate) => (
+                      <MenuItem key={rate.id} value={String(rate.id)}>
+                        {rate.name} ({rate.rate})
+                      </MenuItem>
+                    ))}
+                    <MenuItem value={ADD_RATE_OPTION}>
+                      + {t('addRate')}
+                    </MenuItem>
+                  </Select>
+                </FormControl>
                 <ToggleButton
                   size="small"
                   color="error"
                   value="outOfStockOnly"
                   selected={outOfStockOnly}
                   onChange={() => setOutOfStockOnly((prev) => !prev)}
+                  // Russian and Turkmen render this label long enough to stack
+                  // into three lines, which leaves the control taller than the
+                  // dropdowns beside it. It wraps the row instead.
+                  sx={{ whiteSpace: 'nowrap', lineHeight: 1.2 }}
                 >
                   {t('outOfStockOnly')}
                 </ToggleButton>
               </Box>
-              <Box className="flex flex-row gap-2 w-full">
+              <Box className="flex flex-row flex-wrap gap-2 w-full items-center">
                 <Button
                   variant="contained"
                   sx={{
@@ -541,6 +669,40 @@ export default function UpdatePrices() {
                 >
                   <Typography>{t('addPrice')}</Typography>
                 </Button>
+                {/* Acts on exactly what the filters left on screen, never the
+                    whole table, and says how many that is. */}
+                {tableData.length > 1 && rates.length > 0 && (
+                  <>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                      <InputLabel>{t('assignToRate')}</InputLabel>
+                      <Select
+                        label={t('assignToRate')}
+                        value={bulkRateId}
+                        onChange={(e) => setBulkRateId(e.target.value)}
+                      >
+                        {rates.map((rate) => (
+                          <MenuItem key={rate.id} value={String(rate.id)}>
+                            {rate.name} ({rate.rate})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Button
+                      variant="outlined"
+                      disabled={bulkRateId === ''}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: isMdUp ? 16 : 14,
+                        height: isMdUp ? 52 : 42,
+                      }}
+                      onClick={() => setShowBulkConfirm(true)}
+                    >
+                      <Typography>
+                        {t('assignToRate')} ({tableData.length - 1})
+                      </Typography>
+                    </Button>
+                  </>
+                )}
                 {Object.keys(updatedPrices).length > 0 && (
                   <Button
                     variant="contained"
@@ -677,6 +839,23 @@ export default function UpdatePrices() {
                               />
                             );
                           }
+                          if (cellIndex === PRICE_RATE_IDX) {
+                            const priceId = row[PRICE_ID_IDX] as string;
+                            return (
+                              <SelectCell
+                                id={priceId}
+                                value={cell == null ? null : String(cell)}
+                                options={rateOptions}
+                                emptyLabel={t('defaultRate')}
+                                minWidth={120}
+                                dirty={
+                                  'dollarRateId' in
+                                  (updatedPrices[priceId] ?? {})
+                                }
+                                onChange={handleRateChange}
+                              />
+                            );
+                          }
                           if (cellIndex === PRICE_UPDATED_IDX) {
                             // ISO date, not a locale format: the table spans
                             // five locales and an admin scanning for stale
@@ -794,10 +973,248 @@ export default function UpdatePrices() {
             />
           )}
 
+          {showRateConfirm && editingRate != null && (
+            <Dialog open onClose={() => setShowRateConfirm(false)}>
+              <DialogTitle>{editingRate.name}</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  {t(
+                    editingRate.isDefault
+                      ? 'confirmDefaultRateRecalculate'
+                      : 'confirmRateRecalculate',
+                    { count: editingRateCount },
+                  )}
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowRateConfirm(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    setShowRateConfirm(false);
+                    try {
+                      const { success } = await fetchWithCreds({
+                        accessToken,
+                        path: `/api/prices/rate`,
+                        method: 'PUT',
+                        body: {
+                          id: editingRate.id,
+                          rate: parseFloat(rateDraft),
+                        },
+                      });
+                      setSnackbarOpen(true);
+                      if (success) {
+                        await refreshAfterReprice();
+                        setSnackbarMessage({
+                          message: 'rateUpdated',
+                          severity: 'success',
+                        });
+                      } else {
+                        setSnackbarMessage({
+                          message: 'updateRateError',
+                          severity: 'error',
+                        });
+                      }
+                    } catch (error) {
+                      console.error(error);
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'updateRateError',
+                        severity: 'error',
+                      });
+                    }
+                  }}
+                >
+                  {t('save')}
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
+
+          {showAddRateDialog && (
+            <Dialog open onClose={() => setShowAddRateDialog(false)}>
+              <DialogTitle>{t('addRate')}</DialogTitle>
+              <DialogContent>
+                <Box className="flex flex-col gap-3 pt-2">
+                  <TextField
+                    label={t('rateName')}
+                    value={newRateName}
+                    onChange={(e) => setNewRateName(e.target.value)}
+                  />
+                  <TextField
+                    label={t('rate')}
+                    type="number"
+                    value={newRateValue}
+                    onChange={(e) => setNewRateValue(e.target.value)}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowAddRateDialog(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button
+                  variant="contained"
+                  disabled={
+                    newRateName.trim() === '' || !(parseFloat(newRateValue) > 0)
+                  }
+                  onClick={async () => {
+                    try {
+                      const { success, data } =
+                        await fetchWithCreds<DollarRate>({
+                          accessToken,
+                          path: `/api/prices/rate`,
+                          method: 'POST',
+                          body: {
+                            name: newRateName.trim(),
+                            rate: parseFloat(newRateValue),
+                          },
+                        });
+                      setSnackbarOpen(true);
+                      if (success && data != null) {
+                        setRates((prev) => [...prev, data]);
+                        // Jump straight to the new rate: an admin who just made
+                        // one is about to put prices on it.
+                        setRateFilter(String(data.id));
+                        setShowAddRateDialog(false);
+                        setSnackbarMessage({
+                          message: 'rateCreated',
+                          severity: 'success',
+                        });
+                      } else {
+                        setSnackbarMessage({
+                          message: 'rateCreateFailed',
+                          severity: 'error',
+                        });
+                      }
+                    } catch (error) {
+                      console.error(error);
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'rateCreateFailed',
+                        severity: 'error',
+                      });
+                    }
+                  }}
+                >
+                  {t('save')}
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
+
+          {showDeleteRateDialog && editingRate != null && (
+            <DeleteDialog
+              title={t('deleteRate')}
+              description={t('confirmDeleteRate', { name: editingRate.name })}
+              blueButtonText={t('cancel')}
+              redButtonText={t('delete')}
+              handleClose={async () => setShowDeleteRateDialog(false)}
+              handleDelete={async () => {
+                try {
+                  const { success } = await fetchWithCreds({
+                    accessToken,
+                    path: `/api/prices/rate`,
+                    method: 'DELETE',
+                    body: { id: editingRate.id },
+                  });
+                  setSnackbarOpen(true);
+                  if (success) {
+                    // The rate is gone, so a filter still pointing at it would
+                    // show an empty table.
+                    setRateFilter('');
+                    await refreshAfterReprice();
+                    setSnackbarMessage({
+                      message: 'rateDeleted',
+                      severity: 'success',
+                    });
+                  } else {
+                    setSnackbarMessage({
+                      message: 'rateDeleteFailed',
+                      severity: 'error',
+                    });
+                  }
+                } catch (error) {
+                  console.error(error);
+                  setSnackbarOpen(true);
+                  setSnackbarMessage({
+                    message: 'rateDeleteFailed',
+                    severity: 'error',
+                  });
+                } finally {
+                  setShowDeleteRateDialog(false);
+                }
+              }}
+            />
+          )}
+
+          {showBulkConfirm && (
+            <Dialog open onClose={() => setShowBulkConfirm(false)}>
+              <DialogTitle>{t('assignToRate')}</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  {t('confirmAssignToRate', {
+                    count: tableData.length - 1,
+                    name:
+                      rates.find((rate) => String(rate.id) === bulkRateId)
+                        ?.name ?? '',
+                  })}
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowBulkConfirm(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    setShowBulkConfirm(false);
+                    // Exactly the rows the filters left on screen.
+                    const priceIds = tableData
+                      .slice(1)
+                      .map((row) => row[PRICE_ID_IDX] as string);
+                    try {
+                      const { success } = await fetchWithCreds({
+                        accessToken,
+                        path: `/api/prices/assign-rate`,
+                        method: 'PUT',
+                        body: { priceIds, rateId: Number(bulkRateId) },
+                      });
+                      setSnackbarOpen(true);
+                      if (success) {
+                        await refreshAfterReprice();
+                        setSnackbarMessage({
+                          message: 'pricesAssigned',
+                          severity: 'success',
+                        });
+                      } else {
+                        setSnackbarMessage({
+                          message: 'assignPricesError',
+                          severity: 'error',
+                        });
+                      }
+                    } catch (error) {
+                      console.error(error);
+                      setSnackbarOpen(true);
+                      setSnackbarMessage({
+                        message: 'assignPricesError',
+                        severity: 'error',
+                      });
+                    }
+                  }}
+                >
+                  {t('save')}
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
+
           {showCreatePriceDialog && (
             <AddPrice
               handleClose={() => setShowCreatePriceDialog(false)}
-              dollarRate={dollarRate}
+              dollarRate={editingRate?.rate ?? 0}
               categoryOptions={flattenedCats}
               handleCreate={async (
                 name: string,
@@ -836,6 +1253,9 @@ export default function UpdatePrices() {
                       price: priceInDollars,
                       priceInTmt: priceInManat,
                       categoryId,
+                      // The rate the page is filtered to, so a price created
+                      // while working inside one rate lands on it.
+                      dollarRateId: editingRate?.id ?? null,
                     },
                   });
 
