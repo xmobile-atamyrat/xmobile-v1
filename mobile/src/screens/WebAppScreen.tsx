@@ -26,6 +26,15 @@ import DeviceInfo from 'react-native-device-info';
 import { WebView } from 'react-native-webview';
 import { resolveLocale } from '../i18n/locale';
 import { getStrings } from '../i18n/strings';
+import {
+  createLoadRetryController,
+  LoadRetryController,
+} from '../lib/loadRetry';
+import {
+  classifyWebViewError,
+  formatDiagnostics,
+  WebViewErrorDetail,
+} from '../lib/webviewErrors';
 import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
 const NAVY = '#20166E';
@@ -167,7 +176,12 @@ function WebAppScreen() {
   // the sign-in link so they land on sign-in instead of the home page.
   const [initialPath, setInitialPath] = useState('');
   const [isOffline, setIsOffline] = useState(false);
-  const [hasWebviewError, setHasWebviewError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<WebViewErrorDetail | null>(
+    null,
+  );
+  const [isRetrying, setIsRetrying] = useState(false);
+  const errorDetailRef = useRef<WebViewErrorDetail | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const canGoBackRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [pendingClickAction, setPendingClickAction] = useState<string | null>(
@@ -197,6 +211,26 @@ function WebAppScreen() {
     const timer = setTimeout(dismissNotification, 4000);
     return () => clearTimeout(timer);
   }, [activeNotification, dismissNotification]);
+
+  const controllerRef = useRef<LoadRetryController | null>(null);
+  if (!controllerRef.current) {
+    controllerRef.current = createLoadRetryController({
+      reload: hasCommitted => {
+        if (hasCommitted && webViewRef.current) {
+          webViewRef.current.reload();
+        } else {
+          setReloadKey(key => key + 1);
+        }
+      },
+      setRetrying: setIsRetrying,
+      setError: setErrorDetail,
+    });
+  }
+  const controller = controllerRef.current;
+
+  useEffect(() => {
+    return () => controller.dispose();
+  }, [controller]);
 
   // Dev mode is determined automatically by React Native's __DEV__ flag.
   // __DEV__ = true in debug/Metro builds, false in release/production builds.
@@ -404,6 +438,10 @@ function WebAppScreen() {
   }, []);
 
   useEffect(() => {
+    errorDetailRef.current = errorDetail;
+  }, [errorDetail]);
+
+  useEffect(() => {
     isWebAppReadyRef.current = isWebAppReady;
   }, [isWebAppReady]);
 
@@ -432,12 +470,12 @@ function WebAppScreen() {
       const offline = state.isConnected === false;
       setIsOffline(offline);
       // If internet comes back, clear the webview error so it can retry rendering
-      if (!offline) {
-        setHasWebviewError(false);
+      if (!offline && errorDetailRef.current) {
+        controller.retryOnReconnect();
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [controller]);
 
   useEffect(() => {
     const loadStoredData = async () => {
@@ -586,9 +624,214 @@ function WebAppScreen() {
     );
   }
 
+  const isCertificateError =
+    errorDetail != null && classifyWebViewError(errorDetail) === 'certificate';
+  const overlay = isOffline ? 'offline' : errorDetail ? 'error' : null;
+
   return (
     <View style={styles.container}>
-      {isOffline ? (
+      {activeNotification && !overlay && (
+        <TouchableOpacity
+          activeOpacity={0.95}
+          style={styles.fcmBanner}
+          onPress={() => {
+            if (activeNotification.data) {
+              handleNotificationNavigationFromData(activeNotification.data);
+            }
+            dismissNotification();
+          }}
+        >
+          <View style={styles.fcmBannerContent}>
+            <Text style={styles.fcmBannerTitle} numberOfLines={1}>
+              {activeNotification.title}
+            </Text>
+            <Text style={styles.fcmBannerBody} numberOfLines={2}>
+              {activeNotification.body}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      <WebView
+        key={`${isDevMode ? 'dev' : 'prod'}-${reloadKey}`}
+        ref={webViewRef}
+        source={{ uri: `${baseUrl}${initialPath}` }}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        cacheEnabled={true}
+        incognito={false}
+        domStorageEnabled={true}
+        onNavigationStateChange={navState => {
+          setCanGoBack(navState.canGoBack);
+          persistGuestSessionFromCookie();
+        }}
+        style={styles.webview}
+        startInLoadingState={true}
+        javaScriptEnabled={true}
+        renderLoading={() => <LoadingView />}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        onLoadStart={() => {
+          controller.handleLoadStart();
+        }}
+        onLoad={() => {
+          controller.handleLoadEnd();
+        }}
+        onError={syntheticEvent => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error: ', nativeEvent);
+
+          controller.handleError({
+            code: nativeEvent.code,
+            description: nativeEvent.description,
+            url: nativeEvent.url,
+          });
+        }}
+        onHttpError={syntheticEvent => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView HTTP error: ', nativeEvent);
+        }}
+        onMessage={async event => {
+          try {
+            const data = JSON.parse(event.nativeEvent.data);
+            console.log('WebView Message received:', data.type);
+
+            if (data.type === 'REQUEST_APP_VERSION') {
+              // Web app is ready, now it's safe to send the version
+              setIsWebAppReady(true);
+              const appVersion = DeviceInfo.getVersion();
+              if (webViewRef.current) {
+                const appVersionPayload = {
+                  type: 'APP_VERSION',
+                  payload: appVersion,
+                };
+                const scripts: string[] = [
+                  `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
+                    appVersionPayload,
+                  )} }));`,
+                ];
+
+                if (pendingClickAction) {
+                  const deepLinkPayload = JSON.stringify({
+                    type: 'NOTIFICATION_CLICK',
+                    payload: { target: pendingClickAction },
+                  });
+                  scripts.push(`window.dispatchEvent(new MessageEvent('message', {
+                        data: ${deepLinkPayload}
+                    }));`);
+                }
+
+                if (fcmToken) {
+                  const uniqueId = DeviceInfo.getUniqueIdSync();
+                  const tokenPayload = JSON.stringify({
+                    type: 'FCM_TOKEN_AVAILABLE',
+                    payload: { token: fcmToken, uniqueId },
+                  });
+                  scripts.push(
+                    `window.dispatchEvent(new MessageEvent('message', { data: ${tokenPayload} }));`,
+                  );
+                }
+
+                webViewRef.current.injectJavaScript(`
+                    (function() {
+                      ${scripts.join('\n')}
+                    })();
+                    true;
+                  `);
+                if (pendingClickAction) {
+                  setPendingClickAction(null);
+                }
+              }
+            } else if (data.type === 'REQUEST_FCM_TOKEN') {
+              const uniqueId = await DeviceInfo.getUniqueId();
+              let token = fcmToken;
+              if (!token) {
+                token = await fetchAndCacheToken();
+              }
+              if (token && webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'FCM_TOKEN',
+                  payload: { token, uniqueId },
+                });
+
+                webViewRef.current.injectJavaScript(`
+                    (function() {
+                      window.dispatchEvent(new MessageEvent('message', {
+                        data: ${payload}
+                      }));
+                    })();
+                    true;
+                  `);
+              }
+            } else if (data.type === 'CHECK_PERMISSION') {
+              const status = await checkNotificationPermission();
+              if (webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'NOTIFICATION_PERMISSION_STATUS',
+                  payload: {
+                    status: status ? 'GRANTED' : 'NOT_DETERMINED',
+                  },
+                });
+                webViewRef.current.injectJavaScript(`
+                        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                        true;
+                       `);
+              }
+            } else if (data.type === 'REQUEST_PERMISSION') {
+              const granted = await requestNotificationPermission();
+              if (granted) {
+                fetchAndCacheToken();
+              }
+              if (webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'NOTIFICATION_PERMISSION_STATUS',
+                  payload: { status: granted ? 'GRANTED' : 'DENIED' },
+                });
+                webViewRef.current.injectJavaScript(`
+                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                         true;
+                        `);
+              }
+            } else if (data.type === 'AUTH_STATE') {
+              const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
+              if (REFRESH_TOKEN) {
+                await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
+                setStoredToken(REFRESH_TOKEN);
+              } else {
+                // Token was deleted on web side — clear everything
+                await AsyncStorage.removeItem('REFRESH_TOKEN');
+                await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
+                await CookieManager.clearAll(true);
+                setStoredToken(null);
+                setFcmToken(null);
+              }
+
+              if (NEXT_LOCALE) {
+                await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
+                setStoredLocale(NEXT_LOCALE);
+              } else {
+                await AsyncStorage.removeItem('NEXT_LOCALE');
+                setStoredLocale(null);
+              }
+            } else if (data.type === 'LOGOUT') {
+              await AsyncStorage.removeItem('REFRESH_TOKEN');
+              await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
+              await AsyncStorage.removeItem('NEXT_LOCALE');
+              await AsyncStorage.removeItem('GUEST_SESSION_ID');
+              await CookieManager.clearAll(true);
+              setStoredToken(null);
+              setStoredLocale(null);
+              setStoredGuestSession(null);
+              setFcmToken(null);
+            }
+            await persistGuestSessionFromCookie();
+          } catch (err) {
+            console.error('Failed to parse WebView message:', err);
+          }
+        }}
+        injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
+      />
+      {isRetrying && !overlay && <LoadingView />}
+      {overlay === 'offline' ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
             <WifiOff width={52} height={52} color={ICON_MUTED} />
@@ -609,21 +852,27 @@ function WebAppScreen() {
             <Text style={styles.stateButtonText}>{t.retry}</Text>
           </TouchableOpacity>
         </View>
-      ) : hasWebviewError ? (
+      ) : overlay === 'error' && errorDetail ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: RED_TINT }]}>
             <ServerCrash width={50} height={50} color={RED} />
           </View>
           <Text style={styles.stateTitle}>{t.errorTitle}</Text>
-          <Text style={styles.stateBody}>{t.errorBody}</Text>
+          <Text
+            style={[
+              styles.stateBody,
+              isCertificateError && styles.stateBodyTight,
+            ]}
+          >
+            {isCertificateError ? t.certificateBody : t.errorBody}
+          </Text>
+          {isCertificateError && (
+            <Text style={styles.stateHint}>{t.vpnHint}</Text>
+          )}
           <TouchableOpacity
             activeOpacity={0.85}
             style={[styles.stateButton, styles.stateButtonSpaced]}
-            onPress={() => {
-              // WebView is unmounted while this state shows, so there's no ref to
-              // reload() — remounting it against the same uri is the retry.
-              setHasWebviewError(false);
-            }}
+            onPress={() => controller.retry()}
           >
             <RefreshCw width={18} height={18} color="#ffffff" />
             <Text style={styles.stateButtonText}>{t.retry}</Text>
@@ -634,200 +883,11 @@ function WebAppScreen() {
           >
             <Text style={styles.stateSupportText}>{t.supportLink}</Text>
           </TouchableOpacity>
+          <Text style={styles.stateDiagnostics}>
+            {formatDiagnostics(errorDetail, Platform.OS)}
+          </Text>
         </View>
-      ) : (
-        <>
-          {activeNotification && (
-            <TouchableOpacity
-              activeOpacity={0.95}
-              style={styles.fcmBanner}
-              onPress={() => {
-                if (activeNotification.data) {
-                  handleNotificationNavigationFromData(activeNotification.data);
-                }
-                dismissNotification();
-              }}
-            >
-              <View style={styles.fcmBannerContent}>
-                <Text style={styles.fcmBannerTitle} numberOfLines={1}>
-                  {activeNotification.title}
-                </Text>
-                <Text style={styles.fcmBannerBody} numberOfLines={2}>
-                  {activeNotification.body}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          <WebView
-            key={isDevMode ? 'dev' : 'prod'}
-            ref={webViewRef}
-            source={{ uri: `${baseUrl}${initialPath}` }}
-            sharedCookiesEnabled={true}
-            thirdPartyCookiesEnabled={true}
-            cacheEnabled={true}
-            incognito={false}
-            domStorageEnabled={true}
-            onNavigationStateChange={navState => {
-              setCanGoBack(navState.canGoBack);
-              persistGuestSessionFromCookie();
-            }}
-            style={styles.webview}
-            startInLoadingState={true}
-            javaScriptEnabled={true}
-            renderLoading={() => <LoadingView />}
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            onError={syntheticEvent => {
-              const { nativeEvent } = syntheticEvent;
-              console.warn('WebView error: ', nativeEvent);
-              setHasWebviewError(true);
-            }}
-            onHttpError={syntheticEvent => {
-              const { nativeEvent } = syntheticEvent;
-              console.warn('WebView HTTP error: ', nativeEvent);
-            }}
-            onMessage={async event => {
-              try {
-                const data = JSON.parse(event.nativeEvent.data);
-                console.log('WebView Message received:', data.type);
-
-                if (data.type === 'REQUEST_APP_VERSION') {
-                  // Web app is ready, now it's safe to send the version
-                  setIsWebAppReady(true);
-                  const appVersion = DeviceInfo.getVersion();
-                  if (webViewRef.current) {
-                    const appVersionPayload = {
-                      type: 'APP_VERSION',
-                      payload: appVersion,
-                    };
-                    const scripts: string[] = [
-                      `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
-                        appVersionPayload,
-                      )} }));`,
-                    ];
-
-                    if (pendingClickAction) {
-                      const deepLinkPayload = JSON.stringify({
-                        type: 'NOTIFICATION_CLICK',
-                        payload: { target: pendingClickAction },
-                      });
-                      scripts.push(`window.dispatchEvent(new MessageEvent('message', {
-                        data: ${deepLinkPayload}
-                    }));`);
-                    }
-
-                    if (fcmToken) {
-                      const uniqueId = DeviceInfo.getUniqueIdSync();
-                      const tokenPayload = JSON.stringify({
-                        type: 'FCM_TOKEN_AVAILABLE',
-                        payload: { token: fcmToken, uniqueId },
-                      });
-                      scripts.push(
-                        `window.dispatchEvent(new MessageEvent('message', { data: ${tokenPayload} }));`,
-                      );
-                    }
-
-                    webViewRef.current.injectJavaScript(`
-                    (function() {
-                      ${scripts.join('\n')}
-                    })();
-                    true;
-                  `);
-                    if (pendingClickAction) {
-                      setPendingClickAction(null);
-                    }
-                  }
-                } else if (data.type === 'REQUEST_FCM_TOKEN') {
-                  const uniqueId = await DeviceInfo.getUniqueId();
-                  let token = fcmToken;
-                  if (!token) {
-                    token = await fetchAndCacheToken();
-                  }
-                  if (token && webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'FCM_TOKEN',
-                      payload: { token, uniqueId },
-                    });
-
-                    webViewRef.current.injectJavaScript(`
-                    (function() {
-                      window.dispatchEvent(new MessageEvent('message', {
-                        data: ${payload}
-                      }));
-                    })();
-                    true;
-                  `);
-                  }
-                } else if (data.type === 'CHECK_PERMISSION') {
-                  const status = await checkNotificationPermission();
-                  if (webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'NOTIFICATION_PERMISSION_STATUS',
-                      payload: {
-                        status: status ? 'GRANTED' : 'NOT_DETERMINED',
-                      },
-                    });
-                    webViewRef.current.injectJavaScript(`
-                        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
-                        true;
-                       `);
-                  }
-                } else if (data.type === 'REQUEST_PERMISSION') {
-                  const granted = await requestNotificationPermission();
-                  if (granted) {
-                    fetchAndCacheToken();
-                  }
-                  if (webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'NOTIFICATION_PERMISSION_STATUS',
-                      payload: { status: granted ? 'GRANTED' : 'DENIED' },
-                    });
-                    webViewRef.current.injectJavaScript(`
-                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
-                         true;
-                        `);
-                  }
-                } else if (data.type === 'AUTH_STATE') {
-                  const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
-                  if (REFRESH_TOKEN) {
-                    await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
-                    setStoredToken(REFRESH_TOKEN);
-                  } else {
-                    // Token was deleted on web side — clear everything
-                    await AsyncStorage.removeItem('REFRESH_TOKEN');
-                    await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
-                    await CookieManager.clearAll(true);
-                    setStoredToken(null);
-                    setFcmToken(null);
-                  }
-
-                  if (NEXT_LOCALE) {
-                    await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
-                    setStoredLocale(NEXT_LOCALE);
-                  } else {
-                    await AsyncStorage.removeItem('NEXT_LOCALE');
-                    setStoredLocale(null);
-                  }
-                } else if (data.type === 'LOGOUT') {
-                  await AsyncStorage.removeItem('REFRESH_TOKEN');
-                  await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
-                  await AsyncStorage.removeItem('NEXT_LOCALE');
-                  await AsyncStorage.removeItem('GUEST_SESSION_ID');
-                  await CookieManager.clearAll(true);
-                  setStoredToken(null);
-                  setStoredLocale(null);
-                  setStoredGuestSession(null);
-                  setFcmToken(null);
-                }
-                await persistGuestSessionFromCookie();
-              } catch (err) {
-                console.error('Failed to parse WebView message:', err);
-              }
-            }}
-            injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
-          />
-        </>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -892,8 +952,23 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: NAVY,
   },
+  stateBodyTight: {
+    marginBottom: 12,
+  },
+  stateHint: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: INK,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
   stateButtonSpaced: {
     marginBottom: 12,
+  },
+  stateDiagnostics: {
+    marginTop: 18,
+    fontSize: 11,
+    color: ICON_MUTED,
   },
   stateButtonText: {
     color: '#ffffff',
