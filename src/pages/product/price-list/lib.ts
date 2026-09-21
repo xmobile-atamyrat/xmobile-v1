@@ -1,7 +1,6 @@
 import type { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { dayMonthYearFromDate } from '@/pages/procurement/lib/utils';
-import { tmtFromUsd } from '@/pages/lib/priceDisplay';
 import { collectCategorySubtreeIds } from '@/pages/product/utils';
 import {
   bannerFont,
@@ -16,8 +15,6 @@ import * as ExcelJS from 'exceljs';
 
 export const PRICE_LIST_SHEET_NAME = 'Prices';
 
-const RATE_LABEL = 'USD rate';
-const RATE_CELL = '$B$1';
 // TMT is the exact conversion. The rounded figure the storefront quotes is
 // deliberately absent: this sheet is the price an admin reconciles against.
 const PRICE_HEADER = ['Name', 'USD', 'TMT'];
@@ -308,45 +305,29 @@ function styleSheet(worksheet: ExcelJS.Worksheet) {
   });
 }
 
-// TMT as a live formula against the rate cell, so retyping the rate in B1
-// recalculates every manat price in the sheet at once. `result` caches the
-// value the app itself would compute (tmtFromUsd), so viewers that don't
-// recalculate on open still show the right number. Without a rate there is
-// nothing to compute against, and the stored manat price is written as-is.
-function tmtCell(
-  row: number,
-  usd: number,
-  storedTmt: string,
-  rate: number | null,
-): ExcelJS.CellValue {
-  if (rate == null || Number.isNaN(usd)) {
-    const stored = Number(storedTmt);
-    return Number.isNaN(stored) ? storedTmt : stored;
-  }
-  return {
-    formula: `ROUNDUP(B${row}*${RATE_CELL},0)`,
-    result: tmtFromUsd(usd, rate),
-  };
+// The stored manat figure, written as a plain number. It used to be a live
+// formula against one rate cell, which only held while every price converted at
+// the same rate; each price now carries its own, so a single anchor would
+// misstate most of the sheet.
+function tmtCell(storedTmt: string): ExcelJS.CellValue {
+  const stored = Number(storedTmt);
+  return Number.isNaN(stored) ? storedTmt : stored;
 }
 
 /**
- * One sheet: the dollar rate in B1, then a bold category banner + Name/USD/TMT
- * header per section, blank-row separated.
+ * One sheet: a bold category banner + Name/USD/TMT header per section,
+ * blank-row separated.
  */
 export async function buildPriceListBlob(
   sections: PriceListSection[],
-  rate: number | null,
 ): Promise<Blob> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'WebClient';
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet(PRICE_LIST_SHEET_NAME);
-  sheet.getCell('A1').value = RATE_LABEL;
-  sheet.getCell('A1').font = { bold: true };
-  if (rate != null) sheet.getCell('B1').value = rate;
 
-  let row = 3; // row 2 stays blank, separating the rate from the first section
+  let row = 1;
   sections.forEach((section, index) => {
     if (index > 0) row += 1; // blank row between sections
     const isRoot = section.sectionPath.length <= 1;
@@ -375,12 +356,7 @@ export async function buildPriceListBlob(
       const usd = Number(price.price);
       sheet.getCell(`A${row}`).value = price.name;
       sheet.getCell(`B${row}`).value = Number.isNaN(usd) ? price.price : usd;
-      sheet.getCell(`C${row}`).value = tmtCell(
-        row,
-        usd,
-        price.priceInTmt,
-        rate,
-      );
+      sheet.getCell(`C${row}`).value = tmtCell(price.priceInTmt);
       row += 1;
     });
   });

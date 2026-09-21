@@ -37,7 +37,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { DollarRate, Prices, UserRole } from '@prisma/client';
+import { Prices, UserRole } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -63,7 +63,6 @@ export default function PriceList() {
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
   const [allPrices, setAllPrices] = useState<Prices[]>([]);
-  const [dollarRate, setDollarRate] = useState<number | null>(null);
   const [mode, setMode] = useState<PriceListMode>('category');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<BrandProps[]>([]);
@@ -105,20 +104,6 @@ export default function PriceList() {
         } else {
           console.error(pricesResponse.message);
           showSnackbar('fetchPricesError', 'error');
-        }
-
-        // The rate drives the sheet's manat formula. Without it the export
-        // still works, falling back to each price's stored manat value.
-        const rateResponse = await fetchWithCreds<DollarRate>({
-          accessToken,
-          path: '/api/prices/rate?currency=TMT',
-          method: 'GET',
-        });
-        if (rateResponse.success && rateResponse.data != null) {
-          setDollarRate(rateResponse.data.rate);
-        } else {
-          console.error(rateResponse.message);
-          showSnackbar('fetchDollarRateError', 'error');
         }
 
         // Brand mode needs both halves: the brands to list, and the map saying
@@ -218,7 +203,7 @@ export default function PriceList() {
   const handleDownload = async () => {
     setLoading(true);
     try {
-      const blob = await buildPriceListBlob(sections, dollarRate);
+      const blob = await buildPriceListBlob(sections);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

@@ -1,3 +1,4 @@
+import { RateLike } from '@/lib/dollarRates';
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import {
   displayPriceOf,
@@ -12,20 +13,22 @@ import * as XLSX from 'xlsx';
 
 const regex = /(".*?"|[^",]+|(?<=,)(?=,)|(?<=,)$|^,)/g;
 export type TableData = (string | number | boolean | null)[][];
-// Column order for the update-prices table: the name and the three figures
-// being edited lead, then the row's category, stock state and how stale it is.
+// Column order for the update-prices table: the name and the rate it converts
+// at lead, then the three figures being edited, then the row's category, stock
+// state and how stale it is.
 // The id
 // trails every data row as the stable edit key but is never drawn — the table
 // renders `row.slice(0, PRICE_ID_IDX)`, which is why the header row is exactly
 // one cell shorter than a data row.
 export const PRICE_NAME_IDX = 0;
-export const PRICE_DOLLAR_IDX = 1;
-export const PRICE_MANAT_IDX = 2;
-export const PRICE_DISPLAY_IDX = 3;
-export const PRICE_CATEGORY_IDX = 4;
-export const PRICE_OUT_OF_STOCK_IDX = 5;
-export const PRICE_UPDATED_IDX = 6;
-export const PRICE_ID_IDX = 7;
+export const PRICE_RATE_IDX = 1;
+export const PRICE_DOLLAR_IDX = 2;
+export const PRICE_MANAT_IDX = 3;
+export const PRICE_DISPLAY_IDX = 4;
+export const PRICE_CATEGORY_IDX = 5;
+export const PRICE_OUT_OF_STOCK_IDX = 6;
+export const PRICE_UPDATED_IDX = 7;
+export const PRICE_ID_IDX = 8;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -188,6 +191,7 @@ export const pickVariantColorForSpec = (
 export const processPrices = (prices: Prices[]): TableData => {
   const processedPrices = prices.map((row) => [
     row.name,
+    row.dollarRateId ?? null,
     row.price,
     parsePrice(row.priceInTmt),
     parsePrice(displayPriceOf(row)),
@@ -200,6 +204,7 @@ export const processPrices = (prices: Prices[]): TableData => {
   return [
     [
       'Name',
+      'Rate',
       'Dollars',
       'Manat',
       'Display',
@@ -242,6 +247,8 @@ export const applyPendingEdits = (
     // edit whose value is null, which a `!= null` guard would silently drop.
     if ('categoryId' in edit)
       next[PRICE_CATEGORY_IDX] = edit.categoryId ?? null;
+    if ('dollarRateId' in edit)
+      next[PRICE_RATE_IDX] = edit.dollarRateId ?? null;
     if ('isOutOfStock' in edit)
       next[PRICE_OUT_OF_STOCK_IDX] = edit.isOutOfStock ?? false;
     return next;
@@ -325,6 +332,19 @@ export const NO_PRODUCT_FILTER = '__noProduct__';
 export const NO_CATEGORY_FILTER = '__noCategory__';
 
 // Prices with no category relation of their own.
+// Null rate means "no rate filter". The default rate also owns every unassigned
+// price, matching how a rate edit picks its rows, so those stay reachable here.
+export const filterPricesByRate = (
+  prices: Prices[],
+  rate: RateLike | null,
+): Prices[] => {
+  if (rate == null) return prices;
+  return prices.filter(
+    ({ dollarRateId }) =>
+      dollarRateId === rate.id || (rate.isDefault && dollarRateId == null),
+  );
+};
+
 export const filterPricesWithoutCategory = (prices: Prices[]): Prices[] =>
   prices.filter((p) => p.categoryId == null);
 

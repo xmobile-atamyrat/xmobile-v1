@@ -9,6 +9,7 @@ import {
   computeProductPriceTags,
   debounce,
   filterPricesByCategories,
+  filterPricesByRate,
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
@@ -22,6 +23,7 @@ import {
   PRICE_DISPLAY_IDX,
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
+  PRICE_RATE_IDX,
   PRICE_MANAT_IDX,
   PRICE_NAME_IDX,
   PRICE_OUT_OF_STOCK_IDX,
@@ -82,6 +84,7 @@ describe('processPrices', () => {
         priceInTmt: '35.50',
         categoryId: 'c1',
         productId: 'prod-1',
+        dollarRateId: 1,
         outOfStockAt: null,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         updatedAt: new Date('2026-02-03T04:05:06.000Z'),
@@ -90,6 +93,7 @@ describe('processPrices', () => {
     const table = processPrices(rows);
     expect(table[0]).toEqual([
       'Name',
+      'Rate',
       'Dollars',
       'Manat',
       'Display',
@@ -100,6 +104,7 @@ describe('processPrices', () => {
     // No displayPriceTmt stored, so Display falls back to the exact figure.
     expect(table[1]).toEqual([
       'A',
+      1,
       '10',
       35.5,
       35.5,
@@ -131,12 +136,14 @@ describe('processPrices', () => {
         priceInTmt: '35',
         categoryId: null,
         productId: null,
+        dollarRateId: 1,
         outOfStockAt: new Date('2026-02-01T00:00:00.000Z'),
         updatedAt: new Date('2026-02-03T04:05:06.000Z'),
       },
     ] as Prices[]);
     expect(table[1]).toEqual([
       'A',
+      1,
       '10',
       35,
       35,
@@ -156,11 +163,12 @@ describe('processPrices', () => {
 });
 
 describe('applyPendingEdits', () => {
-  // [Name, Dollars, Manat, Display, Category, Out of stock, Updated, ID]
+  // [Name, Rate, Dollars, Manat, Display, Category, Out of stock, Updated, ID]
   const updated = '2026-02-03T04:05:06.000Z';
   const table = [
     [
       'Name',
+      'Rate',
       'Dollars',
       'Manat',
       'Display',
@@ -168,8 +176,8 @@ describe('applyPendingEdits', () => {
       'Out of stock',
       'Updated',
     ],
-    ['A', '10', 200, 200, 'c1', false, updated, 'p1'],
-    ['B', '20', 400, 400, null, false, updated, 'p2'],
+    ['A', 1, '10', 200, 200, 'c1', false, updated, 'p1'],
+    ['B', null, '20', 400, 400, null, false, updated, 'p2'],
   ];
 
   it('passes rows through unchanged when there are no edits', () => {
@@ -189,6 +197,7 @@ describe('applyPendingEdits', () => {
     // p1 untouched, p2 gets name/dollar/manat/display from the edit
     expect(result[1]).toEqual([
       'A',
+      1,
       '10',
       200,
       200,
@@ -199,6 +208,7 @@ describe('applyPendingEdits', () => {
     ]);
     expect(result[2]).toEqual([
       'B-edited',
+      null,
       '25',
       500,
       510,
@@ -218,6 +228,7 @@ describe('applyPendingEdits', () => {
     // p2 untouched
     expect(result[1]).toEqual([
       'B',
+      null,
       '20',
       400,
       400,
@@ -229,6 +240,7 @@ describe('applyPendingEdits', () => {
     // follows p1; the display cell is its own edit, so it stays put
     expect(result[2]).toEqual([
       'A',
+      1,
       '10',
       999,
       200,
@@ -245,6 +257,7 @@ describe('applyPendingEdits', () => {
     });
     expect(result[2]).toEqual([
       'B',
+      null,
       '20',
       400,
       400,
@@ -262,6 +275,7 @@ describe('applyPendingEdits', () => {
     });
     expect(result[1]).toEqual([
       'A',
+      1,
       '10',
       200,
       200,
@@ -276,7 +290,17 @@ describe('applyPendingEdits', () => {
     const result = applyPendingEdits(table, {
       p2: { id: 'p2', isOutOfStock: true },
     });
-    expect(result[2]).toEqual(['B', '20', 400, 400, null, true, updated, 'p2']);
+    expect(result[2]).toEqual([
+      'B',
+      null,
+      '20',
+      400,
+      400,
+      null,
+      true,
+      updated,
+      'p2',
+    ]);
   });
 
   it('applies an explicit back-in-stock edit', () => {
@@ -284,7 +308,7 @@ describe('applyPendingEdits', () => {
     // absent field.
     const outOfStockTable = [
       table[0],
-      ['A', '10', 200, 200, 'c1', true, updated, 'p1'],
+      ['A', 1, '10', 200, 200, 'c1', true, updated, 'p1'],
       table[2],
     ];
     const result = applyPendingEdits(outOfStockTable, {
@@ -292,6 +316,7 @@ describe('applyPendingEdits', () => {
     });
     expect(result[1]).toEqual([
       'A',
+      1,
       '10',
       200,
       200,
@@ -871,5 +896,90 @@ describe('sortPrices by displayed price', () => {
       'a',
       'b',
     ]);
+  });
+});
+
+describe('the Rate column', () => {
+  it('puts the rate column before Dollars and carries the assigned rate id', () => {
+    const table = processPrices([
+      {
+        id: 'p1',
+        name: 'A',
+        price: '10',
+        priceInTmt: '195',
+        categoryId: 'c1',
+        dollarRateId: 7,
+        outOfStockAt: null,
+        updatedAt: null,
+      },
+    ] as unknown as Prices[]);
+
+    expect(table[0]).toEqual([
+      'Name',
+      'Rate',
+      'Dollars',
+      'Manat',
+      'Display',
+      'Category',
+      'Out of stock',
+      'Updated',
+    ]);
+    expect(table[1][PRICE_RATE_IDX]).toBe(7);
+  });
+
+  it('emits a null rate cell for an unassigned price', () => {
+    const table = processPrices([
+      {
+        id: 'p1',
+        name: 'A',
+        price: '10',
+        priceInTmt: '195',
+        dollarRateId: null,
+      },
+    ] as unknown as Prices[]);
+
+    expect(table[1][PRICE_RATE_IDX]).toBeNull();
+  });
+
+  // Presence-keyed like the category cell: moving a price back to "no rate" is a
+  // legitimate edit whose value is null, which a `!= null` guard would drop.
+  it('overlays a pending rate edit, including a cleared one', () => {
+    const table = processPrices([
+      { id: 'p1', name: 'A', price: '10', priceInTmt: '195', dollarRateId: 7 },
+    ] as unknown as Prices[]);
+
+    expect(
+      applyPendingEdits(table, { p1: { dollarRateId: 9 } })[1][PRICE_RATE_IDX],
+    ).toBe(9);
+    expect(
+      applyPendingEdits(table, { p1: { dollarRateId: null } })[1][
+        PRICE_RATE_IDX
+      ],
+    ).toBeNull();
+  });
+});
+
+describe('filterPricesByRate', () => {
+  const onDefault = { id: 'a', dollarRateId: 1 } as Prices;
+  const onBazar = { id: 'b', dollarRateId: 2 } as Prices;
+  const unassigned = { id: 'c', dollarRateId: null } as Prices;
+  const prices = [onDefault, onBazar, unassigned];
+
+  it('returns every price when no rate is selected', () => {
+    expect(filterPricesByRate(prices, null)).toEqual(prices);
+  });
+
+  it('returns only the prices on a non-default rate', () => {
+    expect(
+      filterPricesByRate(prices, { id: 2, rate: 19.8, isDefault: false }),
+    ).toEqual([onBazar]);
+  });
+
+  // Unassigned prices are priced at the default rate, so the default's filter
+  // has to show them or they are unreachable from the UI.
+  it('includes unassigned prices under the default rate', () => {
+    expect(
+      filterPricesByRate(prices, { id: 1, rate: 19.5, isDefault: true }),
+    ).toEqual([onDefault, unassigned]);
   });
 });
