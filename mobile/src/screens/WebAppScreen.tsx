@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { WebView } from 'react-native-webview';
-import { resolveLocale } from '../i18n/locale';
+import { isSupportedLocale, resolveLocale } from '../i18n/locale';
 import { getStrings } from '../i18n/strings';
 import {
   createLoadRetryController,
@@ -580,7 +580,36 @@ function WebAppScreen() {
     // and the web app fell back to its Russian default. The native screens
     // would then be in one language and the page that followed in another.
     // `locale` is always set, since resolveLocale() ends at DEFAULT_LOCALE.
-    const localeCookie = `document.cookie = "NEXT_LOCALE=${locale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`;
+    //
+    // But it is a *seed*, not an instruction: when nothing is stored, `locale`
+    // is a guess read off the OS. This script runs at the start of every
+    // document, so writing it unconditionally re-stamped that guess over the
+    // language the user had just picked in the switcher -- and the home page
+    // routes to whatever NEXT_LOCALE says (see its getServerSideProps), so the
+    // choice was undone the next time they went home. Only a stored choice
+    // overwrites; a guess is written just when the WebView has no NEXT_LOCALE
+    // at all (fresh install, or a sign-out that emptied the cookie jar).
+    //
+    // Host-only, unlike REFRESH_TOKEN: the web app writes NEXT_LOCALE with no
+    // domain, and a `.xmobile.com.tm` copy is a *different* cookie under RFC
+    // 6265. Both were sent, the older one -- ours -- first, and both the server
+    // (`cookie.parse` keeps the first of a repeated name) and `getCookie` read
+    // that one, so the domain-scoped write shadowed the user's choice outright.
+    const writeLocale = `document.cookie = "NEXT_LOCALE=${locale}; path=/; max-age=315360000${secureAttr}; SameSite=Strict";`;
+
+    // Installs updating from a release that wrote the domain-scoped copy still
+    // carry it, and it would go on shadowing. Expire it on the way past.
+    const legacyDomainLocale = cookieDomain
+      ? `document.cookie = "NEXT_LOCALE=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";`
+      : '';
+
+    const localeCookie = `
+        ${legacyDomainLocale}
+        ${
+          isSupportedLocale(storedLocale)
+            ? writeLocale
+            : `if (!/(?:^|;\\s*)NEXT_LOCALE=/.test(document.cookie)) { ${writeLocale} }`
+        }`;
 
     if (storedToken) {
       return `
@@ -600,7 +629,7 @@ function WebAppScreen() {
         true;
       `;
     }
-  }, [storedToken, locale, cookieDomain, isDevMode]);
+  }, [storedToken, storedLocale, locale, cookieDomain, isDevMode]);
 
   useEffect(() => {
     if (cookieInjectionJS && webViewRef.current) {
@@ -811,6 +840,15 @@ function WebAppScreen() {
               } else {
                 await AsyncStorage.removeItem('NEXT_LOCALE');
                 setStoredLocale(null);
+              }
+            } else if (data.type === 'LOCALE_CHOICE') {
+              // Sent by the web app when the user picks a language, signed in
+              // or not. Storing it is what turns the value into a choice the
+              // cookie seeding above will re-assert instead of stepping on.
+              const chosen = data.payload?.NEXT_LOCALE;
+              if (isSupportedLocale(chosen)) {
+                await AsyncStorage.setItem('NEXT_LOCALE', chosen);
+                setStoredLocale(chosen);
               }
             } else if (data.type === 'LOGOUT') {
               await AsyncStorage.removeItem('REFRESH_TOKEN');
