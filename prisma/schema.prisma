@@ -258,7 +258,6 @@ model DollarRate {
   updatedAt           DateTime    @updatedAt
 
   @@unique([currency, name])
-  @@index([isDefault])
 }
 
 model ChatSession {
