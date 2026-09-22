@@ -28,9 +28,6 @@ DROP INDEX "DollarRate_currency_key";
 CREATE UNIQUE INDEX "DollarRate_currency_name_key" ON "DollarRate"("currency", "name");
 
 -- CreateIndex
-CREATE INDEX "DollarRate_isDefault_idx" ON "DollarRate"("isDefault");
-
--- CreateIndex
 CREATE INDEX "ProcurementOrder_dollarRateId_idx" ON "ProcurementOrder"("dollarRateId");
 
 -- AddForeignKey
