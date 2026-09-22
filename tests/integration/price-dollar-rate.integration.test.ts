@@ -33,6 +33,7 @@ describe('per-price dollar rates (integration)', () => {
     displayPriceTmt: string | null;
     dollarRateId: number | null;
   }[];
+  let cachedPricesBefore: { id: string; cachedPrice: number | null }[];
 
   const seedPrice = (name: string, usd: string, dollarRateId: number | null) =>
     prisma.prices.create({
@@ -59,6 +60,12 @@ describe('per-price dollar rates (integration)', () => {
         dollarRateId: true,
       },
     });
+    // A repricing also mirrors the new manat figure into the cachedPrice of
+    // every product holding that price, and that column is what the catalogue
+    // filters its price ranges on — so it is snapshotted and put back too.
+    cachedPricesBefore = await prisma.product.findMany({
+      select: { id: true, cachedPrice: true },
+    });
   });
 
   afterAll(async () => {
@@ -83,6 +90,16 @@ describe('per-price dollar rates (integration)', () => {
         }),
       ),
     );
+    // updateMany rather than update: the products this file created are already
+    // gone, and a snapshot row for one of them must not abort the restore.
+    await Promise.all(
+      cachedPricesBefore.map((row) =>
+        prisma.product.updateMany({
+          where: { id: row.id },
+          data: { cachedPrice: row.cachedPrice },
+        }),
+      ),
+    );
     await prisma.$disconnect();
     resetPrismaGlobalSingleton();
     teardownIntegrationWorker();
@@ -104,10 +121,11 @@ describe('per-price dollar rates (integration)', () => {
     const bazar = await prisma.dollarRate.create({
       data: { name: `${PREFIX}Bazar`, rate: 19.8, currency: 'TMT' },
     });
-    // Editing the default rate also sweeps up every unassigned price, which
-    // would rewrite the shared catalogue's manat figures. Parking foreign rows
-    // on a rate no test touches keeps the sweep inside this file. The FK is
-    // SetNull, so deleting this rate hands them back unchanged.
+    // Keeps foreign rows off the rates under test, so a case reading back "the
+    // prices on this rate" sees only the ones it seeded. It does not contain a
+    // default-rate edit — that one reprices the whole table whatever a row is
+    // filed under, which is why afterAll restores rather than prevents. The FK
+    // is SetNull, so deleting this rate hands the rows back unchanged.
     const parked = await prisma.dollarRate.create({
       data: { name: `${PREFIX}Parked`, rate: 1, currency: 'TMT' },
     });
