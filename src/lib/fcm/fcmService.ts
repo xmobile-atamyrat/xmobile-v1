@@ -7,6 +7,11 @@ import { FCMNotificationPayload, FCMSendResult } from './types';
 
 let firebaseApp: admin.app.App | null = null;
 
+const STALE_TOKEN_ERROR_CODES = new Set([
+  'messaging/invalid-registration-token',
+  'messaging/registration-token-not-registered',
+]);
+
 /**
  * Initialize Firebase Admin SDK
  */
@@ -198,10 +203,7 @@ export async function sendFCMNotificationToUser(
         if (tokenRecord) failedTokenIds.push(tokenRecord.id);
         const error = resp.error;
 
-        if (
-          error?.code === 'messaging/invalid-registration-token' ||
-          error?.code === 'messaging/registration-token-not-registered'
-        ) {
+        if (STALE_TOKEN_ERROR_CODES.has(error?.code ?? '')) {
           if (tokenRecord) tokensToDelete.push(tokenRecord.token);
         }
 
@@ -223,7 +225,10 @@ export async function sendFCMNotificationToUser(
       // Leads with the notification id: it is stable across the inline attempt
       // and every retry of the same row, which is what lets the Slack throttle
       // (src/lib/alertThrottle.ts) collapse a retry sequence into one alert.
-      console.error(
+      const log = STALE_TOKEN_ERROR_CODES.has(code)
+        ? console.warn
+        : console.error;
+      log(
         `[FCM Service] Notification ${notification.data.notificationId} failed for ${count}/${tokenStrings.length} token(s) of user ${userId} — ${code}: ${errorMessage} (e.g. ${sampleToken}...)`,
       );
     });
