@@ -57,6 +57,66 @@ export function broadcastToSession(
   });
 }
 
+/**
+ * Presence is derived, not stored: a user is online exactly when they hold at
+ * least one open socket. The connection registry is already maintained on
+ * connect and disconnect, so there is no separate presence table to drift out
+ * of sync with reality.
+ *
+ * A user may hold several sockets at once (two tabs, phone plus laptop), which
+ * is why callers care about the 0 <-> 1 boundary rather than every add and
+ * remove -- closing one of two tabs is not going offline.
+ */
+export function isUserOnline(
+  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+  userId: string,
+): boolean {
+  return (connectionsMap.get(userId)?.size ?? 0) > 0;
+}
+
+export function getOnlineUserIds(
+  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+): string[] {
+  return [...connectionsMap.keys()].filter((userId) =>
+    isUserOnline(connectionsMap, userId),
+  );
+}
+
+export function isAdminGrade(grade: AuthenticatedConnection['userGrade']) {
+  return grade === UserRole.ADMIN || grade === UserRole.SUPERUSER;
+}
+
+/** Tells the staff side that one customer's presence changed. */
+export function broadcastPresenceToAdmins(
+  adminConnections: Set<AuthenticatedConnection>,
+  userId: string,
+  online: boolean,
+) {
+  adminConnections.forEach((conn) => {
+    sendMessage(conn, { type: 'presence_update', userId, online });
+  });
+}
+
+/**
+ * Tells every customer whether the support desk is staffed right now.
+ *
+ * Deliberately an aggregate: customers learn that *somebody* is there, never
+ * which individual admin, and never anything about each other.
+ */
+export function broadcastSupportPresence(
+  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+  supportOnline: boolean,
+) {
+  connectionsMap.forEach((userConnections) => {
+    userConnections.forEach((conn) => {
+      if (isAdminGrade(conn.userGrade)) {
+        return;
+      }
+      sendMessage(conn, { type: 'support_presence', supportOnline });
+    });
+  });
+}
+
 export async function verifySessionParticipant(
   sessionId: string,
   userId: string,

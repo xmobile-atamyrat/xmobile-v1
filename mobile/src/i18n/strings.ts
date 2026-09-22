@@ -1,7 +1,12 @@
 import { SupportedLocale } from './locale';
 
 type SlideStrings = {
-  badge: string;
+  /**
+   * Optional: the pill overlaid on the slide image. The delivery slide has
+   * none -- it claimed same-day delivery in Ashgabat, which the business does
+   * not promise -- and a slide without one simply renders the bare image.
+   */
+  badge?: string;
   title: string;
   description: string;
 };
@@ -10,13 +15,14 @@ export type Strings = {
   onboarding: {
     skip: string;
     /**
-     * Primary footer CTA on the last slide. This is the sign-up action (it
-     * hands off to /user/signup), so the wording is the web app's `signup`
-     * string per locale -- keep the two in sync rather than inventing copy.
+     * Primary footer CTA on the last slide. It enters the app as a guest --
+     * straight to the home page, no account -- because a first-launch user who
+     * is still deciding should be able to look before signing anything.
      */
     cta: string;
-    signInPrompt: string;
-    signInLink: string;
+    /** Secondary footer line: the opt-in route to /user/signup. */
+    signUpPrompt: string;
+    signUpLink: string;
     /** Fixed at three, one per slide, aligned with SLIDE_VISUALS. */
     slides: [SlideStrings, SlideStrings, SlideStrings];
   };
@@ -36,9 +42,9 @@ export type Strings = {
 const tk: Strings = {
   onboarding: {
     skip: 'Geç',
-    cta: 'Täze hasap döret',
-    signInPrompt: 'Hasabyňyz barmy? ',
-    signInLink: 'Hasaba gir',
+    cta: 'Myhman hökmünde dowam et',
+    signUpPrompt: 'Hasabyňyz ýokmy? ',
+    signUpLink: 'Täze hasap döret',
     slides: [
       {
         badge: 'Sekuntlarda satyn alyň',
@@ -53,10 +59,9 @@ const tk: Strings = {
           'Goralan töleg, barlanan satyjylar we her satyn almada resmi kepillik. Doly ynam bilen söwda ediň.',
       },
       {
-        badge: 'Aşgabatda şol gün eltip berme',
         title: 'Çalt eltip berme, gapyňyza çenli',
         description:
-          'Hakyky wagtda yzarlamak we şäher boýunça şol gün eltip berme. Sargydyňyz size gerek wagtynda gelýär.',
+          'Türkmenistanyň ähli welaýatlaryna eltip berýäris. Sargydyňyz gelende nagt töläň.',
       },
     ],
   },
@@ -78,9 +83,9 @@ const tk: Strings = {
 const ru: Strings = {
   onboarding: {
     skip: 'Пропустить',
-    cta: 'Зарегистрироваться',
-    signInPrompt: 'Уже есть аккаунт? ',
-    signInLink: 'Войти',
+    cta: 'Продолжить как гость',
+    signUpPrompt: 'Нет аккаунта? ',
+    signUpLink: 'Зарегистрироваться',
     slides: [
       {
         badge: 'Покупайте за секунды',
@@ -95,10 +100,9 @@ const ru: Strings = {
           'Защищённая оплата, проверенные продавцы и официальная гарантия на каждую покупку. Покупайте с полной уверенностью.',
       },
       {
-        badge: 'Доставка в Ашхабаде в тот же день',
         title: 'Быстрая доставка, прямо до двери',
         description:
-          'Отслеживание в реальном времени и доставка по городу в тот же день. Ваш заказ приходит именно тогда, когда нужен.',
+          'Доставляем во все велаяты Туркменистана. Оплатите наличными при получении заказа.',
       },
     ],
   },
@@ -121,9 +125,9 @@ const ru: Strings = {
 const en: Strings = {
   onboarding: {
     skip: 'Skip',
-    cta: 'Sign up',
-    signInPrompt: 'Already have an account? ',
-    signInLink: 'Sign in',
+    cta: 'Continue as a guest',
+    signUpPrompt: "Don't have an account? ",
+    signUpLink: 'Sign up',
     slides: [
       {
         badge: 'Buy in seconds',
@@ -138,10 +142,9 @@ const en: Strings = {
           'Protected payments, verified sellers and an official warranty on every purchase. Shop with complete confidence.',
       },
       {
-        badge: 'Same-day delivery in Ashgabat',
         title: 'Fast delivery, right to your door',
         description:
-          'Real-time tracking and same-day delivery across the city. Your order arrives exactly when you need it.',
+          'We deliver to every velayat of Turkmenistan. Pay in cash when your order arrives.',
       },
     ],
   },
@@ -162,9 +165,9 @@ const en: Strings = {
 const tr: Strings = {
   onboarding: {
     skip: 'Geç',
-    cta: 'Kayıt ol',
-    signInPrompt: 'Hesabınız var mı? ',
-    signInLink: 'Giriş yap',
+    cta: 'Misafir olarak devam et',
+    signUpPrompt: 'Hesabınız yok mu? ',
+    signUpLink: 'Kayıt ol',
     slides: [
       {
         badge: 'Saniyeler içinde satın alın',
@@ -179,10 +182,9 @@ const tr: Strings = {
           'Korumalı ödeme, doğrulanmış satıcılar ve her alışverişte resmi garanti. Tam bir güvenle alışveriş edin.',
       },
       {
-        badge: "Aşkabat'ta aynı gün teslimat",
         title: 'Hızlı teslimat, kapınıza kadar',
         description:
-          'Gerçek zamanlı takip ve şehir genelinde aynı gün teslimat. Siparişiniz tam ihtiyacınız olduğunda geliyor.',
+          "Türkmenistan'ın tüm velayetlerine teslimat yapıyoruz. Siparişiniz geldiğinde nakit ödeyin.",
       },
     ],
   },

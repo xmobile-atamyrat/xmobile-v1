@@ -1,10 +1,20 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { useChatHeaderPresence } from '@/pages/lib/hooks/useChatHeaderPresence';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import { colors, fill, hairline, ink, muted, navy, red } from '@/styles/theme';
+import {
+  colors,
+  fill,
+  hairline,
+  ink,
+  muted,
+  navy,
+  onlineGreen,
+  red,
+} from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -23,8 +33,6 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ChatSessionList from './ChatSessionList';
 import ChatWindow from './ChatWindow';
-
-const ONLINE_GREEN = '#1F9A5A';
 
 const ChatWidget = () => {
   const { user } = useUserContext();
@@ -49,8 +57,16 @@ const ChatWidget = () => {
   const [isSessionClosed, setSessionClosed] = useState(false);
   const router = useRouter();
 
-  const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
-  const canManageSession = isAdmin && currentSession?.status !== 'CLOSED';
+  const isAdmin = !!user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+  // The `!= null` is load-bearing. `currentSession?.status !== 'CLOSED'` on its
+  // own is also true on the admin session list, where there is no current
+  // session at all: optional chaining yields undefined, which passes the
+  // inequality and put an End button in the list header with nothing to end.
+  const canManageSession =
+    isAdmin && currentSession != null && currentSession.status !== 'CLOSED';
+
+  const { inSession, showPresence, online, statusLabel, title } =
+    useChatHeaderPresence(isAdmin);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,21 +149,6 @@ const ChatWidget = () => {
   };
 
   const renderHeader = () => {
-    const inSession = !!currentSession;
-    const showAvatar = !isAdmin || inSession;
-    const online = isConnected;
-
-    let title: string;
-    if (inSession && isAdmin) {
-      title =
-        currentSession?.users?.find((u) => u.grade === 'FREE')?.name ||
-        t('chatGuest');
-    } else if (isAdmin) {
-      title = t('chatAdminDashboard');
-    } else {
-      title = t('chatCustomerSupport');
-    }
-
     return (
       <Box
         className={chatClasses.header.container[platform]}
@@ -183,7 +184,7 @@ const ChatWidget = () => {
           </Box>
         )}
 
-        {showAvatar && (
+        {showPresence && (
           <Box
             sx={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}
           >
@@ -209,7 +210,7 @@ const ChatWidget = () => {
                   width: 11,
                   height: 11,
                   borderRadius: '999px',
-                  backgroundColor: ONLINE_GREEN,
+                  backgroundColor: onlineGreen,
                   border: '2px solid #fff',
                 }}
               />
@@ -224,15 +225,15 @@ const ChatWidget = () => {
           >
             {title}
           </Typography>
-          {showAvatar && (
+          {showPresence && (
             <Typography
               sx={{
                 fontSize: '12px',
                 fontWeight: 500,
-                color: online ? ONLINE_GREEN : muted,
+                color: online ? onlineGreen : muted,
               }}
             >
-              {online ? t('chatOnline') : t('chatConnecting')}
+              {statusLabel}
             </Typography>
           )}
         </Box>
