@@ -268,6 +268,22 @@ export default function CartPage() {
     </Box>
   );
 
+  // Hoisted for the same reason as the two above: the platform trees return
+  // separately, so anything left inline in one of them is invisible in the
+  // other. This one is load-bearing — handleCheckoutClick refuses to navigate
+  // and opens this dialog instead, so without it the web Checkout button is a
+  // silent no-op whenever a line is out of stock.
+  const outOfStockDialog = showOutOfStockDialog && (
+    <OutOfStockDialog
+      items={outOfStockItems.map((item) => ({
+        id: item.id,
+        name: item.product.name,
+      }))}
+      onClose={() => setShowOutOfStockDialog(false)}
+      onRemove={handleRemoveOutOfStockItems}
+    />
+  );
+
   // Desktop storefront cart (spec 1584-1602): line-item cards on the left, the
   // order summary as a 380px card on the right — no PRODUCT/PRICE/QUANTITY/TOTAL
   // table header, and the checkout CTA lives in the summary instead of the head.
@@ -331,6 +347,7 @@ export default function CartPage() {
             emptyState
           )}
         </Box>
+        {outOfStockDialog}
       </Layout>
     );
   }
@@ -389,16 +406,7 @@ export default function CartPage() {
           )}
         </Box>
       </Box>
-      {showOutOfStockDialog && (
-        <OutOfStockDialog
-          items={outOfStockItems.map((item) => ({
-            id: item.id,
-            name: item.product.name,
-          }))}
-          onClose={() => setShowOutOfStockDialog(false)}
-          onRemove={handleRemoveOutOfStockItems}
-        />
-      )}
+      {outOfStockDialog}
     </Layout>
   );
 }
