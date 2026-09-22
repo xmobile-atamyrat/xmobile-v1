@@ -8,6 +8,8 @@ export const muted = '#8B8A98';
 export const hairline = '#ECECF1';
 export const fill = '#F5F5F8';
 export const pageBg = '#E9E8EE';
+/** Chat presence indicator. Shared by the widget, the /chat page and the session list. */
+export const onlineGreen = '#1F9A5A';
 
 export const colors = {
   text: {

@@ -184,6 +184,7 @@ function WebAppScreen() {
   const [reloadKey, setReloadKey] = useState(0);
   const canGoBackRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
+  const hasSeenOnboardingRef = useRef(false);
   const [pendingClickAction, setPendingClickAction] = useState<string | null>(
     null,
   );
@@ -450,7 +451,21 @@ function WebAppScreen() {
   }, [canGoBack]);
 
   useEffect(() => {
+    hasSeenOnboardingRef.current = hasSeenOnboarding;
+  }, [hasSeenOnboarding]);
+
+  useEffect(() => {
     const backButton = () => {
+      // While the onboarding overlay is up the WebView underneath is mounted
+      // and prefetching, so canGoBack can go true for a page the user has
+      // never seen. Consuming the press there would drive an invisible
+      // WebView and swallow the gesture -- the user taps back on slide one
+      // and nothing at all appears to happen. Returning false hands the press
+      // to the OS, which is what happened before onboarding became an overlay
+      // rather than an early return.
+      if (!hasSeenOnboardingRef.current) {
+        return false;
+      }
       if (canGoBackRef.current && webViewRef.current) {
         webViewRef.current.goBack();
         return true;
@@ -641,21 +656,27 @@ function WebAppScreen() {
     return <LoadingView />;
   }
 
-  if (!hasSeenOnboarding) {
-    return (
-      <OnboardingScreen
-        locale={locale}
-        onDone={landingPath => {
-          setInitialPath(landingPath ?? '');
-          setHasSeenOnboarding(true);
-        }}
-      />
-    );
-  }
+  // Onboarding is an overlay, not an early return, so the WebView below it
+  // mounts and loads the home page while the user is still reading the three
+  // slides. That is the whole point: the first load is the slowest one the app
+  // ever does (cold DNS, TLS, an uncached SSR render) and on a slow path it has
+  // been measured in tens of seconds, all of which used to start only after the
+  // final tap. Overlapping it with ~15s of reading hides most of that.
+  //
+  // Nothing about it is visible: OnboardingScreen fills the frame opaquely, and
+  // the state overlays below are suppressed while it is up so a prefetch that
+  // fails unattended cannot paint an error screen behind the slides.
+  const showOnboarding = !hasSeenOnboarding;
 
   const isCertificateError =
     errorDetail != null && classifyWebViewError(errorDetail) === 'certificate';
-  const overlay = isOffline ? 'offline' : errorDetail ? 'error' : null;
+  const overlay = showOnboarding
+    ? null
+    : isOffline
+      ? 'offline'
+      : errorDetail
+        ? 'error'
+        : null;
 
   return (
     <View style={styles.container}>
@@ -868,7 +889,7 @@ function WebAppScreen() {
         }}
         injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
       />
-      {isRetrying && !overlay && <LoadingView />}
+      {isRetrying && !overlay && !showOnboarding && <LoadingView />}
       {overlay === 'offline' ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
@@ -926,6 +947,28 @@ function WebAppScreen() {
           </Text>
         </View>
       ) : null}
+      {showOnboarding && (
+        <View style={styles.onboardingOverlay}>
+          <OnboardingScreen
+            locale={locale}
+            onDone={landingPath => {
+              setInitialPath(landingPath ?? '');
+              setHasSeenOnboarding(true);
+
+              // The prefetch ran unattended. If it never committed -- it
+              // failed, or the 10s deadline fired while nobody was looking --
+              // start the real load clean instead of dropping the user onto a
+              // stale error screen the moment the slides disappear. When it did
+              // commit there is nothing to do: the page is already up, and for
+              // the sign-up link the initialPath change navigates the warm
+              // WebView rather than remounting it.
+              if (!controller.hasCommitted()) {
+                controller.retry();
+              }
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -937,6 +980,14 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+  },
+  // Above every state overlay: the prefetch behind it may legitimately be
+  // loading, retrying or failing, and none of that is the user's business
+  // while they are still on the slides.
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
+    zIndex: 20,
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,

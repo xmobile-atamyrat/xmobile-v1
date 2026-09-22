@@ -32,15 +32,16 @@ const DOT_INACTIVE = '#E4E3EB';
 
 export const ONBOARDING_SEEN_KEY = 'HAS_SEEN_ONBOARDING';
 
-// Routes in the web app that the footer controls hand off to.
+// The route the secondary footer link hands off to. The primary CTA passes no
+// path at all, which lands on the home page as a guest.
 //
-// The primary CTA goes to sign-up, not into the catalogue: onboarding is only
-// ever shown on a first launch, so almost nobody reaching it has an account
-// yet, and auth tokens don't expire -- a user who signs up here effectively
-// never sees a login screen again. Sign-in stays as the secondary link for the
+// Guest-first, deliberately: onboarding runs once on a first launch, at the
+// point where the user has seen three marketing slides and nothing else, and
+// a signup wall there asks for a phone number before they have any reason to
+// give one. Signing up stays one tap away for anyone who wants it, and the
+// web app carries its own signin entry point in the profile tab for the
 // minority who are reinstalling.
 const SIGN_UP_PATH = '/user/signup';
-const SIGN_IN_PATH = '/user/signin';
 
 // Visuals only -- the copy lives in src/i18n/strings.ts and is zipped in by
 // index below. `id` is the React key: titles used to serve as keys, but they
@@ -178,14 +179,16 @@ function OnboardingScreen({
                 style={styles.image}
                 resizeMode="cover"
               />
-              <View style={styles.badge}>
-                <slide.Icon
-                  size={14}
-                  color={slide.iconColor}
-                  strokeWidth={1.75}
-                />
-                <Text style={styles.badgeText}>{slide.badge}</Text>
-              </View>
+              {slide.badge && (
+                <View style={styles.badge}>
+                  <slide.Icon
+                    size={14}
+                    color={slide.iconColor}
+                    strokeWidth={1.75}
+                  />
+                  <Text style={styles.badgeText}>{slide.badge}</Text>
+                </View>
+              )}
             </View>
             <View style={styles.textWrap}>
               <Text style={styles.title}>{slide.title}</Text>
@@ -199,15 +202,15 @@ function OnboardingScreen({
           <>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={() => finish(SIGN_UP_PATH)}
+              onPress={() => finish()}
               activeOpacity={0.85}
             >
               <Text style={styles.ctaButtonText}>{t.cta}</Text>
             </TouchableOpacity>
-            <View style={styles.signInRow}>
-              <Text style={styles.signInPrompt}>{t.signInPrompt}</Text>
-              <TouchableOpacity onPress={() => finish(SIGN_IN_PATH)}>
-                <Text style={styles.signInLink}>{t.signInLink}</Text>
+            <View style={styles.signUpRow}>
+              <Text style={styles.signUpPrompt}>{t.signUpPrompt}</Text>
+              <TouchableOpacity onPress={() => finish(SIGN_UP_PATH)}>
+                <Text style={styles.signUpLink}>{t.signUpLink}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -245,9 +248,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   // NAVY, not MUTED: MUTED is this file's non-interactive body-copy grey
-  // (description, signInPrompt), and at ~3.4:1 on white it read as a disabled
+  // (description, signUpPrompt), and at ~3.4:1 on white it read as a disabled
   // control -- reported as such from the field. Interactive text here is NAVY
-  // (see signInLink), which is unambiguous on every renderer; Android rasterizes
+  // (see signUpLink), which is unambiguous on every renderer; Android rasterizes
   // weight 600 thinner than iOS, which is why the grey only looked dead on some
   // devices.
   skip: { fontSize: 14, fontWeight: '600', color: NAVY },
@@ -320,9 +323,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   ctaButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  signInRow: { flexDirection: 'row', justifyContent: 'center' },
-  signInPrompt: { fontSize: 14, color: MUTED },
-  signInLink: { fontSize: 14, color: NAVY, fontWeight: '600' },
+  signUpRow: { flexDirection: 'row', justifyContent: 'center' },
+  signUpPrompt: { fontSize: 14, color: MUTED },
+  signUpLink: { fontSize: 14, color: NAVY, fontWeight: '600' },
 });
 
 export default OnboardingScreen;

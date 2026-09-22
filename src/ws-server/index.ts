@@ -19,6 +19,11 @@ import {
   sendNotificationWithFCMFallback,
   verifySessionParticipant,
   broadcastToSession,
+  broadcastPresenceToAdmins,
+  broadcastSupportPresence,
+  getOnlineUserIds,
+  isAdminGrade,
+  isUserOnline,
 } from '@/ws-server/lib/utils';
 import cookie from 'cookie';
 import { createServer, IncomingMessage } from 'http';
@@ -49,16 +54,30 @@ const safeCloseConnection = (
 
   if (connection.readyState === WebSocket.OPEN) connection.close(code, reason);
 
+  const wasSupportOnline = adminConnections.size > 0;
+  let wentOffline: string | null = null;
+
   if ('userId' in connection) {
     const userId = connection?.userId;
     connections.get(userId)?.delete(connection as AuthenticatedConnection);
-    if (!connections.get(userId)?.size) connections.delete(userId);
+    if (!connections.get(userId)?.size) {
+      connections.delete(userId);
+      // Last socket for this user: only now are they actually offline.
+      wentOffline = userId;
+    }
   }
-  if (
-    'userGrade' in connection &&
-    (connection.userGrade === 'ADMIN' || connection.userGrade === 'SUPERUSER')
-  ) {
+  if ('userGrade' in connection && isAdminGrade(connection.userGrade)) {
     adminConnections.delete(connection as AuthenticatedConnection);
+  }
+
+  // Broadcast only once the maps are settled. Announcing earlier would let a
+  // recipient recompute presence from the registry and disagree with the event
+  // it just received -- and would send the departing socket its own obituary.
+  if (wentOffline != null) {
+    broadcastPresenceToAdmins(adminConnections, wentOffline, false);
+  }
+  if (wasSupportOnline && adminConnections.size === 0) {
+    broadcastSupportPresence(connections, false);
   }
 };
 
@@ -582,16 +601,60 @@ wsServer.on('connection', async (connection, request) => {
       await authenticateConnection(request, connection);
 
     if (safeConnection?.userId != null) {
+      // Sampled before the registry is touched: this is what tells a second
+      // tab apart from a genuine arrival.
+      const wasOnline = isUserOnline(connections, safeConnection.userId);
+      const wasSupportOnline = adminConnections.size > 0;
+
       if (!connections.has(safeConnection.userId)) {
         connections.set(safeConnection.userId, new Set());
       }
       connections.get(safeConnection.userId)?.add(safeConnection);
 
-      if (
-        safeConnection.userGrade === 'ADMIN' ||
-        safeConnection.userGrade === 'SUPERUSER'
-      ) {
+      const isAdmin = isAdminGrade(safeConnection.userGrade);
+      if (isAdmin) {
         adminConnections.add(safeConnection);
+      }
+
+      // Registered here, immediately after the registry add and before any
+      // await below. A socket that dies while those DB queries are in flight
+      // would otherwise emit 'close' with no listener attached, and nothing
+      // would ever remove it: the ping sweep walks wsServer.clients, which ws
+      // has already pruned, so the entry outlives the process's usefulness.
+      // The result is a user pinned online forever -- or worse, an admin
+      // pinned in adminConnections, telling every customer the support desk
+      // is staffed when nobody is there.
+      //
+      // safeCloseConnection is idempotent (Set/Map deletes, and the presence
+      // broadcasts are gated on the 1->0 transition), so an early attach costs
+      // nothing if the connection closes normally later.
+      safeConnection.on('close', () =>
+        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
+      );
+
+      // Liveness bookkeeping for the ping sweep below.
+      safeConnection.isAlive = true;
+      safeConnection.on('pong', () => {
+        safeConnection.isAlive = true;
+      });
+
+      // Snapshot before any delta, so the client has a baseline to apply
+      // updates to rather than inferring one from the first transition.
+      sendMessage(safeConnection, {
+        type: 'presence_state',
+        onlineUserIds: isAdmin ? getOnlineUserIds(connections) : [],
+        supportOnline: adminConnections.size > 0,
+      });
+
+      if (!wasOnline) {
+        broadcastPresenceToAdmins(
+          adminConnections,
+          safeConnection.userId,
+          true,
+        );
+      }
+      if (!wasSupportOnline && adminConnections.size > 0) {
+        broadcastSupportPresence(connections, true);
       }
 
       if (accessToken != null) {
@@ -653,15 +716,92 @@ wsServer.on('connection', async (connection, request) => {
           console.error(filepath, 'Failed to handle message:', err);
         }
       });
-
-      safeConnection.on('close', () =>
-        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
-      );
     }
   } catch (error) {
     console.error('Connection error:', error);
     safeCloseConnection(1008, 'Unauthorized: Connection failed', connection);
   }
 });
+
+/**
+ * Liveness sweep.
+ *
+ * A socket can die without either side being told -- the phone drops off a
+ * tower, a middlebox silently forgets the flow -- and TCP may take minutes to
+ * work that out. Until it does, the connection sits in the registry and the
+ * user reads as online, which is exactly the failure that makes a presence
+ * indicator untrustworthy.
+ *
+ * Browsers answer ping frames in their WebSocket implementation, below the
+ * page, so this needs no client code and works even on a wedged tab. The
+ * interval doubles as a keepalive: 30s is comfortably under nginx's 60s
+ * proxy_read_timeout, so idle chats stop being dropped by the proxy.
+ */
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+const heartbeat = setInterval(() => {
+  wsServer.clients.forEach((client) => {
+    const connection = client as AuthenticatedConnection;
+
+    if (connection.isAlive === false) {
+      // Missed the previous round trip. terminate() emits 'close', so the
+      // usual cleanup and presence broadcast run without a separate path.
+      connection.terminate();
+      return;
+    }
+
+    connection.isAlive = false;
+    try {
+      connection.ping();
+    } catch (error) {
+      console.error(filepath, 'Failed to ping connection:', error);
+    }
+  });
+}, HEARTBEAT_INTERVAL_MS);
+
+/**
+ * Graceful shutdown.
+ *
+ * This used to hang the interval cleanup off `wsServer.on('close')`, which
+ * only fires from an explicit `wsServer.close()` -- and nothing ever called
+ * one, so the handler was decoration. A process manager restarting this
+ * service sends SIGTERM, and without a handler the sockets die by TCP reset:
+ * clients see an abnormal closure and enter reconnect backoff, rather than a
+ * clean 1001 they can act on immediately.
+ *
+ * Closing the WebSocketServer walks its clients, which runs each connection's
+ * 'close' handler, which is what empties the presence registry and lets the
+ * remaining peers learn everyone went offline.
+ */
+const SHUTDOWN_GRACE_MS = 5_000;
+
+let isShuttingDown = false;
+
+const shutdown = (signal: string) => {
+  // A second SIGTERM (or SIGINT from an impatient Ctrl-C) must not restart the
+  // sequence and re-arm the force-exit timer.
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(filepath, `Received ${signal}, shutting down`);
+  clearInterval(heartbeat);
+
+  wsServer.clients.forEach((client) => {
+    safeCloseConnection(1001, 'Server shutting down', client);
+  });
+
+  wsServer.close(() => server.close(() => process.exit(0)));
+
+  // wsServer.close() waits for every client to acknowledge its close frame,
+  // and a wedged peer -- the same half-open socket the heartbeat exists to
+  // catch -- may never answer. Don't let one hold the restart hostage.
+  setTimeout(() => {
+    console.error(filepath, 'Shutdown grace period elapsed, forcing exit');
+    process.exit(0);
+  }, SHUTDOWN_GRACE_MS).unref();
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 server.listen(port);

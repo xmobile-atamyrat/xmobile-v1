@@ -1,6 +1,7 @@
 import ChatSessionList from '@/pages/components/chat/ChatSessionList';
 import ChatWindow from '@/pages/components/chat/ChatWindow';
 import { useChatContext } from '@/pages/lib/ChatContext';
+import { useChatHeaderPresence } from '@/pages/lib/hooks/useChatHeaderPresence';
 import { SUPPORT_PHONES } from '@/pages/lib/constants';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -8,7 +9,16 @@ import { useVisualViewport } from '@/pages/lib/useVisualViewport';
 import { ChatSession } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import { colors, fill, hairline, ink, muted, navy, red } from '@/styles/theme';
+import {
+  colors,
+  fill,
+  hairline,
+  ink,
+  muted,
+  navy,
+  onlineGreen,
+  red,
+} from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -27,8 +37,6 @@ import { useEffect, useRef, useState } from 'react';
 
 // Store support line (primary of the three in SUPPORT_PHONES), dialed from the chat header
 const [STORE_PHONE] = SUPPORT_PHONES;
-const ONLINE_GREEN = '#1F9A5A';
-
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
     props: {
@@ -66,10 +74,13 @@ export default function ChatPage() {
   const initializedSessionIdRef = useRef<string | null>(null);
   const messagesLoadedRef = useRef<string | null>(null);
 
-  const isAdmin = user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
+  const isAdmin = !!user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
   const isParticipant = currentSession?.users?.some((u) => u.id === user?.id);
   const canManageSession =
     isAdmin && isParticipant && currentSession?.status !== 'CLOSED';
+
+  const { inSession, showPresence, online, statusLabel, title } =
+    useChatHeaderPresence(isAdmin);
 
   // Redirect to sign in if not authenticated
   useEffect(() => {
@@ -293,22 +304,6 @@ export default function ChatPage() {
   };
 
   const renderHeader = () => {
-    const inSession = !!currentSession;
-    // Admin viewing the session list has no conversation partner → no avatar/status.
-    const showAvatar = !isAdmin || inSession;
-    const online = isConnected;
-
-    let title: string;
-    if (inSession && isAdmin) {
-      title =
-        currentSession?.users?.find((u) => u.grade === 'FREE')?.name ||
-        t('chatGuest');
-    } else if (isAdmin) {
-      title = t('chatAdminDashboard');
-    } else {
-      title = t('chatCustomerSupport');
-    }
-
     const onBack = inSession && isAdmin ? handleBackToSessionList : handleBack;
 
     return (
@@ -345,7 +340,7 @@ export default function ChatPage() {
           <ArrowLeft size={20} color={navy} />
         </Box>
 
-        {showAvatar && (
+        {showPresence && (
           <Box
             sx={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}
           >
@@ -371,7 +366,7 @@ export default function ChatPage() {
                   width: 11,
                   height: 11,
                   borderRadius: '999px',
-                  backgroundColor: ONLINE_GREEN,
+                  backgroundColor: onlineGreen,
                   border: '2px solid #fff',
                 }}
               />
@@ -386,15 +381,15 @@ export default function ChatPage() {
           >
             {title}
           </Typography>
-          {showAvatar && (
+          {showPresence && (
             <Typography
               sx={{
                 fontSize: '12px',
                 fontWeight: 500,
-                color: online ? ONLINE_GREEN : muted,
+                color: online ? onlineGreen : muted,
               }}
             >
-              {online ? t('chatOnline') : t('chatConnecting')}
+              {statusLabel}
             </Typography>
           )}
         </Box>
