@@ -172,8 +172,9 @@ function WebAppScreen() {
   const locale = useMemo(() => resolveLocale(storedLocale), [storedLocale]);
   const t = useMemo(() => getStrings(locale).app, [locale]);
 
-  // Path the WebView opens on. Onboarding sets this when the user leaves via
-  // the sign-in link so they land on sign-in instead of the home page.
+  // Path the WebView opens on. Empty is the home page, which is both the
+  // normal case and what the onboarding CTA ("continue as a guest") uses;
+  // onboarding only sets a path when the user takes the sign-up link instead.
   const [initialPath, setInitialPath] = useState('');
   const [isOffline, setIsOffline] = useState(false);
   const [errorDetail, setErrorDetail] = useState<WebViewErrorDetail | null>(
