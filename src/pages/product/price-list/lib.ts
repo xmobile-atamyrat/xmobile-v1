@@ -20,6 +20,8 @@ export const PRICE_LIST_SHEET_NAME = 'Prices';
 const PRICE_HEADER = ['Name', 'USD', 'TMT'];
 const LAST_COLUMN = 3;
 
+const isInStock = (price: Prices): boolean => price.outOfStockAt == null;
+
 /**
  * One banner-and-table block in the sheet. Both download modes produce these:
  * a category section carries its ancestor path, a brand section a single name.
@@ -141,7 +143,7 @@ export const buildBrandPriceSections = (
       sectionPath: [brand.name],
       prices: (brandPriceIds[brand.id] ?? [])
         .map((id) => priceById.get(id))
-        .filter((price): price is Prices => price != null)
+        .filter((price): price is Prices => price != null && isInStock(price))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }))
     .filter((section) => section.prices.length > 0);
@@ -258,6 +260,7 @@ export const buildPriceSections = (
   const grouped = new Map<string, Prices[]>();
   prices.forEach((price) => {
     if (price.categoryId == null) return;
+    if (!isInStock(price)) return;
     const owner = ownerOf(price.categoryId);
     if (owner == null) return;
     if (!grouped.has(owner)) grouped.set(owner, []);
