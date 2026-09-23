@@ -411,6 +411,7 @@
   "chatNoActiveChats": "Işläp duran çat ýok",
   "chatLastActive": "Soňki aktiw wagty",
   "chatTypeMessage": "Bir zat ýazyň...",
+  "chatMessageTooLong": "{count} belgi artyk",
   "chatSessionClosed": "Bu sessiýa ýapyldy",
   "chatNotParticipant": "Siz bu sessiýada katnaşyjy ämäz",
   "chatSessionClosedByAdmin": "Bu çaty admin öçürdi.",

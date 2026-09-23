@@ -66,12 +66,20 @@ export const chatClasses = {
   // Input
   input: {
     container: {
-      web: 'p-[12px] gap-[8px]',
-      mobile: 'p-[10px] gap-[6px]',
+      web: 'p-[12px]',
+      mobile: 'p-[10px]',
+    },
+    row: {
+      web: 'gap-[8px]',
+      mobile: 'gap-[6px]',
     },
     button: {
       web: 'w-[40px] h-[40px]',
       mobile: 'w-[36px] h-[36px]',
+    },
+    counter: {
+      web: 'text-[12px] pt-[6px] px-[4px] gap-[8px]',
+      mobile: 'text-[11px] pt-[5px] px-[4px] gap-[6px]',
     },
   },
 

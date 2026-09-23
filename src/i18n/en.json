@@ -409,6 +409,7 @@
   "chatNoActiveChats": "No active chats",
   "chatLastActive": "Last active",
   "chatTypeMessage": "Type a message...",
+  "chatMessageTooLong": "Too long by {count} characters",
   "chatSessionClosed": "This session is closed",
   "chatNotParticipant": "You are not a participant of this session",
   "chatSessionClosedByAdmin": "This chat session has been closed by an admin.",
