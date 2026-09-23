@@ -300,6 +300,7 @@
   "chatNoActiveChats": "Aktif sohbet yok",
   "chatLastActive": "Son aktif",
   "chatTypeMessage": "Bir mesaj yazın...",
+  "chatMessageTooLong": "{count} karakter fazla",
   "chatSessionClosed": "Bu oturum kapatıldı",
   "chatNotParticipant": "Bu oturumun katılımcısı değilsiniz",
   "chatSessionClosedByAdmin": "Bu sohbet oturumu yönetici tarafından kapatıldı.",

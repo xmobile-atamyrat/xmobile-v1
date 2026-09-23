@@ -412,6 +412,7 @@
   "chatNoActiveChats": "Нет активных чатов",
   "chatLastActive": "Последняя активность",
   "chatTypeMessage": "Введите сообщение...",
+  "chatMessageTooLong": "Лишние символы: {count}",
   "chatSessionClosed": "Эта сессия закрыта",
   "chatNotParticipant": "Вы не являетесь участником этой сессии",
   "chatSessionClosedByAdmin": "Эта сессия чата была закрыта администратором.",

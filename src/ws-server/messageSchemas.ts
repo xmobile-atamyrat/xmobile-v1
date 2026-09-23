@@ -1,3 +1,4 @@
+import { CHAT_MESSAGE_MAX_LENGTH } from '@/pages/lib/constants';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 
@@ -6,7 +7,7 @@ export const MessageSchema = z.object({
   sessionId: z.string(),
   senderId: z.string(),
   senderRole: z.enum([UserRole.ADMIN, UserRole.FREE, UserRole.SUPERUSER]),
-  content: z.string().max(5000),
+  content: z.string().max(CHAT_MESSAGE_MAX_LENGTH),
   timestamp: z.string(),
 });
 

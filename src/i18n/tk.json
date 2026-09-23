@@ -411,6 +411,7 @@
   "chatNoActiveChats": "Işjeň söhbet ýok",
   "chatLastActive": "Soňky işjeňlik",
   "chatTypeMessage": "Habar ýazyň...",
+  "chatMessageTooLong": "{count} belgi artyk",
   "chatSessionClosed": "Bu söhbetdeşlik ýapyk",
   "chatNotParticipant": "Siz bu sessiýanyň gatnaşyjysy däl",
   "chatSessionClosedByAdmin": "Bu söhbetdeşlik admin tarapyndan ýapyldy.",
