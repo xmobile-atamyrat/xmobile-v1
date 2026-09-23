@@ -159,6 +159,30 @@ export type ChatEvent =
       notificationIds: string[];
       success: boolean;
     }
+  /**
+   * Presence snapshot, sent once to every client right after it connects so a
+   * freshly opened dashboard is not blind until the next transition happens.
+   *
+   * `onlineUserIds` is populated for admins only: a customer has no business
+   * learning which other customers are connected, so their copy is always
+   * empty and `supportOnline` is the only field they act on.
+   */
+  | {
+      type: 'presence_state';
+      onlineUserIds: string[];
+      supportOnline: boolean;
+    }
+  /** One user's presence flipped. Admin recipients only, for the same reason. */
+  | {
+      type: 'presence_update';
+      userId: string;
+      online: boolean;
+    }
+  /** At least one ADMIN/SUPERUSER is connected. Sent to non-admin clients. */
+  | {
+      type: 'support_presence';
+      supportOnline: boolean;
+    }
   | HistoryResponseMessage;
 
 // Legacy alias to ease refactoring (deprecated)

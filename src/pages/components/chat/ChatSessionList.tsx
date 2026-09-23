@@ -4,7 +4,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { TK_MONTHS_SHORT } from '@/pages/lib/constants';
 import { ChatSession, ProtectedUser } from '@/pages/lib/types';
 import { chatClasses } from '@/styles/classMaps/components/chat';
-import { muted } from '@/styles/theme';
+import { muted, onlineGreen } from '@/styles/theme';
 import {
   Accordion,
   AccordionDetails,
@@ -71,12 +71,14 @@ const SessionListItem = ({
   user,
   locale,
   platform,
+  onlineUserIds,
   onClick,
 }: {
   session: ChatSession;
   user: ProtectedUser | null;
   locale: string;
   platform: Platform;
+  onlineUserIds: Set<string>;
   onClick: (session: ChatSession) => void;
 }) => {
   const t = useTranslations();
@@ -89,6 +91,7 @@ const SessionListItem = ({
 
   const lastMessage = chatSession.messages?.[0];
   const awaitingAdminReply = lastMessage?.senderRole === 'FREE';
+  const isOnline = sessionUser != null && onlineUserIds.has(sessionUser.id);
 
   let senderName = '';
   if (lastMessage) {
@@ -121,17 +124,37 @@ const SessionListItem = ({
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          sx={{
-            fontSize: '14px',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {userInfo}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {/*
+            Presence dot, driven by the server's connection registry. Rendered
+            only when the user is actually connected -- an always-visible dot
+            that is merely grey when offline reads as decoration and is what
+            made the old indicator so easy to misread.
+          */}
+          {isOnline && (
+            <Box
+              aria-label={t('chatOnline')}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '999px',
+                backgroundColor: onlineGreen,
+                flexShrink: 0,
+              }}
+            />
+          )}
+          <Typography
+            sx={{
+              fontSize: '14px',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {userInfo}
+          </Typography>
+        </Box>
         <Typography
           sx={{
             fontSize: '12px',
@@ -179,7 +202,7 @@ const SessionListItem = ({
 
 const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
   const { user } = useUserContext();
-  const { sessions, loadSessions } = useChatContext();
+  const { sessions, loadSessions, onlineUserIds } = useChatContext();
   const platform = usePlatform();
   const t = useTranslations();
   const router = useRouter();
@@ -257,6 +280,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                 user={user}
                 locale={locale}
                 platform={platform}
+                onlineUserIds={onlineUserIds}
                 onClick={handleSessionClick}
               />
             ))}
@@ -294,6 +318,7 @@ const ChatSessionList = ({ onSelectSession }: ChatSessionListProps) => {
                   user={user}
                   locale={locale}
                   platform={platform}
+                  onlineUserIds={onlineUserIds}
                   onClick={handleSessionClick}
                 />
               ))}

@@ -17,6 +17,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface ChatContextProps {
   isConnected: boolean;
+  /**
+   * Users the server currently holds an open socket for. Only ever populated
+   * for admins -- a customer's snapshot is empty by design, so reading this in
+   * customer-facing UI will silently show everyone as offline.
+   */
+  onlineUserIds: Set<string>;
+  /** Whether any admin is connected, i.e. is the support desk staffed. */
+  isSupportOnline: boolean;
   messages: ChatMessage[];
   sessions: ChatSession[];
   currentSession: ChatSession | undefined;
@@ -36,6 +44,8 @@ interface ChatContextProps {
 
 const ChatContext = createContext<ChatContextProps>({
   isConnected: false,
+  onlineUserIds: new Set<string>(),
+  isSupportOnline: false,
   messages: [],
   sessions: [],
   currentSession: undefined,
@@ -60,6 +70,10 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession>();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
+  const [isSupportOnline, setIsSupportOnline] = useState(false);
 
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
 
@@ -72,6 +86,10 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     setSessions([]);
     setMessages([]);
     setCurrentSession(undefined);
+    // Presence is scoped to who you are: an admin's roster must not survive
+    // into a customer session on the same device.
+    setOnlineUserIds(new Set<string>());
+    setIsSupportOnline(false);
   }, [user?.id]);
 
   const loadSessions = useCallback(async () => {
@@ -106,9 +124,58 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     [isConnected, send],
   );
 
+  // Presence subscriptions are registered at mount, NOT gated on isConnected.
+  //
+  // The server pushes `presence_state` the instant the socket opens, without
+  // being asked. Registering the handler from an effect that waits for
+  // isConnected loses that race every time: isConnected only flips in the
+  // socket's onopen, and the effect reacting to it does not run until React
+  // has committed that re-render -- by which point the snapshot has already
+  // been dispatched to an empty subscriber set and dropped. Transitions kept
+  // working, so the symptom was the subtle one: everybody reads as offline
+  // until something happens to change.
+  //
+  // Effects run child-first, so this registers before WebSocketContext's own
+  // effect has even constructed the socket. `subscribe` is stable, so the
+  // handlers survive reconnects and catch the replayed snapshot too.
+  useEffect(() => {
+    const unsubscribePresenceState = subscribe('presence_state', (data) => {
+      setOnlineUserIds(new Set<string>(data.onlineUserIds ?? []));
+      setIsSupportOnline(Boolean(data.supportOnline));
+    });
+
+    const unsubscribePresenceUpdate = subscribe('presence_update', (data) => {
+      setOnlineUserIds((prev) => {
+        const next = new Set(prev);
+        if (data.online) {
+          next.add(data.userId);
+        } else {
+          next.delete(data.userId);
+        }
+        return next;
+      });
+    });
+
+    const unsubscribeSupportPresence = subscribe('support_presence', (data) => {
+      setIsSupportOnline(Boolean(data.supportOnline));
+    });
+
+    return () => {
+      unsubscribePresenceState();
+      unsubscribePresenceUpdate();
+      unsubscribeSupportPresence();
+    };
+  }, [subscribe]);
+
   // Subscribe to WebSocket messages for chat
   useEffect(() => {
     if (!isConnected) {
+      // Our own socket is down, so every cached presence value is a claim
+      // about a server we can no longer hear from. Drop them: showing a stale
+      // "online" is worse than showing nothing, and the server replays a full
+      // snapshot the moment we reconnect anyway.
+      setOnlineUserIds(new Set<string>());
+      setIsSupportOnline(false);
       return undefined;
     }
 
@@ -318,6 +385,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = useMemo(
     () => ({
       isConnected,
+      onlineUserIds,
+      isSupportOnline,
       messages,
       sessions,
       currentSession,
@@ -334,6 +403,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       isConnected,
+      onlineUserIds,
+      isSupportOnline,
       messages,
       sessions,
       currentSession,
