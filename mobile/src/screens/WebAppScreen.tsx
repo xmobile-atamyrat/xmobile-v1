@@ -24,8 +24,17 @@ import {
 } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { WebView } from 'react-native-webview';
-import { resolveLocale } from '../i18n/locale';
+import { isSupportedLocale, resolveLocale } from '../i18n/locale';
 import { getStrings } from '../i18n/strings';
+import {
+  createLoadRetryController,
+  LoadRetryController,
+} from '../lib/loadRetry';
+import {
+  classifyWebViewError,
+  formatDiagnostics,
+  WebViewErrorDetail,
+} from '../lib/webviewErrors';
 import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
 const NAVY = '#20166E';
@@ -163,13 +172,20 @@ function WebAppScreen() {
   const locale = useMemo(() => resolveLocale(storedLocale), [storedLocale]);
   const t = useMemo(() => getStrings(locale).app, [locale]);
 
-  // Path the WebView opens on. Onboarding sets this when the user leaves via
-  // the sign-in link so they land on sign-in instead of the home page.
+  // Path the WebView opens on. Empty is the home page, which is both the
+  // normal case and what the onboarding CTA ("continue as a guest") uses;
+  // onboarding only sets a path when the user takes the sign-up link instead.
   const [initialPath, setInitialPath] = useState('');
   const [isOffline, setIsOffline] = useState(false);
-  const [hasWebviewError, setHasWebviewError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<WebViewErrorDetail | null>(
+    null,
+  );
+  const [isRetrying, setIsRetrying] = useState(false);
+  const errorDetailRef = useRef<WebViewErrorDetail | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const canGoBackRef = useRef(false);
   const [canGoBack, setCanGoBack] = useState(false);
+  const hasSeenOnboardingRef = useRef(false);
   const [pendingClickAction, setPendingClickAction] = useState<string | null>(
     null,
   );
@@ -197,6 +213,26 @@ function WebAppScreen() {
     const timer = setTimeout(dismissNotification, 4000);
     return () => clearTimeout(timer);
   }, [activeNotification, dismissNotification]);
+
+  const controllerRef = useRef<LoadRetryController | null>(null);
+  if (!controllerRef.current) {
+    controllerRef.current = createLoadRetryController({
+      reload: hasCommitted => {
+        if (hasCommitted && webViewRef.current) {
+          webViewRef.current.reload();
+        } else {
+          setReloadKey(key => key + 1);
+        }
+      },
+      setRetrying: setIsRetrying,
+      setError: setErrorDetail,
+    });
+  }
+  const controller = controllerRef.current;
+
+  useEffect(() => {
+    return () => controller.dispose();
+  }, [controller]);
 
   // Dev mode is determined automatically by React Native's __DEV__ flag.
   // __DEV__ = true in debug/Metro builds, false in release/production builds.
@@ -404,6 +440,10 @@ function WebAppScreen() {
   }, []);
 
   useEffect(() => {
+    errorDetailRef.current = errorDetail;
+  }, [errorDetail]);
+
+  useEffect(() => {
     isWebAppReadyRef.current = isWebAppReady;
   }, [isWebAppReady]);
 
@@ -412,7 +452,21 @@ function WebAppScreen() {
   }, [canGoBack]);
 
   useEffect(() => {
+    hasSeenOnboardingRef.current = hasSeenOnboarding;
+  }, [hasSeenOnboarding]);
+
+  useEffect(() => {
     const backButton = () => {
+      // While the onboarding overlay is up the WebView underneath is mounted
+      // and prefetching, so canGoBack can go true for a page the user has
+      // never seen. Consuming the press there would drive an invisible
+      // WebView and swallow the gesture -- the user taps back on slide one
+      // and nothing at all appears to happen. Returning false hands the press
+      // to the OS, which is what happened before onboarding became an overlay
+      // rather than an early return.
+      if (!hasSeenOnboardingRef.current) {
+        return false;
+      }
       if (canGoBackRef.current && webViewRef.current) {
         webViewRef.current.goBack();
         return true;
@@ -432,12 +486,12 @@ function WebAppScreen() {
       const offline = state.isConnected === false;
       setIsOffline(offline);
       // If internet comes back, clear the webview error so it can retry rendering
-      if (!offline) {
-        setHasWebviewError(false);
+      if (!offline && errorDetailRef.current) {
+        controller.retryOnReconnect();
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [controller]);
 
   useEffect(() => {
     const loadStoredData = async () => {
@@ -542,7 +596,36 @@ function WebAppScreen() {
     // and the web app fell back to its Russian default. The native screens
     // would then be in one language and the page that followed in another.
     // `locale` is always set, since resolveLocale() ends at DEFAULT_LOCALE.
-    const localeCookie = `document.cookie = "NEXT_LOCALE=${locale}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";`;
+    //
+    // But it is a *seed*, not an instruction: when nothing is stored, `locale`
+    // is a guess read off the OS. This script runs at the start of every
+    // document, so writing it unconditionally re-stamped that guess over the
+    // language the user had just picked in the switcher -- and the home page
+    // routes to whatever NEXT_LOCALE says (see its getServerSideProps), so the
+    // choice was undone the next time they went home. Only a stored choice
+    // overwrites; a guess is written just when the WebView has no NEXT_LOCALE
+    // at all (fresh install, or a sign-out that emptied the cookie jar).
+    //
+    // Host-only, unlike REFRESH_TOKEN: the web app writes NEXT_LOCALE with no
+    // domain, and a `.xmobile.com.tm` copy is a *different* cookie under RFC
+    // 6265. Both were sent, the older one -- ours -- first, and both the server
+    // (`cookie.parse` keeps the first of a repeated name) and `getCookie` read
+    // that one, so the domain-scoped write shadowed the user's choice outright.
+    const writeLocale = `document.cookie = "NEXT_LOCALE=${locale}; path=/; max-age=315360000${secureAttr}; SameSite=Strict";`;
+
+    // Installs updating from a release that wrote the domain-scoped copy still
+    // carry it, and it would go on shadowing. Expire it on the way past.
+    const legacyDomainLocale = cookieDomain
+      ? `document.cookie = "NEXT_LOCALE=; path=/; domain=${cookieDomain}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";`
+      : '';
+
+    const localeCookie = `
+        ${legacyDomainLocale}
+        ${
+          isSupportedLocale(storedLocale)
+            ? writeLocale
+            : `if (!/(?:^|;\\s*)NEXT_LOCALE=/.test(document.cookie)) { ${writeLocale} }`
+        }`;
 
     if (storedToken) {
       return `
@@ -562,7 +645,7 @@ function WebAppScreen() {
         true;
       `;
     }
-  }, [storedToken, locale, cookieDomain, isDevMode]);
+  }, [storedToken, storedLocale, locale, cookieDomain, isDevMode]);
 
   useEffect(() => {
     if (cookieInjectionJS && webViewRef.current) {
@@ -574,21 +657,241 @@ function WebAppScreen() {
     return <LoadingView />;
   }
 
-  if (!hasSeenOnboarding) {
-    return (
-      <OnboardingScreen
-        locale={locale}
-        onDone={landingPath => {
-          setInitialPath(landingPath ?? '');
-          setHasSeenOnboarding(true);
-        }}
-      />
-    );
-  }
+  // Onboarding is an overlay, not an early return, so the WebView below it
+  // mounts and loads the home page while the user is still reading the three
+  // slides. That is the whole point: the first load is the slowest one the app
+  // ever does (cold DNS, TLS, an uncached SSR render) and on a slow path it has
+  // been measured in tens of seconds, all of which used to start only after the
+  // final tap. Overlapping it with ~15s of reading hides most of that.
+  //
+  // Nothing about it is visible: OnboardingScreen fills the frame opaquely, and
+  // the state overlays below are suppressed while it is up so a prefetch that
+  // fails unattended cannot paint an error screen behind the slides.
+  const showOnboarding = !hasSeenOnboarding;
+
+  const isCertificateError =
+    errorDetail != null && classifyWebViewError(errorDetail) === 'certificate';
+  const overlay = showOnboarding
+    ? null
+    : isOffline
+      ? 'offline'
+      : errorDetail
+        ? 'error'
+        : null;
 
   return (
     <View style={styles.container}>
-      {isOffline ? (
+      {activeNotification && !overlay && (
+        <TouchableOpacity
+          activeOpacity={0.95}
+          style={styles.fcmBanner}
+          onPress={() => {
+            if (activeNotification.data) {
+              handleNotificationNavigationFromData(activeNotification.data);
+            }
+            dismissNotification();
+          }}
+        >
+          <View style={styles.fcmBannerContent}>
+            <Text style={styles.fcmBannerTitle} numberOfLines={1}>
+              {activeNotification.title}
+            </Text>
+            <Text style={styles.fcmBannerBody} numberOfLines={2}>
+              {activeNotification.body}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      <WebView
+        key={`${isDevMode ? 'dev' : 'prod'}-${reloadKey}`}
+        ref={webViewRef}
+        source={{ uri: `${baseUrl}${initialPath}` }}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        cacheEnabled={true}
+        incognito={false}
+        domStorageEnabled={true}
+        onNavigationStateChange={navState => {
+          setCanGoBack(navState.canGoBack);
+          persistGuestSessionFromCookie();
+        }}
+        style={styles.webview}
+        startInLoadingState={true}
+        javaScriptEnabled={true}
+        renderLoading={() => <LoadingView />}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        onLoadStart={() => {
+          controller.handleLoadStart();
+        }}
+        onLoad={() => {
+          controller.handleLoadEnd();
+        }}
+        onError={syntheticEvent => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView error: ', nativeEvent);
+
+          controller.handleError({
+            code: nativeEvent.code,
+            description: nativeEvent.description,
+            url: nativeEvent.url,
+          });
+        }}
+        onHttpError={syntheticEvent => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn('WebView HTTP error: ', nativeEvent);
+        }}
+        onMessage={async event => {
+          try {
+            const data = JSON.parse(event.nativeEvent.data);
+            console.log('WebView Message received:', data.type);
+
+            if (data.type === 'REQUEST_APP_VERSION') {
+              // Web app is ready, now it's safe to send the version
+              setIsWebAppReady(true);
+              const appVersion = DeviceInfo.getVersion();
+              if (webViewRef.current) {
+                const appVersionPayload = {
+                  type: 'APP_VERSION',
+                  payload: appVersion,
+                };
+                const scripts: string[] = [
+                  `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
+                    appVersionPayload,
+                  )} }));`,
+                ];
+
+                if (pendingClickAction) {
+                  const deepLinkPayload = JSON.stringify({
+                    type: 'NOTIFICATION_CLICK',
+                    payload: { target: pendingClickAction },
+                  });
+                  scripts.push(`window.dispatchEvent(new MessageEvent('message', {
+                        data: ${deepLinkPayload}
+                    }));`);
+                }
+
+                if (fcmToken) {
+                  const uniqueId = DeviceInfo.getUniqueIdSync();
+                  const tokenPayload = JSON.stringify({
+                    type: 'FCM_TOKEN_AVAILABLE',
+                    payload: { token: fcmToken, uniqueId },
+                  });
+                  scripts.push(
+                    `window.dispatchEvent(new MessageEvent('message', { data: ${tokenPayload} }));`,
+                  );
+                }
+
+                webViewRef.current.injectJavaScript(`
+                    (function() {
+                      ${scripts.join('\n')}
+                    })();
+                    true;
+                  `);
+                if (pendingClickAction) {
+                  setPendingClickAction(null);
+                }
+              }
+            } else if (data.type === 'REQUEST_FCM_TOKEN') {
+              const uniqueId = await DeviceInfo.getUniqueId();
+              let token = fcmToken;
+              if (!token) {
+                token = await fetchAndCacheToken();
+              }
+              if (token && webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'FCM_TOKEN',
+                  payload: { token, uniqueId },
+                });
+
+                webViewRef.current.injectJavaScript(`
+                    (function() {
+                      window.dispatchEvent(new MessageEvent('message', {
+                        data: ${payload}
+                      }));
+                    })();
+                    true;
+                  `);
+              }
+            } else if (data.type === 'CHECK_PERMISSION') {
+              const status = await checkNotificationPermission();
+              if (webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'NOTIFICATION_PERMISSION_STATUS',
+                  payload: {
+                    status: status ? 'GRANTED' : 'NOT_DETERMINED',
+                  },
+                });
+                webViewRef.current.injectJavaScript(`
+                        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                        true;
+                       `);
+              }
+            } else if (data.type === 'REQUEST_PERMISSION') {
+              const granted = await requestNotificationPermission();
+              if (granted) {
+                fetchAndCacheToken();
+              }
+              if (webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'NOTIFICATION_PERMISSION_STATUS',
+                  payload: { status: granted ? 'GRANTED' : 'DENIED' },
+                });
+                webViewRef.current.injectJavaScript(`
+                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                         true;
+                        `);
+              }
+            } else if (data.type === 'AUTH_STATE') {
+              const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
+              if (REFRESH_TOKEN) {
+                await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
+                setStoredToken(REFRESH_TOKEN);
+              } else {
+                // Token was deleted on web side — clear everything
+                await AsyncStorage.removeItem('REFRESH_TOKEN');
+                await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
+                await CookieManager.clearAll(true);
+                setStoredToken(null);
+                setFcmToken(null);
+              }
+
+              if (NEXT_LOCALE) {
+                await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
+                setStoredLocale(NEXT_LOCALE);
+              } else {
+                await AsyncStorage.removeItem('NEXT_LOCALE');
+                setStoredLocale(null);
+              }
+            } else if (data.type === 'LOCALE_CHOICE') {
+              // Sent by the web app when the user picks a language, signed in
+              // or not. Storing it is what turns the value into a choice the
+              // cookie seeding above will re-assert instead of stepping on.
+              const chosen = data.payload?.NEXT_LOCALE;
+              if (isSupportedLocale(chosen)) {
+                await AsyncStorage.setItem('NEXT_LOCALE', chosen);
+                setStoredLocale(chosen);
+              }
+            } else if (data.type === 'LOGOUT') {
+              await AsyncStorage.removeItem('REFRESH_TOKEN');
+              await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
+              await AsyncStorage.removeItem('NEXT_LOCALE');
+              await AsyncStorage.removeItem('GUEST_SESSION_ID');
+              await CookieManager.clearAll(true);
+              setStoredToken(null);
+              setStoredLocale(null);
+              setStoredGuestSession(null);
+              setFcmToken(null);
+            }
+            await persistGuestSessionFromCookie();
+          } catch (err) {
+            console.error('Failed to parse WebView message:', err);
+          }
+        }}
+        injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
+      />
+      {isRetrying && !overlay && !showOnboarding && <LoadingView />}
+      {overlay === 'offline' ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: FILL }]}>
             <WifiOff width={52} height={52} color={ICON_MUTED} />
@@ -609,21 +912,27 @@ function WebAppScreen() {
             <Text style={styles.stateButtonText}>{t.retry}</Text>
           </TouchableOpacity>
         </View>
-      ) : hasWebviewError ? (
+      ) : overlay === 'error' && errorDetail ? (
         <View style={styles.stateContainer}>
           <View style={[styles.iconCircle, { backgroundColor: RED_TINT }]}>
             <ServerCrash width={50} height={50} color={RED} />
           </View>
           <Text style={styles.stateTitle}>{t.errorTitle}</Text>
-          <Text style={styles.stateBody}>{t.errorBody}</Text>
+          <Text
+            style={[
+              styles.stateBody,
+              isCertificateError && styles.stateBodyTight,
+            ]}
+          >
+            {isCertificateError ? t.certificateBody : t.errorBody}
+          </Text>
+          {isCertificateError && (
+            <Text style={styles.stateHint}>{t.vpnHint}</Text>
+          )}
           <TouchableOpacity
             activeOpacity={0.85}
             style={[styles.stateButton, styles.stateButtonSpaced]}
-            onPress={() => {
-              // WebView is unmounted while this state shows, so there's no ref to
-              // reload() — remounting it against the same uri is the retry.
-              setHasWebviewError(false);
-            }}
+            onPress={() => controller.retry()}
           >
             <RefreshCw width={18} height={18} color="#ffffff" />
             <Text style={styles.stateButtonText}>{t.retry}</Text>
@@ -634,199 +943,32 @@ function WebAppScreen() {
           >
             <Text style={styles.stateSupportText}>{t.supportLink}</Text>
           </TouchableOpacity>
+          <Text style={styles.stateDiagnostics}>
+            {formatDiagnostics(errorDetail, Platform.OS)}
+          </Text>
         </View>
-      ) : (
-        <>
-          {activeNotification && (
-            <TouchableOpacity
-              activeOpacity={0.95}
-              style={styles.fcmBanner}
-              onPress={() => {
-                if (activeNotification.data) {
-                  handleNotificationNavigationFromData(activeNotification.data);
-                }
-                dismissNotification();
-              }}
-            >
-              <View style={styles.fcmBannerContent}>
-                <Text style={styles.fcmBannerTitle} numberOfLines={1}>
-                  {activeNotification.title}
-                </Text>
-                <Text style={styles.fcmBannerBody} numberOfLines={2}>
-                  {activeNotification.body}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          <WebView
-            key={isDevMode ? 'dev' : 'prod'}
-            ref={webViewRef}
-            source={{ uri: `${baseUrl}${initialPath}` }}
-            sharedCookiesEnabled={true}
-            thirdPartyCookiesEnabled={true}
-            cacheEnabled={true}
-            incognito={false}
-            domStorageEnabled={true}
-            onNavigationStateChange={navState => {
-              setCanGoBack(navState.canGoBack);
-              persistGuestSessionFromCookie();
-            }}
-            style={styles.webview}
-            startInLoadingState={true}
-            javaScriptEnabled={true}
-            renderLoading={() => <LoadingView />}
-            allowsInlineMediaPlayback={true}
-            mediaPlaybackRequiresUserAction={false}
-            onError={syntheticEvent => {
-              const { nativeEvent } = syntheticEvent;
-              console.warn('WebView error: ', nativeEvent);
-              setHasWebviewError(true);
-            }}
-            onHttpError={syntheticEvent => {
-              const { nativeEvent } = syntheticEvent;
-              console.warn('WebView HTTP error: ', nativeEvent);
-            }}
-            onMessage={async event => {
-              try {
-                const data = JSON.parse(event.nativeEvent.data);
-                console.log('WebView Message received:', data.type);
+      ) : null}
+      {showOnboarding && (
+        <View style={styles.onboardingOverlay}>
+          <OnboardingScreen
+            locale={locale}
+            onDone={landingPath => {
+              setInitialPath(landingPath ?? '');
+              setHasSeenOnboarding(true);
 
-                if (data.type === 'REQUEST_APP_VERSION') {
-                  // Web app is ready, now it's safe to send the version
-                  setIsWebAppReady(true);
-                  const appVersion = DeviceInfo.getVersion();
-                  if (webViewRef.current) {
-                    const appVersionPayload = {
-                      type: 'APP_VERSION',
-                      payload: appVersion,
-                    };
-                    const scripts: string[] = [
-                      `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
-                        appVersionPayload,
-                      )} }));`,
-                    ];
-
-                    if (pendingClickAction) {
-                      const deepLinkPayload = JSON.stringify({
-                        type: 'NOTIFICATION_CLICK',
-                        payload: { target: pendingClickAction },
-                      });
-                      scripts.push(`window.dispatchEvent(new MessageEvent('message', {
-                        data: ${deepLinkPayload}
-                    }));`);
-                    }
-
-                    if (fcmToken) {
-                      const uniqueId = DeviceInfo.getUniqueIdSync();
-                      const tokenPayload = JSON.stringify({
-                        type: 'FCM_TOKEN_AVAILABLE',
-                        payload: { token: fcmToken, uniqueId },
-                      });
-                      scripts.push(
-                        `window.dispatchEvent(new MessageEvent('message', { data: ${tokenPayload} }));`,
-                      );
-                    }
-
-                    webViewRef.current.injectJavaScript(`
-                    (function() {
-                      ${scripts.join('\n')}
-                    })();
-                    true;
-                  `);
-                    if (pendingClickAction) {
-                      setPendingClickAction(null);
-                    }
-                  }
-                } else if (data.type === 'REQUEST_FCM_TOKEN') {
-                  const uniqueId = await DeviceInfo.getUniqueId();
-                  let token = fcmToken;
-                  if (!token) {
-                    token = await fetchAndCacheToken();
-                  }
-                  if (token && webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'FCM_TOKEN',
-                      payload: { token, uniqueId },
-                    });
-
-                    webViewRef.current.injectJavaScript(`
-                    (function() {
-                      window.dispatchEvent(new MessageEvent('message', {
-                        data: ${payload}
-                      }));
-                    })();
-                    true;
-                  `);
-                  }
-                } else if (data.type === 'CHECK_PERMISSION') {
-                  const status = await checkNotificationPermission();
-                  if (webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'NOTIFICATION_PERMISSION_STATUS',
-                      payload: {
-                        status: status ? 'GRANTED' : 'NOT_DETERMINED',
-                      },
-                    });
-                    webViewRef.current.injectJavaScript(`
-                        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
-                        true;
-                       `);
-                  }
-                } else if (data.type === 'REQUEST_PERMISSION') {
-                  const granted = await requestNotificationPermission();
-                  if (granted) {
-                    fetchAndCacheToken();
-                  }
-                  if (webViewRef.current) {
-                    const payload = JSON.stringify({
-                      type: 'NOTIFICATION_PERMISSION_STATUS',
-                      payload: { status: granted ? 'GRANTED' : 'DENIED' },
-                    });
-                    webViewRef.current.injectJavaScript(`
-                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
-                         true;
-                        `);
-                  }
-                } else if (data.type === 'AUTH_STATE') {
-                  const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
-                  if (REFRESH_TOKEN) {
-                    await AsyncStorage.setItem('REFRESH_TOKEN', REFRESH_TOKEN);
-                    setStoredToken(REFRESH_TOKEN);
-                  } else {
-                    // Token was deleted on web side — clear everything
-                    await AsyncStorage.removeItem('REFRESH_TOKEN');
-                    await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
-                    await CookieManager.clearAll(true);
-                    setStoredToken(null);
-                    setFcmToken(null);
-                  }
-
-                  if (NEXT_LOCALE) {
-                    await AsyncStorage.setItem('NEXT_LOCALE', NEXT_LOCALE);
-                    setStoredLocale(NEXT_LOCALE);
-                  } else {
-                    await AsyncStorage.removeItem('NEXT_LOCALE');
-                    setStoredLocale(null);
-                  }
-                } else if (data.type === 'LOGOUT') {
-                  await AsyncStorage.removeItem('REFRESH_TOKEN');
-                  await AsyncStorage.removeItem('FCM_TOKEN_CACHE');
-                  await AsyncStorage.removeItem('NEXT_LOCALE');
-                  await AsyncStorage.removeItem('GUEST_SESSION_ID');
-                  await CookieManager.clearAll(true);
-                  setStoredToken(null);
-                  setStoredLocale(null);
-                  setStoredGuestSession(null);
-                  setFcmToken(null);
-                }
-                await persistGuestSessionFromCookie();
-              } catch (err) {
-                console.error('Failed to parse WebView message:', err);
+              // The prefetch ran unattended. If it never committed -- it
+              // failed, or the 10s deadline fired while nobody was looking --
+              // start the real load clean instead of dropping the user onto a
+              // stale error screen the moment the slides disappear. When it did
+              // commit there is nothing to do: the page is already up, and for
+              // the sign-up link the initialPath change navigates the warm
+              // WebView rather than remounting it.
+              if (!controller.hasCommitted()) {
+                controller.retry();
               }
             }}
-            injectedJavaScriptBeforeContentLoaded={cookieInjectionJS}
           />
-        </>
+        </View>
       )}
     </View>
   );
@@ -839,6 +981,14 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+  },
+  // Above every state overlay: the prefetch behind it may legitimately be
+  // loading, retrying or failing, and none of that is the user's business
+  // while they are still on the slides.
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff',
+    zIndex: 20,
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -892,8 +1042,23 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: NAVY,
   },
+  stateBodyTight: {
+    marginBottom: 12,
+  },
+  stateHint: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: INK,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
   stateButtonSpaced: {
     marginBottom: 12,
+  },
+  stateDiagnostics: {
+    marginTop: 18,
+    fontSize: 11,
+    color: ICON_MUTED,
   },
   stateButtonText: {
     color: '#ffffff',

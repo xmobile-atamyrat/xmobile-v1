@@ -50,16 +50,19 @@ function tokenRows(n: number) {
 }
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
+let warnSpy: ReturnType<typeof vi.spyOn>;
 
 describe('sendFCMNotificationToUser failure logging', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeleteMany.mockResolvedValue({ count: 0 });
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     errorSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it('logs a shared credential failure once, not once per token', async () => {
@@ -108,12 +111,12 @@ describe('sendFCMNotificationToUser failure logging', () => {
 
     expect(result.tokensSent).toBe(1);
     expect(result.tokensFailed).toBe(3);
-    expect(errorSpy).toHaveBeenCalledTimes(2);
-    const lines = errorSpy.mock.calls.map((c: unknown[]) => c.join(' '));
-    expect(
-      lines.some((l: string) => l.includes('fetch failed') && l.includes('2')),
-    ).toBe(true);
-    expect(lines.some((l: string) => l.includes('not registered'))).toBe(true);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const errorLine = errorSpy.mock.calls[0].join(' ');
+    expect(errorLine).toContain('fetch failed');
+    expect(errorLine).toContain('2');
+    expect(warnSpy.mock.calls[0].join(' ')).toContain('not registered');
   });
 
   it('still prunes stale tokens while logging is grouped', async () => {
