@@ -641,5 +641,22 @@
   "lastEdited": "Last edited",
   "selectCategoryFirst": "Select a product category first",
   "takenBy": "taken by",
-  "noPricesInCategory": "No prices in this category"
+  "noPricesInCategory": "No prices in this category",
+  "rate": "Rate",
+  "allRates": "All rates",
+  "addRate": "Add rate",
+  "rateName": "Rate name",
+  "defaultRate": "Default rate",
+  "confirmRateRecalculate": "Recalculate {count} prices at this rate?",
+  "assignToRate": "Assign to rate",
+  "confirmAssignToRate": "Move {count} filtered prices onto «{name}»?",
+  "confirmDeleteRate": "Delete «{name}»? Its prices move to the default rate.",
+  "deleteRate": "Delete rate",
+  "rateCreated": "Rate added",
+  "rateCreateFailed": "Could not add the rate",
+  "rateDeleted": "Rate deleted",
+  "rateDeleteFailed": "Could not delete the rate",
+  "pricesAssigned": "Prices moved to the rate",
+  "assignPricesError": "Could not move the prices",
+  "confirmDefaultRateRecalculate": "Recalculate all {count} prices at this rate? Every price moves back to the default rate."
 }
