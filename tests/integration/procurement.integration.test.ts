@@ -132,7 +132,9 @@ describe('Procurement API (integration, SUPERUSER)', () => {
 
   it('SUPERUSER creates procurement order and lists it', async () => {
     await prisma.dollarRate.upsert({
-      where: { currency: CURRENCY.TMT },
+      where: {
+        currency_name: { currency: CURRENCY.TMT, name: 'Manat' },
+      },
       create: { currency: CURRENCY.TMT, rate: 1, name: 'Manat' },
       update: { rate: 1 },
     });

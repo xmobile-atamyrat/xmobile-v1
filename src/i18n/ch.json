@@ -643,5 +643,22 @@
   "lastEdited": "Üýtgedilen",
   "selectCategoryFirst": "Ilki haryt kategoriýasyny saýlaň",
   "takenBy": "eýesi",
-  "noPricesInCategory": "Bu kategoriýada baha ýok"
+  "noPricesInCategory": "Bu kategoriýada baha ýok",
+  "rate": "Kurs",
+  "allRates": "Hemmä kurslar",
+  "addRate": "Kurs koş",
+  "rateName": "Kurs ady",
+  "defaultRate": "Osnownoý kurs",
+  "confirmRateRecalculate": "{count} baha şu kurs boýunça hasaplanywersinmi?",
+  "assignToRate": "Kursa belle",
+  "confirmAssignToRate": "Şu praýslar {count} şu {name} kursa geçirilwersinmi?",
+  "confirmDeleteRate": "{name} kurs udalit edilsinmi? Praýslary osnownoý kursa geçiriledi",
+  "deleteRate": "Kursy udalit et",
+  "rateCreated": "Kurs koşuldy",
+  "rateCreateFailed": "Kurs koşulmady",
+  "rateDeleted": "Kurs udalit edildi",
+  "rateDeleteFailed": "Kurs udalit edilip bilmedi",
+  "pricesAssigned": "Praýslar kursa geçirildi",
+  "assignPricesError": "Praýslary kursa geçirilip bilmedi",
+  "confirmDefaultRateRecalculate": "Hemmä {count} praýslar şu kurs boýunça tazaldan hasaplansynmy? Hemmä bahalar osnownoý kursa geçedi."
 }

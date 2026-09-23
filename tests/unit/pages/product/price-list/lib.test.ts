@@ -292,57 +292,38 @@ describe('buildPriceListBlob', () => {
   const sectionsFor = (over: Partial<Prices>) =>
     buildPriceSections([price({ id: 'a', ...over })], tree, ['phones'], 'tk');
 
-  it('writes the dollar rate into B1 so every TMT cell can reference it', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
-
-    expect(sheet.getCell('B1').value).toBe(19.6);
-  });
-
-  it('computes TMT with a ROUNDUP formula anchored to the rate cell', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
-
-    // row 1 rate, row 2 blank, row 3 category banner, row 4 header, row 5 price
-    // The TMT column stays the exact conversion an admin reconciles against.
-    expect(sheet.getCell('C5').value).toEqual({
-      formula: 'ROUNDUP(B5*$B$1,0)',
-      result: 1960,
-    });
-  });
-
   // The sheet is the exact-conversion view an admin reconciles against; the
   // rounded figure the storefront quotes is not part of it.
   it('writes no fourth column beside the TMT one', async () => {
     const sheet = await readSheet(
       await buildPriceListBlob(
         sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1350' }),
-        19.6,
       ),
     );
 
-    expect(sheet.getCell('D4').value).toBe(null);
-    expect(sheet.getCell('D5').value).toBe(null);
+    expect(sheet.getCell('D2').value).toBe(null);
+    expect(sheet.getCell('D3').value).toBe(null);
   });
 
-  it('writes the stored TMT literal when there is no rate to compute against', async () => {
+  // A legacy row whose manat figure was never a number is passed through as the
+  // text it holds rather than becoming NaN.
+  it('passes a non-numeric stored manat figure through as text', async () => {
     const sheet = await readSheet(
-      await buildPriceListBlob(
-        sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1290' }),
-        null,
-      ),
+      await buildPriceListBlob(sectionsFor({ priceInTmt: 'call us' })),
     );
 
-    expect(sheet.getCell('C5').value).toBe(1283);
+    expect(sheet.getCell('C3').value).toBe('call us');
   });
 
   it('lays out a category banner above a Name/USD/TMT header', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
+    const sheet = await readSheet(await buildPriceListBlob(sections()));
 
-    expect(sheet.getCell('A3').value).toBe('tk:phones');
-    expect(sheet.getCell('A4').value).toBe('Name');
-    expect(sheet.getCell('B4').value).toBe('USD');
-    expect(sheet.getCell('C4').value).toBe('TMT');
-    expect(sheet.getCell('A5').value).toBe('128gb 8gb ram');
-    expect(sheet.getCell('B5').value).toBe(100);
+    expect(sheet.getCell('A1').value).toBe('tk:phones');
+    expect(sheet.getCell('A2').value).toBe('Name');
+    expect(sheet.getCell('B2').value).toBe('USD');
+    expect(sheet.getCell('C2').value).toBe('TMT');
+    expect(sheet.getCell('A3').value).toBe('128gb 8gb ram');
+    expect(sheet.getCell('B3').value).toBe(100);
   });
 
   it('separates consecutive category sections with a blank row', async () => {
@@ -355,14 +336,11 @@ describe('buildPriceListBlob', () => {
       ['phones', 'tablets'],
       'tk',
     );
-    const sheet = await readSheet(await buildPriceListBlob(multi, 19.6));
+    const sheet = await readSheet(await buildPriceListBlob(multi));
 
-    expect(sheet.getCell('A6').value).toBe(null); // blank separator
-    expect(sheet.getCell('A7').value).toBe('tk:tablets');
-    expect(sheet.getCell('C9').value).toEqual({
-      formula: 'ROUNDUP(B9*$B$1,0)',
-      result: 1960,
-    });
+    expect(sheet.getCell('A4').value).toBe(null); // blank separator
+    expect(sheet.getCell('A5').value).toBe('tk:tablets');
+    expect(sheet.getCell('C7').value).toBe(1960);
   });
 
   it('banners a subcategory with its parent, not by its own name alone', async () => {
@@ -372,18 +350,18 @@ describe('buildPriceListBlob', () => {
       ['iphone'],
       'tk',
     );
-    const sheet = await readSheet(await buildPriceListBlob(nested, 19.6));
+    const sheet = await readSheet(await buildPriceListBlob(nested));
 
-    expect(sheet.getCell('A3').value).toBe('tk:phones > tk:iphone');
+    expect(sheet.getCell('A1').value).toBe('tk:phones > tk:iphone');
   });
 
   it('fills the whole banner row so it reads as a section break', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), 19.6));
+    const sheet = await readSheet(await buildPriceListBlob(sections()));
 
-    ['A3', 'B3', 'C3'].forEach((address) => {
+    ['A1', 'B1', 'C1'].forEach((address) => {
       expect(sheet.getCell(address).fill).toMatchObject({ pattern: 'solid' });
     });
-    expect(sheet.getCell('A5').fill).toBeUndefined(); // price rows stay plain
+    expect(sheet.getCell('A3').fill).toBeUndefined(); // price rows stay plain
   });
 
   it('tints a nested section differently from a top-level one', async () => {
@@ -393,19 +371,10 @@ describe('buildPriceListBlob', () => {
       ['iphone'],
       'tk',
     );
-    const topLevel = await readSheet(
-      await buildPriceListBlob(sections(), 19.6),
-    );
-    const child = await readSheet(await buildPriceListBlob(nested, 19.6));
+    const topLevel = await readSheet(await buildPriceListBlob(sections()));
+    const child = await readSheet(await buildPriceListBlob(nested));
 
-    expect(child.getCell('A3').fill).not.toEqual(topLevel.getCell('A3').fill);
-  });
-
-  it('falls back to the stored TMT literal when no rate is known', async () => {
-    const sheet = await readSheet(await buildPriceListBlob(sections(), null));
-
-    expect(sheet.getCell('B1').value).toBe(null);
-    expect(sheet.getCell('C5').value).toBe(1960);
+    expect(child.getCell('A1').fill).not.toEqual(topLevel.getCell('A1').fill);
   });
 });
 
@@ -613,5 +582,29 @@ describe('defaultBrandPriceListFileName', () => {
     expect(defaultBrandPriceListFileName(brands, [], date)).toBe(
       'prices 15-08-2026',
     );
+  });
+});
+
+// Prices are converted at whichever rate each one is filed under, so a single
+// rate cell would misstate most of the sheet. The stored manat figure is
+// written as a plain number and the rate row is gone, which moves the first
+// section up to row 1.
+describe('buildPriceListBlob without a rate row', () => {
+  const sections = () =>
+    buildPriceSections([price({ id: 'a' })], tree, ['phones'], 'tk');
+
+  it('leads with the category banner instead of a rate', async () => {
+    const sheet = await readSheet(await buildPriceListBlob(sections()));
+
+    expect(sheet.getCell('A1').value).toBe('tk:phones');
+    expect(sheet.getCell('A2').value).toBe('Name');
+    expect(sheet.getCell('B2').value).toBe('USD');
+    expect(sheet.getCell('C2').value).toBe('TMT');
+  });
+
+  it('writes the stored manat figure as a plain number', async () => {
+    const sheet = await readSheet(await buildPriceListBlob(sections()));
+
+    expect(sheet.getCell('C3').value).toBe(1960);
   });
 });

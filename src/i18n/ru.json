@@ -644,5 +644,22 @@
   "lastEdited": "Изменено",
   "selectCategoryFirst": "Сначала выберите категорию товара",
   "takenBy": "занята",
-  "noPricesInCategory": "В этой категории нет цен"
+  "noPricesInCategory": "В этой категории нет цен",
+  "rate": "Курс",
+  "allRates": "Все курсы",
+  "addRate": "Добавить курс",
+  "rateName": "Название курса",
+  "defaultRate": "Основной курс",
+  "confirmRateRecalculate": "Пересчитать {count} цен по этому курсу?",
+  "assignToRate": "Назначить курс",
+  "confirmAssignToRate": "Перевести {count} отфильтрованных цен на курс «{name}»?",
+  "confirmDeleteRate": "Удалить курс «{name}»? Его цены перейдут на основной курс.",
+  "deleteRate": "Удалить курс",
+  "rateCreated": "Курс добавлен",
+  "rateCreateFailed": "Не удалось добавить курс",
+  "rateDeleted": "Курс удалён",
+  "rateDeleteFailed": "Не удалось удалить курс",
+  "pricesAssigned": "Цены переведены на курс",
+  "assignPricesError": "Не удалось перевести цены",
+  "confirmDefaultRateRecalculate": "Пересчитать все {count} цен по этому курсу? Все цены вернутся на основной курс."
 }

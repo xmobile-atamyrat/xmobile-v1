@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
+import { rateForPrice, recomputedPriceFields } from '@/lib/dollarRates';
 import { syncProductOutOfStockFromPrices } from '@/lib/outOfStock';
 import { revalidateInBackground } from '@/lib/revalidate';
 import {
@@ -146,6 +147,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         displayPriceTmt,
         categoryId,
         productId,
+        dollarRateId,
       } = body;
       if (name == null || price == null || priceInTmt == null) {
         return res.status(400).json({
@@ -165,6 +167,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           displayPriceTmt:
             displayPriceTmt ?? derivedDisplayFrom(priceInTmt) ?? priceInTmt,
           categoryId: categoryId ?? null,
+          dollarRateId: dollarRateId ?? null,
           productId: productId ?? null,
         },
       });
@@ -241,8 +244,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           id: true,
           productId: true,
           outOfStockAt: true,
+          price: true,
           priceInTmt: true,
           displayPriceTmt: true,
+          dollarRateId: true,
         },
       });
       const currentById = new Map(current.map((price) => [price.id, price]));
@@ -269,6 +274,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         return res.status(409).json({ success: false, message: rejected });
       }
 
+      // Only read when a pair actually moves rate, which most saves do not.
+      const rates = pricePairs.some((price) => 'dollarRateId' in price)
+        ? await dbClient.dollarRate.findMany({ where: { currency: 'TMT' } })
+        : [];
+
       await Promise.all(
         pricePairs.map(async (price) => {
           const data: any = { name: price.name };
@@ -285,7 +295,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             data.displayPriceTmt = price.displayPriceTmt ?? null;
           }
 
-          if (price.priceInTmt != null || 'displayPriceTmt' in price) {
+          // Presence-keyed: clearing the rate drops the price onto the
+          // default, which is what prices it from then on. The manat figures
+          // are re-derived here rather than trusted from the client, so the
+          // stored price always matches the rate it is filed under.
+          if ('dollarRateId' in price) {
+            data.dollarRateId = price.dollarRateId ?? null;
+            const before = currentById.get(price.id as string)!;
+            const target = rateForPrice(
+              { dollarRateId: data.dollarRateId },
+              rates,
+            );
+            if (target != null && data.priceInTmt == null) {
+              const repriced = recomputedPriceFields(
+                data.price ?? before.price,
+                target.rate,
+              );
+              if (repriced != null) {
+                data.priceInTmt = repriced.priceInTmt;
+                // A display price typed in the same save is a deliberate pin
+                // and outranks the figure the rate would derive.
+                if (!('displayPriceTmt' in data)) {
+                  data.displayPriceTmt = repriced.displayPriceTmt;
+                }
+              }
+            }
+          }
+
+          if (data.priceInTmt != null || 'displayPriceTmt' in data) {
             const before = currentById.get(price.id as string)!;
             const shown = cachedPriceFrom({
               priceInTmt: data.priceInTmt ?? before.priceInTmt,
