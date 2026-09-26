@@ -27,6 +27,67 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+@layer base {
+  :root {
+    accent-color: #20166e;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background-color: rgba(32, 22, 110, 0.18);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #c9c8d4;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #8b8a98;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Chrome 121+ ignores ::-webkit-scrollbar once scrollbar-color is set, so only Firefox gets the standard props */
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #c9c8d4 transparent;
+    }
+  }
+
+  .MuiDrawer-paper,
+  .MuiPopover-paper,
+  .MuiDialog-paper,
+  .MuiAutocomplete-listbox,
+  .overflow-auto,
+  .overflow-y-auto {
+    overscroll-behavior: contain;
+  }
+  .overflow-x-auto {
+    overscroll-behavior-x: contain;
+  }
+
+  /* Delays Chrome's autofill fill color indefinitely so inputs keep their own background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: currentColor;
+    transition: background-color 600000s 0s;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
