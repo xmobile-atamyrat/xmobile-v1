@@ -70,6 +70,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     }
   } else if (req.method === 'GET') {
     try {
+      if (req.query.count != null) {
+        const count = await dbClient.cartItem.count({
+          where: { userId, product: whereActiveProduct },
+        });
+        res.status(200).json({ success: true, data: { count } });
+        return;
+      }
+
       const cartItems = await dbClient.cartItem.findMany({
         where: {
           userId,

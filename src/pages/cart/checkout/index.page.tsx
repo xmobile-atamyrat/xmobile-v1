@@ -1,5 +1,6 @@
 import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import Layout from '@/pages/components/Layout';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { useNotificationPrompt } from '@/pages/components/NotificationPrompt';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
@@ -89,6 +90,7 @@ export default function CheckoutPage() {
   const platform = usePlatform();
   const router = useRouter();
   const { user, accessToken } = useUserContext();
+  const { setCartCount } = useCartContext();
   const { promptNotifications } = useNotificationPrompt();
   const fetchWithCreds = useFetchWithCreds();
   const { network } = useNetworkContext();
@@ -148,6 +150,7 @@ export default function CheckoutPage() {
 
       if (success) {
         setCartItems(data);
+        setCartCount(data.length);
         return data;
       }
       console.error(message);
@@ -295,6 +298,7 @@ export default function CheckoutPage() {
 
       if (removed.size > 0) {
         setCartItems((prev) => prev.filter((item) => !removed.has(item.id)));
+        setCartCount((count) => Math.max(0, count - removed.size));
       }
 
       if (removed.size < removableIds.length) {
@@ -350,6 +354,7 @@ export default function CheckoutPage() {
           });
 
       if (success) {
+        setCartCount(0);
         promptNotifications('order');
         // Redirect to success page
         router.push('/cart/checkout/success');
