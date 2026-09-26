@@ -119,9 +119,14 @@ export const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-export async function resizeImage(image: File, width: number): Promise<Blob> {
-  return new Promise((resolve) => {
+export async function resizeImage(
+  image: File,
+  width: number,
+  type?: string,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    img.onerror = () => reject(new Error(`Couldn't open image: ${image.name}`));
     img.onload = () => {
       const originalRatio = img.height / img.width;
       const height = width * originalRatio;
@@ -130,9 +135,13 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        resolve(blob as Blob);
-      });
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob as Blob);
+        },
+        type,
+        type ? 0.92 : undefined,
+      );
     };
     img.src = URL.createObjectURL(image);
   });
@@ -169,7 +178,11 @@ export const addEditBanner = async ({
   for (const img of images) {
     if (img.file != null && img.file.name !== '') {
       // eslint-disable-next-line no-await-in-loop
-      const resized = await resizeImage(img.file, BANNER_IMAGE_WIDTH);
+      const resized = await resizeImage(
+        img.file,
+        BANNER_IMAGE_WIDTH,
+        'image/webp',
+      );
       formData.append(`imageUrl_${img.key}`, resized);
     } else if (img.url != null && img.url !== '') {
       formData.append(`imageUrl_${img.key}`, img.url);

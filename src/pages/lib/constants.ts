@@ -42,6 +42,7 @@ export const SUPPORT_EMAIL = 'xmobile.tkm@gmail.com';
 export const PRODUCT_IMAGE_WIDTH = 1024; // px
 
 export const BANNER_IMAGE_WIDTH = 1600; // px
+export const BANNER_IMAGE_HEIGHT = 800; // px, 2:1 on web and mobile
 
 export const CHAT_MESSAGES_PAGE_SIZE = 50;
 

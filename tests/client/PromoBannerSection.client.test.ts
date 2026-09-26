@@ -2,6 +2,7 @@
 
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
 import { StorefrontBanner } from '@/pages/lib/types';
+import { fireEvent } from '@testing-library/react';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
@@ -71,5 +72,27 @@ describe('PromoBannerSection', () => {
     expect(realSlides[1]?.querySelector('a')?.getAttribute('href')).toBe(
       '/category/b',
     );
+  });
+
+  it('loads the first banner with high priority and holds the rest until it has loaded', () => {
+    const banners = [
+      makeBanner({ id: 'banner-1', imgUrl: '/images/banners/a.webp' }),
+      makeBanner({ id: 'banner-2', imgUrl: '/images/banners/b.webp' }),
+    ];
+    const { container } = renderWithProviders(
+      createElement(PromoBannerSection, { banners }),
+    );
+
+    const images = () => [
+      ...container.querySelectorAll('.slick-slide:not(.slick-cloned) img'),
+    ];
+    const [first, second] = images();
+    expect(first.getAttribute('src')).toBe('/media/banner/a.webp');
+    expect(first.getAttribute('fetchpriority')).toBe('high');
+    expect(second.hasAttribute('src')).toBe(false);
+
+    fireEvent.load(first);
+
+    expect(images()[1].getAttribute('src')).toBe('/media/banner/b.webp');
   });
 });
