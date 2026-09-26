@@ -31,8 +31,9 @@ export const notificationClasses = {
       mobile: 'text-[14px] font-bold text-[#17161D]',
     },
     clearButton: {
-      web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline',
-      mobile: 'text-[12px] text-[#20166E] font-semibold cursor-pointer',
+      web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline whitespace-nowrap flex-none',
+      mobile:
+        'text-[12px] text-[#20166E] font-semibold cursor-pointer whitespace-nowrap flex-none',
     },
     list: {
       web: 'max-h-[500px] overflow-y-auto p-[10px] flex flex-col gap-[10px]',
