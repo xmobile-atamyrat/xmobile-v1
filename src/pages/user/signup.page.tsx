@@ -1,5 +1,6 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ResponseApi } from '@/pages/lib/types';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AuthBrandPanel from '@/pages/user/components/AuthBrandPanel';
 import { emailCheck } from '@/pages/user/utils';
@@ -56,6 +57,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 export default function Signup() {
   const { user, setUser, setAccessToken, isLoading } = useUserContext();
+  const { refreshCartCount } = useCartContext();
   const [errorMessage, setErrorMessage] = useState<string>();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -193,6 +195,7 @@ export default function Signup() {
                     },
                     credentials: 'include',
                   });
+                  refreshCartCount();
 
                   router.push('/');
                 }

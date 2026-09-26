@@ -1,3 +1,4 @@
+import { useCartContext } from '@/pages/lib/CartContext';
 import { AddToCartProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { Box, IconButton, Input, Snackbar, Typography } from '@mui/material';
@@ -44,6 +45,7 @@ export default function AddToCart({
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
   const { user, accessToken } = useUserContext();
+  const { setCartCount } = useCartContext();
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const t = useTranslations();
@@ -80,6 +82,7 @@ export default function AddToCart({
           });
 
       if (data.success) {
+        setCartCount((count) => count + 1);
         setSnackbarOpen(true);
         setSnackbarMessage({
           message: 'addToCartSuccess',

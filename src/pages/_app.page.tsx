@@ -2,6 +2,7 @@ import Loader from '@/pages/components/Loader';
 import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
+import CartContextProvider from '@/pages/lib/CartContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
@@ -254,38 +255,40 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
-            <WebSocketContextProvider>
-              <NotificationContextProvider>
-                <ChatContextProvider>
-                  <CategoryContextProvider>
-                    <ProductContextProvider>
-                      <PrevProductContextProvider>
-                        <DollarRateContextProvider>
-                          <PlatformContextProvider>
-                            <NextIntlClientProvider
-                              locale={
-                                router.locale || router.defaultLocale || 'ru'
-                              }
-                              timeZone="Asia/Ashgabat"
-                              messages={pageProps.messages}
-                            >
-                              {showHardUpdateModal ? (
-                                <UpdateModal type="hard" />
-                              ) : (
-                                <NotificationPromptProvider>
-                                  <Component {...pageProps} />
-                                  {isLoading && <Loader />}
-                                </NotificationPromptProvider>
-                              )}
-                            </NextIntlClientProvider>
-                          </PlatformContextProvider>
-                        </DollarRateContextProvider>
-                      </PrevProductContextProvider>
-                    </ProductContextProvider>
-                  </CategoryContextProvider>
-                </ChatContextProvider>
-              </NotificationContextProvider>
-            </WebSocketContextProvider>
+            <CartContextProvider>
+              <WebSocketContextProvider>
+                <NotificationContextProvider>
+                  <ChatContextProvider>
+                    <CategoryContextProvider>
+                      <ProductContextProvider>
+                        <PrevProductContextProvider>
+                          <DollarRateContextProvider>
+                            <PlatformContextProvider>
+                              <NextIntlClientProvider
+                                locale={
+                                  router.locale || router.defaultLocale || 'ru'
+                                }
+                                timeZone="Asia/Ashgabat"
+                                messages={pageProps.messages}
+                              >
+                                {showHardUpdateModal ? (
+                                  <UpdateModal type="hard" />
+                                ) : (
+                                  <NotificationPromptProvider>
+                                    <Component {...pageProps} />
+                                    {isLoading && <Loader />}
+                                  </NotificationPromptProvider>
+                                )}
+                              </NextIntlClientProvider>
+                            </PlatformContextProvider>
+                          </DollarRateContextProvider>
+                        </PrevProductContextProvider>
+                      </ProductContextProvider>
+                    </CategoryContextProvider>
+                  </ChatContextProvider>
+                </NotificationContextProvider>
+              </WebSocketContextProvider>
+            </CartContextProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>
       </NetworkContextProvider>

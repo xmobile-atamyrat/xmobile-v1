@@ -30,8 +30,10 @@ import {
 } from 'lucide-react';
 
 import CategoryMegaMenu from '@/pages/components/CategoryMegaMenu';
+import CountBadge from '@/pages/components/CountBadge';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import {
@@ -138,6 +140,7 @@ export default function CustomAppBar({
 }: CustomAppBarProps) {
   const { user } = useUserContext();
   const { unreadCount } = useNotificationContext();
+  const { cartCount } = useCartContext();
   const router = useRouter();
   const t = useTranslations();
   const { searchKeyword, setSearchKeyword, setProducts } = useProductContext();
@@ -510,7 +513,9 @@ export default function CustomAppBar({
               className={web.iconAction}
               onClick={() => router.push('/cart')}
             >
-              <ShoppingCart className={web.actionIcon} />
+              <CountBadge count={cartCount}>
+                <ShoppingCart className={web.actionIcon} />
+              </CountBadge>
             </button>
           </Box>
         </Box>

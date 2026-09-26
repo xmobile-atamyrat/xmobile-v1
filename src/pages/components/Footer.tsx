@@ -1,3 +1,5 @@
+import CountBadge from '@/pages/components/CountBadge';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { SUPPORT_EMAIL, SUPPORT_PHONES } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -64,6 +66,7 @@ export default function Footer() {
   const { categories: allCategories, setSelectedCategoryId } =
     useCategoryContext();
   const { setProducts } = useProductContext();
+  const { cartCount } = useCartContext();
 
   const goTo = (href: string) => {
     router.push(href, href, { locale: router.locale });
@@ -134,10 +137,12 @@ export default function Footer() {
                     : footerClasses.navItem.inactive
                 }`}
               >
-                <Icon
-                  className={footerClasses.navItem.icon}
-                  strokeWidth={1.75}
-                />
+                <CountBadge count={href === '/cart' ? cartCount : 0}>
+                  <Icon
+                    className={footerClasses.navItem.icon}
+                    strokeWidth={1.75}
+                  />
+                </CountBadge>
                 <span
                   className={`${fontClassName.className} ${
                     active
