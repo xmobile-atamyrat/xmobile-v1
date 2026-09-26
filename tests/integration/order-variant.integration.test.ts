@@ -69,7 +69,7 @@ describe('Order — variant snapshots (integration)', () => {
       headers: auth,
       body: {
         deliveryAddress: '1 Variant Lane',
-        deliveryPhone: '+999',
+        deliveryPhone: '+99361000999',
         notes: 'variant test',
       },
     });
@@ -120,7 +120,7 @@ describe('Order — variant snapshots (integration)', () => {
       headers: auth,
       body: {
         deliveryAddress: '2 Plain Street',
-        deliveryPhone: '+998',
+        deliveryPhone: '+99361000998',
       },
     });
     await orderHandler(
@@ -159,7 +159,7 @@ describe('Order — variant snapshots (integration)', () => {
       method: 'POST',
       url: '/api/order',
       headers: auth,
-      body: { deliveryAddress: '3 Cancel Ave', deliveryPhone: '+997' },
+      body: { deliveryAddress: '3 Cancel Ave', deliveryPhone: '+99361000997' },
     });
     await orderHandler(
       postOrder.req as unknown as NextApiRequest,

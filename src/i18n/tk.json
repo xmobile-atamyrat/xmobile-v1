@@ -669,5 +669,6 @@
   "rateDeleteFailed": "Kurs pozulmady",
   "pricesAssigned": "Bahalar kursa geçirildi",
   "assignPricesError": "Bahalar geçirilmedi",
-  "confirmDefaultRateRecalculate": "Ähli {count} baha şu kurs boyúna täzeden hasaplansynmy? Ähli bahalar esasy kursa gaýdyp geler."
+  "confirmDefaultRateRecalculate": "Ähli {count} baha şu kurs boyúna täzeden hasaplansynmy? Ähli bahalar esasy kursa gaýdyp geler.",
+  "invalidPhoneNumber": "Dogry belgi giriziň: {dial} kodundan soň {digits} san"
 }

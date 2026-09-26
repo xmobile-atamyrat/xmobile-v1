@@ -670,5 +670,6 @@
   "rateDeleteFailed": "Не удалось удалить курс",
   "pricesAssigned": "Цены переведены на курс",
   "assignPricesError": "Не удалось перевести цены",
-  "confirmDefaultRateRecalculate": "Пересчитать {count, plural, one {# цену} few {все # цены} other {все # цен}} по этому курсу? Все цены вернутся на основной курс."
+  "confirmDefaultRateRecalculate": "Пересчитать {count, plural, one {# цену} few {все # цены} other {все # цен}} по этому курсу? Все цены вернутся на основной курс.",
+  "invalidPhoneNumber": "Введите корректный номер: {digits} цифр после {dial}"
 }
