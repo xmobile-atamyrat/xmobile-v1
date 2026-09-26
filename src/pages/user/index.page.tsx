@@ -401,8 +401,15 @@ export default function Profile() {
     },
   ];
 
-  // Guest: single "General" card (mockup XMobile.dc.html:954-959).
+  // Guest: single "General" card (mockup XMobile.dc.html:954-959), plus My
+  // orders — guest orders are tracked by the session cookie, see /orders.
   const guestRows: MenuRow[] = [
+    {
+      icon: <Package className={profileClasses.icon.muted} />,
+      label: t('myOrders'),
+      onClick: handleToggleMyOrders,
+      tone: 'muted',
+    },
     {
       icon: <Headphones className={profileClasses.icon.muted} />,
       label: t('supportTitle'),
@@ -615,6 +622,7 @@ export default function Profile() {
     const webPreferenceRows = accountRows.filter(
       (row) => row.label !== t('myOrders') && row.label !== t('userOrders'),
     );
+    const webGuestRows = guestRows.filter((row) => row.label !== t('myOrders'));
 
     return (
       <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -672,7 +680,7 @@ export default function Profile() {
                     </ButtonBase>
                   </Box>
                 </Box>
-                <MenuCard variant="web" rows={guestRows} />
+                <MenuCard variant="web" rows={webGuestRows} />
               </>
             )}
           </Box>

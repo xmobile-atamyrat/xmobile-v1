@@ -423,7 +423,7 @@
   "noNotifications": "Нет уведомлений",
   "newMessages": "{count, plural, one {# новое сообщение} few {# новых сообщения} other {# новых сообщений}}",
   "messages": "{count, plural, one {# сообщение} few {# сообщения} other {# сообщений}}",
-  "markAllRead": "Отметить все как прочитанные",
+  "markAllRead": "Прочитать все",
   "enableBrowserNotifications": "Включите уведомления в браузере",
   "enableNativeNotifications": "Разрешите уведомления в приложении",
   "enable": "Включить",

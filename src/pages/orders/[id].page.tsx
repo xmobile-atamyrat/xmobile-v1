@@ -1,7 +1,7 @@
 import Layout from '@/pages/components/Layout';
 import { OrderDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import VariantBadge from '@/pages/components/VariantBadge';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import { appBarHeight } from '@/pages/lib/constants';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import {
@@ -200,40 +200,75 @@ export default function OrderDetailPage() {
     );
   };
 
+  // The loaded view's header, also shown while loading and on "not found" so
+  // mobile always has a way back (the mobile app bar has no back arrow here).
+  const mobileHeader = (orderNumber?: string) => (
+    <Box className={ordersDetailClasses.header.mobile}>
+      <button
+        type="button"
+        onClick={handleBackButton}
+        className={ordersDetailClasses.backButton.mobile}
+        aria-label="back"
+      >
+        <ArrowLeft size={20} color="#20166E" />
+      </button>
+      <Box className="flex-1">
+        <Typography
+          className={`${fontClassName.className} ${ordersDetailClasses.headerTitle.mobile}`}
+        >
+          {t('orderDetails')}
+        </Typography>
+        {orderNumber && (
+          <Typography
+            className={`${fontClassName.className} ${ordersDetailClasses.headerOrderNumber.mobile}`}
+          >
+            {orderNumber}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+
   if (loading) {
     return (
       <Layout handleHeaderBackButton={handleBackButton}>
-        <Box
-          sx={{
-            mt:
-              platform === 'web'
-                ? `${appBarHeight}px`
-                : `${mobileAppBarHeight}px`,
-          }}
-        >
-          <OrderDetailSkeleton />
-        </Box>
+        {platform === 'mobile' ? (
+          <Box className={ordersDetailClasses.container.mobile}>
+            {mobileHeader()}
+            <OrderDetailSkeleton />
+          </Box>
+        ) : (
+          <Box sx={{ mt: `${appBarHeight}px` }}>
+            <OrderDetailSkeleton />
+          </Box>
+        )}
       </Layout>
     );
   }
 
   if (!order) {
+    const notFound = (
+      <Typography className={fontClassName.className}>
+        {t('noOrdersFound')}
+      </Typography>
+    );
     return (
       <Layout handleHeaderBackButton={handleBackButton}>
-        <Box
-          sx={{
-            mt:
-              platform === 'web'
-                ? `${appBarHeight}px`
-                : `${mobileAppBarHeight}px`,
-            p: platform === 'web' ? 2 : 1,
-          }}
-          className="flex justify-center items-center py-12"
-        >
-          <Typography className={fontClassName.className}>
-            {t('noOrdersFound')}
-          </Typography>
-        </Box>
+        {platform === 'mobile' ? (
+          <Box className={ordersDetailClasses.container.mobile}>
+            {mobileHeader()}
+            <Box className="flex justify-center items-center py-12 px-2">
+              {notFound}
+            </Box>
+          </Box>
+        ) : (
+          <Box
+            sx={{ mt: `${appBarHeight}px`, p: 2 }}
+            className="flex justify-center items-center py-12"
+          >
+            {notFound}
+          </Box>
+        )}
       </Layout>
     );
   }
@@ -275,29 +310,7 @@ export default function OrderDetailPage() {
     <Layout handleHeaderBackButton={handleBackButton}>
       {platform === 'mobile' ? (
         <Box className={ordersDetailClasses.container.mobile}>
-          {/* Header */}
-          <Box className={ordersDetailClasses.header.mobile}>
-            <button
-              type="button"
-              onClick={handleBackButton}
-              className={ordersDetailClasses.backButton.mobile}
-              aria-label="back"
-            >
-              <ArrowLeft size={20} color="#20166E" />
-            </button>
-            <Box className="flex-1">
-              <Typography
-                className={`${fontClassName.className} ${ordersDetailClasses.headerTitle.mobile}`}
-              >
-                {t('orderDetails')}
-              </Typography>
-              <Typography
-                className={`${fontClassName.className} ${ordersDetailClasses.headerOrderNumber.mobile}`}
-              >
-                {order.orderNumber}
-              </Typography>
-            </Box>
-          </Box>
+          {mobileHeader(order.orderNumber)}
 
           <Box className={ordersDetailClasses.content.mobile}>
             {/* Status */}
