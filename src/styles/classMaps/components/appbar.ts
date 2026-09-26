@@ -6,13 +6,10 @@ export const appbarClasses = {
     },
     logo: {
       web: 'flex items-center justify-center w-[146px] h-100%',
-      mobile: 'flex items-center justify-center w-[100px] h-100%',
+      mobile: 'h-[40px] w-auto flex-shrink-0',
     },
     header: {
       mobile: 'flex items-center justify-between px-5 pt-2 pb-[14px] bg-white',
-    },
-    deliverTo: {
-      mobile: 'flex items-center gap-1',
     },
     guestGreeting: {
       mobile: 'flex flex-col',
@@ -76,21 +73,19 @@ export const appbarClasses = {
     bleed: '-mx-[2vw] px-[2vw]',
     utilityBar:
       'h-[40px] bg-navy flex flex-row items-center justify-between gap-6 text-[13px]',
-    // The full right-hand group needs ~625px; below xl the phone drops out and
-    // below lg the social icons do, so the address never gets squeezed off.
+    // The full group needs ~625px; below xl the phone drops out and below lg
+    // the social icons do.
     utilityGroup:
       'flex flex-row items-center gap-3 xl:gap-[26px] flex-shrink-0',
     utilityItem:
       'flex flex-row items-center gap-1.5 text-[13px] text-white/[0.86] hover:text-white transition-colors whitespace-nowrap cursor-pointer',
     utilityItemPhone: 'hidden xl:flex',
     utilityIcon: 'w-[15px] h-[15px] flex-shrink-0',
-    utilityAddress: 'text-[13px] font-semibold text-white truncate',
+    utilityHours: 'flex flex-row items-center gap-2 min-w-0 text-white/[0.86]',
+    utilityHoursTime: 'font-semibold text-white whitespace-nowrap',
     utilitySocial: 'hidden lg:flex flex-row items-center gap-1',
     utilitySocialButton:
       'w-[26px] h-[26px] flex items-center justify-center rounded-full text-white/[0.86] hover:bg-white/[0.12] hover:text-white transition-colors',
-
-    utilityAddressGroup:
-      'flex flex-row items-center gap-2 min-w-0 text-white/[0.86]',
 
     mainBar:
       'h-[84px] bg-white border-b border-[#F0EFF4] flex flex-row items-center gap-[36px]',

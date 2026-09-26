@@ -18,8 +18,8 @@ import {
   Bell,
   ChevronDown,
   ChevronUp,
+  Clock,
   Globe,
-  MapPin,
   Menu as MenuIcon,
   Phone,
   Search,
@@ -209,20 +209,15 @@ export default function CustomAppBar({
   if (platform === 'mobile') {
     return (
       <Box className={appbarClasses.appbar.mobile}>
-        {/* Header: guest greeting + Sign in, or location + notification */}
+        {/* Header: guest greeting + Sign in, or logo + notification */}
         <Box className={appbarClasses.boxes.header.mobile}>
           {user ? (
-            <Box className={appbarClasses.boxes.deliverTo.mobile}>
-              <MapPin size={15} className="text-[#E41E2B]" />
-              <div>
-                <div className="text-[11px] text-[#8B8A98] font-normal">
-                  {t('deliverTo')}
-                </div>
-                <div className="text-[15px] text-[#20166E] font-bold">
-                  {t('shortAddress')}
-                </div>
-              </div>
-            </Box>
+            <CardMedia
+              component="img"
+              src="/logo/xmobile-processed-logo.png"
+              alt="Xmobile"
+              className={appbarClasses.boxes.logo.mobile}
+            />
           ) : (
             <Box
               className={`${appbarClasses.boxes.guestGreeting.mobile} ${fontClassName.className}`}
@@ -319,10 +314,12 @@ export default function CustomAppBar({
         <Box
           className={`${web.bleed} ${web.utilityBar} ${fontClassName.className}`}
         >
-          <Box className={web.utilityAddressGroup}>
-            <MapPin className={web.utilityIcon} />
-            <span className="whitespace-nowrap">{t('deliverTo')}</span>
-            <span className={web.utilityAddress}>{t('shortAddress')}</span>
+          <Box className={web.utilityHours}>
+            <Clock className={web.utilityIcon} />
+            <span className="truncate">{t('supportHoursTitle')}:</span>
+            <span className={web.utilityHoursTime}>
+              {t('supportHoursDays')} {t('supportHoursTime')}
+            </span>
           </Box>
           <Box className={web.utilityGroup}>
             <a
