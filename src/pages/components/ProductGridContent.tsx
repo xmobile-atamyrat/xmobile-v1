@@ -648,14 +648,14 @@ export default function ProductGridContent({
 
         {platform === 'mobile' && (
           <Box className="flex-1">
-            {SearchBar({
-              searchKeyword: localSearchKeyword,
-              searchPlaceholder: t('search'),
-              setSearchKeyword: setLocalSearchKeyword,
-              showFilter: true,
-              onFilterClick: () => setMobileFilterOpen(true),
-              formClassName: 'flex flex-1 items-center gap-2.5',
-            })}
+            <SearchBar
+              searchKeyword={localSearchKeyword}
+              searchPlaceholder={t('search')}
+              setSearchKeyword={setLocalSearchKeyword}
+              showFilter
+              onFilterClick={() => setMobileFilterOpen(true)}
+              formClassName="flex flex-1 items-center gap-2.5"
+            />
           </Box>
         )}
       </Box>

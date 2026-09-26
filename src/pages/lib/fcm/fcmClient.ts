@@ -11,6 +11,14 @@ export const FCM_TOKEN_STORAGE_KEY = 'fcm_token';
 export const FCM_TOKEN_REGISTERED_USER_KEY = 'fcm_token_registered_user_id';
 // Key for storing the persistent unique device ID (UUID for web, hardware ID for app)
 export const FCM_DEVICE_ID_KEY = 'fcm_device_id';
+export const FCM_OPT_OUT_KEY = 'fcm_notifications_opt_out';
+export const FCM_REGISTRATION_EVENT = 'fcm-registration-change';
+
+export type EnableNotificationsResult =
+  | 'enabled'
+  | 'dismissed'
+  | 'blocked'
+  | 'failed';
 
 let firebaseApp: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
@@ -204,12 +212,60 @@ export async function unregisterFCMToken(
   }
 }
 
+function notifyRegistrationChange() {
+  window.dispatchEvent(new Event(FCM_REGISTRATION_EVENT));
+}
+
+export function saveRegistration(token: string, userId: string): void {
+  localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
+  notifyRegistrationChange();
+}
+
+export function clearRegistration(): void {
+  localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+  notifyRegistrationChange();
+}
+
 /**
  * Whether notifications are currently enabled on this device (token registered).
  */
 export function isNotificationsEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   return !!localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+}
+
+function readOptedOutUsers(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(FCM_OPT_OUT_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function setOptedOut(userId: string, optedOut: boolean): void {
+  const others = readOptedOutUsers().filter((id) => id !== userId);
+  const next = optedOut ? [...others, userId] : others;
+  if (next.length) localStorage.setItem(FCM_OPT_OUT_KEY, JSON.stringify(next));
+  else localStorage.removeItem(FCM_OPT_OUT_KEY);
+}
+
+export function isNotificationsOptedOut(userId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  return readOptedOutUsers().includes(userId);
+}
+
+export function isNotificationsSupported(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isWebView()) return true;
+  return (
+    'Notification' in window &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+  );
 }
 
 /**
@@ -344,13 +400,17 @@ export async function getNativeFCMTokenViaBridge(): Promise<{
         const parsed =
           typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
 
-        if (parsed && parsed.type === 'FCM_TOKEN' && parsed.payload?.token) {
+        if (parsed && parsed.type === 'FCM_TOKEN') {
           window.removeEventListener('message', handler);
           pendingNativeTokenPromise = null;
-          resolve({
-            token: parsed.payload.token as string,
-            uniqueId: (parsed.payload.uniqueId as string) || '',
-          });
+          resolve(
+            parsed.payload?.token
+              ? {
+                  token: parsed.payload.token as string,
+                  uniqueId: (parsed.payload.uniqueId as string) || '',
+                }
+              : null,
+          );
         }
       } catch (error) {
         if (
@@ -398,9 +458,17 @@ export async function getNativeFCMTokenViaBridge(): Promise<{
 
   return pendingNativeTokenPromise;
 }
-export function getNativeNotificationPermissionStatus(): Promise<
-  'GRANTED' | 'NOT_DETERMINED' | 'DENIED'
-> {
+type NativePermissionStatus =
+  | 'GRANTED'
+  | 'NOT_DETERMINED'
+  | 'DENIED'
+  | 'BLOCKED';
+
+function askNativePermission(
+  request: 'CHECK' | 'REQUEST',
+  fallback: NativePermissionStatus,
+  timeoutMs: number,
+): Promise<NativePermissionStatus> {
   if (!isWebView() || typeof window === 'undefined') {
     return Promise.resolve('DENIED');
   }
@@ -409,69 +477,68 @@ export function getNativeNotificationPermissionStatus(): Promise<
   if (!rnWebView) return Promise.resolve('DENIED');
 
   return new Promise((resolve) => {
-    function handler(event: MessageEvent) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let handler: (event: MessageEvent) => void = () => {};
+    const finish = (status: NativePermissionStatus) => {
+      window.removeEventListener('message', handler);
+      clearTimeout(timer);
+      resolve(status);
+    };
+    handler = (event: MessageEvent) => {
       try {
         const data =
           typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
-          window.removeEventListener('message', handler);
-          resolve(data.payload.status);
-        }
+        if (data?.type !== 'NOTIFICATION_PERMISSION_STATUS') return;
+        const echoed = data.payload?.request;
+        if (echoed && echoed !== request) return;
+        finish(data.payload?.status ?? fallback);
       } catch (err) {
         console.warn('Parsing error in notification permission status', err);
       }
-    }
+    };
     window.addEventListener('message', handler);
+    timer = setTimeout(() => finish(fallback), timeoutMs);
     try {
-      rnWebView.postMessage(JSON.stringify({ type: 'CHECK_PERMISSION' }));
+      rnWebView.postMessage(JSON.stringify({ type: `${request}_PERMISSION` }));
     } catch (err) {
-      window.removeEventListener('message', handler);
-      resolve('DENIED');
+      finish('DENIED');
     }
-
-    setTimeout(() => {
-      window.removeEventListener('message', handler);
-      resolve('NOT_DETERMINED');
-    }, 5000);
   });
 }
 
-export function requestNativeNotificationPermission(): Promise<
-  'GRANTED' | 'DENIED'
+export function getNativeNotificationPermissionStatus(): Promise<NativePermissionStatus> {
+  return askNativePermission('CHECK', 'NOT_DETERMINED', 5000);
+}
+
+export async function requestNativeNotificationPermission(): Promise<
+  'GRANTED' | 'DENIED' | 'BLOCKED'
 > {
-  if (!isWebView() || typeof window === 'undefined') {
-    return Promise.resolve('DENIED');
+  const status = await askNativePermission('REQUEST', 'DENIED', 60000);
+  if (status === 'GRANTED' || status === 'BLOCKED') return status;
+  return 'DENIED';
+}
+
+export function openNativeNotificationSettings(): void {
+  if (!isWebView() || typeof window === 'undefined') return;
+  (window as any).ReactNativeWebView?.postMessage(
+    JSON.stringify({ type: 'OPEN_NOTIFICATION_SETTINGS' }),
+  );
+}
+
+export async function getPermissionState(): Promise<NotificationPermission> {
+  if (typeof window === 'undefined') return 'denied';
+  if (isWebView()) {
+    const status = await getNativeNotificationPermissionStatus();
+    if (status === 'GRANTED') return 'granted';
+    return status === 'NOT_DETERMINED' ? 'default' : 'denied';
   }
+  return getNotificationPermission() ?? 'denied';
+}
 
-  const rnWebView = (window as any).ReactNativeWebView;
-  if (!rnWebView) return Promise.resolve('DENIED');
-
-  return new Promise((resolve) => {
-    function handler(event: MessageEvent) {
-      try {
-        const data =
-          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.type === 'NOTIFICATION_PERMISSION_STATUS') {
-          window.removeEventListener('message', handler);
-          resolve(data.payload.status === 'GRANTED' ? 'GRANTED' : 'DENIED');
-        }
-      } catch (err) {
-        console.warn('Parsing error in notification permission status', err);
-      }
-    }
-    window.addEventListener('message', handler);
-    try {
-      rnWebView.postMessage(JSON.stringify({ type: 'REQUEST_PERMISSION' }));
-    } catch (err) {
-      window.removeEventListener('message', handler);
-      resolve('DENIED');
-    }
-
-    setTimeout(() => {
-      window.removeEventListener('message', handler);
-      resolve('DENIED');
-    }, 60000);
-  });
+export async function isNotificationsActive(): Promise<boolean> {
+  if (!isNotificationsEnabled()) return false;
+  const granted = (await getPermissionState()) === 'granted';
+  return granted && isNotificationsEnabled();
 }
 
 /**
@@ -487,6 +554,10 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
   }
 
   if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (isNotificationsOptedOut(userId)) {
     return;
   }
 
@@ -518,8 +589,7 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
     );
 
     if (registered) {
-      localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
+      saveRegistration(token, userId);
       console.log('[FCM] Native FCM token registered successfully (WebView)');
     } else {
       console.error('[FCM] Failed to register native FCM token (WebView)');
@@ -532,49 +602,63 @@ export async function ensureNativeFCMTokenRegisteredInWebView(
   }
 }
 
+export async function requestNotificationsPermission(): Promise<EnableNotificationsResult> {
+  if (typeof window === 'undefined') return 'failed';
+
+  if (isWebView()) {
+    const status = await requestNativeNotificationPermission();
+    if (status === 'GRANTED') return 'enabled';
+    return status === 'BLOCKED' ? 'blocked' : 'dismissed';
+  }
+
+  if (getNotificationPermission() === 'denied') return 'blocked';
+  const permission = await requestNotificationPermission();
+  if (permission === 'granted') return 'enabled';
+  return permission === 'denied' ? 'blocked' : 'dismissed';
+}
+
 /**
  * Enable notifications on this device: request permission, then register the FCM
- * token. Returns true if a token ends up registered. Shared by the profile
- * Notifications toggle and reuses the same flow the headless FcmManager runs.
+ * token. Shared by the profile Notifications toggle and reuses the same flow the
+ * headless FcmManager runs.
  */
 export async function enableNotifications(
   accessToken: string,
   userId: string,
-): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
+): Promise<EnableNotificationsResult> {
+  if (typeof window === 'undefined') return 'failed';
+  setOptedOut(userId, false);
+  const permission = await requestNotificationsPermission();
+  if (permission !== 'enabled') return permission;
 
   if (isWebView()) {
-    const status = await requestNativeNotificationPermission();
-    if (status !== 'GRANTED') return false;
     await ensureNativeFCMTokenRegisteredInWebView(userId, accessToken);
-    return !!localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+    return isNotificationsEnabled() ? 'enabled' : 'failed';
   }
 
-  const permission = await requestNotificationPermission();
-  if (permission !== 'granted') return false;
-
   const token = await getFCMToken();
-  if (!token) return false;
+  if (!token) return 'failed';
 
   const registered = await registerFCMToken(
     token,
     accessToken,
     getDeviceInfo(),
   );
-  if (registered) {
-    localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-    localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, userId);
-  }
-  return registered;
+  if (!registered) return 'failed';
+  saveRegistration(token, userId);
+  return 'enabled';
 }
 
 /**
  * Disable notifications on this device: unregister the token and clear local FCM
- * state. Browser permission cannot be revoked programmatically, so token
- * presence (not permission) is the source of truth for "enabled".
+ * state. Browser permission cannot be revoked programmatically.
  */
-export async function disableNotifications(accessToken: string): Promise<void> {
+export async function disableNotifications(
+  accessToken: string,
+  userId: string,
+): Promise<void> {
   if (typeof window === 'undefined') return;
+  setOptedOut(userId, true);
   const token = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
   if (token) {
     try {
@@ -583,6 +667,5 @@ export async function disableNotifications(accessToken: string): Promise<void> {
       console.error('[FCM] Failed to unregister on disable:', error);
     }
   }
-  localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-  localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+  clearRegistration();
 }

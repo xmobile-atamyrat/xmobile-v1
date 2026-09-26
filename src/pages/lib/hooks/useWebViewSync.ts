@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { AUTH_REFRESH_COOKIE_NAME, LOCALE_COOKIE_NAME } from '../constants';
 import {
+  clearRegistration,
   ensureNativeFCMTokenRegisteredInWebView,
-  FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
-  unregisterFCMToken,
 } from '../fcm/fcmClient';
 import { isWebView } from '../serviceWorker';
 import { ProtectedUser } from '../types';
@@ -78,20 +77,7 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
       } else if (wasLoggedIn.current) {
         wasLoggedIn.current = false;
 
-        const currentToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
-        const storedAccessToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
-
-        if (currentToken && storedAccessToken) {
-          unregisterFCMToken(currentToken, storedAccessToken).catch((err) => {
-            console.error(
-              '[WebViewSync] Failed to unregister FCM token on logout:',
-              err,
-            );
-          });
-        }
-
-        localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-        localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+        if (localStorage.getItem(FCM_TOKEN_STORAGE_KEY)) clearRegistration();
 
         (window as any).ReactNativeWebView?.postMessage(
           JSON.stringify({ type: 'LOGOUT' }),

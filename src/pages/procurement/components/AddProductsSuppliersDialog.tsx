@@ -72,13 +72,13 @@ export default function AddProductsSuppliersDialog({
       <DialogContent>
         <Box className="flex flex-col gap-4">
           <Box className={`flex flex-${isMdUp ? 'row' : 'col'} gap-2`}>
-            {SearchBar({
-              handleSearch: handleItemSearch,
-              searchKeyword: searchItemKeyword,
-              setSearchKeyword: setSearchItemKeyword,
-              searchPlaceholder: t('search'),
-              width: '100%',
-            })}
+            <SearchBar
+              handleSearch={handleItemSearch}
+              searchKeyword={searchItemKeyword}
+              setSearchKeyword={setSearchItemKeyword}
+              searchPlaceholder={t('search')}
+              width="100%"
+            />
             <Button
               sx={{ textTransform: 'none', minWidth: 150 }}
               variant="outlined"

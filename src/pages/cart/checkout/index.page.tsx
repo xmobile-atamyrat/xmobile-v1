@@ -1,5 +1,6 @@
 import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import Layout from '@/pages/components/Layout';
+import { useNotificationPrompt } from '@/pages/components/NotificationPrompt';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
@@ -67,6 +68,7 @@ export default function CheckoutPage() {
   const platform = usePlatform();
   const router = useRouter();
   const { user, accessToken } = useUserContext();
+  const { promptNotifications } = useNotificationPrompt();
   const fetchWithCreds = useFetchWithCreds();
   const { network } = useNetworkContext();
 
@@ -314,6 +316,7 @@ export default function CheckoutPage() {
           });
 
       if (success) {
+        promptNotifications('order');
         // Redirect to success page
         router.push('/cart/checkout/success');
       } else if (message === OUT_OF_STOCK_ERROR) {
