@@ -1,4 +1,5 @@
 import Loader from '@/pages/components/Loader';
+import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
@@ -271,10 +272,10 @@ export default function App({ Component, pageProps }: AppProps) {
                               {showHardUpdateModal ? (
                                 <UpdateModal type="hard" />
                               ) : (
-                                <>
+                                <NotificationPromptProvider>
                                   <Component {...pageProps} />
                                   {isLoading && <Loader />}
-                                </>
+                                </NotificationPromptProvider>
                               )}
                             </NextIntlClientProvider>
                           </PlatformContextProvider>

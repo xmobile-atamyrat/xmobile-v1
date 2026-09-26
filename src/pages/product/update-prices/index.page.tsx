@@ -559,13 +559,13 @@ export default function UpdatePrices() {
             <Box className={`flex flex-col gap-2 w-full max-w-[900px]`}>
               <Box className="w-full flex flex-row flex-wrap gap-2 items-center">
                 <Box className="flex-1">
-                  {SearchBar({
-                    handleSearch,
-                    setSearchKeyword,
-                    searchPlaceholder: t('search'),
-                    searchKeyword,
-                    width: '100%',
-                  })}
+                  <SearchBar
+                    handleSearch={handleSearch}
+                    setSearchKeyword={setSearchKeyword}
+                    searchPlaceholder={t('search')}
+                    searchKeyword={searchKeyword}
+                    width="100%"
+                  />
                 </Box>
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <InputLabel>{t('sortBy')}</InputLabel>

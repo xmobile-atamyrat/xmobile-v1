@@ -1,6 +1,7 @@
 import ChatBubble from '@/pages/components/chat/ChatBubble';
 import ChatInput from '@/pages/components/chat/ChatInput';
 import ChatWelcomeBanner from '@/pages/components/chat/ChatWelcomeBanner';
+import { useNotificationPrompt } from '@/pages/components/NotificationPrompt';
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { CHAT_MESSAGES_PAGE_SIZE } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -21,6 +22,10 @@ const ChatWindow = () => {
     loadMessages,
   } = useChatContext();
   const { user } = useUserContext();
+  const { promptNotifications } = useNotificationPrompt();
+  const hasSentRef = useRef(false);
+  const promptOnLeaveRef = useRef(promptNotifications);
+  promptOnLeaveRef.current = promptNotifications;
   const platform = usePlatform();
   const t = useTranslations();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,6 +37,13 @@ const ChatWindow = () => {
   const isAdminView = user?.grade === 'ADMIN' || user?.grade === 'SUPERUSER';
 
   const isSessionEmpty = messages.length === 0;
+
+  useEffect(
+    () => () => {
+      if (hasSentRef.current) promptOnLeaveRef.current('chat');
+    },
+    [],
+  );
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -194,7 +206,10 @@ const ChatWindow = () => {
         </Box>
       )}
       <ChatInput
-        onSendMessage={sendMessage}
+        onSendMessage={(content) => {
+          sendMessage(content);
+          if (!isAdminView) hasSentRef.current = true;
+        }}
         disabled={!isConnected || isSessionClosed}
         isSending={isSendingMessage}
       />

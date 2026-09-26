@@ -268,15 +268,15 @@ export default function CustomAppBar({
         </Box>
 
         {/* Search bar with filter */}
-        {SearchBar({
-          searchKeyword: localSearchKeyword,
-          searchPlaceholder: t('search'),
-          setSearchKeyword: setLocalSearchKeyword,
-          showFilter: Boolean(onHomeFilterClick),
-          onFilterClick: onHomeFilterClick
-            ? () => onHomeFilterClick()
-            : undefined,
-        })}
+        <SearchBar
+          searchKeyword={localSearchKeyword}
+          searchPlaceholder={t('search')}
+          setSearchKeyword={setLocalSearchKeyword}
+          showFilter={Boolean(onHomeFilterClick)}
+          onFilterClick={
+            onHomeFilterClick ? () => onHomeFilterClick() : undefined
+          }
+        />
       </Box>
     );
   }

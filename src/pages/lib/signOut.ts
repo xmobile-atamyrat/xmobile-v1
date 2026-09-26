@@ -3,7 +3,7 @@ import {
   LOCALE_COOKIE_NAME,
 } from '@/pages/lib/constants';
 import {
-  FCM_TOKEN_REGISTERED_USER_KEY,
+  clearRegistration,
   FCM_TOKEN_STORAGE_KEY,
   unregisterFCMToken,
 } from '@/pages/lib/fcm/fcmClient';
@@ -32,6 +32,5 @@ export async function clearSessionOnDevice(accessToken?: string) {
 
   deleteCookie(AUTH_REFRESH_COOKIE_NAME);
   deleteCookie(LOCALE_COOKIE_NAME);
-  localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-  localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+  clearRegistration();
 }

@@ -1,14 +1,16 @@
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  FCM_TOKEN_REGISTERED_USER_KEY,
+  FCM_REGISTRATION_EVENT,
   FCM_TOKEN_STORAGE_KEY,
   getDeviceInfo,
   getFCMToken,
   getNativeNotificationPermissionStatus,
   hasNotificationPermission,
   initializeOrGetMessaging,
+  isNotificationsOptedOut,
   registerFCMToken,
+  saveRegistration,
 } from '@/pages/lib/fcm/fcmClient';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { MessagePayload, onMessage } from 'firebase/messaging';
@@ -37,10 +39,12 @@ export default function FcmManager(): null {
     null,
   );
   const initializedRef = useRef(false);
+  const [registrationVersion, setRegistrationVersion] = useState(0);
 
   const initializeFCM = useCallback(async () => {
     if (!user || !accessToken) return false;
     if (!isWebView() && !hasNotificationPermission()) return false;
+    if (isNotificationsOptedOut(user.id)) return false;
     if (initializedRef.current) return true;
 
     try {
@@ -88,8 +92,7 @@ export default function FcmManager(): null {
           getDeviceInfo(),
         );
         if (registered) {
-          localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-          localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, user.id);
+          saveRegistration(token, user.id);
         } else {
           return false;
         }
@@ -150,8 +153,21 @@ export default function FcmManager(): null {
         );
         swMessageHandlerRef.current = null;
       }
+      initializedRef.current = false;
     };
-  }, [user, accessToken, initializeFCM, permission]);
+  }, [user, accessToken, initializeFCM, permission, registrationVersion]);
+
+  useEffect(() => {
+    const onRegistrationChange = () => {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setPermission(Notification.permission);
+      }
+      if (!unsubscribeRef.current) setRegistrationVersion((v) => v + 1);
+    };
+    window.addEventListener(FCM_REGISTRATION_EVENT, onRegistrationChange);
+    return () =>
+      window.removeEventListener(FCM_REGISTRATION_EVENT, onRegistrationChange);
+  }, []);
 
   // WebView: fetch native permission status so auto-init can run.
   useEffect(() => {
