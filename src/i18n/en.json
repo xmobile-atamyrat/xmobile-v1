@@ -668,5 +668,6 @@
   "rateDeleteFailed": "Could not delete the rate",
   "pricesAssigned": "Prices moved to the rate",
   "assignPricesError": "Could not move the prices",
-  "confirmDefaultRateRecalculate": "Recalculate {count, plural, one {the # price} other {all # prices}} at this rate? Every price moves back to the default rate."
+  "confirmDefaultRateRecalculate": "Recalculate {count, plural, one {the # price} other {all # prices}} at this rate? Every price moves back to the default rate.",
+  "invalidPhoneNumber": "Enter a valid number: {digits} digits after {dial}"
 }

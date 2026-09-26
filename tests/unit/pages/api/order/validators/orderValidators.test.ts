@@ -14,7 +14,7 @@ describe('createOrderSchema', () => {
   it('accepts a valid payload', () => {
     const r = createOrderSchema.safeParse({
       deliveryAddress: 'Addr',
-      deliveryPhone: '+123',
+      deliveryPhone: '+99361234567',
       notes: 'Leave at door',
       updateAddress: true,
     });
@@ -25,7 +25,7 @@ describe('createOrderSchema', () => {
     expect(
       createOrderSchema.safeParse({
         deliveryAddress: '',
-        deliveryPhone: '+1',
+        deliveryPhone: '+99361234567',
       }).success,
     ).toBe(false);
     expect(
@@ -34,6 +34,33 @@ describe('createOrderSchema', () => {
         deliveryPhone: '',
       }).success,
     ).toBe(false);
+  });
+
+  it('rejects an unsupported or malformed phone', () => {
+    ['Test', '+123', '+7 916 123 45 67', '8 61 23456'].forEach((phone) => {
+      expect(
+        createOrderSchema.safeParse({
+          deliveryAddress: 'A',
+          deliveryPhone: phone,
+        }).success,
+      ).toBe(false);
+    });
+  });
+
+  it('normalizes the phone to +993 form', () => {
+    const r = createOrderSchema.parse({
+      deliveryAddress: 'A',
+      deliveryPhone: '8 (61) 23-45-67',
+    });
+    expect(r.deliveryPhone).toBe('+99361234567');
+  });
+
+  it('accepts a Turkish phone', () => {
+    const r = createOrderSchema.parse({
+      deliveryAddress: 'A',
+      deliveryPhone: '+90 532 123 45 67',
+    });
+    expect(r.deliveryPhone).toBe('+905321234567');
   });
 });
 

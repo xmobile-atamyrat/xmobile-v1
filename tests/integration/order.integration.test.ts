@@ -47,7 +47,7 @@ describe('Order checkout flow (integration)', () => {
       headers: { authorization: `Bearer ${accessToken}` },
       body: {
         deliveryAddress: '1 Test Street',
-        deliveryPhone: '+777',
+        deliveryPhone: '+99361000777',
         notes: 'Integration',
         updateAddress: true,
       },

@@ -669,5 +669,6 @@
   "rateDeleteFailed": "Kurs udalit edilip bilmedi",
   "pricesAssigned": "Praýslar kursa geçirildi",
   "assignPricesError": "Praýslary kursa geçirilip bilmedi",
-  "confirmDefaultRateRecalculate": "Hemmä {count} praýslar şu kurs boýunça tazaldan hasaplansynmy? Hemmä bahalar osnownoý kursa geçedi."
+  "confirmDefaultRateRecalculate": "Hemmä {count} praýslar şu kurs boýunça tazaldan hasaplansynmy? Hemmä bahalar osnownoý kursa geçedi.",
+  "invalidPhoneNumber": "Dogry nomer girkiziň: {dial} kodundan soň {digits} san"
 }

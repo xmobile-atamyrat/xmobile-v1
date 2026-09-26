@@ -7,12 +7,13 @@ import {
   createGuestOrder,
   getGuestOrders,
 } from '../../order/services/orderService';
+import { deliveryPhoneSchema } from '../../order/validators/orderValidators';
 
 const filepath = 'src/pages/api/guest/order/index.page.ts';
 
 const createGuestOrderSchema = z.object({
   deliveryAddress: z.string().min(1, 'Delivery address is required'),
-  deliveryPhone: z.string().min(1, 'Delivery phone is required'),
+  deliveryPhone: deliveryPhoneSchema,
   notes: z.string().optional(),
   userName: z.string().optional(),
 });

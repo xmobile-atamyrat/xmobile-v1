@@ -668,5 +668,6 @@
   "rateDeleteFailed": "Kur silinemedi",
   "pricesAssigned": "Fiyatlar kura taşındı",
   "assignPricesError": "Fiyatlar taşınamadı",
-  "confirmDefaultRateRecalculate": "Tüm {count} fiyat bu kura göre yeniden hesaplansın mı? Tüm fiyatlar varsayılan kura döner."
+  "confirmDefaultRateRecalculate": "Tüm {count} fiyat bu kura göre yeniden hesaplansın mı? Tüm fiyatlar varsayılan kura döner.",
+  "invalidPhoneNumber": "Geçerli bir numara girin: {dial} sonrası {digits} rakam"
 }
