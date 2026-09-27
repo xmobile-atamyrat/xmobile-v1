@@ -32,7 +32,7 @@ export default function CartContextProvider({
 }: {
   children: ReactNode;
 }) {
-  const { user, accessToken, isLoading } = useUserContext();
+  const { user, accessToken, isLoading, initialCartCount } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const [cartCount, setCartCount] = useState(0);
   const latestRequestRef = useRef(0);
@@ -67,9 +67,18 @@ export default function CartContextProvider({
     }
   }, [fetchWithCreds]);
 
+  const loadedRef = useRef(false);
   useEffect(() => {
-    refreshCartCount();
-  }, [isLoading, userId, refreshCartCount]);
+    if (isLoading) return;
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      if (userId && initialCartCount != null) setCartCount(initialCartCount);
+      else refreshCartCount();
+      return;
+    }
+    // Sign-in pages refresh themselves once the guest cart has migrated
+    if (!userId) refreshCartCount();
+  }, [isLoading, userId, initialCartCount, refreshCartCount]);
 
   const value = useMemo(
     () => ({ cartCount, setCartCount, refreshCartCount }),

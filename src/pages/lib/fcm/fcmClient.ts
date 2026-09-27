@@ -1,6 +1,7 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import { getMessaging, getToken, Messaging } from 'firebase/messaging';
 import { v4 as uuidv4 } from 'uuid';
+import { parseBridgeMessage } from '../nativeBridge';
 import { getServiceWorkerRegistration, isWebView } from '../serviceWorker';
 import { getFirebaseConfig } from './config';
 
@@ -395,33 +396,18 @@ export async function getNativeFCMTokenViaBridge(): Promise<{
     uniqueId: string;
   } | null>((resolve) => {
     function handler(event: MessageEvent) {
-      try {
-        const rawData = event.data;
-        const parsed =
-          typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
-
-        if (parsed && parsed.type === 'FCM_TOKEN') {
-          window.removeEventListener('message', handler);
-          pendingNativeTokenPromise = null;
-          resolve(
-            parsed.payload?.token
-              ? {
-                  token: parsed.payload.token as string,
-                  uniqueId: (parsed.payload.uniqueId as string) || '',
-                }
-              : null,
-          );
-        }
-      } catch (error) {
-        if (
-          typeof event.data === 'string' &&
-          event.data.includes('FCM_TOKEN')
-        ) {
-          console.error(
-            '[FCM] Failed to parse expected FCM message from WebView bridge:',
-            error,
-          );
-        }
+      const parsed = parseBridgeMessage(event.data);
+      if (parsed?.type === 'FCM_TOKEN') {
+        window.removeEventListener('message', handler);
+        pendingNativeTokenPromise = null;
+        resolve(
+          parsed.payload?.token
+            ? {
+                token: parsed.payload.token as string,
+                uniqueId: (parsed.payload.uniqueId as string) || '',
+              }
+            : null,
+        );
       }
     }
 
@@ -485,16 +471,11 @@ function askNativePermission(
       resolve(status);
     };
     handler = (event: MessageEvent) => {
-      try {
-        const data =
-          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.type !== 'NOTIFICATION_PERMISSION_STATUS') return;
-        const echoed = data.payload?.request;
-        if (echoed && echoed !== request) return;
-        finish(data.payload?.status ?? fallback);
-      } catch (err) {
-        console.warn('Parsing error in notification permission status', err);
-      }
+      const data = parseBridgeMessage(event.data);
+      if (data?.type !== 'NOTIFICATION_PERMISSION_STATUS') return;
+      const echoed = data.payload?.request;
+      if (echoed && echoed !== request) return;
+      finish(data.payload?.status ?? fallback);
     };
     window.addEventListener('message', handler);
     timer = setTimeout(() => finish(fallback), timeoutMs);
@@ -627,9 +608,9 @@ export async function enableNotifications(
   userId: string,
 ): Promise<EnableNotificationsResult> {
   if (typeof window === 'undefined') return 'failed';
-  setOptedOut(userId, false);
   const permission = await requestNotificationsPermission();
   if (permission !== 'enabled') return permission;
+  setOptedOut(userId, false);
 
   if (isWebView()) {
     await ensureNativeFCMTokenRegisteredInWebView(userId, accessToken);

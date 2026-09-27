@@ -5,7 +5,8 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { bannerCropSize, writeBannerWebp } from '@/lib/bannerImage';
+import { writeBannerWebp } from '@/lib/bannerImage';
+import { bannerCropSize } from '@/pages/lib/bannerCrop';
 
 describe('bannerCropSize', () => {
   it('crops a tall upload to 1600x800', () => {
@@ -76,6 +77,25 @@ describe('writeBannerWebp', () => {
 
     const meta = await sharp(fs.readFileSync(target)).metadata();
     expect(meta).toMatchObject({ width: 1600, height: 800 });
+  });
+
+  it('stores an already-cropped WebP without re-encoding it', async () => {
+    const source = path.join(dir, 'cropped');
+    await sharp({
+      create: {
+        width: 1600,
+        height: 800,
+        channels: 3,
+        background: { r: 10, g: 20, b: 30 },
+      },
+    })
+      .webp({ quality: 92 })
+      .toFile(source);
+
+    const target = await writeBannerWebp(source);
+
+    expect(target).toBe(path.join(dir, 'cropped-1600x800.webp'));
+    expect(fs.readFileSync(target).equals(fs.readFileSync(source))).toBe(true);
   });
 
   it('rejects a file that is not an image', async () => {

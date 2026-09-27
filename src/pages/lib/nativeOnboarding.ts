@@ -1,20 +1,12 @@
+import { parseBridgeMessage } from './nativeBridge';
 import { isWebView } from './serviceWorker';
 
 let onboardingActive: boolean | null = null;
 const listeners = new Set<() => void>();
 
-function parseMessage(raw: unknown): any {
-  if (typeof raw !== 'string') return raw;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 if (typeof window !== 'undefined') {
   window.addEventListener('message', (event: MessageEvent) => {
-    const data = parseMessage(event.data);
+    const data = parseBridgeMessage(event.data);
     if (data?.type !== 'ONBOARDING_STATE') return;
     onboardingActive = !!data.payload?.active;
     listeners.forEach((listener) => listener());

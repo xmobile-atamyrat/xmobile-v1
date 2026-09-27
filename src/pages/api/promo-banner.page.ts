@@ -227,7 +227,7 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
           console.error(filepath, error);
           resolve({
             success: false,
-            message: 'invalidBannerImage',
+            message: 'bannerImageUnsupported',
             status: 400,
           });
           return;
@@ -358,7 +358,7 @@ async function handleEditBanner(
           console.error(filepath, error);
           resolve({
             success: false,
-            message: 'invalidBannerImage',
+            message: 'bannerImageUnsupported',
             status: 400,
           });
           return;

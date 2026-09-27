@@ -34,26 +34,34 @@ export default function UserContextProvider({
   const [user, setUser] = useState<ProtectedUser>();
   const [accessToken, setAccessToken] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
+  const [initialCartCount, setInitialCartCount] = useState<number>();
 
   useEffect(() => {
     if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
       (async () => {
         try {
-          const response: ResponseApi<{ accessToken: string; user: User }> =
-            await (
-              await fetch('/api/user', {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-              })
-            ).json();
+          const response: ResponseApi<{
+            accessToken: string;
+            user: User;
+            cartCount?: number;
+          }> = await (
+            await fetch('/api/user', {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            })
+          ).json();
           if (response.success && response.data) {
-            const { accessToken: fetchedAccessToken, user: fetchedUser } =
-              response.data;
+            const {
+              accessToken: fetchedAccessToken,
+              user: fetchedUser,
+              cartCount,
+            } = response.data;
             setAccessToken(fetchedAccessToken);
             setUser(fetchedUser);
+            setInitialCartCount(cartCount);
           }
         } catch (error) {
           console.error(error);
@@ -75,8 +83,9 @@ export default function UserContextProvider({
       accessToken,
       setAccessToken,
       isLoading,
+      initialCartCount,
     } as UserContextProps;
-  }, [user, setUser, accessToken, setAccessToken, isLoading]);
+  }, [user, setUser, accessToken, setAccessToken, isLoading, initialCartCount]);
   return (
     <UserContext.Provider value={userContextState}>
       {children}

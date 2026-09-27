@@ -138,10 +138,14 @@ async function requestNotificationPermission(): Promise<
     sound: true,
     provisional: false,
   });
-  return status === messaging.AuthorizationStatus.AUTHORIZED ||
+  if (
+    status === messaging.AuthorizationStatus.AUTHORIZED ||
     status === messaging.AuthorizationStatus.PROVISIONAL
-    ? 'GRANTED'
-    : 'DENIED';
+  ) {
+    return 'GRANTED';
+  }
+  // iOS never shows the alert again after a denial
+  return status === messaging.AuthorizationStatus.DENIED ? 'BLOCKED' : 'DENIED';
 }
 
 /**

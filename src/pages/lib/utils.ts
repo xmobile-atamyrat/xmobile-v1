@@ -1,7 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { fetchProducts } from '@/pages/lib/apis';
+import { bannerCropSize } from '@/pages/lib/bannerCrop';
 import {
-  BANNER_IMAGE_WIDTH,
   COOKIE_EXPIRY_SECONDS,
   LOGO_COLOR,
   PRODUCT_IMAGE_WIDTH,
@@ -119,11 +119,7 @@ export const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-export async function resizeImage(
-  image: File,
-  width: number,
-  type?: string,
-): Promise<Blob> {
+export async function resizeImage(image: File, width: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onerror = () => reject(new Error(`Couldn't open image: ${image.name}`));
@@ -135,12 +131,47 @@ export async function resizeImage(
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        resolve(blob as Blob);
+      });
+    };
+    img.src = URL.createObjectURL(image);
+  });
+}
+
+// Centre-crops to the stored 2:1 banner size so the server can keep the upload as-is.
+export async function cropBannerImage(image: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error(`Couldn't open image: ${image.name}`));
+    img.onload = () => {
+      const crop = bannerCropSize(img.naturalWidth, img.naturalHeight);
+      const scale = Math.min(
+        img.naturalWidth / crop.width,
+        img.naturalHeight / crop.height,
+      );
+      const sourceWidth = crop.width * scale;
+      const sourceHeight = crop.height * scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(
+        img,
+        (img.naturalWidth - sourceWidth) / 2,
+        (img.naturalHeight - sourceHeight) / 2,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        crop.width,
+        crop.height,
+      );
       canvas.toBlob(
-        (blob) => {
-          resolve(blob as Blob);
-        },
-        type,
-        type ? 0.92 : undefined,
+        (blob) =>
+          blob ? resolve(blob) : reject(new Error("Couldn't encode image")),
+        'image/webp',
+        0.92,
       );
     };
     img.src = URL.createObjectURL(image);
@@ -178,11 +209,7 @@ export const addEditBanner = async ({
   for (const img of images) {
     if (img.file != null && img.file.name !== '') {
       // eslint-disable-next-line no-await-in-loop
-      const resized = await resizeImage(
-        img.file,
-        BANNER_IMAGE_WIDTH,
-        'image/webp',
-      );
+      const resized = await cropBannerImage(img.file);
       formData.append(`imageUrl_${img.key}`, resized);
     } else if (img.url != null && img.url !== '') {
       formData.append(`imageUrl_${img.key}`, img.url);

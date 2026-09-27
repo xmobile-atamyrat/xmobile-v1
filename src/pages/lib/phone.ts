@@ -31,6 +31,10 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
 
 export const DEFAULT_PHONE_COUNTRY = PHONE_COUNTRIES[0];
 
+export const MAX_INTERNATIONAL_DIGITS = Math.max(
+  ...PHONE_COUNTRIES.map((c) => c.dial.length - 1 + c.localLength),
+);
+
 export const getPhoneCountry = (code: string): PhoneCountry =>
   PHONE_COUNTRIES.find((c) => c.code === code) ?? DEFAULT_PHONE_COUNTRY;
 

@@ -12,6 +12,7 @@ import {
   detectPhoneCountry,
   getPhoneCountry,
   isValidLocalNumber,
+  MAX_INTERNATIONAL_DIGITS,
   PHONE_COUNTRIES,
   PhoneCountry,
   toLocalDigits,
@@ -460,7 +461,9 @@ export default function CheckoutPage() {
 
   const selectPhoneCountry = (next: PhoneCountry) => {
     setPhoneCountryCode(next.code);
-    setPhoneNumber((prev) => prev.slice(0, next.localLength));
+    setPhoneNumber((prev) =>
+      toLocalDigits(prev, next).slice(0, next.localLength),
+    );
     setPhoneMenuAnchor(null);
   };
 
@@ -531,10 +534,23 @@ export default function CheckoutPage() {
   };
   const handlePhoneChange = (v: string) => {
     // A pasted international number picks its own country
-    const pasted = v.includes('+') ? detectPhoneCountry(v) : null;
-    const country = pasted ?? phoneCountry;
-    if (pasted) setPhoneCountryCode(pasted.code);
-    setPhoneNumber(toLocalDigits(v, country).slice(0, country.localLength));
+    const international = v.trimStart().startsWith('+');
+    const detected = international ? detectPhoneCountry(v) : null;
+    if (detected) {
+      setPhoneCountryCode(detected.code);
+      setPhoneNumber(toLocalDigits(v, detected));
+      return;
+    }
+    // Keep the "+" while an international number is still being typed
+    if (international) {
+      setPhoneNumber(
+        `+${v.replace(/\D/g, '').slice(0, MAX_INTERNATIONAL_DIGITS)}`,
+      );
+      return;
+    }
+    setPhoneNumber(
+      toLocalDigits(v, phoneCountry).slice(0, phoneCountry.localLength),
+    );
   };
 
   const cls = checkoutDialogClasses;

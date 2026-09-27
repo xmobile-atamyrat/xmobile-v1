@@ -5,6 +5,7 @@ import {
   ensureNativeFCMTokenRegisteredInWebView,
   FCM_TOKEN_STORAGE_KEY,
 } from '../fcm/fcmClient';
+import { parseBridgeMessage } from '../nativeBridge';
 import { isWebView } from '../serviceWorker';
 import { ProtectedUser } from '../types';
 import { getCookie } from '../utils';
@@ -105,28 +106,14 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
       );
 
       const handleWebViewMessage = (event: MessageEvent) => {
-        try {
-          const data =
-            typeof event.data === 'string'
-              ? JSON.parse(event.data)
-              : event.data;
-
-          if (
-            data &&
-            (data.type === 'FCM_TOKEN_REFRESHED' ||
-              data.type === 'FCM_TOKEN_AVAILABLE')
-          ) {
-            console.log(
-              `[WebViewSync] Detected native FCM token: ${data.type}`,
-            );
-            ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
-              console.error,
-            );
-          }
-        } catch (error) {
-          console.error(
-            '[WebViewSync] Failed to parse message event in token refresh/token available handler:',
-            error,
+        const data = parseBridgeMessage(event.data);
+        if (
+          data?.type === 'FCM_TOKEN_REFRESHED' ||
+          data?.type === 'FCM_TOKEN_AVAILABLE'
+        ) {
+          console.log(`[WebViewSync] Detected native FCM token: ${data.type}`);
+          ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
+            console.error,
           );
         }
       };
