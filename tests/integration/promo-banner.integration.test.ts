@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
@@ -31,11 +32,44 @@ function multipartBody(
   return chunks.join('\r\n');
 }
 
+function multipartBodyWithFile(
+  fields: Record<string, string>,
+  file: { name: string; content: Buffer },
+  boundary: string,
+): Buffer {
+  const parts: Buffer[] = Object.entries(fields).map(([name, value]) =>
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+    ),
+  );
+  parts.push(
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${file.name}"; filename="blob"\r\nContent-Type: image/png\r\n\r\n`,
+    ),
+    file.content,
+    Buffer.from(`\r\n--${boundary}--`),
+  );
+  return Buffer.concat(parts);
+}
+
+function tallPng(): Promise<Buffer> {
+  return sharp({
+    create: {
+      width: 1600,
+      height: 2840,
+      channels: 4,
+      background: { r: 200, g: 30, b: 60, alpha: 1 },
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
 async function invokeBannerApi(options: {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   query?: Record<string, string>;
   headers?: Record<string, string>;
-  body?: string;
+  body?: string | Buffer;
 }): Promise<{ status: number; json: Record<string, unknown> }> {
   const bannerHandler = (await import('@/pages/api/promo-banner.page')).default;
   const { req: mockReq, res } = createMocks({
@@ -47,7 +81,9 @@ async function invokeBannerApi(options: {
 
   let req: NextApiRequest;
   if (options.body != null) {
-    const buf = Buffer.from(options.body, 'utf8');
+    const buf = Buffer.isBuffer(options.body)
+      ? options.body
+      : Buffer.from(options.body, 'utf8');
     const bodyStream = Readable.from(buf);
     req = Object.assign(bodyStream, {
       url: '/api/promo-banner',
@@ -547,6 +583,120 @@ describe('promo banner API + delete guard (integration)', () => {
       );
     } finally {
       await prisma.promoBanner.delete({ where: { id: banner.id } });
+    }
+  });
+
+  // ── Uploaded images ──────────────────────────────────────────────────────
+
+  async function uploadBanner(): Promise<{
+    status: number;
+    json: Record<string, unknown>;
+  }> {
+    const boundary = 'banneruploadpost';
+    return invokeBannerApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body: multipartBodyWithFile(
+        { sortOrder: String(nextSortOrder()), isActive: 'false' },
+        { name: 'imageUrl_default', content: await tallPng() },
+        boundary,
+      ),
+    });
+  }
+
+  function storedDefault(json: Record<string, unknown>): string {
+    return (json.data as { imgUrls: { default: string } }).imgUrls.default;
+  }
+
+  it('POST stores an uploaded image as a 2:1 WebP and removes the raw upload', async () => {
+    const { status, json } = await uploadBanner();
+    expect(status).toBe(201);
+    const stored = storedDefault(json);
+    try {
+      expect(stored.endsWith('-1600x800.webp')).toBe(true);
+      const meta = await sharp(fs.readFileSync(stored)).metadata();
+      expect(meta).toMatchObject({ format: 'webp', width: 1600, height: 800 });
+      expect(
+        fs.readdirSync(uploadDir).filter((f) => !f.endsWith('.webp')),
+      ).toEqual([]);
+    } finally {
+      await prisma.promoBanner.delete({
+        where: { id: (json.data as { id: string }).id },
+      });
+      fs.rmSync(stored, { force: true });
+    }
+  });
+
+  it('POST returns 400 for an upload that is not an image and leaves no files behind', async () => {
+    const before = fs.readdirSync(uploadDir);
+    const boundary = 'bannerbadupload';
+    const { status, json } = await invokeBannerApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body: multipartBodyWithFile(
+        { sortOrder: String(nextSortOrder()), isActive: 'false' },
+        { name: 'imageUrl_default', content: Buffer.from('not an image') },
+        boundary,
+      ),
+    });
+    expect(status).toBe(400);
+    expect(json.message).toBe('bannerImageUnsupported');
+    expect(fs.readdirSync(uploadDir)).toEqual(before);
+  });
+
+  it('PUT keeps an unchanged image on disk and removes a replaced one', async () => {
+    const created = await uploadBanner();
+    expect(created.status).toBe(201);
+    const bannerId = (created.json.data as { id: string }).id;
+    const original = storedDefault(created.json);
+    let replacement: string | undefined;
+    try {
+      const keepBoundary = 'bannerputkeep';
+      const kept = await invokeBannerApi({
+        method: 'PUT',
+        query: { id: bannerId },
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': `multipart/form-data; boundary=${keepBoundary}`,
+        },
+        body: multipartBody(
+          { imageUrl_default: original, isActive: 'false' },
+          keepBoundary,
+        ),
+      });
+      expect(kept.status).toBe(200);
+      expect(storedDefault(kept.json)).toBe(original);
+      expect(fs.existsSync(original)).toBe(true);
+
+      const replaceBoundary = 'bannerputreplace';
+      const replaced = await invokeBannerApi({
+        method: 'PUT',
+        query: { id: bannerId },
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': `multipart/form-data; boundary=${replaceBoundary}`,
+        },
+        body: multipartBodyWithFile(
+          { isActive: 'false' },
+          { name: 'imageUrl_default', content: await tallPng() },
+          replaceBoundary,
+        ),
+      });
+      expect(replaced.status).toBe(200);
+      replacement = storedDefault(replaced.json);
+      expect(replacement).not.toBe(original);
+      expect(fs.existsSync(replacement)).toBe(true);
+      expect(fs.existsSync(original)).toBe(false);
+    } finally {
+      await prisma.promoBanner.delete({ where: { id: bannerId } });
+      fs.rmSync(original, { force: true });
+      if (replacement) fs.rmSync(replacement, { force: true });
     }
   });
 

@@ -1,7 +1,7 @@
+import CountBadge from '@/pages/components/CountBadge';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { notificationClasses } from '@/styles/classMaps/components/notifications';
-import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import { Bell } from 'lucide-react';
@@ -16,20 +16,7 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
 
   return (
     <Box className={notificationClasses.badge.container[platform]}>
-      <Badge
-        badgeContent={unreadCount > 99 ? '99+' : unreadCount}
-        color="error"
-        sx={{
-          '& .MuiBadge-badge': {
-            backgroundColor: '#E41E2B',
-            fontSize: platform === 'web' ? '11px' : '9px',
-            fontWeight: 700,
-            minWidth: platform === 'web' ? '18px' : '16px',
-            height: platform === 'web' ? '18px' : '16px',
-            padding: platform === 'web' ? '0 4px' : '0 4px',
-          },
-        }}
-      >
+      <CountBadge count={unreadCount}>
         <IconButton
           onClick={onClick}
           aria-label="notifications"
@@ -40,7 +27,7 @@ export default function NotificationBadge({ onClick }: NotificationBadgeProps) {
         >
           <Bell className={notificationClasses.badge.icon[platform]} />
         </IconButton>
-      </Badge>
+      </CountBadge>
     </Box>
   );
 }

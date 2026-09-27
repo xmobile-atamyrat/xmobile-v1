@@ -60,7 +60,7 @@ describe('Admin order API (integration)', () => {
         userEmail: buyer.email,
         totalPrice: '50',
         deliveryAddress: 'Addr',
-        deliveryPhone: '+1',
+        deliveryPhone: '+99361000001',
         status: 'PENDING',
         items: {
           create: [

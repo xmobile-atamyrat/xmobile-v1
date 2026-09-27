@@ -48,6 +48,12 @@ const ICON_MUTED = '#B6B5C2';
 // XMobile support line — matches SUPPORT_PHONES[0] in src/pages/support.page.tsx
 const SUPPORT_PHONE = '+99361004933';
 
+const NOTIF_DENIED_ONCE_KEY = 'NOTIF_PERMISSION_DENIED_ONCE';
+const NOTIF_BLOCKED_KEY = 'NOTIF_PERMISSION_BLOCKED';
+const INSTANT_ANSWER_MS = 400;
+
+type NotificationPermissionStatus = 'GRANTED' | 'NOT_DETERMINED' | 'BLOCKED';
+
 /**
  * Cross-platform notification permission check.
  *
@@ -56,24 +62,34 @@ const SUPPORT_PHONE = '+99361004933';
  *   UNUserNotificationCenter.getNotificationSettings().
  * - Older Android: always granted (no runtime permission needed).
  */
-async function checkNotificationPermission(): Promise<boolean> {
+async function checkNotificationPermission(): Promise<NotificationPermissionStatus> {
   if (Platform.OS === 'android') {
-    if (Number(Platform.Version) >= 33) {
-      return await PermissionsAndroid.check(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
+    if (Number(Platform.Version) < 33) return 'GRANTED';
+    const granted = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    if (granted) {
+      await AsyncStorage.removeItem(NOTIF_BLOCKED_KEY);
+      return 'GRANTED';
     }
-    return true;
+    return (await AsyncStorage.getItem(NOTIF_BLOCKED_KEY))
+      ? 'BLOCKED'
+      : 'NOT_DETERMINED';
   }
 
   // iOS — AuthorizationStatus values:
   // AUTHORIZED = 1, PROVISIONAL = 3  → treat as granted
   // NOT_DETERMINED = 0, DENIED = -1  → treat as not granted
   const status = await messaging().hasPermission();
-  return (
+  if (
     status === messaging.AuthorizationStatus.AUTHORIZED ||
     status === messaging.AuthorizationStatus.PROVISIONAL
-  );
+  ) {
+    return 'GRANTED';
+  }
+  return status === messaging.AuthorizationStatus.DENIED
+    ? 'BLOCKED'
+    : 'NOT_DETERMINED';
 }
 
 /**
@@ -82,16 +98,37 @@ async function checkNotificationPermission(): Promise<boolean> {
  * On iOS this triggers the native system alert (only shown once by the OS).
  * On Android 13+ it shows the runtime permission dialog.
  */
-async function requestNotificationPermission(): Promise<boolean> {
+async function requestNotificationPermission(): Promise<
+  'GRANTED' | 'DENIED' | 'BLOCKED'
+> {
   if (Platform.OS === 'android') {
-    if (Number(Platform.Version) >= 33) {
-      const result = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      return result === PermissionsAndroid.RESULTS.GRANTED;
+    if (Number(Platform.Version) < 33) return 'GRANTED';
+
+    const startedAt = Date.now();
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    if (result === PermissionsAndroid.RESULTS.GRANTED) {
+      await AsyncStorage.multiRemove([
+        NOTIF_DENIED_ONCE_KEY,
+        NOTIF_BLOCKED_KEY,
+      ]);
+      return 'GRANTED';
     }
-    return true;
+    if (result === PermissionsAndroid.RESULTS.DENIED) {
+      await AsyncStorage.setItem(NOTIF_DENIED_ONCE_KEY, '1');
+      return 'DENIED';
+    }
+    const blocked =
+      !!(await AsyncStorage.getItem(NOTIF_DENIED_ONCE_KEY)) ||
+      Date.now() - startedAt < INSTANT_ANSWER_MS;
+    if (!blocked) return 'DENIED';
+    await AsyncStorage.setItem(NOTIF_BLOCKED_KEY, '1');
+    return 'BLOCKED';
   }
+
+  const current = await messaging().hasPermission();
+  if (current === messaging.AuthorizationStatus.DENIED) return 'BLOCKED';
 
   // iOS — requestPermission shows the system alert the very first time.
   // Subsequent calls return the already-stored status without showing the alert.
@@ -101,10 +138,14 @@ async function requestNotificationPermission(): Promise<boolean> {
     sound: true,
     provisional: false,
   });
-  return (
+  if (
     status === messaging.AuthorizationStatus.AUTHORIZED ||
     status === messaging.AuthorizationStatus.PROVISIONAL
-  );
+  ) {
+    return 'GRANTED';
+  }
+  // iOS never shows the alert again after a denial
+  return status === messaging.AuthorizationStatus.DENIED ? 'BLOCKED' : 'DENIED';
 }
 
 /**
@@ -755,9 +796,16 @@ function WebAppScreen() {
                   type: 'APP_VERSION',
                   payload: appVersion,
                 };
+                const onboardingPayload = {
+                  type: 'ONBOARDING_STATE',
+                  payload: { active: !hasSeenOnboardingRef.current },
+                };
                 const scripts: string[] = [
                   `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
                     appVersionPayload,
+                  )} }));`,
+                  `window.dispatchEvent(new MessageEvent('message', { data: ${JSON.stringify(
+                    onboardingPayload,
                   )} }));`,
                 ];
 
@@ -798,10 +846,10 @@ function WebAppScreen() {
               if (!token) {
                 token = await fetchAndCacheToken();
               }
-              if (token && webViewRef.current) {
+              if (webViewRef.current) {
                 const payload = JSON.stringify({
                   type: 'FCM_TOKEN',
-                  payload: { token, uniqueId },
+                  payload: { token: token ?? null, uniqueId },
                 });
 
                 webViewRef.current.injectJavaScript(`
@@ -818,9 +866,7 @@ function WebAppScreen() {
               if (webViewRef.current) {
                 const payload = JSON.stringify({
                   type: 'NOTIFICATION_PERMISSION_STATUS',
-                  payload: {
-                    status: status ? 'GRANTED' : 'NOT_DETERMINED',
-                  },
+                  payload: { status, request: 'CHECK' },
                 });
                 webViewRef.current.injectJavaScript(`
                         window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
@@ -828,20 +874,24 @@ function WebAppScreen() {
                        `);
               }
             } else if (data.type === 'REQUEST_PERMISSION') {
-              const granted = await requestNotificationPermission();
-              if (granted) {
+              const status = await requestNotificationPermission();
+              if (status === 'GRANTED') {
                 fetchAndCacheToken();
               }
               if (webViewRef.current) {
                 const payload = JSON.stringify({
                   type: 'NOTIFICATION_PERMISSION_STATUS',
-                  payload: { status: granted ? 'GRANTED' : 'DENIED' },
+                  payload: { status, request: 'REQUEST' },
                 });
                 webViewRef.current.injectJavaScript(`
                          window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
                          true;
                         `);
               }
+            } else if (data.type === 'OPEN_NOTIFICATION_SETTINGS') {
+              Linking.openSettings().catch(error => {
+                console.warn('Failed to open app settings:', error);
+              });
             } else if (data.type === 'AUTH_STATE') {
               const { REFRESH_TOKEN, NEXT_LOCALE } = data.payload;
               if (REFRESH_TOKEN) {
@@ -955,6 +1005,16 @@ function WebAppScreen() {
             onDone={landingPath => {
               setInitialPath(landingPath ?? '');
               setHasSeenOnboarding(true);
+              if (isWebAppReadyRef.current && webViewRef.current) {
+                const payload = JSON.stringify({
+                  type: 'ONBOARDING_STATE',
+                  payload: { active: false },
+                });
+                webViewRef.current.injectJavaScript(`
+                  window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+                  true;
+                `);
+              }
 
               // The prefetch ran unattended. If it never committed -- it
               // failed, or the 10s deadline fired while nobody was looking --

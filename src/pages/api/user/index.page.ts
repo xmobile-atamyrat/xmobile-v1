@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
 import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
@@ -19,7 +20,9 @@ const filepath = 'src/pages/api/user/signin.page.ts';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseApi<{ accessToken: string; user: User }>>,
+  res: NextApiResponse<
+    ResponseApi<{ accessToken: string; user: User; cartCount?: number }>
+  >,
 ) {
   addCors(res);
   const { method } = req;
@@ -65,9 +68,13 @@ export default async function handler(
         `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
+      const cartCount = await dbClient.cartItem.count({
+        where: { userId: user.id, product: whereActiveProduct },
+      });
+
       return res.status(200).json({
         success: true,
-        data: { user, accessToken },
+        data: { user, accessToken, cartCount },
       });
     } catch (error) {
       console.error(error);

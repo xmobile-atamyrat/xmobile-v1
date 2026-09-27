@@ -40,7 +40,7 @@ describe('Order controller validation (integration)', () => {
     const { resp, status } = await createOrderController(
       {
         deliveryAddress: 'A',
-        deliveryPhone: 'B',
+        deliveryPhone: '+99361000000',
       },
       orphan.id,
     );

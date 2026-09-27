@@ -1,13 +1,14 @@
 import Layout from '@/pages/components/Layout';
+import NotificationResultSnackbar from '@/pages/components/NotificationResultSnackbar';
 import { ProfileSkeleton } from '@/pages/components/SkeletonLoader';
-import {
-  LOCALE_COOKIE_NAME,
-  mobileBottomNavHeight,
-} from '@/pages/lib/constants';
+import { LOCALE_COOKIE_NAME } from '@/pages/lib/constants';
 import {
   disableNotifications,
   enableNotifications,
-  isNotificationsEnabled,
+  EnableNotificationsResult,
+  FCM_REGISTRATION_EVENT,
+  isNotificationsActive,
+  isNotificationsSupported,
 } from '@/pages/lib/fcm/fcmClient';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { clearSessionOnDevice } from '@/pages/lib/signOut';
@@ -16,19 +17,16 @@ import { getCookie, setCookie } from '@/pages/lib/utils';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
-import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
 import { fontClassName, navy } from '@/styles/theme';
 import {
   Box,
   ButtonBase,
   CardMedia,
   Dialog,
-  Snackbar,
   Switch,
   Typography,
 } from '@mui/material';
 import {
-  AlertTriangle,
   BarChart3,
   Bell,
   Boxes,
@@ -56,7 +54,7 @@ import {
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 // getStaticProps because translations are static
 export const getStaticProps = (async (context) => {
   return {
@@ -72,7 +70,7 @@ type MenuRow = {
   onClick?: () => void;
   tone?: 'primary' | 'muted';
   value?: string;
-  toggle?: { checked: boolean; onChange: () => void };
+  toggle?: { checked: boolean; onChange: () => void; disabled?: boolean };
 };
 
 const navySwitchSx = {
@@ -126,6 +124,7 @@ function MenuCard({
               <Switch
                 checked={row.toggle.checked}
                 onChange={row.toggle.onChange}
+                disabled={row.toggle.disabled}
                 sx={navySwitchSx}
               />
             ) : (
@@ -164,9 +163,11 @@ export default function Profile() {
   );
   const [selectedLocale, setSelectedLocale] = useState('ru');
   const [pendingLocale, setPendingLocale] = useState('ru');
+  const [notifSupported, setNotifSupported] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
-  const [notifDenied, setNotifDenied] = useState(false);
+  const [notifResult, setNotifResult] =
+    useState<EnableNotificationsResult | null>(null);
   const router = useRouter();
   const t = useTranslations();
   const platform = usePlatform();
@@ -192,22 +193,38 @@ export default function Profile() {
     }
   }, [router.locale, router.defaultLocale]);
 
-  // Reflect the current device's notification state (token registered = on).
   useEffect(() => {
-    setNotifEnabled(user ? isNotificationsEnabled() : false);
+    setNotifSupported(isNotificationsSupported());
+  }, []);
+
+  const refreshNotifEnabled = useCallback(async () => {
+    setNotifEnabled(user ? await isNotificationsActive() : false);
   }, [user]);
+
+  useEffect(() => {
+    refreshNotifEnabled();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshNotifEnabled();
+    };
+    window.addEventListener(FCM_REGISTRATION_EVENT, refreshNotifEnabled);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener(FCM_REGISTRATION_EVENT, refreshNotifEnabled);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshNotifEnabled]);
 
   const handleToggleNotif = async () => {
     if (!user || !accessToken || notifBusy) return;
     setNotifBusy(true);
     try {
       if (notifEnabled) {
-        await disableNotifications(accessToken);
+        await disableNotifications(accessToken, user.id);
         setNotifEnabled(false);
       } else {
-        const ok = await enableNotifications(accessToken, user.id);
-        setNotifEnabled(ok);
-        if (!ok) setNotifDenied(true);
+        const result = await enableNotifications(accessToken, user.id);
+        setNotifEnabled(result === 'enabled');
+        if (result !== 'enabled') setNotifResult(result);
       }
     } finally {
       setNotifBusy(false);
@@ -371,14 +388,19 @@ export default function Profile() {
       label: isAdmin ? t('userOrders') : t('myOrders'),
       onClick: handleToggleMyOrders,
     },
-    {
-      icon: <Bell className={profileClasses.icon.primary} />,
-      label: t('notifications'),
-      toggle: {
-        checked: notifEnabled,
-        onChange: handleToggleNotif,
-      },
-    },
+    ...(notifSupported
+      ? [
+          {
+            icon: <Bell className={profileClasses.icon.primary} />,
+            label: t('notifications'),
+            toggle: {
+              checked: notifEnabled,
+              onChange: handleToggleNotif,
+              disabled: notifBusy,
+            },
+          },
+        ]
+      : []),
     {
       icon: <Languages className={profileClasses.icon.primary} />,
       label: t('appLanguage'),
@@ -401,8 +423,15 @@ export default function Profile() {
     },
   ];
 
-  // Guest: single "General" card (mockup XMobile.dc.html:954-959).
+  // Guest: single "General" card (mockup XMobile.dc.html:954-959), plus My
+  // orders — guest orders are tracked by the session cookie, see /orders.
   const guestRows: MenuRow[] = [
+    {
+      icon: <Package className={profileClasses.icon.muted} />,
+      label: t('myOrders'),
+      onClick: handleToggleMyOrders,
+      tone: 'muted',
+    },
     {
       icon: <Headphones className={profileClasses.icon.muted} />,
       label: t('supportTitle'),
@@ -588,23 +617,11 @@ export default function Profile() {
         </ButtonBase>
       </Dialog>
 
-      <Snackbar
-        open={notifDenied}
-        autoHideDuration={4000}
-        disableWindowBlurListener
-        onClose={() => setNotifDenied(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        sx={{ bottom: `${mobileBottomNavHeight + 8}px !important` }}
-      >
-        <Box className={snackbarClasses.pill}>
-          <AlertTriangle className={snackbarClasses.icon.warning} size={20} />
-          <Typography
-            className={`${fontClassName.className} ${snackbarClasses.message}`}
-          >
-            {t('notificationsDenied')}
-          </Typography>
-        </Box>
-      </Snackbar>
+      <NotificationResultSnackbar
+        result={notifResult}
+        onClose={() => setNotifResult(null)}
+        explainDismissed
+      />
     </>
   );
 
@@ -615,6 +632,7 @@ export default function Profile() {
     const webPreferenceRows = accountRows.filter(
       (row) => row.label !== t('myOrders') && row.label !== t('userOrders'),
     );
+    const webGuestRows = guestRows.filter((row) => row.label !== t('myOrders'));
 
     return (
       <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -672,7 +690,7 @@ export default function Profile() {
                     </ButtonBase>
                   </Box>
                 </Box>
-                <MenuCard variant="web" rows={guestRows} />
+                <MenuCard variant="web" rows={webGuestRows} />
               </>
             )}
           </Box>

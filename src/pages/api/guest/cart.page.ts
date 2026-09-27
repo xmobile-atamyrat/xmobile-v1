@@ -3,6 +3,7 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { unavailableVariantTags } from '@/lib/variantStock';
 import addCors from '@/pages/api/utils/addCors';
 import { getOrCreateGuestSessionId } from '@/pages/api/utils/guestSession';
+import { GUEST_SESSION_COOKIE_NAME } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -30,6 +31,30 @@ export default async function handler(
 ) {
   addCors(res);
   const { method, body } = req;
+
+  // The header badge asks on every visit, so a visitor without a cart must not
+  // be handed a guest session cookie just for looking.
+  if (method === 'GET' && req.query.count != null) {
+    try {
+      const existingSessionId = req.cookies[GUEST_SESSION_COOKIE_NAME];
+      const count = existingSessionId
+        ? await dbClient.guestCartItem.count({
+            where: {
+              guestSessionId: existingSessionId,
+              product: whereActiveProduct,
+            },
+          })
+        : 0;
+      return res.status(200).json({ success: true, data: { count } });
+    } catch (error) {
+      console.error(filepath, error);
+      return res.status(500).json({
+        success: false,
+        message: (error as Error).message,
+      });
+    }
+  }
+
   const guestSessionId = getOrCreateGuestSessionId(req, res);
 
   if (method === 'GET') {

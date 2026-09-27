@@ -16,7 +16,7 @@ Short reference to major features and where they live.
 
 ## Cart & checkout
 
-- **Cart:** `api/cart` (CRUD); cart state/UI in `pages/cart/`, `components/AddToCart`.
+- **Cart:** `api/cart` (CRUD); cart state/UI in `pages/cart/`, `components/AddToCart`. The header/bottom-nav item count lives in `lib/CartContext` (fetched once via `?count=1`, then updated locally on add/remove/order).
 - **Checkout:** `pages/cart/checkout/` (flow + success). Orders created via `api/order`.
 
 ## Orders

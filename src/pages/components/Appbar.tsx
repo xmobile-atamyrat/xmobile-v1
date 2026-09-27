@@ -18,8 +18,8 @@ import {
   Bell,
   ChevronDown,
   ChevronUp,
+  Clock,
   Globe,
-  MapPin,
   Menu as MenuIcon,
   Phone,
   Search,
@@ -30,8 +30,10 @@ import {
 } from 'lucide-react';
 
 import CategoryMegaMenu from '@/pages/components/CategoryMegaMenu';
+import CountBadge from '@/pages/components/CountBadge';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import {
@@ -138,6 +140,7 @@ export default function CustomAppBar({
 }: CustomAppBarProps) {
   const { user } = useUserContext();
   const { unreadCount } = useNotificationContext();
+  const { cartCount } = useCartContext();
   const router = useRouter();
   const t = useTranslations();
   const { searchKeyword, setSearchKeyword, setProducts } = useProductContext();
@@ -209,20 +212,15 @@ export default function CustomAppBar({
   if (platform === 'mobile') {
     return (
       <Box className={appbarClasses.appbar.mobile}>
-        {/* Header: guest greeting + Sign in, or location + notification */}
+        {/* Header: guest greeting + Sign in, or logo + notification */}
         <Box className={appbarClasses.boxes.header.mobile}>
           {user ? (
-            <Box className={appbarClasses.boxes.deliverTo.mobile}>
-              <MapPin size={15} className="text-[#E41E2B]" />
-              <div>
-                <div className="text-[11px] text-[#8B8A98] font-normal">
-                  {t('deliverTo')}
-                </div>
-                <div className="text-[15px] text-[#20166E] font-bold">
-                  {t('shortAddress')}
-                </div>
-              </div>
-            </Box>
+            <CardMedia
+              component="img"
+              src="/logo/xmobile-processed-logo.png"
+              alt="Xmobile"
+              className={appbarClasses.boxes.logo.mobile}
+            />
           ) : (
             <Box
               className={`${appbarClasses.boxes.guestGreeting.mobile} ${fontClassName.className}`}
@@ -268,15 +266,15 @@ export default function CustomAppBar({
         </Box>
 
         {/* Search bar with filter */}
-        {SearchBar({
-          searchKeyword: localSearchKeyword,
-          searchPlaceholder: t('search'),
-          setSearchKeyword: setLocalSearchKeyword,
-          showFilter: Boolean(onHomeFilterClick),
-          onFilterClick: onHomeFilterClick
-            ? () => onHomeFilterClick()
-            : undefined,
-        })}
+        <SearchBar
+          searchKeyword={localSearchKeyword}
+          searchPlaceholder={t('search')}
+          setSearchKeyword={setLocalSearchKeyword}
+          showFilter={Boolean(onHomeFilterClick)}
+          onFilterClick={
+            onHomeFilterClick ? () => onHomeFilterClick() : undefined
+          }
+        />
       </Box>
     );
   }
@@ -319,10 +317,12 @@ export default function CustomAppBar({
         <Box
           className={`${web.bleed} ${web.utilityBar} ${fontClassName.className}`}
         >
-          <Box className={web.utilityAddressGroup}>
-            <MapPin className={web.utilityIcon} />
-            <span className="whitespace-nowrap">{t('deliverTo')}</span>
-            <span className={web.utilityAddress}>{t('shortAddress')}</span>
+          <Box className={web.utilityHours}>
+            <Clock className={web.utilityIcon} />
+            <span className="truncate">{t('supportHoursTitle')}:</span>
+            <span className={web.utilityHoursTime}>
+              {t('supportHoursDays')} {t('supportHoursTime')}
+            </span>
           </Box>
           <Box className={web.utilityGroup}>
             <a
@@ -513,7 +513,9 @@ export default function CustomAppBar({
               className={web.iconAction}
               onClick={() => router.push('/cart')}
             >
-              <ShoppingCart className={web.actionIcon} />
+              <CountBadge count={cartCount}>
+                <ShoppingCart className={web.actionIcon} />
+              </CountBadge>
             </button>
           </Box>
         </Box>

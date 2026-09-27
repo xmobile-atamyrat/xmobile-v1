@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useWebSocketContext } from '@/pages/lib/WebSocketContext';
+import { parseBridgeMessage } from '@/pages/lib/nativeBridge';
 import { isWebView, showNotification } from '@/pages/lib/serviceWorker';
 import { InAppNotification } from '@/pages/lib/types';
 import {
@@ -308,25 +309,14 @@ export const NotificationContextProvider = ({
     if (typeof window === 'undefined' || !isWebView()) return undefined;
 
     const handleForegroundMessage = (event: MessageEvent) => {
-      try {
-        const data =
-          typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-
-        if (data && data.type === 'FCM_FOREGROUND_MESSAGE') {
-          console.log(
-            '[NotificationContext] Foreground FCM message received (Mobile):',
-            data,
-          );
-          refreshUnreadCount();
-          loadNotifications(null);
-        }
-      } catch (error) {
-        if (typeof event.data === 'string' && event.data.includes('FCM_')) {
-          console.error(
-            '[NotificationContext] Failed to parse foreground message:',
-            error,
-          );
-        }
+      const data = parseBridgeMessage(event.data);
+      if (data?.type === 'FCM_FOREGROUND_MESSAGE') {
+        console.log(
+          '[NotificationContext] Foreground FCM message received (Mobile):',
+          data,
+        );
+        refreshUnreadCount();
+        loadNotifications(null);
       }
     };
 

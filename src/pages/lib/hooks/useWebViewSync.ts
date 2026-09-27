@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { AUTH_REFRESH_COOKIE_NAME, LOCALE_COOKIE_NAME } from '../constants';
 import {
+  clearRegistration,
   ensureNativeFCMTokenRegisteredInWebView,
-  FCM_TOKEN_REGISTERED_USER_KEY,
   FCM_TOKEN_STORAGE_KEY,
-  unregisterFCMToken,
 } from '../fcm/fcmClient';
+import { parseBridgeMessage } from '../nativeBridge';
 import { isWebView } from '../serviceWorker';
 import { ProtectedUser } from '../types';
 import { getCookie } from '../utils';
@@ -78,20 +78,7 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
       } else if (wasLoggedIn.current) {
         wasLoggedIn.current = false;
 
-        const currentToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
-        const storedAccessToken = getCookie(AUTH_REFRESH_COOKIE_NAME);
-
-        if (currentToken && storedAccessToken) {
-          unregisterFCMToken(currentToken, storedAccessToken).catch((err) => {
-            console.error(
-              '[WebViewSync] Failed to unregister FCM token on logout:',
-              err,
-            );
-          });
-        }
-
-        localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
-        localStorage.removeItem(FCM_TOKEN_REGISTERED_USER_KEY);
+        if (localStorage.getItem(FCM_TOKEN_STORAGE_KEY)) clearRegistration();
 
         (window as any).ReactNativeWebView?.postMessage(
           JSON.stringify({ type: 'LOGOUT' }),
@@ -119,28 +106,14 @@ export function useWebViewSync(user?: ProtectedUser, accessToken?: string) {
       );
 
       const handleWebViewMessage = (event: MessageEvent) => {
-        try {
-          const data =
-            typeof event.data === 'string'
-              ? JSON.parse(event.data)
-              : event.data;
-
-          if (
-            data &&
-            (data.type === 'FCM_TOKEN_REFRESHED' ||
-              data.type === 'FCM_TOKEN_AVAILABLE')
-          ) {
-            console.log(
-              `[WebViewSync] Detected native FCM token: ${data.type}`,
-            );
-            ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
-              console.error,
-            );
-          }
-        } catch (error) {
-          console.error(
-            '[WebViewSync] Failed to parse message event in token refresh/token available handler:',
-            error,
+        const data = parseBridgeMessage(event.data);
+        if (
+          data?.type === 'FCM_TOKEN_REFRESHED' ||
+          data?.type === 'FCM_TOKEN_AVAILABLE'
+        ) {
+          console.log(`[WebViewSync] Detected native FCM token: ${data.type}`);
+          ensureNativeFCMTokenRegisteredInWebView(user.id, accessToken).catch(
+            console.error,
           );
         }
       };

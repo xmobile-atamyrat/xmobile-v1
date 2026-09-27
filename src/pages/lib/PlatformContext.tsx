@@ -3,8 +3,10 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   createContext,
   ReactNode,
+  startTransition,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -28,11 +30,15 @@ export default function PlatformContextProvider({
   const [platform, setPlatform] = useState<Platform>('web');
 
   useEffect(() => {
-    setPlatform(isMobileQuery ? 'mobile' : 'web');
+    startTransition(() => {
+      setPlatform(isMobileQuery ? 'mobile' : 'web');
+    });
   }, [isMobileQuery]);
 
+  const value = useMemo(() => ({ platform }), [platform]);
+
   return (
-    <PlatformContext.Provider value={{ platform }}>
+    <PlatformContext.Provider value={value}>
       {children}
     </PlatformContext.Provider>
   );

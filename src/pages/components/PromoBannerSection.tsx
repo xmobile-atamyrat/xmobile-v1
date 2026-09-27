@@ -7,6 +7,7 @@ import {
 import { bannerClasses } from '@/styles/classMaps/components/banner';
 import { Box } from '@mui/material';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
@@ -22,6 +23,15 @@ export default function PromoBannerSection({
   variant = 'default',
 }: PromoBannerSectionProps) {
   const platform = usePlatform();
+  // Slides after the first get no src until it loads, so on a slow link the
+  // first banner doesn't share bandwidth with ones nobody is looking at yet.
+  const [restReady, setRestReady] = useState(false);
+  const firstImageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    // A cached or fast first banner can finish before hydration attaches onLoad.
+    if (firstImageRef.current?.complete) setRestReady(true);
+  }, []);
 
   if (!banners || banners.length === 0) return null;
 
@@ -38,14 +48,20 @@ export default function PromoBannerSection({
     pauseOnHover: true,
   };
 
-  const renderSlide = (banner: StorefrontBanner) => {
+  const renderSlide = (banner: StorefrontBanner, index: number) => {
     const src = getBannerMediaUrl(banner.imgUrl) ?? PRODUCT_IMAGE_FALLBACK;
+    const isFirst = index === 0;
     const image = (
       <img
-        src={src}
+        ref={isFirst ? firstImageRef : undefined}
+        src={isFirst || restReady ? src : undefined}
         alt=""
         className={bannerClasses.image}
+        // Lowercase: React 18 doesn't know the camelCase fetchPriority prop.
+        {...(isFirst ? { fetchpriority: 'high' } : {})}
+        onLoad={isFirst ? () => setRestReady(true) : undefined}
         onError={(error) => {
+          if (isFirst) setRestReady(true);
           error.currentTarget.onerror = null;
           error.currentTarget.src = PRODUCT_IMAGE_FALLBACK;
         }}
@@ -83,7 +99,7 @@ export default function PromoBannerSection({
           {banners.map(renderSlide)}
         </Slider>
       ) : (
-        renderSlide(banners[0])
+        renderSlide(banners[0], 0)
       )}
     </Box>
   );

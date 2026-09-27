@@ -1,10 +1,22 @@
 import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import Layout from '@/pages/components/Layout';
+import { useCartContext } from '@/pages/lib/CartContext';
+import { useNotificationPrompt } from '@/pages/components/NotificationPrompt';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchColors } from '@/pages/lib/apis';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  DEFAULT_PHONE_COUNTRY,
+  detectPhoneCountry,
+  getPhoneCountry,
+  isValidLocalNumber,
+  MAX_INTERNATIONAL_DIGITS,
+  PHONE_COUNTRIES,
+  PhoneCountry,
+  toLocalDigits,
+} from '@/pages/lib/phone';
 import {
   getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
@@ -36,18 +48,30 @@ import {
   Box,
   Breadcrumbs,
   Button,
+  ButtonBase,
   CardMedia,
   Checkbox,
   CircularProgress,
   FormControlLabel,
   IconButton,
+  InputAdornment,
   Link,
+  Menu,
+  MenuItem,
   Snackbar,
   TextField,
+  TextFieldProps,
   Typography,
 } from '@mui/material';
 import { Color, Prices } from '@prisma/client';
-import { Banknote, Check, MapPin, Pencil, Truck } from 'lucide-react';
+import {
+  Banknote,
+  Check,
+  ChevronDown,
+  MapPin,
+  Pencil,
+  Truck,
+} from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -67,6 +91,8 @@ export default function CheckoutPage() {
   const platform = usePlatform();
   const router = useRouter();
   const { user, accessToken } = useUserContext();
+  const { setCartCount } = useCartContext();
+  const { promptNotifications } = useNotificationPrompt();
   const fetchWithCreds = useFetchWithCreds();
   const { network } = useNetworkContext();
 
@@ -74,6 +100,9 @@ export default function CheckoutPage() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState<
+    PhoneCountry['code']
+  >(DEFAULT_PHONE_COUNTRY.code);
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   // Unit price (TMT) per cart line id — variant-aware
@@ -89,7 +118,12 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState(0);
   // Set once the user tries to advance past the address step incomplete.
   const [attemptedNext, setAttemptedNext] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [phoneMenuAnchor, setPhoneMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
+  const phoneCountry = getPhoneCountry(phoneCountryCode);
 
   useEffect(() => {
     (async () => {
@@ -117,6 +151,7 @@ export default function CheckoutPage() {
 
       if (success) {
         setCartItems(data);
+        setCartCount(data.length);
         return data;
       }
       console.error(message);
@@ -135,7 +170,12 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) {
       setFullName(user.name || '');
-      setPhoneNumber(user.phoneNumber || '');
+      const savedPhone = user.phoneNumber || '';
+      const savedCountry = detectPhoneCountry(savedPhone);
+      setPhoneCountryCode(savedCountry?.code ?? DEFAULT_PHONE_COUNTRY.code);
+      setPhoneNumber(
+        savedCountry ? toLocalDigits(savedPhone, savedCountry) : '',
+      );
       setAddress(user.address || '');
       setNotes('');
       // Collapse to the saved-address card only when every required field is
@@ -144,7 +184,7 @@ export default function CheckoutPage() {
         !(
           (user.address || '').trim() &&
           (user.name || '').trim() &&
-          (user.phoneNumber || '').trim()
+          detectPhoneCountry(user.phoneNumber || '')
         ),
       );
     }
@@ -259,6 +299,7 @@ export default function CheckoutPage() {
 
       if (removed.size > 0) {
         setCartItems((prev) => prev.filter((item) => !removed.has(item.id)));
+        setCartCount((count) => Math.max(0, count - removed.size));
       }
 
       if (removed.size < removableIds.length) {
@@ -284,7 +325,7 @@ export default function CheckoutPage() {
     if (!fullName.trim()) {
       return;
     }
-    if (!phoneNumber.trim()) {
+    if (!isValidLocalNumber(phoneNumber, phoneCountry)) {
       return;
     }
     if (!address.trim()) {
@@ -301,19 +342,21 @@ export default function CheckoutPage() {
             method: 'POST',
             body: {
               deliveryAddress: address.trim(),
-              deliveryPhone: phoneNumber.trim(),
+              deliveryPhone: `${phoneCountry.dial}${phoneNumber}`,
               notes: notes.trim() || undefined,
               updateAddress: saveToProfile,
             },
           })
         : await fetchWithoutCreds('/api/guest/order', 'POST', {
             deliveryAddress: address.trim(),
-            deliveryPhone: phoneNumber.trim(),
+            deliveryPhone: `${phoneCountry.dial}${phoneNumber}`,
             notes: notes.trim() || undefined,
             userName: fullName.trim(),
           });
 
       if (success) {
+        setCartCount(0);
+        promptNotifications('order');
         // Redirect to success page
         router.push('/cart/checkout/success');
       } else if (message === OUT_OF_STOCK_ERROR) {
@@ -384,8 +427,131 @@ export default function CheckoutPage() {
     '& .MuiInputBase-input::placeholder': { color: muted, opacity: 1 },
   });
 
-  const isFormIncomplete =
-    !fullName.trim() || !phoneNumber.trim() || !address.trim();
+  const isPhoneValid = isValidLocalNumber(phoneNumber, phoneCountry);
+  const isFormIncomplete = !fullName.trim() || !isPhoneValid || !address.trim();
+  const showPhoneError = (phoneTouched || attemptedNext) && !isPhoneValid;
+
+  const phoneOption = (c: PhoneCountry) => (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        component="img"
+        src={c.flag}
+        alt={c.code}
+        sx={{
+          width: 24,
+          height: 18,
+          flexShrink: 0,
+          display: 'block',
+          objectFit: 'cover',
+          borderRadius: '2px',
+        }}
+      />
+      {c.dial}
+    </Box>
+  );
+
+  const selectPhoneCountry = (next: PhoneCountry) => {
+    setPhoneCountryCode(next.code);
+    setPhoneNumber((prev) =>
+      toLocalDigits(prev, next).slice(0, next.localLength),
+    );
+    setPhoneMenuAnchor(null);
+  };
+
+  const phoneFieldProps: Partial<TextFieldProps> = {
+    error: showPhoneError,
+    helperText:
+      showPhoneError && phoneNumber
+        ? t('invalidPhoneNumber', {
+            digits: phoneCountry.localLength,
+            dial: phoneCountry.dial,
+          })
+        : undefined,
+    placeholder: phoneCountry.example,
+    onBlur: () => {
+      if (phoneNumber) setPhoneTouched(true);
+    },
+    inputProps: { inputMode: 'numeric', autoComplete: 'tel-national' },
+    InputProps: {
+      startAdornment: (
+        <InputAdornment position="start" sx={{ flexShrink: 0, mr: 0 }}>
+          <ButtonBase
+            onClick={(e) => setPhoneMenuAnchor(e.currentTarget)}
+            aria-haspopup="listbox"
+            aria-expanded={Boolean(phoneMenuAnchor)}
+            aria-label={t('phoneNumber')}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              height: '32px',
+              pr: '10px',
+              borderRight: `1px solid ${hairline}`,
+              color: ink,
+              fontSize: fieldFontSize,
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {phoneOption(phoneCountry)}
+            <ChevronDown
+              size={16}
+              color={muted}
+              style={{
+                flexShrink: 0,
+                transform: phoneMenuAnchor ? 'rotate(180deg)' : undefined,
+              }}
+            />
+          </ButtonBase>
+          <Menu
+            anchorEl={phoneMenuAnchor}
+            open={Boolean(phoneMenuAnchor)}
+            onClose={() => setPhoneMenuAnchor(null)}
+          >
+            {PHONE_COUNTRIES.map((c) => (
+              <MenuItem
+                key={c.code}
+                selected={c.code === phoneCountry.code}
+                onClick={() => selectPhoneCountry(c)}
+              >
+                {phoneOption(c)}
+              </MenuItem>
+            ))}
+          </Menu>
+        </InputAdornment>
+      ),
+    },
+  };
+  const handlePhoneChange = (v: string) => {
+    // A pasted international number picks its own country
+    const international = v.trimStart().startsWith('+');
+    const detected = international ? detectPhoneCountry(v) : null;
+    if (detected) {
+      setPhoneCountryCode(detected.code);
+      setPhoneNumber(toLocalDigits(v, detected));
+      return;
+    }
+    // Keep the "+" while an international number is still being typed
+    if (international) {
+      setPhoneNumber(
+        `+${v.replace(/\D/g, '').slice(0, MAX_INTERNATIONAL_DIGITS)}`,
+      );
+      return;
+    }
+    setPhoneNumber(
+      toLocalDigits(v, phoneCountry).slice(0, phoneCountry.localLength),
+    );
+  };
 
   const cls = checkoutDialogClasses;
   const fc = fontClassName.className;
@@ -399,6 +565,7 @@ export default function CheckoutPage() {
     required?: boolean;
     multiline?: boolean;
     error?: boolean;
+    textFieldProps?: Partial<TextFieldProps>;
   }) => (
     // mobile-only: the web tree has its own renderWebField below
     <Box className={cls.fieldContainer.mobile}>
@@ -417,6 +584,7 @@ export default function CheckoutPage() {
         placeholder={opts.placeholder}
         className={cls.textField.mobile}
         sx={fieldSx(opts.multiline)}
+        {...opts.textFieldProps}
       />
     </Box>
   );
@@ -441,7 +609,7 @@ export default function CheckoutPage() {
       <Box className="min-w-0">
         <Typography className={`${fc} ${cls.addressName}`}>
           {fullName}
-          {phoneNumber ? ` · ${phoneNumber}` : ''}
+          {phoneNumber ? ` · ${phoneCountry.dial} ${phoneNumber}` : ''}
         </Typography>
         <Typography className={`${fc} ${cls.addressLine}`}>
           {address}
@@ -523,6 +691,7 @@ export default function CheckoutPage() {
     required?: boolean;
     multiline?: boolean;
     wide?: boolean;
+    textFieldProps?: Partial<TextFieldProps>;
   }) => (
     <Box className={opts.wide ? cls.web.fieldWide : undefined}>
       <Typography className={`${fc} ${cls.web.fieldLabel}`}>
@@ -539,6 +708,7 @@ export default function CheckoutPage() {
         placeholder={opts.placeholder}
         className={cls.textField.web}
         sx={fieldSx(opts.multiline)}
+        {...opts.textFieldProps}
       />
     </Box>
   );
@@ -650,9 +820,10 @@ export default function CheckoutPage() {
                   {renderWebField({
                     label: t('phoneNumber'),
                     value: phoneNumber,
-                    onChange: setPhoneNumber,
+                    onChange: handlePhoneChange,
                     placeholder: t('phoneNumberPlaceholder'),
                     required: true,
+                    textFieldProps: phoneFieldProps,
                   })}
                   {renderWebField({
                     label: t('addressText'),
@@ -915,10 +1086,10 @@ export default function CheckoutPage() {
                   {renderField({
                     label: t('phoneNumber'),
                     value: phoneNumber,
-                    onChange: setPhoneNumber,
+                    onChange: handlePhoneChange,
                     placeholder: t('phoneNumberPlaceholder'),
                     required: true,
-                    error: attemptedNext && !phoneNumber.trim(),
+                    textFieldProps: phoneFieldProps,
                   })}
                   {renderField({
                     label: t('addressText'),

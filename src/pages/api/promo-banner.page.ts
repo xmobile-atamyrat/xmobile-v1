@@ -1,3 +1,4 @@
+import { writeBannerWebp } from '@/lib/bannerImage';
 import dbClient from '@/lib/dbClient';
 import {
   BannerImgUrls,
@@ -65,6 +66,34 @@ function collectImgUrls(fields: Fields, files: Files): Record<string, string> {
     else if (pasted) imgUrls[key] = pasted;
   });
   return imgUrls;
+}
+
+function uploadedPaths(files: Files): string[] {
+  return Object.values(files).flatMap((list) =>
+    (list ?? []).map((file) => file.path),
+  );
+}
+
+/**
+ * Swaps each freshly uploaded path in `imgUrls` for its compressed WebP,
+ * recording every file written in `written` so a failed save can remove them.
+ */
+async function compressUploads(
+  imgUrls: Record<string, string>,
+  uploads: string[],
+  written: string[],
+): Promise<Record<string, string>> {
+  const result = { ...imgUrls };
+  // Sequential on purpose: decoding a large upload can take hundreds of MB on the 4 GB VM.
+  // eslint-disable-next-line no-restricted-syntax
+  for (const [key, value] of Object.entries(imgUrls)) {
+    if (uploads.includes(value)) {
+      // eslint-disable-next-line no-await-in-loop
+      result[key] = await writeBannerWebp(value);
+      written.push(result[key]);
+    }
+  }
+  return result;
 }
 
 /**
@@ -150,9 +179,12 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
         resolve({ success: false, message: err.message, status: 500 });
         return;
       }
+      const uploads = uploadedPaths(files);
+      const written: string[] = [];
+      let saved = false;
       try {
-        const imgUrls = collectImgUrls(fields, files);
-        if (!imgUrls.default) {
+        const sources = collectImgUrls(fields, files);
+        if (!sources.default) {
           resolve({
             success: false,
             message: 'defaultBannerImageRequired',
@@ -188,6 +220,19 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
           return;
         }
 
+        let imgUrls: Record<string, string>;
+        try {
+          imgUrls = await compressUploads(sources, uploads, written);
+        } catch (error) {
+          console.error(filepath, error);
+          resolve({
+            success: false,
+            message: 'bannerImageUnsupported',
+            status: 400,
+          });
+          return;
+        }
+
         const banner = await dbClient.promoBanner.create({
           data: {
             imgUrls: imgUrls as BannerImgUrls,
@@ -199,6 +244,7 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
             endsAt: parseDate(firstField(fields, 'endsAt')),
           },
         });
+        saved = true;
         resolve({ success: true, data: banner, status: 201 });
       } catch (error) {
         console.error(filepath, error);
@@ -207,6 +253,9 @@ async function handlePostBanner(req: NextApiRequest): Promise<{
           message: "Couldn't create banner",
           status: 500,
         });
+      } finally {
+        uploads.forEach(unlinkIfLocal);
+        if (!saved) written.forEach(unlinkIfLocal);
       }
     });
   });
@@ -232,6 +281,9 @@ async function handleEditBanner(
         resolve({ success: false, message: err.message, status: 500 });
         return;
       }
+      const uploads = uploadedPaths(files);
+      const written: string[] = [];
+      let saved = false;
       try {
         const existing = await dbClient.promoBanner.findFirst({
           where: { id: bannerId, deletedAt: null },
@@ -241,26 +293,23 @@ async function handleEditBanner(
           return;
         }
 
-        const currentImgUrls = {
-          ...(existing.imgUrls as unknown as Record<string, string>),
+        const previousImgUrls = existing.imgUrls as unknown as Record<
+          string,
+          string
+        >;
+        const sources = {
+          ...previousImgUrls,
+          ...collectImgUrls(fields, files),
         };
-        const incoming = collectImgUrls(fields, files);
-        // Replace any provided images (unlink old local files first).
-        Object.entries(incoming).forEach(([key, value]) => {
-          unlinkIfLocal(currentImgUrls[key]);
-          currentImgUrls[key] = value;
-        });
         // Clear per-locale overrides the admin removed (never the default).
         const cleared: string[] = JSON.parse(
           firstField(fields, 'clearedImages') ?? '[]',
         );
         cleared.forEach((key) => {
-          if (key === 'default') return;
-          unlinkIfLocal(currentImgUrls[key]);
-          delete currentImgUrls[key];
+          if (key !== 'default') delete sources[key];
         });
 
-        if (!currentImgUrls.default) {
+        if (!sources.default) {
           resolve({
             success: false,
             message: 'defaultBannerImageRequired',
@@ -302,10 +351,23 @@ async function handleEditBanner(
           return;
         }
 
+        let imgUrls: Record<string, string>;
+        try {
+          imgUrls = await compressUploads(sources, uploads, written);
+        } catch (error) {
+          console.error(filepath, error);
+          resolve({
+            success: false,
+            message: 'bannerImageUnsupported',
+            status: 400,
+          });
+          return;
+        }
+
         const banner = await dbClient.promoBanner.update({
           where: { id: bannerId },
           data: {
-            imgUrls: currentImgUrls as BannerImgUrls,
+            imgUrls: imgUrls as BannerImgUrls,
             redirectCategoryId: redirect.redirectCategoryId,
             redirectProductId: redirect.redirectProductId,
             isActive,
@@ -314,6 +376,14 @@ async function handleEditBanner(
             endsAt: parseDate(firstField(fields, 'endsAt')),
           },
         });
+        saved = true;
+
+        // Unchanged images come back as their stored path, so only unlink what the banner dropped.
+        const kept = new Set(Object.values(imgUrls));
+        Object.values(previousImgUrls)
+          .filter((stored) => !kept.has(stored))
+          .forEach(unlinkIfLocal);
+
         resolve({ success: true, data: banner, status: 200 });
       } catch (error) {
         console.error(filepath, error);
@@ -322,6 +392,9 @@ async function handleEditBanner(
           message: "Couldn't edit banner",
           status: 500,
         });
+      } finally {
+        uploads.forEach(unlinkIfLocal);
+        if (!saved) written.forEach(unlinkIfLocal);
       }
     });
   });
