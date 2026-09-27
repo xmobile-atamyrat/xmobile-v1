@@ -201,7 +201,7 @@ export default function BannersAdminPage() {
                   }
                   width={isMdUp ? 160 : 96}
                   style={{
-                    aspectRatio: '3 / 1',
+                    aspectRatio: '2 / 1',
                     objectFit: 'cover',
                     borderRadius: 8,
                     flexShrink: 0,

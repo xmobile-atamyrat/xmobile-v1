@@ -1,14 +1,16 @@
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
-  FCM_TOKEN_REGISTERED_USER_KEY,
+  FCM_REGISTRATION_EVENT,
   FCM_TOKEN_STORAGE_KEY,
   getDeviceInfo,
   getFCMToken,
   getNativeNotificationPermissionStatus,
   hasNotificationPermission,
   initializeOrGetMessaging,
+  isNotificationsOptedOut,
   registerFCMToken,
+  saveRegistration,
 } from '@/pages/lib/fcm/fcmClient';
 import { isWebView } from '@/pages/lib/serviceWorker';
 import { MessagePayload, onMessage } from 'firebase/messaging';
@@ -37,31 +39,53 @@ export default function FcmManager(): null {
     null,
   );
   const initializedRef = useRef(false);
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
+  const generationRef = useRef(0);
+  const [registrationVersion, setRegistrationVersion] = useState(0);
 
-  const initializeFCM = useCallback(async () => {
+  const teardown = useCallback(() => {
+    generationRef.current += 1;
+    inFlightRef.current = null;
+    initializedRef.current = false;
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+    if (swMessageHandlerRef.current && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.removeEventListener(
+        'message',
+        swMessageHandlerRef.current,
+      );
+      swMessageHandlerRef.current = null;
+    }
+  }, []);
+
+  const runInitialize = useCallback(async () => {
     if (!user || !accessToken) return false;
-    if (!isWebView() && !hasNotificationPermission()) return false;
-    if (initializedRef.current) return true;
+    const generation = generationRef.current;
+    const isStale = () => generation !== generationRef.current;
 
     try {
       const messaging = await initializeOrGetMessaging();
-      if (!messaging) return false;
+      if (!messaging || isStale()) return false;
 
-      const unsubscribe = onMessage(messaging, (payload: MessagePayload) => {
-        console.log('[FCM] Foreground message received:', payload);
-        refreshUnreadCount().catch((error) => {
-          console.error('[FCM] Failed to refresh unread count:', error);
+      if (!unsubscribeRef.current) {
+        const unsubscribe = onMessage(messaging, (payload: MessagePayload) => {
+          console.log('[FCM] Foreground message received:', payload);
+          refreshUnreadCount().catch((error) => {
+            console.error('[FCM] Failed to refresh unread count:', error);
+          });
         });
-      });
-
-      if (unsubscribe) {
+        if (!unsubscribe) return false;
         unsubscribeRef.current = unsubscribe;
-      } else {
-        return false;
       }
 
       // Some browsers route foreground messages through the service worker.
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      if (
+        !swMessageHandlerRef.current &&
+        'serviceWorker' in navigator &&
+        navigator.serviceWorker.controller
+      ) {
         const messageHandler = (event: MessageEvent) => {
           if (
             event.data &&
@@ -78,7 +102,7 @@ export default function FcmManager(): null {
       }
 
       const token = await getFCMToken();
-      if (!token) return false;
+      if (!token || isStale()) return false;
 
       const storedToken = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
       if (!storedToken || storedToken !== token) {
@@ -87,12 +111,8 @@ export default function FcmManager(): null {
           accessToken,
           getDeviceInfo(),
         );
-        if (registered) {
-          localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-          localStorage.setItem(FCM_TOKEN_REGISTERED_USER_KEY, user.id);
-        } else {
-          return false;
-        }
+        if (!registered || isStale()) return false;
+        saveRegistration(token, user.id);
       }
 
       initializedRef.current = true;
@@ -103,25 +123,25 @@ export default function FcmManager(): null {
     }
   }, [user, accessToken, refreshUnreadCount]);
 
+  const initializeFCM = useCallback(async () => {
+    if (!user || !accessToken) return false;
+    if (!isWebView() && !hasNotificationPermission()) return false;
+    if (isNotificationsOptedOut(user.id)) return false;
+    if (initializedRef.current) return true;
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const run = runInitialize();
+    inFlightRef.current = run;
+    run.finally(() => {
+      if (inFlightRef.current === run) inFlightRef.current = null;
+    });
+    return run;
+  }, [user, accessToken, runInitialize]);
+
   // Auto-initialize when logged in and permission is already granted.
   useEffect(() => {
     if (!user || !accessToken) {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-      if (
-        swMessageHandlerRef.current &&
-        'serviceWorker' in navigator &&
-        navigator.serviceWorker.controller
-      ) {
-        navigator.serviceWorker.removeEventListener(
-          'message',
-          swMessageHandlerRef.current,
-        );
-        swMessageHandlerRef.current = null;
-      }
-      initializedRef.current = false;
+      teardown();
       return undefined;
     }
 
@@ -134,24 +154,27 @@ export default function FcmManager(): null {
       });
     }
 
-    return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
+    return teardown;
+  }, [
+    user,
+    accessToken,
+    initializeFCM,
+    teardown,
+    permission,
+    registrationVersion,
+  ]);
+
+  useEffect(() => {
+    const onRegistrationChange = () => {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setPermission(Notification.permission);
       }
-      if (
-        swMessageHandlerRef.current &&
-        'serviceWorker' in navigator &&
-        navigator.serviceWorker.controller
-      ) {
-        navigator.serviceWorker.removeEventListener(
-          'message',
-          swMessageHandlerRef.current,
-        );
-        swMessageHandlerRef.current = null;
-      }
+      if (!unsubscribeRef.current) setRegistrationVersion((v) => v + 1);
     };
-  }, [user, accessToken, initializeFCM, permission]);
+    window.addEventListener(FCM_REGISTRATION_EVENT, onRegistrationChange);
+    return () =>
+      window.removeEventListener(FCM_REGISTRATION_EVENT, onRegistrationChange);
+  }, []);
 
   // WebView: fetch native permission status so auto-init can run.
   useEffect(() => {

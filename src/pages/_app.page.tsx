@@ -1,10 +1,13 @@
 import Loader from '@/pages/components/Loader';
+import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
+import CartContextProvider from '@/pages/lib/CartContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
+import { parseBridgeMessage } from '@/pages/lib/nativeBridge';
 import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
@@ -68,10 +71,7 @@ export default function App({ Component, pageProps }: AppProps) {
       );
       const handleMessage = (event: MessageEvent) => {
         try {
-          const data =
-            typeof event.data === 'string'
-              ? JSON.parse(event.data)
-              : event.data;
+          const data = parseBridgeMessage(event.data);
           if (data?.type === 'APP_VERSION' && data.payload) {
             setMobileAppVersion(data.payload);
           } else if (
@@ -253,38 +253,40 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
-            <WebSocketContextProvider>
-              <NotificationContextProvider>
-                <ChatContextProvider>
-                  <CategoryContextProvider>
-                    <ProductContextProvider>
-                      <PrevProductContextProvider>
-                        <DollarRateContextProvider>
-                          <PlatformContextProvider>
-                            <NextIntlClientProvider
-                              locale={
-                                router.locale || router.defaultLocale || 'ru'
-                              }
-                              timeZone="Asia/Ashgabat"
-                              messages={pageProps.messages}
-                            >
-                              {showHardUpdateModal ? (
-                                <UpdateModal type="hard" />
-                              ) : (
-                                <>
-                                  <Component {...pageProps} />
-                                  {isLoading && <Loader />}
-                                </>
-                              )}
-                            </NextIntlClientProvider>
-                          </PlatformContextProvider>
-                        </DollarRateContextProvider>
-                      </PrevProductContextProvider>
-                    </ProductContextProvider>
-                  </CategoryContextProvider>
-                </ChatContextProvider>
-              </NotificationContextProvider>
-            </WebSocketContextProvider>
+            <CartContextProvider>
+              <WebSocketContextProvider>
+                <NotificationContextProvider>
+                  <ChatContextProvider>
+                    <CategoryContextProvider>
+                      <ProductContextProvider>
+                        <PrevProductContextProvider>
+                          <DollarRateContextProvider>
+                            <PlatformContextProvider>
+                              <NextIntlClientProvider
+                                locale={
+                                  router.locale || router.defaultLocale || 'ru'
+                                }
+                                timeZone="Asia/Ashgabat"
+                                messages={pageProps.messages}
+                              >
+                                {showHardUpdateModal ? (
+                                  <UpdateModal type="hard" />
+                                ) : (
+                                  <NotificationPromptProvider>
+                                    <Component {...pageProps} />
+                                    {isLoading && <Loader />}
+                                  </NotificationPromptProvider>
+                                )}
+                              </NextIntlClientProvider>
+                            </PlatformContextProvider>
+                          </DollarRateContextProvider>
+                        </PrevProductContextProvider>
+                      </ProductContextProvider>
+                    </CategoryContextProvider>
+                  </ChatContextProvider>
+                </NotificationContextProvider>
+              </WebSocketContextProvider>
+            </CartContextProvider>
           </UserContextProvider>
         </AbortControllerContextProvider>
       </NetworkContextProvider>

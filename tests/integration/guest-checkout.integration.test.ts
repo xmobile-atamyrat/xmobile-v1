@@ -97,7 +97,7 @@ describe('Guest checkout flow (integration)', () => {
       body: {
         userName: 'Guest User',
         deliveryAddress: 'Guest street',
-        deliveryPhone: '+7000000',
+        deliveryPhone: '+99361000000',
       },
     });
     await guestOrderHandler(
@@ -150,7 +150,7 @@ describe('Guest checkout flow (integration)', () => {
       body: {
         userName: 'Guest Cancel',
         deliveryAddress: 'Guest cancel street',
-        deliveryPhone: '+7111',
+        deliveryPhone: '+99361000111',
       },
     });
     await guestOrderHandler(
@@ -236,7 +236,7 @@ describe('Guest checkout flow (integration)', () => {
       body: {
         userName: 'Guest Before Login',
         deliveryAddress: 'Guest before login',
-        deliveryPhone: '+7999',
+        deliveryPhone: '+99361000999',
       },
     });
     await guestOrderHandler(

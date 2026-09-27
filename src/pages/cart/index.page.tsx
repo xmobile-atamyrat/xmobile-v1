@@ -2,6 +2,7 @@ import CheckoutSummary from '@/pages/cart/components/CheckoutSummary';
 import OutOfStockDialog from '@/pages/cart/components/OutOfStockDialog';
 import CartProductCard from '@/pages/cart/components/ProductCard';
 import Layout from '@/pages/components/Layout';
+import { useCartContext } from '@/pages/lib/CartContext';
 import { fetchColors } from '@/pages/lib/apis';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { CartItemWithProduct } from '@/pages/lib/types';
@@ -40,6 +41,8 @@ export const getStaticProps = (async (context) => {
 export default function CartPage() {
   const { user, accessToken, isLoading } = useUserContext();
   const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
+  const [cartLoaded, setCartLoaded] = useState(false);
+  const { setCartCount } = useCartContext();
   const [totalPrice, setTotalPrice] = useState(0);
   const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
   const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
@@ -139,6 +142,7 @@ export default function CartPage() {
             }),
           );
           setCartItems(computedData);
+          setCartLoaded(true);
         } else {
           console.error(message);
         }
@@ -159,6 +163,10 @@ export default function CartPage() {
     });
     setTotalPrice(totPrice);
   }, [cartItems]);
+
+  useEffect(() => {
+    if (cartLoaded) setCartCount(cartItems.length);
+  }, [cartLoaded, cartItems.length, setCartCount]);
 
   const outOfStockItems = cartItems.filter(isCartLineOutOfStock);
 

@@ -131,13 +131,13 @@ export default function UpdateColors() {
         >
           <Box className="flex flex-col gap-2 w-full max-w-[600px] pl-2">
             <Box className="w-full">
-              {SearchBar({
-                handleSearch: async () => {},
-                setSearchKeyword,
-                searchPlaceholder: t('search'),
-                searchKeyword,
-                width: '100%',
-              })}
+              <SearchBar
+                handleSearch={async () => {}}
+                setSearchKeyword={setSearchKeyword}
+                searchPlaceholder={t('search')}
+                searchKeyword={searchKeyword}
+                width="100%"
+              />
             </Box>
             <Box className="flex flex-row gap-2 w-full">
               <Button

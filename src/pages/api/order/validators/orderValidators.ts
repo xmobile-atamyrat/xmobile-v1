@@ -1,9 +1,22 @@
+import { normalizePhone } from '@/pages/lib/phone';
 import { UserOrderStatus } from '@prisma/client';
 import { z } from 'zod';
 
+export const deliveryPhoneSchema = z.string().transform((val, ctx) => {
+  const normalized = normalizePhone(val);
+  if (!normalized) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Invalid delivery phone',
+    });
+    return z.NEVER;
+  }
+  return normalized;
+});
+
 export const createOrderSchema = z.object({
   deliveryAddress: z.string().min(1, 'Delivery address is required'),
-  deliveryPhone: z.string().min(1, 'Delivery phone is required'),
+  deliveryPhone: deliveryPhoneSchema,
   notes: z.string().optional(),
   updateAddress: z.boolean().optional(),
 });

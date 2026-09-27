@@ -247,8 +247,8 @@ export default function NotificationMenu({
               className={`${notificationClasses.group.count} ${fontClassName.className}`}
             >
               {group.unread > 0
-                ? `${group.unread} ${t('newMessages')}`
-                : `${group.items.length} ${t('messages')}`}
+                ? t('newMessages', { count: group.unread })
+                : t('messages', { count: group.items.length })}
             </Typography>
             <Typography
               className={`${notificationClasses.item.text[platform]} ${fontClassName.className}`}

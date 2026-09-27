@@ -1,6 +1,10 @@
 import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { BANNER_IMAGE_WIDTH, localeOptions } from '@/pages/lib/constants';
+import {
+  BANNER_IMAGE_HEIGHT,
+  BANNER_IMAGE_WIDTH,
+  localeOptions,
+} from '@/pages/lib/constants';
 import {
   getBannerMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
@@ -59,6 +63,12 @@ interface AddEditBannerDialogProps {
 }
 
 const IMAGE_KEYS = ['default', ...localeOptions];
+const SERVER_ERROR_KEYS = new Set([
+  'bannerImageUnsupported',
+  'bannerOrderConflict',
+  'bannerOrderInvalid',
+  'defaultBannerImageRequired',
+]);
 
 /** Convert an ISO string to the value format expected by <input type="datetime-local">. */
 function toLocalInput(iso: string | null): string {
@@ -176,10 +186,12 @@ export default function AddEditBannerDialog({
   const handleImageChange = (key: string, file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
-      setImgState((prev) => ({
-        ...prev,
-        [key]: { file, preview: reader.result as string },
-      }));
+      const preview = reader.result as string;
+      const probe = new Image();
+      probe.onload = () =>
+        setImgState((prev) => ({ ...prev, [key]: { file, preview } }));
+      probe.onerror = () => onSuccess(t('bannerImageUnsupported'), 'warning');
+      probe.src = preview;
     };
     reader.readAsDataURL(file);
   };
@@ -249,7 +261,8 @@ export default function AddEditBannerDialog({
       onSuccess(isEdit ? t('bannerUpdated') : t('bannerCreated'), 'success');
       handleClose();
     } catch (error) {
-      onSuccess((error as Error).message, 'error');
+      const { message } = error as Error;
+      onSuccess(SERVER_ERROR_KEYS.has(message) ? t(message) : message, 'error');
     } finally {
       setLoading(false);
     }
@@ -297,7 +310,12 @@ export default function AddEditBannerDialog({
                 alt={label}
                 src={state.preview}
                 width={platform === 'web' ? 320 : 200}
-                style={{ borderRadius: 8, display: 'block' }}
+                style={{
+                  borderRadius: 8,
+                  display: 'block',
+                  aspectRatio: '2 / 1',
+                  objectFit: 'cover',
+                }}
                 onError={(error) => {
                   error.currentTarget.onerror = null;
                   error.currentTarget.src = PRODUCT_IMAGE_FALLBACK;
@@ -327,7 +345,7 @@ export default function AddEditBannerDialog({
             <Typography fontSize={12}>
               {t('bannerImageGuidelines', {
                 width: BANNER_IMAGE_WIDTH,
-                height: Math.round(BANNER_IMAGE_WIDTH / 3),
+                height: BANNER_IMAGE_HEIGHT,
               })}
             </Typography>
           </Alert>
