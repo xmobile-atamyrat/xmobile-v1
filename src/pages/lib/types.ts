@@ -210,6 +210,7 @@ export interface UserContextProps {
   accessToken: string;
   setAccessToken: Dispatch<SetStateAction<string>>;
   isLoading: boolean;
+  initialCartCount?: number;
 }
 
 export interface DollarRateProps {

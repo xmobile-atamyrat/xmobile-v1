@@ -437,6 +437,7 @@
   "notifPromptChat": "Turn on notifications so you don't miss a reply from our support team.",
   "notifPromptLater": "Not now",
   "notificationsBlockedApp": "Notifications are turned off for XMobile. You can turn them on in your phone settings.",
+  "notificationsDismissedApp": "Notifications are still off. Tap the switch again to allow them.",
   "notificationsEnableFailed": "Couldn't turn on notifications. Please try again later.",
   "openSettings": "Settings",
   "serverLogs": "Server Logs",

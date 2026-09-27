@@ -646,7 +646,7 @@ describe('promo banner API + delete guard (integration)', () => {
       ),
     });
     expect(status).toBe(400);
-    expect(json.message).toBe('invalidBannerImage');
+    expect(json.message).toBe('bannerImageUnsupported');
     expect(fs.readdirSync(uploadDir)).toEqual(before);
   });
 

@@ -26,11 +26,10 @@ export default function NotificationResultSnackbar({
   let message: string | null = null;
   if (result === 'failed') {
     message = t('notificationsEnableFailed');
-  } else if (
-    result === 'blocked' ||
-    (result === 'dismissed' && explainDismissed && inApp)
-  ) {
+  } else if (result === 'blocked') {
     message = inApp ? t('notificationsBlockedApp') : t('notificationsDenied');
+  } else if (result === 'dismissed' && explainDismissed && inApp) {
+    message = t('notificationsDismissedApp');
   }
   const canOpenSettings = inApp && result === 'blocked';
 

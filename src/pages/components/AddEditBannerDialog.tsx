@@ -63,6 +63,12 @@ interface AddEditBannerDialogProps {
 }
 
 const IMAGE_KEYS = ['default', ...localeOptions];
+const SERVER_ERROR_KEYS = new Set([
+  'bannerImageUnsupported',
+  'bannerOrderConflict',
+  'bannerOrderInvalid',
+  'defaultBannerImageRequired',
+]);
 
 /** Convert an ISO string to the value format expected by <input type="datetime-local">. */
 function toLocalInput(iso: string | null): string {
@@ -255,7 +261,8 @@ export default function AddEditBannerDialog({
       onSuccess(isEdit ? t('bannerUpdated') : t('bannerCreated'), 'success');
       handleClose();
     } catch (error) {
-      onSuccess((error as Error).message, 'error');
+      const { message } = error as Error;
+      onSuccess(SERVER_ERROR_KEYS.has(message) ? t(message) : message, 'error');
     } finally {
       setLoading(false);
     }

@@ -436,6 +436,7 @@
   "notifPromptChat": "Destek ekibimizin yanıtını kaçırmamak için bildirimleri açın.",
   "notifPromptLater": "Şimdi değil",
   "notificationsBlockedApp": "XMobile için bildirimler kapalı. Telefonunuzun ayarlarından açabilirsiniz.",
+  "notificationsDismissedApp": "Bildirimler hâlâ kapalı. İzin vermek için anahtara tekrar dokunun.",
   "notificationsEnableFailed": "Bildirimler açılamadı. Lütfen daha sonra tekrar deneyin.",
   "openSettings": "Ayarlar",
   "serverLogs": "Sunucu Günlükleri",
