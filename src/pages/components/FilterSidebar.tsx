@@ -434,9 +434,7 @@ export default function FilterSidebar({
                   }}
                   onClick={() => setLimitCategories(!limitCategories)}
                 >
-                  {limitCategories
-                    ? t('moreCategories') || 'More Categories'
-                    : t('lessCategories') || 'Less Categories'}
+                  {limitCategories ? t('showMore') : t('showLess')}
                 </Typography>
               </Box>
             )}
@@ -489,9 +487,7 @@ export default function FilterSidebar({
                   }}
                   onClick={() => setLimitBrands(!limitBrands)}
                 >
-                  {limitBrands
-                    ? t('moreBrands') || 'More Brands'
-                    : t('lessBrands') || 'Less Brands'}
+                  {limitBrands ? t('showMore') : t('showLess')}
                 </Typography>
               </Box>
             )}
