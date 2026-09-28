@@ -17,8 +17,11 @@ export const PRICE_LIST_SHEET_NAME = 'Prices';
 
 // TMT is the exact conversion. The rounded figure the storefront quotes is
 // deliberately absent: this sheet is the price an admin reconciles against.
-const PRICE_HEADER = ['Name', 'USD', 'TMT'];
-const LAST_COLUMN = 3;
+// "Köne pul" (old price) is the stored manat figure times five, unrounded.
+const PRICE_HEADER = ['Name', 'USD', 'TMT', 'Köne pul'];
+const LAST_COLUMN = 4;
+
+const OLD_MANAT_MULTIPLIER = 5;
 
 const isInStock = (price: Prices): boolean => price.outOfStockAt == null;
 
@@ -317,9 +320,16 @@ function tmtCell(storedTmt: string): ExcelJS.CellValue {
   return Number.isNaN(stored) ? storedTmt : stored;
 }
 
+// The stored manat figure in old manat. Left blank when the stored figure is
+// not a number, since there is nothing to multiply.
+function oldManatCell(storedTmt: string): ExcelJS.CellValue {
+  const stored = Number(storedTmt);
+  return Number.isNaN(stored) ? null : stored * OLD_MANAT_MULTIPLIER;
+}
+
 /**
- * One sheet: a bold category banner + Name/USD/TMT header per section,
- * blank-row separated.
+ * One sheet: a bold category banner + Name/USD/TMT/Köne pul header per
+ * section, blank-row separated.
  */
 export async function buildPriceListBlob(
   sections: PriceListSection[],
@@ -344,7 +354,7 @@ export async function buildPriceListBlob(
     );
     sheet.getCell(`A${row}`).value = section.sectionPath.join(PATH_SEPARATOR);
     sheet.getCell(`A${row}`).font = bannerFont(isRoot);
-    sheet.mergeCells(`A${row}:C${row}`);
+    sheet.mergeCells(`A${row}:D${row}`);
     row += 1;
 
     fillRow(sheet, row, LAST_COLUMN, HEADER_FILL);
@@ -360,6 +370,7 @@ export async function buildPriceListBlob(
       sheet.getCell(`A${row}`).value = price.name;
       sheet.getCell(`B${row}`).value = Number.isNaN(usd) ? price.price : usd;
       sheet.getCell(`C${row}`).value = tmtCell(price.priceInTmt);
+      sheet.getCell(`D${row}`).value = oldManatCell(price.priceInTmt);
       row += 1;
     });
   });
