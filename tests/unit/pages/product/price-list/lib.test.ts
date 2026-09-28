@@ -294,15 +294,16 @@ describe('buildPriceListBlob', () => {
 
   // The sheet is the exact-conversion view an admin reconciles against; the
   // rounded figure the storefront quotes is not part of it.
-  it('writes no fourth column beside the TMT one', async () => {
+  it('writes the old price as the exact manat figure times five', async () => {
     const sheet = await readSheet(
       await buildPriceListBlob(
         sectionsFor({ priceInTmt: '1283', displayPriceTmt: '1350' }),
       ),
     );
 
-    expect(sheet.getCell('D2').value).toBe(null);
-    expect(sheet.getCell('D3').value).toBe(null);
+    expect(sheet.getCell('D2').value).toBe('Köne pul');
+    expect(sheet.getCell('D3').value).toBe(6415);
+    expect(sheet.getCell('E2').value).toBe(null);
   });
 
   // A legacy row whose manat figure was never a number is passed through as the
@@ -313,6 +314,7 @@ describe('buildPriceListBlob', () => {
     );
 
     expect(sheet.getCell('C3').value).toBe('call us');
+    expect(sheet.getCell('D3').value).toBe(null);
   });
 
   it('lays out a category banner above a Name/USD/TMT header', async () => {
@@ -358,7 +360,7 @@ describe('buildPriceListBlob', () => {
   it('fills the whole banner row so it reads as a section break', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections()));
 
-    ['A1', 'B1', 'C1'].forEach((address) => {
+    ['A1', 'B1', 'C1', 'D1'].forEach((address) => {
       expect(sheet.getCell(address).fill).toMatchObject({ pattern: 'solid' });
     });
     expect(sheet.getCell('A3').fill).toBeUndefined(); // price rows stay plain
