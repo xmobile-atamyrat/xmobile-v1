@@ -15,11 +15,12 @@ import * as ExcelJS from 'exceljs';
 
 export const PRICE_LIST_SHEET_NAME = 'Prices';
 
-// TMT is the exact conversion. The rounded figure the storefront quotes is
-// deliberately absent: this sheet is the price an admin reconciles against.
-// "Köne pul" (old price) is the stored manat figure times five, unrounded.
-const PRICE_HEADER = ['Name', 'USD', 'TMT', 'Köne pul'];
-const LAST_COLUMN = 4;
+// Manat only: the USD figure is left out. TMT is the exact conversion. The
+// rounded figure the storefront quotes is deliberately absent: this sheet is
+// the price an admin reconciles against. "Köne pul" (old price) is the stored
+// manat figure times five, unrounded.
+const PRICE_HEADER = ['Name', 'TMT', 'Köne pul'];
+const LAST_COLUMN = 3;
 
 const OLD_MANAT_MULTIPLIER = 5;
 
@@ -328,7 +329,7 @@ function oldManatCell(storedTmt: string): ExcelJS.CellValue {
 }
 
 /**
- * One sheet: a bold category banner + Name/USD/TMT/Köne pul header per
+ * One sheet: a bold category banner + Name/TMT/Köne pul header per
  * section, blank-row separated.
  */
 export async function buildPriceListBlob(
@@ -354,7 +355,7 @@ export async function buildPriceListBlob(
     );
     sheet.getCell(`A${row}`).value = section.sectionPath.join(PATH_SEPARATOR);
     sheet.getCell(`A${row}`).font = bannerFont(isRoot);
-    sheet.mergeCells(`A${row}:D${row}`);
+    sheet.mergeCells(`A${row}:C${row}`);
     row += 1;
 
     fillRow(sheet, row, LAST_COLUMN, HEADER_FILL);
@@ -366,11 +367,9 @@ export async function buildPriceListBlob(
     row += 1;
 
     section.prices.forEach((price) => {
-      const usd = Number(price.price);
       sheet.getCell(`A${row}`).value = price.name;
-      sheet.getCell(`B${row}`).value = Number.isNaN(usd) ? price.price : usd;
-      sheet.getCell(`C${row}`).value = tmtCell(price.priceInTmt);
-      sheet.getCell(`D${row}`).value = oldManatCell(price.priceInTmt);
+      sheet.getCell(`B${row}`).value = tmtCell(price.priceInTmt);
+      sheet.getCell(`C${row}`).value = oldManatCell(price.priceInTmt);
       row += 1;
     });
   });
