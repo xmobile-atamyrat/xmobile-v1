@@ -301,9 +301,9 @@ describe('buildPriceListBlob', () => {
       ),
     );
 
-    expect(sheet.getCell('D2').value).toBe('Köne pul');
-    expect(sheet.getCell('D3').value).toBe(6415);
-    expect(sheet.getCell('E2').value).toBe(null);
+    expect(sheet.getCell('C2').value).toBe('Köne pul');
+    expect(sheet.getCell('C3').value).toBe(6415);
+    expect(sheet.getCell('D2').value).toBe(null);
   });
 
   // A legacy row whose manat figure was never a number is passed through as the
@@ -313,19 +313,30 @@ describe('buildPriceListBlob', () => {
       await buildPriceListBlob(sectionsFor({ priceInTmt: 'call us' })),
     );
 
-    expect(sheet.getCell('C3').value).toBe('call us');
-    expect(sheet.getCell('D3').value).toBe(null);
+    expect(sheet.getCell('B3').value).toBe('call us');
+    expect(sheet.getCell('C3').value).toBe(null);
   });
 
-  it('lays out a category banner above a Name/USD/TMT header', async () => {
+  it('lays out a category banner above a Name/TMT/Köne pul header', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections()));
 
     expect(sheet.getCell('A1').value).toBe('tk:phones');
     expect(sheet.getCell('A2').value).toBe('Name');
-    expect(sheet.getCell('B2').value).toBe('USD');
-    expect(sheet.getCell('C2').value).toBe('TMT');
+    expect(sheet.getCell('B2').value).toBe('TMT');
+    expect(sheet.getCell('C2').value).toBe('Köne pul');
     expect(sheet.getCell('A3').value).toBe('128gb 8gb ram');
-    expect(sheet.getCell('B3').value).toBe(100);
+    expect(sheet.getCell('B3').value).toBe(1960);
+  });
+
+  it('leaves the USD price out of the sheet', async () => {
+    const sheet = await readSheet(await buildPriceListBlob(sections()));
+
+    [1, 2, 3].forEach((row) => {
+      sheet.getRow(row).eachCell((cell) => {
+        expect(cell.value).not.toBe('USD');
+        expect(cell.value).not.toBe(100);
+      });
+    });
   });
 
   it('separates consecutive category sections with a blank row', async () => {
@@ -342,7 +353,7 @@ describe('buildPriceListBlob', () => {
 
     expect(sheet.getCell('A4').value).toBe(null); // blank separator
     expect(sheet.getCell('A5').value).toBe('tk:tablets');
-    expect(sheet.getCell('C7').value).toBe(1960);
+    expect(sheet.getCell('B7').value).toBe(1960);
   });
 
   it('banners a subcategory with its parent, not by its own name alone', async () => {
@@ -360,7 +371,7 @@ describe('buildPriceListBlob', () => {
   it('fills the whole banner row so it reads as a section break', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections()));
 
-    ['A1', 'B1', 'C1', 'D1'].forEach((address) => {
+    ['A1', 'B1', 'C1'].forEach((address) => {
       expect(sheet.getCell(address).fill).toMatchObject({ pattern: 'solid' });
     });
     expect(sheet.getCell('A3').fill).toBeUndefined(); // price rows stay plain
@@ -600,13 +611,12 @@ describe('buildPriceListBlob without a rate row', () => {
 
     expect(sheet.getCell('A1').value).toBe('tk:phones');
     expect(sheet.getCell('A2').value).toBe('Name');
-    expect(sheet.getCell('B2').value).toBe('USD');
-    expect(sheet.getCell('C2').value).toBe('TMT');
+    expect(sheet.getCell('B2').value).toBe('TMT');
   });
 
   it('writes the stored manat figure as a plain number', async () => {
     const sheet = await readSheet(await buildPriceListBlob(sections()));
 
-    expect(sheet.getCell('C3').value).toBe(1960);
+    expect(sheet.getCell('B3').value).toBe(1960);
   });
 });
