@@ -418,7 +418,7 @@
   "chatSessionClosedByAdmin": "Bu söhbetdeşlik admin tarapyndan ýapyldy.",
   "chatConfirmEndSession": "Siz bu söhbeti tamamlamak isleýärsiňizmi? Bu sessiýany ýapar.",
   "chatConfirmLeaveSession": "Siz bu söhbetden çykmak isleýärsiňizmi?",
-  "chatSessionTakenByOther": "Bu söhbetdeşlik başga bir dolandyryjy tarapyndan alyndy.",
+  "chatSessionUnavailable": "Bu söhbetdeşlik indi elýeterli däl.",
   "notifications": "Bildirişler",
   "noNotifications": "Bildiriş ýok",
   "newMessages": "{count} täze habar",

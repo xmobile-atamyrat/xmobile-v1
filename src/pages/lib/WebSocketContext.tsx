@@ -23,6 +23,13 @@ const WebSocketContext = createContext<WebSocketContextProps>({
 
 export const useWebSocketContext = () => useContext(WebSocketContext);
 
+// A connection that drops without a FIN (phone changing networks, a
+// backgrounded WebView) leaves the browser reporting OPEN for minutes. The
+// server's ping frames are answered below the page, so only an app-level
+// round trip lets the client notice.
+export const HEARTBEAT_INTERVAL_MS = 25_000;
+export const HEARTBEAT_TIMEOUT_MS = 10_000;
+
 export const WebSocketContextProvider = ({
   children,
 }: {
@@ -33,13 +40,11 @@ export const WebSocketContextProvider = ({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const reconnectAttemptsRef = useRef(0);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
+  const pongTimeoutRef = useRef<NodeJS.Timeout>();
+  const probeRef = useRef<() => void>();
   const subscribersRef = useRef<Map<string, Set<(data: any) => void>>>(
     new Map(),
-  );
-
-  const maxReconnectAttempts = parseInt(
-    process.env.NEXT_PUBLIC_WS_MAX_RECONNECT_ATTEMPTS || '5',
-    10,
   );
 
   // Subscribe to specific message types
@@ -85,8 +90,25 @@ export const WebSocketContextProvider = ({
     }
   }, []);
 
+  const clearPongTimeout = useCallback(() => {
+    if (pongTimeoutRef.current) {
+      clearTimeout(pongTimeoutRef.current);
+      pongTimeoutRef.current = undefined;
+    }
+  }, []);
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = undefined;
+    }
+    probeRef.current = undefined;
+    clearPongTimeout();
+  }, [clearPongTimeout]);
+
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    const state = wsRef.current?.readyState;
+    if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) return;
     if (!accessToken) return;
 
     const wsBase =
@@ -99,15 +121,67 @@ export const WebSocketContextProvider = ({
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
 
+      const handleClose = (code: number, reason: string) => {
+        stopHeartbeat();
+        console.log('WebSocket disconnected', code, reason);
+        setIsConnected(false);
+
+        // Don't reconnect if it was a clean close or user/auth issue
+        if (code === 1000 || code === 1008) {
+          reconnectAttemptsRef.current = 0;
+          return;
+        }
+
+        // Exponential backoff reconnection
+        const delay = Math.min(
+          1000 * 2 ** reconnectAttemptsRef.current,
+          30000, // Max 30 seconds
+        );
+        reconnectAttemptsRef.current += 1;
+
+        console.log(
+          `Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`,
+        );
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (user && accessToken) {
+            connect();
+          }
+        }, delay);
+      };
+
       socket.onopen = () => {
         console.log('WebSocket connected');
         setIsConnected(true);
         reconnectAttemptsRef.current = 0; // Reset on successful connection
+
+        stopHeartbeat();
+        const probe = () => {
+          if (socket.readyState !== WebSocket.OPEN || pongTimeoutRef.current) {
+            return;
+          }
+          socket.send(JSON.stringify({ type: 'ping' }));
+          pongTimeoutRef.current = setTimeout(() => {
+            if (wsRef.current !== socket) return;
+            // Detach first: close() on a half-open socket can take minutes
+            // to fire onclose, and connect() refuses while wsRef looks OPEN.
+            wsRef.current = null;
+            socket.close();
+            handleClose(4000, 'Heartbeat timeout');
+          }, HEARTBEAT_TIMEOUT_MS);
+        };
+        probeRef.current = probe;
+        heartbeatIntervalRef.current = setInterval(
+          probe,
+          HEARTBEAT_INTERVAL_MS,
+        );
       };
 
       socket.onmessage = (event) => {
+        clearPongTimeout();
         try {
           const data = JSON.parse(event.data);
+          if (data.type === 'pong') return;
           notifySubscribers(data);
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err);
@@ -122,46 +196,15 @@ export const WebSocketContextProvider = ({
         // This socket has already been replaced (e.g. user switched accounts) -
         // its stale closure must not reconnect with an outdated token.
         if (wsRef.current !== socket) return;
-
-        console.log('WebSocket disconnected', event.code, event.reason);
-        setIsConnected(false);
-
-        // Don't reconnect if it was a clean close or user/auth issue
-        if (event.code === 1000 || event.code === 1008) {
-          reconnectAttemptsRef.current = 0;
-          return;
-        }
-
-        // Exponential backoff reconnection
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          const delay = Math.min(
-            1000 * 2 ** reconnectAttemptsRef.current,
-            30000, // Max 30 seconds
-          );
-          reconnectAttemptsRef.current += 1;
-
-          console.log(
-            `Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`,
-          );
-
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (user && accessToken) {
-              connect();
-            }
-          }, delay);
-        } else {
-          console.error(
-            'Max reconnection attempts reached. Please refresh the page.',
-          );
-          reconnectAttemptsRef.current = 0; // Reset for potential manual retry
-        }
+        handleClose(event.code, event.reason);
       };
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
     }
-  }, [accessToken, user, maxReconnectAttempts, notifySubscribers]);
+  }, [accessToken, user, notifySubscribers, stopHeartbeat, clearPongTimeout]);
 
   const disconnect = useCallback(() => {
+    stopHeartbeat();
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = undefined;
@@ -170,7 +213,7 @@ export const WebSocketContextProvider = ({
     wsRef.current = null;
     setIsConnected(false);
     reconnectAttemptsRef.current = 0;
-  }, []);
+  }, [stopHeartbeat]);
 
   // Connect when user and token are available
   useEffect(() => {
@@ -185,6 +228,37 @@ export const WebSocketContextProvider = ({
       disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, accessToken, connect]);
+
+  // Backoff can leave us waiting up to 30s after the network is already back,
+  // and a backgrounded WebView often loses its socket. Retry immediately on
+  // either signal instead of waiting out the timer, and check that a socket
+  // still claiming OPEN really is alive.
+  useEffect(() => {
+    if (!user || !accessToken) return undefined;
+
+    const reconnectNow = () => {
+      if (document.visibilityState === 'hidden') return;
+      const state = wsRef.current?.readyState;
+      if (state === WebSocket.OPEN) {
+        probeRef.current?.();
+        return;
+      }
+      if (state === WebSocket.CONNECTING) return;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = undefined;
+      }
+      reconnectAttemptsRef.current = 0;
+      connect();
+    };
+
+    window.addEventListener('online', reconnectNow);
+    document.addEventListener('visibilitychange', reconnectNow);
+    return () => {
+      window.removeEventListener('online', reconnectNow);
+      document.removeEventListener('visibilitychange', reconnectNow);
+    };
   }, [user, accessToken, connect]);
 
   const contextValue = {

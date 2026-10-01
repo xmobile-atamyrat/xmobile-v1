@@ -701,7 +701,10 @@ wsServer.on('connection', async (connection, request) => {
         try {
           const parsed = JSON.parse(message.toString());
 
-          if (parsed.type === 'get_messages') {
+          if (parsed.type === 'ping') {
+            safeConnection.isAlive = true;
+            sendMessage(safeConnection, { type: 'pong' });
+          } else if (parsed.type === 'get_messages') {
             handleGetMessages(message, safeConnection);
           } else if (parsed.type === 'message') {
             handleMessage(message, safeConnection);

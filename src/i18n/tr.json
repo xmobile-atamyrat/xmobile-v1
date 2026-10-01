@@ -589,7 +589,7 @@
   "startShopping": "Alışverişe başla",
   "popularCategories": "Popüler Kategoriler",
   "moreCategories": "Diğer Kategoriler",
-  "chatSessionTakenByOther": "Bu oturum başka bir yönetici tarafından yürütülmektedir.",
+  "chatSessionUnavailable": "Bu sohbet artık kullanılamıyor.",
   "chatClosedChats": "Kapatılan Sohbetler",
   "chatNoClosedChats": "Kapatılan sohbet yok.",
   "chatReadOnlyMode": "Salt okunur",

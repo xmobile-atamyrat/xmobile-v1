@@ -1,5 +1,6 @@
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { useChatHeaderPresence } from '@/pages/lib/hooks/useChatHeaderPresence';
+import { useSessionClosedNotice } from '@/pages/lib/hooks/useSessionClosedNotice';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useVisualViewport } from '@/pages/lib/useVisualViewport';
@@ -54,7 +55,6 @@ const ChatWidget = () => {
   const [loading, setLoading] = useState(false);
   const visualViewport = useVisualViewport();
 
-  const [isSessionClosed, setSessionClosed] = useState(false);
   const router = useRouter();
 
   const isAdmin = !!user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
@@ -67,20 +67,13 @@ const ChatWidget = () => {
 
   const { inSession, showPresence, online, statusLabel, title } =
     useChatHeaderPresence(isAdmin);
+  const closedNotice = useSessionClosedNotice(isAdmin);
 
   useEffect(() => {
     if (isOpen) {
       loadSessions();
     }
   }, [isOpen, loadSessions]);
-
-  useEffect(() => {
-    if (currentSession?.status === 'CLOSED') {
-      if (!isAdmin) {
-        setSessionClosed(true);
-      }
-    }
-  }, [currentSession, isAdmin]);
 
   useEffect(() => {
     if (isOpen && !isAdmin && sessions.length > 0 && !currentSession) {
@@ -392,13 +385,13 @@ const ChatWidget = () => {
       </Slide>
 
       <Snackbar
-        open={isSessionClosed}
+        open={closedNotice.open}
         autoHideDuration={5000}
-        onClose={() => setSessionClosed(false)}
+        onClose={closedNotice.close}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setSessionClosed(false)}
+          onClose={closedNotice.close}
           severity="info"
           variant="filled"
           sx={{ backgroundColor: navy, color: '#fff' }}
