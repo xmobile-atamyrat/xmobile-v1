@@ -418,7 +418,7 @@
   "chatSessionClosedByAdmin": "Bu çaty admin öçürdi.",
   "chatConfirmEndSession": "Siz bu çaty toçno öçürjaksyzmy? Bu çatyny ýapady.",
   "chatConfirmLeaveSession": "Siz bu çattan çykmak islotrypsyzmy?",
-  "chatSessionTakenByOther": "Bu çatyny başka bir admin aldy.",
+  "chatSessionUnavailable": "Bu çat indi elýeterli däl.",
   "notifications": "Uwedomleniya",
   "noNotifications": "Uwedomleniya ýok",
   "newMessages": "{count} taza habar",

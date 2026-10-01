@@ -343,7 +343,7 @@ export default function NotificationMenu({
         PaperProps={{ className: notificationClasses.sheet.paper }}
       >
         <div className={notificationClasses.sheet.header}>
-          <div className="flex items-center gap-[14px]">
+          <div className="flex min-w-0 items-center gap-[14px]">
             <button
               type="button"
               onClick={onClose}

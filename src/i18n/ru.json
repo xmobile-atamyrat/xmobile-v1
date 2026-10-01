@@ -418,7 +418,7 @@
   "chatSessionClosedByAdmin": "Эта сессия чата была закрыта администратором.",
   "chatConfirmEndSession": "Закончить чат? Сессия закроется.",
   "chatConfirmLeaveSession": "Вы уверены, что хотите покинуть этот чат?",
-  "chatSessionTakenByOther": "Эта сессия была занята другим администратором.",
+  "chatSessionUnavailable": "Этот чат больше недоступен.",
   "notifications": "Уведомления",
   "noNotifications": "Нет уведомлений",
   "newMessages": "{count, plural, one {# новое сообщение} few {# новых сообщения} other {# новых сообщений}}",

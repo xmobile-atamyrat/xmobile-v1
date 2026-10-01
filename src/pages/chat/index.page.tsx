@@ -2,6 +2,7 @@ import ChatSessionList from '@/pages/components/chat/ChatSessionList';
 import ChatWindow from '@/pages/components/chat/ChatWindow';
 import { useChatContext } from '@/pages/lib/ChatContext';
 import { useChatHeaderPresence } from '@/pages/lib/hooks/useChatHeaderPresence';
+import { useSessionClosedNotice } from '@/pages/lib/hooks/useSessionClosedNotice';
 import { SUPPORT_PHONES } from '@/pages/lib/constants';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -66,9 +67,8 @@ export default function ChatPage() {
   const { markSessionAsRead } = useNotificationContext();
 
   const [loading, setLoading] = useState(false);
-  const [showTakenAlert, setShowTakenAlert] = useState(false);
+  const [showUnavailableAlert, setShowUnavailableAlert] = useState(false);
   const visualViewport = useVisualViewport();
-  const [isSessionClosed, setSessionClosed] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const initializedSessionIdRef = useRef<string | null>(null);
@@ -81,6 +81,7 @@ export default function ChatPage() {
 
   const { inSession, showPresence, online, statusLabel, title } =
     useChatHeaderPresence(isAdmin);
+  const closedNotice = useSessionClosedNotice(isAdmin);
 
   // Redirect to sign in if not authenticated
   useEffect(() => {
@@ -138,8 +139,8 @@ export default function ChatPage() {
               messagesLoadedRef.current = null;
               const success = await joinSession(sessionId);
               if (!success) {
-                setShowTakenAlert(true);
-                setSessionError('chatSessionTakenByOther');
+                setShowUnavailableAlert(true);
+                setSessionError('chatSessionUnavailable');
                 initializedSessionIdRef.current = null;
               } else if (!isConnected) {
                 // If WebSocket isn't connected, messages weren't loaded
@@ -160,8 +161,8 @@ export default function ChatPage() {
             }
           }
         } else {
-          // Session not found in loaded sessions
-          setSessionError('chatNotParticipant');
+          // Closed, deleted, or not ours: the list only holds what we can open
+          setSessionError('chatSessionUnavailable');
         }
         setIsInitializing(false);
         return;
@@ -207,15 +208,6 @@ export default function ChatPage() {
     // But use initializedSessionIdRef to prevent re-joining
   ]);
 
-  // Handle session closed state
-  useEffect(() => {
-    if (currentSession?.status === 'CLOSED') {
-      if (!isAdmin) {
-        setSessionClosed(true);
-      }
-    }
-  }, [currentSession, isAdmin]);
-
   // Mark session notifications as read when they come from deeplink
   useEffect(() => {
     if (currentSession?.id) {
@@ -231,6 +223,7 @@ export default function ChatPage() {
       isConnected &&
       currentSession &&
       currentSession.id &&
+      (isAdmin || currentSession.status !== 'CLOSED') &&
       messages.length === 0 &&
       !isInitializing &&
       messagesLoadedRef.current !== currentSession.id
@@ -271,7 +264,7 @@ export default function ChatPage() {
     try {
       const success = await joinSession(session.id);
       if (!success) {
-        setShowTakenAlert(true);
+        setShowUnavailableAlert(true);
       } else {
         // Update URL with sessionId
         router.replace(`/chat?sessionId=${session.id}`, undefined, {
@@ -458,8 +451,8 @@ export default function ChatPage() {
           }}
         >
           <Typography align="center" sx={{ fontSize: '14px', color: muted }}>
-            {sessionError === 'chatSessionTakenByOther'
-              ? t('chatSessionTakenByOther')
+            {sessionError === 'chatSessionUnavailable'
+              ? t('chatSessionUnavailable')
               : t('chatNotParticipant')}
           </Typography>
         </Box>
@@ -559,13 +552,13 @@ export default function ChatPage() {
       </Paper>
 
       <Snackbar
-        open={isSessionClosed}
+        open={closedNotice.open}
         autoHideDuration={5000}
-        onClose={() => setSessionClosed(false)}
+        onClose={closedNotice.close}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setSessionClosed(false)}
+          onClose={closedNotice.close}
           severity="info"
           variant="filled"
           sx={{ backgroundColor: navy, color: '#fff' }}
@@ -575,18 +568,18 @@ export default function ChatPage() {
       </Snackbar>
 
       <Snackbar
-        open={showTakenAlert}
+        open={showUnavailableAlert}
         autoHideDuration={5000}
-        onClose={() => setShowTakenAlert(false)}
+        onClose={() => setShowUnavailableAlert(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setShowTakenAlert(false)}
+          onClose={() => setShowUnavailableAlert(false)}
           severity="info"
           variant="filled"
           sx={{ backgroundColor: navy, color: '#fff' }}
         >
-          {t('chatSessionTakenByOther')}
+          {t('chatSessionUnavailable')}
         </Alert>
       </Snackbar>
     </>

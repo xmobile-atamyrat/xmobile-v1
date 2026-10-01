@@ -183,6 +183,8 @@ export type ChatEvent =
       type: 'support_presence';
       supportOnline: boolean;
     }
+  /** Reply to a client heartbeat `{ type: 'ping' }`. */
+  | { type: 'pong' }
   | HistoryResponseMessage;
 
 // Legacy alias to ease refactoring (deprecated)
