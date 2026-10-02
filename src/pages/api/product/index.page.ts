@@ -7,6 +7,7 @@ import {
   setProductOutOfStock,
 } from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { productSearchWhere } from '@/lib/productSearchWhere';
 import { revalidateInBackground } from '@/lib/revalidate';
 import {
   categoryListingPaths,
@@ -332,6 +333,7 @@ async function handleGetProduct(query: {
   count?: string;
   facets?: string;
   locale?: string | string[];
+  inStock?: string;
 }): Promise<{ resp: ResponseApi; status: number }> {
   const {
     searchKeyword,
@@ -348,6 +350,7 @@ async function handleGetProduct(query: {
     count,
     facets,
     locale,
+    inStock,
   } = query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
@@ -451,7 +454,11 @@ async function handleGetProduct(query: {
   if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
 
   if (searchKeyword) {
-    where.name = { contains: searchKeyword, mode: 'insensitive' };
+    where.AND = productSearchWhere(searchKeyword);
+  }
+
+  if (inStock === '1') {
+    where.outOfStockAt = null;
   }
 
   // Both bounds and cachedPrice are the shown manat, so they compare directly.
