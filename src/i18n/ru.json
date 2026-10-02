@@ -292,7 +292,6 @@
   "shipping": "Доставка",
   "review": "Проверка",
   "delivery": "Доставка",
-  "standardDelivery": "Стандартная доставка",
   "nationwideDelivery": "Доставка по стране",
   "viewAll": "Смотреть все",
   "shopByCategory": "Покупки по категориям",
@@ -674,5 +673,19 @@
   "pricesAssigned": "Цены переведены на курс",
   "assignPricesError": "Не удалось перевести цены",
   "confirmDefaultRateRecalculate": "Пересчитать {count, plural, one {# цену} few {все # цены} other {все # цен}} по этому курсу? Все цены вернутся на основной курс.",
-  "invalidPhoneNumber": "Введите корректный номер: {digits} цифр после {dial}"
+  "invalidPhoneNumber": "Введите корректный номер: {digits} цифр после {dial}",
+  "deliveryMethod": "Способ получения",
+  "pickupYourself": "Самовывоз",
+  "pickupYourselfSub": "Заберите заказ в нашем магазине",
+  "courierDelivery": "Доставка по адресу",
+  "deliveryWithinDays": "Вы получите заказ максимум за {days} дней",
+  "deliveryPriceSetByManager": "Стоимость доставки определит менеджер и добавит её к сумме заказа",
+  "deliveryPriceToBeConfirmed": "Уточняется",
+  "contactDetails": "Контактные данные",
+  "setDeliveryPrice": "Указать цену доставки",
+  "deliveryPrice": "Цена доставки",
+  "deliveryPriceUpdated": "Цена доставки обновлена",
+  "updateDeliveryPriceError": "Не удалось обновить цену доставки",
+  "deliveryPriceHint": "Добавляется к стоимости товаров ({subtotal} TMT). Новое значение заменяет предыдущее.",
+  "deliveryChosenAtCheckout": "Выбирается при оформлении"
 }

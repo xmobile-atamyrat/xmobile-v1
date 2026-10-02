@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { PrismaClient } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -10,14 +11,20 @@ import {
 } from './shared/worker-env';
 
 describe('Order checkout flow (integration)', () => {
+  let prisma: PrismaClient;
   let productId: string;
 
   beforeAll(async () => {
-    const { catalog } = await prepareIntegrationWorker();
+    const { databaseUrl, catalog } = await prepareIntegrationWorker();
     productId = catalog.productId;
+    prisma = new PrismaClient({
+      datasources: { db: { url: databaseUrl } },
+    });
+    await prisma.$connect();
   }, 180_000);
 
   afterAll(async () => {
+    await prisma?.$disconnect();
     await resetPrismaGlobalSingleton();
     teardownIntegrationWorker();
   });
@@ -133,5 +140,69 @@ describe('Order checkout flow (integration)', () => {
     );
 
     expect(userId).toBeTruthy();
+  });
+
+  it('creates a pickup order without an address and keeps the profile address', async () => {
+    const session = await signupTestUser('pickup-buyer');
+    const { accessToken } = session;
+
+    const cartHandler = (await import('@/pages/api/cart.page')).default;
+    const orderHandler = (await import('@/pages/api/order/index.page')).default;
+
+    const addToCart = async () => {
+      const add = createMocks({
+        method: 'POST',
+        url: '/api/cart',
+        headers: { authorization: `Bearer ${accessToken}` },
+        body: { productId, quantity: 1 },
+      });
+      await cartHandler(
+        add.req as unknown as NextApiRequest,
+        add.res as unknown as NextApiResponse,
+      );
+      expect(add.res._getStatusCode()).toBe(200);
+    };
+
+    const placeOrder = async (body: Record<string, unknown>) => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        url: '/api/order',
+        headers: { authorization: `Bearer ${accessToken}` },
+        body,
+      });
+      await orderHandler(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      return res;
+    };
+
+    const before = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { address: true },
+    });
+
+    await addToCart();
+    const missingAddress = await placeOrder({
+      deliveryMethod: 'DELIVERY',
+      deliveryPhone: '+99361000778',
+    });
+    expect(missingAddress._getStatusCode()).toBe(400);
+
+    const pickup = await placeOrder({
+      deliveryMethod: 'PICKUP',
+      deliveryPhone: '+99361000778',
+      updateAddress: true,
+    });
+    expect(pickup._getStatusCode()).toBe(200);
+    expect(JSON.parse(pickup._getData() as string).data.deliveryAddress).toBe(
+      'PICKUP',
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { address: true },
+    });
+    expect(user?.address).toBe(before?.address);
   });
 });

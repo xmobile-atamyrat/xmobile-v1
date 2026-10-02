@@ -7,6 +7,7 @@ import { fetchColors } from '@/pages/lib/apis';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import { DeliveryMethod, MAX_DELIVERY_DAYS } from '@/pages/lib/orderDelivery';
 import {
   DEFAULT_PHONE_COUNTRY,
   detectPhoneCountry,
@@ -66,8 +67,10 @@ import {
   Banknote,
   Check,
   ChevronDown,
+  LucideIcon,
   MapPin,
   Pencil,
+  Store,
   Truck,
 } from 'lucide-react';
 import { GetStaticProps } from 'next';
@@ -102,6 +105,8 @@ export default function CheckoutPage() {
     PhoneCountry['code']
   >(DEFAULT_PHONE_COUNTRY.code);
   const [address, setAddress] = useState('');
+  const [deliveryMethod, setDeliveryMethod] =
+    useState<DeliveryMethod>('DELIVERY');
   const [notes, setNotes] = useState('');
   // Unit price (TMT) per cart line id — variant-aware
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
@@ -112,7 +117,7 @@ export default function CheckoutPage() {
   // Address card: saved (collapsed) vs edit (fields). Guests/no-address start editing.
   const [editingAddress, setEditingAddress] = useState(true);
   const [saveToProfile, setSaveToProfile] = useState(false);
-  // Wizard: 0=Address 1=Delivery 2=Payment 3=Review
+  // Wizard: 0=Delivery 1=Address 2=Payment 3=Review
   const [currentStep, setCurrentStep] = useState(0);
   // Set once the user tries to advance past the address step incomplete.
   const [attemptedNext, setAttemptedNext] = useState(false);
@@ -311,6 +316,8 @@ export default function CheckoutPage() {
     }
   };
 
+  const isPickup = deliveryMethod === 'PICKUP';
+
   const handleOrder = async () => {
     // Out-of-stock items block the order outright — check before anything else
     // so the user isn't asked to fix form fields on an order that can't succeed
@@ -326,11 +333,18 @@ export default function CheckoutPage() {
     if (!isValidLocalNumber(phoneNumber, phoneCountry)) {
       return;
     }
-    if (!address.trim()) {
+    if (!isPickup && !address.trim()) {
       return;
     }
 
     setLoading(true);
+
+    const deliveryBody = {
+      deliveryMethod,
+      deliveryAddress: isPickup ? undefined : address.trim(),
+      deliveryPhone: `${phoneCountry.dial}${phoneNumber}`,
+      notes: notes.trim() || undefined,
+    };
 
     try {
       const { success, message } = user
@@ -339,16 +353,12 @@ export default function CheckoutPage() {
             path: '/api/order',
             method: 'POST',
             body: {
-              deliveryAddress: address.trim(),
-              deliveryPhone: `${phoneCountry.dial}${phoneNumber}`,
-              notes: notes.trim() || undefined,
-              updateAddress: saveToProfile,
+              ...deliveryBody,
+              updateAddress: saveToProfile && !isPickup,
             },
           })
         : await fetchWithoutCreds('/api/guest/order', 'POST', {
-            deliveryAddress: address.trim(),
-            deliveryPhone: `${phoneCountry.dial}${phoneNumber}`,
-            notes: notes.trim() || undefined,
+            ...deliveryBody,
             userName: fullName.trim(),
           });
 
@@ -416,7 +426,8 @@ export default function CheckoutPage() {
   });
 
   const isPhoneValid = isValidLocalNumber(phoneNumber, phoneCountry);
-  const isFormIncomplete = !fullName.trim() || !isPhoneValid || !address.trim();
+  const isFormIncomplete =
+    !fullName.trim() || !isPhoneValid || (!isPickup && !address.trim());
   const showPhoneError = (phoneTouched || attemptedNext) && !isPhoneValid;
 
   const phoneOption = (c: PhoneCountry) => (
@@ -577,12 +588,17 @@ export default function CheckoutPage() {
     </Box>
   );
 
-  const steps = [t('addressText'), t('shipping'), t('payment'), t('review')];
+  const steps = [
+    t('shipping'),
+    isPickup ? t('contactDetails') : t('addressText'),
+    t('payment'),
+    t('review'),
+  ];
 
-  // Navigate to a step. Advancing past Address (step 0) requires the required
+  // Navigate to a step. Advancing past Address (step 1) requires the required
   // address fields; if incomplete, flag the empty fields instead of moving.
   const goToStep = (target: number) => {
-    if (target > 0 && isFormIncomplete) {
+    if (target > 1 && isFormIncomplete) {
       setAttemptedNext(true);
       setSnackbarMsg('fillRequiredFields');
       setSnackbarOpen(true);
@@ -599,9 +615,11 @@ export default function CheckoutPage() {
           {fullName}
           {phoneNumber ? ` · ${phoneCountry.dial} ${phoneNumber}` : ''}
         </Typography>
-        <Typography className={`${fc} ${cls.addressLine}`}>
-          {address}
-        </Typography>
+        {!isPickup && (
+          <Typography className={`${fc} ${cls.addressLine}`}>
+            {address}
+          </Typography>
+        )}
       </Box>
       <IconButton
         onClick={onEdit}
@@ -613,20 +631,116 @@ export default function CheckoutPage() {
     </Box>
   );
 
-  const deliveryCard = (
-    <Box className={cls.infoCard}>
+  const deliveryOptions: Array<{
+    method: DeliveryMethod;
+    Icon: LucideIcon;
+    title: string;
+    lines: string[];
+    free?: boolean;
+  }> = [
+    {
+      method: 'PICKUP',
+      Icon: Store,
+      title: t('pickupYourself'),
+      lines: [t('pickupYourselfSub'), t('address')],
+      free: true,
+    },
+    {
+      method: 'DELIVERY',
+      Icon: Truck,
+      title: t('courierDelivery'),
+      lines: [
+        t('deliveryWithinDays', { days: MAX_DELIVERY_DAYS }),
+        t('deliveryPriceSetByManager'),
+      ],
+    },
+  ];
+  const selectedDeliveryOption = deliveryOptions.find(
+    (opt) => opt.method === deliveryMethod,
+  )!;
+
+  const deliveryOptionContent = (opt: (typeof deliveryOptions)[number]) => (
+    <>
       <Box className={cls.infoIconTile}>
-        <Truck size={20} />
+        <opt.Icon size={20} />
       </Box>
       <Box className={cls.infoGrow}>
         <Typography className={`${fc} ${cls.infoTitle}`}>
-          {t('standardDelivery')}
+          {opt.title}
         </Typography>
-        <Typography className={`${fc} ${cls.infoSub}`}>
-          {t('nationwideDelivery')}
-        </Typography>
+        {opt.lines.map((line) => (
+          <Typography key={line} className={`${fc} ${cls.infoSub}`}>
+            {line}
+          </Typography>
+        ))}
       </Box>
-      <Typography className={`${fc} ${cls.infoRight}`}>{t('free')}</Typography>
+      {opt.free && (
+        <Typography className={`${fc} ${cls.infoRightFree}`}>
+          {t('free')}
+        </Typography>
+      )}
+    </>
+  );
+
+  const webDeliveryOptionContent = (
+    opt: (typeof deliveryOptions)[number],
+    selected: boolean,
+  ) => (
+    <>
+      <Box className={selected ? cls.web.radioOuter : cls.web.radioOuterIdle}>
+        {selected && <Box className={cls.web.radioInner} />}
+      </Box>
+      <Box className={cls.web.optionBody}>
+        <Typography className={`${fc} ${cls.web.optionTitle}`}>
+          {opt.title}
+        </Typography>
+        {opt.lines.map((line) => (
+          <Typography key={line} className={`${fc} ${cls.web.optionSub}`}>
+            {line}
+          </Typography>
+        ))}
+      </Box>
+      {opt.free && (
+        <Typography className={`${fc} ${cls.web.optionRight}`}>
+          {t('free')}
+        </Typography>
+      )}
+    </>
+  );
+
+  const deliveryPicker = (web: boolean) => (
+    <Box
+      role="radiogroup"
+      className={web ? cls.web.optionList : cls.optionList}
+    >
+      {deliveryOptions.map((opt) => {
+        const selected = deliveryMethod === opt.method;
+        let className = selected ? cls.optionCardSelected : cls.optionCard;
+        if (web) {
+          className = `${cls.web.optionButton} ${
+            selected ? cls.web.optionRow : cls.web.optionRowIdle
+          }`;
+        }
+        return (
+          <ButtonBase
+            key={opt.method}
+            role="radio"
+            aria-checked={selected}
+            onClick={() => setDeliveryMethod(opt.method)}
+            className={className}
+          >
+            {web
+              ? webDeliveryOptionContent(opt, selected)
+              : deliveryOptionContent(opt)}
+          </ButtonBase>
+        );
+      })}
+    </Box>
+  );
+
+  const deliveryCard = (
+    <Box className={cls.infoCard}>
+      {deliveryOptionContent(selectedDeliveryOption)}
     </Box>
   );
 
@@ -789,12 +903,23 @@ export default function CheckoutPage() {
 
           <Box className={cls.web.grid}>
             <Box className={cls.web.formCol}>
+              {/* Delivery method (spec 1635) — pickup or delivery */}
+              <Box className={cls.web.card}>
+                <Box className={cls.web.cardHead}>
+                  <Truck className={cls.web.cardIcon} />
+                  <Typography className={`${fc} ${cls.web.cardTitle}`}>
+                    {t('deliveryMethod')}
+                  </Typography>
+                </Box>
+                {deliveryPicker(true)}
+              </Box>
+
               {/* Delivery address (spec 1620) */}
               <Box className={cls.web.card}>
                 <Box className={cls.web.cardHead}>
                   <MapPin className={cls.web.cardIcon} />
                   <Typography className={`${fc} ${cls.web.cardTitle}`}>
-                    {t('deliveryAddress')}
+                    {isPickup ? t('contactDetails') : t('deliveryAddress')}
                   </Typography>
                 </Box>
                 <Box className={cls.web.fieldGrid}>
@@ -813,14 +938,15 @@ export default function CheckoutPage() {
                     required: true,
                     textFieldProps: phoneFieldProps,
                   })}
-                  {renderWebField({
-                    label: t('addressText'),
-                    value: address,
-                    onChange: setAddress,
-                    placeholder: t('addressPlaceholder'),
-                    required: true,
-                    wide: true,
-                  })}
+                  {!isPickup &&
+                    renderWebField({
+                      label: t('addressText'),
+                      value: address,
+                      onChange: setAddress,
+                      placeholder: t('addressPlaceholder'),
+                      required: true,
+                      wide: true,
+                    })}
                   {renderWebField({
                     label: t('orderNotes'),
                     value: notes,
@@ -830,7 +956,7 @@ export default function CheckoutPage() {
                     wide: true,
                   })}
                 </Box>
-                {user && (
+                {user && !isPickup && (
                   <FormControlLabel
                     className={cls.web.saveRow}
                     control={
@@ -847,32 +973,6 @@ export default function CheckoutPage() {
                     }
                   />
                 )}
-              </Box>
-
-              {/* Delivery method (spec 1635) — one real option */}
-              <Box className={cls.web.card}>
-                <Box className={cls.web.cardHead}>
-                  <Truck className={cls.web.cardIcon} />
-                  <Typography className={`${fc} ${cls.web.cardTitle}`}>
-                    {t('delivery')}
-                  </Typography>
-                </Box>
-                <Box className={cls.web.optionRow}>
-                  <Box className={cls.web.radioOuter}>
-                    <Box className={cls.web.radioInner} />
-                  </Box>
-                  <Box className={cls.web.optionBody}>
-                    <Typography className={`${fc} ${cls.web.optionTitle}`}>
-                      {t('standardDelivery')}
-                    </Typography>
-                    <Typography className={`${fc} ${cls.web.optionSub}`}>
-                      {t('nationwideDelivery')}
-                    </Typography>
-                  </Box>
-                  <Typography className={`${fc} ${cls.web.optionRight}`}>
-                    {t('free')}
-                  </Typography>
-                </Box>
               </Box>
 
               {/* Payment (spec 1648) — COD is the only method */}
@@ -971,8 +1071,12 @@ export default function CheckoutPage() {
                   <Typography className={`${fc} ${cls.web.totalsLabel}`}>
                     {t('delivery')}
                   </Typography>
-                  <Typography className={`${fc} ${cls.web.totalsFree}`}>
-                    {t('free')}
+                  <Typography
+                    className={`${fc} ${
+                      isPickup ? cls.web.totalsFree : cls.web.totalsPending
+                    }`}
+                  >
+                    {isPickup ? t('free') : t('deliveryPriceToBeConfirmed')}
                   </Typography>
                 </Box>
               </Box>
@@ -1053,11 +1157,21 @@ export default function CheckoutPage() {
             </Box>
           </Box>
 
-          {/* Step 0 — Address */}
+          {/* Step 0 — Delivery method */}
           {currentStep === 0 && (
             <Box className={cls.section}>
               <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                {t('deliveryAddress')}
+                {t('deliveryMethod')}
+              </Typography>
+              {deliveryPicker(false)}
+            </Box>
+          )}
+
+          {/* Step 1 — Address */}
+          {currentStep === 1 && (
+            <Box className={cls.section}>
+              <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
+                {isPickup ? t('contactDetails') : t('deliveryAddress')}
               </Typography>
               {!editingAddress ? (
                 addressSummaryCard(() => setEditingAddress(true))
@@ -1079,15 +1193,16 @@ export default function CheckoutPage() {
                     required: true,
                     textFieldProps: phoneFieldProps,
                   })}
-                  {renderField({
-                    label: t('addressText'),
-                    value: address,
-                    onChange: setAddress,
-                    placeholder: t('addressPlaceholder'),
-                    required: true,
-                    error: attemptedNext && !address.trim(),
-                  })}
-                  {user && (
+                  {!isPickup &&
+                    renderField({
+                      label: t('addressText'),
+                      value: address,
+                      onChange: setAddress,
+                      placeholder: t('addressPlaceholder'),
+                      required: true,
+                      error: attemptedNext && !address.trim(),
+                    })}
+                  {user && !isPickup && (
                     <FormControlLabel
                       className={cls.saveRow}
                       control={
@@ -1112,16 +1227,6 @@ export default function CheckoutPage() {
             </Box>
           )}
 
-          {/* Step 1 — Delivery */}
-          {currentStep === 1 && (
-            <Box className={cls.section}>
-              <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                {t('delivery')}
-              </Typography>
-              {deliveryCard}
-            </Box>
-          )}
-
           {/* Step 2 — Payment */}
           {currentStep === 2 && (
             <Box className={cls.section}>
@@ -1137,18 +1242,18 @@ export default function CheckoutPage() {
             <>
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                  {t('deliveryAddress')}
+                  {t('deliveryMethod')}
                 </Typography>
-                {addressSummaryCard(() => {
-                  setEditingAddress(true);
-                  setCurrentStep(0);
-                })}
+                {deliveryCard}
               </Box>
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>
-                  {t('delivery')}
+                  {isPickup ? t('contactDetails') : t('deliveryAddress')}
                 </Typography>
-                {deliveryCard}
+                {addressSummaryCard(() => {
+                  setEditingAddress(true);
+                  setCurrentStep(1);
+                })}
               </Box>
               <Box className={cls.section}>
                 <Typography className={`${fc} ${cls.sectionTitle.mobile}`}>

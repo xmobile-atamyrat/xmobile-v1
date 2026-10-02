@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cancelOrderSchema,
+  createGuestOrderSchema,
   createOrderSchema,
   getAdminOrdersQuerySchema,
   getOrdersQuerySchema,
   updateAdminNotesSchema,
+  updateDeliveryPriceSchema,
   updateOrderStatusSchema,
 } from '@/pages/api/order/validators/orderValidators';
+import { PICKUP_ADDRESS } from '@/pages/lib/orderDelivery';
 
 describe('createOrderSchema', () => {
   it('accepts a valid payload', () => {
@@ -132,5 +135,64 @@ describe('cancelOrderSchema', () => {
       cancelOrderSchema.safeParse({ cancellationReason: 'changed mind' })
         .success,
     ).toBe(true);
+  });
+});
+
+const phone = '+99361000000';
+
+describe('order delivery validation', () => {
+  it('defaults to delivery and requires an address for it', () => {
+    expect(createOrderSchema.safeParse({ deliveryPhone: phone }).success).toBe(
+      false,
+    );
+    const parsed = createOrderSchema.parse({
+      deliveryPhone: phone,
+      deliveryAddress: '  Main st 1 ',
+    });
+    expect(parsed.deliveryMethod).toBe('DELIVERY');
+    expect(parsed.deliveryAddress).toBe('Main st 1');
+  });
+
+  it('stores the pickup marker instead of an address for pickup', () => {
+    const parsed = createGuestOrderSchema.parse({
+      deliveryMethod: 'PICKUP',
+      deliveryPhone: phone,
+      deliveryAddress: 'ignored',
+      userName: 'Guest',
+    });
+    expect(parsed.deliveryAddress).toBe(PICKUP_ADDRESS);
+    expect(parsed.userName).toBe('Guest');
+  });
+
+  it('rejects the pickup marker as a delivery address', () => {
+    expect(
+      createOrderSchema.safeParse({
+        deliveryMethod: 'DELIVERY',
+        deliveryPhone: phone,
+        deliveryAddress: ' pickup ',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects an unknown delivery method', () => {
+    expect(
+      createOrderSchema.safeParse({
+        deliveryMethod: 'DRONE',
+        deliveryPhone: phone,
+        deliveryAddress: 'Main st 1',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts a non-negative delivery price only', () => {
+    expect(updateDeliveryPriceSchema.parse({ deliveryPrice: '15.5' })).toEqual({
+      deliveryPrice: 15.5,
+    });
+    expect(
+      updateDeliveryPriceSchema.safeParse({ deliveryPrice: -1 }).success,
+    ).toBe(false);
+    expect(
+      updateDeliveryPriceSchema.safeParse({ deliveryPrice: 'abc' }).success,
+    ).toBe(false);
   });
 });

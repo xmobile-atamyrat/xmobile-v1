@@ -72,13 +72,18 @@ export const checkoutDialogClasses = {
     fieldGrid: 'grid grid-cols-1 md:grid-cols-2 gap-[14px]',
     fieldWide: 'md:col-span-2',
     fieldLabel: 'text-[12px] font-semibold text-muted mb-[6px]',
-    // Spec 1637/1652: selected radio row. Only one real option exists for each
-    // of delivery and payment, so it renders selected and inert rather than as
-    // a choice the user cannot actually make.
+    // Spec 1637/1652: selected radio row. Payment has one real option, so it
+    // renders selected and inert; delivery uses the same row as a real choice.
+    optionList: 'flex flex-col gap-3',
     optionRow:
       'flex flex-row items-center gap-[14px] border-2 border-navy rounded-[14px] p-4 bg-[#F7F6FA]',
+    optionRowIdle:
+      'flex flex-row items-center gap-[14px] border-2 border-hairline rounded-[14px] p-4 bg-white',
+    optionButton: 'w-full text-left justify-start font-[inherit]',
     radioOuter:
       'w-[22px] h-[22px] rounded-full border-2 border-navy flex items-center justify-center flex-shrink-0',
+    radioOuterIdle:
+      'w-[22px] h-[22px] rounded-full border-2 border-hairline flex items-center justify-center flex-shrink-0',
     radioInner: 'w-[11px] h-[11px] rounded-full bg-navy',
     optionBody: 'flex flex-col flex-1 min-w-0',
     optionTitle: 'text-[15px] font-semibold text-ink',
@@ -104,6 +109,7 @@ export const checkoutDialogClasses = {
     totalsLabel: 'text-[14px] text-[#4A4959]',
     totalsValue: 'text-[14px] font-semibold text-ink',
     totalsFree: 'text-[14px] font-semibold text-[#1F8A5B]',
+    totalsPending: 'text-[14px] font-semibold text-muted',
     grandRow: 'flex flex-row justify-between items-baseline pt-4 pb-1',
     grandLabel: 'text-[16px] font-bold text-ink',
     grandValue: 'text-[24px] font-[800] text-navy',
@@ -150,4 +156,11 @@ export const checkoutDialogClasses = {
   infoSub: 'font-normal text-[13px] leading-[18px] text-[#8B8A98] mt-0.5',
   infoRight:
     'font-bold text-[15px] leading-normal text-[#20166E] flex-shrink-0',
+  infoRightFree:
+    'font-bold text-[15px] leading-normal text-[#1F8A5B] flex-shrink-0',
+  optionList: 'flex flex-col gap-3',
+  optionCard:
+    'flex flex-row items-center gap-3 w-full text-left justify-start font-[inherit] bg-white border-2 border-[#ECECF1] rounded-2xl p-4',
+  optionCardSelected:
+    'flex flex-row items-center gap-3 w-full text-left justify-start font-[inherit] bg-[#F7F6FA] border-2 border-[#20166E] rounded-2xl p-4',
 };

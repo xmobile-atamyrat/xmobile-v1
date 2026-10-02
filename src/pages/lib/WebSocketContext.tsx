@@ -44,6 +44,9 @@ export const WebSocketContextProvider = ({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const reconnectAttemptsRef = useRef(0);
+  // Set when the server closed cleanly or rejected the token, so the
+  // online/foreground handler doesn't retry a connection meant to stay closed
+  const stayClosedRef = useRef(false);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
   const pongTimeoutRef = useRef<NodeJS.Timeout>();
   const probeRef = useRef<() => void>();
@@ -136,6 +139,7 @@ export const WebSocketContextProvider = ({
         // Don't reconnect if it was a clean close or user/auth issue
         if (code === 1000 || code === 1008) {
           reconnectAttemptsRef.current = 0;
+          stayClosedRef.current = true;
           return;
         }
 
@@ -240,6 +244,7 @@ export const WebSocketContextProvider = ({
     wsRef.current = null;
     setIsConnected(false);
     reconnectAttemptsRef.current = 0;
+    stayClosedRef.current = false;
   }, [stopHeartbeat]);
 
   // Connect when user and token are available
@@ -265,7 +270,9 @@ export const WebSocketContextProvider = ({
     if (!user || !accessToken) return undefined;
 
     const reconnectNow = () => {
-      if (document.visibilityState === 'hidden') return;
+      if (document.visibilityState === 'hidden' || stayClosedRef.current) {
+        return;
+      }
       const state = wsRef.current?.readyState;
       if (state === WebSocket.OPEN) {
         probeRef.current?.();

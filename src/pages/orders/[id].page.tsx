@@ -5,6 +5,12 @@ import { appBarHeight } from '@/pages/lib/constants';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { productThumbnailUrl } from '@/pages/lib/mediaUrls';
+import {
+  deliveryFeeLabel as formatDeliveryFee,
+  isPickupOrder,
+  MAX_DELIVERY_DAYS,
+  orderItemsSubtotal,
+} from '@/pages/lib/orderDelivery';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -14,7 +20,14 @@ import { formatDate } from '@/pages/orders/lib/utils';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { ordersDetailClasses } from '@/styles/classMaps/orders/detail';
 import { fontClassName } from '@/styles/theme';
-import { ArrowLeft, Banknote, MapPin, Package, StickyNote } from 'lucide-react';
+import {
+  ArrowLeft,
+  Banknote,
+  MapPin,
+  Package,
+  StickyNote,
+  Store,
+} from 'lucide-react';
 import {
   Alert,
   Box,
@@ -259,13 +272,17 @@ export default function OrderDetailPage() {
 
   const items = order.items ?? [];
   // Real numbers only: the line snapshots add up to the subtotal, and the total
-  // is the one stored on the order. Delivery is free (there is no fee field and
-  // none is charged), so there is no third figure to invent.
-  const subtotal = items.reduce(
-    (acc, item) => acc + (parseFloat(item.productPrice) || 0) * item.quantity,
-    0,
-  );
+  // is the one stored on the order, delivery fee included once an admin sets it.
+  const subtotal = orderItemsSubtotal(items);
   const orderTotal = parseFloat(order.totalPrice) || subtotal;
+  const isPickup = isPickupOrder(order);
+  const deliveryFeeLabel = formatDeliveryFee(order, t);
+  const deliveryLines = isPickup
+    ? [t('pickupYourself'), t('address')]
+    : [
+        order.deliveryAddress,
+        t('deliveryWithinDays', { days: MAX_DELIVERY_DAYS }),
+      ];
 
   const timeline = [
     { label: t('createdAt'), value: formatDate(order.createdAt, platform) },
@@ -375,26 +392,42 @@ export default function OrderDetailPage() {
             {/* Delivery + payment */}
             <Box className={ordersDetailClasses.card.mobile}>
               <Box className={ordersDetailClasses.infoRow.mobile}>
-                <MapPin
-                  size={18}
-                  color="#20166E"
-                  className="flex-none mt-[2px]"
-                />
+                {isPickup ? (
+                  <Store
+                    size={18}
+                    color="#20166E"
+                    className="flex-none mt-[2px]"
+                  />
+                ) : (
+                  <MapPin
+                    size={18}
+                    color="#20166E"
+                    className="flex-none mt-[2px]"
+                  />
+                )}
                 <Box>
                   <Typography
                     className={`${fontClassName.className} ${ordersDetailClasses.infoTitle.mobile}`}
                   >
                     {order.userName || t('deliverTo')}
                   </Typography>
-                  <Typography
-                    className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
-                  >
-                    {order.deliveryAddress}
-                  </Typography>
+                  {deliveryLines.map((line) => (
+                    <Typography
+                      key={line}
+                      className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
+                    >
+                      {line}
+                    </Typography>
+                  ))}
                   <Typography
                     className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
                   >
                     {order.deliveryPhone}
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
+                  >
+                    {t('delivery')}: {deliveryFeeLabel}
                   </Typography>
                 </Box>
               </Box>
@@ -528,8 +561,12 @@ export default function OrderDetailPage() {
                     className={`${fontClassName.className} ${ordersDetailClasses.web.totalsRow}`}
                   >
                     <span>{t('delivery')}</span>
-                    <span className={ordersDetailClasses.web.free}>
-                      {t('free')}
+                    <span
+                      className={
+                        isPickup ? ordersDetailClasses.web.free : undefined
+                      }
+                    >
+                      {deliveryFeeLabel}
                     </span>
                   </Box>
                   <Box className={ordersDetailClasses.web.grandRow}>
@@ -551,7 +588,11 @@ export default function OrderDetailPage() {
               <Box className={ordersDetailClasses.web.sideCol}>
                 <Box className={ordersDetailClasses.web.card}>
                   <Box className={ordersDetailClasses.web.sideHead}>
-                    <MapPin className={ordersDetailClasses.web.sideIcon} />
+                    {isPickup ? (
+                      <Store className={ordersDetailClasses.web.sideIcon} />
+                    ) : (
+                      <MapPin className={ordersDetailClasses.web.sideIcon} />
+                    )}
                     <Typography
                       className={`${fontClassName.className} ${ordersDetailClasses.web.sideTitle}`}
                     >
@@ -565,11 +606,14 @@ export default function OrderDetailPage() {
                       {order.userName}
                     </Typography>
                   )}
-                  <Typography
-                    className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
-                  >
-                    {order.deliveryAddress}
-                  </Typography>
+                  {deliveryLines.map((line) => (
+                    <Typography
+                      key={line}
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.sideText}`}
+                    >
+                      {line}
+                    </Typography>
+                  ))}
                   <Typography
                     className={`${fontClassName.className} ${ordersDetailClasses.web.sideMuted}`}
                   >

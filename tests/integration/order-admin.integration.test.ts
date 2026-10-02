@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
 import { createStaffPrincipal } from './shared/staff-token';
@@ -147,6 +147,118 @@ describe('Admin order API (integration)', () => {
     expect(badAction.res._getStatusCode()).toBe(400);
 
     await prisma.userOrder.delete({ where: { id: order.id } });
+    await prisma.user.delete({ where: { id: admin.userId } });
+  });
+
+  it('ADMIN sets the delivery price on top of the charged total', async () => {
+    const buyer = await signupTestUser('adm-ord-delivery');
+    const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const detailHandler = (await import('@/pages/api/order/admin/[id].page'))
+      .default;
+
+    const makeOrder = (
+      deliveryMethod: 'PICKUP' | 'DELIVERY',
+      totalPrice = '50.00',
+    ) =>
+      prisma.userOrder.create({
+        data: {
+          orderNumber: `ORD-INTDLV-${Date.now()}-${Math.random()}`,
+          userId: buyer.userId,
+          totalPrice,
+          deliveryAddress: deliveryMethod === 'PICKUP' ? 'PICKUP' : 'Main st 1',
+          deliveryPhone: '+99361000002',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                quantity: 2,
+                productName: '{"en":"P"}',
+                productPrice: '25',
+                productId,
+              },
+            ],
+          },
+        },
+      });
+
+    const setPrice = async (orderId: string, deliveryPrice: unknown) => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        url: '/api/order/admin/x',
+        headers: { authorization: `Bearer ${admin.accessToken}` },
+        query: { id: orderId, action: 'delivery-price' },
+        body: { deliveryPrice },
+      });
+      await detailHandler(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      return res;
+    };
+    const dataOf = (res: Awaited<ReturnType<typeof setPrice>>) =>
+      JSON.parse(res._getData() as string).data;
+
+    const delivery = await makeOrder('DELIVERY');
+
+    const first = await setPrice(delivery.id, 15);
+    expect(first._getStatusCode()).toBe(200);
+    expect(dataOf(first)).toMatchObject({
+      deliveryPrice: '15.00',
+      totalPrice: '65.00',
+    });
+    // The fee line stays out of the product items
+    expect(dataOf(first).items).toHaveLength(1);
+
+    const replaced = await setPrice(delivery.id, '10.5');
+    expect(replaced._getStatusCode()).toBe(200);
+    expect(dataOf(replaced).totalPrice).toBe('60.50');
+
+    // Unchanged price: no extra notice
+    expect((await setPrice(delivery.id, 10.5))._getStatusCode()).toBe(200);
+
+    // Free delivery is a real answer, distinct from "not set yet"
+    const free = await setPrice(delivery.id, 0);
+    expect(dataOf(free)).toMatchObject({
+      deliveryPrice: '0.00',
+      totalPrice: '50.00',
+    });
+
+    await vi.waitFor(async () => {
+      const notices = await prisma.inAppNotification.findMany({
+        where: { userId: buyer.userId, orderId: delivery.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(notices.map((n) => n.content)).toEqual([
+        expect.stringContaining('15.00 TMT'),
+        expect.stringContaining('10.50 TMT'),
+        expect.stringContaining('0.00 TMT'),
+      ]);
+    });
+
+    expect((await setPrice(delivery.id, -5))._getStatusCode()).toBe(400);
+
+    // The fee goes on top of what was charged, not a recomputed subtotal
+    const offSnapshot = await makeOrder('DELIVERY', '51.00');
+    expect(dataOf(await setPrice(offSnapshot.id, 15)).totalPrice).toBe('66.00');
+
+    const pickup = await makeOrder('PICKUP');
+    expect((await setPrice(pickup.id, 15))._getStatusCode()).toBe(400);
+
+    await prisma.userOrder.update({
+      where: { id: offSnapshot.id },
+      data: { status: 'COMPLETED' },
+    });
+    expect((await setPrice(offSnapshot.id, 20))._getStatusCode()).toBe(400);
+
+    await prisma.userOrder.update({
+      where: { id: delivery.id },
+      data: { status: 'ADMIN_CANCELLED' },
+    });
+    expect((await setPrice(delivery.id, 20))._getStatusCode()).toBe(400);
+
+    await prisma.userOrder.deleteMany({
+      where: { id: { in: [delivery.id, offSnapshot.id, pickup.id] } },
+    });
     await prisma.user.delete({ where: { id: admin.userId } });
   });
 
