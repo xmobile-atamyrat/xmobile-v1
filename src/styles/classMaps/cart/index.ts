@@ -9,7 +9,8 @@ export const cartIndexClasses = {
     mobile: 'flex w-full justify-between items-center mb-[20px]',
   },
   prodCart: {
-    mobile: 'flex flex-col grow w-full px-4 pt-[8px] pb-[70px]',
+    // paddingBottom set inline from the measured CheckoutSummary height
+    mobile: 'flex flex-col grow w-full px-4 pt-[8px]',
   },
   link: 'flex flex-row justify-center items-center gap-1 py-2 no-underline mx-2',
   iconButton: {

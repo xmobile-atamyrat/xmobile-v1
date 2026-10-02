@@ -40,6 +40,7 @@ interface LayoutProps {
   handleHeaderBackButton?: () => void;
   showHomeHeader?: boolean;
   onHomeFilterClick?: () => void;
+  mobileChatFabBottom?: number;
 }
 
 export default function Layout({
@@ -47,6 +48,7 @@ export default function Layout({
   handleHeaderBackButton,
   showHomeHeader = false,
   onHomeFilterClick,
+  mobileChatFabBottom,
 }: LayoutProps) {
   const [editCategoriesModal, setEditCategoriesModal] =
     useState<EditCategoriesProps>({ open: false });
@@ -222,7 +224,7 @@ export default function Layout({
           </Typography>
         </Box>
       </Snackbar>
-      <ChatWidget />
+      <ChatWidget mobileFabBottom={mobileChatFabBottom} />
     </Box>
   );
 }

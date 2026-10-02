@@ -8,6 +8,10 @@ import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import { CartItemWithProduct } from '@/pages/lib/types';
 import { isCartLineOutOfStock } from '@/pages/lib/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  mobileBottomNavHeight,
+  mobileCheckoutBarHeight,
+} from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { computeProductPrice } from '@/pages/product/utils';
@@ -26,6 +30,7 @@ import {
 import { Color, Prices } from '@prisma/client';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
+import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -46,6 +51,9 @@ export default function CartPage() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
   const [showOutOfStockDialog, setShowOutOfStockDialog] = useState(false);
+  const [checkoutBarHeight, setCheckoutBarHeight] = useState(
+    mobileCheckoutBarHeight,
+  );
   const router = useRouter();
   const t = useTranslations();
   const fetchWithCreds = useFetchWithCreds();
@@ -265,7 +273,11 @@ export default function CartPage() {
       >
         {t('emptyCart')}
       </Typography>
-      <Link href="/" className={cartIndexClasses.emptyCart.link[platform]}>
+      <Link
+        component={NextLink}
+        href="/"
+        className={cartIndexClasses.emptyCart.link[platform]}
+      >
         <IconButton
           disableRipple
           className={`${cartIndexClasses.iconButton[platform]} ${fontClassName.className}`}
@@ -304,14 +316,22 @@ export default function CartPage() {
             maxItems={2}
             className={cartIndexClasses.breadcrumbs.web}
           >
-            <Link href="/" className={cartIndexClasses.link}>
+            <Link
+              component={NextLink}
+              href="/"
+              className={cartIndexClasses.link}
+            >
               <Typography
                 className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
               >
                 {t('home')}
               </Typography>
             </Link>
-            <Link href="/cart" className={cartIndexClasses.link}>
+            <Link
+              component={NextLink}
+              href="/cart"
+              className={cartIndexClasses.link}
+            >
               <Typography
                 className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
               >
@@ -361,21 +381,30 @@ export default function CartPage() {
   }
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout
+      handleHeaderBackButton={() => router.push('/')}
+      mobileChatFabBottom={
+        hasItems ? mobileBottomNavHeight + checkoutBarHeight + 16 : undefined
+      }
+    >
       <Box className={cartIndexClasses.box[platform]}>
         <Breadcrumbs
           separator="|"
           maxItems={2}
           className={cartIndexClasses.breadcrumbs[platform]}
         >
-          <Link href="/" className={cartIndexClasses.link}>
+          <Link component={NextLink} href="/" className={cartIndexClasses.link}>
             <Typography
               className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-regular`}
             >
               {t('home')}
             </Typography>
           </Link>
-          <Link href="/cart" className={cartIndexClasses.link}>
+          <Link
+            component={NextLink}
+            href="/cart"
+            className={cartIndexClasses.link}
+          >
             <Typography
               className={`${fontClassName.className} ${cartIndexClasses.breadcrumbsText} font-bold`}
             >
@@ -383,7 +412,12 @@ export default function CartPage() {
             </Typography>
           </Link>
         </Breadcrumbs>
-        <Box className={cartIndexClasses.prodCart.mobile}>
+        <Box
+          className={cartIndexClasses.prodCart.mobile}
+          sx={
+            hasItems ? { paddingBottom: `${checkoutBarHeight}px` } : undefined
+          }
+        >
           {hasItems ? (
             <Box className="flex flex-col">
               <Box className={cartIndexClasses.cartHeader.mobile}>
@@ -405,6 +439,7 @@ export default function CartPage() {
                 <CheckoutSummary
                   totalPrice={totalPrice}
                   onCheckoutClick={handleCheckoutClick}
+                  onBarHeightChange={setCheckoutBarHeight}
                 />
               </Box>
               {productCards}

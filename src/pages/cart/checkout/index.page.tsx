@@ -18,11 +18,9 @@ import {
   toLocalDigits,
 } from '@/pages/lib/phone';
 import {
-  getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { CartItemWithProduct } from '@/pages/lib/types';
@@ -74,6 +72,7 @@ import {
 } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
+import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -94,7 +93,6 @@ export default function CheckoutPage() {
   const { setCartCount } = useCartContext();
   const { promptNotifications } = useNotificationPrompt();
   const fetchWithCreds = useFetchWithCreds();
-  const { network } = useNetworkContext();
 
   const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
@@ -384,16 +382,6 @@ export default function CheckoutPage() {
 
   const getItemPrice = (item: CartItemWithProduct): number =>
     itemPrices[item.id] ?? 0;
-
-  // 52px order-summary thumbnails (web) — same tiered media path the cards use
-  const summaryThumbSrc = (raw: string | undefined) => {
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
-  };
 
   // Shared field style — hairline border, navy focus, ink text (design tokens).
   // Web uses the mockup's compact 48px/15px field (spec 1621) rather than the
@@ -727,14 +715,14 @@ export default function CheckoutPage() {
       <Layout handleHeaderBackButton={() => router.push('/cart')}>
         <Box className={cls.web.page}>
           <Breadcrumbs separator="|" className={cls.breadcrumbs.web}>
-            <Link href="/" className="no-underline">
+            <Link component={NextLink} href="/" className="no-underline">
               <Typography
                 className={`${fc} ${cartIndexClasses.breadcrumbsText} font-regular`}
               >
                 {t('home')}
               </Typography>
             </Link>
-            <Link href="/cart" className="no-underline">
+            <Link component={NextLink} href="/cart" className="no-underline">
               <Typography
                 className={`${fc} ${cartIndexClasses.breadcrumbsText} font-regular`}
               >
@@ -918,7 +906,7 @@ export default function CheckoutPage() {
               </Typography>
               <Box className={cls.web.summaryItems}>
                 {cartItems.map((item) => {
-                  const thumb = summaryThumbSrc(item.product.imgUrls[0]);
+                  const thumb = productThumbnailUrl(item.product.imgUrls[0]);
                   return (
                     <Box key={item.id} className={cls.web.summaryItem}>
                       <Box className={cls.web.summaryThumb}>

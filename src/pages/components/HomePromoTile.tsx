@@ -1,10 +1,8 @@
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
-  getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -15,7 +13,7 @@ import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const cls = homePageClasses.promoTile;
 
@@ -32,21 +30,13 @@ interface HomePromoTileProps {
 export default function HomePromoTile({ product, tone }: HomePromoTileProps) {
   const t = useTranslations();
   const router = useRouter();
-  const { network } = useNetworkContext();
   const { accessToken } = useUserContext();
   const { setSelectedProduct } = useProductContext();
   const fetchWithCreds = useFetchWithCreds();
   const [price, setPrice] = useState<string | undefined>(undefined);
 
-  const imgSrc = useMemo(() => {
-    const raw = product.imgUrls[0];
-    if (raw == null) return PRODUCT_IMAGE_FALLBACK;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
-  }, [product.imgUrls, network]);
+  const imgSrc =
+    productThumbnailUrl(product.imgUrls[0]) ?? PRODUCT_IMAGE_FALLBACK;
 
   // Same price resolution as ProductCard: the list API ships "[id]{value}",
   // so this normally resolves from the payload without a second request.
