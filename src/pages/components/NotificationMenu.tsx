@@ -391,6 +391,7 @@ export default function NotificationMenu({
       PaperProps={{
         className: notificationClasses.menu.paper[platform],
       }}
+      MenuListProps={{ className: notificationClasses.menu.menuList }}
     >
       <Paper className={notificationClasses.menu.header[platform]}>
         <Typography
