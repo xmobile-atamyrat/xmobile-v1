@@ -386,6 +386,8 @@ export default function FilterSidebar({
           // `visible` to `auto`, that 1px would raise a full-width horizontal
           // scrollbar across the rail. The rail only ever scrolls vertically.
           overflowX: variant === 'sidebar' ? 'hidden' : 'visible',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
         {/* Spec 1447: "Filters" + red "Clear all". Mobile has the same pair in
