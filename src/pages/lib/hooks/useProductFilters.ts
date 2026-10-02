@@ -9,6 +9,7 @@ export interface FilterState {
   minPrice: string;
   maxPrice: string;
   sortBy: string;
+  inStock: boolean;
 }
 
 interface UseProductFiltersReturn {
@@ -36,6 +37,7 @@ export function useProductFilters(
     minPrice: '',
     maxPrice: '',
     sortBy: initialSortBy,
+    inStock: false,
   });
 
   const updateUrl = useCallback(
@@ -52,6 +54,7 @@ export function useProductFilters(
         'minPrice',
         'maxPrice',
         'sortBy',
+        'inStock',
         'page',
       ];
       knownKeys.forEach((key) => delete query[key]);
@@ -80,6 +83,7 @@ export function useProductFilters(
 
       if (newFilters.minPrice) query.minPrice = newFilters.minPrice;
       if (newFilters.maxPrice) query.maxPrice = newFilters.maxPrice;
+      if (newFilters.inStock) query.inStock = '1';
 
       if (newFilters.sortBy && newFilters.sortBy !== initialSortBy) {
         query.sortBy = newFilters.sortBy;
@@ -101,8 +105,15 @@ export function useProductFilters(
   useEffect(() => {
     if (!router.isReady) return;
 
-    const { categoryIds, brandIds, colorIds, minPrice, maxPrice, sortBy } =
-      router.query;
+    const {
+      categoryIds,
+      brandIds,
+      colorIds,
+      minPrice,
+      maxPrice,
+      sortBy,
+      inStock,
+    } = router.query;
 
     setFiltersState({
       categoryIds: normalizeQueryStringArray(categoryIds),
@@ -111,6 +122,7 @@ export function useProductFilters(
       minPrice: (minPrice as string) || '',
       maxPrice: (maxPrice as string) || '',
       sortBy: (sortBy as string) || initialSortBy,
+      inStock: inStock === '1',
     });
   }, [router.isReady, router.query, initialSortBy]);
 

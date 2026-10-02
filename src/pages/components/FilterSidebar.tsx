@@ -35,6 +35,7 @@ interface FilterSidebarProps {
   minPrice: string;
   maxPrice: string;
   sortBy?: string;
+  inStock?: boolean;
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
@@ -42,6 +43,7 @@ interface FilterSidebarProps {
     minPrice?: string;
     maxPrice?: string;
     sortBy?: string;
+    inStock?: boolean;
   }) => void;
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
@@ -122,6 +124,7 @@ export default function FilterSidebar({
   minPrice,
   maxPrice,
   sortBy,
+  inStock = false,
   onFilterChange,
   hideSections = [],
   variant = 'sidebar',
@@ -171,6 +174,7 @@ export default function FilterSidebar({
   );
   const [sortByOpen, setSortByOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
+  const [availabilityOpen, setAvailabilityOpen] = useState(true);
 
   // Sync with prop changes (e.g. Mode switch)
   useEffect(() => {
@@ -223,6 +227,7 @@ export default function FilterSidebar({
       brandIds: [],
       colorIds: [],
       sortBy: SORT_OPTIONS.NEWEST,
+      inStock: false,
     });
   };
 
@@ -400,6 +405,19 @@ export default function FilterSidebar({
             </Typography>
           </Box>
         )}
+
+        <FilterSection
+          title={t('availability')}
+          open={availabilityOpen}
+          onToggle={() => setAvailabilityOpen(!availabilityOpen)}
+          variant={variant}
+        >
+          <FilterItem
+            label={t('inStockOnly')}
+            isSelected={inStock}
+            onClick={() => onFilterChange({ inStock: !inStock })}
+          />
+        </FilterSection>
 
         {!hideSections.includes('categories') && (
           <FilterSection

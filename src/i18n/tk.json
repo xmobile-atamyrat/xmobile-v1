@@ -644,6 +644,8 @@
   "selectCategory": "Kategoriýa saýlaň",
   "categoryRequired": "Haýyş, kategoriýa saýlaň",
   "outOfStockOnly": "Diňe gutaranlar",
+  "availability": "Elýeterlilik",
+  "inStockOnly": "Diňe barlar",
   "productsUpdated": "Harytlar üstünlikli täzelendi!",
   "updateProductsError": "Harytlary täzeläp bolmady",
   "allBrands": "Ähli brendler",

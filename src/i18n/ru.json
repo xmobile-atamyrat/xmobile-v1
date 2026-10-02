@@ -644,6 +644,8 @@
   "selectCategory": "Выберите категорию",
   "categoryRequired": "Пожалуйста, выберите категорию",
   "outOfStockOnly": "Только нет в наличии",
+  "availability": "Наличие",
+  "inStockOnly": "Только в наличии",
   "productsUpdated": "Товары успешно обновлены!",
   "updateProductsError": "Не удалось обновить товары.",
   "allBrands": "Все бренды",

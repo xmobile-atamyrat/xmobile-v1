@@ -642,6 +642,8 @@
   "selectCategory": "Select a category",
   "categoryRequired": "Please select a category",
   "outOfStockOnly": "Out of stock only",
+  "availability": "Availability",
+  "inStockOnly": "In stock only",
   "productsUpdated": "Products updated successfully!",
   "updateProductsError": "Could not update products.",
   "allBrands": "All brands",
