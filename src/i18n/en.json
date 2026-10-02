@@ -290,7 +290,6 @@
   "shipping": "Shipping",
   "review": "Review",
   "delivery": "Delivery",
-  "standardDelivery": "Standard delivery",
   "nationwideDelivery": "Nationwide delivery",
   "viewAll": "View all",
   "shopByCategory": "Shop by category",
@@ -672,5 +671,19 @@
   "pricesAssigned": "Prices moved to the rate",
   "assignPricesError": "Could not move the prices",
   "confirmDefaultRateRecalculate": "Recalculate {count, plural, one {the # price} other {all # prices}} at this rate? Every price moves back to the default rate.",
-  "invalidPhoneNumber": "Enter a valid number: {digits} digits after {dial}"
+  "invalidPhoneNumber": "Enter a valid number: {digits} digits after {dial}",
+  "deliveryMethod": "Delivery method",
+  "pickupYourself": "Pick up yourself",
+  "pickupYourselfSub": "Collect your order from our store",
+  "courierDelivery": "Delivery to your address",
+  "deliveryWithinDays": "You'll get your order within {days} days at most",
+  "deliveryPriceSetByManager": "The delivery price is set by our manager and added to your total",
+  "deliveryPriceToBeConfirmed": "To be confirmed",
+  "contactDetails": "Contact details",
+  "setDeliveryPrice": "Set delivery price",
+  "deliveryPrice": "Delivery price",
+  "deliveryPriceUpdated": "Delivery price updated",
+  "updateDeliveryPriceError": "Failed to update the delivery price",
+  "deliveryPriceHint": "Added to the items subtotal ({subtotal} TMT). Saving again replaces the previous price.",
+  "deliveryChosenAtCheckout": "Chosen at checkout"
 }

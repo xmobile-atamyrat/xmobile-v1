@@ -80,9 +80,9 @@ export default function CheckoutSummary({
                   {t('delivery')}
                 </Typography>
                 <Typography
-                  className={`${fontClassName.className} ${cartCheckoutClasses.web.rowFree}`}
+                  className={`${fontClassName.className} ${cartCheckoutClasses.web.rowValue}`}
                 >
-                  {t('free')}
+                  {t('deliveryChosenAtCheckout')}
                 </Typography>
               </Box>
             </Box>

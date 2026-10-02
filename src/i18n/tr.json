@@ -318,7 +318,6 @@
   "shipping": "Kargo",
   "review": "İnceleme",
   "delivery": "Teslimat",
-  "standardDelivery": "Standart teslimat",
   "nationwideDelivery": "Ülke geneline teslimat",
   "viewAll": "Tümünü gör",
   "shopByCategory": "Kategoriye göre alışveriş",
@@ -672,5 +671,19 @@
   "pricesAssigned": "Fiyatlar kura taşındı",
   "assignPricesError": "Fiyatlar taşınamadı",
   "confirmDefaultRateRecalculate": "Tüm {count} fiyat bu kura göre yeniden hesaplansın mı? Tüm fiyatlar varsayılan kura döner.",
-  "invalidPhoneNumber": "Geçerli bir numara girin: {dial} sonrası {digits} rakam"
+  "invalidPhoneNumber": "Geçerli bir numara girin: {dial} sonrası {digits} rakam",
+  "deliveryMethod": "Teslimat yöntemi",
+  "pickupYourself": "Mağazadan teslim al",
+  "pickupYourselfSub": "Siparişinizi mağazamızdan teslim alın",
+  "courierDelivery": "Adrese teslimat",
+  "deliveryWithinDays": "Siparişiniz en geç {days} gün içinde elinize ulaşır",
+  "deliveryPriceSetByManager": "Teslimat ücretini yöneticimiz belirler ve toplam tutara ekler",
+  "deliveryPriceToBeConfirmed": "Belirlenecek",
+  "contactDetails": "İletişim bilgileri",
+  "setDeliveryPrice": "Teslimat ücretini belirle",
+  "deliveryPrice": "Teslimat ücreti",
+  "deliveryPriceUpdated": "Teslimat ücreti güncellendi",
+  "updateDeliveryPriceError": "Teslimat ücreti güncellenemedi",
+  "deliveryPriceHint": "Ürün tutarına ({subtotal} TMT) eklenir. Yeni değer öncekinin yerine geçer.",
+  "deliveryChosenAtCheckout": "Siparişte seçilir"
 }

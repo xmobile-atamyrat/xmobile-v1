@@ -2,6 +2,13 @@ import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import {
+  deliveryFeeLabel,
+  isClosedOrder,
+  isPickupOrder,
+  orderDeliveryFee,
+  orderItemsSubtotal,
+} from '@/pages/lib/orderDelivery';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -29,11 +36,13 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import OrderStatusBadge from './components/OrderStatusBadge';
+import UpdateDeliveryPriceDialog from './components/UpdateDeliveryPriceDialog';
 import UpdateNotesDialog from './components/UpdateNotesDialog';
 import UpdateStatusDialog from './components/UpdateStatusDialog';
 import {
   getOrderDetail,
   updateAdminNotes,
+  updateDeliveryPrice,
   updateOrderStatus,
 } from './lib/apiUtils';
 
@@ -76,6 +85,7 @@ export default function UserOrderDetailPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [deliveryPriceDialogOpen, setDeliveryPriceDialogOpen] = useState(false);
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return '-';
@@ -188,6 +198,23 @@ export default function UserOrderDetailPage() {
     }
   };
 
+  const handleDeliveryPriceUpdate = async (deliveryPrice: number) => {
+    if (!accessToken || !id || typeof id !== 'string' || !order) return false;
+
+    const updated = await updateDeliveryPrice({
+      accessToken,
+      orderId: id,
+      deliveryPrice,
+      fetchWithCreds,
+      setSnackbarMessage,
+      setSnackbarOpen,
+    });
+
+    if (!updated) return false;
+    await fetchOrder();
+    return true;
+  };
+
   if (loading) {
     return (
       <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
@@ -228,6 +255,10 @@ export default function UserOrderDetailPage() {
     );
   }
 
+  const isPickup = isPickupOrder(order);
+  const itemsSubtotal = orderItemsSubtotal(order.items);
+  const canSetDeliveryPrice = !isPickup && !isClosedOrder(order);
+
   return (
     <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
       {['ADMIN', 'SUPERUSER'].includes(user?.grade) && (
@@ -267,6 +298,15 @@ export default function UserOrderDetailPage() {
               >
                 {t('updateNotes')}
               </Button>
+              {canSetDeliveryPrice && (
+                <Button
+                  variant="outlined"
+                  onClick={() => setDeliveryPriceDialogOpen(true)}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {t('setDeliveryPrice')}
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -323,14 +363,28 @@ export default function UserOrderDetailPage() {
               <Typography
                 className={`${fontClassName.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
               >
-                {t('deliveryAddress')}:
+                {t('deliveryMethod')}:
               </Typography>
               <Typography
                 className={`${fontClassName.className} ${userOrdersDetailClasses.infoValue[platform]}`}
               >
-                {order.deliveryAddress}
+                {isPickup ? t('pickupYourself') : t('courierDelivery')}
               </Typography>
             </Box>
+            {!isPickup && (
+              <Box className={userOrdersDetailClasses.infoRow[platform]}>
+                <Typography
+                  className={`${fontClassName.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
+                >
+                  {t('deliveryAddress')}:
+                </Typography>
+                <Typography
+                  className={`${fontClassName.className} ${userOrdersDetailClasses.infoValue[platform]}`}
+                >
+                  {order.deliveryAddress}
+                </Typography>
+              </Box>
+            )}
             <Box className={userOrdersDetailClasses.infoRow[platform]}>
               <Typography
                 className={`${fontClassName.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
@@ -442,6 +496,30 @@ export default function UserOrderDetailPage() {
                   })}
                   <TableRow>
                     <TableCell colSpan={3}>
+                      <Typography className={fontClassName.className}>
+                        {t('subtotal')}:
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography className={fontClassName.className}>
+                        {itemsSubtotal.toFixed(2)} TMT
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      <Typography className={fontClassName.className}>
+                        {t('deliveryPrice')}:
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography className={fontClassName.className}>
+                        {deliveryFeeLabel(order, t)}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={3}>
                       <Typography
                         className={fontClassName.className}
                         fontWeight={600}
@@ -551,6 +629,14 @@ export default function UserOrderDetailPage() {
             onClose={() => setNotesDialogOpen(false)}
             onSubmit={handleNotesUpdate}
             currentNotes={order.adminNotes}
+          />
+
+          <UpdateDeliveryPriceDialog
+            open={deliveryPriceDialogOpen}
+            onClose={() => setDeliveryPriceDialogOpen(false)}
+            onSubmit={handleDeliveryPriceUpdate}
+            subtotal={itemsSubtotal}
+            currentPrice={orderDeliveryFee(order)}
           />
 
           <Snackbar

@@ -207,3 +207,51 @@ export async function updateAdminNotes({
     return null;
   }
 }
+
+export async function updateDeliveryPrice({
+  accessToken,
+  orderId,
+  deliveryPrice,
+  fetchWithCreds,
+  setSnackbarMessage,
+  setSnackbarOpen,
+}: {
+  accessToken: string;
+  orderId: string;
+  deliveryPrice: number;
+  fetchWithCreds: FetchWithCredsType;
+  setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
+  setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
+}): Promise<UserOrder | null> {
+  try {
+    const { success, data, message } = await fetchWithCreds<UserOrder>({
+      accessToken,
+      path: `/api/order/admin/${orderId}?action=delivery-price`,
+      method: 'PUT',
+      body: { deliveryPrice },
+    });
+
+    if (success && data) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({
+        message: 'deliveryPriceUpdated',
+        severity: 'success',
+      });
+      return data;
+    }
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: message || 'updateDeliveryPriceError',
+      severity: 'error',
+    });
+    return null;
+  } catch (error) {
+    console.error('Error updating delivery price:', error);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'updateDeliveryPriceError',
+      severity: 'error',
+    });
+    return null;
+  }
+}

@@ -292,7 +292,6 @@
   "shipping": "Eltip bermek",
   "review": "Barlamak",
   "delivery": "Dostawka",
-  "standardDelivery": "Obiçno dostawka",
   "nationwideDelivery": "Ýurt boýunça eltip bermek",
   "viewAll": "Hemmäsini görmek",
   "shopByCategory": "Kategoriýa boýunça",
@@ -674,5 +673,19 @@
   "pricesAssigned": "Praýslar kursa geçirildi",
   "assignPricesError": "Praýslary kursa geçirilip bilmedi",
   "confirmDefaultRateRecalculate": "Hemmä {count} praýslar şu kurs boýunça tazaldan hasaplansynmy? Hemmä bahalar osnownoý kursa geçedi.",
-  "invalidPhoneNumber": "Dogry nomer girkiziň: {dial} kodundan soň {digits} san"
+  "invalidPhoneNumber": "Dogry nomer girkiziň: {dial} kodundan soň {digits} san",
+  "deliveryMethod": "Alyş usuly",
+  "pickupYourself": "Samowywoz",
+  "pickupYourselfSub": "Zakazyňyzy magazinimizden alyp gidiň",
+  "courierDelivery": "Adresiňize dostawka",
+  "deliveryWithinDays": "Zakazyňyzy iň köp {days} günde alarsyňyz",
+  "deliveryPriceSetByManager": "Dostawkanyň bahasyny menejer kesgitläp, opşi baha goşar",
+  "deliveryPriceToBeConfirmed": "Anyklanýar",
+  "contactDetails": "Kontakt maglumatlar",
+  "setDeliveryPrice": "Dostawka bahasyny bellemek",
+  "deliveryPrice": "Dostawka bahasy",
+  "deliveryPriceUpdated": "Dostawka bahasy tazalandy",
+  "updateDeliveryPriceError": "Dostawka bahasyny tazalap bolmady",
+  "deliveryPriceHint": "Harytlaryň bahasyna ({subtotal} TMT) goşulýar. Täze baha öňkisini çalyşýar.",
+  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar"
 }

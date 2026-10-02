@@ -292,7 +292,6 @@
   "shipping": "Eltip bermek",
   "review": "Barlamak",
   "delivery": "Eltip bermek",
-  "standardDelivery": "Adaty eltip bermek",
   "nationwideDelivery": "Ýurt boýunça eltip bermek",
   "viewAll": "Ählisini görmek",
   "shopByCategory": "Kategoriýa boýunça",
@@ -674,5 +673,19 @@
   "pricesAssigned": "Bahalar kursa geçirildi",
   "assignPricesError": "Bahalar geçirilmedi",
   "confirmDefaultRateRecalculate": "Ähli {count} baha şu kurs boyúna täzeden hasaplansynmy? Ähli bahalar esasy kursa gaýdyp geler.",
-  "invalidPhoneNumber": "Dogry belgi giriziň: {dial} kodundan soň {digits} san"
+  "invalidPhoneNumber": "Dogry belgi giriziň: {dial} kodundan soň {digits} san",
+  "deliveryMethod": "Alyş usuly",
+  "pickupYourself": "Özüňiz alyp gitmek",
+  "pickupYourselfSub": "Sargydyňyzy dükanymyzdan alyp gidiň",
+  "courierDelivery": "Salgyňyza eltip bermek",
+  "deliveryWithinDays": "Sargydyňyzy iň köp {days} günüň dowamynda alarsyňyz",
+  "deliveryPriceSetByManager": "Eltip bermegiň bahasyny menejerimiz kesgitläp, jemi baha goşar",
+  "deliveryPriceToBeConfirmed": "Anyklanýar",
+  "contactDetails": "Habarlaşmak üçin maglumatlar",
+  "setDeliveryPrice": "Eltip bermegiň bahasyny bellemek",
+  "deliveryPrice": "Eltip bermegiň bahasy",
+  "deliveryPriceUpdated": "Eltip bermegiň bahasy täzelendi",
+  "updateDeliveryPriceError": "Eltip bermegiň bahasyny täzeläp bolmady",
+  "deliveryPriceHint": "Harytlaryň bahasyna ({subtotal} TMT) goşulýar. Täze baha öňkini çalyşýar.",
+  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar"
 }
