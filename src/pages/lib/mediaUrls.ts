@@ -48,8 +48,24 @@ export function getBannerMediaUrl(
   return `/media/banner/${encodeURIComponent(base)}`;
 }
 
-/** Grids / cards: bad when slow or unknown; good when fast. */
-export function tierForProductList(
+/**
+ * Cards and line items never render wider than ~260 CSS px, so the 600px tier
+ * already covers 2x screens. The full-width tier was 4x oversized there.
+ */
+export const PRODUCT_THUMBNAIL_TIER: ProductMediaTier = 'bad';
+
+export function productThumbnailUrl(
+  storedPath: string | null | undefined,
+): string | undefined {
+  if (storedPath == null) return undefined;
+  return (
+    getProductMediaUrl(PRODUCT_THUMBNAIL_TIER, storedPath) ??
+    PRODUCT_IMAGE_FALLBACK
+  );
+}
+
+/** Product page gallery: bad when slow or unknown; good when fast. */
+export function tierForProductGallery(
   network: 'slow' | 'fast' | 'unknown',
 ): 'bad' | 'good' {
   return network === 'fast' ? 'good' : 'bad';

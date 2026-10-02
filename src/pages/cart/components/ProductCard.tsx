@@ -1,10 +1,8 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
-  getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import VariantBadge from '@/pages/components/VariantBadge';
@@ -19,7 +17,7 @@ import { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // next/dynamic (not React.lazy) so the chunk suspends inside its own boundary
 // rather than relying on an ancestor <Suspense> that may not be there.
@@ -48,7 +46,6 @@ export default function CartProductCard({
   const t = useTranslations();
   const router = useRouter();
   const { setSelectedProduct } = useProductContext();
-  const { network } = useNetworkContext();
   const platform = usePlatform();
   const [categoryName, setCategoryName] = useState<string | null>(null);
 
@@ -71,13 +68,7 @@ export default function CartProductCard({
     };
   }, [product?.categoryId]);
 
-  const cardImageSrc = useMemo(() => {
-    const raw = product?.imgUrls[0];
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    const tier = tierForProductList(network);
-    return getProductMediaUrl(tier, raw) ?? PRODUCT_IMAGE_FALLBACK;
-  }, [product?.imgUrls, network]);
+  const cardImageSrc = productThumbnailUrl(product?.imgUrls[0]);
 
   return (
     <Box>

@@ -35,7 +35,11 @@ import { useEffect, useState } from 'react';
 import ChatSessionList from './ChatSessionList';
 import ChatWindow from './ChatWindow';
 
-const ChatWidget = () => {
+interface ChatWidgetProps {
+  mobileFabBottom?: number;
+}
+
+const ChatWidget = ({ mobileFabBottom }: ChatWidgetProps) => {
   const { user } = useUserContext();
   const platform = usePlatform();
   const t = useTranslations();
@@ -330,6 +334,11 @@ const ChatWidget = () => {
         aria-label="chat"
         onClick={handleToggle}
         className={chatClasses.widget.fab[platform]}
+        style={
+          platform === 'mobile' && mobileFabBottom != null
+            ? { bottom: mobileFabBottom }
+            : undefined
+        }
         sx={{
           backgroundColor: navy,
           color: 'white',

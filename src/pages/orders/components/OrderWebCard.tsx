@@ -1,9 +1,4 @@
-import {
-  getProductMediaUrl,
-  PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
-} from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { productThumbnailUrl } from '@/pages/lib/mediaUrls';
 import { formatDate } from '@/pages/orders/lib/utils';
 import { UserOrderWithItems } from '@/pages/orders/lib/apiUtils';
 import { ordersComponentClasses } from '@/styles/classMaps/orders/components';
@@ -29,21 +24,10 @@ const MAX_THUMBS = 3;
 export default function OrderWebCard({ order }: { order: UserOrderWithItems }) {
   const router = useRouter();
   const t = useTranslations();
-  const { network } = useNetworkContext();
 
   const items = order.items ?? [];
   const shown = items.slice(0, MAX_THUMBS);
   const overflow = items.length - shown.length;
-
-  // Same tiered media path the product cards use.
-  const thumbSrc = (raw: string | undefined) => {
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
-  };
 
   const openDetail = () => router.push(`/orders/${order.id}`);
 
@@ -65,7 +49,7 @@ export default function OrderWebCard({ order }: { order: UserOrderWithItems }) {
       <Box className={ordersComponentClasses.webCard.foot}>
         <Box className={ordersComponentClasses.webCard.thumbs}>
           {shown.map((item) => {
-            const thumb = thumbSrc(item.product?.imgUrls?.[0]);
+            const thumb = productThumbnailUrl(item.product?.imgUrls?.[0]);
             return (
               <Box
                 key={item.id}

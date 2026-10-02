@@ -2,11 +2,9 @@ import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import {
-  getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -49,7 +47,6 @@ export default function CheckoutSuccessPage() {
   const router = useRouter();
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
-  const { network } = useNetworkContext();
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
   const orderNumber = order?.orderNumber ?? null;
 
@@ -87,16 +84,6 @@ export default function CheckoutSuccessPage() {
       }
     })();
   }, [user, accessToken, fetchWithCreds]);
-
-  // 52px item thumbnails — same tiered media path the cards use
-  const thumbSrc = (raw: string | undefined) => {
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
-  };
 
   const items = order?.items ?? [];
   const subtotal = items.reduce(
@@ -143,7 +130,7 @@ export default function CheckoutSuccessPage() {
                 {t('orderSummary')}
               </Typography>
               {items.map((item) => {
-                const thumb = thumbSrc(item.product?.imgUrls?.[0]);
+                const thumb = productThumbnailUrl(item.product?.imgUrls?.[0]);
                 const lineTotal =
                   (parseFloat(item.productPrice) || 0) * item.quantity;
                 return (

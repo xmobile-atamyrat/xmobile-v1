@@ -4,12 +4,7 @@ import VariantBadge from '@/pages/components/VariantBadge';
 import { appBarHeight } from '@/pages/lib/constants';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
-import {
-  getProductMediaUrl,
-  PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
-} from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
+import { productThumbnailUrl } from '@/pages/lib/mediaUrls';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
@@ -58,7 +53,6 @@ export default function OrderDetailPage() {
   const t = useTranslations();
   const platform = usePlatform();
 
-  const { network } = useNetworkContext();
   const [order, setOrder] = useState<UserOrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -188,16 +182,6 @@ export default function OrderDetailPage() {
 
   const handleBackButton = () => {
     router.push('/orders');
-  };
-
-  // Same tiered media path the product cards use.
-  const thumbSrc = (raw: string | undefined) => {
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
   };
 
   // The loaded view's header, also shown while loading and on "not found" so
@@ -485,7 +469,7 @@ export default function OrderDetailPage() {
                   {t('orderedItems')} ({items.length})
                 </Typography>
                 {items.map((item) => {
-                  const thumb = thumbSrc(item.product?.imgUrls?.[0]);
+                  const thumb = productThumbnailUrl(item.product?.imgUrls?.[0]);
                   const lineTotal =
                     (parseFloat(item.productPrice) || 0) * item.quantity;
                   return (

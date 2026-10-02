@@ -25,7 +25,7 @@ import {
   getAbsoluteProductMediaUrl,
   getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  tierForProductGallery,
 } from '@/pages/lib/mediaUrls';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -303,7 +303,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
 
   const displayImgUrls = useMemo(() => {
     if (!product?.imgUrls?.length) return [];
-    const tier = tierForProductList(network);
+    const tier = tierForProductGallery(network);
     return product.imgUrls.map((u) =>
       u.startsWith('http') ? u : getProductMediaUrl(tier, u) ?? u,
     );
