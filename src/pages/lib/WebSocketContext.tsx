@@ -28,7 +28,11 @@ export const useWebSocketContext = () => useContext(WebSocketContext);
 // server's ping frames are answered below the page, so only an app-level
 // round trip lets the client notice.
 export const HEARTBEAT_INTERVAL_MS = 25_000;
-export const HEARTBEAT_TIMEOUT_MS = 10_000;
+export const HEARTBEAT_TIMEOUT_MS = 20_000;
+// A handshake whose packets are silently dropped stays CONNECTING until the
+// browser gives up, which can take minutes.
+export const CONNECT_TIMEOUT_MS = 15_000;
+export const MAX_RECONNECT_DELAY_MS = 30_000;
 
 export const WebSocketContextProvider = ({
   children,
@@ -120,8 +124,11 @@ export const WebSocketContextProvider = ({
     try {
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
+      let serverAnswersPing = false;
+      let connectTimeout: NodeJS.Timeout | undefined;
 
       const handleClose = (code: number, reason: string) => {
+        clearTimeout(connectTimeout);
         stopHeartbeat();
         console.log('WebSocket disconnected', code, reason);
         setIsConnected(false);
@@ -132,11 +139,13 @@ export const WebSocketContextProvider = ({
           return;
         }
 
-        // Exponential backoff reconnection
-        const delay = Math.min(
+        // Exponential backoff with jitter, so clients don't all return at once
+        // when the server comes back.
+        const backoff = Math.min(
           1000 * 2 ** reconnectAttemptsRef.current,
-          30000, // Max 30 seconds
+          MAX_RECONNECT_DELAY_MS,
         );
+        const delay = Math.round(backoff * (0.5 + Math.random() * 0.5));
         reconnectAttemptsRef.current += 1;
 
         console.log(
@@ -150,7 +159,23 @@ export const WebSocketContextProvider = ({
         }, delay);
       };
 
+      // Detach first: close() on a dead socket can take minutes to fire
+      // onclose, and connect() refuses while wsRef still holds it.
+      const abandon = (reason: string) => {
+        if (wsRef.current !== socket) return;
+        wsRef.current = null;
+        socket.close();
+        handleClose(4000, reason);
+      };
+
+      connectTimeout = setTimeout(() => {
+        if (socket.readyState === WebSocket.CONNECTING) {
+          abandon('Connect timeout');
+        }
+      }, CONNECT_TIMEOUT_MS);
+
       socket.onopen = () => {
+        clearTimeout(connectTimeout);
         console.log('WebSocket connected');
         setIsConnected(true);
         reconnectAttemptsRef.current = 0; // Reset on successful connection
@@ -162,12 +187,10 @@ export const WebSocketContextProvider = ({
           }
           socket.send(JSON.stringify({ type: 'ping' }));
           pongTimeoutRef.current = setTimeout(() => {
-            if (wsRef.current !== socket) return;
-            // Detach first: close() on a half-open socket can take minutes
-            // to fire onclose, and connect() refuses while wsRef looks OPEN.
-            wsRef.current = null;
-            socket.close();
-            handleClose(4000, 'Heartbeat timeout');
+            pongTimeoutRef.current = undefined;
+            // A server deployed without ping support never answers; dropping
+            // its sockets would only cause a reconnect loop.
+            if (serverAnswersPing) abandon('Heartbeat timeout');
           }, HEARTBEAT_TIMEOUT_MS);
         };
         probeRef.current = probe;
@@ -175,13 +198,17 @@ export const WebSocketContextProvider = ({
           probe,
           HEARTBEAT_INTERVAL_MS,
         );
+        probe();
       };
 
       socket.onmessage = (event) => {
         clearPongTimeout();
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'pong') return;
+          if (data.type === 'pong') {
+            serverAnswersPing = true;
+            return;
+          }
           notifySubscribers(data);
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err);

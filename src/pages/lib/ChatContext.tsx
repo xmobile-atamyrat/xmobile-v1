@@ -79,6 +79,8 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const sessionsRef = useRef<ChatSession[]>(sessions);
   const hasConnectedRef = useRef(false);
   const needsResyncRef = useRef(false);
+  const isAdminRef = useRef(false);
+  isAdminRef.current = !!user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
   useEffect(() => {
     sessionRef.current = currentSession;
@@ -99,7 +101,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     setIsSupportOnline(false);
   }, [user?.id]);
 
-  const loadSessions = useCallback(async () => {
+  const fetchSessions = useCallback(async (): Promise<ChatSession[] | null> => {
     try {
       const res = await fetch(`${BASE_URL}/api/chat/session`, {
         method: 'GET',
@@ -114,8 +116,13 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error(err);
     }
-    return [];
+    return null;
   }, [accessToken]);
+
+  const loadSessions = useCallback(
+    async () => (await fetchSessions()) ?? [],
+    [fetchSessions],
+  );
 
   const loadMessages = useCallback(
     async (sessionId: string, cursorId?: string) => {
@@ -270,15 +277,30 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // The server only relays to open sockets, so anything sent while we were
-    // disconnected is in the DB but was never pushed to us. Refetch the latest
-    // page after a reconnect; the history handler dedupes against what we have.
+    // disconnected is in the DB but was never pushed to us, including the
+    // session being closed. Reconcile the open session against a fresh list
+    // first (customers only get PENDING/ACTIVE back, so a missing session was
+    // closed), then refetch the latest page; the history handler dedupes.
     if (needsResyncRef.current) {
       needsResyncRef.current = false;
       const activeSession = sessionRef.current;
-      if (activeSession) {
+      fetchSessions().then((freshSessions) => {
+        if (!freshSessions || !activeSession) return;
+        if (sessionRef.current?.id !== activeSession.id) return;
+        const status =
+          freshSessions.find((s) => s.id === activeSession.id)?.status ??
+          'CLOSED';
+        if (status !== sessionRef.current.status) {
+          setCurrentSession((prev) =>
+            prev?.id === activeSession.id ? { ...prev, status } : prev,
+          );
+        }
+        if (status === 'CLOSED' && !isAdminRef.current) {
+          setMessages([]);
+          return;
+        }
         send({ type: 'get_messages', sessionId: activeSession.id });
-      }
-      loadSessions();
+      });
     }
     hasConnectedRef.current = true;
 
@@ -289,7 +311,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeSessionUpdate();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, subscribe, send, loadSessions]);
+  }, [isConnected, subscribe, send, loadSessions, fetchSessions]);
 
   const sendMessage = useCallback(
     (content: string) => {

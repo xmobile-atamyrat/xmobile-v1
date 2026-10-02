@@ -116,7 +116,18 @@ describe('ChatContextProvider', () => {
     expect(result.current.messages).toEqual([]);
   });
 
-  it('refetches the open session after the socket reconnects', () => {
+  const reconnect = async (rerender: () => void, whileOffline?: () => void) => {
+    wsState.isConnected = false;
+    rerender();
+    whileOffline?.();
+    mockSend.mockClear();
+    wsState.isConnected = true;
+    await act(async () => {
+      rerender();
+    });
+  };
+
+  it('refetches the open session after the socket reconnects', async () => {
     vi.stubGlobal('fetch', respondWith([session('s1')]));
     const { result, rerender } = renderHook(() => useChatContext(), {
       wrapper,
@@ -125,12 +136,65 @@ describe('ChatContextProvider', () => {
       result.current.setCurrentSession(session('s1'));
     });
 
-    wsState.isConnected = false;
-    rerender();
-    mockSend.mockClear();
-    wsState.isConnected = true;
-    rerender();
+    await reconnect(rerender);
 
+    expect(mockSend).toHaveBeenCalledWith({
+      type: 'get_messages',
+      sessionId: 's1',
+    });
+  });
+
+  it('marks the open session closed if it was closed while offline', async () => {
+    const { result, rerender } = renderHook(() => useChatContext(), {
+      wrapper,
+    });
+    act(() => {
+      result.current.setCurrentSession(session('s1'));
+      result.current.setMessages([
+        { type: 'message', messageId: 'm1', content: 'hi' } as never,
+      ]);
+    });
+
+    await reconnect(rerender, () => {
+      vi.stubGlobal('fetch', respondWith([]));
+    });
+
+    expect(result.current.currentSession?.status).toBe('CLOSED');
+    expect(result.current.messages).toEqual([]);
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it('keeps the open session when the resync request fails', async () => {
+    const { result, rerender } = renderHook(() => useChatContext(), {
+      wrapper,
+    });
+    act(() => {
+      result.current.setCurrentSession(session('s1'));
+    });
+
+    await reconnect(rerender, () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    });
+
+    expect(result.current.currentSession?.status).toBe('ACTIVE');
+  });
+
+  it('still reloads a closed session for an admin', async () => {
+    mockUseUserContext.mockReturnValue({
+      user: { id: 'admin', grade: 'ADMIN' },
+      accessToken: 'token-admin',
+    });
+    vi.stubGlobal('fetch', respondWith([session('s1', 'CLOSED')]));
+    const { result, rerender } = renderHook(() => useChatContext(), {
+      wrapper,
+    });
+    act(() => {
+      result.current.setCurrentSession(session('s1'));
+    });
+
+    await reconnect(rerender);
+
+    expect(result.current.currentSession?.status).toBe('CLOSED');
     expect(mockSend).toHaveBeenCalledWith({
       type: 'get_messages',
       sessionId: 's1',
