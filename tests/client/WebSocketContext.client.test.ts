@@ -11,6 +11,7 @@ vi.mock('@/pages/lib/UserContext', () => ({
 
 // eslint-disable-next-line import/first
 import {
+  CONNECT_TIMEOUT_MS,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_TIMEOUT_MS,
   useWebSocketContext,
@@ -82,6 +83,7 @@ describe('WebSocketContextProvider', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('ignores a stale reconnect from a socket superseded by a user switch', () => {
@@ -142,16 +144,16 @@ describe('WebSocketContextProvider', () => {
     renderHook(() => useWebSocketContext(), { wrapper });
 
     const failLatestAndWait = () => {
+      const before = createdSockets.length;
       act(() => {
-        createdSockets[createdSockets.length - 1].triggerClose(1006);
+        createdSockets[before - 1].triggerClose(1006);
       });
       act(() => {
         vi.advanceTimersByTime(30000);
       });
+      expect(createdSockets.length).toBeGreaterThan(before);
     };
     Array.from({ length: 8 }).forEach(failLatestAndWait);
-
-    expect(createdSockets).toHaveLength(9);
   });
 
   it('reconnects immediately when the browser comes back online', () => {
@@ -198,6 +200,46 @@ describe('WebSocketContextProvider', () => {
 
     expect(createdSockets).toHaveLength(1);
   });
+
+  it('gives up on a handshake that never completes', () => {
+    mockUseUserContext.mockReturnValue({
+      user: { id: 'user-a' },
+      accessToken: 'token-a',
+    });
+    renderHook(() => useWebSocketContext(), { wrapper });
+
+    act(() => {
+      vi.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+    });
+    expect(createdSockets[0].readyState).toBe(FakeWebSocket.CLOSING);
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(createdSockets).toHaveLength(2);
+  });
+
+  it('spreads reconnects out instead of retrying in lockstep', () => {
+    mockUseUserContext.mockReturnValue({
+      user: { id: 'user-a' },
+      accessToken: 'token-a',
+    });
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    renderHook(() => useWebSocketContext(), { wrapper });
+
+    act(() => {
+      createdSockets[0].triggerClose(1006);
+    });
+    act(() => {
+      vi.advanceTimersByTime(499);
+    });
+    expect(createdSockets).toHaveLength(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(createdSockets).toHaveLength(2);
+  });
+
   describe('heartbeat', () => {
     const openSocket = () => {
       mockUseUserContext.mockReturnValue({
@@ -212,26 +254,32 @@ describe('WebSocketContextProvider', () => {
     };
     const pings = (socket: { sentMessages: string[] }) =>
       socket.sentMessages.filter((m) => JSON.parse(m).type === 'ping');
+    const pong = () => {
+      act(() => {
+        createdSockets[0].onmessage({ data: JSON.stringify({ type: 'pong' }) });
+      });
+    };
 
-    it('pings the server on an interval', () => {
+    it('pings the server on open and then on an interval', () => {
       openSocket();
+      expect(pings(createdSockets[0])).toHaveLength(1);
+      pong();
 
       act(() => {
         vi.advanceTimersByTime(HEARTBEAT_INTERVAL_MS);
       });
 
-      expect(pings(createdSockets[0])).toHaveLength(1);
+      expect(pings(createdSockets[0])).toHaveLength(2);
     });
 
     it('keeps the socket when the server answers', () => {
       const { result } = openSocket();
+      pong();
 
       act(() => {
         vi.advanceTimersByTime(HEARTBEAT_INTERVAL_MS);
       });
-      act(() => {
-        createdSockets[0].onmessage({ data: JSON.stringify({ type: 'pong' }) });
-      });
+      pong();
       act(() => {
         vi.advanceTimersByTime(HEARTBEAT_TIMEOUT_MS);
       });
@@ -256,6 +304,7 @@ describe('WebSocketContextProvider', () => {
 
     it('drops a silent socket and reconnects', () => {
       const { result } = openSocket();
+      pong();
 
       act(() => {
         vi.advanceTimersByTime(HEARTBEAT_INTERVAL_MS + HEARTBEAT_TIMEOUT_MS);
@@ -271,19 +320,33 @@ describe('WebSocketContextProvider', () => {
 
       act(() => {
         createdSockets[0].triggerClose(1006);
-        vi.advanceTimersByTime(30000);
+        vi.advanceTimersByTime(CONNECT_TIMEOUT_MS - 1000);
       });
       expect(createdSockets).toHaveLength(2);
     });
 
+    it('keeps sockets to a server that does not answer pings', () => {
+      const { result } = openSocket();
+
+      act(() => {
+        vi.advanceTimersByTime(
+          (HEARTBEAT_INTERVAL_MS + HEARTBEAT_TIMEOUT_MS) * 3,
+        );
+      });
+
+      expect(result.current.isConnected).toBe(true);
+      expect(createdSockets).toHaveLength(1);
+    });
+
     it('probes an open socket when the page becomes visible', () => {
       openSocket();
+      pong();
 
       act(() => {
         document.dispatchEvent(new Event('visibilitychange'));
       });
 
-      expect(pings(createdSockets[0])).toHaveLength(1);
+      expect(pings(createdSockets[0])).toHaveLength(2);
       expect(createdSockets).toHaveLength(1);
     });
   });
