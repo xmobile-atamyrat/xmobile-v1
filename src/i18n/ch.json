@@ -644,6 +644,8 @@
   "selectCategory": "Kategoriýa saýlaň",
   "categoryRequired": "Haýyş, kategoriýa saýlaň",
   "outOfStockOnly": "Diňe kutaranlar",
+  "availability": "Nalicie",
+  "inStockOnly": "Diňe skladda barlar",
   "productsUpdated": "Towarlar tazalandy!",
   "updateProductsError": "Towarlary tazalap bolmady",
   "allBrands": "Ähli brendler",

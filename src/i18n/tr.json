@@ -642,6 +642,8 @@
   "selectCategory": "Kategori seçin",
   "categoryRequired": "Lütfen bir kategori seçin",
   "outOfStockOnly": "Sadece stokta olmayanlar",
+  "availability": "Stok durumu",
+  "inStockOnly": "Sadece stoktakiler",
   "productsUpdated": "Ürünler başarıyla güncellendi!",
   "updateProductsError": "Ürünler güncellenemedi.",
   "allBrands": "Tüm markalar",
