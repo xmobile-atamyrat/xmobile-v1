@@ -688,5 +688,6 @@
   "deliveryPriceUpdated": "Dostawka bahasy tazalandy",
   "updateDeliveryPriceError": "Dostawka bahasyny tazalap bolmady",
   "deliveryPriceHint": "Harytlaryň bahasyna ({subtotal} TMT) goşulýar. Täze baha öňkisini çalyşýar.",
-  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar"
+  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar",
+  "deliveryPriceGuestCallHint": "Gost zakaz: klienta uwedomleniýa barmaýar. {phone} nomere zwonit edip, dostawkanyň bahasyny aýdyň."
 }

@@ -640,6 +640,7 @@ export default function UserOrderDetailPage() {
             onSubmit={handleDeliveryPriceUpdate}
             subtotal={itemsSubtotal}
             currentPrice={orderDeliveryFee(order)}
+            guestPhone={order.userId ? undefined : order.deliveryPhone}
           />
 
           <Snackbar
