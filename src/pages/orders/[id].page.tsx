@@ -9,7 +9,9 @@ import {
   deliveryFeeLabel as formatDeliveryFee,
   isPickupOrder,
   MAX_DELIVERY_DAYS,
+  orderDeliveryFee,
   orderItemsSubtotal,
+  showDeliveryFee,
 } from '@/pages/lib/orderDelivery';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -277,6 +279,8 @@ export default function OrderDetailPage() {
   const orderTotal = parseFloat(order.totalPrice) || subtotal;
   const isPickup = isPickupOrder(order);
   const deliveryFeeLabel = formatDeliveryFee(order, t);
+  const isDeliveryFree = orderDeliveryFee(order) === 0;
+  const showDelivery = showDeliveryFee(order);
   const deliveryLines = isPickup
     ? [t('pickupYourself'), t('address')]
     : [
@@ -424,11 +428,13 @@ export default function OrderDetailPage() {
                   >
                     {order.deliveryPhone}
                   </Typography>
-                  <Typography
-                    className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
-                  >
-                    {t('delivery')}: {deliveryFeeLabel}
-                  </Typography>
+                  {showDelivery && (
+                    <Typography
+                      className={`${fontClassName.className} ${ordersDetailClasses.infoText.mobile}`}
+                    >
+                      {t('delivery')}: {deliveryFeeLabel}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
               <Box className={ordersDetailClasses.infoRow.mobile}>
@@ -557,18 +563,22 @@ export default function OrderDetailPage() {
                       {subtotal.toFixed(2)} {t('manat')}
                     </span>
                   </Box>
-                  <Box
-                    className={`${fontClassName.className} ${ordersDetailClasses.web.totalsRow}`}
-                  >
-                    <span>{t('delivery')}</span>
-                    <span
-                      className={
-                        isPickup ? ordersDetailClasses.web.free : undefined
-                      }
+                  {showDelivery && (
+                    <Box
+                      className={`${fontClassName.className} ${ordersDetailClasses.web.totalsRow}`}
                     >
-                      {deliveryFeeLabel}
-                    </span>
-                  </Box>
+                      <span>{t('delivery')}</span>
+                      <span
+                        className={
+                          isDeliveryFree
+                            ? ordersDetailClasses.web.free
+                            : undefined
+                        }
+                      >
+                        {deliveryFeeLabel}
+                      </span>
+                    </Box>
+                  )}
                   <Box className={ordersDetailClasses.web.grandRow}>
                     <Typography
                       className={`${fontClassName.className} ${ordersDetailClasses.web.grandLabel}`}

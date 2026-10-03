@@ -285,8 +285,14 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       needsResyncRef.current = false;
       const activeSession = sessionRef.current;
       fetchSessions().then((freshSessions) => {
-        if (!freshSessions || !activeSession) return;
+        if (!activeSession) return;
         if (sessionRef.current?.id !== activeSession.id) return;
+        // Without a fresh list the status can't be checked, but the messages
+        // missed while offline still need fetching
+        if (!freshSessions) {
+          send({ type: 'get_messages', sessionId: activeSession.id });
+          return;
+        }
         const status =
           freshSessions.find((s) => s.id === activeSession.id)?.status ??
           'CLOSED';

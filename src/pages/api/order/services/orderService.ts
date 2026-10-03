@@ -809,6 +809,9 @@ export async function updateDeliveryPrice(
   const nextDeliveryPrice = deliveryPrice.toFixed(2);
 
   const { order, updatedOrder } = await dbClient.$transaction(async (tx) => {
+    // Lock the order so two admins saving at once can't both add a fee line
+    await tx.$queryRaw`SELECT id FROM "UserOrder" WHERE id = ${orderId} FOR UPDATE`;
+
     const current = await tx.userOrder.findUnique({
       where: { id: orderId },
       include: { items: true },

@@ -1283,6 +1283,20 @@ export default function CheckoutPage() {
           <Box className={cls.totalContainer.mobile}>
             <Box className={cls.totalRow.mobile}>
               <Typography className={`${fc} ${cls.totalLabel.mobile}`}>
+                {t('delivery')}
+              </Typography>
+              <Typography
+                className={`${fc} ${
+                  isPickup
+                    ? cls.deliveryValueFree.mobile
+                    : cls.deliveryValue.mobile
+                }`}
+              >
+                {isPickup ? t('free') : t('deliveryPriceToBeConfirmed')}
+              </Typography>
+            </Box>
+            <Box className={cls.totalRow.mobile}>
+              <Typography className={`${fc} ${cls.totalLabel.mobile}`}>
                 {t('totalPayable')}
               </Typography>
               <Typography className={`${fc} ${cls.totalValue.mobile}`}>
