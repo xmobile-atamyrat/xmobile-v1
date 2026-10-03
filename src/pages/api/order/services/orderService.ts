@@ -4,9 +4,17 @@ import { unavailableVariantTags } from '@/lib/variantStock';
 import { getColor } from '@/pages/api/colors/index.page';
 import { getPrice } from '@/pages/api/prices/index.page';
 import { OUT_OF_STOCK_ERROR } from '@/pages/lib/constants';
+import {
+  DELIVERY_FEE_ITEM_NAME,
+  isClosedOrder,
+  isPickupOrder,
+  splitDeliveryFee,
+} from '@/pages/lib/orderDelivery';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
+import { InAppNotification } from '@/pages/lib/types';
 import { parseVariantTag } from '@/pages/product/utils';
 import {
+  createNotificationForDeliveryPriceUpdate,
   createNotificationForOrderStatusUpdate,
   createNotificationsForAdmins,
   sendNotificationToWebSocketServer,
@@ -38,6 +46,33 @@ export interface CreateGuestOrderData {
   deliveryPhone: string;
   notes?: string;
   userName?: string;
+}
+
+function notifyOrderOwner(
+  createNotification: Promise<InAppNotification | null>,
+  context: string,
+) {
+  createNotification
+    .then((notification) => {
+      if (notification) {
+        sendFCMWithCallbackFallback(
+          notification.userId,
+          notification,
+          sendNotificationToWebSocketServer,
+        ).catch((error) => {
+          console.error(
+            `[OrderService] Failed to send notification to user ${notification.userId}:`,
+            error,
+          );
+        });
+      }
+    })
+    .catch((error) => {
+      console.error(
+        `[OrderService] Failed to create/send notification for ${context}:`,
+        error,
+      );
+    });
 }
 
 export interface GetOrdersFilters {
@@ -191,14 +226,14 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
     });
 
     // Update user address if requested
-    if (updateAddress) {
+    if (updateAddress && !isPickupOrder({ deliveryAddress })) {
       await tx.user.update({
         where: { id: userId },
         data: { address: deliveryAddress },
       });
     }
 
-    return newOrder;
+    return splitDeliveryFee(newOrder);
   });
 
   // Send Slack notification (fire and forget - don't block on this)
@@ -292,7 +327,7 @@ export async function createGuestOrder(
       where: { guestSessionId },
     });
 
-    return newOrder;
+    return splitDeliveryFee(newOrder);
   });
 
   notifyOrderCreated(order).catch((error) => {
@@ -333,7 +368,7 @@ export async function createGuestOrder(
 }
 
 export async function getGuestOrders(guestSessionId: string) {
-  return dbClient.userOrder.findMany({
+  const orders = await dbClient.userOrder.findMany({
     where: { guestSessionId, userId: null },
     include: {
       items: {
@@ -342,13 +377,14 @@ export async function getGuestOrders(guestSessionId: string) {
     },
     orderBy: { createdAt: 'desc' },
   });
+  return orders.map(splitDeliveryFee);
 }
 
 export async function getGuestOrderById(
   orderId: string,
   guestSessionId: string,
 ) {
-  return dbClient.userOrder.findFirst({
+  const order = await dbClient.userOrder.findFirst({
     where: {
       id: orderId,
       guestSessionId,
@@ -360,6 +396,7 @@ export async function getGuestOrderById(
       },
     },
   });
+  return order && splitDeliveryFee(order);
 }
 
 export async function migrateGuestDataToUser(
@@ -503,7 +540,7 @@ export async function getOrders(filters: GetOrdersFilters) {
   ]);
 
   return {
-    orders,
+    orders: orders.map(splitDeliveryFee),
     pagination: {
       page,
       limit: pageSize,
@@ -520,7 +557,7 @@ export async function getOrderById(
   orderId: string,
   includeUser = false,
 ): Promise<UserOrder | null> {
-  return dbClient.userOrder.findUnique({
+  const order = await dbClient.userOrder.findUnique({
     where: { id: orderId },
     include: {
       items: {
@@ -539,6 +576,7 @@ export async function getOrderById(
       }),
     },
   });
+  return order && splitDeliveryFee(order);
 }
 
 /**
@@ -743,39 +781,107 @@ export async function updateOrderStatus(
     );
   });
 
-  // Create and send in-app notification to order owner if status changed (fire and forget)
+  // Notify the order owner if the status changed
   if (previousStatus !== updatedOrder.status && updatedOrder.userId) {
-    createNotificationForOrderStatusUpdate(
-      updatedOrder.id,
-      updatedOrder.userId,
-      updatedOrder.orderNumber,
-      updatedOrder.status,
-      previousStatus,
-    )
-      .then((notification) => {
-        if (notification) {
-          // Send notification with FCM first, fallback to WebSocket
-          sendFCMWithCallbackFallback(
-            notification.userId,
-            notification,
-            sendNotificationToWebSocketServer,
-          ).catch((error) => {
-            console.error(
-              `[OrderService] Failed to send notification to user ${notification.userId}:`,
-              error,
-            );
-          });
-        }
-      })
-      .catch((error) => {
-        console.error(
-          '[OrderService] Failed to create/send notification for order status update:',
-          error,
-        );
-      });
+    notifyOrderOwner(
+      createNotificationForOrderStatusUpdate(
+        updatedOrder.id,
+        updatedOrder.userId,
+        updatedOrder.orderNumber,
+        updatedOrder.status,
+        previousStatus,
+      ),
+      'order status update',
+    );
   }
 
   return updatedOrder;
+}
+
+/**
+ * Sets the delivery fee (admin only). The fee is kept as its own order line and
+ * added to the total that was charged, so setting it again swaps the old fee.
+ */
+export async function updateDeliveryPrice(
+  orderId: string,
+  deliveryPrice: number,
+): Promise<UserOrder> {
+  const nextDeliveryPrice = deliveryPrice.toFixed(2);
+
+  const { order, updatedOrder } = await dbClient.$transaction(async (tx) => {
+    // Lock the order so two admins saving at once can't both add a fee line
+    await tx.$queryRaw`SELECT id FROM "UserOrder" WHERE id = ${orderId} FOR UPDATE`;
+
+    const current = await tx.userOrder.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!current) {
+      throw new Error('Order not found');
+    }
+
+    if (isPickupOrder(current)) {
+      throw new Error('Pickup orders have no delivery price');
+    }
+
+    if (isClosedOrder(current)) {
+      throw new Error(
+        'Cannot change the delivery price of a completed or cancelled order',
+      );
+    }
+
+    const feeItem = current.items.find(
+      (item) => item.productName === DELIVERY_FEE_ITEM_NAME,
+    );
+    const previousFee = parseFloat(feeItem?.productPrice ?? '') || 0;
+
+    if (feeItem) {
+      await tx.userOrderItem.update({
+        where: { id: feeItem.id },
+        data: { productPrice: nextDeliveryPrice },
+      });
+    } else {
+      await tx.userOrderItem.create({
+        data: {
+          orderId,
+          quantity: 1,
+          productName: DELIVERY_FEE_ITEM_NAME,
+          productPrice: nextDeliveryPrice,
+        },
+      });
+    }
+
+    const updated = await tx.userOrder.update({
+      where: { id: orderId },
+      data: {
+        totalPrice: (
+          (parseFloat(current.totalPrice) || 0) -
+          previousFee +
+          deliveryPrice
+        ).toFixed(2),
+      },
+      include: { items: true },
+    });
+
+    return { order: splitDeliveryFee(current), updatedOrder: updated };
+  });
+
+  // Guests have no account to notify; an unchanged price needs no notice
+  if (updatedOrder.userId && order.deliveryPrice !== nextDeliveryPrice) {
+    notifyOrderOwner(
+      createNotificationForDeliveryPriceUpdate(
+        updatedOrder.id,
+        updatedOrder.userId,
+        updatedOrder.orderNumber,
+        deliveryPrice,
+        updatedOrder.totalPrice,
+      ),
+      'delivery price update',
+    );
+  }
+
+  return splitDeliveryFee(updatedOrder);
 }
 
 /**

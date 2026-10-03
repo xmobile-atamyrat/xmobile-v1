@@ -1,10 +1,8 @@
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
-  getProductMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
@@ -57,18 +55,11 @@ export default function ProductCard({
   const router = useRouter();
   const { setSelectedProduct, colorsMap } = useProductContext();
   const [product, setProduct] = useState(initialProduct);
-  const { network } = useNetworkContext();
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
 
-  const cardImageSrc = useMemo(() => {
-    const raw = product?.imgUrls[0];
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    const tier = tierForProductList(network);
-    return getProductMediaUrl(tier, raw) ?? PRODUCT_IMAGE_FALLBACK;
-  }, [product?.imgUrls, network]);
+  const cardImageSrc = productThumbnailUrl(product?.imgUrls[0]);
 
   // Quick-add from the grid can't ask which spec/color to buy, so it defaults
   // to the first variant tag — same as the product detail page's default.

@@ -7,6 +7,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import {
   getAdminOrderController,
   updateAdminNotesController,
+  updateDeliveryPriceController,
   updateOrderStatusController,
 } from '../controllers/adminOrderController';
 import { checkAdmin } from '../utils/checkAdmin';
@@ -74,10 +75,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           message: error.message || 'Failed to update admin notes',
         });
       }
+    } else if (action === 'delivery-price') {
+      try {
+        const { resp, status } = await updateDeliveryPriceController(
+          orderId,
+          body,
+        );
+        return res.status(status).json(resp);
+      } catch (error: any) {
+        console.error(filepath, error);
+        return res.status(500).json({
+          success: false,
+          message: error.message || 'Failed to update delivery price',
+        });
+      }
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Invalid action. Use ?action=status or ?action=notes',
+        message:
+          'Invalid action. Use ?action=status, ?action=notes or ?action=delivery-price',
       });
     }
   } else {

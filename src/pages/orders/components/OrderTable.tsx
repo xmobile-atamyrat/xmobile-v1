@@ -1,3 +1,4 @@
+import { isPickupOrder } from '@/pages/lib/orderDelivery';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { fontClassName } from '@/styles/theme';
 import {
@@ -114,7 +115,9 @@ export default function OrderTable({ orders }: OrderTableProps) {
               </TableCell>
               <TableCell>
                 <Typography className={fontClassName.className} color="#4A4959">
-                  {order.deliveryAddress}
+                  {isPickupOrder(order)
+                    ? t('pickupYourself')
+                    : order.deliveryAddress}
                 </Typography>
               </TableCell>
               <TableCell>

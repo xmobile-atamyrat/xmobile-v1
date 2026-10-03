@@ -1,3 +1,8 @@
+import {
+  DELIVERY_METHODS,
+  isPickupAddress,
+  PICKUP_ADDRESS,
+} from '@/pages/lib/orderDelivery';
 import { normalizePhone } from '@/pages/lib/phone';
 import { UserOrderStatus } from '@prisma/client';
 import { z } from 'zod';
@@ -14,11 +19,46 @@ export const deliveryPhoneSchema = z.string().transform((val, ctx) => {
   return normalized;
 });
 
-export const createOrderSchema = z.object({
-  deliveryAddress: z.string().min(1, 'Delivery address is required'),
+const orderDeliveryFields = {
+  deliveryMethod: z.enum(DELIVERY_METHODS).default('DELIVERY'),
+  deliveryAddress: z.string().trim().optional(),
   deliveryPhone: deliveryPhoneSchema,
   notes: z.string().optional(),
+};
+
+const withDeliveryRules = <T extends z.ZodRawShape>(extra: T) =>
+  z
+    .object({ ...orderDeliveryFields, ...extra })
+    .superRefine((val, ctx) => {
+      if (val.deliveryMethod !== 'DELIVERY') return;
+      if (!val.deliveryAddress) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['deliveryAddress'],
+          message: 'Delivery address is required',
+        });
+      } else if (isPickupAddress(val.deliveryAddress)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['deliveryAddress'],
+          message: 'Invalid delivery address',
+        });
+      }
+    })
+    .transform((val) => ({
+      ...val,
+      deliveryAddress:
+        val.deliveryMethod === 'PICKUP'
+          ? PICKUP_ADDRESS
+          : (val.deliveryAddress as string),
+    }));
+
+export const createOrderSchema = withDeliveryRules({
   updateAddress: z.boolean().optional(),
+});
+
+export const createGuestOrderSchema = withDeliveryRules({
+  userName: z.string().optional(),
 });
 
 export const cancelOrderSchema = z.object({
@@ -33,6 +73,13 @@ export const updateOrderStatusSchema = z.object({
 
 export const updateAdminNotesSchema = z.object({
   adminNotes: z.string().min(1, 'Admin notes cannot be empty'),
+});
+
+export const updateDeliveryPriceSchema = z.object({
+  deliveryPrice: z.coerce
+    .number()
+    .finite()
+    .min(0, 'Delivery price cannot be negative'),
 });
 
 // `status` accepts either one status or a comma-separated list, so a tab that

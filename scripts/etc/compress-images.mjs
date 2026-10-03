@@ -54,6 +54,8 @@ const createCompressedImg = async (imgName, type) => {
     ) {
       compressedImg = await sharp(img)
         .resize({ width: targetWidth })
+        // JPEG has no alpha; without this, transparent pixels turn black.
+        .flatten({ background: '#ffffff' })
         .jpeg({ quality, progressive: true })
         .toBuffer();
       quality -= 10;

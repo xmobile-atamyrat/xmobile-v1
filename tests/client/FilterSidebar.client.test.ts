@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import FilterSidebar from '@/pages/components/FilterSidebar';
-import { screen, waitFor, fireEvent } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -85,8 +91,8 @@ describe('FilterSidebar — color filter section', () => {
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
 
-    const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toBeChecked();
+    const row = screen.getByTitle('Red').parentElement as HTMLElement;
+    expect(within(row).getByRole('checkbox')).toBeChecked();
   });
 
   it('clicking a checked color calls onFilterChange with the colorId removed', async () => {
@@ -109,5 +115,31 @@ describe('FilterSidebar — color filter section', () => {
     await waitFor(() => {
       expect(screen.queryByTitle('Red')).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('FilterSidebar — availability section', () => {
+  beforeEach(async () => {
+    const apis = await getApis();
+    apis.fetchColors.mockResolvedValue([]);
+    apis.fetchProductFilterOptions.mockResolvedValue({ colors: [] });
+    apis.fetchBrands.mockResolvedValue([]);
+  });
+
+  it('turns the in-stock filter on', async () => {
+    const onFilterChange = vi.fn();
+    renderSidebar({ inStock: false }, onFilterChange);
+    // The mount-time fetches re-render the rail, which remounts its rows.
+    await act(async () => {});
+
+    fireEvent.click(screen.getByLabelText('In stock only'));
+
+    expect(onFilterChange).toHaveBeenCalledWith({ inStock: true });
+  });
+
+  it('shows the in-stock filter as checked when active', async () => {
+    renderSidebar({ inStock: true });
+
+    expect(await screen.findByLabelText('In stock only')).toBeChecked();
   });
 });

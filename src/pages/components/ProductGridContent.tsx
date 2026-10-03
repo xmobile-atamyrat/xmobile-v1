@@ -143,6 +143,7 @@ export default function ProductGridContent({
     minPrice: '',
     maxPrice: '',
     sortBy: '',
+    inStock: false,
   });
 
   const t = useTranslations();
@@ -245,6 +246,7 @@ export default function ProductGridContent({
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
+        inStock: filters.inStock,
       });
     }
   }, [mobileFilterOpen, filters]);
@@ -272,6 +274,7 @@ export default function ProductGridContent({
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       searchKeyword,
+      inStock: filters.inStock,
     })
       .then((data) => {
         if (!cancelled) setCategoryFacets(data);
@@ -289,6 +292,7 @@ export default function ProductGridContent({
     filters.colorIds,
     filters.minPrice,
     filters.maxPrice,
+    filters.inStock,
   ]);
 
   // The API groups by the product's own (leaf) category; the pills show root
@@ -405,6 +409,7 @@ export default function ProductGridContent({
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
           locale: router.locale,
+          inStock: filters.inStock,
         };
 
         if (searchKeyword) {
@@ -478,6 +483,7 @@ export default function ProductGridContent({
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
         locale: router.locale,
+        inStock: filters.inStock,
       };
 
       if (searchKeyword) {
@@ -621,6 +627,14 @@ export default function ProductGridContent({
     });
   }
 
+  if (filters.inStock) {
+    activeChips.push({
+      key: 'in-stock',
+      label: t('inStockOnly'),
+      onRemove: () => applyFilters({ inStock: false }),
+    });
+  }
+
   // --- Pagination (spec 1473) ------------------------------------------
   const totalPages =
     totalCount != null ? getTotalPages(totalCount, PRODUCTS_PER_PAGE) : 0;
@@ -694,6 +708,7 @@ export default function ProductGridContent({
                     minPrice: '',
                     maxPrice: '',
                     sortBy: '',
+                    inStock: false,
                   })
                 }
               >
@@ -710,6 +725,7 @@ export default function ProductGridContent({
                 minPrice={localFilters.minPrice}
                 maxPrice={localFilters.maxPrice}
                 sortBy={localFilters.sortBy}
+                inStock={localFilters.inStock}
                 onFilterChange={(newFilters) => {
                   setLocalFilters((prev) => ({ ...prev, ...newFilters }));
                 }}
@@ -728,6 +744,7 @@ export default function ProductGridContent({
                     minPrice: '',
                     maxPrice: '',
                     sortBy: '',
+                    inStock: false,
                   })
                 }
               >
@@ -777,6 +794,7 @@ export default function ProductGridContent({
                 selectedColorIds={filters.colorIds}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
+                inStock={filters.inStock}
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
                 // Brand.productCount counts the whole catalogue (step 54), so

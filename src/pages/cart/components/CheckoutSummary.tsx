@@ -5,22 +5,47 @@ import { colors, fontClassName } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
 import { ArrowRight, Banknote } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useEffect, useRef } from 'react';
 
 interface CheckoutSummaryProps {
   totalPrice: number;
   onCheckoutClick: () => void;
+  /** Mobile only: the fixed bar's height above the bottom nav, in px. */
+  onBarHeightChange?: (height: number) => void;
 }
 
 export default function CheckoutSummary({
   totalPrice,
   onCheckoutClick,
+  onBarHeightChange,
 }: CheckoutSummaryProps) {
   const t = useTranslations();
   const platform = usePlatform();
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (
+      platform !== 'mobile' ||
+      !bar ||
+      !onBarHeightChange ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      return undefined;
+    }
+    const observer = new ResizeObserver(() => {
+      onBarHeightChange(
+        Math.ceil(bar.getBoundingClientRect().height) - mobileBottomNavHeight,
+      );
+    });
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [platform, onBarHeightChange]);
 
   return (
     <Box className={cartCheckoutClasses.container[platform]}>
       <Box
+        ref={barRef}
         className={cartCheckoutClasses.summaryBox[platform]}
         sx={
           platform === 'mobile'
@@ -55,9 +80,9 @@ export default function CheckoutSummary({
                   {t('delivery')}
                 </Typography>
                 <Typography
-                  className={`${fontClassName.className} ${cartCheckoutClasses.web.rowFree}`}
+                  className={`${fontClassName.className} ${cartCheckoutClasses.web.rowValue}`}
                 >
-                  {t('free')}
+                  {t('deliveryChosenAtCheckout')}
                 </Typography>
               </Box>
             </Box>

@@ -76,10 +76,19 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
   const [isSupportOnline, setIsSupportOnline] = useState(false);
 
   const sessionRef = useRef<ChatSession | undefined>(currentSession);
+  const sessionsRef = useRef<ChatSession[]>(sessions);
+  const hasConnectedRef = useRef(false);
+  const needsResyncRef = useRef(false);
+  const isAdminRef = useRef(false);
+  isAdminRef.current = !!user && ['ADMIN', 'SUPERUSER'].includes(user.grade);
 
   useEffect(() => {
     sessionRef.current = currentSession;
   }, [currentSession]);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   // Reset all chat state when the signed-in user changes (e.g. sign-out then sign-in as different user)
   useEffect(() => {
@@ -92,7 +101,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
     setIsSupportOnline(false);
   }, [user?.id]);
 
-  const loadSessions = useCallback(async () => {
+  const fetchSessions = useCallback(async (): Promise<ChatSession[] | null> => {
     try {
       const res = await fetch(`${BASE_URL}/api/chat/session`, {
         method: 'GET',
@@ -100,14 +109,20 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       });
       const data = await res.json();
       if (data.success) {
+        sessionsRef.current = data.data;
         setSessions(data.data);
         return data.data;
       }
     } catch (err) {
       console.error(err);
     }
-    return [];
+    return null;
   }, [accessToken]);
+
+  const loadSessions = useCallback(
+    async () => (await fetchSessions()) ?? [],
+    [fetchSessions],
+  );
 
   const loadMessages = useCallback(
     async (sessionId: string, cursorId?: string) => {
@@ -176,6 +191,9 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       // snapshot the moment we reconnect anyway.
       setOnlineUserIds(new Set<string>());
       setIsSupportOnline(false);
+      // An ack for an in-flight message will never arrive on a dead socket.
+      setIsSendingMessage(false);
+      needsResyncRef.current = hasConnectedRef.current;
       return undefined;
     }
 
@@ -258,6 +276,40 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       loadSessions();
     });
 
+    // The server only relays to open sockets, so anything sent while we were
+    // disconnected is in the DB but was never pushed to us, including the
+    // session being closed. Reconcile the open session against a fresh list
+    // first (customers only get PENDING/ACTIVE back, so a missing session was
+    // closed), then refetch the latest page; the history handler dedupes.
+    if (needsResyncRef.current) {
+      needsResyncRef.current = false;
+      const activeSession = sessionRef.current;
+      fetchSessions().then((freshSessions) => {
+        if (!activeSession) return;
+        if (sessionRef.current?.id !== activeSession.id) return;
+        // Without a fresh list the status can't be checked, but the messages
+        // missed while offline still need fetching
+        if (!freshSessions) {
+          send({ type: 'get_messages', sessionId: activeSession.id });
+          return;
+        }
+        const status =
+          freshSessions.find((s) => s.id === activeSession.id)?.status ??
+          'CLOSED';
+        if (status !== sessionRef.current.status) {
+          setCurrentSession((prev) =>
+            prev?.id === activeSession.id ? { ...prev, status } : prev,
+          );
+        }
+        if (status === 'CLOSED' && !isAdminRef.current) {
+          setMessages([]);
+          return;
+        }
+        send({ type: 'get_messages', sessionId: activeSession.id });
+      });
+    }
+    hasConnectedRef.current = true;
+
     return () => {
       unsubscribeAck();
       unsubscribeHistory();
@@ -265,7 +317,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeSessionUpdate();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, subscribe, loadSessions]);
+  }, [isConnected, subscribe, send, loadSessions, fetchSessions]);
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -288,7 +340,13 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
 
   const joinSession = useCallback(
     async (sessionId: string) => {
-      const session = sessions.find((s) => s.id === sessionId);
+      // Read through a ref: callers often join right after awaiting
+      // loadSessions(), before a re-render has refreshed this closure.
+      let session = sessionsRef.current.find((s) => s.id === sessionId);
+      if (!session) {
+        const freshSessions: ChatSession[] = await loadSessions();
+        session = freshSessions.find((s) => s.id === sessionId);
+      }
       if (!session) {
         console.warn('Session not found:', sessionId);
         return false;
@@ -305,15 +363,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       loadSessions();
       return true;
     },
-    [
-      sessions,
-      user,
-      accessToken,
-      isConnected,
-      loadMessages,
-      loadSessions,
-      send,
-    ],
+    [isConnected, loadMessages, loadSessions],
   );
 
   const createSession = useCallback(async () => {
@@ -327,6 +377,7 @@ export const ChatContextProvider = ({ children }: { children: ReactNode }) => {
       });
       const data = await res.json();
       if (data.success) {
+        setMessages([]);
         setCurrentSession(data.data);
         return data.data;
       }
