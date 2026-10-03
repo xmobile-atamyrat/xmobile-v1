@@ -55,6 +55,7 @@ export default function AddEditCategoriesDialog({
     imageUrl,
     popular: initialPopular,
     categoryId: editCategoryId,
+    parentId,
   },
   onSuccess,
 }: EditCategoriesDialogProps) {
@@ -84,9 +85,9 @@ export default function AddEditCategoriesDialog({
       const parent = findParentCategory(editCategoryId, categories);
       setPredecessorId(parent?.id ?? HIGHEST_LEVEL_CATEGORY_ID);
     } else {
-      setPredecessorId(HIGHEST_LEVEL_CATEGORY_ID);
+      setPredecessorId(parentId ?? HIGHEST_LEVEL_CATEGORY_ID);
     }
-  }, [dialogType, editCategoryId, categories]);
+  }, [dialogType, editCategoryId, parentId, categories]);
 
   useEffect(() => {
     setPopularChecked(initialPopular ?? false);

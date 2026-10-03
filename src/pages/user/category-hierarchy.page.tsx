@@ -1,3 +1,4 @@
+import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
 import Layout from '@/pages/components/Layout';
 import { appBarHeight } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
@@ -6,7 +7,11 @@ import {
   POPULAR_CATEGORIES_SECTION_MAX,
   POPULAR_ROOT_LIMIT_CODE,
 } from '@/pages/lib/popularCategoriesLayout';
-import { ExtendedCategory, ResponseApi } from '@/pages/lib/types';
+import {
+  EditCategoriesProps,
+  ExtendedCategory,
+  ResponseApi,
+} from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { categoryIdClasses } from '@/styles/classMaps/category/id';
@@ -14,8 +19,11 @@ import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { homePageClasses } from '@/styles/classMaps';
 import { colors, fontClassName } from '@/styles/theme';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import AddIcon from '@mui/icons-material/Add';
+import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import StarIcon from '@mui/icons-material/Star';
@@ -102,6 +110,8 @@ interface CategoryTreeRowProps {
   busy: boolean;
   onMove: (categoryId: string, direction: 'up' | 'down') => void;
   onOpenParentDialog: (category: ExtendedCategory) => void;
+  onEdit: (category: ExtendedCategory) => void;
+  onAddChild: (category: ExtendedCategory) => void;
   onTogglePopular: (categoryId: string, popular: boolean) => void;
   canSetPopular: boolean;
 }
@@ -115,6 +125,8 @@ function CategoryTreeRow({
   busy,
   onMove,
   onOpenParentDialog,
+  onEdit,
+  onAddChild,
   onTogglePopular,
   canSetPopular,
 }: CategoryTreeRowProps) {
@@ -132,7 +144,7 @@ function CategoryTreeRow({
           display: 'flex',
           alignItems: 'center',
           gap: 0.5,
-          pl: depth * 2,
+          pl: 1.5 + depth * 2,
           py: 0.75,
           pr: 0.5,
           borderBottom: '1px solid',
@@ -210,6 +222,30 @@ function CategoryTreeRow({
             </IconButton>
           </span>
         </Tooltip>
+        <Tooltip title={t('addSubcategory')}>
+          <span>
+            <IconButton
+              size="small"
+              disabled={busy}
+              onClick={() => onAddChild(category)}
+              aria-label={t('addSubcategory')}
+            >
+              <CreateNewFolderOutlinedIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={t('editCategory')}>
+          <span>
+            <IconButton
+              size="small"
+              disabled={busy}
+              onClick={() => onEdit(category)}
+              aria-label={t('editCategory')}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Box>
       {subs.map((child, i, arr) => (
         <CategoryTreeRow
@@ -222,6 +258,8 @@ function CategoryTreeRow({
           busy={busy}
           onMove={onMove}
           onOpenParentDialog={onOpenParentDialog}
+          onEdit={onEdit}
+          onAddChild={onAddChild}
           onTogglePopular={onTogglePopular}
           canSetPopular={depth === 0 ? canSetPopular : true}
         />
@@ -252,6 +290,10 @@ export default function CategoryHierarchyPage() {
     useState<ExtendedCategory | null>(null);
   const [parentSelectValue, setParentSelectValue] =
     useState<string>(ROOT_VALUE);
+
+  const [categoryDialog, setCategoryDialog] = useState<EditCategoriesProps>({
+    open: false,
+  });
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -333,6 +375,38 @@ export default function CategoryHierarchyPage() {
   const closeParentDialog = useCallback(() => {
     setParentDialogCat(null);
   }, []);
+
+  const openAddDialog = useCallback(() => {
+    setCategoryDialog({ open: true, dialogType: 'add' });
+  }, []);
+
+  const openAddChildDialog = useCallback((parent: ExtendedCategory) => {
+    setCategoryDialog({ open: true, dialogType: 'add', parentId: parent.id });
+  }, []);
+
+  const openEditDialog = useCallback((cat: ExtendedCategory) => {
+    setCategoryDialog({
+      open: true,
+      dialogType: 'edit',
+      categoryId: cat.id,
+      categoryName: cat.name,
+      imageUrl: cat.imgUrl ?? undefined,
+      popular: cat.popular ?? false,
+    });
+  }, []);
+
+  const handleCategoryDialogResult = useCallback(
+    (
+      message: string,
+      severity: 'success' | 'error' | 'warning' = 'success',
+    ) => {
+      showSnackbar(message, severity);
+      if (severity === 'success') {
+        loadCategories().catch(() => {});
+      }
+    },
+    [showSnackbar, loadCategories],
+  );
 
   const runHierarchyMutation = useCallback(
     async (body: object) => {
@@ -517,6 +591,8 @@ export default function CategoryHierarchyPage() {
               busy={busy}
               onMove={handleMove}
               onOpenParentDialog={openParentDialog}
+              onEdit={openEditDialog}
+              onAddChild={openAddChildDialog}
               onTogglePopular={handleTogglePopular}
               canSetPopular={
                 popularRootCount < POPULAR_CATEGORIES_SECTION_MAX ||
@@ -583,6 +659,23 @@ export default function CategoryHierarchyPage() {
           {t('categoryHierarchySubtitle')}
         </Typography>
 
+        <Box className="flex justify-end">
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openAddDialog}
+            disabled={busy}
+            className={fontClassName.className}
+            sx={{
+              textTransform: 'none',
+              bgcolor: colors.main,
+              '&:hover': { bgcolor: colors.buttonHoverBg },
+            }}
+          >
+            {t('addNewCategory')}
+          </Button>
+        </Box>
+
         <Divider />
 
         {treePanel}
@@ -645,6 +738,14 @@ export default function CategoryHierarchyPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {categoryDialog.open && (
+        <AddEditCategoriesDialog
+          editCategoriesModal={categoryDialog}
+          handleClose={() => setCategoryDialog({ open: false })}
+          onSuccess={handleCategoryDialogResult}
+        />
+      )}
 
       <Snackbar
         open={snackbarOpen}
