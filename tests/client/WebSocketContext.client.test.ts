@@ -149,9 +149,14 @@ describe('WebSocketContextProvider', () => {
       act(() => {
         createdSockets[before - 1].triggerClose(1006);
       });
-      act(() => {
-        vi.advanceTimersByTime(30000);
-      });
+      // Step until the retry opens a socket, stopping before that socket's
+      // own connect timeout could fire and spend another attempt
+      for (let ms = 0; ms < 30000 && createdSockets.length === before; ) {
+        act(() => {
+          vi.advanceTimersByTime(500);
+        });
+        ms += 500;
+      }
       return createdSockets.length > before;
     };
     Array.from({ length: MAX_RECONNECT_ATTEMPTS }).forEach(() => {

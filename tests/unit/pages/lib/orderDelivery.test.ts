@@ -62,9 +62,9 @@ describe('order delivery helpers', () => {
     const before = new Date(DELIVERY_PRICING_START.getTime() - 1);
     const after = new Date(DELIVERY_PRICING_START.getTime() + 1);
     expect(orderDeliveryFee({ ...open, createdAt: before })).toBe(0);
-    expect(
-      orderDeliveryFee({ ...open, createdAt: before.toISOString() }),
-    ).toBe(0);
+    expect(orderDeliveryFee({ ...open, createdAt: before.toISOString() })).toBe(
+      0,
+    );
     expect(orderDeliveryFee({ ...open, createdAt: after })).toBeNull();
     // A price an admin set still wins over the old default
     expect(
@@ -73,7 +73,10 @@ describe('order delivery helpers', () => {
   });
 
   it('hides the fee of a cancelled delivery that was never priced', () => {
-    const cancelled = { deliveryAddress: 'Main st 1', status: 'USER_CANCELLED' };
+    const cancelled = {
+      deliveryAddress: 'Main st 1',
+      status: 'USER_CANCELLED',
+    };
     expect(showDeliveryFee(cancelled)).toBe(false);
     expect(showDeliveryFee({ ...cancelled, status: 'ADMIN_CANCELLED' })).toBe(
       false,
