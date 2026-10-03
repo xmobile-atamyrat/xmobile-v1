@@ -7,6 +7,11 @@ import {
   setProductOutOfStock,
 } from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import {
+  applyImageOrder,
+  fileToken,
+  parseImageOrder,
+} from '@/lib/productImageOrder';
 import { productSearchWhere } from '@/lib/productSearchWhere';
 import { revalidateInBackground } from '@/lib/revalidate';
 import {
@@ -129,6 +134,8 @@ export async function createCompressedImg(
       ) {
         compressedImg = await sharp(img)
           .resize({ width: targetWidth })
+          // JPEG has no alpha; without this, transparent pixels turn black.
+          .flatten({ background: '#ffffff' })
           .jpeg({ quality, progressive: true })
           .toBuffer();
         quality -= 10;
@@ -144,6 +151,32 @@ export async function createCompressedImg(
     console.error(filepath, `image not found: ${imgUrl}`);
     return null;
   }
+}
+
+// Kept images, then pasted URLs, then uploads, rearranged by the admin's
+// `imageOrder`. Uploads arrive as `imageUrl<N>` fields; the client refers to
+// them as `file:<N>` since it can't know where they land on disk.
+function orderedImgUrls(
+  keptImgUrls: string[],
+  fields: Record<string, string[]>,
+  files: Record<string, { path: string }[]>,
+): string[] {
+  const pastedUrls: string[] = fields.imageUrls
+    ? JSON.parse(fields.imageUrls[0])
+    : [];
+  return applyImageOrder(
+    [
+      ...[...keptImgUrls, ...pastedUrls].map((imgPath) => ({
+        token: imgPath,
+        path: imgPath,
+      })),
+      ...Object.keys(files).map((key) => ({
+        token: fileToken(Number(key.slice('imageUrl'.length))),
+        path: files[key][0].path,
+      })),
+    ],
+    parseImageOrder(fields.imageOrder?.[0]),
+  );
 }
 
 async function createProduct(
@@ -240,10 +273,7 @@ async function createProduct(
           tags: productTags,
           colors: { connect: variantColumns.colors.map((id) => ({ id })) },
           videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
-          imgUrls: [
-            ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-            ...(fileKeys.map((key) => files[key][0].path) ?? []),
-          ],
+          imgUrls: orderedImgUrls([], fields, files),
           price: fields.price?.[0],
           cachedPrice,
           // A product can be created already sold out. The timestamp travels
@@ -671,11 +701,7 @@ async function handleEditProduct(
         await createCompressedImg(imgUrl, 'good');
       });
 
-      data.imgUrls = [
-        ...data.imgUrls!,
-        ...(fields.imageUrls ? JSON.parse(fields.imageUrls[0]) : []),
-        ...(fileKeys.map((key) => files[key][0].path) ?? []),
-      ];
+      data.imgUrls = orderedImgUrls(data.imgUrls!, fields, files);
 
       if (data.categoryId) {
         const catOk = await dbClient.category.findFirst({
