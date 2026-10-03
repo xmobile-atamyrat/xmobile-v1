@@ -2,11 +2,15 @@ import Layout from '@/pages/components/Layout';
 import VariantBadge from '@/pages/components/VariantBadge';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import {
-  getProductMediaUrl,
+  deliveryFeeLabel as formatDeliveryFee,
+  isPickupOrder,
+  MAX_DELIVERY_DAYS,
+  orderItemsSubtotal,
+} from '@/pages/lib/orderDelivery';
+import {
   PRODUCT_IMAGE_FALLBACK,
-  tierForProductList,
+  productThumbnailUrl,
 } from '@/pages/lib/mediaUrls';
-import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -15,7 +19,7 @@ import { checkoutSuccessClasses } from '@/styles/classMaps/cart/checkoutSuccess'
 import { colors, fontClassName, navy } from '@/styles/theme';
 import { Box, Button, CardMedia, Typography } from '@mui/material';
 import { UserOrder } from '@prisma/client';
-import { Banknote, Check, Package, Truck } from 'lucide-react';
+import { Banknote, Check, Package, Store, Truck } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -49,7 +53,6 @@ export default function CheckoutSuccessPage() {
   const router = useRouter();
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
-  const { network } = useNetworkContext();
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
   const orderNumber = order?.orderNumber ?? null;
 
@@ -88,22 +91,14 @@ export default function CheckoutSuccessPage() {
     })();
   }, [user, accessToken, fetchWithCreds]);
 
-  // 52px item thumbnails — same tiered media path the cards use
-  const thumbSrc = (raw: string | undefined) => {
-    if (raw == null) return undefined;
-    if (raw.startsWith('http')) return raw;
-    return (
-      getProductMediaUrl(tierForProductList(network), raw) ??
-      PRODUCT_IMAGE_FALLBACK
-    );
-  };
-
   const items = order?.items ?? [];
-  const subtotal = items.reduce(
-    (acc, item) => acc + (parseFloat(item.productPrice) || 0) * item.quantity,
-    0,
-  );
+  const subtotal = orderItemsSubtotal(items);
   const totalPaid = parseFloat(order?.totalPrice ?? '') || subtotal;
+  const isPickup = order ? isPickupOrder(order) : false;
+  const deliveryFeeLabel = order ? formatDeliveryFee(order, t) : '';
+  const deliveryNote = isPickup
+    ? t('pickupYourselfSub')
+    : t('deliveryWithinDays', { days: MAX_DELIVERY_DAYS });
 
   // Desktop confirmation (spec 2186-2211): centred success block over an order
   // summary card and a delivery/payment column.
@@ -143,7 +138,7 @@ export default function CheckoutSuccessPage() {
                 {t('orderSummary')}
               </Typography>
               {items.map((item) => {
-                const thumb = thumbSrc(item.product?.imgUrls?.[0]);
+                const thumb = productThumbnailUrl(item.product?.imgUrls?.[0]);
                 const lineTotal =
                   (parseFloat(item.productPrice) || 0) * item.quantity;
                 return (
@@ -203,8 +198,12 @@ export default function CheckoutSuccessPage() {
                 </Box>
                 <Box className={checkoutSuccessClasses.web.totalsRow}>
                   <span>{t('delivery')}</span>
-                  <span className={checkoutSuccessClasses.web.free}>
-                    {t('free')}
+                  <span
+                    className={
+                      isPickup ? checkoutSuccessClasses.web.free : undefined
+                    }
+                  >
+                    {deliveryFeeLabel}
                   </span>
                 </Box>
                 <Box className={checkoutSuccessClasses.web.grandRow}>
@@ -222,7 +221,11 @@ export default function CheckoutSuccessPage() {
             <Box className={checkoutSuccessClasses.web.sideCol}>
               <Box className={checkoutSuccessClasses.web.card}>
                 <Box className={checkoutSuccessClasses.web.sideHead}>
-                  <Truck className={checkoutSuccessClasses.web.sideIcon} />
+                  {isPickup ? (
+                    <Store className={checkoutSuccessClasses.web.sideIcon} />
+                  ) : (
+                    <Truck className={checkoutSuccessClasses.web.sideIcon} />
+                  )}
                   <Typography
                     className={`${fontClassName.className} ${checkoutSuccessClasses.web.sideTitle}`}
                   >
@@ -232,8 +235,10 @@ export default function CheckoutSuccessPage() {
                 <Typography
                   className={`${fontClassName.className} ${checkoutSuccessClasses.web.sideBody}`}
                 >
-                  {order?.deliveryAddress}
+                  {isPickup ? t('address') : order?.deliveryAddress}
                   {order?.deliveryPhone ? ` · ${order.deliveryPhone}` : ''}
+                  <br />
+                  {deliveryNote}
                 </Typography>
               </Box>
 
@@ -324,6 +329,13 @@ export default function CheckoutSuccessPage() {
           >
             {t('waitForConfirmation')}
           </Typography>
+          {order && (
+            <Typography
+              className={`${fontClassName.className} ${checkoutSuccessClasses.confirmation.mobile}`}
+            >
+              {deliveryNote}
+            </Typography>
+          )}
         </Box>
 
         {/* Buttons */}

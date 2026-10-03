@@ -59,6 +59,10 @@ export const mobileAppBarHeight = 56;
 // reserve clearance from one number instead of three independent guesses.
 export const mobileBottomNavHeight = 64;
 
+// Expected height of the cart's CheckoutSummary bar above the nav, used until
+// the bar has measured itself.
+export const mobileCheckoutBarHeight = 106;
+
 export const localeOptions = ['en', 'tk', 'ru', 'ch', 'tr'];
 
 /**

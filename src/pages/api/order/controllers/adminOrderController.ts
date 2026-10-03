@@ -5,10 +5,12 @@ import {
   getOrders,
   GetOrdersFilters,
   updateAdminNotes,
+  updateDeliveryPrice,
   updateOrderStatus,
 } from '../services/orderService';
 import {
   updateAdminNotesSchema,
+  updateDeliveryPriceSchema,
   updateOrderStatusSchema,
 } from '../validators/orderValidators';
 
@@ -143,6 +145,42 @@ export async function updateAdminNotesController(
       resp: {
         success: false,
         message: error.message || 'Failed to update admin notes',
+      },
+      status: 400,
+    };
+  }
+}
+
+/**
+ * Controller for setting the delivery price
+ */
+export async function updateDeliveryPriceController(
+  orderId: string,
+  data: unknown,
+): Promise<{ resp: ResponseApi<UserOrder>; status: number }> {
+  try {
+    const validated = updateDeliveryPriceSchema.parse(data);
+    const order = await updateDeliveryPrice(orderId, validated.deliveryPrice);
+
+    return {
+      resp: { success: true, data: order },
+      status: 200,
+    };
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return {
+        resp: {
+          success: false,
+          message: `Validation error: ${error.errors[0].message}`,
+        },
+        status: 400,
+      };
+    }
+
+    return {
+      resp: {
+        success: false,
+        message: error.message || 'Failed to update delivery price',
       },
       status: 400,
     };

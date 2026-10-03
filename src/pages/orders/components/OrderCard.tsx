@@ -1,9 +1,11 @@
+import { isPickupOrder } from '@/pages/lib/orderDelivery';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { ordersComponentClasses } from '@/styles/classMaps/orders/components';
 import { fontClassName } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { UserOrder } from '@prisma/client';
 import { ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import OrderStatusBadge from './OrderStatusBadge';
 
@@ -12,6 +14,7 @@ interface OrderCardProps {
 }
 
 export default function OrderCard({ order }: OrderCardProps) {
+  const t = useTranslations();
   const router = useRouter();
   const platform = usePlatform();
 
@@ -56,7 +59,7 @@ export default function OrderCard({ order }: OrderCardProps) {
       <Typography
         className={`${fontClassName.className} ${ordersComponentClasses.orderCardAddress.mobile}`}
       >
-        {order.deliveryAddress}
+        {isPickupOrder(order) ? t('pickupYourself') : order.deliveryAddress}
       </Typography>
       <Box className={ordersComponentClasses.orderCardFooter.mobile}>
         <Typography

@@ -443,6 +443,35 @@ export async function createNotificationForOrderStatusUpdate(
 }
 
 /**
+ * Creates a notification for the order owner when an admin sets the delivery price
+ */
+export async function createNotificationForDeliveryPriceUpdate(
+  orderId: string,
+  userId: string,
+  orderNumber: string,
+  deliveryPrice: number,
+  totalPrice: string,
+): Promise<InAppNotification | null> {
+  try {
+    const notification = await dbClient.inAppNotification.create({
+      data: {
+        userId,
+        orderId,
+        type: NotificationType.ORDER_STATUS_UPDATE,
+        title: 'Стоимость доставки указана',
+        content: `Стоимость доставки заказа #${orderNumber}: ${deliveryPrice.toFixed(2)} TMT. Итого к оплате: ${parseFloat(totalPrice).toFixed(2)} TMT`,
+        isRead: false,
+      },
+    });
+
+    return notification as InAppNotification;
+  } catch (error) {
+    console.error('createNotificationForDeliveryPriceUpdate error:', error);
+    return null;
+  }
+}
+
+/**
  * Creates notifications for all admins (for new orders or cancellations)
  */
 export async function createNotificationsForAdmins(

@@ -5,7 +5,9 @@ import {
   getBasename,
   getCategoryMediaUrl,
   getProductMediaUrl,
-  tierForProductList,
+  PRODUCT_IMAGE_FALLBACK,
+  productThumbnailUrl,
+  tierForProductGallery,
 } from '@/pages/lib/mediaUrls';
 import { describe, expect, it } from 'vitest';
 
@@ -60,10 +62,10 @@ describe('mediaUrls', () => {
     expect(getBannerMediaUrl(undefined)).toBeUndefined();
   });
 
-  it('tierForProductList', () => {
-    expect(tierForProductList('fast')).toBe('good');
-    expect(tierForProductList('slow')).toBe('bad');
-    expect(tierForProductList('unknown')).toBe('bad');
+  it('tierForProductGallery', () => {
+    expect(tierForProductGallery('fast')).toBe('good');
+    expect(tierForProductGallery('slow')).toBe('bad');
+    expect(tierForProductGallery('unknown')).toBe('bad');
   });
 
   it('getAbsoluteProductMediaUrl', () => {
@@ -83,5 +85,19 @@ describe('mediaUrls', () => {
         '/home/ubuntu/images/categories/y.png',
       ),
     ).toBe('https://xmobile.com.tm/media/category/y.png');
+  });
+
+  it('productThumbnailUrl uses the thumbnail tier', () => {
+    expect(productThumbnailUrl('/home/ubuntu/images/products/a.jpg')).toBe(
+      '/media/product/bad/a.jpg',
+    );
+    expect(productThumbnailUrl('HTTPS://cdn.example.com/a.jpg')).toBe(
+      'HTTPS://cdn.example.com/a.jpg',
+    );
+  });
+
+  it('productThumbnailUrl falls back only for an unusable path', () => {
+    expect(productThumbnailUrl('')).toBe(PRODUCT_IMAGE_FALLBACK);
+    expect(productThumbnailUrl(undefined)).toBeUndefined();
   });
 });

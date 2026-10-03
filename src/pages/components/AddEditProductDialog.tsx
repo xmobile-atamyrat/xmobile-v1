@@ -1,3 +1,8 @@
+import ProductImagesEditor, {
+  isValidUrl,
+  ProductImage,
+  productImagesPayload,
+} from '@/pages/components/ProductImagesEditor';
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { fetchBrands, fetchColors, fetchPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
@@ -27,9 +32,7 @@ import {
   addEditBrand,
   addEditProduct,
   deleteBrand,
-  isNumeric,
   parseName,
-  VisuallyHiddenInput,
 } from '@/pages/lib/utils';
 import { addEditProductDialogClasses } from '@/styles/classMaps/components/addEditProductDialog';
 import {
@@ -41,14 +44,12 @@ import {
   YouTube,
 } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { LoadingButton } from '@mui/lab';
 import {
   Box,
   Button,
-  CardMedia,
   Dialog,
   DialogActions,
   DialogContent,
@@ -219,23 +220,8 @@ export default function AddEditProductDialog({
   const router = useRouter();
   const platform = usePlatform();
 
-  // for existing product imageUrls the key is imageUrl
-  // for new product imageUrls the key is number
-  // this is to differentiate between the two when deleting
-  const [productImageUrls, setProductImageUrls] = useState<
-    { [key: string | number]: string }[]
-  >([]);
-  const [productImageUrlsNumberKeyCount, setProductImageUrlsNumberKeyCount] =
-    useState<number>(0);
-  const [originalDeletedProductImageUrls, setOriginalDeletedProductImageUrls] =
-    useState<string[]>([]);
-  const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
-  const [productImageFileUrls, setProductImageFileUrls] = useState<string[]>(
-    [],
-  );
-  const [productImageOrder, setProductImageOrder] = useState<{
-    [key: number]: string;
-  }>({});
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const parsedProductName = JSON.parse(name ?? '{}');
   const parsedProductDescription = JSON.parse(description ?? '{}');
@@ -466,32 +452,16 @@ export default function AddEditProductDialog({
 
   useEffect(() => {
     if (imageUrls == null || imageUrls.length === 0) return;
-    const initialProductImageUrl: { [key: string]: string }[] = imageUrls.map(
-      (imageUrl) => {
-        try {
-          new URL(imageUrl);
-          return { [imageUrl]: imageUrl };
-        } catch (_) {
-          const display = getProductMediaUrl('original', imageUrl) ?? imageUrl;
-          return { [imageUrl]: display };
-        }
-      },
+    setProductImages(
+      imageUrls.map((imageUrl, index) => ({
+        key: `existing-${index}`,
+        kind: 'existing',
+        stored: imageUrl,
+        src: isValidUrl(imageUrl)
+          ? imageUrl
+          : getProductMediaUrl('original', imageUrl) ?? imageUrl,
+      })),
     );
-    setProductImageOrder(
-      initialProductImageUrl
-        .map((obj) => {
-          const [key] = Object.keys(obj);
-          return obj[key];
-        })
-        .reduce(
-          (acc, curr, index) => {
-            acc[index + 1] = curr;
-            return acc;
-          },
-          {} as { [key: number]: string },
-        ),
-    );
-    setProductImageUrls(initialProductImageUrl);
   }, [imageUrls]);
 
   useEffect(() => {
@@ -551,6 +521,7 @@ export default function AddEditProductDialog({
               event.currentTarget as unknown as HTMLFormElement,
             );
 
+            const imagesPayload = productImagesPayload(productImages);
             const updatedProduct = await addEditProduct({
               formJson: Object.fromEntries(formData.entries()),
               categoryId,
@@ -558,14 +529,10 @@ export default function AddEditProductDialog({
               setProducts,
               setPrevProducts,
               setPrevCategory,
-              productImageFiles,
-              deleteImageUrls: originalDeletedProductImageUrls,
-              productImageUrls: productImageUrls
-                .filter((obj) => {
-                  const [key] = Object.keys(obj);
-                  return isNumeric(key);
-                })
-                .map((obj) => obj[Object.keys(obj)[0]]),
+              productImageFiles: imagesPayload.files,
+              productImageUrls: imagesPayload.pastedUrls,
+              imageOrder: imagesPayload.order,
+              deleteImageUrls: deletedImageUrls,
               type: dialogType,
               tags,
               videoUrls,
@@ -1071,162 +1038,13 @@ export default function AddEditProductDialog({
               defaultValue={parsedProductDescription.en ?? defaultProductDescEn}
             />
           </Box>
-          <Box className={addEditProductDialogClasses.box.flex.pad}>
-            <Box className={addEditProductDialogClasses.box.flex.col}>
-              <TextField
-                margin="dense"
-                id="imgUrl"
-                label={t('imageUrl')}
-                type="url"
-                name="imgUrl"
-                className={
-                  addEditProductDialogClasses.textField.imageButton[platform]
-                }
-                onChange={(event) => {
-                  try {
-                    const { value } = event.currentTarget;
-                    new URL(value);
-                    setProductImageUrls([
-                      ...productImageUrls,
-                      { [productImageUrlsNumberKeyCount]: value },
-                    ]);
-                    setProductImageUrlsNumberKeyCount(
-                      productImageUrlsNumberKeyCount + 1,
-                    );
-                  } catch (_) {
-                    // do nothing
-                  }
-                }}
-              />
-              <Button
-                component="label"
-                role={undefined}
-                variant="contained"
-                tabIndex={-1}
-                startIcon={<CloudUploadIcon />}
-                sx={{ textTransform: 'none' }}
-                className={
-                  addEditProductDialogClasses.textField.imageButton[platform]
-                }
-              >
-                {t('uploadProductImage')}
-                <VisuallyHiddenInput
-                  type="file"
-                  name="productImage"
-                  accept="image/*"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      setProductImageFiles([...productImageFiles, file]);
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setProductImageFileUrls([
-                          ...productImageFileUrls,
-                          reader.result as string,
-                        ]);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                    event.target.value = '';
-                  }}
-                />
-              </Button>
-            </Box>
-            {productImageUrls.map((obj, index) => {
-              const [key] = Object.keys(obj);
-              const url = obj[key];
-              return (
-                <Box
-                  className={addEditProductDialogClasses.box.fullRel}
-                  key={key}
-                >
-                  <CardMedia component="img" alt="asdf" src={url} width={200} />
-                  <IconButton
-                    className={addEditProductDialogClasses.box.absZero}
-                    onClick={() => {
-                      productImageUrls.forEach((objUrls) => {
-                        const [idx] = Object.keys(objUrls);
-                        if (!isNumeric(idx) && obj[idx] === url) {
-                          setOriginalDeletedProductImageUrls([
-                            ...originalDeletedProductImageUrls,
-                            idx,
-                          ]);
-                        }
-                      });
-                      setProductImageUrls(
-                        productImageUrls.filter((_, i) => i !== index),
-                      );
-                      if (productImageFileUrls.includes(url)) {
-                        const fileIndex = productImageFileUrls.indexOf(url);
-                        setProductImageFileUrls(
-                          productImageFileUrls.filter(
-                            (_, i) => i !== fileIndex,
-                          ),
-                        );
-                        setProductImageFiles(
-                          productImageFiles.filter((_, i) => i !== fileIndex),
-                        );
-                      }
-                    }}
-                  >
-                    <DeleteOutlined fontSize="medium" color="error" />
-                  </IconButton>
-                  <TextField
-                    disabled
-                    size="small"
-                    className={
-                      addEditProductDialogClasses.textField.absZeroLeft
-                    }
-                    style={{ backgroundColor: 'white' }}
-                    type="number"
-                    defaultValue={index + 1}
-                    onChange={(event) => {
-                      const newIndex = Number(event.currentTarget.value);
-                      if (newIndex > 0 && newIndex <= productImageUrls.length) {
-                        const curIndex = index + 1;
-
-                        const newProductImageOrder = { ...productImageOrder };
-                        const curUrl = newProductImageOrder[curIndex];
-                        newProductImageOrder[curIndex] =
-                          newProductImageOrder[newIndex];
-                        newProductImageOrder[newIndex] = curUrl;
-                        setProductImageOrder(newProductImageOrder);
-
-                        const newProductImageUrls = [...productImageUrls];
-                        const temp = newProductImageUrls[curIndex - 1];
-                        newProductImageUrls[curIndex - 1] =
-                          newProductImageUrls[newIndex - 1];
-                        newProductImageUrls[newIndex - 1] = temp;
-                        setProductImageUrls(newProductImageUrls);
-                      }
-                    }}
-                  />
-                </Box>
-              );
-            })}
-            {productImageFileUrls.map((url, index) => (
-              <Box
-                className={addEditProductDialogClasses.box.fullRel}
-                key={index}
-              >
-                <CardMedia component="img" alt="asdf" src={url} width={200} />
-                <IconButton
-                  className={addEditProductDialogClasses.box.absZero}
-                  onClick={() => {
-                    const fileIndex = productImageFileUrls.indexOf(url);
-                    setProductImageFileUrls(
-                      productImageFileUrls.filter((_, i) => i !== fileIndex),
-                    );
-                    setProductImageFiles(
-                      productImageFiles.filter((_, i) => i !== fileIndex),
-                    );
-                  }}
-                >
-                  <DeleteOutlined fontSize="medium" color="error" />
-                </IconButton>
-              </Box>
-            ))}
-          </Box>
+          <ProductImagesEditor
+            images={productImages}
+            onChange={setProductImages}
+            onRemoveExisting={(stored) =>
+              setDeletedImageUrls((prev) => [...prev, stored])
+            }
+          />
         </DialogContent>
         <DialogActions>
           <Button variant="contained" color="error" onClick={handleClose}>

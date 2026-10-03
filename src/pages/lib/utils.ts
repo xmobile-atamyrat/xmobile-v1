@@ -131,9 +131,15 @@ export async function resizeImage(image: File, width: number): Promise<Blob> {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        resolve(blob as Blob);
-      });
+      // WebP keeps transparency at a fraction of PNG's size; uploads share a
+      // 10MB per-request cap, so PNGs made multi-image saves fail.
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob as Blob);
+        },
+        'image/webp',
+        0.9,
+      );
     };
     img.src = URL.createObjectURL(image);
   });
@@ -437,6 +443,7 @@ export async function addEditProduct({
   productImageUrls,
   productImageFiles,
   deleteImageUrls,
+  imageOrder,
   tags,
   videoUrls,
   selectedProductId,
@@ -450,6 +457,8 @@ export async function addEditProduct({
   productImageUrls: string[];
   productImageFiles: File[];
   deleteImageUrls: string[];
+  // Final image order, see src/lib/productImageOrder.ts
+  imageOrder?: string[];
   setProducts: Dispatch<SetStateAction<Product[]>>;
   setPrevProducts: Dispatch<SetStateAction<Product[]>>;
   setPrevCategory: Dispatch<SetStateAction<string | undefined>>;
@@ -517,6 +526,9 @@ export async function addEditProduct({
   }
   if (deleteImageUrls.length > 0) {
     newFormData.append('deleteImageUrls', JSON.stringify(deleteImageUrls));
+  }
+  if (imageOrder != null) {
+    newFormData.append('imageOrder', JSON.stringify(imageOrder));
   }
 
   if (tags.length > 0) {

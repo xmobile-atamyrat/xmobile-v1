@@ -17,14 +17,18 @@ export const notificationClasses = {
     },
   },
   menu: {
+    // The paper never scrolls: only the list does, so the header stays put
+    // instead of riding up under the cards when MUI caps the menu height.
     paper: {
-      web: 'mt-[8px] max-w-[400px] w-[400px] max-h-[600px] rounded-[16px] !bg-[#F5F5F8]',
+      web: 'mt-[8px] max-w-[400px] w-[400px] max-h-[min(600px,calc(100vh-96px))] rounded-[16px] !bg-[#F5F5F8] !overflow-hidden flex flex-col',
       mobile:
-        'mt-[8px] max-w-[90vw] w-[90vw] max-h-[70vh] rounded-[16px] !bg-[#F5F5F8]',
+        'mt-[8px] max-w-[90vw] w-[90vw] max-h-[70vh] rounded-[16px] !bg-[#F5F5F8] !overflow-hidden flex flex-col',
     },
+    menuList: '!p-0 flex flex-col min-h-0 flex-1',
     header: {
-      web: 'px-[16px] py-[12px] bg-white flex items-center justify-between',
-      mobile: 'px-[12px] py-[10px] bg-white flex items-center justify-between',
+      web: 'flex-none relative z-[1] px-[16px] py-[12px] bg-white flex items-center justify-between gap-[12px]',
+      mobile:
+        'flex-none relative z-[1] px-[12px] py-[10px] bg-white flex items-center justify-between gap-[12px]',
     },
     title: {
       web: 'text-[16px] font-bold text-[#17161D]',
@@ -33,11 +37,11 @@ export const notificationClasses = {
     clearButton: {
       web: 'text-[12px] text-[#20166E] font-semibold cursor-pointer hover:underline whitespace-nowrap flex-none',
       mobile:
-        'text-[12px] text-[#20166E] font-semibold cursor-pointer whitespace-nowrap flex-none',
+        'max-w-[45%] text-right text-[12px] leading-[1.3] text-[#20166E] font-semibold cursor-pointer',
     },
     list: {
-      web: 'max-h-[500px] overflow-y-auto p-[10px] flex flex-col gap-[10px]',
-      mobile: 'max-h-[50vh] overflow-y-auto p-[8px] flex flex-col gap-[8px]',
+      web: 'min-h-0 flex-1 overflow-y-auto p-[10px] flex flex-col gap-[10px]',
+      mobile: 'min-h-0 flex-1 overflow-y-auto p-[8px] flex flex-col gap-[8px]',
     },
     empty: {
       web: 'px-[16px] py-[24px] text-center text-[14px] text-[#8B8A98]',
@@ -47,10 +51,10 @@ export const notificationClasses = {
   sheet: {
     paper: '!bg-[#F5F5F8] !m-0 flex flex-col',
     header:
-      'flex-none flex items-center justify-between px-[20px] pt-[12px] pb-[14px] bg-white',
+      'flex-none flex items-center justify-between gap-[12px] px-[20px] pt-[12px] pb-[14px] bg-white',
     backButton:
       'w-[40px] h-[40px] rounded-full bg-[#F5F5F8] flex items-center justify-center text-[#20166E] flex-none',
-    title: 'text-[20px] font-bold text-[#17161D]',
+    title: 'min-w-0 truncate text-[20px] font-bold text-[#17161D]',
     list: 'flex-1 overflow-y-auto px-[16px] pt-[10px] pb-[24px] flex flex-col gap-[10px]',
   },
   group: {

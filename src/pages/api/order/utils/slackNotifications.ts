@@ -1,4 +1,5 @@
 import { getSlack } from '@/lib/slack';
+import { isPickupOrder } from '@/pages/lib/orderDelivery';
 import { UserOrder, UserOrderStatus } from '@prisma/client';
 
 const SLACK_BOT_NAME = 'ORDER_BOT_WEBHOOK';
@@ -26,7 +27,10 @@ export async function notifyOrderCreated(order: UserOrder): Promise<void> {
 
   const orderLink = `https://xmobile.com.tm/orders/admin/${order.id}`;
   const statusRu = statusTranslations[order.status as string] || order.status;
-  const message = `🛒 *Создан новый заказ*\n\n*Номер заказа:* ${order.orderNumber}\n*Клиент:* ${order.userName || 'Н/Д'}\n*Телефон:* ${order.deliveryPhone}\n*Адрес:* ${order.deliveryAddress}\n*Сумма:* ${parseFloat(order.totalPrice).toFixed(2)} TMT\n*Статус:* ${statusRu}\n\n<${orderLink}|Открыть заказ>`;
+  const deliveryRu = isPickupOrder(order)
+    ? '*Получение:* Самовывоз'
+    : `*Получение:* Доставка (цену доставки нужно указать в заказе)\n*Адрес:* ${order.deliveryAddress}`;
+  const message = `🛒 *Создан новый заказ*\n\n*Номер заказа:* ${order.orderNumber}\n*Клиент:* ${order.userName || 'Н/Д'}\n*Телефон:* ${order.deliveryPhone}\n${deliveryRu}\n*Сумма:* ${parseFloat(order.totalPrice).toFixed(2)} TMT\n*Статус:* ${statusRu}\n\n<${orderLink}|Открыть заказ>`;
 
   const result = await slack.send(message);
   if (!result.success) {

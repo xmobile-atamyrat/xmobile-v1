@@ -24,6 +24,7 @@ export const fetchProducts = async ({
   productSlug,
   page,
   locale,
+  inStock,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -31,6 +32,7 @@ export const fetchProducts = async ({
   minPrice?: string;
   maxPrice?: string;
   sortBy?: string;
+  inStock?: boolean;
   searchKeyword?: string;
   productId?: string;
   productSlug?: string;
@@ -68,6 +70,7 @@ export const fetchProducts = async ({
   appendParam('searchKeyword', searchKeyword);
   appendParam('sortBy', sortBy);
   appendParam('locale', locale);
+  appendParam('inStock', inStock ? '1' : undefined);
 
   const { success, data, message }: ResponseApi<ExtendedProduct[]> = await (
     await fetch(url)
@@ -86,6 +89,7 @@ export const fetchProductsCount = async ({
   minPrice,
   maxPrice,
   searchKeyword,
+  inStock,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -93,6 +97,7 @@ export const fetchProductsCount = async ({
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
+  inStock?: boolean;
 }): Promise<number> => {
   let url = `${BASE_URL}/api/product?count=true`;
   const appendParam = (key: string, val: any) => {
@@ -104,6 +109,7 @@ export const fetchProductsCount = async ({
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
+  appendParam('inStock', inStock ? '1' : undefined);
 
   const { success, data }: ResponseApi<number> = await (
     await fetch(url)
@@ -130,12 +136,14 @@ export const fetchCategoryFacets = async ({
   minPrice,
   maxPrice,
   searchKeyword,
+  inStock,
 }: {
   brandIds?: string[];
   colorIds?: string[];
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
+  inStock?: boolean;
 }): Promise<CategoryFacet[]> => {
   let url = `${BASE_URL}/api/product?facets=categories`;
   const appendParam = (key: string, val: any) => {
@@ -146,6 +154,7 @@ export const fetchCategoryFacets = async ({
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
+  appendParam('inStock', inStock ? '1' : undefined);
 
   const { success, data }: ResponseApi<CategoryFacet[]> = await (
     await fetch(url)

@@ -39,7 +39,6 @@ export const cartCheckoutClasses = {
     row: 'flex flex-row justify-between items-center text-[14px]',
     rowLabel: 'text-[14px] text-[#4A4959]',
     rowValue: 'text-[14px] font-semibold text-ink',
-    rowFree: 'text-[14px] font-semibold text-[#1F8A5B]',
     // Replaces the mockup's "Secure SSL checkout" line: COD is the only payment
     // method, so the honest reassurance is the one the app actually offers.
     note: 'flex flex-row items-center justify-center gap-2 text-muted mt-3',

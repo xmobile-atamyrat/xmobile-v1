@@ -183,6 +183,8 @@ export type ChatEvent =
       type: 'support_presence';
       supportOnline: boolean;
     }
+  /** Reply to a client heartbeat `{ type: 'ping' }`. */
+  | { type: 'pong' }
   | HistoryResponseMessage;
 
 // Legacy alias to ease refactoring (deprecated)
@@ -225,6 +227,7 @@ export interface EditCategoriesProps {
   categoryName?: string;
   imageUrl?: string | null;
   popular?: boolean;
+  parentId?: string;
 }
 
 /** Locale -> stored image path/URL. `default` always present; locale keys optional. */
