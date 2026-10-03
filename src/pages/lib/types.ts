@@ -227,6 +227,7 @@ export interface EditCategoriesProps {
   categoryName?: string;
   imageUrl?: string | null;
   popular?: boolean;
+  parentId?: string;
 }
 
 /** Locale -> stored image path/URL. `default` always present; locale keys optional. */
