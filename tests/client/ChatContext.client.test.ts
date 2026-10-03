@@ -164,7 +164,7 @@ describe('ChatContextProvider', () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it('keeps the open session when the resync request fails', async () => {
+  it('keeps the open session and still refetches it when the resync request fails', async () => {
     const { result, rerender } = renderHook(() => useChatContext(), {
       wrapper,
     });
@@ -177,6 +177,10 @@ describe('ChatContextProvider', () => {
     });
 
     expect(result.current.currentSession?.status).toBe('ACTIVE');
+    expect(mockSend).toHaveBeenCalledWith({
+      type: 'get_messages',
+      sessionId: 's1',
+    });
   });
 
   it('still reloads a closed session for an admin', async () => {

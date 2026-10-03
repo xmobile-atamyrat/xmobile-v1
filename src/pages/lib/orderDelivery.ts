@@ -44,19 +44,38 @@ export const orderItemsSubtotal = (
     0,
   );
 
+// Orders placed before paid delivery shipped were promised free delivery and
+// never get a fee line. Set this to the day the delivery options go live.
+export const DELIVERY_PRICING_START = new Date('2026-10-03T00:00:00+05:00');
+
 type OrderDelivery = {
   deliveryAddress: string;
   deliveryPrice?: string | null;
   status: string;
+  createdAt?: Date | string;
 };
 
+const isPreDeliveryPricingOrder = (order: OrderDelivery) =>
+  order.createdAt != null &&
+  new Date(order.createdAt).getTime() < DELIVERY_PRICING_START.getTime();
+
+const isCancelledOrder = (order: { status: string }) =>
+  ['USER_CANCELLED', 'ADMIN_CANCELLED'].includes(order.status);
+
 // null while an open delivery order still waits for an admin to price it;
-// a closed order that was never priced was delivered for free
+// older orders and closed orders that were never priced were free
 export const orderDeliveryFee = (order: OrderDelivery): number | null => {
   if (isPickupOrder(order)) return 0;
-  if (order.deliveryPrice == null) return isClosedOrder(order) ? 0 : null;
-  return parseFloat(order.deliveryPrice) || 0;
+  if (order.deliveryPrice != null) return parseFloat(order.deliveryPrice) || 0;
+  if (isPreDeliveryPricingOrder(order) || isClosedOrder(order)) return 0;
+  return null;
 };
+
+// A cancelled delivery that was never priced has no fee worth showing
+export const showDeliveryFee = (order: OrderDelivery) =>
+  isPickupOrder(order) ||
+  order.deliveryPrice != null ||
+  !isCancelledOrder(order);
 
 export const deliveryFeeLabel = (
   order: OrderDelivery,

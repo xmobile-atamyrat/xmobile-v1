@@ -33,6 +33,10 @@ export const HEARTBEAT_TIMEOUT_MS = 20_000;
 // browser gives up, which can take minutes.
 export const CONNECT_TIMEOUT_MS = 15_000;
 export const MAX_RECONNECT_DELAY_MS = 30_000;
+// After this many failed retries in a row, stop and wait for the network to
+// come back or the app to return to the foreground (see reconnectNow below),
+// so a long server outage doesn't keep every open client knocking.
+export const MAX_RECONNECT_ATTEMPTS = 10;
 
 export const WebSocketContextProvider = ({
   children,
@@ -140,6 +144,13 @@ export const WebSocketContextProvider = ({
         if (code === 1000 || code === 1008) {
           reconnectAttemptsRef.current = 0;
           stayClosedRef.current = true;
+          return;
+        }
+
+        if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+          console.warn(
+            'Max reconnection attempts reached; waiting for network or foreground',
+          );
           return;
         }
 

@@ -36,6 +36,13 @@ export const checkoutDialogClasses = {
   totalValue: {
     mobile: 'font-bold text-[20px] leading-normal text-[#20166E]',
   },
+  // Delivery row above the mobile total: free (pickup) or still to be priced
+  deliveryValue: {
+    mobile: 'font-semibold text-[14px] leading-normal text-[#8B8A98]',
+  },
+  deliveryValueFree: {
+    mobile: 'font-semibold text-[14px] leading-normal text-[#1F8A5B]',
+  },
 
   // --- Web checkout (spec 1608-1683). Horizontal padding comes from Layout's
   // px-[2vw] container, so only vertical rhythm lives here. ---

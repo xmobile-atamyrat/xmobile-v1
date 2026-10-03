@@ -1,5 +1,6 @@
 import {
   DELIVERY_FEE_ITEM_NAME,
+  DELIVERY_PRICING_START,
   deliveryFeeLabel,
   isClosedOrder,
   isPickupAddress,
@@ -7,6 +8,7 @@ import {
   orderDeliveryFee,
   orderItemsSubtotal,
   PICKUP_ADDRESS,
+  showDeliveryFee,
   splitDeliveryFee,
 } from '@/pages/lib/orderDelivery';
 import { describe, expect, it } from 'vitest';
@@ -54,6 +56,34 @@ describe('order delivery helpers', () => {
     expect(
       orderDeliveryFee({ deliveryAddress: 'Main st 1', status: 'COMPLETED' }),
     ).toBe(0);
+  });
+
+  it('treats delivery orders placed before paid delivery as free', () => {
+    const before = new Date(DELIVERY_PRICING_START.getTime() - 1);
+    const after = new Date(DELIVERY_PRICING_START.getTime() + 1);
+    expect(orderDeliveryFee({ ...open, createdAt: before })).toBe(0);
+    expect(
+      orderDeliveryFee({ ...open, createdAt: before.toISOString() }),
+    ).toBe(0);
+    expect(orderDeliveryFee({ ...open, createdAt: after })).toBeNull();
+    // A price an admin set still wins over the old default
+    expect(
+      orderDeliveryFee({ ...open, createdAt: before, deliveryPrice: '10' }),
+    ).toBe(10);
+  });
+
+  it('hides the fee of a cancelled delivery that was never priced', () => {
+    const cancelled = { deliveryAddress: 'Main st 1', status: 'USER_CANCELLED' };
+    expect(showDeliveryFee(cancelled)).toBe(false);
+    expect(showDeliveryFee({ ...cancelled, status: 'ADMIN_CANCELLED' })).toBe(
+      false,
+    );
+    expect(showDeliveryFee({ ...cancelled, deliveryPrice: '20' })).toBe(true);
+    expect(
+      showDeliveryFee({ ...cancelled, deliveryAddress: PICKUP_ADDRESS }),
+    ).toBe(true);
+    expect(showDeliveryFee(open)).toBe(true);
+    expect(showDeliveryFee({ ...open, status: 'COMPLETED' })).toBe(true);
   });
 
   it('labels unpriced, free and priced delivery', () => {

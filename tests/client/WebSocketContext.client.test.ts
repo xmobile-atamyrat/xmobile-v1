@@ -14,6 +14,7 @@ import {
   CONNECT_TIMEOUT_MS,
   HEARTBEAT_INTERVAL_MS,
   HEARTBEAT_TIMEOUT_MS,
+  MAX_RECONNECT_ATTEMPTS,
   useWebSocketContext,
   WebSocketContextProvider,
 } from '@/pages/lib/WebSocketContext';
@@ -136,7 +137,7 @@ describe('WebSocketContextProvider', () => {
     expect(createdSockets).toHaveLength(2);
   });
 
-  it('keeps retrying with backoff capped at 30s instead of giving up', () => {
+  it('retries with backoff capped at 30s, then waits for a network signal', () => {
     mockUseUserContext.mockReturnValue({
       user: { id: 'user-a' },
       accessToken: 'token-a',
@@ -151,9 +152,21 @@ describe('WebSocketContextProvider', () => {
       act(() => {
         vi.advanceTimersByTime(30000);
       });
-      expect(createdSockets.length).toBeGreaterThan(before);
+      return createdSockets.length > before;
     };
-    Array.from({ length: 8 }).forEach(failLatestAndWait);
+    Array.from({ length: MAX_RECONNECT_ATTEMPTS }).forEach(() => {
+      expect(failLatestAndWait()).toBe(true);
+    });
+
+    // Out of attempts: no more timed retries
+    expect(failLatestAndWait()).toBe(false);
+
+    // Coming back online starts over
+    const before = createdSockets.length;
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(createdSockets).toHaveLength(before + 1);
   });
 
   it('reconnects immediately when the browser comes back online', () => {

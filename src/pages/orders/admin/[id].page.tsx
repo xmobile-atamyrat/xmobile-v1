@@ -8,6 +8,7 @@ import {
   isPickupOrder,
   orderDeliveryFee,
   orderItemsSubtotal,
+  showDeliveryFee,
 } from '@/pages/lib/orderDelivery';
 import { parseOrderVariant } from '@/pages/product/utils';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -506,18 +507,20 @@ export default function UserOrderDetailPage() {
                       </Typography>
                     </TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell colSpan={3}>
-                      <Typography className={fontClassName.className}>
-                        {t('deliveryPrice')}:
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography className={fontClassName.className}>
-                        {deliveryFeeLabel(order, t)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
+                  {showDeliveryFee(order) && (
+                    <TableRow>
+                      <TableCell colSpan={3}>
+                        <Typography className={fontClassName.className}>
+                          {t('deliveryPrice')}:
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography className={fontClassName.className}>
+                          {deliveryFeeLabel(order, t)}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                   <TableRow>
                     <TableCell colSpan={3}>
                       <Typography
