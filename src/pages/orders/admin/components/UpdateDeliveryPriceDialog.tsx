@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Dialog,
   DialogActions,
@@ -18,6 +19,8 @@ interface UpdateDeliveryPriceDialogProps {
   onSubmit: (deliveryPrice: number) => Promise<boolean>;
   subtotal: number;
   currentPrice: number | null;
+  /** Set for guest orders: they get no notification, so the admin calls. */
+  guestPhone?: string;
 }
 
 export default function UpdateDeliveryPriceDialog({
@@ -26,6 +29,7 @@ export default function UpdateDeliveryPriceDialog({
   onSubmit,
   subtotal,
   currentPrice,
+  guestPhone,
 }: UpdateDeliveryPriceDialogProps) {
   const t = useTranslations();
   const [value, setValue] = useState('');
@@ -62,6 +66,14 @@ export default function UpdateDeliveryPriceDialog({
         <DialogContentText className={fontClassName.className}>
           {t('deliveryPriceHint', { subtotal: subtotal.toFixed(2) })}
         </DialogContentText>
+        {guestPhone && (
+          <Alert
+            severity="warning"
+            className={`${fontClassName.className} mt-3`}
+          >
+            {t('deliveryPriceGuestCallHint', { phone: guestPhone })}
+          </Alert>
+        )}
         <TextField
           fullWidth
           autoFocus

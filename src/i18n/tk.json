@@ -688,5 +688,6 @@
   "deliveryPriceUpdated": "Eltip bermegiň bahasy täzelendi",
   "updateDeliveryPriceError": "Eltip bermegiň bahasyny täzeläp bolmady",
   "deliveryPriceHint": "Harytlaryň bahasyna ({subtotal} TMT) goşulýar. Täze baha öňkini çalyşýar.",
-  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar"
+  "deliveryChosenAtCheckout": "Sargyt edilende saýlanýar",
+  "deliveryPriceGuestCallHint": "Myhmanyň sargydy: müşderä bildiriş gitmeýär. {phone} belgä jaň edip, eltip bermegiň bahasyny aýdyň."
 }

@@ -686,5 +686,6 @@
   "deliveryPriceUpdated": "Teslimat ücreti güncellendi",
   "updateDeliveryPriceError": "Teslimat ücreti güncellenemedi",
   "deliveryPriceHint": "Ürün tutarına ({subtotal} TMT) eklenir. Yeni değer öncekinin yerine geçer.",
-  "deliveryChosenAtCheckout": "Siparişte seçilir"
+  "deliveryChosenAtCheckout": "Siparişte seçilir",
+  "deliveryPriceGuestCallHint": "Misafir siparişi: müşteriye bildirim gitmez. Teslimat ücretini bildirmek için {phone} numarasını arayın."
 }

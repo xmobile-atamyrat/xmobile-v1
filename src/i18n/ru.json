@@ -688,5 +688,6 @@
   "deliveryPriceUpdated": "Цена доставки обновлена",
   "updateDeliveryPriceError": "Не удалось обновить цену доставки",
   "deliveryPriceHint": "Добавляется к стоимости товаров ({subtotal} TMT). Новое значение заменяет предыдущее.",
-  "deliveryChosenAtCheckout": "Выбирается при оформлении"
+  "deliveryChosenAtCheckout": "Выбирается при оформлении",
+  "deliveryPriceGuestCallHint": "Заказ гостя: уведомление не придёт. Позвоните клиенту по номеру {phone} и сообщите цену доставки."
 }
