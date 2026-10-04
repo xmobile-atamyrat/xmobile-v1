@@ -8,6 +8,11 @@ import {
 } from '@/lib/outOfStock';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import {
+  recordProductCreated,
+  recordProductDeleted,
+  recordProductUpdated,
+} from '@/lib/productActivity';
+import {
   applyImageOrder,
   fileToken,
   parseImageOrder,
@@ -20,7 +25,10 @@ import {
 } from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  bearerUserId,
+  requireStaffBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
@@ -83,6 +91,8 @@ interface CreateProductReturnType {
    * one it joined, and only the form parser still has the pre-update row.
    */
   previousCategoryId?: string | null;
+  /** Edit only. The row as it was before the edit, for the activity log. */
+  previous?: Product;
 }
 
 // changes url from images/products/img -> images/compressed/products/img
@@ -746,6 +756,7 @@ async function handleEditProduct(
         data: product,
         status: 200,
         previousCategoryId: currProduct.categoryId,
+        previous: currProduct,
       });
     });
   });
@@ -762,11 +773,13 @@ export default async function handler(
   if (method === 'POST') {
     if (!(await requireStaffBearerAuth(req, res))) return undefined;
     try {
+      const actorId = await bearerUserId(req);
       const retData = await createProduct(req);
       if (retData.success && retData.data != null) {
         // Captured outside the thunk: the `!= null` narrowing above doesn't
         // survive into a deferred callback.
         const created = retData.data;
+        recordProductCreated(actorId, created).catch(() => undefined);
         revalidateInBackground(res, () =>
           productRevalidationPaths([created.id]),
         );
@@ -802,7 +815,7 @@ export default async function handler(
 
       const existing = await dbClient.product.findFirst({
         where: { id: productId as string, deletedAt: null },
-        select: { id: true, brandId: true },
+        select: { id: true, brandId: true, name: true },
       });
 
       if (!existing) {
@@ -831,6 +844,7 @@ export default async function handler(
           .json({ success: false, message: 'productHasActiveBanner' });
       }
 
+      const actorId = await bearerUserId(req);
       const now = new Date();
       await dbClient.$transaction([
         dbClient.product.update({
@@ -839,6 +853,8 @@ export default async function handler(
         }),
         dbClient.cartItem.deleteMany({ where: { productId: existing.id } }),
       ]);
+
+      recordProductDeleted(actorId, existing);
 
       if (existing.brandId) {
         await syncBrandProductCount(existing.brandId);
@@ -868,8 +884,14 @@ export default async function handler(
     }
 
     try {
+      const actorId = await bearerUserId(req);
       const retData = await handleEditProduct(req);
       if (retData.success && retData.data != null) {
+        if (retData.previous != null) {
+          recordProductUpdated(actorId, retData.previous, retData.data).catch(
+            () => undefined,
+          );
+        }
         // Both categories: the listing the product left loses a card, the one
         // it joined gains one. `previousCategoryId` is deduped away when the
         // product didn't move.

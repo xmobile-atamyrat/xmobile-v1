@@ -118,6 +118,9 @@ describe('Admin activity logging (integration)', () => {
         where: { imgUrls: { path: ['default'], string_contains: 'actlog' } },
       })
       .catch(() => {});
+    await prisma.product
+      .deleteMany({ where: { slug: { startsWith: 'actlog' } } })
+      .catch(() => {});
     await prisma.category
       .deleteMany({ where: { slug: { startsWith: 'actlog' } } })
       .catch(() => {});
@@ -392,6 +395,87 @@ describe('Admin activity logging (integration)', () => {
         where: { targetId: bannerId, action: 'UPDATE' },
       }),
     ).toBe(0);
+  });
+
+  it('records product create, edit, stock flip, image reorder and delete', async () => {
+    const category = await prisma.category.create({
+      data: { name: '{"en":"ActLog ProdCat"}', slug: 'actlog-prodcat' },
+    });
+    const img = (n: string) => `https://cdn.example.com/actlog-${n}.jpg`;
+
+    const created = await callMultipart('@/pages/api/product/index.page', {
+      method: 'POST',
+      url: '/api/product',
+      fields: {
+        name: JSON.stringify({ en: 'ActLog Phone' }),
+        categoryId: category.id,
+        imageUrls: JSON.stringify([img('a'), img('b')]),
+      },
+    });
+    expect(created.status).toBe(200);
+    const productId = created.body.data.id as string;
+    const createRow = await activityFor('PRODUCT', 'CREATE', productId);
+    expect(createRow.meta).toEqual({
+      name: 'ActLog Phone',
+      category: 'ActLog ProdCat',
+      images: 2,
+    });
+
+    await callMultipart('@/pages/api/product/index.page', {
+      method: 'PUT',
+      url: '/api/product',
+      query: { productId },
+      fields: {
+        categoryId: category.id,
+        imageOrder: JSON.stringify([img('b'), img('a')]),
+      },
+    });
+    const reorderRow = await activityFor('PRODUCT', 'REORDER', productId);
+    expect(reorderRow.meta).toEqual({ name: 'ActLog Phone' });
+
+    await callMultipart('@/pages/api/product/index.page', {
+      method: 'PUT',
+      url: '/api/product',
+      query: { productId },
+      fields: {
+        categoryId: category.id,
+        name: JSON.stringify({ en: 'ActLog Phone 2' }),
+        isOutOfStock: 'true',
+      },
+    });
+    const updateRow = await activityFor('PRODUCT', 'UPDATE', productId);
+    expect(updateRow.meta).toEqual({
+      name: 'ActLog Phone 2',
+      changes: {
+        name: { from: 'ActLog Phone', to: 'ActLog Phone 2' },
+        outOfStock: { from: false, to: true },
+      },
+    });
+
+    await callMultipart('@/pages/api/product/index.page', {
+      method: 'PUT',
+      url: '/api/product',
+      query: { productId },
+      fields: {
+        categoryId: category.id,
+        name: JSON.stringify({ en: 'ActLog Phone 2' }),
+        isOutOfStock: 'true',
+      },
+    });
+    await settle();
+    expect(
+      await prisma.adminActivity.count({
+        where: { targetId: productId, action: { in: ['UPDATE', 'REORDER'] } },
+      }),
+    ).toBe(2);
+
+    await callMultipart('@/pages/api/product/index.page', {
+      method: 'DELETE',
+      url: '/api/product',
+      query: { productId },
+    });
+    const deleteRow = await activityFor('PRODUCT', 'DELETE', productId);
+    expect(deleteRow.meta).toEqual({ name: 'ActLog Phone 2' });
   });
 
   it('keeps the row and the name after the actor is deleted', async () => {
