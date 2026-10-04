@@ -1218,6 +1218,10 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   `${BASE_URL}/api/product?productId=${showDeleteProductDialog.productId}`,
                   {
                     method: 'DELETE',
+                    credentials: 'include',
+                    headers: accessToken
+                      ? { Authorization: `Bearer ${accessToken}` }
+                      : undefined,
                   },
                 )
               ).json();
