@@ -52,7 +52,10 @@ export function logAdminActivity(input: AdminActivityInput): void {
   writeAdminActivity(input).catch(() => undefined);
 }
 
-export type FieldChange = { from: unknown; to: unknown };
+export type FieldChange = {
+  from: Prisma.InputJsonValue;
+  to: Prisma.InputJsonValue;
+};
 
 const sameValue = (a: unknown, b: unknown): boolean => {
   if (a instanceof Date && b instanceof Date)
@@ -76,7 +79,10 @@ export function changedFields(
   keys.forEach((key) => {
     if (!(key in next) || next[key] === undefined) return;
     if (!sameValue(before[key], next[key])) {
-      changes[key] = { from: before[key] ?? null, to: next[key] };
+      changes[key] = {
+        from: (before[key] ?? null) as Prisma.InputJsonValue,
+        to: next[key] as Prisma.InputJsonValue,
+      };
     }
   });
   return changes;
