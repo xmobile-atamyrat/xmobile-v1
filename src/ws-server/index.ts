@@ -10,6 +10,11 @@ import {
   CHAT_MESSAGES_PAGE_SIZE,
 } from '@/pages/lib/constants';
 import { ChatMessage } from '@/pages/lib/types';
+import {
+  adminUserIdsOnline,
+  isTrackedAdmin,
+  touchAdminLastSeen,
+} from '@/ws-server/lib/adminPresence';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import {
   createNotificationsForSession,
@@ -615,6 +620,9 @@ wsServer.on('connection', async (connection, request) => {
       if (isAdmin) {
         adminConnections.add(safeConnection);
       }
+      if (isTrackedAdmin(safeConnection)) {
+        touchAdminLastSeen([safeConnection.userId]);
+      }
 
       // Registered here, immediately after the registry add and before any
       // await below. A socket that dies while those DB queries are in flight
@@ -628,9 +636,14 @@ wsServer.on('connection', async (connection, request) => {
       // safeCloseConnection is idempotent (Set/Map deletes, and the presence
       // broadcasts are gated on the 1->0 transition), so an early attach costs
       // nothing if the connection closes normally later.
-      safeConnection.on('close', () =>
-        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection),
-      );
+      safeConnection.on('close', () => {
+        safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection);
+        // The moment an admin leaves is the last time they were seen, and the
+        // next sweep no longer includes them.
+        if (isTrackedAdmin(safeConnection)) {
+          touchAdminLastSeen([safeConnection.userId]);
+        }
+      });
 
       // Liveness bookkeeping for the ping sweep below.
       safeConnection.isAlive = true;
@@ -760,6 +773,10 @@ const heartbeat = setInterval(() => {
       console.error(filepath, 'Failed to ping connection:', error);
     }
   });
+
+  // Presence for the admin activity page: one batched write per sweep, and
+  // none at all when no admin is connected.
+  touchAdminLastSeen(adminUserIdsOnline(connections));
 }, HEARTBEAT_INTERVAL_MS);
 
 /**
