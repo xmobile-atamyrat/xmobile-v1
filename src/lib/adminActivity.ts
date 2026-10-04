@@ -53,8 +53,8 @@ export function logAdminActivity(input: AdminActivityInput): void {
 }
 
 export type FieldChange = {
-  from: Prisma.InputJsonValue;
-  to: Prisma.InputJsonValue;
+  from: Prisma.InputJsonValue | null;
+  to: Prisma.InputJsonValue | null;
 };
 
 const sameValue = (a: unknown, b: unknown): boolean => {
@@ -80,8 +80,8 @@ export function changedFields(
     if (!(key in next) || next[key] === undefined) return;
     if (!sameValue(before[key], next[key])) {
       changes[key] = {
-        from: (before[key] ?? null) as Prisma.InputJsonValue,
-        to: next[key] as Prisma.InputJsonValue,
+        from: (before[key] ?? null) as Prisma.InputJsonValue | null,
+        to: next[key] as Prisma.InputJsonValue | null,
       };
     }
   });
