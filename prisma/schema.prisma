@@ -39,13 +39,53 @@ model User {
   orders          UserOrder[]
   inAppNotifications  InAppNotification[]
   fcmTokens       FCMToken[]
+  adminActivities AdminActivity[] @relation("AdminActivityActor")
 
+  lastSeenAt      DateTime?
   deletedAt       DateTime?
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   @@index([deletedAt])
+}
+
+enum AdminActivityEntity {
+  PRODUCT
+  PRICE
+  CURRENCY_RATE
+  CATEGORY
+  ORDER
+  BANNER
+  BRAND
+  COLOR
+}
+
+enum AdminActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+  REORDER
+}
+
+model AdminActivity {
+  id              String              @id @default(uuid())
+
+  user            User?               @relation("AdminActivityActor", fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?
+  userName       String
+
+  entity          AdminActivityEntity
+  action          AdminActivityAction
+  targetId        String?
+  meta            Json?
+
+  createdAt       DateTime            @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entity, createdAt(sort: Desc)])
+  @@index([targetId, createdAt(sort: Desc)])
 }
 
 
@@ -291,6 +331,7 @@ model ChatMessage {
   @@index([sessionId, createdAt])
   @@index([sessionId, isRead])
   @@index([tempId])
+  @@index([senderId, createdAt])
 }
 
 enum ChatStatus {
