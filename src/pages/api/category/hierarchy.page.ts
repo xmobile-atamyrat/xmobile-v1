@@ -1,3 +1,7 @@
+import {
+  recordCategoryReordered,
+  recordCategoryUpdated,
+} from '@/lib/categoryActivity';
 import dbClient from '@/lib/dbClient';
 import {
   categorySiblingOrderBy,
@@ -34,10 +38,11 @@ type HierarchyResult = {
 async function handleReorderSibling(
   categoryId: string,
   direction: 'up' | 'down',
+  actorId: string | undefined,
 ): Promise<HierarchyResult> {
   const cat = await dbClient.category.findFirst({
     where: { id: categoryId, deletedAt: null },
-    select: { id: true, predecessorId: true },
+    select: { id: true, predecessorId: true, name: true },
   });
   if (!cat) {
     return {
@@ -90,6 +95,8 @@ async function handleReorderSibling(
     ),
   );
 
+  recordCategoryReordered(actorId, cat, direction);
+
   // Only the parent's grid changed — the siblings' own pages don't render their
   // position. A root-level reorder resolves to nothing, since the root listing
   // lives on the server-rendered home page.
@@ -103,6 +110,7 @@ async function handleReorderSibling(
 async function handleSetParent(
   categoryId: string,
   newPredecessorId: string | null,
+  actorId: string | undefined,
 ): Promise<HierarchyResult> {
   if (newPredecessorId === categoryId) {
     return {
@@ -115,7 +123,13 @@ async function handleSetParent(
   // entry and has to be rebuilt too.
   const cat = await dbClient.category.findFirst({
     where: { id: categoryId, deletedAt: null },
-    select: { id: true, predecessorId: true },
+    select: {
+      id: true,
+      predecessorId: true,
+      name: true,
+      popular: true,
+      imgUrl: true,
+    },
   });
   if (!cat) {
     return {
@@ -159,6 +173,11 @@ async function handleSetParent(
     },
   });
 
+  recordCategoryUpdated(actorId, cat, {
+    ...cat,
+    predecessorId: newPredecessorId,
+  }).catch(() => undefined);
+
   // Both parents' grids, plus the moved category itself: `/category/{slug}`
   // redirects to the product listing when a category has no subcategories, and
   // that redirect is cached. Moving the last child out of a parent flips it in
@@ -173,10 +192,17 @@ async function handleSetParent(
 async function handleSetPopular(
   categoryId: string,
   popular: boolean,
+  actorId: string | undefined,
 ): Promise<HierarchyResult> {
   const cat = await dbClient.category.findFirst({
     where: { id: categoryId, deletedAt: null },
-    select: { id: true, predecessorId: true, popular: true },
+    select: {
+      id: true,
+      predecessorId: true,
+      popular: true,
+      name: true,
+      imgUrl: true,
+    },
   });
   if (!cat) {
     return {
@@ -218,6 +244,10 @@ async function handleSetPopular(
     data: { popular },
   });
 
+  recordCategoryUpdated(actorId, cat, { ...cat, popular }).catch(
+    () => undefined,
+  );
+
   // Nothing to revalidate: `popular` is read only by the home page, which is
   // server-rendered on every request.
   return { status: 200, resp: { success: true } };
@@ -254,11 +284,23 @@ async function handler(
 
     let result: HierarchyResult;
     if (body.action === 'reorderSibling') {
-      result = await handleReorderSibling(body.categoryId, body.direction);
+      result = await handleReorderSibling(
+        body.categoryId,
+        body.direction,
+        req.userId,
+      );
     } else if (body.action === 'setParent') {
-      result = await handleSetParent(body.categoryId, body.newPredecessorId);
+      result = await handleSetParent(
+        body.categoryId,
+        body.newPredecessorId,
+        req.userId,
+      );
     } else {
-      result = await handleSetPopular(body.categoryId, body.popular);
+      result = await handleSetPopular(
+        body.categoryId,
+        body.popular,
+        req.userId,
+      );
     }
 
     if (result.resp.success && result.categoryIds != null) {

@@ -1,3 +1,4 @@
+import { logAdminActivity } from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
 import { revalidateInBackground } from '@/lib/revalidate';
 import { productRevalidationPaths } from '@/lib/revalidateTargets';
@@ -64,6 +65,14 @@ async function handler(
         data: { name },
       });
 
+      logAdminActivity({
+        userId: req.userId,
+        entity: 'BRAND',
+        action: 'CREATE',
+        targetId: brand.id,
+        meta: { name: brand.name },
+      });
+
       return res.status(201).json({ success: true, data: brand });
     }
 
@@ -75,10 +84,28 @@ async function handler(
           .json({ success: false, message: 'ID and Name are required' });
       }
 
+      const previous = await dbClient.brand.findUnique({
+        where: { id },
+        select: { name: true },
+      });
+
       const brand = await dbClient.brand.update({
         where: { id },
         data: { name },
       });
+
+      if (previous && previous.name !== brand.name) {
+        logAdminActivity({
+          userId: req.userId,
+          entity: 'BRAND',
+          action: 'UPDATE',
+          targetId: id,
+          meta: {
+            name: brand.name,
+            changes: { name: { from: previous.name, to: brand.name } },
+          },
+        });
+      }
 
       revalidateInBackground(res, () => brandProductPaths(id));
 
@@ -99,8 +126,16 @@ async function handler(
       // nothing has been mutated yet when it runs.
       const paths = await brandProductPaths(id);
 
-      await dbClient.brand.delete({
+      const deleted = await dbClient.brand.delete({
         where: { id },
+      });
+
+      logAdminActivity({
+        userId: req.userId,
+        entity: 'BRAND',
+        action: 'DELETE',
+        targetId: id,
+        meta: { name: deleted.name },
       });
 
       revalidateInBackground(res, paths);

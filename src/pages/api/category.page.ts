@@ -1,5 +1,10 @@
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import {
+  recordCategoryCreated,
+  recordCategoryDeleted,
+  recordCategoryUpdated,
+} from '@/lib/categoryActivity';
+import {
   categorySiblingOrderBy,
   collectActiveSubtreeCategoryIds,
   nextSiblingSortOrder,
@@ -13,7 +18,10 @@ import {
 } from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  bearerUserId,
+  requireStaffBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import {
   POPULAR_CATEGORIES_SECTION_MAX,
   POPULAR_ROOT_LIMIT_CODE,
@@ -296,6 +304,7 @@ async function handleEditCategory(req: NextApiRequest) {
      * still holds the pre-update row.
      */
     previousPredecessorId?: string | null;
+    previous?: Category;
   }> = new Promise((resolve) => {
     form.parse(req, async (err, fields, files) => {
       if (err) {
@@ -379,6 +388,7 @@ async function handleEditCategory(req: NextApiRequest) {
         data: category,
         status: 200,
         previousPredecessorId: existingCat.predecessorId,
+        previous: existingCat,
       });
     });
   });
@@ -407,11 +417,13 @@ export default async function handler(
       return undefined;
     }
     try {
+      const actorId = await bearerUserId(req);
       const { status, success, data, message } = await handlePostCategory(req);
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
       if (success && data) {
+        recordCategoryCreated(actorId, data).catch(() => undefined);
         // The parent's subcategory grid gained an entry. The new category's own
         // pages are included too: anything that probed this slug before the
         // category existed left behind a `notFound` entry, which both catalog
@@ -441,12 +453,22 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      const { status, success, data, message, previousPredecessorId } =
-        await handleEditCategory(req);
+      const actorId = await bearerUserId(req);
+      const {
+        status,
+        success,
+        data,
+        message,
+        previousPredecessorId,
+        previous,
+      } = await handleEditCategory(req);
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
       if (success && data) {
+        if (previous) {
+          recordCategoryUpdated(actorId, previous, data).catch(() => undefined);
+        }
         // Own pages, plus both parents' grids — deduped when nothing moved.
         // Product pages under this category carry its name in their breadcrumb
         // too, but that cascade is left to the TTL rather than fanned out here.
@@ -478,6 +500,7 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
+      const actorId = await bearerUserId(req);
       const subtreeIds = await collectActiveSubtreeCategoryIds(
         categoryId as string,
       );
@@ -500,7 +523,7 @@ export default async function handler(
       // unscoped by `deletedAt` and stay valid after the transaction.
       const parent = await dbClient.category.findUnique({
         where: { id: categoryId as string },
-        select: { predecessorId: true },
+        select: { predecessorId: true, name: true },
       });
 
       const brandIds = new Set(
@@ -550,6 +573,15 @@ export default async function handler(
       });
 
       await Promise.all([...brandIds].map((bid) => syncBrandProductCount(bid)));
+
+      recordCategoryDeleted(
+        actorId,
+        { id: categoryId as string, name: parent?.name ?? null },
+        {
+          subcategories: subtreeIds.length - 1,
+          products: productsToSoftDelete.length,
+        },
+      );
 
       // The one place products are fanned out: a category delete soft-deletes
       // everything under it, and those product pages would otherwise keep

@@ -2,6 +2,11 @@
 import dbClient from '@/lib/dbClient';
 import { rateForPrice, recomputedPriceFields } from '@/lib/dollarRates';
 import { syncProductOutOfStockFromPrices } from '@/lib/outOfStock';
+import {
+  recordPriceCreated,
+  recordPriceDeleted,
+  recordPricesUpdated,
+} from '@/lib/priceActivity';
 import { revalidateInBackground } from '@/lib/revalidate';
 import {
   productIdsReferencingPrices,
@@ -172,6 +177,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         },
       });
 
+      recordPriceCreated(userId, newPrice).catch(() => undefined);
+
       // A new price starts in stock, so attaching one to an out-of-stock
       // product brings that product back — same rule as any other price edit.
       if (newPrice.productId != null) {
@@ -242,7 +249,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         where: { id: { in: pricePairs.map((price) => price.id as string) } },
         select: {
           id: true,
+          name: true,
           productId: true,
+          categoryId: true,
           outOfStockAt: true,
           price: true,
           priceInTmt: true,
@@ -279,7 +288,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         ? await dbClient.dollarRate.findMany({ where: { currency: 'TMT' } })
         : [];
 
-      await Promise.all(
+      const updatedPrices = await Promise.all(
         pricePairs.map(async (price) => {
           const data: any = { name: price.name };
           if (price.price != null) {
@@ -375,6 +384,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         }),
       );
 
+      recordPricesUpdated(
+        userId,
+        updatedPrices.map((after) => ({
+          before: currentById.get(after.id)!,
+          after,
+        })),
+      ).catch(() => undefined);
+
       // A price's stock state or ownership changing can change its product's
       // stock state, so the affected products are re-derived. Both the old and
       // the new owner are included: moving a price out of a product changes
@@ -442,6 +459,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // remaining prices are in stock leaves the product marked out of stock —
       // with `outOfStockAt` still counting down toward the retention job — until
       // the nightly sync happens to run.
+      recordPriceDeleted(userId, deletedPrice);
       if (deletedPrice.productId != null) {
         await syncProductOutOfStockFromPrices(deletedPrice.productId);
       }
