@@ -118,6 +118,9 @@ describe('Admin activity logging (integration)', () => {
         where: { imgUrls: { path: ['default'], string_contains: 'actlog' } },
       })
       .catch(() => {});
+    await prisma.userOrder
+      .deleteMany({ where: { orderNumber: { startsWith: 'ORD-ACTLOG' } } })
+      .catch(() => {});
     await prisma.prices
       .deleteMany({ where: { name: { startsWith: 'ActLog' } } })
       .catch(() => {});
@@ -675,6 +678,88 @@ describe('Admin activity logging (integration)', () => {
       String(otherId),
     );
     expect(deleteRow.meta).toMatchObject({ name: 'ActLog Rate B' });
+  });
+
+  it('records order status, notes, delivery fee and cancel changes', async () => {
+    const order = await prisma.userOrder.create({
+      data: {
+        orderNumber: `ORD-ACTLOG-${Date.now()}`,
+        userName: 'Buyer',
+        totalPrice: '50',
+        deliveryAddress: 'Addr',
+        deliveryPhone: '+99361000001',
+        status: 'PENDING',
+        items: {
+          create: [
+            { quantity: 1, productName: '{"en":"P"}', productPrice: '50' },
+          ],
+        },
+      },
+    });
+    const put = (action: string, body: object) =>
+      call('@/pages/api/order/admin/[id].page', {
+        method: 'PUT',
+        url: '/api/order/admin/x',
+        query: { id: order.id, action },
+        body,
+      });
+    const orderRows = async () =>
+      (
+        await prisma.adminActivity.findMany({
+          where: { entity: 'ORDER', targetId: order.id },
+          orderBy: { createdAt: 'asc' },
+        })
+      ).map((row) => row.meta as Record<string, unknown>);
+
+    expect((await put('status', { status: 'IN_PROGRESS' })).status).toBe(200);
+    await vi.waitFor(async () => expect(await orderRows()).toHaveLength(1));
+    expect((await orderRows())[0]).toEqual({
+      orderNumber: order.orderNumber,
+      kind: 'STATUS',
+      changes: { status: { from: 'PENDING', to: 'IN_PROGRESS' } },
+    });
+
+    expect((await put('notes', { adminNotes: 'Packed' })).status).toBe(200);
+    await vi.waitFor(async () => expect(await orderRows()).toHaveLength(2));
+    expect((await orderRows())[1]).toEqual({
+      orderNumber: order.orderNumber,
+      kind: 'NOTES',
+    });
+
+    await put('notes', { adminNotes: 'Packed' });
+    await put('status', { status: 'IN_PROGRESS' });
+    await settle();
+    expect(await orderRows()).toHaveLength(2);
+
+    expect((await put('delivery-price', { deliveryPrice: 10 })).status).toBe(
+      200,
+    );
+    await vi.waitFor(async () => expect(await orderRows()).toHaveLength(3));
+    expect((await orderRows())[2]).toEqual({
+      orderNumber: order.orderNumber,
+      kind: 'DELIVERY_FEE',
+      changes: { deliveryPrice: { from: null, to: '10.00' } },
+    });
+
+    await put('delivery-price', { deliveryPrice: 10 });
+    await settle();
+    expect(await orderRows()).toHaveLength(3);
+
+    expect(
+      (
+        await put('status', {
+          status: 'ADMIN_CANCELLED',
+          cancellationReason: 'Out of stock',
+        })
+      ).status,
+    ).toBe(200);
+    await vi.waitFor(async () => expect(await orderRows()).toHaveLength(4));
+    expect((await orderRows())[3]).toEqual({
+      orderNumber: order.orderNumber,
+      kind: 'CANCEL',
+      changes: { status: { from: 'IN_PROGRESS', to: 'ADMIN_CANCELLED' } },
+      reason: 'Out of stock',
+    });
   });
 
   it('keeps the row and the name after the actor is deleted', async () => {
