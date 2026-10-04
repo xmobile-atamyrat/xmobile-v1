@@ -28,7 +28,7 @@ import { UserRole } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFeed, { ActivityFilters } from './ActivityFeed';
 import ActivityHeatmap from './ActivityHeatmap';
 import StaffCards from './StaffCards';
@@ -111,9 +111,13 @@ export default function AdminActivityPage() {
     return () => clearInterval(timer);
   }, [isAuthorized, loadStaff]);
 
+  const feedRequestId = useRef(0);
+
   const loadFeed = useCallback(
     async (cursor?: string) => {
       if (!accessToken) return;
+      feedRequestId.current += 1;
+      const requestId = feedRequestId.current;
       setFeedLoading(true);
       try {
         const response = await fetchWithCreds<FeedPage>({
@@ -121,6 +125,7 @@ export default function AdminActivityPage() {
           path: `/api/admin/activity/feed${toQuery(filters, cursor)}`,
           method: 'GET',
         });
+        if (requestId !== feedRequestId.current) return;
         if (response.success && response.data) {
           const page = response.data;
           setFeed((previous) => ({
@@ -132,9 +137,9 @@ export default function AdminActivityPage() {
           setFailed(true);
         }
       } catch {
-        setFailed(true);
+        if (requestId === feedRequestId.current) setFailed(true);
       } finally {
-        setFeedLoading(false);
+        if (requestId === feedRequestId.current) setFeedLoading(false);
       }
     },
     [accessToken, fetchWithCreds, filters],
@@ -145,10 +150,8 @@ export default function AdminActivityPage() {
   }, [isAuthorized, loadFeed]);
 
   useEffect(() => {
-    if (!isAuthorized || !accessToken || !filters.userId) {
-      setHeatmap(undefined);
-      return;
-    }
+    setHeatmap(undefined);
+    if (!isAuthorized || !accessToken || !filters.userId) return;
     let cancelled = false;
     fetchWithCreds<Heatmap>({
       accessToken,
