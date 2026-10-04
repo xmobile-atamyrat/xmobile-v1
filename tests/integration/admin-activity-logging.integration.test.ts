@@ -1,3 +1,5 @@
+import { Readable } from 'node:stream';
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
@@ -49,6 +51,46 @@ describe('Admin activity logging (integration)', () => {
       { timeout: 5000, interval: 100 },
     );
 
+  const callMultipart = async (
+    modulePath: string,
+    options: {
+      method: 'POST' | 'PUT' | 'DELETE';
+      url: string;
+      query?: Record<string, string>;
+      fields?: Record<string, string>;
+    },
+  ) => {
+    const handler = (await import(modulePath)).default;
+    const boundary = '----actlogboundary';
+    const chunks = Object.entries(options.fields ?? {}).map(
+      ([name, value]) =>
+        `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}`,
+    );
+    chunks.push(`--${boundary}--`);
+    const stream = Readable.from(Buffer.from(chunks.join('\r\n'), 'utf8'));
+    const { res } = createMocks({ method: options.method, url: options.url });
+    const req = Object.assign(stream, {
+      url: options.url,
+      method: options.method,
+      query: options.query ?? {},
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+    }) as unknown as NextApiRequest;
+    await handler(req, res as unknown as NextApiResponse);
+    const raw = res._getData() as string;
+    return {
+      status: res._getStatusCode(),
+      body: raw ? JSON.parse(raw) : {},
+    };
+  };
+
+  const settle = () =>
+    new Promise((resolve) => {
+      setTimeout(resolve, 400);
+    });
+
   beforeAll(async () => {
     const { databaseUrl } = await prepareIntegrationWorker();
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
@@ -70,6 +112,14 @@ describe('Admin activity logging (integration)', () => {
       .catch(() => {});
     await prisma.brand
       .deleteMany({ where: { name: { startsWith: 'ActLog' } } })
+      .catch(() => {});
+    await prisma.promoBanner
+      .deleteMany({
+        where: { imgUrls: { path: ['default'], string_contains: 'actlog' } },
+      })
+      .catch(() => {});
+    await prisma.category
+      .deleteMany({ where: { slug: { startsWith: 'actlog' } } })
       .catch(() => {});
     await prisma.user.delete({ where: { id: adminUserId } }).catch(() => {});
     await prisma.$disconnect();
@@ -155,6 +205,193 @@ describe('Admin activity logging (integration)', () => {
       query: { id: brandId },
     });
     await activityFor('BRAND', 'DELETE', brandId);
+  });
+
+  it('records category create, edit, reorder, move and delete', async () => {
+    const parent = await callMultipart('@/pages/api/category.page', {
+      method: 'POST',
+      url: '/api/category',
+      fields: { name: JSON.stringify({ en: 'ActLog Parent' }) },
+    });
+    expect(parent.status).toBe(200);
+    const parentId = parent.body.data.id as string;
+    await activityFor('CATEGORY', 'CREATE', parentId);
+
+    const child = await callMultipart('@/pages/api/category.page', {
+      method: 'POST',
+      url: '/api/category',
+      fields: {
+        name: JSON.stringify({ en: 'ActLog Child' }),
+        predecessorId: parentId,
+      },
+    });
+    const childId = child.body.data.id as string;
+    const childCreate = await activityFor('CATEGORY', 'CREATE', childId);
+    expect(childCreate.meta).toEqual({
+      name: 'ActLog Child',
+      parent: 'ActLog Parent',
+    });
+
+    await callMultipart('@/pages/api/category.page', {
+      method: 'PUT',
+      url: '/api/category',
+      query: { categoryId: childId },
+      fields: { name: JSON.stringify({ en: 'ActLog Child Renamed' }) },
+    });
+    const edit = await activityFor('CATEGORY', 'UPDATE', childId);
+    expect(edit.meta).toEqual({
+      name: 'ActLog Child Renamed',
+      changes: { name: { from: 'ActLog Child', to: 'ActLog Child Renamed' } },
+    });
+
+    const sibling = await callMultipart('@/pages/api/category.page', {
+      method: 'POST',
+      url: '/api/category',
+      fields: {
+        name: JSON.stringify({ en: 'ActLog Sibling' }),
+        predecessorId: parentId,
+      },
+    });
+    expect(sibling.status).toBe(200);
+
+    await call('@/pages/api/category/hierarchy.page', {
+      method: 'POST',
+      url: '/api/category/hierarchy',
+      body: {
+        action: 'reorderSibling',
+        categoryId: childId,
+        direction: 'down',
+      },
+    });
+    const reorder = await activityFor('CATEGORY', 'REORDER', childId);
+    expect(reorder.meta).toEqual({
+      name: 'ActLog Child Renamed',
+      direction: 'down',
+    });
+
+    await call('@/pages/api/category/hierarchy.page', {
+      method: 'POST',
+      url: '/api/category/hierarchy',
+      body: {
+        action: 'setParent',
+        categoryId: childId,
+        newPredecessorId: null,
+      },
+    });
+    await vi.waitFor(async () => {
+      expect(
+        await prisma.adminActivity.count({
+          where: { targetId: childId, action: 'UPDATE' },
+        }),
+      ).toBe(2);
+    });
+    const move = (
+      await prisma.adminActivity.findMany({
+        where: { targetId: childId, action: 'UPDATE' },
+        orderBy: { createdAt: 'desc' },
+      })
+    )[0];
+    expect(move.meta).toMatchObject({
+      changes: { parent: { from: 'ActLog Parent', to: null } },
+    });
+
+    await callMultipart('@/pages/api/category.page', {
+      method: 'DELETE',
+      url: '/api/category',
+      query: { categoryId: parentId },
+    });
+    const del = await activityFor('CATEGORY', 'DELETE', parentId);
+    expect(del.meta).toEqual({
+      name: 'ActLog Parent',
+      subcategories: 1,
+      products: 0,
+    });
+  });
+
+  it('does not log a category edit that changes nothing', async () => {
+    const created = await callMultipart('@/pages/api/category.page', {
+      method: 'POST',
+      url: '/api/category',
+      fields: { name: JSON.stringify({ en: 'ActLog Quiet' }) },
+    });
+    const id = created.body.data.id as string;
+    await activityFor('CATEGORY', 'CREATE', id);
+
+    await callMultipart('@/pages/api/category.page', {
+      method: 'PUT',
+      url: '/api/category',
+      query: { categoryId: id },
+      fields: { name: JSON.stringify({ en: 'ActLog Quiet' }) },
+    });
+    await settle();
+    expect(
+      await prisma.adminActivity.count({
+        where: { targetId: id, action: 'UPDATE' },
+      }),
+    ).toBe(0);
+  });
+
+  it('records banner create, update and delete by position', async () => {
+    const created = await callMultipart('@/pages/api/promo-banner.page', {
+      method: 'POST',
+      url: '/api/promo-banner',
+      fields: {
+        imageUrl_default: 'https://example.com/actlog-a.jpg',
+        sortOrder: '901',
+        isActive: 'true',
+      },
+    });
+    expect(created.status).toBe(201);
+    const bannerId = created.body.data.id as string;
+    const createRow = await activityFor('BANNER', 'CREATE', bannerId);
+    expect(createRow.meta).toEqual({ position: 901, active: true });
+
+    await callMultipart('@/pages/api/promo-banner.page', {
+      method: 'PUT',
+      url: '/api/promo-banner',
+      query: { id: bannerId },
+      fields: { isActive: 'false', sortOrder: '901' },
+    });
+    const updateRow = await activityFor('BANNER', 'UPDATE', bannerId);
+    expect(updateRow.meta).toEqual({
+      position: 901,
+      changes: { isActive: { from: true, to: false } },
+    });
+
+    await callMultipart('@/pages/api/promo-banner.page', {
+      method: 'DELETE',
+      url: '/api/promo-banner',
+      query: { id: bannerId },
+    });
+    const deleteRow = await activityFor('BANNER', 'DELETE', bannerId);
+    expect(deleteRow.meta).toEqual({ position: 901 });
+  });
+
+  it('does not log a banner save that changes nothing', async () => {
+    const created = await callMultipart('@/pages/api/promo-banner.page', {
+      method: 'POST',
+      url: '/api/promo-banner',
+      fields: {
+        imageUrl_default: 'https://example.com/actlog-b.jpg',
+        sortOrder: '902',
+        isActive: 'true',
+      },
+    });
+    const bannerId = created.body.data.id as string;
+    await activityFor('BANNER', 'CREATE', bannerId);
+
+    await callMultipart('@/pages/api/promo-banner.page', {
+      method: 'PUT',
+      url: '/api/promo-banner',
+      query: { id: bannerId },
+      fields: { sortOrder: '902' },
+    });
+    await settle();
+    expect(
+      await prisma.adminActivity.count({
+        where: { targetId: bannerId, action: 'UPDATE' },
+      }),
+    ).toBe(0);
   });
 
   it('keeps the row and the name after the actor is deleted', async () => {

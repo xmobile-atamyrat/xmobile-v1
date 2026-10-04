@@ -18,6 +18,26 @@ export function isSuperuser(grade: UserRole | undefined): boolean {
 type JwtPayloadWithGrade = { grade?: UserRole };
 
 /**
+ * The user id inside the request's bearer token, for routes that gate with
+ * `requireStaffBearerAuth` (which only reports pass/fail). Call it after that
+ * check; returns undefined for anything it can't verify.
+ */
+export async function bearerUserId(
+  req: NextApiRequest,
+): Promise<string | undefined> {
+  const authHeader = req.headers.authorization;
+  if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+    return undefined;
+  }
+  try {
+    const decoded = await verifyToken(authHeader.split(' ')[1], ACCESS_SECRET);
+    return typeof decoded.userId === 'string' ? decoded.userId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Requires `Authorization: Bearer <access JWT>` whose grade passes `allow`.
  * A missing or invalid token is always 401; a valid token with a disallowed
  * grade gets `rejectStatus`, so each caller keeps its own established contract.
