@@ -382,4 +382,44 @@ describe('Admin activity read APIs (integration)', () => {
       expect((await get('heatmap', superToken)).status).toBe(400);
     });
   });
+
+  describe('retention', () => {
+    it('deletes only rows past 13 months, across several batches', async () => {
+      const monthsAgo = (months: number) => {
+        const date = new Date();
+        date.setUTCMonth(date.getUTCMonth() - months);
+        return date;
+      };
+      await prisma.adminActivity.createMany({
+        data: [
+          row(busyAdminId, 'ActApi Old', 'BRAND', 'CREATE', monthsAgo(20)),
+          row(busyAdminId, 'ActApi Old', 'BRAND', 'UPDATE', monthsAgo(16)),
+          row(busyAdminId, 'ActApi Old', 'BRAND', 'DELETE', monthsAgo(14)),
+          row(busyAdminId, 'ActApi Keep', 'BRAND', 'CREATE', monthsAgo(12)),
+          row(busyAdminId, 'ActApi Keep', 'BRAND', 'UPDATE', new Date()),
+        ],
+      });
+
+      const { pruneAdminActivity } = await import(
+        '@/lib/adminActivityRetention'
+      );
+      const result = await pruneAdminActivity({ batchSize: 2 });
+      // Other tests in this file seed an old row too, so only a floor is exact.
+      expect(result.deleted).toBeGreaterThanOrEqual(3);
+      expect(result.batches).toBeGreaterThanOrEqual(2);
+      expect(await pruneAdminActivity({ batchSize: 2 })).toEqual({
+        deleted: 0,
+        batches: 1,
+      });
+
+      expect(
+        await prisma.adminActivity.count({ where: { userName: 'ActApi Old' } }),
+      ).toBe(0);
+      expect(
+        await prisma.adminActivity.count({
+          where: { userName: 'ActApi Keep' },
+        }),
+      ).toBe(2);
+    });
+  });
 });
