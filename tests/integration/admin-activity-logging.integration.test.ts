@@ -118,6 +118,12 @@ describe('Admin activity logging (integration)', () => {
         where: { imgUrls: { path: ['default'], string_contains: 'actlog' } },
       })
       .catch(() => {});
+    await prisma.prices
+      .deleteMany({ where: { name: { startsWith: 'ActLog' } } })
+      .catch(() => {});
+    await prisma.dollarRate
+      .deleteMany({ where: { name: { startsWith: 'ActLog' } } })
+      .catch(() => {});
     await prisma.product
       .deleteMany({ where: { slug: { startsWith: 'actlog' } } })
       .catch(() => {});
@@ -476,6 +482,199 @@ describe('Admin activity logging (integration)', () => {
     });
     const deleteRow = await activityFor('PRODUCT', 'DELETE', productId);
     expect(deleteRow.meta).toEqual({ name: 'ActLog Phone 2' });
+  });
+
+  it('records price create, edit, no-op save and delete', async () => {
+    const created = await call('@/pages/api/prices/index.page', {
+      method: 'POST',
+      url: '/api/prices',
+      body: { name: 'ActLog 128gb', price: '340', priceInTmt: '6664' },
+    });
+    expect(created.status).toBe(200);
+    const priceId = created.body.data.id as string;
+    const createRow = await activityFor('PRICE', 'CREATE', priceId);
+    expect(createRow.meta).toEqual({ name: 'ActLog 128gb', price: '340' });
+
+    await call('@/pages/api/prices/index.page', {
+      method: 'PUT',
+      url: '/api/prices',
+      body: {
+        pricePairs: [{ id: priceId, name: 'ActLog 128gb', price: '355' }],
+      },
+    });
+    const updateRow = await activityFor('PRICE', 'UPDATE', priceId);
+    expect(updateRow.meta).toEqual({
+      name: 'ActLog 128gb',
+      changes: { price: { from: '340', to: '355' } },
+    });
+
+    await call('@/pages/api/prices/index.page', {
+      method: 'PUT',
+      url: '/api/prices',
+      body: {
+        pricePairs: [{ id: priceId, name: 'ActLog 128gb', price: '355' }],
+      },
+    });
+    await settle();
+    expect(
+      await prisma.adminActivity.count({
+        where: { targetId: priceId, action: 'UPDATE' },
+      }),
+    ).toBe(1);
+
+    await call('@/pages/api/prices/index.page', {
+      method: 'DELETE',
+      url: '/api/prices',
+      query: { id: priceId },
+    });
+    const deleteRow = await activityFor('PRICE', 'DELETE', priceId);
+    expect(deleteRow.meta).toEqual({ name: 'ActLog 128gb', price: '355' });
+  });
+
+  it('collapses a large price save into one summary row', async () => {
+    const rows = await Promise.all(
+      Array.from({ length: 12 }, (_, i) =>
+        prisma.prices.create({
+          data: { name: `ActLog Bulk ${i}`, price: '10', priceInTmt: '196' },
+        }),
+      ),
+    );
+    await call('@/pages/api/prices/index.page', {
+      method: 'PUT',
+      url: '/api/prices',
+      body: {
+        pricePairs: rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          price: '11',
+        })),
+      },
+    });
+    await vi.waitFor(async () => {
+      const summary = await prisma.adminActivity.findMany({
+        where: {
+          userId: adminUserId,
+          entity: 'PRICE',
+          action: 'UPDATE',
+          targetId: null,
+        },
+      });
+      expect(summary).toHaveLength(1);
+      expect(summary[0].meta).toEqual({ count: 12, fields: ['price'] });
+    });
+    expect(
+      await prisma.adminActivity.count({
+        where: { targetId: { in: rows.map((row) => row.id) } },
+      }),
+    ).toBe(0);
+  });
+
+  it('records one row for a rate change and how many prices it recalculated', async () => {
+    const created = await call('@/pages/api/prices/rate.page', {
+      method: 'POST',
+      url: '/api/prices/rate',
+      body: { name: 'ActLog Rate', rate: 19.5 },
+    });
+    expect(created.status).toBe(200);
+    const rateId = created.body.data.id as number;
+    const createRow = await activityFor(
+      'CURRENCY_RATE',
+      'CREATE',
+      String(rateId),
+    );
+    expect(createRow.meta).toMatchObject({ name: 'ActLog Rate', rate: 19.5 });
+
+    await Promise.all(
+      [1, 2, 3].map((i) =>
+        prisma.prices.create({
+          data: {
+            name: `ActLog Rated ${i}`,
+            price: '100',
+            priceInTmt: '1950',
+            dollarRateId: rateId,
+          },
+        }),
+      ),
+    );
+
+    const updated = await call('@/pages/api/prices/rate.page', {
+      method: 'PUT',
+      url: '/api/prices/rate',
+      body: { id: rateId, rate: 19.6 },
+    });
+    expect(updated.status).toBe(200);
+    const updateRow = await activityFor(
+      'CURRENCY_RATE',
+      'UPDATE',
+      String(rateId),
+    );
+    expect(updateRow.meta).toMatchObject({
+      name: 'ActLog Rate',
+      changes: { rate: { from: 19.5, to: 19.6 } },
+      recalculatedPrices: 3,
+    });
+    expect(
+      await prisma.adminActivity.count({
+        where: {
+          entity: 'PRICE',
+          targetId: { not: null },
+          userId: adminUserId,
+          meta: { path: ['name'], string_starts_with: 'ActLog Rated' },
+        },
+      }),
+    ).toBe(0);
+
+    const priceIds = (
+      await prisma.prices.findMany({
+        where: { name: { startsWith: 'ActLog Rated' } },
+        select: { id: true },
+      })
+    ).map((row) => row.id);
+    const other = await call('@/pages/api/prices/rate.page', {
+      method: 'POST',
+      url: '/api/prices/rate',
+      body: { name: 'ActLog Rate B', rate: 20 },
+    });
+    const otherId = other.body.data.id as number;
+    await call('@/pages/api/prices/assign-rate.page', {
+      method: 'PUT',
+      url: '/api/prices/assign-rate',
+      body: { priceIds: priceIds.slice(0, 2), rateId: otherId },
+    });
+    await vi.waitFor(async () => {
+      const rows = await prisma.adminActivity.findMany({
+        where: {
+          entity: 'PRICE',
+          action: 'UPDATE',
+          targetId: null,
+          userId: adminUserId,
+        },
+      });
+      expect(
+        rows.some((row) => (row.meta as any)?.rate === 'ActLog Rate B'),
+      ).toBe(true);
+    });
+
+    if (
+      (await prisma.dollarRate.findFirst({ where: { isDefault: true } })) ==
+      null
+    ) {
+      await prisma.dollarRate.create({
+        data: { name: 'ActLog Default', rate: 19, isDefault: true },
+      });
+    }
+    const removed = await call('@/pages/api/prices/rate.page', {
+      method: 'DELETE',
+      url: '/api/prices/rate',
+      body: { id: otherId },
+    });
+    expect(removed.status).toBe(200);
+    const deleteRow = await activityFor(
+      'CURRENCY_RATE',
+      'DELETE',
+      String(otherId),
+    );
+    expect(deleteRow.meta).toMatchObject({ name: 'ActLog Rate B' });
   });
 
   it('keeps the row and the name after the actor is deleted', async () => {
