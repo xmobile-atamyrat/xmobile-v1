@@ -79,10 +79,16 @@ export function parseFeedQuery(
   const cursor = first(query.cursor);
   const limitRaw = first(query.limit);
 
-  if (entity && !(entity in AdminActivityEntity)) {
+  if (
+    entity &&
+    !(Object.values(AdminActivityEntity) as string[]).includes(entity)
+  ) {
     return { ok: false, message: 'Invalid entity' };
   }
-  if (action && !(action in AdminActivityAction)) {
+  if (
+    action &&
+    !(Object.values(AdminActivityAction) as string[]).includes(action)
+  ) {
     return { ok: false, message: 'Invalid action' };
   }
   if ((from && !isValidDay(from)) || (to && !isValidDay(to))) {
