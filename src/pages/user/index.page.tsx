@@ -27,6 +27,7 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  Activity,
   BarChart3,
   Bell,
   Boxes,
@@ -375,6 +376,11 @@ export default function Profile() {
             icon: <RotateCcw className={profileClasses.icon.primary} />,
             label: t('pushRetryConfig'),
             onClick: () => router.push('/admin/push-retry-config'),
+          },
+          {
+            icon: <Activity className={profileClasses.icon.primary} />,
+            label: t('adminActivity'),
+            onClick: () => router.push('/admin/activity'),
           },
         ]
       : []),
