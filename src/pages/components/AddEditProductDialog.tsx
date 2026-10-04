@@ -538,6 +538,7 @@ export default function AddEditProductDialog({
               videoUrls,
               selectedProductId: id,
               isOutOfStock,
+              accessToken,
             });
             // A new product only got its id just now, so the prices staged in
             // connectedPrices are linked here. Editing an existing product
