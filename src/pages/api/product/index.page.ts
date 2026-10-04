@@ -20,6 +20,7 @@ import {
 } from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
@@ -759,6 +760,7 @@ export default async function handler(
   addCors(res);
   const { method, query } = req;
   if (method === 'POST') {
+    if (!(await requireStaffBearerAuth(req, res))) return undefined;
     try {
       const retData = await createProduct(req);
       if (retData.success && retData.data != null) {
@@ -788,6 +790,7 @@ export default async function handler(
       };
     }
   } else if (method === 'DELETE') {
+    if (!(await requireStaffBearerAuth(req, res))) return undefined;
     try {
       const { productId } = query;
       if (productId == null) {
@@ -855,6 +858,7 @@ export default async function handler(
         .json({ success: false, message: "Couldn't delete the product" });
     }
   } else if (method === 'PUT') {
+    if (!(await requireStaffBearerAuth(req, res))) return undefined;
     const { productId } = query;
     if (productId == null) {
       console.error(filepath, 'No product id provided', `Method: ${method}`);
