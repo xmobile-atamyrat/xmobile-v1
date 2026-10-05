@@ -344,6 +344,7 @@ export const addEditCategory = async ({
   const newFormData = new FormData();
   const {
     categoryNameInTurkmen,
+    categoryNameInTurkish,
     categoryNameInCharjov,
     categoryNameInRussian,
     categoryNameInEnglish,
@@ -354,6 +355,7 @@ export const addEditCategory = async ({
   }
   const categoryNames: any = {};
   if (categoryNameInTurkmen !== '') categoryNames.tk = categoryNameInTurkmen;
+  if (categoryNameInTurkish !== '') categoryNames.tr = categoryNameInTurkish;
   if (categoryNameInCharjov !== '') categoryNames.ch = categoryNameInCharjov;
   if (categoryNameInRussian !== '') categoryNames.ru = categoryNameInRussian;
   if (categoryNameInEnglish !== '') categoryNames.en = categoryNameInEnglish;

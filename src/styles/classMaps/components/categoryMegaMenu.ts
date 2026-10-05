@@ -38,17 +38,17 @@ export const categoryMegaMenuClasses = {
   group: 'min-w-0 flex flex-col items-start',
   groupHeadingRow: 'group flex flex-row items-center gap-1 mb-3 max-w-full',
   groupHeading:
-    'text-[12px] font-bold tracking-[.06em] uppercase text-navy text-left truncate hover:underline',
-  groupList: 'flex flex-col items-start gap-[9px] max-w-full',
+    'text-[14px] font-bold tracking-[.05em] uppercase text-navy text-left truncate hover:underline',
+  groupList: 'flex flex-col items-start gap-[12px] max-w-full',
   groupItemRow: 'group flex flex-row items-center gap-1 max-w-full',
   groupItem:
-    'text-[13px] text-[#4A4959] text-left truncate hover:text-navy transition-colors',
+    'text-[15px] font-medium text-[#2B2A38] text-left truncate hover:text-navy hover:underline transition-colors',
   // Categories with no subcategories keep the group shape: same heading, one
   // "all products" link in place of the child list.
   emptyHeading:
-    'text-[12px] font-bold tracking-[.06em] uppercase text-navy mb-3 truncate max-w-full',
+    'text-[14px] font-bold tracking-[.05em] uppercase text-navy mb-3 truncate max-w-full',
   emptyLink:
-    'text-[13px] text-[#4A4959] hover:text-navy transition-colors flex flex-row items-center gap-1.5',
+    'text-[15px] font-medium text-[#2B2A38] hover:text-navy hover:underline transition-colors flex flex-row items-center gap-1.5',
 
   // Category spotlight (the mockup's product promo, spec :2281-2284). No
   // "featured product" data exists, so it highlights the open category itself.

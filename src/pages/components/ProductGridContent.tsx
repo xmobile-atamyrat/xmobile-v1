@@ -686,11 +686,13 @@ export default function ProductGridContent({
               m: 0,
               width: '100%',
               maxHeight: '88vh',
+              '@supports (height: 1dvh)': { maxHeight: '88dvh' },
+              overflow: 'hidden',
               borderRadius: '26px 26px 0 0',
             },
           }}
         >
-          <Box className="flex flex-col bg-white">
+          <Box className="flex min-h-0 flex-1 flex-col bg-white">
             <Box className={filterSidebarClasses.dragHandle} />
             <Box className={filterSidebarClasses.header}>
               <Typography

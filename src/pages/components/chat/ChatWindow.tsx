@@ -128,6 +128,7 @@ const ChatWindow = () => {
           (() => {
             const elements: JSX.Element[] = [];
             let lastDateKey: string | null = null;
+            let lastSenderId: string | null = null;
 
             messages.forEach((msg) => {
               const date = new Date(
@@ -156,19 +157,20 @@ const ChatWindow = () => {
                   </Box>,
                 );
                 lastDateKey = dateKey;
+                lastSenderId = null;
               }
 
               const isAdminMessage =
                 msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPERUSER';
               const isMe = msg.senderId === user?.id;
 
-              let senderIndicator;
-              if (isMe) {
-                senderIndicator = t('chatYou') || 'You';
-              } else if (isAdminMessage) {
-                senderIndicator =
-                  msg.senderName || `Admin (${msg.senderId.slice(-4)})`;
-              }
+              const isContinuation = msg.senderId === lastSenderId;
+              lastSenderId = msg.senderId;
+
+              const senderIndicator =
+                isAdminView && isAdminMessage && !isMe && !isContinuation
+                  ? msg.senderName
+                  : undefined;
 
               const key =
                 msg.messageId ||

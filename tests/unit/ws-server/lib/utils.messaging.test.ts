@@ -27,6 +27,41 @@ describe('sendMessage', () => {
     sendMessage(conn, { type: 'ping' } as any);
     expect(send).toHaveBeenCalledWith(JSON.stringify({ type: 'ping' }));
   });
+
+  describe('staff name visibility', () => {
+    const live = {
+      type: 'message',
+      senderId: 'a1',
+      senderRole: 'ADMIN',
+      senderName: 'Aman',
+      content: 'hi',
+    };
+    const history = { type: 'history', sessionId: 's', messages: [live] };
+
+    const sentTo = (userGrade: string, message: any) => {
+      const send = vi.fn();
+      sendMessage(
+        { readyState: WebSocket.OPEN, send, userGrade } as any,
+        message,
+      );
+      return JSON.parse(send.mock.calls[0][0]);
+    };
+
+    it('strips senderName from live messages for customers', () => {
+      expect(sentTo('FREE', live)).not.toHaveProperty('senderName');
+    });
+
+    it('strips senderName from history for customers', () => {
+      expect(sentTo('FREE', history).messages[0]).not.toHaveProperty(
+        'senderName',
+      );
+    });
+
+    it.each(['ADMIN', 'SUPERUSER'])('keeps senderName for %s', (grade) => {
+      expect(sentTo(grade, live).senderName).toBe('Aman');
+      expect(sentTo(grade, history).messages[0].senderName).toBe('Aman');
+    });
+  });
 });
 
 describe('sendNotificationsToUser', () => {

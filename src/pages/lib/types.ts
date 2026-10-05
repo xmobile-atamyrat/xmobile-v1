@@ -331,6 +331,7 @@ export interface CategoryName {
   en: string;
   ru: string;
   tk: string;
+  tr: string;
   ch: string;
 }
 
