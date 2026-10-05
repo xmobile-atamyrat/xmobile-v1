@@ -11,7 +11,7 @@ interface ChatBubbleProps {
   senderIndicator?: string;
 }
 
-const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
+const ChatBubble = ({ message, isMe, senderIndicator }: ChatBubbleProps) => {
   const platform = usePlatform();
   const isUserMessage = message.senderRole === 'FREE';
   const backgroundColor = isUserMessage ? navy : '#fff';
@@ -34,6 +34,13 @@ const ChatBubble = ({ message, isMe }: ChatBubbleProps) => {
         alignItems: alignSelf,
       }}
     >
+      {senderIndicator && (
+        <Typography
+          sx={{ fontSize: '11px', color: '#8A89A0', mb: '2px', px: 1 }}
+        >
+          {senderIndicator}
+        </Typography>
+      )}
       <Paper
         elevation={0}
         className={chatClasses.bubble.paper[platform]}
