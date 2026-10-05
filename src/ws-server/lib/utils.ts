@@ -1,5 +1,9 @@
 import dbClient from '@/lib/dbClient';
-import { ChatMessageProps, InAppNotification } from '@/pages/lib/types';
+import {
+  ChatMessageProps,
+  HistoryResponseMessage,
+  InAppNotification,
+} from '@/pages/lib/types';
 import {
   createFCMNotificationPayload,
   recordNotificationDelivery,
@@ -22,15 +26,31 @@ export interface SessionVerificationResult {
   isParticipant: boolean;
 }
 
+// Customers must not learn which staff member replied.
+function withoutStaffName(message: any) {
+  if (message?.type === 'message') {
+    return { ...message, senderName: undefined };
+  }
+  if (message?.type === 'history') {
+    return { ...message, messages: message.messages.map(withoutStaffName) };
+  }
+  return message;
+}
+
 export function sendMessage(
   safeConnection: AuthenticatedConnection,
-  message: ChatMessageProps,
+  message: ChatMessageProps | HistoryResponseMessage,
 ) {
   if (safeConnection.readyState !== WebSocket.OPEN) {
     return;
   }
 
-  safeConnection.send(JSON.stringify(message));
+  const payload =
+    safeConnection.userGrade === UserRole.FREE
+      ? withoutStaffName(message)
+      : message;
+
+  safeConnection.send(JSON.stringify(payload));
 }
 
 export function broadcastToSession(
