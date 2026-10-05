@@ -237,6 +237,12 @@ export default function AddEditCategoriesDialog({
               defaultValue={parsedCategoryName.tk ?? ''}
             />
             <TextField
+              label={t('inTurkish')}
+              name="categoryNameInTurkish"
+              className={addEditCategoriesDialogClasses.textField[platform]}
+              defaultValue={parsedCategoryName.tr ?? ''}
+            />
+            <TextField
               label={t('inCharjov')}
               name="categoryNameInCharjov"
               className={addEditCategoriesDialogClasses.textField[platform]}
