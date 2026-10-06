@@ -4,6 +4,7 @@ import { bannerCropSize } from '@/pages/lib/bannerCrop';
 import {
   COOKIE_EXPIRY_SECONDS,
   LOGO_COLOR,
+  CATEGORY_IMAGE_WIDTH,
   PRODUCT_IMAGE_WIDTH,
   RED_COLOR,
   X_MOBILE_DOMAIN,
@@ -362,7 +363,10 @@ export const addEditCategory = async ({
   if (categoryImageUrl != null && categoryImageUrl !== '') {
     newFormData.append('imageUrl', categoryImageUrl);
   } else if (categoryImageFile != null && categoryImageFile.name !== '') {
-    const resizedImage = await resizeImage(categoryImageFile, 240);
+    const resizedImage = await resizeImage(
+      categoryImageFile,
+      CATEGORY_IMAGE_WIDTH,
+    );
     newFormData.append('imageUrl', resizedImage);
   }
 
