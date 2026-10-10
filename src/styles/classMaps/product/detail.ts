@@ -51,7 +51,6 @@ export const detailPageClasses = {
   // Web info column (spec 1517-1524)
   brandEyebrow:
     'text-[13px] font-semibold text-muted uppercase tracking-[0.1em] mb-2',
-  webDescription: 'text-[15px] leading-[1.65] text-[#4A4959] max-w-[440px]',
   optionGroup: 'mt-[22px]',
   optionLabel: 'text-[14px] font-bold text-ink mb-3',
   optionRow: 'flex flex-row flex-wrap gap-3',
@@ -108,9 +107,13 @@ export const detailPageClasses = {
     row: 'flex flex-row justify-between items-start gap-4 py-[13px] border-b border-[#F4F3F7]',
     rowKey: 'text-[14px] text-muted',
     rowVal: 'text-[14px] font-semibold text-ink text-right',
-    proseBlock: 'mt-6',
-    proseTitle: 'text-[15px] font-bold text-ink mb-2',
-    proseLine: 'text-[14px] leading-[1.65] text-[#4A4959]',
+    // Long sections (any line > 35 chars) span both grid columns so the value
+    // wraps as readable left-aligned text instead of a narrow right-aligned cell.
+    rowLong:
+      'col-span-2 flex flex-row items-start gap-6 py-[13px] border-b border-[#F4F3F7]',
+    rowKeyLong: 'text-[14px] text-muted shrink-0 w-[180px]',
+    rowValLong: 'flex flex-col flex-1 min-w-0',
+    rowValLongLine: 'text-[14px] leading-[1.65] text-ink',
   },
   dialogImg: {
     web: 'w-[90vw] h-auto',
