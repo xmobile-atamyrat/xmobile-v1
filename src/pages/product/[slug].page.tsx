@@ -519,11 +519,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     };
   };
 
-  // Web info column (spec 1521) reads the first long description section as the
-  // product's marketing copy; the remaining long sections and every short one
-  // drop into the specs strip below, so nothing is rendered twice.
-  const webIntroKey = longSpecKeys[0];
-  const webProseKeys = longSpecKeys.slice(1);
+  // Web specs strip lists every description section in its original order.
+  // Long sections span the full grid width so their text has room to wrap.
+  const webSpecKeys = useMemo(
+    () =>
+      Object.keys(description ?? {}).filter(
+        (key) => (description?.[key]?.length ?? 0) > 0,
+      ),
+    [description],
+  );
+  const longSpecKeySet = useMemo(() => new Set(longSpecKeys), [longSpecKeys]);
 
   // Spec 1523 draws colors as circular swatches. Color.hex is non-null in the
   // schema, but colorsMap is fetched async — fall back to the labelled pill
@@ -706,13 +711,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               >
                 {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
               </Typography>
-              {webIntroKey && (
-                <Typography
-                  className={`${fontClassName.className} ${detailPageClasses.webDescription}`}
-                >
-                  {description?.[webIntroKey].join(' ')}
-                </Typography>
-              )}
             </Box>
 
             {/* colors — spec 1523 */}
@@ -877,7 +875,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           </Box>
 
           {/* specs strip — spec 1540 (reviews card skipped: no Review model) */}
-          {(shortSpecKeys.length > 0 || webProseKeys.length > 0) && (
+          {webSpecKeys.length > 0 && (
             <Box className={detailPageClasses.boxes.detail.web}>
               <Box className={detailPageClasses.specs.tabBar}>
                 <Typography
@@ -886,41 +884,49 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   {t('specification')}
                 </Typography>
               </Box>
-              {shortSpecKeys.length > 0 && (
-                <Box className={detailPageClasses.specs.grid}>
-                  {shortSpecKeys.map((key) => (
-                    <Box key={key} className={detailPageClasses.specs.row}>
+              <Box className={detailPageClasses.specs.grid}>
+                {webSpecKeys.map((key) => {
+                  const isLong = longSpecKeySet.has(key);
+                  return (
+                    <Box
+                      key={key}
+                      className={
+                        isLong
+                          ? detailPageClasses.specs.rowLong
+                          : detailPageClasses.specs.row
+                      }
+                    >
                       <Typography
-                        className={`${fontClassName.className} ${detailPageClasses.specs.rowKey}`}
+                        className={`${fontClassName.className} ${
+                          isLong
+                            ? detailPageClasses.specs.rowKeyLong
+                            : detailPageClasses.specs.rowKey
+                        }`}
                       >
                         {key}
                       </Typography>
-                      <Typography
-                        className={`${fontClassName.className} ${detailPageClasses.specs.rowVal}`}
-                      >
-                        {description?.[key].join(' · ')}
-                      </Typography>
+                      {isLong ? (
+                        <Box className={detailPageClasses.specs.rowValLong}>
+                          {description?.[key].map((descLine, index) => (
+                            <Typography
+                              key={index}
+                              className={`${fontClassName.className} ${detailPageClasses.specs.rowValLongLine}`}
+                            >
+                              {descLine}
+                            </Typography>
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography
+                          className={`${fontClassName.className} ${detailPageClasses.specs.rowVal}`}
+                        >
+                          {description?.[key].join(' · ')}
+                        </Typography>
+                      )}
                     </Box>
-                  ))}
-                </Box>
-              )}
-              {webProseKeys.map((key) => (
-                <Box key={key} className={detailPageClasses.specs.proseBlock}>
-                  <Typography
-                    className={`${fontClassName.className} ${detailPageClasses.specs.proseTitle}`}
-                  >
-                    {key}
-                  </Typography>
-                  {description?.[key].map((descLine, index) => (
-                    <Typography
-                      key={index}
-                      className={`${fontClassName.className} ${detailPageClasses.specs.proseLine}`}
-                    >
-                      {descLine}
-                    </Typography>
-                  ))}
-                </Box>
-              ))}
+                  );
+                })}
+              </Box>
             </Box>
           )}
         </Box>
