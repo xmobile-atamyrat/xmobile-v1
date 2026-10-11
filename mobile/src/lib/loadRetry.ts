@@ -4,10 +4,12 @@ import {
   WebViewErrorDetail,
 } from './webviewErrors';
 
-export const MAX_AUTO_RETRIES = 3;
+export const MAX_AUTO_RETRIES = 6;
 export const RETRY_BASE_DELAY_MS = 1000;
 export const RETRY_MAX_DELAY_MS = 8000;
-export const LOAD_DEADLINE_MS = 10000;
+// Long enough to outlast a slow .tm DNS lookup from abroad (ios -1003 /
+// android -2); the browser waits far longer than this before giving up.
+export const LOAD_DEADLINE_MS = 45000;
 
 export type LoadRetryHandlers = {
   reload: (hasCommitted: boolean) => void;
