@@ -189,6 +189,40 @@ export function generateSearchTitle(template: string, keyword: string): string {
   return `${template.replace('{keyword}', keyword)} - ${BUSINESS_NAME}`;
 }
 
+const ORGANIZATION_ID = `${BASE_URL}/#organization`;
+
+// Prices follow the dollar rate, so this is no real guarantee. It only has to
+// stay in the future: Google hides prices whose date has passed.
+const PRICE_VALID_DAYS = 90;
+
+const dayRange = (minValue: number, maxValue: number) => ({
+  '@type': 'QuantitativeValue' as const,
+  minValue,
+  maxValue,
+  unitCode: 'DAY' as const,
+});
+
+/**
+ * Pick the variant the product page opens on: the first in stock, else the
+ * first one. Without variants, the base price is used.
+ */
+export function pickJsonLdOffer(params: {
+  basePrice: string | null | undefined;
+  productOutOfStock: boolean;
+  variants: { priceTmt: string | null; isOutOfStock: boolean }[];
+}): { price: string | null; isOutOfStock: boolean } {
+  const { basePrice, productOutOfStock, variants } = params;
+  if (variants.length === 0) {
+    return { price: basePrice ?? null, isOutOfStock: productOutOfStock };
+  }
+  const opened =
+    variants.find((variant) => !variant.isOutOfStock) ?? variants[0];
+  return {
+    price: opened.priceTmt,
+    isOutOfStock: productOutOfStock || opened.isOutOfStock,
+  };
+}
+
 /**
  * Generate Product schema JSON-LD for structured data.
  * This enables Google Shopping rich results.
@@ -201,18 +235,24 @@ export function generateSearchTitle(template: string, keyword: string): string {
 export function generateProductJsonLd(params: {
   productName: string;
   productUrl: string;
-  price?: string;
+  sku: string;
+  price?: string | null;
+  isOutOfStock?: boolean;
   imageUrls: string[];
   brandName?: string;
   description?: string;
+  category?: string;
 }): ProductJsonLdData {
   const {
     productName,
     productUrl,
+    sku,
     price,
+    isOutOfStock = false,
     imageUrls,
     brandName, // todo: brandName reserved for future use when all products have brands
     description,
+    category,
   } = params;
 
   const schema: ProductJsonLdData = {
@@ -220,13 +260,48 @@ export function generateProductJsonLd(params: {
     '@type': 'Product',
     name: productName,
     image: imageUrls,
-    offers: {
-      '@type': 'Offer',
-      price: price || '0',
-      priceCurrency: 'TMT',
-      url: productUrl,
-    },
+    sku,
   };
+
+  // Google reads a price of 0 as free, and merchant listings require one above 0.
+  if (price && Number(price) > 0) {
+    const validUntil = new Date();
+    validUntil.setUTCDate(validUntil.getUTCDate() + PRICE_VALID_DAYS);
+
+    schema.offers = {
+      '@type': 'Offer',
+      price,
+      priceCurrency: 'TMT',
+      priceValidUntil: validUntil.toISOString().slice(0, 10),
+      url: productUrl,
+      availability: isOutOfStock
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Organization',
+        '@id': ORGANIZATION_ID,
+        name: BUSINESS_NAME,
+        url: BASE_URL,
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'TM',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: dayRange(0, 1),
+          transitTime: dayRange(5, 10),
+        },
+      },
+    };
+  }
+
+  if (category) {
+    schema.category = category;
+  }
 
   if (brandName) {
     schema.brand = {
@@ -298,6 +373,7 @@ export function generateOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': ORGANIZATION_ID,
     name: BUSINESS_NAME, // Xmobile
     url: BASE_URL,
     logo: `${BASE_URL}/logo/xmobile-processed-logo.png`,

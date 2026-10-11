@@ -38,6 +38,7 @@ import {
   generateProductMetaDescription,
   generateProductTitle,
   getCanonicalUrl,
+  pickJsonLdOffer,
 } from '@/pages/lib/seo';
 import { expandDynamicPathsForAllLocales } from '@/pages/lib/ssgLocales';
 import {
@@ -71,7 +72,7 @@ import {
   Typography,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import type { Color, Product } from '@prisma/client';
+import type { Color, Prices, Product } from '@prisma/client';
 import {
   ArrowLeft,
   Banknote,
@@ -95,6 +96,37 @@ import 'slick-carousel/slick/slick.css';
 const AddToCart = dynamic(() => import('@/pages/components/AddToCart'), {
   loading: () => <CircularProgress />,
 });
+
+// Same variant lookup the page runs on mount, so the JSON-LD Offer matches it.
+async function resolveJsonLdVariants(tags: string[]) {
+  const priceIds = [
+    ...new Set(tags.map((tag) => parseVariantTag(tag).priceId)),
+  ].filter((id): id is string => id != null);
+  const rows = new Map(
+    await Promise.all(
+      priceIds.map(async (priceId) => {
+        try {
+          const res = await fetch(
+            `${BASE_URL}/api/prices?id=${encodeURIComponent(priceId)}`,
+          );
+          const { success, data }: ResponseApi<Prices> = await res.json();
+          return [priceId, success ? data ?? null : null] as const;
+        } catch {
+          return [priceId, null] as const;
+        }
+      }),
+    ),
+  );
+
+  return tags.map((tag) => {
+    const { priceId } = parseVariantTag(tag);
+    const row = priceId ? rows.get(priceId) ?? null : null;
+    return {
+      priceTmt: displayPriceOrNull(row),
+      isOutOfStock: row == null || row.outOfStockAt != null,
+    };
+  });
+}
 
 // getStaticPaths for dynamic routes
 export const getStaticPaths: GetStaticPaths = async (context) => {
@@ -200,13 +232,24 @@ export const getStaticProps: GetStaticProps = async ({
         );
       });
 
+      const offer = pickJsonLdOffer({
+        basePrice: priceValue,
+        productOutOfStock: product.outOfStockAt != null,
+        variants: await resolveJsonLdVariants(product.tags ?? []),
+      });
+
       const productJsonLd = generateProductJsonLd({
         productName,
         productUrl: canonicalUrl,
-        price: priceValue,
+        sku: product.id,
+        price: offer.price,
+        isOutOfStock: offer.isOutOfStock,
         imageUrls,
         description: parseName(product.description ?? '{}', locale),
         brandName: product.brand?.name,
+        category: categoryPath
+          .map((category) => parseName(category.name, locale).trim())
+          .join(' > '),
       });
 
       const breadcrumbJsonLd = generateBreadcrumbJsonLd(
