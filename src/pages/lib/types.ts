@@ -417,6 +417,44 @@ export interface DollarRateContextProps {
 // SEO TYPE DEFINITIONS
 // ============================================
 
+interface JsonLdDayRange {
+  '@type': 'QuantitativeValue';
+  minValue: number;
+  maxValue: number;
+  unitCode: 'DAY';
+}
+
+/**
+ * @see https://schema.org/Offer
+ */
+export interface ProductOfferJsonLd {
+  '@type': 'Offer';
+  price: string;
+  priceCurrency: 'TMT';
+  priceValidUntil: string;
+  url: string;
+  availability: 'https://schema.org/InStock' | 'https://schema.org/OutOfStock';
+  itemCondition: 'https://schema.org/NewCondition';
+  seller: {
+    '@type': 'Organization';
+    '@id': string;
+    name: string;
+    url: string;
+  };
+  shippingDetails: {
+    '@type': 'OfferShippingDetails';
+    shippingDestination: {
+      '@type': 'DefinedRegion';
+      addressCountry: 'TM';
+    };
+    deliveryTime: {
+      '@type': 'ShippingDeliveryTime';
+      handlingTime: JsonLdDayRange;
+      transitTime: JsonLdDayRange;
+    };
+  };
+}
+
 /**
  * @see https://schema.org/Product
  */
@@ -429,12 +467,9 @@ export interface ProductJsonLdData {
     '@type': 'Brand';
     name: string;
   };
-  offers: {
-    '@type': 'Offer';
-    price: string;
-    priceCurrency: 'TMT';
-    url: string;
-  };
+  sku: string;
+  category?: string;
+  offers?: ProductOfferJsonLd;
   image: string[];
 }
 
