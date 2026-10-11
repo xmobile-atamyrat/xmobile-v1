@@ -6,6 +6,7 @@ import {
   generateProductJsonLd,
   generateProductMetaDescription,
   generateProductTitle,
+  pickJsonLdOffer,
 } from '@/pages/lib/seo';
 
 describe('generateProductTitle', () => {
@@ -124,5 +125,53 @@ describe('generateProductJsonLd', () => {
         category: 'Телефоны > Смартфоны',
       }).category,
     ).toBe('Телефоны > Смартфоны');
+  });
+});
+
+describe('pickJsonLdOffer', () => {
+  it('uses the base price and product flag when there are no variants', () => {
+    expect(
+      pickJsonLdOffer({
+        basePrice: '3230',
+        productOutOfStock: false,
+        variants: [],
+      }),
+    ).toEqual({ price: '3230', isOutOfStock: false });
+  });
+
+  it('opens on the first variant that can be bought', () => {
+    expect(
+      pickJsonLdOffer({
+        basePrice: '3230',
+        productOutOfStock: false,
+        variants: [
+          { priceTmt: '3230', isOutOfStock: true },
+          { priceTmt: '3990', isOutOfStock: false },
+        ],
+      }),
+    ).toEqual({ price: '3990', isOutOfStock: false });
+  });
+
+  it('falls back to the first variant when all are sold out', () => {
+    expect(
+      pickJsonLdOffer({
+        basePrice: '3230',
+        productOutOfStock: false,
+        variants: [
+          { priceTmt: '3230', isOutOfStock: true },
+          { priceTmt: null, isOutOfStock: true },
+        ],
+      }),
+    ).toEqual({ price: '3230', isOutOfStock: true });
+  });
+
+  it('lets the product flag win over an in-stock variant', () => {
+    expect(
+      pickJsonLdOffer({
+        basePrice: '3230',
+        productOutOfStock: true,
+        variants: [{ priceTmt: '3230', isOutOfStock: false }],
+      }),
+    ).toEqual({ price: '3230', isOutOfStock: true });
   });
 });

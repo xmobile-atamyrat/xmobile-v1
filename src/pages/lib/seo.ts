@@ -203,6 +203,27 @@ const dayRange = (minValue: number, maxValue: number) => ({
 });
 
 /**
+ * Pick the variant the product page opens on: the first in stock, else the
+ * first one. Without variants, the base price is used.
+ */
+export function pickJsonLdOffer(params: {
+  basePrice: string | null | undefined;
+  productOutOfStock: boolean;
+  variants: { priceTmt: string | null; isOutOfStock: boolean }[];
+}): { price: string | null; isOutOfStock: boolean } {
+  const { basePrice, productOutOfStock, variants } = params;
+  if (variants.length === 0) {
+    return { price: basePrice ?? null, isOutOfStock: productOutOfStock };
+  }
+  const opened =
+    variants.find((variant) => !variant.isOutOfStock) ?? variants[0];
+  return {
+    price: opened.priceTmt,
+    isOutOfStock: productOutOfStock || opened.isOutOfStock,
+  };
+}
+
+/**
  * Generate Product schema JSON-LD for structured data.
  * This enables Google Shopping rich results.
  *
