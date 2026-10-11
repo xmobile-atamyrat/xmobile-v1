@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { META_DESC_MAX_LENGTH } from '@/pages/lib/constants';
 import {
+  generateOrganizationSchema,
+  generateProductJsonLd,
   generateProductMetaDescription,
   generateProductTitle,
 } from '@/pages/lib/seo';
@@ -38,5 +40,89 @@ describe('generateProductMetaDescription', () => {
     const d = generateProductMetaDescription(filler, 'P');
     expect(d.length).toBeLessThanOrEqual(META_DESC_MAX_LENGTH);
     expect(d.endsWith('...')).toBe(true);
+  });
+});
+
+describe('generateProductJsonLd', () => {
+  const baseParams = {
+    productName: 'iPhone 15 Pro',
+    productUrl: 'https://xmobile.com.tm/ru/product/iphone-15-pro',
+    sku: 'product-id-1',
+    price: '12000',
+    imageUrls: ['https://xmobile.com.tm/media/product/good/img1.jpg'],
+    brandName: 'Apple',
+    description: 'Latest flagship smartphone',
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-11T20:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('builds a merchant-listing Offer for an in-stock product', () => {
+    const schema = generateProductJsonLd(baseParams);
+
+    expect(schema['@context']).toBe('https://schema.org');
+    expect(schema['@type']).toBe('Product');
+    expect(schema.name).toBe('iPhone 15 Pro');
+    expect(schema.sku).toBe('product-id-1');
+    expect(schema.offers).toMatchObject({
+      '@type': 'Offer',
+      price: '12000',
+      priceCurrency: 'TMT',
+      priceValidUntil: '2027-01-09',
+      url: 'https://xmobile.com.tm/ru/product/iphone-15-pro',
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@type': 'Organization', name: 'Xmobile' },
+      shippingDetails: {
+        shippingDestination: { addressCountry: 'TM' },
+        deliveryTime: {
+          handlingTime: { minValue: 0, maxValue: 1, unitCode: 'DAY' },
+          transitTime: { minValue: 5, maxValue: 10, unitCode: 'DAY' },
+        },
+      },
+    });
+  });
+
+  it('points the seller at the organization schema', () => {
+    const schema = generateProductJsonLd(baseParams);
+
+    expect(schema.offers?.seller['@id']).toBe(
+      generateOrganizationSchema()['@id'],
+    );
+  });
+
+  it('sets availability to OutOfStock when isOutOfStock is true', () => {
+    const schema = generateProductJsonLd({
+      ...baseParams,
+      isOutOfStock: true,
+    });
+
+    expect(schema.offers?.availability).toBe('https://schema.org/OutOfStock');
+  });
+
+  it.each([undefined, null, '', '0', 'undefined'])(
+    'leaves the Offer out when the price is %j',
+    (price) => {
+      const schema = generateProductJsonLd({ ...baseParams, price });
+
+      expect(schema.offers).toBeUndefined();
+      expect(schema.name).toBe('iPhone 15 Pro');
+    },
+  );
+
+  it('includes the category only when one is given', () => {
+    expect(generateProductJsonLd(baseParams).category).toBeUndefined();
+    expect(
+      generateProductJsonLd({
+        ...baseParams,
+        category: 'Телефоны > Смартфоны',
+      }).category,
+    ).toBe('Телефоны > Смартфоны');
   });
 });

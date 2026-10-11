@@ -203,10 +203,15 @@ export const getStaticProps: GetStaticProps = async ({
       const productJsonLd = generateProductJsonLd({
         productName,
         productUrl: canonicalUrl,
+        sku: product.id,
         price: priceValue,
+        isOutOfStock: product.outOfStockAt != null,
         imageUrls,
         description: parseName(product.description ?? '{}', locale),
         brandName: product.brand?.name,
+        category: categoryPath
+          .map((category) => parseName(category.name, locale).trim())
+          .join(' > '),
       });
 
       const breadcrumbJsonLd = generateBreadcrumbJsonLd(
