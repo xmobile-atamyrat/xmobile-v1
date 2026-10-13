@@ -1,3 +1,10 @@
+import {
+  buildDeliveryFeeMeta,
+  buildNotesMeta,
+  buildStatusMeta,
+  recordOrderActivity,
+  snapshotOrder,
+} from '@/lib/orderActivity';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -49,10 +56,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
     if (action === 'status') {
       try {
+        const before = await snapshotOrder(orderId);
         const { resp, status } = await updateOrderStatusController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && before) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildStatusMeta(before, resp.data),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);
@@ -63,10 +78,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'notes') {
       try {
+        const before = await snapshotOrder(orderId);
         const { resp, status } = await updateAdminNotesController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && before) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildNotesMeta(before, resp.data),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);
@@ -77,10 +100,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'delivery-price') {
       try {
+        const before = await snapshotOrder(orderId);
         const { resp, status } = await updateDeliveryPriceController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && before) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildDeliveryFeeMeta(before, {
+              orderNumber: resp.data.orderNumber,
+              deliveryPrice:
+                (resp.data as { deliveryPrice?: string | null })
+                  .deliveryPrice ?? null,
+            }),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);

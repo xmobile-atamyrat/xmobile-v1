@@ -1,3 +1,5 @@
+import { logAdminActivity } from '@/lib/adminActivity';
+import { buildBannerUpdateMeta } from '@/lib/bannerActivity';
 import { writeBannerWebp } from '@/lib/bannerImage';
 import dbClient from '@/lib/dbClient';
 import {
@@ -6,7 +8,10 @@ import {
   getAllBanners,
 } from '@/lib/promoBanners';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  bearerUserId,
+  requireStaffBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import { localeOptions } from '@/pages/lib/constants';
 import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ResponseApi } from '@/pages/lib/types';
@@ -269,6 +274,7 @@ async function handleEditBanner(
   status: number;
   message?: string;
   data?: PromoBanner;
+  previous?: PromoBanner;
 }> {
   const form = new multiparty.Form({
     uploadDir: process.env.BANNER_IMAGES_DIR,
@@ -384,7 +390,12 @@ async function handleEditBanner(
           .filter((stored) => !kept.has(stored))
           .forEach(unlinkIfLocal);
 
-        resolve({ success: true, data: banner, status: 200 });
+        resolve({
+          success: true,
+          data: banner,
+          status: 200,
+          previous: existing,
+        });
       } catch (error) {
         console.error(filepath, error);
         resolve({
@@ -426,7 +437,17 @@ export default async function handler(
 
   if (method === 'POST') {
     if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actorId = await bearerUserId(req);
     const { status, success, data, message } = await handlePostBanner(req);
+    if (success && data) {
+      logAdminActivity({
+        userId: actorId,
+        entity: 'BANNER',
+        action: 'CREATE',
+        targetId: data.id,
+        meta: { position: data.sortOrder, active: data.isActive },
+      });
+    }
     const retData: ResponseApi = { success };
     if (message) retData.message = message;
     if (data) retData.data = data;
@@ -441,10 +462,23 @@ export default async function handler(
         .status(400)
         .json({ success: false, message: 'Banner ID not provided' });
     }
-    const { status, success, data, message } = await handleEditBanner(
+    const actorId = await bearerUserId(req);
+    const { status, success, data, message, previous } = await handleEditBanner(
       req,
       bannerId,
     );
+    if (success && data && previous) {
+      const meta = buildBannerUpdateMeta(previous, data);
+      if (meta) {
+        logAdminActivity({
+          userId: actorId,
+          entity: 'BANNER',
+          action: 'UPDATE',
+          targetId: data.id,
+          meta,
+        });
+      }
+    }
     const retData: ResponseApi = { success };
     if (message) retData.message = message;
     if (data) retData.data = data;
@@ -462,16 +496,24 @@ export default async function handler(
     try {
       const existing = await dbClient.promoBanner.findFirst({
         where: { id: bannerId, deletedAt: null },
-        select: { id: true },
+        select: { id: true, sortOrder: true },
       });
       if (!existing) {
         return res
           .status(404)
           .json({ success: false, message: 'Banner not found' });
       }
+      const actorId = await bearerUserId(req);
       await dbClient.promoBanner.update({
         where: { id: bannerId },
         data: { deletedAt: new Date() },
+      });
+      logAdminActivity({
+        userId: actorId,
+        entity: 'BANNER',
+        action: 'DELETE',
+        targetId: bannerId,
+        meta: { position: existing.sortOrder },
       });
       return res.status(200).json({ success: true });
     } catch (error) {

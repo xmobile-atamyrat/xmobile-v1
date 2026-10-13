@@ -6,6 +6,11 @@ import {
   updateRate,
 } from '@/lib/dollarRateService';
 import { findDefaultRate } from '@/lib/dollarRates';
+import {
+  recordRateCreated,
+  recordRateDeleted,
+  recordRateUpdated,
+} from '@/lib/rateActivity';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -86,6 +91,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // AED/CNY/USD rows by currency alone.
       if (name != null) {
         const created = await createRate(dbClient, { name, rate });
+        recordRateCreated(userId, created);
         return res.status(200).json({
           success: true,
           message: 'Dollar rate created',
@@ -106,6 +112,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       const result = await dbClient.dollarRate.create({
         data: { currency, rate },
       });
+      recordRateCreated(userId, result);
 
       return res.status(200).json({
         success: true,
@@ -129,11 +136,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // Price rates are addressed by id, because the currency no longer picks
       // out a single row.
       if (id != null) {
+        const before = await dbClient.dollarRate
+          .findUnique({ where: { id } })
+          .catch(() => null);
         const { rate: updated, updatedCount } = await updateRate(dbClient, {
           id,
           rate,
           name,
         });
+        recordRateUpdated(userId, before, updated, updatedCount);
         return res.status(200).json({
           success: true,
           message: 'Dollar rate updated',
@@ -168,6 +179,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           id: existing.id,
           rate,
         });
+        recordRateUpdated(userId, existing, updated, updatedCount);
         return res.status(200).json({
           success: true,
           message: 'Dollar rate updated',
@@ -188,6 +200,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
               where: { id: existing.id },
               data: { rate },
             });
+      recordRateUpdated(userId, existing, result, null);
 
       return res.status(200).json({
         success: true,
@@ -207,7 +220,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           .status(400)
           .json({ success: false, message: 'Rate id not provided' });
       }
+      const before = await dbClient.dollarRate
+        .findUnique({ where: { id } })
+        .catch(() => null);
       const { reassignedCount } = await deleteRate(dbClient, id);
+      if (before != null) recordRateDeleted(userId, before, reassignedCount);
       return res.status(200).json({
         success: true,
         message: 'Dollar rate deleted',
