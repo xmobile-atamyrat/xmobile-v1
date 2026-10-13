@@ -256,6 +256,9 @@ export default function UserOrderDetailPage() {
     );
   }
 
+  // Registered orders keep a `user` relation; guest orders only carry the
+  // snapshot name and the guest session id.
+  const isGuest = !order.userId && !!order.guestSessionId;
   const isPickup = isPickupOrder(order);
   const itemsSubtotal = orderItemsSubtotal(order.items);
   const canSetDeliveryPrice = !isPickup && !isClosedOrder(order);
@@ -318,6 +321,22 @@ export default function UserOrderDetailPage() {
             >
               {t('customerInfo')}
             </Typography>
+            {isGuest && (
+              <Box className={userOrdersDetailClasses.infoRowBox[platform]}>
+                <Box className={userOrdersDetailClasses.infoRow[platform]}>
+                  <Typography
+                    className={`${fontClassName.className} ${userOrdersDetailClasses.infoLabel[platform]}`}
+                  >
+                    {t('userName')}:
+                  </Typography>
+                  <Typography
+                    className={`${fontClassName.className} ${userOrdersDetailClasses.infoValue[platform]}`}
+                  >
+                    {order.userName || '-'} ({t('guest')})
+                  </Typography>
+                </Box>
+              </Box>
+            )}
             {order.user && (
               <Box className={userOrdersDetailClasses.infoRowBox[platform]}>
                 <Box className={userOrdersDetailClasses.infoRow[platform]}>
