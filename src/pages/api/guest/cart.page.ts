@@ -25,6 +25,13 @@ const deleteSchema = z.object({
   id: z.string(),
 });
 
+// A rejected body is the client's mistake, not a server fault, so it is logged
+// as a warning instead of raising an error alert.
+function logFailure(error: unknown) {
+  if (error instanceof z.ZodError) console.warn(filepath, error.message);
+  else console.error(filepath, error);
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -124,7 +131,7 @@ export default async function handler(
       });
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
-      console.error(filepath, error);
+      logFailure(error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,
@@ -146,7 +153,7 @@ export default async function handler(
       }
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
-      console.error(filepath, error);
+      logFailure(error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,
@@ -167,7 +174,7 @@ export default async function handler(
       }
       return res.status(200).json({ success: true, data: [] });
     } catch (error) {
-      console.error(filepath, error);
+      logFailure(error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,

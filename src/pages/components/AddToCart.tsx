@@ -25,6 +25,14 @@ import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
 import { fontClassName } from '@/styles/theme';
 import CircularProgress from '@mui/material/CircularProgress';
 
+// The quantity field is free text, so it can briefly be empty while the user
+// retypes it. Digits only; anything unparseable reads as 0, which the field
+// shows as blank and which is never sent to the API.
+function parseQuantityInput(value: string): number {
+  const parsed = parseInt(value.replace(/\D/g, ''), 10);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 const snackbarIcon = {
   success: CheckCircle2,
   error: XCircle,
@@ -62,6 +70,8 @@ export default function AddToCart({
       });
       return;
     }
+    // A cleared field is restored on blur, but the click may still race it.
+    const addQuantity = Math.max(1, quantity);
     try {
       const data = user
         ? await fetchWithCreds({
@@ -71,13 +81,13 @@ export default function AddToCart({
             body: {
               userId: user.id,
               productId,
-              quantity,
+              quantity: addQuantity,
               selectedVariant,
             },
           })
         : await fetchWithoutCreds('/api/guest/cart', 'POST', {
             productId,
-            quantity,
+            quantity: addQuantity,
             selectedVariant,
           });
 
@@ -196,6 +206,26 @@ export default function AddToCart({
       }
     };
 
+  const handleQuantityChange =
+    (syncToCart: boolean) => (e: { target: { value: string } }) => {
+      const newQuantity = parseQuantityInput(e.target.value);
+      setQuantity(newQuantity);
+      if (setTotalPrice)
+        setTotalPrice(
+          (cur) => cur - quantity * Number(price) + newQuantity * Number(price),
+        );
+      if (syncToCart && newQuantity >= 1) editCartItems(newQuantity);
+    };
+
+  // Leaving the field blank would leave a 0 quantity behind; fall back to 1.
+  const handleQuantityBlur = (syncToCart: boolean) => () => {
+    if (quantity >= 1) return;
+    setQuantity(1);
+    if (setTotalPrice)
+      setTotalPrice((cur) => cur + (1 - quantity) * Number(price));
+    if (syncToCart) editCartItems(1);
+  };
+
   return (
     <Box className={addToCartClasses.main[platform]}>
       <Suspense fallback={<CircularProgress />}>
@@ -254,20 +284,10 @@ export default function AddToCart({
                 name="quantity"
                 inputProps={{ min: 1 }}
                 className={`${addToCartClasses.inputDet[platform]} ${fontClassName.className}`}
-                value={quantity}
+                value={quantity || ''}
                 disableUnderline
-                onChange={(e) => {
-                  const newQuantity = Number(e.target.value);
-                  setQuantity(newQuantity);
-                  if (setTotalPrice)
-                    setTotalPrice(
-                      (cur) =>
-                        cur -
-                        quantity * Number(price) +
-                        newQuantity * Number(price),
-                    );
-                  editCartItems(Number(e.target.value));
-                }}
+                onChange={handleQuantityChange(true)}
+                onBlur={handleQuantityBlur(true)}
               />
 
               {/* addButton */}
@@ -331,21 +351,12 @@ export default function AddToCart({
                   name="quantity"
                   inputProps={{ min: 1 }}
                   className={`${addToCartClasses.input[platform]} ${fontClassName.className}`}
-                  value={quantity}
+                  value={quantity || ''}
                   disableUnderline
-                  onChange={(e) => {
-                    const newQuantity = Number(e.target.value);
-                    setQuantity(newQuantity);
-                    // optional: the product page renders this control without a
-                    // running total, only the cart page passes a setter
-                    if (setTotalPrice)
-                      setTotalPrice(
-                        (cur) =>
-                          cur -
-                          quantity * Number(price) +
-                          newQuantity * Number(price),
-                      );
-                  }}
+                  // the product page renders this control without a running
+                  // total; only the cart page passes setTotalPrice
+                  onChange={handleQuantityChange(false)}
+                  onBlur={handleQuantityBlur(false)}
                 />
 
                 {/* addButton */}
