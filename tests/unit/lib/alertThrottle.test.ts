@@ -79,6 +79,36 @@ describe('createAlertThrottle', () => {
     expect(out[0]).toMatch(/2 .*suppressed/i);
   });
 
+  it('marks the summary as a warning and names the most repeated alert', () => {
+    const throttle = makeThrottle();
+    const noisy =
+      ':rotating_light: *[ERROR]* cart quantity too small\nZodError';
+    throttle.admit(noisy, 0);
+    throttle.admit(noisy, 10);
+    throttle.admit(noisy, 20);
+    throttle.admit('other', 30);
+    throttle.admit('other', 40);
+
+    const [summary] = throttle.admit('next', WINDOW + 1);
+    expect(summary).toMatch(/^:warning: \*\[WARN\]\* 3 /);
+    expect(summary).toContain('window that just ended');
+    expect(summary).toContain('Most repeated (2x): cart quantity too small');
+    expect(summary).not.toContain('ZodError');
+  });
+
+  it('says how long ago the window ended when the next alert is late', () => {
+    const throttle = makeThrottle();
+    throttle.admit('boom', 0);
+    throttle.admit('boom', 10);
+
+    // The summary only goes out with the next alert, here 3h 12m after the
+    // window closed, and must not claim to cover "the last 5m".
+    const late = WINDOW + (3 * 60 + 12) * 60_000;
+    const [summary] = throttle.admit('later', late);
+    expect(summary).toContain('5m window that ended 3h 12m ago');
+    expect(summary).not.toMatch(/last 5m/);
+  });
+
   it('bounds memory when flooded with unique keys', () => {
     const throttle = makeThrottle({ maxKeys: 10, maxPerWindow: 100_000 });
     for (let i = 0; i < 50; i += 1) {
