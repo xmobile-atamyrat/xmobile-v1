@@ -13,7 +13,7 @@ const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
   cartItemId: z.string(),
   productId: z.string(),
-  quantity: z.number(),
+  quantity: z.number().int().min(1),
   selectedVariant: z.string().nullish(),
 });
 
@@ -65,7 +65,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         res.status(400).json({ success: false, message: 'cartItemExistError' });
       }
     } catch (error) {
-      console.error(filepath, error);
+      // Bad client input, not a server fault: keep it out of the error alerts.
+      if (error instanceof z.ZodError) console.warn(filepath, error.message);
+      else console.error(filepath, error);
       res.status(400).json({ success: false, message: error.message });
     }
   } else if (req.method === 'GET') {
@@ -141,10 +143,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         .json({ success: true, data: { quantity: cartItem.quantity } });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.warn(filepath, error.message);
         res.status(400).json({
           success: false,
           message: `${filepath}: quantity/cartId type is incorrect`,
         });
+        return;
       }
       console.error(filepath, error);
       res.status(500).json({ success: false, message: error.message });
