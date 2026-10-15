@@ -678,6 +678,9 @@ async function handleEditProduct(
         : [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
+          // A pasted external URL has no file on disk, so dropping it from
+          // imgUrls is all there is to do.
+          if (/^https?:\/\//i.test(imgUrl)) return;
           const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
           const lightlyCompressedImgUrl = createCompressedImgUrl(
             imgUrl,

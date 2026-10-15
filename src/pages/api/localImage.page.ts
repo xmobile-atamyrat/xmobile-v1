@@ -51,7 +51,9 @@ export default async function handler(
       }
     }
 
-    console.error(
+    // A missing file is a bad or stale link (or a scanner probing the URL),
+    // not a server fault, so it is a warning rather than an error alert.
+    console.warn(
       filepath,
       'Image not found',
       `Method: ${method}`,
