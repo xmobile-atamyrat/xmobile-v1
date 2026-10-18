@@ -3,34 +3,33 @@ import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { unavailableVariantTags } from '@/lib/variantStock';
 import addCors from '@/pages/api/utils/addCors';
 import { getOrCreateGuestSessionId } from '@/pages/api/utils/guestSession';
-import { GUEST_SESSION_COOKIE_NAME } from '@/pages/lib/constants';
+import logRequestError from '@/pages/api/utils/logRequestError';
+import {
+  GUEST_SESSION_COOKIE_NAME,
+  MAX_CART_QUANTITY,
+} from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
 const filepath = 'src/pages/api/guest/cart.page.ts';
 
+const quantitySchema = z.coerce.number().int().min(1).max(MAX_CART_QUANTITY);
+
 const createSchema = z.object({
   productId: z.string(),
-  quantity: z.coerce.number().int().min(1),
+  quantity: quantitySchema,
   selectedVariant: z.string().nullish(),
 });
 
 const updateSchema = z.object({
   id: z.string(),
-  quantity: z.coerce.number().int().min(1),
+  quantity: quantitySchema,
 });
 
 const deleteSchema = z.object({
   id: z.string(),
 });
-
-// A rejected body is the client's mistake, not a server fault, so it is logged
-// as a warning instead of raising an error alert.
-function logFailure(error: unknown) {
-  if (error instanceof z.ZodError) console.warn(filepath, error.message);
-  else console.error(filepath, error);
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -48,6 +47,7 @@ export default async function handler(
         ? await dbClient.guestCartItem.count({
             where: {
               guestSessionId: existingSessionId,
+              quantity: { gte: 1 },
               product: whereActiveProduct,
             },
           })
@@ -69,6 +69,7 @@ export default async function handler(
       const cartItems = await dbClient.guestCartItem.findMany({
         where: {
           guestSessionId,
+          quantity: { gte: 1 },
           product: whereActiveProduct,
         },
         include: { product: true },
@@ -115,6 +116,15 @@ export default async function handler(
           selectedVariant: selectedVariant ?? null,
         },
       });
+      // A hidden line below 1 holds the unique slot, so adding the product
+      // again sets its quantity instead of reporting a duplicate.
+      if (existing && existing.quantity < 1) {
+        await dbClient.guestCartItem.update({
+          where: { id: existing.id },
+          data: { quantity },
+        });
+        return res.status(200).json({ success: true, data: { quantity } });
+      }
       if (existing) {
         return res
           .status(400)
@@ -131,7 +141,7 @@ export default async function handler(
       });
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
-      logFailure(error);
+      logRequestError(filepath, error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,
@@ -153,7 +163,7 @@ export default async function handler(
       }
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
-      logFailure(error);
+      logRequestError(filepath, error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,
@@ -174,7 +184,7 @@ export default async function handler(
       }
       return res.status(200).json({ success: true, data: [] });
     } catch (error) {
-      logFailure(error);
+      logRequestError(filepath, error);
       return res.status(400).json({
         success: false,
         message: (error as Error).message,
