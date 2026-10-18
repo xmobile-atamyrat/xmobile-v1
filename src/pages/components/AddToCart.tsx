@@ -14,10 +14,13 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
-import { mobileBottomNavHeight } from '@/pages/lib/constants';
+import {
+  MAX_CART_QUANTITY,
+  mobileBottomNavHeight,
+} from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
@@ -26,11 +29,13 @@ import { fontClassName } from '@/styles/theme';
 import CircularProgress from '@mui/material/CircularProgress';
 
 // The quantity field is free text, so it can briefly be empty while the user
-// retypes it. Digits only; anything unparseable reads as 0, which the field
-// shows as blank and which is never sent to the API.
-function parseQuantityInput(value: string): number {
-  const parsed = parseInt(value.replace(/\D/g, ''), 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
+// retypes it. An empty field reads as 0, which is shown blank and never sent to
+// the API. Anything but digits returns null so the keystroke is ignored rather
+// than read as a different number ('1.5' must not become 15).
+function parseQuantityInput(value: string): number | null {
+  if (value === '') return 0;
+  if (!/^\d+$/.test(value)) return null;
+  return Math.min(parseInt(value, 10), MAX_CART_QUANTITY);
 }
 
 const snackbarIcon = {
@@ -52,6 +57,11 @@ export default function AddToCart({
   setTotalPrice,
 }: AddToCartProps) {
   const [quantity, setQuantity] = useState(initialQuantity);
+  // The last quantity >= 1, which a cleared field falls back to on blur.
+  const lastValidQuantity = useRef(Math.max(1, initialQuantity));
+  useEffect(() => {
+    if (quantity >= 1) lastValidQuantity.current = quantity;
+  }, [quantity]);
   const { user, accessToken } = useUserContext();
   const { setCartCount } = useCartContext();
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
@@ -71,7 +81,7 @@ export default function AddToCart({
       return;
     }
     // A cleared field is restored on blur, but the click may still race it.
-    const addQuantity = Math.max(1, quantity);
+    const addQuantity = quantity >= 1 ? quantity : lastValidQuantity.current;
     try {
       const data = user
         ? await fetchWithCreds({
@@ -187,6 +197,12 @@ export default function AddToCart({
 
   const handleProductQuantity =
     (action: 'add' | 'remove' | 'quantityAdd' | 'quantityRemove') => () => {
+      if (
+        (action === 'add' || action === 'quantityAdd') &&
+        quantity >= MAX_CART_QUANTITY
+      ) {
+        return;
+      }
       if (action === 'add') {
         setQuantity(quantity + 1);
         if (setTotalPrice) setTotalPrice((cur) => cur + Number(price));
@@ -209,6 +225,7 @@ export default function AddToCart({
   const handleQuantityChange =
     (syncToCart: boolean) => (e: { target: { value: string } }) => {
       const newQuantity = parseQuantityInput(e.target.value);
+      if (newQuantity === null) return;
       setQuantity(newQuantity);
       if (setTotalPrice)
         setTotalPrice(
@@ -217,13 +234,14 @@ export default function AddToCart({
       if (syncToCart && newQuantity >= 1) editCartItems(newQuantity);
     };
 
-  // Leaving the field blank would leave a 0 quantity behind; fall back to 1.
-  const handleQuantityBlur = (syncToCart: boolean) => () => {
+  // Leaving the field blank restores the quantity it had before it was
+  // cleared. The 0 was never sent, so the cart already holds that value.
+  const handleQuantityBlur = () => {
     if (quantity >= 1) return;
-    setQuantity(1);
+    const restored = lastValidQuantity.current;
+    setQuantity(restored);
     if (setTotalPrice)
-      setTotalPrice((cur) => cur + (1 - quantity) * Number(price));
-    if (syncToCart) editCartItems(1);
+      setTotalPrice((cur) => cur + (restored - quantity) * Number(price));
   };
 
   return (
@@ -282,12 +300,12 @@ export default function AddToCart({
               {/* quantityInput */}
               <Input
                 name="quantity"
-                inputProps={{ min: 1 }}
+                inputProps={{ min: 1, max: MAX_CART_QUANTITY }}
                 className={`${addToCartClasses.inputDet[platform]} ${fontClassName.className}`}
                 value={quantity || ''}
                 disableUnderline
                 onChange={handleQuantityChange(true)}
-                onBlur={handleQuantityBlur(true)}
+                onBlur={handleQuantityBlur}
               />
 
               {/* addButton */}
@@ -349,14 +367,14 @@ export default function AddToCart({
                 {/* quantityInput */}
                 <Input
                   name="quantity"
-                  inputProps={{ min: 1 }}
+                  inputProps={{ min: 1, max: MAX_CART_QUANTITY }}
                   className={`${addToCartClasses.input[platform]} ${fontClassName.className}`}
                   value={quantity || ''}
                   disableUnderline
                   // the product page renders this control without a running
                   // total; only the cart page passes setTotalPrice
                   onChange={handleQuantityChange(false)}
-                  onBlur={handleQuantityBlur(false)}
+                  onBlur={handleQuantityBlur}
                 />
 
                 {/* addButton */}

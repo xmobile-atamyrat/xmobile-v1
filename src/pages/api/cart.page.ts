@@ -5,6 +5,8 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import logRequestError from '@/pages/api/utils/logRequestError';
+import { MAX_CART_QUANTITY } from '@/pages/lib/constants';
 import { ResponseApi } from '@/pages/lib/types';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -13,7 +15,7 @@ const filepath = 'src/pages/api/cart.page.ts';
 const FormSchema = z.object({
   cartItemId: z.string(),
   productId: z.string(),
-  quantity: z.number().int().min(1),
+  quantity: z.number().int().min(1).max(MAX_CART_QUANTITY),
   selectedVariant: z.string().nullish(),
 });
 
@@ -38,6 +40,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       const cartItemExist = await dbClient.cartItem.findFirst({
         where: { userId, productId, selectedVariant: selectedVariant ?? null },
       });
+
+      // A hidden line below 1 holds the unique slot, so adding the product
+      // again sets its quantity instead of reporting a duplicate.
+      if (cartItemExist && cartItemExist.quantity < 1) {
+        await dbClient.cartItem.update({
+          where: { id: cartItemExist.id },
+          data: { quantity },
+        });
+        res.status(200).json({ success: true, data: { quantity } });
+        return;
+      }
 
       if (!cartItemExist) {
         const productOk = await dbClient.product.findFirst({
@@ -65,24 +78,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         res.status(400).json({ success: false, message: 'cartItemExistError' });
       }
     } catch (error) {
-      // Bad client input, not a server fault: keep it out of the error alerts.
-      if (error instanceof z.ZodError) console.warn(filepath, error.message);
-      else console.error(filepath, error);
+      logRequestError(filepath, error);
       res.status(400).json({ success: false, message: error.message });
     }
   } else if (req.method === 'GET') {
     try {
       if (req.query.count != null) {
         const count = await dbClient.cartItem.count({
-          where: { userId, product: whereActiveProduct },
+          where: {
+            userId,
+            quantity: { gte: 1 },
+            product: whereActiveProduct,
+          },
         });
         res.status(200).json({ success: true, data: { count } });
         return;
       }
 
+      // Older rows can hold a quantity below 1 from before it was validated;
+      // they are hidden here and left out of orders.
       const cartItems = await dbClient.cartItem.findMany({
         where: {
           userId,
+          quantity: { gte: 1 },
           product: whereActiveProduct,
         },
         include: { product: true },
@@ -102,15 +120,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
       res.status(200).json({ success: true, data: itemsWithStock });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          success: false,
-          message: `Type of data's are incorrect. ${error.errors[0].message}`,
-        });
-      } else {
-        console.error(filepath, error);
-        res.status(500).json({ success: false, message: error.message });
-      }
+      console.error(filepath, error);
+      res.status(500).json({ success: false, message: error.message });
     }
   } else if (req.method === 'DELETE') {
     try {
@@ -131,26 +142,28 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         quantity: data.quantity,
       });
 
-      const cartItem = await dbClient.cartItem.update({
+      // updateMany so an item deleted in another tab is a 404, not a throw.
+      const updated = await dbClient.cartItem.updateMany({
         where: { id: cartItemId, userId },
-        data: {
-          quantity,
-        },
+        data: { quantity },
       });
+      if (!updated.count) {
+        res
+          .status(404)
+          .json({ success: false, message: 'Cart item not found' });
+        return;
+      }
 
-      res
-        .status(200)
-        .json({ success: true, data: { quantity: cartItem.quantity } });
+      res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
+      logRequestError(filepath, error);
       if (error instanceof z.ZodError) {
-        console.warn(filepath, error.message);
         res.status(400).json({
           success: false,
           message: `${filepath}: quantity/cartId type is incorrect`,
         });
         return;
       }
-      console.error(filepath, error);
       res.status(500).json({ success: false, message: error.message });
     }
   } else {

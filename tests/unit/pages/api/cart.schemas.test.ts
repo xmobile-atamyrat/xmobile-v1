@@ -7,7 +7,7 @@ import { z } from 'zod';
 const FormSchema = z.object({
   cartItemId: z.string(),
   productId: z.string(),
-  quantity: z.number(),
+  quantity: z.number().int().min(1).max(999),
 });
 
 const CreateCartItem = FormSchema.omit({ cartItemId: true });
@@ -33,5 +33,16 @@ describe('cart API zod shapes', () => {
     expect(
       CreateCartItem.safeParse({ productId: 'p', quantity: '2' }).success,
     ).toBe(false);
+  });
+
+  it('rejects quantities below 1, above 999, or fractional', () => {
+    [0, -3, 1000, 1.5].forEach((quantity) => {
+      expect(
+        CreateCartItem.safeParse({ productId: 'p', quantity }).success,
+      ).toBe(false);
+    });
+    expect(
+      CreateCartItem.safeParse({ productId: 'p', quantity: 999 }).success,
+    ).toBe(true);
   });
 });
