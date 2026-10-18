@@ -4,10 +4,32 @@ import {
   createCompressedImgUrl,
 } from '@/pages/api/product/index.page';
 import addCors from '@/pages/api/utils/addCors';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import fs from 'fs';
 import { NextApiRequest, NextApiResponse } from 'next';
+import path from 'path';
 
 const filepath = 'src/pages/api/localImage.page.ts';
+
+const IMAGE_DIR_ENV_KEYS = [
+  'PRODUCT_IMAGES_DIR',
+  'CATEGORY_IMAGES_DIR',
+  'BANNER_IMAGES_DIR',
+  'COMPRESSED_PRODUCT_IMAGES_DIR',
+] as const;
+
+// `imgUrl` is a filesystem path, so only paths inside the configured image
+// folders are served or deleted. Anything else (/app/.env, ../../..) is
+// answered as if the file did not exist.
+function resolveImagePath(imgUrl: unknown): string | null {
+  if (typeof imgUrl !== 'string' || imgUrl === '') return null;
+  const resolved = path.resolve(imgUrl);
+  const allowed = IMAGE_DIR_ENV_KEYS.some((key) => {
+    const dir = process.env[key];
+    return !!dir && resolved.startsWith(`${path.resolve(dir)}${path.sep}`);
+  });
+  return allowed ? resolved : null;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,8 +42,9 @@ export default async function handler(
   } = req;
 
   if (method === 'GET') {
-    if (imgUrl != null && fs.existsSync(imgUrl as string)) {
-      const img = fs.readFileSync(imgUrl as string);
+    const imgPath = resolveImagePath(imgUrl);
+    if (imgPath != null && fs.existsSync(imgPath)) {
+      const img = fs.readFileSync(imgPath);
       const quality = network === 'fast' ? 'good' : 'bad';
       res.setHeader('Content-Type', 'image/jpeg');
 
@@ -30,14 +53,11 @@ export default async function handler(
       }
 
       try {
-        const compressedImgUrl = createCompressedImgUrl(
-          imgUrl as string,
-          quality,
-        );
+        const compressedImgUrl = createCompressedImgUrl(imgPath, quality);
 
         const compressedImg = fs.existsSync(compressedImgUrl)
           ? fs.readFileSync(compressedImgUrl)
-          : await createCompressedImg(imgUrl as string, quality);
+          : await createCompressedImg(imgPath, quality);
 
         return res.status(200).send(compressedImg);
       } catch (error) {
@@ -63,12 +83,16 @@ export default async function handler(
   }
 
   if (method === 'DELETE') {
-    if (fs.existsSync(imgUrl as string)) {
+    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+
+    const imgPath = resolveImagePath(imgUrl);
+    if (imgPath != null && fs.existsSync(imgPath)) {
       try {
+        // Products and categories store the path as it was given.
         const imgUrlStr = imgUrl as string;
 
         // Delete files
-        fs.unlinkSync(imgUrlStr);
+        fs.unlinkSync(imgPath);
         const filename = imgUrlStr.split('/').pop();
         if (filename) {
           const baseDir = process.env.COMPRESSED_PRODUCT_IMAGES_DIR;
