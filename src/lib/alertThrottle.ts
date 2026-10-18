@@ -37,6 +37,7 @@ export interface AlertThrottle {
 }
 
 const PREVIEW_MAX_CHARS = 150;
+const ERROR_PREFIX = /^:\w+: \*\[ERROR\]\* /;
 
 /** First line of an alert, without the icon/level prefix, kept short. */
 function preview(message: string): string {
@@ -65,13 +66,13 @@ export function createAlertThrottle(
   let windowStartMs = Number.NEGATIVE_INFINITY;
   let sentInWindow = 0;
   let suppressedInWindow = 0;
-  // Per-message suppressed counts, to name the noisiest alert in the summary.
-  const suppressedBy = new Map<string, number>();
+  // The summary takes the level of the worst alert it swallowed, so a filter
+  // on [ERROR] still catches a window of suppressed errors.
+  let suppressedError = false;
 
   function recordSuppressed(message: string) {
     suppressedInWindow += 1;
-    if (!suppressedBy.has(message) && suppressedBy.size >= maxKeys) return;
-    suppressedBy.set(message, (suppressedBy.get(message) ?? 0) + 1);
+    if (ERROR_PREFIX.test(message)) suppressedError = true;
   }
 
   function summarize(nowMs: number): string {
@@ -82,15 +83,20 @@ export function createAlertThrottle(
         ? 'that just ended'
         : `that ended ${formatDuration(endedAgoMs)} ago`;
 
+    // `seen` already counts every occurrence, the sent copy included, so it
+    // names the noisiest alert without keeping a second map of alert texts.
     let top: [string, number] | undefined;
-    suppressedBy.forEach((count, message) => {
-      if (!top || count > top[1]) top = [message, count];
+    seen.forEach((count, message) => {
+      if (count > 1 && (!top || count > top[1])) top = [message, count];
     });
     const topLine = top
-      ? ` Most repeated (${top[1]}x): ${preview(top[0])}`
+      ? ` Most repeated (${top[1]}x in the window): ${preview(top[0])}`
       : '';
+    const prefix = suppressedError
+      ? ':rotating_light: *[ERROR]*'
+      : ':warning: *[WARN]*';
 
-    return `:warning: *[WARN]* ${suppressedInWindow} duplicate/excess alert(s) suppressed in the ${windowMinutes}m window ${when}.${topLine}`;
+    return `${prefix} ${suppressedInWindow} duplicate/excess alert(s) suppressed in the ${windowMinutes}m window ${when}.${topLine}`;
   }
 
   function rollWindow(nowMs: number): string[] {
@@ -99,10 +105,10 @@ export function createAlertThrottle(
     const summary = suppressedInWindow > 0 ? [summarize(nowMs)] : [];
 
     seen.clear();
-    suppressedBy.clear();
     windowStartMs = nowMs;
     sentInWindow = 0;
     suppressedInWindow = 0;
+    suppressedError = false;
     return summary;
   }
 
