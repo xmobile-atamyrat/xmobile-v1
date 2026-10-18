@@ -79,7 +79,7 @@ describe('createAlertThrottle', () => {
     expect(out[0]).toMatch(/2 .*suppressed/i);
   });
 
-  it('marks the summary as a warning and names the most repeated alert', () => {
+  it('names the most repeated alert, counting the copy that was sent', () => {
     const throttle = makeThrottle();
     const noisy =
       ':rotating_light: *[ERROR]* cart quantity too small\nZodError';
@@ -90,10 +90,43 @@ describe('createAlertThrottle', () => {
     throttle.admit('other', 40);
 
     const [summary] = throttle.admit('next', WINDOW + 1);
-    expect(summary).toMatch(/^:warning: \*\[WARN\]\* 3 /);
+    expect(summary).toContain('3 duplicate/excess alert(s) suppressed');
     expect(summary).toContain('window that just ended');
-    expect(summary).toContain('Most repeated (2x): cart quantity too small');
+    expect(summary).toContain(
+      'Most repeated (3x in the window): cart quantity too small',
+    );
     expect(summary).not.toContain('ZodError');
+  });
+
+  it('raises the summary to ERROR when it swallowed an error', () => {
+    const throttle = makeThrottle();
+    const error = ':rotating_light: *[ERROR]* db down';
+    throttle.admit(error, 0);
+    throttle.admit(error, 10);
+
+    const [summary] = throttle.admit('next', WINDOW + 1);
+    expect(summary).toMatch(/^:rotating_light: \*\[ERROR\]\* 1 /);
+  });
+
+  it('keeps the summary at WARN when only warnings were swallowed', () => {
+    const throttle = makeThrottle();
+    const warning = ':warning: *[WARN]* bad cart body';
+    throttle.admit(warning, 0);
+    throttle.admit(warning, 10);
+
+    const [summary] = throttle.admit('next', WINDOW + 1);
+    expect(summary).toMatch(/^:warning: \*\[WARN\]\* 1 /);
+  });
+
+  it('names no top alert when only distinct alerts hit the rate cap', () => {
+    const throttle = makeThrottle({ maxPerWindow: 1 });
+    throttle.admit('a', 0);
+    throttle.admit('b', 1);
+    throttle.admit('c', 2);
+
+    const [summary] = throttle.admit('d', WINDOW + 1);
+    expect(summary).toContain('2 duplicate/excess alert(s) suppressed');
+    expect(summary).not.toContain('Most repeated');
   });
 
   it('says how long ago the window ended when the next alert is late', () => {
