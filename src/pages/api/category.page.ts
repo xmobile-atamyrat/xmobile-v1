@@ -18,10 +18,7 @@ import {
 } from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
-import {
-  bearerUserId,
-  requireStaffBearerAuth,
-} from '@/pages/api/utils/staffAuth';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import {
   POPULAR_CATEGORIES_SECTION_MAX,
   POPULAR_ROOT_LIMIT_CODE,
@@ -413,17 +410,17 @@ export default async function handler(
         .json({ success: false, message: "Couldn't get categories" });
     }
   } else if (method === 'POST') {
-    if (!(await requireStaffBearerAuth(req, res))) {
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) {
       return undefined;
     }
     try {
-      const actorId = await bearerUserId(req);
       const { status, success, data, message } = await handlePostCategory(req);
       const retData: any = { success };
       if (message) retData.message = message;
       if (data) retData.data = data;
       if (success && data) {
-        recordCategoryCreated(actorId, data).catch(() => undefined);
+        recordCategoryCreated(actor.userId, data).catch(() => undefined);
         // The parent's subcategory grid gained an entry. The new category's own
         // pages are included too: anything that probed this slug before the
         // category existed left behind a `notFound` entry, which both catalog
@@ -442,7 +439,8 @@ export default async function handler(
         .json({ success: false, message: "Couldn't create a new category" });
     }
   } else if (method === 'PUT') {
-    if (!(await requireStaffBearerAuth(req, res))) {
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) {
       return undefined;
     }
     const { categoryId } = query;
@@ -453,7 +451,6 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      const actorId = await bearerUserId(req);
       const {
         status,
         success,
@@ -467,7 +464,9 @@ export default async function handler(
       if (data) retData.data = data;
       if (success && data) {
         if (previous) {
-          recordCategoryUpdated(actorId, previous, data).catch(() => undefined);
+          recordCategoryUpdated(actor.userId, previous, data).catch(
+            () => undefined,
+          );
         }
         // Own pages, plus both parents' grids — deduped when nothing moved.
         // Product pages under this category carry its name in their breadcrumb
@@ -489,7 +488,8 @@ export default async function handler(
         .json({ success: false, message: "Couldn't edit the category" });
     }
   } else if (method === 'DELETE') {
-    if (!(await requireStaffBearerAuth(req, res))) {
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) {
       return undefined;
     }
     const { categoryId } = query;
@@ -500,7 +500,6 @@ export default async function handler(
         .json({ success: false, message: 'Category ID not provided' });
     }
     try {
-      const actorId = await bearerUserId(req);
       const subtreeIds = await collectActiveSubtreeCategoryIds(
         categoryId as string,
       );
@@ -575,7 +574,7 @@ export default async function handler(
       await Promise.all([...brandIds].map((bid) => syncBrandProductCount(bid)));
 
       recordCategoryDeleted(
-        actorId,
+        actor.userId,
         { id: categoryId as string, name: parent?.name ?? null },
         {
           subcategories: subtreeIds.length - 1,

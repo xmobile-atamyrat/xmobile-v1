@@ -15,41 +15,64 @@ export type AdminActivityInput = {
 
 /**
  * Awaitable variant, used by tests and by callers that already run off the
- * request path. It never rejects: an audit-log failure must not fail an admin's
- * save. `console.warn` (not `error`) keeps a logging hiccup out of Slack.
+ * request path. All rows go in one insert, with one name lookup however many
+ * rows share an actor. It never rejects: an audit-log failure must not fail an
+ * admin's save. `console.warn` (not `error`) keeps a logging hiccup out of
+ * Slack.
  */
-export async function writeAdminActivity(
-  input: AdminActivityInput,
+export async function writeAdminActivities(
+  inputs: AdminActivityInput[],
 ): Promise<void> {
-  if (!input.userId) return;
+  const withActor = inputs.filter(
+    (input): input is AdminActivityInput & { userId: string } =>
+      Boolean(input.userId),
+  );
+  if (withActor.length === 0) return;
   try {
-    const user = await dbClient.user.findUnique({
-      where: { id: input.userId },
-      select: { name: true },
-    });
-    if (!user) return;
-
-    await dbClient.adminActivity.create({
-      data: {
-        userId: input.userId,
-        userName: user.name,
-        entity: input.entity,
-        action: input.action,
-        entityId: input.entityId ?? null,
-        meta: input.meta,
+    const users = await dbClient.user.findMany({
+      where: {
+        id: { in: [...new Set(withActor.map((input) => input.userId))] },
       },
+      select: { id: true, name: true },
     });
+    const names = new Map(users.map((user) => [user.id, user.name]));
+
+    const data = withActor.flatMap((input) => {
+      const userName = names.get(input.userId);
+      if (userName == null) return [];
+      return [
+        {
+          userId: input.userId,
+          userName,
+          entity: input.entity,
+          action: input.action,
+          entityId: input.entityId ?? null,
+          meta: input.meta,
+        },
+      ];
+    });
+    if (data.length === 0) return;
+
+    await dbClient.adminActivity.createMany({ data });
   } catch (error) {
     console.warn('[adminActivity] failed to record activity:', error);
   }
 }
 
+export function writeAdminActivity(input: AdminActivityInput): Promise<void> {
+  return writeAdminActivities([input]);
+}
+
 /**
  * Fire-and-forget: call this after the change has committed and do not await.
- * One call per admin decision, not per database write.
+ * One row per admin decision, not per database write.
  */
+export function logAdminActivities(inputs: AdminActivityInput[]): void {
+  writeAdminActivities(inputs).catch(() => undefined);
+}
+
 export function logAdminActivity(input: AdminActivityInput): void {
-  writeAdminActivity(input).catch(() => undefined);
+  logAdminActivities([input]);
 }
 
 export type FieldChange = {

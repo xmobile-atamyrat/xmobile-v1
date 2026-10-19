@@ -1,31 +1,10 @@
-export type ActivityEntity =
-  | 'PRODUCT'
-  | 'PRICE'
-  | 'CURRENCY_RATE'
-  | 'CATEGORY'
-  | 'ORDER'
-  | 'BANNER'
-  | 'BRAND'
-  | 'COLOR';
+import { AdminActivityAction, AdminActivityEntity } from '@prisma/client';
 
-export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE';
+export type ActivityEntity = AdminActivityEntity;
+export type ActivityAction = AdminActivityAction;
 
-export const ACTIVITY_ENTITIES: ActivityEntity[] = [
-  'PRODUCT',
-  'PRICE',
-  'CURRENCY_RATE',
-  'CATEGORY',
-  'ORDER',
-  'BANNER',
-  'BRAND',
-  'COLOR',
-];
-
-export const ACTIVITY_ACTIONS: ActivityAction[] = [
-  'CREATE',
-  'UPDATE',
-  'DELETE',
-];
+export const ACTIVITY_ENTITIES = Object.values(AdminActivityEntity);
+export const ACTIVITY_ACTIONS = Object.values(AdminActivityAction);
 
 export const ACTIVITY_ENTITY_LABEL_KEYS: Record<ActivityEntity, string> = {
   PRODUCT: 'activityEntityProduct',
@@ -66,6 +45,8 @@ export type StaffMember = {
   totalChanges: number;
   customersAnswered: number;
 };
+
+export type StaffPresence = Pick<StaffMember, 'id' | 'lastSeenAt' | 'online'>;
 
 export type HeatmapDay = { date: string; changes: number; chats: number };
 

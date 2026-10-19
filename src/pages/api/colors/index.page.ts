@@ -1,5 +1,10 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { changedFields, logAdminActivity } from '@/lib/adminActivity';
+import {
+  AdminActivityInput,
+  changedFields,
+  logAdminActivities,
+  logAdminActivity,
+} from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
@@ -112,19 +117,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         }),
       );
 
-      colorPairs.forEach((color) => {
-        const previous = previousColors.find((prev) => prev.id === color.id);
-        if (!previous) return;
-        const changes = changedFields(previous, color, ['name', 'hex']);
-        if (Object.keys(changes).length === 0) return;
-        logAdminActivity({
-          userId,
-          entity: 'COLOR',
-          action: 'UPDATE',
-          entityId: color.id,
-          meta: { name: color.name ?? previous.name, changes },
-        });
-      });
+      logAdminActivities(
+        colorPairs.flatMap((color): AdminActivityInput[] => {
+          const previous = previousColors.find((prev) => prev.id === color.id);
+          if (!previous) return [];
+          const changes = changedFields(previous, color, ['name', 'hex']);
+          if (Object.keys(changes).length === 0) return [];
+          return [
+            {
+              userId,
+              entity: 'COLOR',
+              action: 'UPDATE',
+              entityId: color.id,
+              meta: { name: color.name ?? previous.name, changes },
+            },
+          ];
+        }),
+      );
 
       return res.status(200).json({ success: true, message: 'Colors updated' });
     } catch (error) {

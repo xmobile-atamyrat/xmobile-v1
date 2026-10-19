@@ -1,6 +1,8 @@
 import {
+  AdminActivityInput,
   changedFields,
   FieldChange,
+  logAdminActivities,
   logAdminActivity,
 } from '@/lib/adminActivity';
 import { categoryLabel } from '@/lib/categoryActivity';
@@ -188,17 +190,15 @@ export async function recordPricesUpdated(
   }
 
   const names = await resolveNames(changed);
-  changed.forEach(({ before, after }) => {
-    const meta = buildPriceUpdateMeta(before, after, names);
-    if (meta == null) return;
-    logAdminActivity({
-      userId,
-      entity: 'PRICE',
-      action: 'UPDATE',
-      entityId: after.id,
-      meta,
-    });
-  });
+  logAdminActivities(
+    changed.flatMap(({ before, after }): AdminActivityInput[] => {
+      const meta = buildPriceUpdateMeta(before, after, names);
+      if (meta == null) return [];
+      return [
+        { userId, entity: 'PRICE', action: 'UPDATE', entityId: after.id, meta },
+      ];
+    }),
+  );
 }
 
 export async function recordPriceCreated(

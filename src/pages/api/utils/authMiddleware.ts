@@ -23,6 +23,34 @@ export const verifyToken = (
   });
 };
 
+/**
+ * Mints a fresh token pair from the refresh cookie, for a request whose access
+ * token has expired. The rotated cookie and an `Authorization` response header
+ * (which `fetchWithCreds` stores) are set on `res`, and the request's own header
+ * is rewritten so anything later in the request sees the new token. Rejects
+ * when the cookie is missing or invalid.
+ */
+export async function refreshFromCookie(
+  req: NextApiRequest,
+  res: NextApiResponse,
+): Promise<{ userId: string; grade: UserRole }> {
+  const refreshToken = req.cookies?.[AUTH_REFRESH_COOKIE_NAME];
+  const { userId, grade } = await verifyToken(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+  );
+  const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+    generateTokens(userId, grade);
+
+  req.headers.authorization = `Bearer ${newAccessToken}`;
+  res.setHeader(
+    'Set-Cookie',
+    `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
+  );
+  res.setHeader('Authorization', `Bearer ${newAccessToken}`);
+  return { userId, grade };
+}
+
 export interface AuthenticatedRequest extends NextApiRequest {
   userId?: string;
   grade?: UserRole;
@@ -74,22 +102,10 @@ const withAuth = (
     } catch (accessTokenError) {
       if (accessTokenError.name === 'TokenExpiredError') {
         try {
-          const { userId, grade } = await verifyToken(
-            refreshToken,
-            process.env.REFRESH_TOKEN_SECRET,
-          );
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-            generateTokens(userId, grade);
-
-          req.headers.authorization = `Bearer ${newAccessToken}`;
+          const { userId, grade } = await refreshFromCookie(req, res);
           (req as AuthenticatedRequest).userId = userId;
           (req as AuthenticatedRequest).grade = grade;
 
-          res.setHeader(
-            'Set-Cookie',
-            `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
-          );
-          res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           const originalResponse = await handler(
             req as AuthenticatedRequest,
             res,

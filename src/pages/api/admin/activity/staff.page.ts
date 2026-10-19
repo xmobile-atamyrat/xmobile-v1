@@ -1,4 +1,4 @@
-import { getStaffOverview } from '@/lib/adminActivityQueries';
+import { getStaffOverview, getStaffPresence } from '@/lib/adminActivityQueries';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -25,7 +25,10 @@ async function handler(
   }
 
   try {
-    const staff = await getStaffOverview();
+    const staff =
+      req.query.presence === '1'
+        ? await getStaffPresence()
+        : await getStaffOverview();
     return res.status(200).json({ success: true, data: staff });
   } catch (error) {
     console.error(filepath, error);

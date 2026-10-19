@@ -8,10 +8,7 @@ import {
   getAllBanners,
 } from '@/lib/promoBanners';
 import addCors from '@/pages/api/utils/addCors';
-import {
-  bearerUserId,
-  requireStaffBearerAuth,
-} from '@/pages/api/utils/staffAuth';
+import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { localeOptions } from '@/pages/lib/constants';
 import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ResponseApi } from '@/pages/lib/types';
@@ -436,12 +433,12 @@ export default async function handler(
   }
 
   if (method === 'POST') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
-    const actorId = await bearerUserId(req);
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const { status, success, data, message } = await handlePostBanner(req);
     if (success && data) {
       logAdminActivity({
-        userId: actorId,
+        userId: actor.userId,
         entity: 'BANNER',
         action: 'CREATE',
         entityId: data.id,
@@ -455,14 +452,14 @@ export default async function handler(
   }
 
   if (method === 'PUT') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const bannerId = query.id as string | undefined;
     if (!bannerId) {
       return res
         .status(400)
         .json({ success: false, message: 'Banner ID not provided' });
     }
-    const actorId = await bearerUserId(req);
     const { status, success, data, message, previous } = await handleEditBanner(
       req,
       bannerId,
@@ -471,7 +468,7 @@ export default async function handler(
       const meta = buildBannerUpdateMeta(previous, data);
       if (meta) {
         logAdminActivity({
-          userId: actorId,
+          userId: actor.userId,
           entity: 'BANNER',
           action: 'UPDATE',
           entityId: data.id,
@@ -486,7 +483,8 @@ export default async function handler(
   }
 
   if (method === 'DELETE') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const bannerId = query.id as string | undefined;
     if (!bannerId) {
       return res
@@ -503,13 +501,12 @@ export default async function handler(
           .status(404)
           .json({ success: false, message: 'Banner not found' });
       }
-      const actorId = await bearerUserId(req);
       await dbClient.promoBanner.update({
         where: { id: bannerId },
         data: { deletedAt: new Date() },
       });
       logAdminActivity({
-        userId: actorId,
+        userId: actor.userId,
         entity: 'BANNER',
         action: 'DELETE',
         entityId: bannerId,

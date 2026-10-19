@@ -16,18 +16,17 @@ const conn = (userId: string, userGrade: string) =>
   ({ userId, userGrade }) as unknown as AuthenticatedConnection;
 
 describe('adminUserIdsOnline', () => {
-  it('returns only staff users that hold at least one socket', () => {
-    const connections = new Map<string, Set<AuthenticatedConnection>>([
-      ['a1', new Set([conn('a1', 'ADMIN'), conn('a1', 'ADMIN')])],
-      ['s1', new Set([conn('s1', 'SUPERUSER')])],
-      ['f1', new Set([conn('f1', 'FREE')])],
-      ['a2', new Set()],
+  it('returns each admin once, however many sockets they hold', () => {
+    const sockets = new Set([
+      conn('a1', 'ADMIN'),
+      conn('a1', 'ADMIN'),
+      conn('s1', 'SUPERUSER'),
     ]);
-    expect(adminUserIdsOnline(connections)).toEqual(['a1', 's1']);
+    expect(adminUserIdsOnline(sockets)).toEqual(['a1', 's1']);
   });
 
-  it('is empty when nobody is connected', () => {
-    expect(adminUserIdsOnline(new Map())).toEqual([]);
+  it('is empty when no admin is connected', () => {
+    expect(adminUserIdsOnline(new Set())).toEqual([]);
   });
 });
 

@@ -741,37 +741,45 @@ export async function updateOrderStatus(
   status: UserOrderStatus,
   adminNotes?: string,
   cancellationReason?: string,
-): Promise<UserOrder> {
-  const order = await dbClient.userOrder.findUnique({
-    where: { id: orderId },
-  });
+): Promise<{ order: UserOrder; previous: UserOrder }> {
+  // Locked so two admins saving at once each see what the other left: the
+  // owner notification and the activity log both report it as the "from".
+  const { previous, updatedOrder } = await dbClient.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "UserOrder" WHERE id = ${orderId} FOR UPDATE`;
 
-  if (!order) {
-    throw new Error('Order not found');
-  }
+    const order = await tx.userOrder.findUnique({
+      where: { id: orderId },
+    });
 
-  const updateData: Prisma.UserOrderUpdateInput = {
-    status,
-    ...(adminNotes !== undefined && { adminNotes }),
-  };
-
-  // Set completion/cancellation timestamps
-  if (status === 'COMPLETED' && order.status !== 'COMPLETED') {
-    updateData.completedAt = new Date();
-  }
-
-  if (status === 'ADMIN_CANCELLED') {
-    updateData.cancelledAt = new Date();
-    if (cancellationReason) {
-      updateData.cancellationReason = cancellationReason;
+    if (!order) {
+      throw new Error('Order not found');
     }
-  }
 
-  const previousStatus = order.status;
-  const updatedOrder = await dbClient.userOrder.update({
-    where: { id: orderId },
-    data: updateData,
+    const updateData: Prisma.UserOrderUpdateInput = {
+      status,
+      ...(adminNotes !== undefined && { adminNotes }),
+    };
+
+    // Set completion/cancellation timestamps
+    if (status === 'COMPLETED' && order.status !== 'COMPLETED') {
+      updateData.completedAt = new Date();
+    }
+
+    if (status === 'ADMIN_CANCELLED') {
+      updateData.cancelledAt = new Date();
+      if (cancellationReason) {
+        updateData.cancellationReason = cancellationReason;
+      }
+    }
+
+    const updated = await tx.userOrder.update({
+      where: { id: orderId },
+      data: updateData,
+    });
+    return { previous: order, updatedOrder: updated };
   });
+
+  const previousStatus = previous.status;
 
   // Send Slack notification (fire and forget - don't block on this)
   notifyOrderStatusUpdated(updatedOrder, previousStatus).catch((error) => {
@@ -795,7 +803,7 @@ export async function updateOrderStatus(
     );
   }
 
-  return updatedOrder;
+  return { order: updatedOrder, previous };
 }
 
 /**
@@ -805,7 +813,10 @@ export async function updateOrderStatus(
 export async function updateDeliveryPrice(
   orderId: string,
   deliveryPrice: number,
-): Promise<UserOrder> {
+): Promise<{
+  order: UserOrder & { deliveryPrice: string | null };
+  previous: UserOrder & { deliveryPrice: string | null };
+}> {
   const nextDeliveryPrice = deliveryPrice.toFixed(2);
 
   const { order, updatedOrder } = await dbClient.$transaction(async (tx) => {
@@ -881,7 +892,7 @@ export async function updateDeliveryPrice(
     );
   }
 
-  return splitDeliveryFee(updatedOrder);
+  return { order: splitDeliveryFee(updatedOrder), previous: order };
 }
 
 /**
@@ -890,17 +901,24 @@ export async function updateDeliveryPrice(
 export async function updateAdminNotes(
   orderId: string,
   adminNotes: string,
-): Promise<UserOrder> {
-  const order = await dbClient.userOrder.findUnique({
-    where: { id: orderId },
-  });
+): Promise<{ order: UserOrder; previous: UserOrder }> {
+  return dbClient.$transaction(async (tx) => {
+    // Locked for the same reason as a status change: the activity log's
+    // "before" must be the notes this save actually replaced.
+    await tx.$queryRaw`SELECT id FROM "UserOrder" WHERE id = ${orderId} FOR UPDATE`;
 
-  if (!order) {
-    throw new Error('Order not found');
-  }
+    const previous = await tx.userOrder.findUnique({
+      where: { id: orderId },
+    });
 
-  return dbClient.userOrder.update({
-    where: { id: orderId },
-    data: { adminNotes },
+    if (!previous) {
+      throw new Error('Order not found');
+    }
+
+    const order = await tx.userOrder.update({
+      where: { id: orderId },
+      data: { adminNotes },
+    });
+    return { order, previous };
   });
 }
