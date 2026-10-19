@@ -125,7 +125,7 @@ describe('recordPricesUpdated', () => {
       userId: 'u1',
       entity: 'PRICE',
       action: 'UPDATE',
-      targetId: 'pr1',
+      entityId: 'pr1',
     });
   });
 
@@ -138,7 +138,7 @@ describe('recordPricesUpdated', () => {
     expect(mockLog.mock.calls[0][0]).toMatchObject({
       entity: 'PRICE',
       action: 'UPDATE',
-      targetId: null,
+      entityId: null,
       meta: { count: PRICE_ROW_LOG_LIMIT + 1, fields: ['price'] },
     });
   });

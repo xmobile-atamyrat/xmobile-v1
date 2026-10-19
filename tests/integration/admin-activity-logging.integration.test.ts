@@ -34,7 +34,13 @@ describe('Admin activity logging (integration)', () => {
     return { status: res._getStatusCode(), body: JSON.parse(res._getData()) };
   };
 
-  const activityFor = (entity: string, action: string, targetId: string) =>
+  /** Waits for exactly `count` matching rows and returns the newest. */
+  const activityFor = (
+    entity: string,
+    action: string,
+    entityId: string,
+    count = 1,
+  ) =>
     vi.waitFor(
       async () => {
         const rows = await prisma.adminActivity.findMany({
@@ -42,10 +48,11 @@ describe('Admin activity logging (integration)', () => {
             userId: adminUserId,
             entity: entity as never,
             action: action as never,
-            targetId,
+            entityId,
           },
+          orderBy: { createdAt: 'desc' },
         });
-        expect(rows).toHaveLength(1);
+        expect(rows).toHaveLength(count);
         return rows[0];
       },
       { timeout: 5000, interval: 100 },
@@ -185,7 +192,7 @@ describe('Admin activity logging (integration)', () => {
       setTimeout(resolve, 400);
     });
     const rows = await prisma.adminActivity.findMany({
-      where: { targetId: color.id },
+      where: { entityId: color.id },
     });
     expect(rows).toHaveLength(0);
   });
@@ -275,9 +282,10 @@ describe('Admin activity logging (integration)', () => {
         direction: 'down',
       },
     });
-    const reorder = await activityFor('CATEGORY', 'REORDER', childId);
+    const reorder = await activityFor('CATEGORY', 'UPDATE', childId, 2);
     expect(reorder.meta).toEqual({
       name: 'ActLog Child Renamed',
+      kind: 'REORDER',
       direction: 'down',
     });
 
@@ -290,19 +298,7 @@ describe('Admin activity logging (integration)', () => {
         newPredecessorId: null,
       },
     });
-    await vi.waitFor(async () => {
-      expect(
-        await prisma.adminActivity.count({
-          where: { targetId: childId, action: 'UPDATE' },
-        }),
-      ).toBe(2);
-    });
-    const move = (
-      await prisma.adminActivity.findMany({
-        where: { targetId: childId, action: 'UPDATE' },
-        orderBy: { createdAt: 'desc' },
-      })
-    )[0];
+    const move = await activityFor('CATEGORY', 'UPDATE', childId, 3);
     expect(move.meta).toMatchObject({
       changes: { parent: { from: 'ActLog Parent', to: null } },
     });
@@ -338,7 +334,7 @@ describe('Admin activity logging (integration)', () => {
     await settle();
     expect(
       await prisma.adminActivity.count({
-        where: { targetId: id, action: 'UPDATE' },
+        where: { entityId: id, action: 'UPDATE' },
       }),
     ).toBe(0);
   });
@@ -401,7 +397,7 @@ describe('Admin activity logging (integration)', () => {
     await settle();
     expect(
       await prisma.adminActivity.count({
-        where: { targetId: bannerId, action: 'UPDATE' },
+        where: { entityId: bannerId, action: 'UPDATE' },
       }),
     ).toBe(0);
   });
@@ -439,8 +435,12 @@ describe('Admin activity logging (integration)', () => {
         imageOrder: JSON.stringify([img('b'), img('a')]),
       },
     });
-    const reorderRow = await activityFor('PRODUCT', 'REORDER', productId);
-    expect(reorderRow.meta).toEqual({ name: 'ActLog Phone' });
+    const reorderRow = await activityFor('PRODUCT', 'UPDATE', productId);
+    expect(reorderRow.meta).toEqual({
+      name: 'ActLog Phone',
+      changes: {},
+      imagesReordered: true,
+    });
 
     await callMultipart('@/pages/api/product/index.page', {
       method: 'PUT',
@@ -452,7 +452,7 @@ describe('Admin activity logging (integration)', () => {
         isOutOfStock: 'true',
       },
     });
-    const updateRow = await activityFor('PRODUCT', 'UPDATE', productId);
+    const updateRow = await activityFor('PRODUCT', 'UPDATE', productId, 2);
     expect(updateRow.meta).toEqual({
       name: 'ActLog Phone 2',
       changes: {
@@ -474,7 +474,7 @@ describe('Admin activity logging (integration)', () => {
     await settle();
     expect(
       await prisma.adminActivity.count({
-        where: { targetId: productId, action: { in: ['UPDATE', 'REORDER'] } },
+        where: { entityId: productId, action: 'UPDATE' },
       }),
     ).toBe(2);
 
@@ -521,7 +521,7 @@ describe('Admin activity logging (integration)', () => {
     await settle();
     expect(
       await prisma.adminActivity.count({
-        where: { targetId: priceId, action: 'UPDATE' },
+        where: { entityId: priceId, action: 'UPDATE' },
       }),
     ).toBe(1);
 
@@ -559,7 +559,7 @@ describe('Admin activity logging (integration)', () => {
           userId: adminUserId,
           entity: 'PRICE',
           action: 'UPDATE',
-          targetId: null,
+          entityId: null,
         },
       });
       expect(summary).toHaveLength(1);
@@ -567,7 +567,7 @@ describe('Admin activity logging (integration)', () => {
     });
     expect(
       await prisma.adminActivity.count({
-        where: { targetId: { in: rows.map((row) => row.id) } },
+        where: { entityId: { in: rows.map((row) => row.id) } },
       }),
     ).toBe(0);
   });
@@ -620,7 +620,7 @@ describe('Admin activity logging (integration)', () => {
       await prisma.adminActivity.count({
         where: {
           entity: 'PRICE',
-          targetId: { not: null },
+          entityId: { not: null },
           userId: adminUserId,
           meta: { path: ['name'], string_starts_with: 'ActLog Rated' },
         },
@@ -649,7 +649,7 @@ describe('Admin activity logging (integration)', () => {
         where: {
           entity: 'PRICE',
           action: 'UPDATE',
-          targetId: null,
+          entityId: null,
           userId: adminUserId,
         },
       });
@@ -706,7 +706,7 @@ describe('Admin activity logging (integration)', () => {
     const orderRows = async () =>
       (
         await prisma.adminActivity.findMany({
-          where: { entity: 'ORDER', targetId: order.id },
+          where: { entity: 'ORDER', entityId: order.id },
           orderBy: { createdAt: 'asc' },
         })
       ).map((row) => row.meta as Record<string, unknown>);
@@ -773,7 +773,7 @@ describe('Admin activity logging (integration)', () => {
         userName: otherUser.name,
         entity: 'BRAND',
         action: 'CREATE',
-        targetId: 'x',
+        entityId: 'x',
       },
     });
 

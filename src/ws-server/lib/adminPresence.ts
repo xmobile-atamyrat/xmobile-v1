@@ -2,9 +2,11 @@ import dbClient from '@/lib/dbClient';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
 import { UserRole } from '@prisma/client';
 
-/** Only ADMIN grade is tracked; superusers are not shown on the staff cards. */
+const STAFF_GRADES: UserRole[] = [UserRole.ADMIN, UserRole.SUPERUSER];
+
+/** Staff (ADMIN and SUPERUSER) are tracked; customers are not. */
 export const isTrackedAdmin = (connection: AuthenticatedConnection): boolean =>
-  connection.userGrade === UserRole.ADMIN;
+  STAFF_GRADES.includes(connection.userGrade);
 
 /**
  * The connection registry lives in this process's memory, so the Next.js API
@@ -32,7 +34,7 @@ export async function touchAdminLastSeen(
   if (userIds.length === 0) return;
   try {
     await dbClient.user.updateMany({
-      where: { id: { in: userIds }, grade: UserRole.ADMIN },
+      where: { id: { in: userIds }, grade: { in: STAFF_GRADES } },
       data: { lastSeenAt: now },
     });
   } catch (error) {

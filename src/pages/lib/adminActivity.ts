@@ -8,7 +8,7 @@ export type ActivityEntity =
   | 'BRAND'
   | 'COLOR';
 
-export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'REORDER';
+export type ActivityAction = 'CREATE' | 'UPDATE' | 'DELETE';
 
 export const ACTIVITY_ENTITIES: ActivityEntity[] = [
   'PRODUCT',
@@ -25,7 +25,6 @@ export const ACTIVITY_ACTIONS: ActivityAction[] = [
   'CREATE',
   'UPDATE',
   'DELETE',
-  'REORDER',
 ];
 
 export const ACTIVITY_ENTITY_LABEL_KEYS: Record<ActivityEntity, string> = {
@@ -43,7 +42,6 @@ export const ACTIVITY_ACTION_LABEL_KEYS: Record<ActivityAction, string> = {
   CREATE: 'activityActionCreate',
   UPDATE: 'activityActionUpdate',
   DELETE: 'activityActionDelete',
-  REORDER: 'activityActionReorder',
 };
 
 export type ActivityMeta = Record<string, any> | null;
@@ -54,7 +52,7 @@ export type ActivityRow = {
   userName: string;
   entity: ActivityEntity;
   action: ActivityAction;
-  targetId: string | null;
+  entityId: string | null;
   meta: ActivityMeta;
   createdAt: string;
 };
@@ -62,6 +60,7 @@ export type ActivityRow = {
 export type StaffMember = {
   id: string;
   name: string;
+  grade: 'ADMIN' | 'SUPERUSER';
   lastSeenAt: string | null;
   online: boolean;
   totalChanges: number;
@@ -79,7 +78,6 @@ const HEAD_KEYS: Record<string, string> = {
   'PRODUCT:CREATE': 'activityProductCreate',
   'PRODUCT:UPDATE': 'activityProductUpdate',
   'PRODUCT:DELETE': 'activityProductDelete',
-  'PRODUCT:REORDER': 'activityProductReorder',
   'PRICE:CREATE': 'activityPriceCreate',
   'PRICE:UPDATE': 'activityPriceUpdate',
   'PRICE:DELETE': 'activityPriceDelete',
@@ -230,7 +228,7 @@ function headFor(row: ActivityRow, t: Translate): string {
     const key = ORDER_HEAD_KEYS[String(meta.kind)] ?? ORDER_HEAD_KEYS.STATUS;
     return t(key, { orderNumber: String(meta.orderNumber ?? '') });
   }
-  if (row.entity === 'CATEGORY' && row.action === 'REORDER') {
+  if (row.entity === 'CATEGORY' && meta.kind === 'REORDER') {
     return t(
       meta.direction === 'up'
         ? 'activityCategoryMovedUp'

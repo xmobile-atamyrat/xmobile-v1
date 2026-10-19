@@ -16,14 +16,14 @@ const conn = (userId: string, userGrade: string) =>
   ({ userId, userGrade }) as unknown as AuthenticatedConnection;
 
 describe('adminUserIdsOnline', () => {
-  it('returns only ADMIN users that hold at least one socket', () => {
+  it('returns only staff users that hold at least one socket', () => {
     const connections = new Map<string, Set<AuthenticatedConnection>>([
       ['a1', new Set([conn('a1', 'ADMIN'), conn('a1', 'ADMIN')])],
       ['s1', new Set([conn('s1', 'SUPERUSER')])],
       ['f1', new Set([conn('f1', 'FREE')])],
       ['a2', new Set()],
     ]);
-    expect(adminUserIdsOnline(connections)).toEqual(['a1']);
+    expect(adminUserIdsOnline(connections)).toEqual(['a1', 's1']);
   });
 
   it('is empty when nobody is connected', () => {
@@ -42,12 +42,15 @@ describe('touchAdminLastSeen', () => {
     expect(mockUpdateMany).not.toHaveBeenCalled();
   });
 
-  it('stamps all given users in one query, ADMIN grade only', async () => {
+  it('stamps all given users in one query, staff grades only', async () => {
     const now = new Date('2026-10-05T10:00:00Z');
     await touchAdminLastSeen(['a1', 'a2'], now);
     expect(mockUpdateMany).toHaveBeenCalledTimes(1);
     expect(mockUpdateMany).toHaveBeenCalledWith({
-      where: { id: { in: ['a1', 'a2'] }, grade: 'ADMIN' },
+      where: {
+        id: { in: ['a1', 'a2'] },
+        grade: { in: ['ADMIN', 'SUPERUSER'] },
+      },
       data: { lastSeenAt: now },
     });
   });

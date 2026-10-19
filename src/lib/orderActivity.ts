@@ -93,7 +93,7 @@ export function recordOrderActivity(
     userId,
     entity: 'ORDER',
     action: 'UPDATE',
-    targetId: orderId,
+    entityId: orderId,
     meta,
   });
 }

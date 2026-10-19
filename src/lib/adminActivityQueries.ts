@@ -144,8 +144,8 @@ export async function getActivityFeed(params: FeedParams) {
 
 export async function getStaffOverview(now: Date = new Date()) {
   const admins = await dbClient.user.findMany({
-    where: { grade: 'ADMIN', deletedAt: null },
-    select: { id: true, name: true, lastSeenAt: true },
+    where: { grade: { in: ['ADMIN', 'SUPERUSER'] }, deletedAt: null },
+    select: { id: true, name: true, grade: true, lastSeenAt: true },
   });
   if (admins.length === 0) return [];
   const ids = admins.map((admin) => admin.id);
@@ -180,6 +180,7 @@ export async function getStaffOverview(now: Date = new Date()) {
     .map((admin) => ({
       id: admin.id,
       name: admin.name,
+      grade: admin.grade,
       lastSeenAt: admin.lastSeenAt,
       online: isOnline(admin.lastSeenAt, now),
       totalChanges: changesById.get(admin.id) ?? 0,
