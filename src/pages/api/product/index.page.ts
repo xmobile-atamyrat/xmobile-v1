@@ -28,6 +28,7 @@ import {
   SORT_OPTIONS,
   localeOptions,
 } from '@/pages/lib/constants';
+import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import {
   cachedPriceFrom,
@@ -89,6 +90,9 @@ export function createCompressedImgUrl(
   imgUrl: string,
   type: 'bad' | 'good',
 ): string | null {
+  // A pasted external URL has no file on disk, so no compressed copy either.
+  if (isRemoteImageUrl(imgUrl)) return null;
+
   // Windows uses '\' in path format, replace it with '/'
   const normalizedUrl = imgUrl.replace(/\\/g, '/');
   const imgName = path.basename(imgUrl);
@@ -102,6 +106,18 @@ export function createCompressedImgUrl(
   }
 
   return `${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/${imgName}`;
+}
+
+/** Removes a product image and its compressed copies from disk. */
+export function deleteProductImageFiles(imgUrl: string) {
+  if (isRemoteImageUrl(imgUrl)) return;
+  [
+    imgUrl,
+    createCompressedImgUrl(imgUrl, 'bad'),
+    createCompressedImgUrl(imgUrl, 'good'),
+  ].forEach((file) => {
+    if (file && fs.existsSync(file)) fs.unlinkSync(file);
+  });
 }
 
 export async function createCompressedImg(
@@ -678,17 +694,7 @@ async function handleEditProduct(
         : [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
-          const heavilyCompressedImgUrl = createCompressedImgUrl(imgUrl, 'bad');
-          const lightlyCompressedImgUrl = createCompressedImgUrl(
-            imgUrl,
-            'good',
-          );
-
-          if (fs.existsSync(imgUrl)) fs.unlinkSync(imgUrl);
-          if (fs.existsSync(heavilyCompressedImgUrl))
-            fs.unlinkSync(heavilyCompressedImgUrl);
-          if (fs.existsSync(lightlyCompressedImgUrl))
-            fs.unlinkSync(lightlyCompressedImgUrl);
+          deleteProductImageFiles(imgUrl);
         } else {
           data.imgUrls!.push(imgUrl);
         }
