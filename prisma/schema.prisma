@@ -65,7 +65,6 @@ enum AdminActivityAction {
   CREATE
   UPDATE
   DELETE
-  REORDER
 }
 
 model AdminActivity {
@@ -77,7 +76,7 @@ model AdminActivity {
 
   entity          AdminActivityEntity
   action          AdminActivityAction
-  targetId        String?
+  entityId        String?
   meta            Json?
 
   createdAt       DateTime            @default(now())
@@ -85,7 +84,7 @@ model AdminActivity {
   @@index([createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
   @@index([entity, createdAt(sort: Desc)])
-  @@index([targetId, createdAt(sort: Desc)])
+  @@index([entityId, createdAt(sort: Desc)])
 }
 
 
