@@ -4,6 +4,7 @@ import {
   Translate,
 } from '@/pages/lib/adminActivity';
 import {
+  fill,
   fontClassName,
   hairline,
   muted,
@@ -101,6 +102,24 @@ export default function StaffCards({ staff, selectedId, onSelect }: Props) {
               >
                 {member.name}
               </Typography>
+              {member.grade === 'SUPERUSER' && (
+                <Typography
+                  component="span"
+                  fontSize={11}
+                  fontWeight={600}
+                  color={navy}
+                  className={fontClassName.className}
+                  sx={{
+                    flexShrink: 0,
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: '999px',
+                    backgroundColor: fill,
+                  }}
+                >
+                  {t('activitySuperuserBadge')}
+                </Typography>
+              )}
             </Box>
             <Typography
               fontSize={13}

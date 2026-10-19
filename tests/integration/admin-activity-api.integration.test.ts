@@ -74,7 +74,7 @@ describe('Admin activity read APIs (integration)', () => {
     userName,
     entity,
     action,
-    targetId: `t-${createdAt.getTime()}`,
+    entityId: `t-${createdAt.getTime()}`,
     meta: { name: 'x' },
     createdAt,
   });
@@ -292,7 +292,7 @@ describe('Admin activity read APIs (integration)', () => {
       sessionIds.push(first.id, second.id);
     });
 
-    it('shows ADMIN staff only, with presence, change and chat counts', async () => {
+    it('shows ADMIN and SUPERUSER staff, with presence, change and chat counts', async () => {
       const { status, body } = await get('staff', superToken);
       expect(status).toBe(200);
       const staff = body.data as {
@@ -303,7 +303,8 @@ describe('Admin activity read APIs (integration)', () => {
       }[];
       const byId = new Map(staff.map((member) => [member.id, member]));
 
-      expect(byId.has(superId)).toBe(false);
+      expect(byId.get(superId)).toMatchObject({ grade: 'SUPERUSER' });
+      expect(byId.get(busyAdminId)).toMatchObject({ grade: 'ADMIN' });
       expect(byId.has(deletedAdminId)).toBe(false);
 
       expect(byId.get(busyAdminId)).toMatchObject({

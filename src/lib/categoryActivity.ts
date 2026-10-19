@@ -84,7 +84,7 @@ export async function recordCategoryCreated(
     userId,
     entity: 'CATEGORY',
     action: 'CREATE',
-    targetId: category.id,
+    entityId: category.id,
     meta: {
       name: categoryLabel(category.name),
       ...(parent != null ? { parent } : {}),
@@ -110,7 +110,7 @@ export async function recordCategoryUpdated(
     userId,
     entity: 'CATEGORY',
     action: 'UPDATE',
-    targetId: after.id,
+    entityId: after.id,
     meta,
   });
 }
@@ -124,7 +124,7 @@ export function recordCategoryDeleted(
     userId,
     entity: 'CATEGORY',
     action: 'DELETE',
-    targetId: category.id,
+    entityId: category.id,
     meta: { name: categoryLabel(category.name), ...counts },
   });
 }
@@ -137,8 +137,8 @@ export function recordCategoryReordered(
   logAdminActivity({
     userId,
     entity: 'CATEGORY',
-    action: 'REORDER',
-    targetId: category.id,
-    meta: { name: categoryLabel(category.name), direction },
+    action: 'UPDATE',
+    entityId: category.id,
+    meta: { name: categoryLabel(category.name), kind: 'REORDER', direction },
   });
 }

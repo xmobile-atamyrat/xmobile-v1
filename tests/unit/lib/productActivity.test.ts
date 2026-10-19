@@ -75,14 +75,17 @@ describe('buildProductUpdateActivity', () => {
     ).toBeNull();
   });
 
-  it('logs a pure image reorder as REORDER', () => {
+  it('logs a pure image reorder as an UPDATE flagged imagesReordered', () => {
     expect(
       buildProductUpdateActivity(
         product,
         { ...product, imgUrls: ['c.jpg', 'a.jpg', 'b.jpg'] },
         noNames,
       ),
-    ).toEqual({ action: 'REORDER', meta: { name: 'iPhone 15' } });
+    ).toEqual({
+      action: 'UPDATE',
+      meta: { name: 'iPhone 15', changes: {}, imagesReordered: true },
+    });
   });
 
   it('records renames, moves, brand changes and stock flips', () => {

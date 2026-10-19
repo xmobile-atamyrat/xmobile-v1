@@ -15,7 +15,7 @@ export function recordRateCreated(
     userId,
     entity: 'CURRENCY_RATE',
     action: 'CREATE',
-    targetId: String(rate.id),
+    entityId: String(rate.id),
     meta: { name: rate.name, currency: rate.currency, rate: rate.rate },
   });
 }
@@ -38,7 +38,7 @@ export function recordRateUpdated(
     userId,
     entity: 'CURRENCY_RATE',
     action: 'UPDATE',
-    targetId: String(after.id),
+    entityId: String(after.id),
     meta: {
       name: after.name,
       currency: after.currency,
@@ -59,7 +59,7 @@ export function recordRateDeleted(
     userId,
     entity: 'CURRENCY_RATE',
     action: 'DELETE',
-    targetId: String(rate.id),
+    entityId: String(rate.id),
     meta: {
       name: rate.name,
       currency: rate.currency,

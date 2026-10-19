@@ -30,7 +30,7 @@ describe('writeAdminActivity', () => {
       userId: 'u1',
       entity: 'BRAND',
       action: 'CREATE',
-      targetId: 'b1',
+      entityId: 'b1',
       meta: { name: 'Apple' },
     });
 
@@ -44,7 +44,7 @@ describe('writeAdminActivity', () => {
         userName: 'Aman',
         entity: 'BRAND',
         action: 'CREATE',
-        targetId: 'b1',
+        entityId: 'b1',
         meta: { name: 'Apple' },
       },
     });

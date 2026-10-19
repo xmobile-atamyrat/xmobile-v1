@@ -56,7 +56,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         userId,
         entity: 'COLOR',
         action: 'CREATE',
-        targetId: newColor.id,
+        entityId: newColor.id,
         meta: { name: newColor.name, hex: newColor.hex },
       });
       return res.status(200).json({
@@ -121,7 +121,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           userId,
           entity: 'COLOR',
           action: 'UPDATE',
-          targetId: color.id,
+          entityId: color.id,
           meta: { name: color.name ?? previous.name, changes },
         });
       });
@@ -151,7 +151,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         userId,
         entity: 'COLOR',
         action: 'DELETE',
-        targetId: deletedColor.id,
+        entityId: deletedColor.id,
         meta: { name: deletedColor.name, hex: deletedColor.hex },
       });
       return res.status(200).json({

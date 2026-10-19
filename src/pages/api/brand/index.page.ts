@@ -69,7 +69,7 @@ async function handler(
         userId: req.userId,
         entity: 'BRAND',
         action: 'CREATE',
-        targetId: brand.id,
+        entityId: brand.id,
         meta: { name: brand.name },
       });
 
@@ -99,7 +99,7 @@ async function handler(
           userId: req.userId,
           entity: 'BRAND',
           action: 'UPDATE',
-          targetId: id,
+          entityId: id,
           meta: {
             name: brand.name,
             changes: { name: { from: previous.name, to: brand.name } },
@@ -134,7 +134,7 @@ async function handler(
         userId: req.userId,
         entity: 'BRAND',
         action: 'DELETE',
-        targetId: id,
+        entityId: id,
         meta: { name: deleted.name },
       });
 

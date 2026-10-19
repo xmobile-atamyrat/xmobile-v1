@@ -39,9 +39,9 @@ export function imageDiff(
 }
 
 /**
- * One save is one decision. A save whose only effect is the image order is a
- * REORDER; anything else is a single UPDATE listing everything that moved.
- * Returns null when the save changed nothing worth recording.
+ * One save is one decision: a single UPDATE listing everything that moved,
+ * including an image-order-only save (`imagesReordered`). Returns null when
+ * the save changed nothing worth recording.
  */
 export function buildProductUpdateActivity(
   before: ProductSnapshot,
@@ -81,10 +81,7 @@ export function buildProductUpdateActivity(
 
   const nothingElse =
     Object.keys(changes).length === 0 && edited.length === 0 && !imagesChanged;
-  if (nothingElse && images.reordered) {
-    return { action: 'REORDER', meta: { name } };
-  }
-  if (nothingElse) return null;
+  if (nothingElse && !images.reordered) return null;
 
   return {
     action: 'UPDATE',
@@ -123,7 +120,7 @@ export async function recordProductCreated(
     userId,
     entity: 'PRODUCT',
     action: 'CREATE',
-    targetId: product.id,
+    entityId: product.id,
     meta: {
       name: categoryLabel(product.name),
       ...(category != null ? { category } : {}),
@@ -154,7 +151,7 @@ export async function recordProductUpdated(
     userId,
     entity: 'PRODUCT',
     action: activity.action,
-    targetId: after.id,
+    entityId: after.id,
     meta: activity.meta,
   });
 }
@@ -167,7 +164,7 @@ export function recordProductDeleted(
     userId,
     entity: 'PRODUCT',
     action: 'DELETE',
-    targetId: product.id,
+    entityId: product.id,
     meta: { name: categoryLabel(product.name) },
   });
 }

@@ -9,7 +9,7 @@ export type AdminActivityInput = {
   userId: string | undefined | null;
   entity: AdminActivityEntity;
   action: AdminActivityAction;
-  targetId?: string | null;
+  entityId?: string | null;
   meta?: Prisma.InputJsonObject;
 };
 
@@ -35,7 +35,7 @@ export async function writeAdminActivity(
         userName: user.name,
         entity: input.entity,
         action: input.action,
-        targetId: input.targetId ?? null,
+        entityId: input.entityId ?? null,
         meta: input.meta,
       },
     });

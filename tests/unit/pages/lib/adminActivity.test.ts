@@ -28,7 +28,7 @@ const row = (
   userName: 'Aman',
   entity,
   action,
-  targetId: 't1',
+  entityId: 't1',
   meta,
   createdAt: '2026-10-05T10:00:00.000Z',
 });
@@ -168,13 +168,21 @@ describe('activitySentence', () => {
   it('picks the category reorder head by direction', () => {
     expect(
       activitySentence(
-        row('CATEGORY', 'REORDER', { name: 'Phones', direction: 'up' }),
+        row('CATEGORY', 'UPDATE', {
+          name: 'Phones',
+          kind: 'REORDER',
+          direction: 'up',
+        }),
         t,
       ),
     ).toBe('activityCategoryMovedUp(name=Phones)');
     expect(
       activitySentence(
-        row('CATEGORY', 'REORDER', { name: 'Phones', direction: 'down' }),
+        row('CATEGORY', 'UPDATE', {
+          name: 'Phones',
+          kind: 'REORDER',
+          direction: 'down',
+        }),
         t,
       ),
     ).toBe('activityCategoryMovedDown(name=Phones)');

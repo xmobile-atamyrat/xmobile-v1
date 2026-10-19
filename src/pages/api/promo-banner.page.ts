@@ -444,7 +444,7 @@ export default async function handler(
         userId: actorId,
         entity: 'BANNER',
         action: 'CREATE',
-        targetId: data.id,
+        entityId: data.id,
         meta: { position: data.sortOrder, active: data.isActive },
       });
     }
@@ -474,7 +474,7 @@ export default async function handler(
           userId: actorId,
           entity: 'BANNER',
           action: 'UPDATE',
-          targetId: data.id,
+          entityId: data.id,
           meta,
         });
       }
@@ -512,7 +512,7 @@ export default async function handler(
         userId: actorId,
         entity: 'BANNER',
         action: 'DELETE',
-        targetId: bannerId,
+        entityId: bannerId,
         meta: { position: existing.sortOrder },
       });
       return res.status(200).json({ success: true });

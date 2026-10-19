@@ -181,7 +181,7 @@ export async function recordPricesUpdated(
       userId,
       entity: 'PRICE',
       action: 'UPDATE',
-      targetId: null,
+      entityId: null,
       meta: { count: changed.length, fields: [...fields] },
     });
     return;
@@ -195,7 +195,7 @@ export async function recordPricesUpdated(
       userId,
       entity: 'PRICE',
       action: 'UPDATE',
-      targetId: after.id,
+      entityId: after.id,
       meta,
     });
   });
@@ -216,7 +216,7 @@ export async function recordPriceCreated(
     userId,
     entity: 'PRICE',
     action: 'CREATE',
-    targetId: created.id,
+    entityId: created.id,
     meta: {
       name: created.name,
       price: created.price,
@@ -233,7 +233,7 @@ export function recordPriceDeleted(
     userId,
     entity: 'PRICE',
     action: 'DELETE',
-    targetId: deleted.id,
+    entityId: deleted.id,
     meta: { name: deleted.name, price: deleted.price },
   });
 }
@@ -258,7 +258,7 @@ export async function recordPricesAssignedToRate(
     userId,
     entity: 'PRICE',
     action: 'UPDATE',
-    targetId: null,
+    entityId: null,
     meta: { count, fields: ['rate'], ...(rate != null ? { rate } : {}) },
   });
 }

@@ -14,6 +14,7 @@ import { renderWithProviders } from './helpers/renderWithProviders';
 const staff: StaffMember[] = [
   {
     id: 'a1',
+    grade: 'ADMIN',
     name: 'Aman',
     lastSeenAt: new Date().toISOString(),
     online: true,
@@ -22,6 +23,7 @@ const staff: StaffMember[] = [
   },
   {
     id: 'a2',
+    grade: 'ADMIN',
     name: 'Bahar',
     lastSeenAt: new Date(Date.now() - 5 * 60_000).toISOString(),
     online: false,
@@ -30,6 +32,7 @@ const staff: StaffMember[] = [
   },
   {
     id: 'a3',
+    grade: 'SUPERUSER',
     name: 'Chary',
     lastSeenAt: null,
     online: false,
@@ -60,6 +63,20 @@ describe('StaffCards', () => {
 
     const chary = screen.getByRole('button', { name: /Chary/ });
     expect(within(chary).getByText('Never seen')).toBeTruthy();
+  });
+
+  it('badges superusers only', () => {
+    renderWithProviders(
+      createElement(StaffCards, {
+        staff,
+        selectedId: undefined,
+        onSelect: vi.fn(),
+      }),
+    );
+
+    expect(screen.getAllByText('Superuser')).toHaveLength(1);
+    const chary = screen.getByRole('button', { name: /Chary/ });
+    expect(within(chary).getByText('Superuser')).toBeTruthy();
   });
 
   it('selects an admin on click and deselects on a second click', async () => {
@@ -144,7 +161,7 @@ describe('ActivityFeed', () => {
       userName: 'Aman',
       entity: 'PRICE',
       action: 'UPDATE',
-      targetId: 'p1',
+      entityId: 'p1',
       meta: {
         name: '128gb Black',
         changes: { price: { from: '340', to: '355' } },
@@ -157,7 +174,7 @@ describe('ActivityFeed', () => {
       userName: 'Old Admin',
       entity: 'BRAND',
       action: 'CREATE',
-      targetId: 'b1',
+      entityId: 'b1',
       meta: { name: 'Apple' },
       createdAt: '2026-03-01T10:00:00.000Z',
     },
