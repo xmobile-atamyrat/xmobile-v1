@@ -4,21 +4,18 @@ import { UserRole } from '@prisma/client';
 
 const STAFF_GRADES: UserRole[] = [UserRole.ADMIN, UserRole.SUPERUSER];
 
-/** Staff (ADMIN and SUPERUSER) are tracked; customers are not. */
-export const isTrackedAdmin = (connection: AuthenticatedConnection): boolean =>
-  STAFF_GRADES.includes(connection.userGrade);
-
 /**
  * The connection registry lives in this process's memory, so the Next.js API
  * cannot see it. `User.lastSeenAt` is how presence crosses that boundary: the
  * admin activity page treats an admin as online when it is recent.
+ *
+ * Takes the ws-server's `adminConnections` set, which already holds exactly the
+ * staff sockets, so a sweep never walks the customers' connections.
  */
 export function adminUserIdsOnline(
-  connectionsMap: Map<string, Set<AuthenticatedConnection>>,
+  adminSockets: Set<AuthenticatedConnection>,
 ): string[] {
-  return [...connectionsMap.entries()]
-    .filter(([, sockets]) => [...sockets].some(isTrackedAdmin))
-    .map(([userId]) => userId);
+  return [...new Set([...adminSockets].map((socket) => socket.userId))];
 }
 
 /**

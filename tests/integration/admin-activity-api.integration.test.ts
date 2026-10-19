@@ -322,6 +322,24 @@ describe('Admin activity read APIs (integration)', () => {
         order.indexOf(idleAdminId),
       );
     });
+
+    it('presence=1 returns only who is online, without the totals', async () => {
+      const { status, body } = await get('staff', superToken, {
+        presence: '1',
+      });
+      expect(status).toBe(200);
+      const staff = body.data as Record<string, unknown>[];
+      const byId = new Map(staff.map((member) => [member.id, member]));
+
+      expect(Object.keys(byId.get(busyAdminId) ?? {}).sort()).toEqual([
+        'id',
+        'lastSeenAt',
+        'online',
+      ]);
+      expect(byId.get(busyAdminId)).toMatchObject({ online: true });
+      expect(byId.get(idleAdminId)).toMatchObject({ online: false });
+      expect(byId.has(deletedAdminId)).toBe(false);
+    });
   });
 
   describe('heatmap', () => {

@@ -1,6 +1,4 @@
 import { logAdminActivity } from '@/lib/adminActivity';
-import dbClient from '@/lib/dbClient';
-import { splitDeliveryFee } from '@/pages/lib/orderDelivery';
 import type { Prisma, UserOrderStatus } from '@prisma/client';
 
 export type OrderSnapshot = {
@@ -11,32 +9,11 @@ export type OrderSnapshot = {
 };
 
 /**
- * The order as it was before an admin change, which the order services don't
- * hand back. Never throws: a failed read only means this change goes unlogged.
+ * The builders take the order as the service read it under its row lock, so
+ * "before" is what this save replaced even when two admins save at once.
  */
-export async function snapshotOrder(
-  orderId: string,
-): Promise<OrderSnapshot | null> {
-  try {
-    const order = await dbClient.userOrder.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
-    if (order == null) return null;
-    const { deliveryPrice } = splitDeliveryFee(order);
-    return {
-      orderNumber: order.orderNumber,
-      status: order.status,
-      adminNotes: order.adminNotes,
-      deliveryPrice,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export function buildStatusMeta(
-  before: OrderSnapshot,
+  before: Pick<OrderSnapshot, 'status' | 'adminNotes'>,
   after: Omit<OrderSnapshot, 'deliveryPrice'> & {
     cancellationReason: string | null;
   },
@@ -62,7 +39,7 @@ export function buildStatusMeta(
 
 /** Notes can be long and personal; the log records that they changed, not what they said. */
 export function buildNotesMeta(
-  before: OrderSnapshot,
+  before: Pick<OrderSnapshot, 'adminNotes'>,
   after: Pick<OrderSnapshot, 'orderNumber' | 'adminNotes'>,
 ): Prisma.InputJsonObject | null {
   if ((before.adminNotes ?? '') === (after.adminNotes ?? '')) return null;
@@ -70,7 +47,7 @@ export function buildNotesMeta(
 }
 
 export function buildDeliveryFeeMeta(
-  before: OrderSnapshot,
+  before: Pick<OrderSnapshot, 'deliveryPrice'>,
   after: Pick<OrderSnapshot, 'orderNumber' | 'deliveryPrice'>,
 ): Prisma.InputJsonObject | null {
   if (before.deliveryPrice === after.deliveryPrice) return null;

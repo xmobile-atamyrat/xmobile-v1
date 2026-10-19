@@ -7,21 +7,22 @@ const { mockUserFind, mockCreate } = vi.hoisted(() => ({
 
 vi.mock('@/lib/dbClient', () => ({
   default: {
-    user: { findUnique: mockUserFind },
-    adminActivity: { create: mockCreate },
+    user: { findMany: mockUserFind },
+    adminActivity: { createMany: mockCreate },
   },
 }));
 
 import {
   changedFields,
   logAdminActivity,
+  writeAdminActivities,
   writeAdminActivity,
 } from '@/lib/adminActivity';
 
 describe('writeAdminActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUserFind.mockResolvedValue({ name: 'Aman' });
+    mockUserFind.mockResolvedValue([{ id: 'u1', name: 'Aman' }]);
     mockCreate.mockResolvedValue({});
   });
 
@@ -35,19 +36,44 @@ describe('writeAdminActivity', () => {
     });
 
     expect(mockUserFind).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      select: { name: true },
+      where: { id: { in: ['u1'] } },
+      select: { id: true, name: true },
     });
     expect(mockCreate).toHaveBeenCalledWith({
-      data: {
-        userId: 'u1',
-        userName: 'Aman',
-        entity: 'BRAND',
-        action: 'CREATE',
-        entityId: 'b1',
-        meta: { name: 'Apple' },
-      },
+      data: [
+        {
+          userId: 'u1',
+          userName: 'Aman',
+          entity: 'BRAND',
+          action: 'CREATE',
+          entityId: 'b1',
+          meta: { name: 'Apple' },
+        },
+      ],
     });
+  });
+
+  it('writes a batch with one lookup and one insert', async () => {
+    mockUserFind.mockResolvedValue([
+      { id: 'u1', name: 'Aman' },
+      { id: 'u2', name: 'Maral' },
+    ]);
+    await writeAdminActivities([
+      { userId: 'u1', entity: 'PRICE', action: 'UPDATE', entityId: 'p1' },
+      { userId: 'u1', entity: 'PRICE', action: 'UPDATE', entityId: 'p2' },
+      { userId: 'u2', entity: 'COLOR', action: 'DELETE', entityId: 'c1' },
+      { userId: undefined, entity: 'COLOR', action: 'DELETE' },
+    ]);
+
+    expect(mockUserFind).toHaveBeenCalledTimes(1);
+    expect(mockUserFind.mock.calls[0][0].where.id.in).toEqual(['u1', 'u2']);
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(
+      mockCreate.mock.calls[0][0].data.map(
+        (row: { userName: string; entityId: string }) =>
+          `${row.userName}:${row.entityId}`,
+      ),
+    ).toEqual(['Aman:p1', 'Aman:p2', 'Maral:c1']);
   });
 
   it('skips when there is no actor id', async () => {
@@ -61,7 +87,7 @@ describe('writeAdminActivity', () => {
   });
 
   it('skips when the actor no longer exists', async () => {
-    mockUserFind.mockResolvedValue(null);
+    mockUserFind.mockResolvedValue([]);
     await writeAdminActivity({
       userId: 'gone',
       entity: 'BRAND',
@@ -85,7 +111,7 @@ describe('writeAdminActivity', () => {
 describe('logAdminActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUserFind.mockResolvedValue({ name: 'Aman' });
+    mockUserFind.mockResolvedValue([{ id: 'u1', name: 'Aman' }]);
     mockCreate.mockResolvedValue({});
   });
 

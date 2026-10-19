@@ -14,6 +14,8 @@ import {
   updateOrderStatusSchema,
 } from '../validators/orderValidators';
 
+type UserOrderWithFee = UserOrder & { deliveryPrice: string | null };
+
 /**
  * Controller for getting all orders (admin)
  */
@@ -80,10 +82,14 @@ export async function getAdminOrderController(
 export async function updateOrderStatusController(
   orderId: string,
   data: unknown,
-): Promise<{ resp: ResponseApi<UserOrder>; status: number }> {
+): Promise<{
+  resp: ResponseApi<UserOrder>;
+  status: number;
+  previous?: UserOrder;
+}> {
   try {
     const validated = updateOrderStatusSchema.parse(data);
-    const order = await updateOrderStatus(
+    const { order, previous } = await updateOrderStatus(
       orderId,
       validated.status,
       validated.adminNotes,
@@ -93,6 +99,7 @@ export async function updateOrderStatusController(
     return {
       resp: { success: true, data: order },
       status: 200,
+      previous,
     };
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -121,14 +128,22 @@ export async function updateOrderStatusController(
 export async function updateAdminNotesController(
   orderId: string,
   data: unknown,
-): Promise<{ resp: ResponseApi<UserOrder>; status: number }> {
+): Promise<{
+  resp: ResponseApi<UserOrder>;
+  status: number;
+  previous?: UserOrder;
+}> {
   try {
     const validated = updateAdminNotesSchema.parse(data);
-    const order = await updateAdminNotes(orderId, validated.adminNotes);
+    const { order, previous } = await updateAdminNotes(
+      orderId,
+      validated.adminNotes,
+    );
 
     return {
       resp: { success: true, data: order },
       status: 200,
+      previous,
     };
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -157,14 +172,22 @@ export async function updateAdminNotesController(
 export async function updateDeliveryPriceController(
   orderId: string,
   data: unknown,
-): Promise<{ resp: ResponseApi<UserOrder>; status: number }> {
+): Promise<{
+  resp: ResponseApi<UserOrderWithFee>;
+  status: number;
+  previous?: UserOrderWithFee;
+}> {
   try {
     const validated = updateDeliveryPriceSchema.parse(data);
-    const order = await updateDeliveryPrice(orderId, validated.deliveryPrice);
+    const { order, previous } = await updateDeliveryPrice(
+      orderId,
+      validated.deliveryPrice,
+    );
 
     return {
       resp: { success: true, data: order },
       status: 200,
+      previous,
     };
   } catch (error: any) {
     if (error.name === 'ZodError') {

@@ -142,9 +142,31 @@ export async function getActivityFeed(params: FeedParams) {
   return { items, nextCursor: hasMore ? items[items.length - 1].id : null };
 }
 
+const whereActiveStaff: Prisma.UserWhereInput = {
+  grade: { in: ['ADMIN', 'SUPERUSER'] },
+  deletedAt: null,
+};
+
+/**
+ * Just who is online, for the page's 30s poll. The totals in
+ * `getStaffOverview` are whole-history aggregates and too heavy to repeat that
+ * often on the shared VM.
+ */
+export async function getStaffPresence(now: Date = new Date()) {
+  const admins = await dbClient.user.findMany({
+    where: whereActiveStaff,
+    select: { id: true, lastSeenAt: true },
+  });
+  return admins.map((admin) => ({
+    id: admin.id,
+    lastSeenAt: admin.lastSeenAt,
+    online: isOnline(admin.lastSeenAt, now),
+  }));
+}
+
 export async function getStaffOverview(now: Date = new Date()) {
   const admins = await dbClient.user.findMany({
-    where: { grade: { in: ['ADMIN', 'SUPERUSER'] }, deletedAt: null },
+    where: whereActiveStaff,
     select: { id: true, name: true, grade: true, lastSeenAt: true },
   });
   if (admins.length === 0) return [];

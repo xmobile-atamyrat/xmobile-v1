@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockLog } = vi.hoisted(() => ({ mockLog: vi.fn() }));
+const { mockLog, mockLogMany } = vi.hoisted(() => ({
+  mockLog: vi.fn(),
+  mockLogMany: vi.fn(),
+}));
 
 vi.mock('@/lib/adminActivity', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/adminActivity')>()),
   logAdminActivity: mockLog,
+  logAdminActivities: mockLogMany,
 }));
 
 vi.mock('@/lib/dbClient', () => ({
@@ -102,7 +106,10 @@ describe('buildPriceUpdateMeta', () => {
 });
 
 describe('recordPricesUpdated', () => {
-  beforeEach(() => mockLog.mockClear());
+  beforeEach(() => {
+    mockLog.mockClear();
+    mockLogMany.mockClear();
+  });
 
   const pair = (i: number, changed: boolean) => ({
     before: { ...price, id: `pr${i}` },
@@ -112,21 +119,25 @@ describe('recordPricesUpdated', () => {
   it('logs nothing when no price changed', async () => {
     await recordPricesUpdated('u1', [pair(1, false), pair(2, false)]);
     expect(mockLog).not.toHaveBeenCalled();
+    expect(mockLogMany).not.toHaveBeenCalled();
   });
 
-  it('logs one row per changed price up to the limit', async () => {
+  it('logs one row per changed price up to the limit, in one batch', async () => {
     await recordPricesUpdated('u1', [
       pair(1, true),
       pair(2, false),
       pair(3, true),
     ]);
-    expect(mockLog).toHaveBeenCalledTimes(2);
-    expect(mockLog.mock.calls[0][0]).toMatchObject({
+    expect(mockLogMany).toHaveBeenCalledTimes(1);
+    const rows = mockLogMany.mock.calls[0][0];
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
       userId: 'u1',
       entity: 'PRICE',
       action: 'UPDATE',
       entityId: 'pr1',
     });
+    expect(rows[1]).toMatchObject({ entityId: 'pr3' });
   });
 
   it('collapses a large save into a single summary row', async () => {

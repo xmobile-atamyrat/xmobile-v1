@@ -10,6 +10,7 @@ import {
   ActivityRow,
   HeatmapDay,
   StaffMember,
+  StaffPresence,
 } from '@/pages/lib/adminActivity';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
@@ -37,6 +38,7 @@ const STAFF_REFRESH_MS = 30_000;
 
 type FeedPage = { items: ActivityRow[]; nextCursor: string | null };
 type Heatmap = { from: string; to: string; days: HeatmapDay[] };
+type LoadErrors = { staff: boolean; feed: boolean; heatmap: boolean };
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const home = {
@@ -81,47 +83,107 @@ export default function AdminActivityPage() {
   const [feed, setFeed] = useState<FeedPage>({ items: [], nextCursor: null });
   const [feedLoading, setFeedLoading] = useState(true);
   const [heatmap, setHeatmap] = useState<Heatmap | undefined>();
-  const [failed, setFailed] = useState(false);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [errors, setErrors] = useState<LoadErrors>({
+    staff: false,
+    feed: false,
+    heatmap: false,
+  });
 
   const isAuthorized = user != null && user.grade === UserRole.SUPERUSER;
+
+  // Loaders read the token through a ref. fetchWithCreds stores a silently
+  // refreshed token, and depending on the value itself would re-run the feed
+  // load from page one, throwing away every page fetched with "show more".
+  const accessTokenRef = useRef(accessToken);
+  accessTokenRef.current = accessToken;
+  const hasToken = Boolean(accessToken);
+
+  const setError = useCallback((key: keyof LoadErrors, value: boolean) => {
+    setErrors((previous) =>
+      previous[key] === value ? previous : { ...previous, [key]: value },
+    );
+  }, []);
 
   useEffect(() => {
     if (!isUserLoading && !isAuthorized) router.push('/');
   }, [isUserLoading, isAuthorized, router]);
 
   const loadStaff = useCallback(async () => {
-    if (!accessToken) return;
+    const token = accessTokenRef.current;
+    if (!token) return;
     try {
       const response = await fetchWithCreds<StaffMember[]>({
-        accessToken,
+        accessToken: token,
         path: '/api/admin/activity/staff',
         method: 'GET',
       });
-      if (response.success && response.data) setStaff(response.data);
-      else setFailed(true);
+      if (response.success && response.data) {
+        setStaff(response.data);
+        setError('staff', false);
+      } else {
+        setError('staff', true);
+      }
     } catch {
-      setFailed(true);
+      setError('staff', true);
     }
-  }, [accessToken, fetchWithCreds]);
+  }, [fetchWithCreds, setError]);
 
+  const refreshPresence = useCallback(async () => {
+    const token = accessTokenRef.current;
+    if (!token) return;
+    try {
+      const response = await fetchWithCreds<StaffPresence[]>({
+        accessToken: token,
+        path: '/api/admin/activity/staff?presence=1',
+        method: 'GET',
+      });
+      if (!response.success || !response.data) return;
+      const byId = new Map(response.data.map((entry) => [entry.id, entry]));
+      setStaff((previous) =>
+        previous.map((member) => {
+          const entry = byId.get(member.id);
+          return entry
+            ? { ...member, lastSeenAt: entry.lastSeenAt, online: entry.online }
+            : member;
+        }),
+      );
+    } catch {
+      // Presence is a nicety; the next tick tries again.
+    }
+  }, [fetchWithCreds]);
+
+  // The totals on the cards are whole-history aggregates, so they load once and
+  // again when the tab comes back. Only presence is polled, and not while the
+  // tab is hidden.
   useEffect(() => {
-    if (!isAuthorized) return undefined;
+    if (!isAuthorized || !hasToken) return undefined;
     loadStaff();
-    const timer = setInterval(loadStaff, STAFF_REFRESH_MS);
-    return () => clearInterval(timer);
-  }, [isAuthorized, loadStaff]);
+    const timer = setInterval(() => {
+      if (!document.hidden) refreshPresence();
+    }, STAFF_REFRESH_MS);
+    const onVisible = () => {
+      if (!document.hidden) loadStaff();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isAuthorized, hasToken, loadStaff, refreshPresence]);
 
   const feedRequestId = useRef(0);
 
   const loadFeed = useCallback(
     async (cursor?: string) => {
-      if (!accessToken) return;
+      const token = accessTokenRef.current;
+      if (!token) return;
       feedRequestId.current += 1;
       const requestId = feedRequestId.current;
       setFeedLoading(true);
       try {
         const response = await fetchWithCreds<FeedPage>({
-          accessToken,
+          accessToken: token,
           path: `/api/admin/activity/feed${toQuery(filters, cursor)}`,
           method: 'GET',
         });
@@ -132,43 +194,57 @@ export default function AdminActivityPage() {
             items: cursor ? [...previous.items, ...page.items] : page.items,
             nextCursor: page.nextCursor,
           }));
-          setFailed(false);
+          setError('feed', false);
         } else {
-          setFailed(true);
+          setError('feed', true);
         }
       } catch {
-        if (requestId === feedRequestId.current) setFailed(true);
+        if (requestId === feedRequestId.current) setError('feed', true);
       } finally {
         if (requestId === feedRequestId.current) setFeedLoading(false);
       }
     },
-    [accessToken, fetchWithCreds, filters],
+    [fetchWithCreds, filters, setError],
   );
 
   useEffect(() => {
-    if (isAuthorized) loadFeed();
-  }, [isAuthorized, loadFeed]);
+    if (isAuthorized && hasToken) loadFeed();
+  }, [isAuthorized, hasToken, loadFeed]);
 
   useEffect(() => {
     setHeatmap(undefined);
-    if (!isAuthorized || !accessToken || !filters.userId) return;
+    const token = accessTokenRef.current;
+    if (!isAuthorized || !token || !filters.userId) {
+      setHeatmapLoading(false);
+      setError('heatmap', false);
+      return undefined;
+    }
     let cancelled = false;
+    setHeatmapLoading(true);
     fetchWithCreds<Heatmap>({
-      accessToken,
+      accessToken: token,
       path: `/api/admin/activity/heatmap?userId=${encodeURIComponent(filters.userId)}`,
       method: 'GET',
     })
       .then((response) => {
-        if (!cancelled && response.success) setHeatmap(response.data);
+        if (cancelled) return;
+        if (response.success && response.data) {
+          setHeatmap(response.data);
+          setError('heatmap', false);
+        } else {
+          setError('heatmap', true);
+        }
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) setError('heatmap', true);
+      })
+      .finally(() => {
+        if (!cancelled) setHeatmapLoading(false);
       });
-    // eslint-disable-next-line consistent-return
     return () => {
       cancelled = true;
     };
-  }, [isAuthorized, accessToken, filters.userId, fetchWithCreds]);
+  }, [isAuthorized, hasToken, filters.userId, fetchWithCreds, setError]);
 
   if (isUserLoading || !isAuthorized) return null;
 
@@ -201,7 +277,9 @@ export default function AdminActivityPage() {
           </Typography>
         </Box>
 
-        {failed && <Alert severity="error">{t('activityLoadError')}</Alert>}
+        {(errors.staff || errors.feed || errors.heatmap) && (
+          <Alert severity="error">{t('activityLoadError')}</Alert>
+        )}
 
         <Box className="flex flex-col gap-3">
           <Typography fontWeight={600} className={fontClassName.className}>
@@ -242,7 +320,7 @@ export default function AdminActivityPage() {
             />
           </>
         )}
-        {filters.userId && !heatmap && (
+        {filters.userId && heatmapLoading && (
           <Box className="flex flex-row justify-center">
             <CircularProgress size={24} />
           </Box>

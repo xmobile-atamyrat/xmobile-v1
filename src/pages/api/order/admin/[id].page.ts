@@ -3,7 +3,6 @@ import {
   buildNotesMeta,
   buildStatusMeta,
   recordOrderActivity,
-  snapshotOrder,
 } from '@/lib/orderActivity';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
@@ -56,16 +55,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
     if (action === 'status') {
       try {
-        const before = await snapshotOrder(orderId);
-        const { resp, status } = await updateOrderStatusController(
+        const { resp, status, previous } = await updateOrderStatusController(
           orderId,
           body,
         );
-        if (resp.success && resp.data && before) {
+        if (resp.success && resp.data && previous) {
           recordOrderActivity(
             userId,
             orderId,
-            buildStatusMeta(before, resp.data),
+            buildStatusMeta(previous, resp.data),
           );
         }
         return res.status(status).json(resp);
@@ -78,16 +76,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'notes') {
       try {
-        const before = await snapshotOrder(orderId);
-        const { resp, status } = await updateAdminNotesController(
+        const { resp, status, previous } = await updateAdminNotesController(
           orderId,
           body,
         );
-        if (resp.success && resp.data && before) {
+        if (resp.success && resp.data && previous) {
           recordOrderActivity(
             userId,
             orderId,
-            buildNotesMeta(before, resp.data),
+            buildNotesMeta(previous, resp.data),
           );
         }
         return res.status(status).json(resp);
@@ -100,21 +97,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'delivery-price') {
       try {
-        const before = await snapshotOrder(orderId);
-        const { resp, status } = await updateDeliveryPriceController(
+        const { resp, status, previous } = await updateDeliveryPriceController(
           orderId,
           body,
         );
-        if (resp.success && resp.data && before) {
+        if (resp.success && resp.data && previous) {
           recordOrderActivity(
             userId,
             orderId,
-            buildDeliveryFeeMeta(before, {
-              orderNumber: resp.data.orderNumber,
-              deliveryPrice:
-                (resp.data as { deliveryPrice?: string | null })
-                  .deliveryPrice ?? null,
-            }),
+            buildDeliveryFeeMeta(previous, resp.data),
           );
         }
         return res.status(status).json(resp);

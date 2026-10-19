@@ -12,7 +12,6 @@ import {
 import { ChatMessage } from '@/pages/lib/types';
 import {
   adminUserIdsOnline,
-  isTrackedAdmin,
   touchAdminLastSeen,
 } from '@/ws-server/lib/adminPresence';
 import { AuthenticatedConnection } from '@/ws-server/lib/types';
@@ -619,8 +618,6 @@ wsServer.on('connection', async (connection, request) => {
       const isAdmin = isAdminGrade(safeConnection.userGrade);
       if (isAdmin) {
         adminConnections.add(safeConnection);
-      }
-      if (isTrackedAdmin(safeConnection)) {
         touchAdminLastSeen([safeConnection.userId]);
       }
 
@@ -640,9 +637,7 @@ wsServer.on('connection', async (connection, request) => {
         safeCloseConnection(1001, 'Offline: User Disconnected', safeConnection);
         // The moment an admin leaves is the last time they were seen, and the
         // next sweep no longer includes them.
-        if (isTrackedAdmin(safeConnection)) {
-          touchAdminLastSeen([safeConnection.userId]);
-        }
+        if (isAdmin) touchAdminLastSeen([safeConnection.userId]);
       });
 
       // Liveness bookkeeping for the ping sweep below.
@@ -776,7 +771,7 @@ const heartbeat = setInterval(() => {
 
   // Presence for the admin activity page: one batched write per sweep, and
   // none at all when no admin is connected.
-  touchAdminLastSeen(adminUserIdsOnline(connections));
+  touchAdminLastSeen(adminUserIdsOnline(adminConnections));
 }, HEARTBEAT_INTERVAL_MS);
 
 /**
