@@ -125,6 +125,9 @@ export const curlyBracketRegex = /\{([^}]+)\}/;
 export const POLL_DOLLAR_RATE_INTERVAL = 600_000; // 10 minutes
 export const POLL_PRODUCT_INTERVAL = 600_000; // 10 minutes
 
+// Per cart line. Enforced by the quantity input and both cart APIs.
+export const MAX_CART_QUANTITY = 999;
+
 export const HIGHEST_LEVEL_CATEGORY_ID = 'no_parent_category';
 
 export const defaultProductDescEn =

@@ -163,9 +163,12 @@ export async function createOrder(data: CreateOrderData): Promise<UserOrder> {
   const { userId, deliveryAddress, deliveryPhone, notes, updateAddress } = data;
 
   // Get user's cart items with products
+  // A line below 1 (left over from before quantities were validated) is
+  // hidden from the cart, so it is left out of the order too.
   const cartItems = await dbClient.cartItem.findMany({
     where: {
       userId,
+      quantity: { gte: 1 },
       product: { deletedAt: null },
     },
     include: { product: true },
@@ -285,6 +288,7 @@ export async function createGuestOrder(
   const cartItems = await dbClient.guestCartItem.findMany({
     where: {
       guestSessionId,
+      quantity: { gte: 1 },
       product: { deletedAt: null },
     },
     include: { product: true },

@@ -128,6 +128,92 @@ describe('Cart API (integration)', () => {
     expect(JSON.parse(empty.res._getData() as string).data.length).toBe(0);
   });
 
+  it('PUT rejects quantities outside 1..999 and returns 404 for an unknown item', async () => {
+    const session = await signupTestUser('cart-put-guard');
+    const cartHandler = (await import('@/pages/api/cart.page')).default;
+    const auth = { authorization: `Bearer ${session.accessToken}` };
+    const item = await prisma.cartItem.create({
+      data: { userId: session.userId, productId, quantity: 2 },
+    });
+
+    const putQuantity = async (id: string, quantity: number) => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        url: '/api/cart',
+        headers: auth,
+        body: { id, quantity },
+      });
+      await cartHandler(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      return res._getStatusCode();
+    };
+
+    expect(await putQuantity(item.id, 0)).toBe(400);
+    expect(await putQuantity(item.id, 1000)).toBe(400);
+    expect(await putQuantity('00000000-0000-4000-8000-000000000002', 3)).toBe(
+      404,
+    );
+    expect(
+      (await prisma.cartItem.findUnique({ where: { id: item.id } }))?.quantity,
+    ).toBe(2);
+
+    await prisma.cartItem.delete({ where: { id: item.id } });
+  });
+
+  it('GET hides lines saved with a quantity below 1', async () => {
+    const session = await signupTestUser('cart-zero-row');
+    const cartHandler = (await import('@/pages/api/cart.page')).default;
+    const auth = { authorization: `Bearer ${session.accessToken}` };
+    await prisma.cartItem.create({
+      data: { userId: session.userId, productId, quantity: 0 },
+    });
+
+    const list = createMocks({
+      method: 'GET',
+      url: '/api/cart',
+      headers: auth,
+    });
+    await cartHandler(
+      list.req as unknown as NextApiRequest,
+      list.res as unknown as NextApiResponse,
+    );
+    expect(JSON.parse(list.res._getData() as string).data).toEqual([]);
+
+    const count = createMocks({
+      method: 'GET',
+      url: '/api/cart',
+      headers: auth,
+      query: { count: '1' },
+    });
+    await cartHandler(
+      count.req as unknown as NextApiRequest,
+      count.res as unknown as NextApiResponse,
+    );
+    expect(JSON.parse(count.res._getData() as string).data.count).toBe(0);
+
+    // Adding the product again revives the hidden line rather than failing
+    // with cartItemExistError.
+    const add = createMocks({
+      method: 'POST',
+      url: '/api/cart',
+      headers: auth,
+      body: { productId, quantity: 3 },
+    });
+    await cartHandler(
+      add.req as unknown as NextApiRequest,
+      add.res as unknown as NextApiResponse,
+    );
+    expect(add.res._getStatusCode()).toBe(200);
+    const lines = await prisma.cartItem.findMany({
+      where: { userId: session.userId },
+    });
+    expect(lines.map((line) => line.quantity)).toEqual([3]);
+
+    await prisma.cartItem.deleteMany({ where: { userId: session.userId } });
+  });
+
   it('POST returns 404 for unknown product id', async () => {
     const session = await signupTestUser('cart-404');
     const cartHandler = (await import('@/pages/api/cart.page')).default;
