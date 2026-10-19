@@ -1,6 +1,6 @@
 CREATE TYPE "AdminActivityEntity" AS ENUM ('PRODUCT', 'PRICE', 'CURRENCY_RATE', 'CATEGORY', 'ORDER', 'BANNER', 'BRAND', 'COLOR');
 
-CREATE TYPE "AdminActivityAction" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'REORDER');
+CREATE TYPE "AdminActivityAction" AS ENUM ('CREATE', 'UPDATE', 'DELETE');
 
 ALTER TABLE "User" ADD COLUMN     "lastSeenAt" TIMESTAMP(3);
 
@@ -10,7 +10,7 @@ CREATE TABLE "AdminActivity" (
     "userName" TEXT NOT NULL,
     "entity" "AdminActivityEntity" NOT NULL,
     "action" "AdminActivityAction" NOT NULL,
-    "targetId" TEXT,
+    "entityId" TEXT,
     "meta" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -23,7 +23,7 @@ CREATE INDEX "AdminActivity_userId_createdAt_idx" ON "AdminActivity"("userId", "
 
 CREATE INDEX "AdminActivity_entity_createdAt_idx" ON "AdminActivity"("entity", "createdAt" DESC);
 
-CREATE INDEX "AdminActivity_targetId_createdAt_idx" ON "AdminActivity"("targetId", "createdAt" DESC);
+CREATE INDEX "AdminActivity_entityId_createdAt_idx" ON "AdminActivity"("entityId", "createdAt" DESC);
 
 CREATE INDEX "ChatMessage_senderId_createdAt_idx" ON "ChatMessage"("senderId", "createdAt");
 
