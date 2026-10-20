@@ -23,11 +23,22 @@ import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
 import '@/styles/globals.css';
 import { ThemeProvider } from '@mui/material';
-import { NextIntlClientProvider } from 'next-intl';
+import { IntlError, IntlErrorCode, NextIntlClientProvider } from 'next-intl';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+
+// next-intl reports every error through console.error, which the Slack logger
+// sends as an ERROR alert. A missing key only falls back to showing the key
+// name, so report it as a warning; the message names the key and locale.
+const handleIntlError = (error: IntlError) => {
+  if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+    console.warn(error.message);
+    return;
+  }
+  console.error(error);
+};
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -268,6 +279,7 @@ export default function App({ Component, pageProps }: AppProps) {
                                 }
                                 timeZone="Asia/Ashgabat"
                                 messages={pageProps.messages}
+                                onError={handleIntlError}
                               >
                                 {showHardUpdateModal ? (
                                   <UpdateModal type="hard" />
