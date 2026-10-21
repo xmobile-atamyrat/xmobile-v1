@@ -228,7 +228,7 @@ export function pickJsonLdOffer(params: {
  * This enables Google Shopping rich results.
  *
  * @param params - Product data for schema
- * @returns JSON-LD Product schema object
+ * @returns JSON-LD Product schema object, or null when there is no price
  *
  * @see {@link ../../../docs/seo-knowledge.md} for details on Structured Data.
  */
@@ -242,7 +242,7 @@ export function generateProductJsonLd(params: {
   brandName?: string;
   description?: string;
   category?: string;
-}): ProductJsonLdData {
+}): ProductJsonLdData | null {
   const {
     productName,
     productUrl,
@@ -255,20 +255,22 @@ export function generateProductJsonLd(params: {
     category,
   } = params;
 
+  // Google reads a price of 0 as free, and a Product without an offer is an
+  // invalid item, so a product with no price gets no markup at all.
+  if (!(price && Number(price) > 0)) {
+    return null;
+  }
+
+  const validUntil = new Date();
+  validUntil.setUTCDate(validUntil.getUTCDate() + PRICE_VALID_DAYS);
+
   const schema: ProductJsonLdData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: productName,
     image: imageUrls,
     sku,
-  };
-
-  // Google reads a price of 0 as free, and merchant listings require one above 0.
-  if (price && Number(price) > 0) {
-    const validUntil = new Date();
-    validUntil.setUTCDate(validUntil.getUTCDate() + PRICE_VALID_DAYS);
-
-    schema.offers = {
+    offers: {
       '@type': 'Offer',
       price,
       priceCurrency: 'TMT',
@@ -296,8 +298,8 @@ export function generateProductJsonLd(params: {
           transitTime: dayRange(5, 10),
         },
       },
-    };
-  }
+    },
+  };
 
   if (category) {
     schema.category = category;
