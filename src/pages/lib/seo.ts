@@ -199,6 +199,13 @@ const PRICE_VALID_DAYS = 90;
 // for all of Turkmenistan; the delivery time below is for the same velayats.
 const SHIPPING_RATE_TMT = 40;
 
+const RETURN_POLICY = {
+  '@type': 'MerchantReturnPolicy' as const,
+  applicableCountry: 'TM' as const,
+  returnPolicyCategory:
+    'https://schema.org/MerchantReturnNotPermitted' as const,
+};
+
 const dayRange = (minValue: number, maxValue: number) => ({
   '@type': 'QuantitativeValue' as const,
   minValue,
@@ -307,6 +314,7 @@ export function generateProductJsonLd(params: {
           transitTime: dayRange(3, 3),
         },
       },
+      hasMerchantReturnPolicy: RETURN_POLICY,
     },
   };
 
@@ -399,6 +407,7 @@ export function generateOrganizationSchema() {
       areaServed: 'TM',
       availableLanguage: ['Turkmen', 'Russian', 'English'],
     },
+    hasMerchantReturnPolicy: RETURN_POLICY,
   };
 }
 

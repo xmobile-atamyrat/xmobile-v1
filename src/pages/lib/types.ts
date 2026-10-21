@@ -458,6 +458,11 @@ export interface ProductOfferJsonLd {
       transitTime: JsonLdDayRange;
     };
   };
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy';
+    applicableCountry: 'TM';
+    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted';
+  };
 }
 
 /**
