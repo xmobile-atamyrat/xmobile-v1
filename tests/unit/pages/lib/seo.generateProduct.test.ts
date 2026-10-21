@@ -88,6 +88,10 @@ describe('generateProductJsonLd', () => {
           transitTime: { minValue: 3, maxValue: 3, unitCode: 'DAY' },
         },
       },
+      hasMerchantReturnPolicy: {
+        applicableCountry: 'TM',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+      },
     });
   });
 
@@ -96,6 +100,14 @@ describe('generateProductJsonLd', () => {
 
     expect(schema.offers.seller['@id']).toBe(
       generateOrganizationSchema()['@id'],
+    );
+  });
+
+  it('declares the same return policy on the offer and the organization', () => {
+    const schema = generateProductJsonLd(baseParams)!;
+
+    expect(generateOrganizationSchema().hasMerchantReturnPolicy).toEqual(
+      schema.offers.hasMerchantReturnPolicy,
     );
   });
 
