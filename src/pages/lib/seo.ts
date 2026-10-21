@@ -195,6 +195,10 @@ const ORGANIZATION_ID = `${BASE_URL}/#organization`;
 // stay in the future: Google hides prices whose date has passed.
 const PRICE_VALID_DAYS = 90;
 
+// Google takes one shipping rate per country, so the rate outside Lebap stands
+// for all of Turkmenistan; the delivery time below is for the same velayats.
+const SHIPPING_RATE_TMT = 40;
+
 const dayRange = (minValue: number, maxValue: number) => ({
   '@type': 'QuantitativeValue' as const,
   minValue,
@@ -288,6 +292,11 @@ export function generateProductJsonLd(params: {
       },
       shippingDetails: {
         '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: SHIPPING_RATE_TMT,
+          currency: 'TMT',
+        },
         shippingDestination: {
           '@type': 'DefinedRegion',
           addressCountry: 'TM',
@@ -295,7 +304,7 @@ export function generateProductJsonLd(params: {
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
           handlingTime: dayRange(0, 1),
-          transitTime: dayRange(5, 10),
+          transitTime: dayRange(3, 3),
         },
       },
     },

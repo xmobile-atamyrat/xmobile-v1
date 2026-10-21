@@ -81,10 +81,11 @@ describe('generateProductJsonLd', () => {
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', name: 'Xmobile' },
       shippingDetails: {
+        shippingRate: { value: 40, currency: 'TMT' },
         shippingDestination: { addressCountry: 'TM' },
         deliveryTime: {
           handlingTime: { minValue: 0, maxValue: 1, unitCode: 'DAY' },
-          transitTime: { minValue: 5, maxValue: 10, unitCode: 'DAY' },
+          transitTime: { minValue: 3, maxValue: 3, unitCode: 'DAY' },
         },
       },
     });

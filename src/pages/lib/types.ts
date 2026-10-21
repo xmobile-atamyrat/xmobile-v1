@@ -443,6 +443,11 @@ export interface ProductOfferJsonLd {
   };
   shippingDetails: {
     '@type': 'OfferShippingDetails';
+    shippingRate: {
+      '@type': 'MonetaryAmount';
+      value: number;
+      currency: 'TMT';
+    };
     shippingDestination: {
       '@type': 'DefinedRegion';
       addressCountry: 'TM';
