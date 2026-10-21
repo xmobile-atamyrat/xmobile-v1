@@ -469,7 +469,7 @@ export interface ProductJsonLdData {
   };
   sku: string;
   category?: string;
-  offers?: ProductOfferJsonLd;
+  offers: ProductOfferJsonLd;
   image: string[];
 }
 
@@ -515,7 +515,7 @@ export interface PageSeoData {
   hreflangLinks: HreflangLink[];
 
   // JSON-LD
-  productJsonLd?: ProductJsonLdData;
+  productJsonLd?: ProductJsonLdData | null;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
   organizationJsonLd?: Record<string, any>;
   localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
