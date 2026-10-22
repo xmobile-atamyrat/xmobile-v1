@@ -35,7 +35,7 @@ describe('Order — variant snapshots (integration)', () => {
 
   afterAll(async () => {
     await prisma.color
-      .delete({ where: { name: 'OrderTest Red' } })
+      .deleteMany({ where: { name: 'OrderTest Red' } })
       .catch(() => {});
     await prisma.$disconnect();
     await resetPrismaGlobalSingleton();

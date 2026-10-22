@@ -27,6 +27,7 @@ const RED_COLOR = {
   id: 'c1',
   name: 'Red',
   hex: '#ff0000',
+  brandId: null as string | null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
