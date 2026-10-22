@@ -188,6 +188,7 @@ model Brand {
   id        String    @id @default(uuid())
   name      String    @unique
   products  Product[]
+  colors    Color[]
   
   productCount Int       @default(0)
 
@@ -224,13 +225,19 @@ model Prices {
 
 model Color {
   id              String      @id @default(uuid())
-  name            String      @unique
-  hex             String      @unique
+  name            String
+  hex             String
+
+  brand           Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brandId         String?
 
   products        Product[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@unique([brandId, name])
+  @@unique([brandId, hex])
 }
 
 model UserVisitRecord {
