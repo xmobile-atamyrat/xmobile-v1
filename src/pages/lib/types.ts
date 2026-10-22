@@ -443,6 +443,11 @@ export interface ProductOfferJsonLd {
   };
   shippingDetails: {
     '@type': 'OfferShippingDetails';
+    shippingRate: {
+      '@type': 'MonetaryAmount';
+      value: number;
+      currency: 'TMT';
+    };
     shippingDestination: {
       '@type': 'DefinedRegion';
       addressCountry: 'TM';
@@ -452,6 +457,11 @@ export interface ProductOfferJsonLd {
       handlingTime: JsonLdDayRange;
       transitTime: JsonLdDayRange;
     };
+  };
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy';
+    applicableCountry: 'TM';
+    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted';
   };
 }
 
@@ -469,7 +479,7 @@ export interface ProductJsonLdData {
   };
   sku: string;
   category?: string;
-  offers?: ProductOfferJsonLd;
+  offers: ProductOfferJsonLd;
   image: string[];
 }
 
@@ -515,7 +525,7 @@ export interface PageSeoData {
   hreflangLinks: HreflangLink[];
 
   // JSON-LD
-  productJsonLd?: ProductJsonLdData;
+  productJsonLd?: ProductJsonLdData | null;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
   organizationJsonLd?: Record<string, any>;
   localBusinessJsonLd?: Record<string, any> | Record<string, any>[];

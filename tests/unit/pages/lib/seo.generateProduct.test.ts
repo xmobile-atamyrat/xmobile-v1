@@ -65,7 +65,7 @@ describe('generateProductJsonLd', () => {
   });
 
   it('builds a merchant-listing Offer for an in-stock product', () => {
-    const schema = generateProductJsonLd(baseParams);
+    const schema = generateProductJsonLd(baseParams)!;
 
     expect(schema['@context']).toBe('https://schema.org');
     expect(schema['@type']).toBe('Product');
@@ -81,20 +81,33 @@ describe('generateProductJsonLd', () => {
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', name: 'Xmobile' },
       shippingDetails: {
+        shippingRate: { value: 40, currency: 'TMT' },
         shippingDestination: { addressCountry: 'TM' },
         deliveryTime: {
           handlingTime: { minValue: 0, maxValue: 1, unitCode: 'DAY' },
-          transitTime: { minValue: 5, maxValue: 10, unitCode: 'DAY' },
+          transitTime: { minValue: 3, maxValue: 3, unitCode: 'DAY' },
         },
+      },
+      hasMerchantReturnPolicy: {
+        applicableCountry: 'TM',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
       },
     });
   });
 
   it('points the seller at the organization schema', () => {
-    const schema = generateProductJsonLd(baseParams);
+    const schema = generateProductJsonLd(baseParams)!;
 
-    expect(schema.offers?.seller['@id']).toBe(
+    expect(schema.offers.seller['@id']).toBe(
       generateOrganizationSchema()['@id'],
+    );
+  });
+
+  it('declares the same return policy on the offer and the organization', () => {
+    const schema = generateProductJsonLd(baseParams)!;
+
+    expect(generateOrganizationSchema().hasMerchantReturnPolicy).toEqual(
+      schema.offers.hasMerchantReturnPolicy,
     );
   });
 
@@ -102,28 +115,25 @@ describe('generateProductJsonLd', () => {
     const schema = generateProductJsonLd({
       ...baseParams,
       isOutOfStock: true,
-    });
+    })!;
 
-    expect(schema.offers?.availability).toBe('https://schema.org/OutOfStock');
+    expect(schema.offers.availability).toBe('https://schema.org/OutOfStock');
   });
 
   it.each([undefined, null, '', '0', 'undefined'])(
-    'leaves the Offer out when the price is %j',
+    'returns no markup when the price is %j',
     (price) => {
-      const schema = generateProductJsonLd({ ...baseParams, price });
-
-      expect(schema.offers).toBeUndefined();
-      expect(schema.name).toBe('iPhone 15 Pro');
+      expect(generateProductJsonLd({ ...baseParams, price })).toBeNull();
     },
   );
 
   it('includes the category only when one is given', () => {
-    expect(generateProductJsonLd(baseParams).category).toBeUndefined();
+    expect(generateProductJsonLd(baseParams)!.category).toBeUndefined();
     expect(
       generateProductJsonLd({
         ...baseParams,
         category: 'Телефоны > Смартфоны',
-      }).category,
+      })!.category,
     ).toBe('Телефоны > Смартфоны');
   });
 });
