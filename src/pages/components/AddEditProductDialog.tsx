@@ -6,6 +6,7 @@ import ProductImagesEditor, {
 import TikTokIcon from '@/pages/components/TikTokIcon';
 import { fetchBrands, fetchColors, fetchPrices } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { groupColorsByBrand } from '@/pages/lib/colorGroups';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
 import {
   curlyBracketRegex,
@@ -274,6 +275,11 @@ export default function AddEditProductDialog({
   useEffect(() => {
     (async () => setColorOptions(await fetchColors()))();
   }, []);
+
+  const colorGroups = useMemo(
+    () => groupColorsByBrand(colorOptions, brands, brandId || null),
+    [colorOptions, brands, brandId],
+  );
 
   useEffect(() => {
     (async () => {
@@ -945,22 +951,27 @@ export default function AddEditProductDialog({
                     <MenuItem value="">
                       <em>{t('color')}</em>
                     </MenuItem>
-                    {colorOptions.map((color) => (
-                      <MenuItem value={color.id} key={color.id}>
-                        <Box className="flex flex-row items-center gap-2">
-                          <Box
-                            sx={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              border: '1px solid #ccc',
-                              backgroundColor: color.hex,
-                            }}
-                          />
-                          {color.name}
-                        </Box>
-                      </MenuItem>
-                    ))}
+                    {colorGroups.flatMap((group) => [
+                      <ListSubheader key={`brand-${group.brandId ?? ''}`}>
+                        {group.brandName ?? t('noBrand')}
+                      </ListSubheader>,
+                      ...group.colors.map((color) => (
+                        <MenuItem value={color.id} key={color.id}>
+                          <Box className="flex flex-row items-center gap-2">
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                border: '1px solid #ccc',
+                                backgroundColor: color.hex,
+                              }}
+                            />
+                            {color.name}
+                          </Box>
+                        </MenuItem>
+                      )),
+                    ])}
                   </Select>
                   <IconButton
                     onClick={() => setTags(tags.filter((_, i) => i !== index))}
