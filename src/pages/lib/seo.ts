@@ -195,6 +195,17 @@ const ORGANIZATION_ID = `${BASE_URL}/#organization`;
 // stay in the future: Google hides prices whose date has passed.
 const PRICE_VALID_DAYS = 90;
 
+// Google takes one shipping rate per country, so the rate outside Lebap stands
+// for all of Turkmenistan; the delivery time below is for the same velayats.
+const SHIPPING_RATE_TMT = 40;
+
+const RETURN_POLICY = {
+  '@type': 'MerchantReturnPolicy' as const,
+  applicableCountry: 'TM' as const,
+  returnPolicyCategory:
+    'https://schema.org/MerchantReturnNotPermitted' as const,
+};
+
 const dayRange = (minValue: number, maxValue: number) => ({
   '@type': 'QuantitativeValue' as const,
   minValue,
@@ -228,7 +239,7 @@ export function pickJsonLdOffer(params: {
  * This enables Google Shopping rich results.
  *
  * @param params - Product data for schema
- * @returns JSON-LD Product schema object
+ * @returns JSON-LD Product schema object, or null when there is no price
  *
  * @see {@link ../../../docs/seo-knowledge.md} for details on Structured Data.
  */
@@ -242,7 +253,7 @@ export function generateProductJsonLd(params: {
   brandName?: string;
   description?: string;
   category?: string;
-}): ProductJsonLdData {
+}): ProductJsonLdData | null {
   const {
     productName,
     productUrl,
@@ -255,20 +266,22 @@ export function generateProductJsonLd(params: {
     category,
   } = params;
 
+  // Google reads a price of 0 as free, and a Product without an offer is an
+  // invalid item, so a product with no price gets no markup at all.
+  if (!(price && Number(price) > 0)) {
+    return null;
+  }
+
+  const validUntil = new Date();
+  validUntil.setUTCDate(validUntil.getUTCDate() + PRICE_VALID_DAYS);
+
   const schema: ProductJsonLdData = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: productName,
     image: imageUrls,
     sku,
-  };
-
-  // Google reads a price of 0 as free, and merchant listings require one above 0.
-  if (price && Number(price) > 0) {
-    const validUntil = new Date();
-    validUntil.setUTCDate(validUntil.getUTCDate() + PRICE_VALID_DAYS);
-
-    schema.offers = {
+    offers: {
       '@type': 'Offer',
       price,
       priceCurrency: 'TMT',
@@ -286,6 +299,11 @@ export function generateProductJsonLd(params: {
       },
       shippingDetails: {
         '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: SHIPPING_RATE_TMT,
+          currency: 'TMT',
+        },
         shippingDestination: {
           '@type': 'DefinedRegion',
           addressCountry: 'TM',
@@ -293,11 +311,12 @@ export function generateProductJsonLd(params: {
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
           handlingTime: dayRange(0, 1),
-          transitTime: dayRange(5, 10),
+          transitTime: dayRange(3, 3),
         },
       },
-    };
-  }
+      hasMerchantReturnPolicy: RETURN_POLICY,
+    },
+  };
 
   if (category) {
     schema.category = category;
@@ -388,6 +407,7 @@ export function generateOrganizationSchema() {
       areaServed: 'TM',
       availableLanguage: ['Turkmen', 'Russian', 'English'],
     },
+    hasMerchantReturnPolicy: RETURN_POLICY,
   };
 }
 

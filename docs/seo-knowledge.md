@@ -13,7 +13,7 @@ All pages render standard `<head>` meta tags:
 
 ### Structured Data (JSON-LD)
 JSON-LD powers rich results in search engines:
-- **Product**: Includes `name`, `image`, `sku`, and `offers` (price, currency, availability, condition, seller, shipping time, `priceValidUntil`), with optional `brand`, `category` and `description`. `offers` is left out when the product has no price.
+- **Product**: Includes `name`, `image`, `sku`, and `offers` (price, currency, availability, condition, seller, shipping rate and time, no-returns policy, `priceValidUntil`), with optional `brand`, `category` and `description`. A product with no price gets no Product markup.
 - **Breadcrumb**: Defines the page hierarchy for search engine breadcrumb trails.
 - **Organization & LocalBusiness**: Establishes brand identity and links physical stores to the website via unique `@id` identifiers (e.g., `https://xmobile.com.tm/#store-xmobile-main`).
 
