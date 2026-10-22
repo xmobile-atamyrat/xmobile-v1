@@ -16,6 +16,29 @@ describe('Colors API (integration)', () => {
   let adminToken: string;
   let adminUserId: string;
   let seededColorId: string;
+  let brandAId: string;
+  let brandBId: string;
+
+  const callColors = async (
+    method: 'POST' | 'PUT',
+    body: Record<string, unknown>,
+  ) => {
+    const handler = (await import('@/pages/api/colors/index.page')).default;
+    const { req, res } = createMocks({
+      method,
+      url: '/api/colors',
+      headers: { authorization: `Bearer ${adminToken}` },
+      body,
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    return {
+      status: res._getStatusCode(),
+      body: JSON.parse(res._getData() as string),
+    };
+  };
 
   beforeAll(async () => {
     const { databaseUrl } = await prepareIntegrationWorker();
@@ -33,10 +56,22 @@ describe('Colors API (integration)', () => {
       data: { name: 'IntTest Seeded Blue', hex: '#0000aa' },
     });
     seededColorId = seeded.id;
+
+    const brandA = await prisma.brand.create({
+      data: { name: 'IntTest Brand A' },
+    });
+    const brandB = await prisma.brand.create({
+      data: { name: 'IntTest Brand B' },
+    });
+    brandAId = brandA.id;
+    brandBId = brandB.id;
   }, 180_000);
 
   afterAll(async () => {
     await prisma.color
+      .deleteMany({ where: { name: { startsWith: 'IntTest' } } })
+      .catch(() => {});
+    await prisma.brand
       .deleteMany({ where: { name: { startsWith: 'IntTest' } } })
       .catch(() => {});
     await prisma.user.delete({ where: { id: adminUserId } }).catch(() => {});
@@ -160,7 +195,7 @@ describe('Colors API (integration)', () => {
     expect(body.success).toBe(true);
     expect(body.data.name).toBe('IntTest Created Green');
 
-    const inDb = await prisma.color.findUnique({
+    const inDb = await prisma.color.findFirst({
       where: { name: 'IntTest Created Green' },
     });
     expect(inDb).not.toBeNull();
@@ -300,6 +335,166 @@ describe('Colors API (integration)', () => {
 
     const gone = await prisma.color.findUnique({ where: { id: toDelete.id } });
     expect(gone).toBeNull();
+  });
+
+  // ── Brands ─────────────────────────────────────────────────────────────────
+
+  it('POST with a brandId stores the brand on the color', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Brand Black',
+      hex: '#010101',
+      brandId: brandAId,
+    });
+    expect(status).toBe(200);
+    expect(body.data.brandId).toBe(brandAId);
+  });
+
+  it('POST allows the same name and hex under a different brand', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Brand Black',
+      hex: '#010101',
+      brandId: brandBId,
+    });
+    expect(status).toBe(200);
+    expect(body.data.brandId).toBe(brandBId);
+  });
+
+  it('POST rejects a duplicate name within the same brand', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Brand Black',
+      hex: '#020202',
+      brandId: brandAId,
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+  });
+
+  it('POST rejects a duplicate hex within the same brand', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Brand Other',
+      hex: '#010101',
+      brandId: brandAId,
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+  });
+
+  it('POST rejects a duplicate hex among unbranded colors', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Unbranded Other',
+      hex: '#0000aa',
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+  });
+
+  it('POST treats an empty brandId as no brand', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Seeded Blue',
+      hex: '#0000cc',
+      brandId: '',
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+  });
+
+  it('POST with an unknown brandId returns 400 brandNotFound', async () => {
+    const { status, body } = await callColors('POST', {
+      name: 'IntTest Ghost Brand',
+      hex: '#030303',
+      brandId: '00000000-0000-4000-8000-000000000098',
+    });
+    expect(status).toBe(400);
+    expect(body.message).toBe('brandNotFound');
+  });
+
+  it('PUT moves a color to a brand and back to no brand', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Movable', hex: '#040404' },
+    });
+
+    const toBrand = await callColors('PUT', {
+      colorPairs: [{ id: color.id, brandId: brandAId }],
+    });
+    expect(toBrand.status).toBe(200);
+    const branded = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(branded?.brandId).toBe(brandAId);
+
+    const toNone = await callColors('PUT', {
+      colorPairs: [{ id: color.id, brandId: null }],
+    });
+    expect(toNone.status).toBe(200);
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.brandId).toBeNull();
+    expect(after?.name).toBe('IntTest Movable');
+  });
+
+  it('PUT leaves the brand alone when brandId is omitted', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Keep Brand', hex: '#050505', brandId: brandBId },
+    });
+    const { status } = await callColors('PUT', {
+      colorPairs: [{ id: color.id, name: 'IntTest Keep Brand Renamed' }],
+    });
+    expect(status).toBe(200);
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.brandId).toBe(brandBId);
+    expect(after?.name).toBe('IntTest Keep Brand Renamed');
+  });
+
+  it('PUT rejects moving a color into a brand that already has its name', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Brand Black', hex: '#060606' },
+    });
+    const { status, body } = await callColors('PUT', {
+      colorPairs: [{ id: color.id, brandId: brandAId }],
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.brandId).toBeNull();
+  });
+
+  it('PUT rejects unbranding a color whose name an unbranded color already has', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Seeded Blue', hex: '#070707', brandId: brandAId },
+    });
+    const { status, body } = await callColors('PUT', {
+      colorPairs: [{ id: color.id, brandId: null }],
+    });
+    expect(status).toBe(409);
+    expect(body.message).toBe('colorExists');
+  });
+
+  it('PUT rejects a batch that collides with itself', async () => {
+    const one = await prisma.color.create({
+      data: { name: 'IntTest Batch One', hex: '#080808', brandId: brandBId },
+    });
+    const two = await prisma.color.create({
+      data: { name: 'IntTest Batch Two', hex: '#090909', brandId: brandBId },
+    });
+    const { status } = await callColors('PUT', {
+      colorPairs: [
+        { id: one.id, name: 'IntTest Batch Same' },
+        { id: two.id, name: 'IntTest Batch Same' },
+      ],
+    });
+    expect(status).toBe(409);
+    const after = await prisma.color.findUnique({ where: { id: one.id } });
+    expect(after?.name).toBe('IntTest Batch One');
+  });
+
+  it('deleting a brand leaves its colors unbranded', async () => {
+    const brand = await prisma.brand.create({
+      data: { name: 'IntTest Brand Doomed' },
+    });
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Orphan', hex: '#0a0a0a', brandId: brand.id },
+    });
+    await prisma.brand.delete({ where: { id: brand.id } });
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after).not.toBeNull();
+    expect(after?.brandId).toBeNull();
   });
 
   // ── Method guard ───────────────────────────────────────────────────────────
