@@ -1,4 +1,10 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import {
+  AdminActivityInput,
+  changedFields,
+  logAdminActivities,
+  logAdminActivity,
+} from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
@@ -51,6 +57,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         });
       }
       const newColor = await dbClient.color.create({ data: { name, hex } });
+      logAdminActivity({
+        userId,
+        entity: 'COLOR',
+        action: 'CREATE',
+        entityId: newColor.id,
+        meta: { name: newColor.name, hex: newColor.hex },
+      });
       return res.status(200).json({
         success: true,
         message: 'Color created',
@@ -91,12 +104,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           .json({ success: false, message: 'No data provided' });
       }
 
+      const previousColors = await dbClient.color.findMany({
+        where: { id: { in: colorPairs.map((color) => color.id) } },
+      });
+
       await Promise.all(
         colorPairs.map((color) => {
           const data: Prisma.ColorUpdateInput = {};
           if (color.name != null) data.name = color.name;
           if (color.hex != null) data.hex = color.hex;
           return dbClient.color.update({ where: { id: color.id }, data });
+        }),
+      );
+
+      logAdminActivities(
+        colorPairs.flatMap((color): AdminActivityInput[] => {
+          const previous = previousColors.find((prev) => prev.id === color.id);
+          if (!previous) return [];
+          const changes = changedFields(previous, color, ['name', 'hex']);
+          if (Object.keys(changes).length === 0) return [];
+          return [
+            {
+              userId,
+              entity: 'COLOR',
+              action: 'UPDATE',
+              entityId: color.id,
+              meta: { name: color.name ?? previous.name, changes },
+            },
+          ];
         }),
       );
 
@@ -120,6 +155,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
       const deletedColor = await dbClient.color.delete({
         where: { id: id as string },
+      });
+      logAdminActivity({
+        userId,
+        entity: 'COLOR',
+        action: 'DELETE',
+        entityId: deletedColor.id,
+        meta: { name: deletedColor.name, hex: deletedColor.hex },
       });
       return res.status(200).json({
         success: true,

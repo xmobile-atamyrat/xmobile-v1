@@ -5,10 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResponseApi } from '@/pages/lib/types';
 
 const verifyTokenMock = vi.fn();
+const refreshFromCookieMock = vi.fn();
 
 vi.mock('@/pages/api/utils/authMiddleware', () => ({
   verifyToken: (...args: unknown[]) => verifyTokenMock(...args),
+  refreshFromCookie: (...args: unknown[]) => refreshFromCookieMock(...args),
 }));
+
+const expired = () =>
+  Object.assign(new Error('jwt expired'), { name: 'TokenExpiredError' });
 
 vi.mock('@/pages/api/utils/tokenUtils', () => ({
   ACCESS_SECRET: 'unit-staff-access-secret',
@@ -65,7 +70,7 @@ describe('staffAuth', () => {
 
       const ok = await requireStaffBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
@@ -82,7 +87,7 @@ describe('staffAuth', () => {
 
       const ok = await requireStaffBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
@@ -95,7 +100,7 @@ describe('staffAuth', () => {
 
       const ok = await requireStaffBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
@@ -109,10 +114,82 @@ describe('staffAuth', () => {
 
         const ok = await requireStaffBearerAuth(req, res);
 
-        expect(ok).toBe(true);
+        expect(ok).toEqual({ userId: undefined, grade });
         expect(res.status).not.toHaveBeenCalled();
         expect(res.json).not.toHaveBeenCalled();
       }
+    });
+    it('returns the actor id from the token', async () => {
+      verifyTokenMock.mockResolvedValueOnce({
+        userId: 'admin-1',
+        grade: UserRole.ADMIN,
+      });
+      const req = {
+        headers: { authorization: 'Bearer valid' },
+      } as unknown as NextApiRequest;
+
+      const actor = await requireStaffBearerAuth(req, createMockRes());
+
+      expect(actor).toEqual({ userId: 'admin-1', grade: UserRole.ADMIN });
+      expect(refreshFromCookieMock).not.toHaveBeenCalled();
+    });
+
+    it('renews an expired token from the refresh cookie', async () => {
+      verifyTokenMock.mockRejectedValueOnce(expired());
+      refreshFromCookieMock.mockResolvedValueOnce({
+        userId: 'admin-1',
+        grade: UserRole.ADMIN,
+      });
+      const req = {
+        headers: { authorization: 'Bearer stale' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const actor = await requireStaffBearerAuth(req, res);
+
+      expect(actor).toEqual({ userId: 'admin-1', grade: UserRole.ADMIN });
+      expect(refreshFromCookieMock).toHaveBeenCalledWith(req, res);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('sends 401 when the token expired and the refresh cookie is no good', async () => {
+      verifyTokenMock.mockRejectedValueOnce(expired());
+      refreshFromCookieMock.mockRejectedValueOnce(new Error('jwt expired'));
+      const req = {
+        headers: { authorization: 'Bearer stale' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      const actor = await requireStaffBearerAuth(req, res);
+
+      expect(actor).toBeNull();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('still checks the grade of a renewed token', async () => {
+      verifyTokenMock.mockRejectedValueOnce(expired());
+      refreshFromCookieMock.mockResolvedValueOnce({
+        userId: 'user-1',
+        grade: UserRole.FREE,
+      });
+      const req = {
+        headers: { authorization: 'Bearer stale' },
+      } as unknown as NextApiRequest;
+      const res = createMockRes();
+
+      expect(await requireStaffBearerAuth(req, res)).toBeNull();
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('does not try the refresh cookie for a token that is invalid, not expired', async () => {
+      verifyTokenMock.mockRejectedValueOnce(new Error('invalid signature'));
+      const req = {
+        headers: { authorization: 'Bearer forged' },
+      } as unknown as NextApiRequest;
+
+      await requireStaffBearerAuth(req, createMockRes());
+
+      expect(refreshFromCookieMock).not.toHaveBeenCalled();
     });
   });
 
@@ -125,7 +202,7 @@ describe('staffAuth', () => {
 
       const ok = await requireSuperuserBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
@@ -138,7 +215,7 @@ describe('staffAuth', () => {
 
       const ok = await requireSuperuserBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
@@ -151,7 +228,7 @@ describe('staffAuth', () => {
 
       const ok = await requireSuperuserBearerAuth(req, res);
 
-      expect(ok).toBe(false);
+      expect(ok).toBeNull();
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
@@ -168,7 +245,7 @@ describe('staffAuth', () => {
 
       const ok = await requireSuperuserBearerAuth(req, res);
 
-      expect(ok).toBe(true);
+      expect(ok).toEqual({ userId: undefined, grade: UserRole.SUPERUSER });
       expect(res.status).not.toHaveBeenCalled();
       expect(res.json).not.toHaveBeenCalled();
     });
