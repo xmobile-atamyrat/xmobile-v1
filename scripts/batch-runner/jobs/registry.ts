@@ -1,4 +1,5 @@
 import type { BatchJob } from './types';
+import { adminActivityRetentionJob } from './admin-activity-retention';
 import { accountDeletionJob } from './account-deletion';
 import { healthcheckJob } from './healthcheck';
 import { notificationRetryJob } from './notification-retry';
@@ -13,4 +14,5 @@ export const jobs: BatchJob[] = [
   notificationRetryJob,
   outOfStockSyncJob,
   outOfStockCleanupJob,
+  adminActivityRetentionJob,
 ];

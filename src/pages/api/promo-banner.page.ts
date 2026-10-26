@@ -1,3 +1,5 @@
+import { logAdminActivity } from '@/lib/adminActivity';
+import { buildBannerUpdateMeta } from '@/lib/bannerActivity';
 import { writeBannerWebp } from '@/lib/bannerImage';
 import dbClient from '@/lib/dbClient';
 import {
@@ -269,6 +271,7 @@ async function handleEditBanner(
   status: number;
   message?: string;
   data?: PromoBanner;
+  previous?: PromoBanner;
 }> {
   const form = new multiparty.Form({
     uploadDir: process.env.BANNER_IMAGES_DIR,
@@ -384,7 +387,12 @@ async function handleEditBanner(
           .filter((stored) => !kept.has(stored))
           .forEach(unlinkIfLocal);
 
-        resolve({ success: true, data: banner, status: 200 });
+        resolve({
+          success: true,
+          data: banner,
+          status: 200,
+          previous: existing,
+        });
       } catch (error) {
         console.error(filepath, error);
         resolve({
@@ -425,8 +433,18 @@ export default async function handler(
   }
 
   if (method === 'POST') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const { status, success, data, message } = await handlePostBanner(req);
+    if (success && data) {
+      logAdminActivity({
+        userId: actor.userId,
+        entity: 'BANNER',
+        action: 'CREATE',
+        entityId: data.id,
+        meta: { position: data.sortOrder, active: data.isActive },
+      });
+    }
     const retData: ResponseApi = { success };
     if (message) retData.message = message;
     if (data) retData.data = data;
@@ -434,17 +452,30 @@ export default async function handler(
   }
 
   if (method === 'PUT') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const bannerId = query.id as string | undefined;
     if (!bannerId) {
       return res
         .status(400)
         .json({ success: false, message: 'Banner ID not provided' });
     }
-    const { status, success, data, message } = await handleEditBanner(
+    const { status, success, data, message, previous } = await handleEditBanner(
       req,
       bannerId,
     );
+    if (success && data && previous) {
+      const meta = buildBannerUpdateMeta(previous, data);
+      if (meta) {
+        logAdminActivity({
+          userId: actor.userId,
+          entity: 'BANNER',
+          action: 'UPDATE',
+          entityId: data.id,
+          meta,
+        });
+      }
+    }
     const retData: ResponseApi = { success };
     if (message) retData.message = message;
     if (data) retData.data = data;
@@ -452,7 +483,8 @@ export default async function handler(
   }
 
   if (method === 'DELETE') {
-    if (!(await requireStaffBearerAuth(req, res))) return undefined;
+    const actor = await requireStaffBearerAuth(req, res);
+    if (!actor) return undefined;
     const bannerId = query.id as string | undefined;
     if (!bannerId) {
       return res
@@ -462,7 +494,7 @@ export default async function handler(
     try {
       const existing = await dbClient.promoBanner.findFirst({
         where: { id: bannerId, deletedAt: null },
-        select: { id: true },
+        select: { id: true, sortOrder: true },
       });
       if (!existing) {
         return res
@@ -472,6 +504,13 @@ export default async function handler(
       await dbClient.promoBanner.update({
         where: { id: bannerId },
         data: { deletedAt: new Date() },
+      });
+      logAdminActivity({
+        userId: actor.userId,
+        entity: 'BANNER',
+        action: 'DELETE',
+        entityId: bannerId,
+        meta: { position: existing.sortOrder },
       });
       return res.status(200).json({ success: true });
     } catch (error) {

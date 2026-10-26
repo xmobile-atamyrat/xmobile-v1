@@ -455,6 +455,7 @@ export async function addEditProduct({
   selectedProductId,
   brandId,
   isOutOfStock,
+  accessToken,
 }: {
   type: AddEditProductProps['dialogType'];
   formJson: { [k: string]: FormDataEntryValue };
@@ -472,6 +473,7 @@ export async function addEditProduct({
   videoUrls: string[];
   selectedProductId?: string;
   isOutOfStock?: boolean;
+  accessToken: string | undefined;
 }): Promise<Product> {
   const {
     productNameInCharjov,
@@ -547,12 +549,18 @@ export async function addEditProduct({
 
   newFormData.append('isOutOfStock', String(isOutOfStock ?? false));
 
+  const authHeaders = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : undefined;
+
   let product: Product;
   if (type === 'add') {
     const { success, data, message }: ResponseApi<Product> = await (
       await fetch(`${BASE_URL}/api/product`, {
         method: 'POST',
         body: newFormData,
+        credentials: 'include',
+        headers: authHeaders,
       })
     ).json();
     if (!success || data == null) throw new Error(message);
@@ -562,6 +570,8 @@ export async function addEditProduct({
       await fetch(`${BASE_URL}/api/product?productId=${selectedProductId}`, {
         method: 'PUT',
         body: newFormData,
+        credentials: 'include',
+        headers: authHeaders,
       })
     ).json();
     if (!success || data == null) throw new Error(message);

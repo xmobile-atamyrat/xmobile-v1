@@ -433,4 +433,68 @@ describe('Role-gated API routes (integration)', () => {
 
     await prisma.user.delete({ where: { id: su.id } });
   });
+
+  it.each(['POST', 'PUT', 'DELETE'] as const)(
+    '%s /api/product returns 401 without a token',
+    async (method) => {
+      const product = (await import('@/pages/api/product/index.page')).default;
+      const { req, res } = createMocks({
+        method,
+        url: '/api/product',
+        query: { productId: 'missing' },
+      });
+      await product(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      expect(res._getStatusCode()).toBe(401);
+    },
+  );
+
+  it.each(['POST', 'PUT', 'DELETE'] as const)(
+    '%s /api/product returns 401 for a FREE user',
+    async (method) => {
+      const session = await signupTestUser(`product-free-${method}`);
+      const product = (await import('@/pages/api/product/index.page')).default;
+      const { req, res } = createMocks({
+        method,
+        url: '/api/product',
+        query: { productId: 'missing' },
+        headers: { authorization: `Bearer ${session.accessToken}` },
+      });
+      await product(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      expect(res._getStatusCode()).toBe(401);
+    },
+  );
+
+  it('DELETE /api/product gets past the gate for ADMIN (404 for an unknown id)', async () => {
+    const admin = await prisma.user.create({
+      data: {
+        email: `admin-product-${Date.now()}@test.local`,
+        name: 'Admin',
+        password: 'placeholder',
+        grade: UserRole.ADMIN,
+      },
+    });
+    const { generateTokens } = await import('@/pages/api/utils/tokenUtils');
+    const { accessToken } = generateTokens(admin.id, UserRole.ADMIN);
+
+    const product = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'DELETE',
+      url: '/api/product',
+      query: { productId: '00000000-0000-0000-0000-000000000000' },
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+    await product(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(404);
+
+    await prisma.user.delete({ where: { id: admin.id } });
+  });
 });

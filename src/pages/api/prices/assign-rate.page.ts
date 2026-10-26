@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { assignPricesToRate, RateError } from '@/lib/dollarRateService';
+import { recordPricesAssignedToRate } from '@/lib/priceActivity';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -45,6 +46,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       priceIds,
       rateId,
     });
+    recordPricesAssignedToRate(userId, rateId, updatedCount).catch(
+      () => undefined,
+    );
 
     return res.status(200).json({
       success: true,

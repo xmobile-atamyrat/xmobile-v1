@@ -124,6 +124,7 @@ async function invokeCategoryDelete(
 
 async function invokeProductDelete(
   productId: string,
+  token: string,
 ): Promise<{ status: number; json: Record<string, unknown> }> {
   const productHandler = (await import('@/pages/api/product/index.page'))
     .default;
@@ -131,6 +132,7 @@ async function invokeProductDelete(
     method: 'DELETE',
     url: '/api/product',
     query: { productId },
+    headers: { authorization: `Bearer ${token}` },
   });
   await productHandler(
     req as unknown as NextApiRequest,
@@ -839,7 +841,7 @@ describe('promo banner API + delete guard (integration)', () => {
       },
     });
     try {
-      const blocked = await invokeProductDelete(product.id);
+      const blocked = await invokeProductDelete(product.id, adminToken);
       expect(blocked.status).toBe(409);
       expect(blocked.json.message).toBe('productHasActiveBanner');
 
@@ -853,7 +855,7 @@ describe('promo banner API + delete guard (integration)', () => {
         data: { isActive: false },
       });
 
-      const allowed = await invokeProductDelete(product.id);
+      const allowed = await invokeProductDelete(product.id, adminToken);
       expect(allowed.status).toBe(200);
       expect(allowed.json.success).toBe(true);
     } finally {

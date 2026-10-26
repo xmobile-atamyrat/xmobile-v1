@@ -8,6 +8,7 @@ Central process that runs all periodic (cron/interval) jobs. Deploy once; it run
 |------------------|------------|-------------|
 | healthcheck      | Every 5s   | Pings `/api/ping`; Slack on down/recovery |
 | telekom-balance  | Daily 09:00| Fetches Telekom balance; Slack if below `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` |
+| admin-activity-retention | Daily 05:00 | Deletes admin activity older than 13 months, in batches |
 
 ## Adding a job
 

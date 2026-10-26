@@ -252,7 +252,14 @@ export default function ProductsOverview() {
           );
           const response = await fetch(
             `${BASE_URL}/api/product?productId=${productId}`,
-            { method: 'PUT', body: formData },
+            {
+              method: 'PUT',
+              body: formData,
+              credentials: 'include',
+              headers: accessToken
+                ? { Authorization: `Bearer ${accessToken}` }
+                : undefined,
+            },
           );
           const json: ResponseApi<Product> = await response.json();
           return { productId, ...json };

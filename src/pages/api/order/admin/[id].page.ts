@@ -1,3 +1,9 @@
+import {
+  buildDeliveryFeeMeta,
+  buildNotesMeta,
+  buildStatusMeta,
+  recordOrderActivity,
+} from '@/lib/orderActivity';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -49,10 +55,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
 
     if (action === 'status') {
       try {
-        const { resp, status } = await updateOrderStatusController(
+        const { resp, status, previous } = await updateOrderStatusController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && previous) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildStatusMeta(previous, resp.data),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);
@@ -63,10 +76,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'notes') {
       try {
-        const { resp, status } = await updateAdminNotesController(
+        const { resp, status, previous } = await updateAdminNotesController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && previous) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildNotesMeta(previous, resp.data),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);
@@ -77,10 +97,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       }
     } else if (action === 'delivery-price') {
       try {
-        const { resp, status } = await updateDeliveryPriceController(
+        const { resp, status, previous } = await updateDeliveryPriceController(
           orderId,
           body,
         );
+        if (resp.success && resp.data && previous) {
+          recordOrderActivity(
+            userId,
+            orderId,
+            buildDeliveryFeeMeta(previous, resp.data),
+          );
+        }
         return res.status(status).json(resp);
       } catch (error: any) {
         console.error(filepath, error);
