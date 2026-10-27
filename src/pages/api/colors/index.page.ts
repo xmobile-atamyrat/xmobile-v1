@@ -6,6 +6,7 @@ import {
   logAdminActivity,
 } from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
+import { hasUnbrandedClash, lockUnbrandedColors } from '@/lib/unbrandedColors';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -42,25 +43,17 @@ function isMissingBrand(error: unknown): boolean {
   );
 }
 
+function isMissingColor(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2025'
+  );
+}
+
 function normalizeBrandId(brandId: unknown): string | null | undefined {
   if (brandId === undefined) return undefined;
   if (brandId == null || brandId === '') return null;
   return String(brandId);
-}
-
-async function hasUnbrandedClash(
-  name: string,
-  hex: string,
-  excludeIds: string[] = [],
-): Promise<boolean> {
-  const count = await dbClient.color.count({
-    where: {
-      brandId: null,
-      id: { notIn: excludeIds },
-      OR: [{ name }, { hex }],
-    },
-  });
-  return count > 0;
 }
 
 function hasBatchClash(colors: Pick<Color, 'name' | 'hex' | 'brandId'>[]) {
@@ -97,12 +90,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         });
       }
       const brandId = normalizeBrandId(body?.brandId) ?? null;
-      if (brandId == null && (await hasUnbrandedClash(name, hex))) {
+      const newColor = await dbClient.$transaction(async (tx) => {
+        await lockUnbrandedColors(tx);
+        if (brandId == null && (await hasUnbrandedClash(tx, [{ name, hex }]))) {
+          return null;
+        }
+        return tx.color.create({ data: { name, hex, brandId } });
+      });
+      if (newColor == null) {
         return res.status(409).json({ success: false, message: 'colorExists' });
       }
-      const newColor = await dbClient.color.create({
-        data: { name, hex, brandId },
-      });
       logAdminActivity({
         userId,
         entity: 'COLOR',
@@ -155,48 +152,69 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           .json({ success: false, message: 'No data provided' });
       }
 
-      const ids = colorPairs
-        .map((color) => color.id)
-        .filter((id): id is string => id != null);
-      const existing = await dbClient.color.findMany({
-        where: { id: { in: ids } },
+      // A color listed more than once is merged into one update, later
+      // fields winning, so it isn't mistaken for a clash with itself.
+      const pairsById = new Map<string, Partial<Color>>();
+      colorPairs.forEach((color) => {
+        if (color.id == null) return;
+        pairsById.set(color.id, { ...pairsById.get(color.id), ...color });
       });
-      const existingById = new Map(existing.map((color) => [color.id, color]));
+      const ids = [...pairsById.keys()];
 
-      const updates = colorPairs.flatMap((color) => {
-        const current = color.id != null ? existingById.get(color.id) : null;
-        if (current == null) return [];
-        const brandId = normalizeBrandId(color.brandId);
-        return [
-          {
+      const result = await dbClient.$transaction(async (tx) => {
+        await lockUnbrandedColors(tx);
+        const existing = await tx.color.findMany({
+          where: { id: { in: ids } },
+        });
+        if (
+          colorPairs.some((color) => color.id == null) ||
+          existing.length !== ids.length
+        ) {
+          return { error: 'colorNotFound' as const };
+        }
+        const existingById = new Map(
+          existing.map((color) => [color.id, color]),
+        );
+
+        const updates = [...pairsById.values()].map((color) => {
+          const current = existingById.get(color.id!)!;
+          const brandId = normalizeBrandId(color.brandId);
+          return {
             id: current.id,
             name: color.name ?? current.name,
             hex: color.hex ?? current.hex,
             brandId: brandId === undefined ? current.brandId : brandId,
-          },
-        ];
+          };
+        });
+
+        if (
+          hasBatchClash(updates) ||
+          (await hasUnbrandedClash(
+            tx,
+            updates.filter((color) => color.brandId == null),
+            ids,
+          ))
+        ) {
+          return { error: 'colorExists' as const };
+        }
+
+        await Promise.all(
+          updates.map(({ id, name, hex, brandId }) =>
+            tx.color.update({
+              where: { id },
+              data: { name, hex, brandId },
+            }),
+          ),
+        );
+        return { existingById, updates };
       });
 
-      if (hasBatchClash(updates)) {
-        return res.status(409).json({ success: false, message: 'colorExists' });
+      if ('error' in result) {
+        return res
+          .status(result.error === 'colorNotFound' ? 404 : 409)
+          .json({ success: false, message: result.error });
       }
-      const unbrandedClashes = await Promise.all(
-        updates
-          .filter((color) => color.brandId == null)
-          .map((color) => hasUnbrandedClash(color.name, color.hex, ids)),
-      );
-      if (unbrandedClashes.some(Boolean)) {
-        return res.status(409).json({ success: false, message: 'colorExists' });
-      }
-
-      await dbClient.$transaction(
-        updates.map(({ id, name, hex, brandId }) =>
-          dbClient.color.update({
-            where: { id },
-            data: { name, hex, brandId },
-          }),
-        ),
-      );
+      const { existingById, updates } = result;
 
       logAdminActivities(
         updates.flatMap((color): AdminActivityInput[] => {
@@ -224,6 +242,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     } catch (error) {
       if (isUniqueViolation(error)) {
         return res.status(409).json({ success: false, message: 'colorExists' });
+      }
+      if (isMissingColor(error)) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'colorNotFound' });
       }
       if (isMissingBrand(error)) {
         return res

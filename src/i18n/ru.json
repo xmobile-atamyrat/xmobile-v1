@@ -802,5 +802,7 @@
   "activityFieldDeliveryPrice": "цена доставки",
   "activityFieldDescription": "описание",
   "activityFieldTags": "варианты",
-  "activityFieldVideos": "видео"
+  "activityFieldVideos": "видео",
+  "brandColorsClash": "Нельзя удалить бренд: у него есть цвета с тем же названием или кодом, что и у цветов без бренда. Сначала переименуйте или удалите их.",
+  "colorNotFound": "Один из цветов уже удалён. Обновите страницу."
 }

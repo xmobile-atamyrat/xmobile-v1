@@ -97,9 +97,6 @@ export default function UpdateColors() {
     field: 'name' | 'hex' | 'brandId',
     value: string | null,
   ) => {
-    setColors((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
-    );
     setUpdatedColors((prev) => {
       const base = prev[id] ?? colors.find((c) => c.id === id)!;
       return { ...prev, [id]: { ...base, [field]: value } };
@@ -116,11 +113,14 @@ export default function UpdateColors() {
       body: { colorPairs },
     });
     if (success) {
+      setColors((prev) => prev.map((c) => updatedColors[c.id] ?? c));
       setUpdatedColors({});
       notify('colorsUpdated', 'success');
     } else {
       notify(
-        message === 'colorExists' ? 'colorExists' : 'updateColorsError',
+        message === 'colorExists' || message === 'colorNotFound'
+          ? message
+          : 'updateColorsError',
         'error',
       );
     }
@@ -230,120 +230,125 @@ export default function UpdateColors() {
                         </Typography>
                       </TableCell>
                     </TableRow>
-                    {group.colors.map((color) => (
-                      <TableRow
-                        key={color.id}
-                        onMouseOver={() => setHoveredColor(color.id)}
-                        onMouseOut={() => setHoveredColor(undefined)}
-                      >
-                        <TableCell className="relative">
-                          {hoveredColor === color.id && (
-                            <IconButton
-                              className="absolute -left-4 top-1"
-                              onClick={() => {
-                                setSelectedColor(color.id);
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <DeleteIcon color="error" />
-                            </IconButton>
-                          )}
-                          <TextField
-                            variant="standard"
-                            value={color.name}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                color.id,
-                                'name',
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Box className="flex flex-row gap-2 items-center">
-                            <input
-                              type="color"
-                              value={color.hex}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  color.id,
-                                  'hex',
-                                  e.target.value,
-                                )
-                              }
-                              style={{
-                                width: 36,
-                                height: 36,
-                                border: 'none',
-                                background: 'none',
-                                cursor: 'pointer',
-                              }}
-                            />
+                    {group.colors.map((saved) => {
+                      const color = updatedColors[saved.id] ?? saved;
+                      return (
+                        <TableRow
+                          key={color.id}
+                          onMouseOver={() => setHoveredColor(color.id)}
+                          onMouseOut={() => setHoveredColor(undefined)}
+                        >
+                          <TableCell className="relative">
+                            {hoveredColor === color.id && (
+                              <IconButton
+                                className="absolute -left-4 top-1"
+                                onClick={() => {
+                                  setSelectedColor(color.id);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <DeleteIcon color="error" />
+                              </IconButton>
+                            )}
                             <TextField
                               variant="standard"
-                              value={color.hex}
+                              value={color.name}
                               onChange={(e) =>
                                 handleFieldChange(
                                   color.id,
-                                  'hex',
+                                  'name',
                                   e.target.value,
                                 )
                               }
                             />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            size="small"
-                            variant="standard"
-                            displayEmpty
-                            value={
-                              color.brandId != null &&
-                              knownBrandIds.has(color.brandId)
-                                ? color.brandId
-                                : ''
-                            }
-                            onChange={(e) =>
-                              handleFieldChange(
-                                color.id,
-                                'brandId',
-                                e.target.value || null,
-                              )
-                            }
-                            sx={{ minWidth: 120 }}
-                          >
-                            <MenuItem value="">
-                              <em>{t('noBrand')}</em>
-                            </MenuItem>
-                            {sortedBrands.map((brand) => (
-                              <MenuItem value={brand.id} key={brand.id}>
-                                {brand.name}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </TableCell>
-                        <TableCell className="relative">
-                          {hoveredColor === color.id && (
-                            <IconButton
-                              className="absolute -left-4 top-1"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(color.id);
-                                  notify('copied', 'success');
-                                } catch (error) {
-                                  console.error(error);
-                                  notify('copyFailed', 'error');
+                          </TableCell>
+                          <TableCell>
+                            <Box className="flex flex-row gap-2 items-center">
+                              <input
+                                type="color"
+                                value={color.hex}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    color.id,
+                                    'hex',
+                                    e.target.value,
+                                  )
                                 }
-                              }}
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                }}
+                              />
+                              <TextField
+                                variant="standard"
+                                value={color.hex}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    color.id,
+                                    'hex',
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              size="small"
+                              variant="standard"
+                              displayEmpty
+                              value={
+                                color.brandId != null &&
+                                knownBrandIds.has(color.brandId)
+                                  ? color.brandId
+                                  : ''
+                              }
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  color.id,
+                                  'brandId',
+                                  e.target.value || null,
+                                )
+                              }
+                              sx={{ minWidth: 120 }}
                             >
-                              <ContentCopyIcon color="primary" />
-                            </IconButton>
-                          )}
-                          {color.id}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              <MenuItem value="">
+                                <em>{t('noBrand')}</em>
+                              </MenuItem>
+                              {sortedBrands.map((brand) => (
+                                <MenuItem value={brand.id} key={brand.id}>
+                                  {brand.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </TableCell>
+                          <TableCell className="relative">
+                            {hoveredColor === color.id && (
+                              <IconButton
+                                className="absolute -left-4 top-1"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(
+                                      color.id,
+                                    );
+                                    notify('copied', 'success');
+                                  } catch (error) {
+                                    console.error(error);
+                                    notify('copyFailed', 'error');
+                                  }
+                                }}
+                              >
+                                <ContentCopyIcon color="primary" />
+                              </IconButton>
+                            )}
+                            {color.id}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </Fragment>
                 ))}
               </TableBody>
@@ -387,6 +392,13 @@ export default function UpdateColors() {
                     setColors((prev) =>
                       prev.filter((c) => c.id !== selectedColor),
                     );
+                    // A pending edit for the deleted color would make every
+                    // later save fail with colorNotFound.
+                    setUpdatedColors((prev) => {
+                      const next = { ...prev };
+                      delete next[selectedColor];
+                      return next;
+                    });
                     notify('colorDeleteSuccess', 'success');
                   } else {
                     notify('colorDeleteFailed', 'error');

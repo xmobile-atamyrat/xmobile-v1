@@ -484,6 +484,77 @@ describe('Colors API (integration)', () => {
     expect(after?.name).toBe('IntTest Batch One');
   });
 
+  it('PUT merges repeated entries for the same color, later fields winning', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Repeated', hex: '#0a0a0a', brandId: brandBId },
+    });
+    const { status } = await callColors('PUT', {
+      colorPairs: [
+        { id: color.id, name: 'IntTest Repeated First' },
+        { id: color.id, hex: '#0b0b0b' },
+        { id: color.id, name: 'IntTest Repeated Last' },
+      ],
+    });
+    expect(status).toBe(200);
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.name).toBe('IntTest Repeated Last');
+    expect(after?.hex).toBe('#0b0b0b');
+  });
+
+  it('concurrent unbranded POSTs create only one color', async () => {
+    const results = await Promise.all([
+      callColors('POST', { name: 'IntTest Racing Red', hex: '#0c0c0c' }),
+      callColors('POST', { name: 'IntTest Racing Red', hex: '#0c0c0c' }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    const count = await prisma.color.count({
+      where: { name: 'IntTest Racing Red' },
+    });
+    expect(count).toBe(1);
+  });
+
+  it('PUT with a deleted color id returns 404 colorNotFound and changes nothing', async () => {
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Survivor', hex: '#0d0d0d', brandId: brandBId },
+    });
+    const { status, body } = await callColors('PUT', {
+      colorPairs: [
+        { id: color.id, name: 'IntTest Survivor Renamed' },
+        { id: '00000000-0000-4000-8000-000000000097', name: 'IntTest Ghost' },
+      ],
+    });
+    expect(status).toBe(404);
+    expect(body.message).toBe('colorNotFound');
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.name).toBe('IntTest Survivor');
+  });
+
+  it('deleting a brand whose color clashes with an unbranded one returns 409', async () => {
+    const brand = await prisma.brand.create({
+      data: { name: 'IntTest Brand Clashing' },
+    });
+    const color = await prisma.color.create({
+      data: { name: 'IntTest Seeded Blue', hex: '#0e0e0e', brandId: brand.id },
+    });
+    const handler = (await import('@/pages/api/brand/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'DELETE',
+      url: `/api/brand?id=${brand.id}`,
+      query: { id: brand.id },
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(409);
+    expect(JSON.parse(res._getData() as string).message).toBe(
+      'brandColorsClash',
+    );
+    const after = await prisma.color.findUnique({ where: { id: color.id } });
+    expect(after?.brandId).toBe(brand.id);
+  });
+
   it('deleting a brand leaves its colors unbranded', async () => {
     const brand = await prisma.brand.create({
       data: { name: 'IntTest Brand Doomed' },

@@ -443,7 +443,11 @@ export default function AddEditProductDialog({
       if (brandId === brand.id) setBrandId('');
       await loadBrands();
     } else if (snackbarErrorHandler) {
-      snackbarErrorHandler(res.message || t('deleteBrandError'));
+      snackbarErrorHandler(
+        res.message === 'brandColorsClash'
+          ? t('brandColorsClash')
+          : res.message || t('deleteBrandError'),
+      );
     }
   };
 

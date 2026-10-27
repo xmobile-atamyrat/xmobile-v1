@@ -47,3 +47,26 @@ export function groupColorsByBrand<T extends GroupableColor>(
 
   return [...priority, ...unbranded, ...rest];
 }
+
+export interface ColorSwatch {
+  key: string;
+  name: string;
+  hex: string;
+  ids: string[];
+}
+
+export function mergeSameColors(
+  colors: Pick<Color, 'id' | 'name' | 'hex'>[],
+): ColorSwatch[] {
+  const swatches = new Map<string, ColorSwatch>();
+  colors.forEach(({ id, name, hex }) => {
+    const key = `${name.trim().toLowerCase()}|${hex.toLowerCase()}`;
+    const swatch = swatches.get(key);
+    if (swatch != null) {
+      swatch.ids.push(id);
+    } else {
+      swatches.set(key, { key, name, hex, ids: [id] });
+    }
+  });
+  return [...swatches.values()];
+}
