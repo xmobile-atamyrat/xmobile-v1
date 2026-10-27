@@ -800,5 +800,7 @@
   "activityFieldDeliveryPrice": "teslimat ücreti",
   "activityFieldDescription": "açıklama",
   "activityFieldTags": "varyasyonlar",
-  "activityFieldVideos": "videolar"
+  "activityFieldVideos": "videolar",
+  "brandColorsClash": "Marka silinemiyor: bazı renkleri markasız bir renkle aynı ada veya hex koduna sahip. Önce bunları yeniden adlandırın veya silin.",
+  "colorNotFound": "Renklerden biri silinmiş. Sayfayı yenileyin."
 }

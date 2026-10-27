@@ -27,6 +27,7 @@ const RED_COLOR = {
   id: 'c1',
   name: 'Red',
   hex: '#ff0000',
+  brandId: null as string | null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -103,6 +104,23 @@ describe('FilterSidebar — color filter section', () => {
 
     fireEvent.click(screen.getByTitle('Red'));
     expect(onFilterChange).toHaveBeenCalledWith({ colorIds: [] });
+  });
+
+  it('shows one swatch for identical colors from different brands and toggles all of them', async () => {
+    const apis = await getApis();
+    apis.fetchColors.mockResolvedValue([
+      RED_COLOR,
+      { ...RED_COLOR, id: 'c2', brandId: 'b1' },
+    ]);
+    apis.fetchProductFilterOptions.mockResolvedValue({ colors: ['c1', 'c2'] });
+    const onFilterChange = vi.fn();
+    renderSidebar({ selectedColorIds: [] }, onFilterChange);
+
+    await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
+    expect(screen.getAllByTitle('Red')).toHaveLength(1);
+
+    fireEvent.click(screen.getByTitle('Red'));
+    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: ['c1', 'c2'] });
   });
 
   it('hides the color section when filterOptions.colors is empty', async () => {

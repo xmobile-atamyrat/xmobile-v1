@@ -14,6 +14,7 @@ import {
   fetchProductsCount,
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { mergeSameColors } from '@/pages/lib/colorGroups';
 import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
@@ -604,15 +605,18 @@ export default function ProductGridContent({
     });
   });
 
-  filters.colorIds.forEach((id) => {
-    const color = colors.find((c) => c.id === id);
-    if (!color) return;
+  // One swatch in the sidebar can stand for the same color in several brands,
+  // so its ids share one chip and removing the chip clears all of them.
+  const selectedColors = filters.colorIds
+    .map((id) => colors.find((c) => c.id === id))
+    .filter((c): c is Color => c != null);
+  mergeSameColors(selectedColors).forEach((swatch) => {
     activeChips.push({
-      key: `color-${id}`,
-      label: color.name,
+      key: `color-${swatch.key}`,
+      label: swatch.name,
       onRemove: () =>
         applyFilters({
-          colorIds: filters.colorIds.filter((cid) => cid !== id),
+          colorIds: filters.colorIds.filter((cid) => !swatch.ids.includes(cid)),
         }),
     });
   });
