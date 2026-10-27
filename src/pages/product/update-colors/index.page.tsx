@@ -1,9 +1,11 @@
 import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
+import { fetchBrands } from '@/pages/lib/apis';
+import { groupColorsByBrand } from '@/pages/lib/colorGroups';
 import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { SnackbarProps } from '@/pages/lib/types';
+import { BrandProps, SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AddColor from '@/pages/product/components/AddColor';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -13,6 +15,8 @@ import {
   Box,
   Button,
   IconButton,
+  MenuItem,
+  Select,
   Snackbar,
   Table,
   TableBody,
@@ -28,7 +32,10 @@ import { Color } from '@prisma/client';
 import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+
+const ALL_BRANDS = 'all';
+const NO_BRAND = 'none';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   return {
@@ -57,6 +64,8 @@ export default function UpdateColors() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [brands, setBrands] = useState<BrandProps[]>([]);
+  const [brandFilter, setBrandFilter] = useState(ALL_BRANDS);
 
   const notify = (message: string, severity: SnackbarProps['severity']) => {
     setSnackbarOpen(true);
@@ -79,14 +88,15 @@ export default function UpdateColors() {
     })();
   }, [accessToken]);
 
+  useEffect(() => {
+    (async () => setBrands(await fetchBrands()))();
+  }, []);
+
   const handleFieldChange = (
     id: string,
-    field: 'name' | 'hex',
-    value: string,
+    field: 'name' | 'hex' | 'brandId',
+    value: string | null,
   ) => {
-    setColors((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
-    );
     setUpdatedColors((prev) => {
       const base = prev[id] ?? colors.find((c) => c.id === id)!;
       return { ...prev, [id]: { ...base, [field]: value } };
@@ -103,19 +113,31 @@ export default function UpdateColors() {
       body: { colorPairs },
     });
     if (success) {
+      setColors((prev) => prev.map((c) => updatedColors[c.id] ?? c));
       setUpdatedColors({});
       notify('colorsUpdated', 'success');
     } else {
       notify(
-        message === 'colorExists' ? 'colorExists' : 'updateColorsError',
+        message === 'colorExists' || message === 'colorNotFound'
+          ? message
+          : 'updateColorsError',
         'error',
       );
     }
   };
 
-  const filteredColors = colors.filter((c) =>
-    c.name.toLowerCase().includes(searchKeyword.toLowerCase()),
-  );
+  const knownBrandIds = new Set(brands.map((b) => b.id));
+  const filteredColors = colors.filter((c) => {
+    if (!c.name.toLowerCase().includes(searchKeyword.toLowerCase())) {
+      return false;
+    }
+    if (brandFilter === ALL_BRANDS) return true;
+    const isUnbranded = c.brandId == null || !knownBrandIds.has(c.brandId);
+    if (brandFilter === NO_BRAND) return isUnbranded;
+    return c.brandId === brandFilter;
+  });
+  const colorGroups = groupColorsByBrand(filteredColors, brands);
+  const sortedBrands = [...brands].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <Layout handleHeaderBackButton={() => router.push('/')}>
@@ -139,6 +161,20 @@ export default function UpdateColors() {
                 width="100%"
               />
             </Box>
+            <Select
+              size="small"
+              value={brandFilter}
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className="w-full"
+            >
+              <MenuItem value={ALL_BRANDS}>{t('allBrands')}</MenuItem>
+              <MenuItem value={NO_BRAND}>{t('noBrand')}</MenuItem>
+              {sortedBrands.map((brand) => (
+                <MenuItem value={brand.id} key={brand.id}>
+                  {brand.name}
+                </MenuItem>
+              ))}
+            </Select>
             <Box className="flex flex-row gap-2 w-full">
               <Button
                 variant="contained"
@@ -172,7 +208,7 @@ export default function UpdateColors() {
             <Table>
               <TableHead>
                 <TableRow>
-                  {['Name', 'Color', 'ID'].map((header) => (
+                  {['Name', 'Color', t('brand'), 'ID'].map((header) => (
                     <TableCell key={header}>
                       <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
                         {header}
@@ -182,77 +218,138 @@ export default function UpdateColors() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredColors.map((color) => (
-                  <TableRow
-                    key={color.id}
-                    onMouseOver={() => setHoveredColor(color.id)}
-                    onMouseOut={() => setHoveredColor(undefined)}
-                  >
-                    <TableCell className="relative">
-                      {hoveredColor === color.id && (
-                        <IconButton
-                          className="absolute -left-4 top-1"
-                          onClick={() => {
-                            setSelectedColor(color.id);
-                            setShowDeleteDialog(true);
-                          }}
+                {colorGroups.map((group) => (
+                  <Fragment key={group.brandId ?? NO_BRAND}>
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        sx={{ bgcolor: 'action.hover', py: 1 }}
+                      >
+                        <Typography fontWeight={600}>
+                          {`${group.brandName ?? t('noBrand')} (${group.colors.length})`}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                    {group.colors.map((saved) => {
+                      const color = updatedColors[saved.id] ?? saved;
+                      return (
+                        <TableRow
+                          key={color.id}
+                          onMouseOver={() => setHoveredColor(color.id)}
+                          onMouseOut={() => setHoveredColor(undefined)}
                         >
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      )}
-                      <TextField
-                        variant="standard"
-                        value={color.name}
-                        onChange={(e) =>
-                          handleFieldChange(color.id, 'name', e.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box className="flex flex-row gap-2 items-center">
-                        <input
-                          type="color"
-                          value={color.hex}
-                          onChange={(e) =>
-                            handleFieldChange(color.id, 'hex', e.target.value)
-                          }
-                          style={{
-                            width: 36,
-                            height: 36,
-                            border: 'none',
-                            background: 'none',
-                            cursor: 'pointer',
-                          }}
-                        />
-                        <TextField
-                          variant="standard"
-                          value={color.hex}
-                          onChange={(e) =>
-                            handleFieldChange(color.id, 'hex', e.target.value)
-                          }
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell className="relative">
-                      {hoveredColor === color.id && (
-                        <IconButton
-                          className="absolute -left-4 top-1"
-                          onClick={async () => {
-                            try {
-                              await navigator.clipboard.writeText(color.id);
-                              notify('copied', 'success');
-                            } catch (error) {
-                              console.error(error);
-                              notify('copyFailed', 'error');
-                            }
-                          }}
-                        >
-                          <ContentCopyIcon color="primary" />
-                        </IconButton>
-                      )}
-                      {color.id}
-                    </TableCell>
-                  </TableRow>
+                          <TableCell className="relative">
+                            {hoveredColor === color.id && (
+                              <IconButton
+                                className="absolute -left-4 top-1"
+                                onClick={() => {
+                                  setSelectedColor(color.id);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <DeleteIcon color="error" />
+                              </IconButton>
+                            )}
+                            <TextField
+                              variant="standard"
+                              value={color.name}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  color.id,
+                                  'name',
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box className="flex flex-row gap-2 items-center">
+                              <input
+                                type="color"
+                                value={color.hex}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    color.id,
+                                    'hex',
+                                    e.target.value,
+                                  )
+                                }
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                }}
+                              />
+                              <TextField
+                                variant="standard"
+                                value={color.hex}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    color.id,
+                                    'hex',
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              size="small"
+                              variant="standard"
+                              displayEmpty
+                              value={
+                                color.brandId != null &&
+                                knownBrandIds.has(color.brandId)
+                                  ? color.brandId
+                                  : ''
+                              }
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  color.id,
+                                  'brandId',
+                                  e.target.value || null,
+                                )
+                              }
+                              sx={{ minWidth: 120 }}
+                            >
+                              <MenuItem value="">
+                                <em>{t('noBrand')}</em>
+                              </MenuItem>
+                              {sortedBrands.map((brand) => (
+                                <MenuItem value={brand.id} key={brand.id}>
+                                  {brand.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </TableCell>
+                          <TableCell className="relative">
+                            {hoveredColor === color.id && (
+                              <IconButton
+                                className="absolute -left-4 top-1"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(
+                                      color.id,
+                                    );
+                                    notify('copied', 'success');
+                                  } catch (error) {
+                                    console.error(error);
+                                    notify('copyFailed', 'error');
+                                  }
+                                }}
+                              >
+                                <ContentCopyIcon color="primary" />
+                              </IconButton>
+                            )}
+                            {color.id}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
@@ -295,6 +392,13 @@ export default function UpdateColors() {
                     setColors((prev) =>
                       prev.filter((c) => c.id !== selectedColor),
                     );
+                    // A pending edit for the deleted color would make every
+                    // later save fail with colorNotFound.
+                    setUpdatedColors((prev) => {
+                      const next = { ...prev };
+                      delete next[selectedColor];
+                      return next;
+                    });
                     notify('colorDeleteSuccess', 'success');
                   } else {
                     notify('colorDeleteFailed', 'error');
@@ -311,13 +415,25 @@ export default function UpdateColors() {
 
           {showCreateDialog && (
             <AddColor
+              brands={brands}
+              initialBrandId={
+                brandFilter !== ALL_BRANDS && brandFilter !== NO_BRAND
+                  ? brandFilter
+                  : undefined
+              }
               handleClose={() => setShowCreateDialog(false)}
-              handleCreate={async (name, hex) => {
+              handleCreate={async (name, hex, brandId) => {
                 if (name === '' || hex === '') {
                   notify('emptyField', 'error');
                   return false;
                 }
-                if (colors.some((c) => c.name === name || c.hex === hex)) {
+                if (
+                  colors.some(
+                    (c) =>
+                      (c.brandId ?? null) === brandId &&
+                      (c.name === name || c.hex === hex),
+                  )
+                ) {
                   notify('colorExists', 'error');
                   return false;
                 }
@@ -327,7 +443,7 @@ export default function UpdateColors() {
                       accessToken,
                       path: '/api/colors',
                       method: 'POST',
-                      body: { name, hex },
+                      body: { name, hex, brandId },
                     });
                   if (success && data) {
                     setColors((prev) => [data, ...prev]);

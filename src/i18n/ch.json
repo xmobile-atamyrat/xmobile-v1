@@ -802,5 +802,7 @@
   "activityFieldDeliveryPrice": "dostawka bahasy",
   "activityFieldDescription": "opisaniýe",
   "activityFieldTags": "görnüşläri",
-  "activityFieldVideos": "wideolar"
+  "activityFieldVideos": "wideolar",
+  "brandColorsClash": "Brendi öçürüp bolmaýar: onuň käbir reňkleriniň ady ýa-da kody brendsiz reňk bilen gabat gelýär. Ilki olaryň adyny üýtgediň ýa-da öçüriň.",
+  "colorNotFound": "Reňkleriň biri uže öçürildi. Sahypany täzeläň."
 }

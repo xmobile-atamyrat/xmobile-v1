@@ -6,6 +6,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
   useMediaQuery,
   useTheme,
@@ -14,17 +18,29 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 interface AddColorProps {
+  brands: { id: string; name: string }[];
+  initialBrandId?: string;
   handleClose: () => void;
-  handleCreate: (name: string, hex: string) => Promise<boolean>;
+  handleCreate: (
+    name: string,
+    hex: string,
+    brandId: string | null,
+  ) => Promise<boolean>;
 }
 
-export default function AddColor({ handleClose, handleCreate }: AddColorProps) {
+export default function AddColor({
+  brands,
+  initialBrandId,
+  handleClose,
+  handleCreate,
+}: AddColorProps) {
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const [name, setName] = useState('');
   const [hex, setHex] = useState('#000000');
+  const [brandId, setBrandId] = useState(initialBrandId ?? '');
 
   const width = isMdUp ? '450px' : '250px';
 
@@ -40,6 +56,26 @@ export default function AddColor({ handleClose, handleCreate }: AddColorProps) {
             style={{ width }}
             required
           />
+          <FormControl style={{ width }}>
+            <InputLabel id="add-color-brand">{t('brand')}</InputLabel>
+            <Select
+              labelId="add-color-brand"
+              label={t('brand')}
+              value={brandId}
+              onChange={(e) => setBrandId(e.target.value)}
+            >
+              <MenuItem value="">
+                <em>{t('noBrand')}</em>
+              </MenuItem>
+              {[...brands]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((brand) => (
+                  <MenuItem value={brand.id} key={brand.id}>
+                    {brand.name}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
           <Box className="flex flex-row gap-2 items-center" style={{ width }}>
             <input
               type="color"
@@ -76,7 +112,7 @@ export default function AddColor({ handleClose, handleCreate }: AddColorProps) {
           loading={loading}
           onClick={async () => {
             setLoading(true);
-            const success = await handleCreate(name, hex);
+            const success = await handleCreate(name, hex, brandId || null);
             if (success) handleClose();
             setLoading(false);
           }}

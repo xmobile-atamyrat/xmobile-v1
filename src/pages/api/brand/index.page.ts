@@ -2,6 +2,7 @@ import { logAdminActivity } from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
 import { revalidateInBackground } from '@/lib/revalidate';
 import { productRevalidationPaths } from '@/lib/revalidateTargets';
+import { hasUnbrandedClash, lockUnbrandedColors } from '@/lib/unbrandedColors';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -126,9 +127,19 @@ async function handler(
       // nothing has been mutated yet when it runs.
       const paths = await brandProductPaths(id);
 
-      const deleted = await dbClient.brand.delete({
-        where: { id },
+      // Deleting the brand turns its colors into unbranded ones (SET NULL),
+      // which must not duplicate an existing unbranded color.
+      const deleted = await dbClient.$transaction(async (tx) => {
+        await lockUnbrandedColors(tx);
+        const colors = await tx.color.findMany({ where: { brandId: id } });
+        if (await hasUnbrandedClash(tx, colors)) return null;
+        return tx.brand.delete({ where: { id } });
       });
+      if (deleted == null) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'brandColorsClash' });
+      }
 
       logAdminActivity({
         userId: req.userId,

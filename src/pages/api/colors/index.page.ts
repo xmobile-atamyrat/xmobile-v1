@@ -6,6 +6,7 @@ import {
   logAdminActivity,
 } from '@/lib/adminActivity';
 import dbClient from '@/lib/dbClient';
+import { hasUnbrandedClash, lockUnbrandedColors } from '@/lib/unbrandedColors';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -35,6 +36,38 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+function isMissingBrand(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2003'
+  );
+}
+
+function isMissingColor(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2025'
+  );
+}
+
+function normalizeBrandId(brandId: unknown): string | null | undefined {
+  if (brandId === undefined) return undefined;
+  if (brandId == null || brandId === '') return null;
+  return String(brandId);
+}
+
+function hasBatchClash(colors: Pick<Color, 'name' | 'hex' | 'brandId'>[]) {
+  const seen = new Set<string>();
+  return colors.some(({ name, hex, brandId }) => {
+    const nameKey = `${brandId ?? ''}|name|${name}`;
+    const hexKey = `${brandId ?? ''}|hex|${hex}`;
+    if (seen.has(nameKey) || seen.has(hexKey)) return true;
+    seen.add(nameKey);
+    seen.add(hexKey);
+    return false;
+  });
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   addCors(res);
   const { method, userId } = req as AuthenticatedRequest;
@@ -56,7 +89,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           message: 'Missing required fields',
         });
       }
-      const newColor = await dbClient.color.create({ data: { name, hex } });
+      const brandId = normalizeBrandId(body?.brandId) ?? null;
+      const newColor = await dbClient.$transaction(async (tx) => {
+        await lockUnbrandedColors(tx);
+        if (brandId == null && (await hasUnbrandedClash(tx, [{ name, hex }]))) {
+          return null;
+        }
+        return tx.color.create({ data: { name, hex, brandId } });
+      });
+      if (newColor == null) {
+        return res.status(409).json({ success: false, message: 'colorExists' });
+      }
       logAdminActivity({
         userId,
         entity: 'COLOR',
@@ -72,6 +115,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     } catch (error) {
       if (isUniqueViolation(error)) {
         return res.status(409).json({ success: false, message: 'colorExists' });
+      }
+      if (isMissingBrand(error)) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'brandNotFound' });
       }
       console.error(error);
       return res
@@ -104,24 +152,79 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           .json({ success: false, message: 'No data provided' });
       }
 
-      const previousColors = await dbClient.color.findMany({
-        where: { id: { in: colorPairs.map((color) => color.id) } },
+      // A color listed more than once is merged into one update, later
+      // fields winning, so it isn't mistaken for a clash with itself.
+      const pairsById = new Map<string, Partial<Color>>();
+      colorPairs.forEach((color) => {
+        if (color.id == null) return;
+        pairsById.set(color.id, { ...pairsById.get(color.id), ...color });
+      });
+      const ids = [...pairsById.keys()];
+
+      const result = await dbClient.$transaction(async (tx) => {
+        await lockUnbrandedColors(tx);
+        const existing = await tx.color.findMany({
+          where: { id: { in: ids } },
+        });
+        if (
+          colorPairs.some((color) => color.id == null) ||
+          existing.length !== ids.length
+        ) {
+          return { error: 'colorNotFound' as const };
+        }
+        const existingById = new Map(
+          existing.map((color) => [color.id, color]),
+        );
+
+        const updates = [...pairsById.values()].map((color) => {
+          const current = existingById.get(color.id!)!;
+          const brandId = normalizeBrandId(color.brandId);
+          return {
+            id: current.id,
+            name: color.name ?? current.name,
+            hex: color.hex ?? current.hex,
+            brandId: brandId === undefined ? current.brandId : brandId,
+          };
+        });
+
+        if (
+          hasBatchClash(updates) ||
+          (await hasUnbrandedClash(
+            tx,
+            updates.filter((color) => color.brandId == null),
+            ids,
+          ))
+        ) {
+          return { error: 'colorExists' as const };
+        }
+
+        await Promise.all(
+          updates.map(({ id, name, hex, brandId }) =>
+            tx.color.update({
+              where: { id },
+              data: { name, hex, brandId },
+            }),
+          ),
+        );
+        return { existingById, updates };
       });
 
-      await Promise.all(
-        colorPairs.map((color) => {
-          const data: Prisma.ColorUpdateInput = {};
-          if (color.name != null) data.name = color.name;
-          if (color.hex != null) data.hex = color.hex;
-          return dbClient.color.update({ where: { id: color.id }, data });
-        }),
-      );
+      if ('error' in result) {
+        return res
+          .status(result.error === 'colorNotFound' ? 404 : 409)
+          .json({ success: false, message: result.error });
+      }
+      const { existingById, updates } = result;
 
       logAdminActivities(
-        colorPairs.flatMap((color): AdminActivityInput[] => {
-          const previous = previousColors.find((prev) => prev.id === color.id);
+        updates.flatMap((color): AdminActivityInput[] => {
+          const previous = existingById.get(color.id);
           if (!previous) return [];
-          const changes = changedFields(previous, color, ['name', 'hex']);
+          const changes = changedFields(previous, color, [
+            'name',
+            'hex',
+            'brandId',
+          ]);
           if (Object.keys(changes).length === 0) return [];
           return [
             {
@@ -129,7 +232,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
               entity: 'COLOR',
               action: 'UPDATE',
               entityId: color.id,
-              meta: { name: color.name ?? previous.name, changes },
+              meta: { name: color.name, changes },
             },
           ];
         }),
@@ -139,6 +242,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     } catch (error) {
       if (isUniqueViolation(error)) {
         return res.status(409).json({ success: false, message: 'colorExists' });
+      }
+      if (isMissingColor(error)) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'colorNotFound' });
+      }
+      if (isMissingBrand(error)) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'brandNotFound' });
       }
       console.error(error);
       return res
