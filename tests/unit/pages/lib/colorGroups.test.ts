@@ -1,4 +1,4 @@
-import { groupColorsByBrand } from '@/pages/lib/colorGroups';
+import { groupColorsByBrand, mergeSameColors } from '@/pages/lib/colorGroups';
 import { describe, expect, it } from 'vitest';
 
 const brands = [
@@ -64,5 +64,28 @@ describe('groupColorsByBrand', () => {
       'Samsung',
       'Xiaomi',
     ]);
+  });
+});
+
+describe('mergeSameColors', () => {
+  it('merges colors with the same name and hex across brands', () => {
+    const swatches = mergeSameColors([
+      { id: 'apple-black', name: 'Black', hex: '#000000' },
+      { id: 'samsung-black', name: 'black ', hex: '#000000' },
+      { id: 'white', name: 'White', hex: '#ffffff' },
+    ]);
+    expect(swatches.map((swatch) => swatch.ids)).toEqual([
+      ['apple-black', 'samsung-black'],
+      ['white'],
+    ]);
+    expect(swatches[0].name).toBe('Black');
+  });
+
+  it('keeps same-named colors apart when their hex differs', () => {
+    const swatches = mergeSameColors([
+      { id: 'a', name: 'Black', hex: '#000000' },
+      { id: 'b', name: 'Black', hex: '#111111' },
+    ]);
+    expect(swatches).toHaveLength(2);
   });
 });

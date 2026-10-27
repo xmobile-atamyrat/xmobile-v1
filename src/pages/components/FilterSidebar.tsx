@@ -4,6 +4,7 @@ import {
   fetchProductFilterOptions,
   ProductFilterOptions,
 } from '@/pages/lib/apis';
+import { mergeSameColors } from '@/pages/lib/colorGroups';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { Color } from '@prisma/client';
@@ -153,15 +154,19 @@ export default function FilterSidebar({
     })();
   }, []);
 
-  // Only show colors that are actually used by some product
-  const colorsToShow = colors.filter((c) =>
-    filterOptions.colors.includes(c.id),
+  // Only show colors that are actually used by some product; brands can each
+  // have their own "Black", so identical ones share a single swatch.
+  const colorsToShow = mergeSameColors(
+    colors.filter((c) => filterOptions.colors.includes(c.id)),
   );
 
-  const toggleColor = (value: string) => {
-    const next = selectedColorIds.includes(value)
-      ? selectedColorIds.filter((v) => v !== value)
-      : [...selectedColorIds, value];
+  const isColorSelected = (ids: string[]) =>
+    ids.some((id) => selectedColorIds.includes(id));
+
+  const toggleColor = (ids: string[]) => {
+    const next = isColorSelected(ids)
+      ? selectedColorIds.filter((v) => !ids.includes(v))
+      : [...selectedColorIds, ...ids];
     onFilterChange({ colorIds: next });
   };
 
@@ -527,19 +532,19 @@ export default function FilterSidebar({
               sx={{ maxHeight: '300px', overflowY: 'auto' }}
             >
               {colorsToShow.map((color) => (
-                <Box key={color.id} display="flex" alignItems="center">
+                <Box key={color.key} display="flex" alignItems="center">
                   <CustomCheckbox
-                    checked={selectedColorIds.includes(color.id)}
-                    onChange={() => toggleColor(color.id)}
+                    checked={isColorSelected(color.ids)}
+                    onChange={() => toggleColor(color.ids)}
                   />
                   <Box
                     title={color.name}
-                    onClick={() => toggleColor(color.id)}
+                    onClick={() => toggleColor(color.ids)}
                     sx={{
                       width: 22,
                       height: 22,
                       borderRadius: '50%',
-                      border: selectedColorIds.includes(color.id)
+                      border: isColorSelected(color.ids)
                         ? `2px solid ${navy}`
                         : '1px solid #D6D5DE',
                       backgroundColor: color.hex,
