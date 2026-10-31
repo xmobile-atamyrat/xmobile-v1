@@ -64,7 +64,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { Color, Prices, Product } from '@prisma/client';
+import type { Color, Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
@@ -81,8 +81,7 @@ interface AddEditProductDialogProps {
 //
 // The options are every price in the product's category plus every price left
 // uncategorized. A price another product already owns is listed but not
-// selectable — the reassignment guard on PUT /api/prices would refuse it
-// anyway, and showing it with the owner's name answers "why isn't the price I
+// selectable — saving the product would refuse it anyway, and showing it with the owner's name answers "why isn't the price I
 // just made showing up" far better than hiding it does.
 function PriceSelect({
   value,
@@ -304,44 +303,21 @@ export default function AddEditProductDialog({
     return [...merged.values()];
   }, [categoryPrices, connectedPrices]);
 
-  // Writes the link immediately for an existing product. For a new one the
-  // price is only held in local state and linked after the product is created.
-  const connectPrice = async (
-    priceToConnect: PriceWithOwner,
-  ): Promise<boolean> => {
-    setConnectError('');
-    if (id != null) {
-      const { success, message } = await fetchWithCreds<Prices>({
-        accessToken,
-        path: '/api/prices',
-        method: 'PUT',
-        body: { pricePairs: [{ id: priceToConnect.id, productId: id }] },
-      });
-      if (!success) {
-        setConnectError(message ?? t('connectPriceError'));
-        return false;
-      }
-    }
-    setConnectedPrices((prev) =>
-      prev.some((p) => p.id === priceToConnect.id)
-        ? prev
-        : [...prev, priceToConnect],
-    );
-    return true;
-  };
-
-  // Picking a price for the base price or a variant is what connects it. The
-  // pickers offer more than this product owns, but its `price`/`tags` may only
-  // reference prices it owns, so the reference and the link have to be made
-  // together — otherwise choosing a price would write a string pointing at a
-  // row this product has no claim on. Returns false when the link was refused,
+  // Picking a price only stages it. Ownership is written by the product save,
+  // which links the prices the saved tags carry (or the base price, when no
+  // tag carries one) and releases the rest, so a wrong pick that is removed
+  // again, or a dialog that is cancelled, leaves no link behind. Staging keeps
+  // the pick in `priceOptions` as one of this product's own, even when it sits
+  // outside the category list. Returns false when the pick cannot be resolved,
   // in which case the caller must leave the reference alone.
-  const ensurePriceConnected = async (priceId: string): Promise<boolean> => {
+  const ensurePriceConnected = (priceId: string): boolean => {
+    setConnectError('');
     if (priceId === '') return true;
     if (connectedPrices.some((option) => option.id === priceId)) return true;
     const pick = priceOptions.find((option) => option.id === priceId);
     if (pick == null) return false;
-    return connectPrice(pick);
+    setConnectedPrices((prev) => [...prev, pick]);
+    return true;
   };
 
   // The pickers are category-scoped, so without a category there is no list to
@@ -550,33 +526,6 @@ export default function AddEditProductDialog({
               isOutOfStock,
               accessToken,
             });
-            // A new product only got its id just now, so the prices staged in
-            // connectedPrices are linked here. Editing an existing product
-            // writes each link as it is made, so there is nothing left to do.
-            if (id == null && connectedPrices.length > 0) {
-              const { success, message } = await fetchWithCreds({
-                accessToken,
-                path: '/api/prices',
-                method: 'PUT',
-                body: {
-                  pricePairs: connectedPrices.map((p) => ({
-                    id: p.id,
-                    productId: updatedProduct.id,
-                  })),
-                },
-              });
-              // The product's `price` and `tags` already reference these ids,
-              // so a rejected link (another admin claimed one first) leaves it
-              // pointing at prices it does not own — the exact state the
-              // reassignment guard exists to prevent. Reported rather than
-              // thrown: the product itself was created, so the state below
-              // still has to be applied, and only a human can resolve which
-              // product should keep the contested price.
-              if (!success && snackbarErrorHandler) {
-                snackbarErrorHandler(message ?? 'connectPriceError');
-              }
-            }
-
             setSelectedProduct(updatedProduct);
             if (setProduct) {
               setProduct(updatedProduct);
@@ -680,11 +629,8 @@ export default function AddEditProductDialog({
               <Typography>{t('price')}</Typography>
               <PriceSelect
                 value={basePriceId}
-                onChange={async (selectedId) => {
-                  // Connect first: a reference to a price this product does not
-                  // own is exactly what the reassignment guard exists to stop,
-                  // so a refused link must leave the old base price standing.
-                  if (!(await ensurePriceConnected(selectedId))) return;
+                onChange={(selectedId) => {
+                  if (!ensurePriceConnected(selectedId)) return;
                   setBasePrice(selectedId ? `[${selectedId}]` : '');
                 }}
                 priceOptions={priceOptions}
@@ -715,9 +661,9 @@ export default function AddEditProductDialog({
               <input type="hidden" name="price" value={basePrice} />
             </Box>
 
-            {/* Connecting a price is a side effect of picking it above, so
-                there is no list to manage here — only the failures that
-                silently leave a picker unchanged need saying out loud. */}
+            {/* Prices are linked by saving the product, so there is no list
+                to manage here — only a picker that refused to open needs
+                saying out loud. */}
             {connectError && (
               <Typography variant="caption" color="error" className="w-full">
                 {connectError}
@@ -922,11 +868,8 @@ export default function AddEditProductDialog({
                   />
                   <PriceSelect
                     value={priceId}
-                    onChange={async (selectedId) => {
-                      // Same rule as the base price: the tag may only reference
-                      // a price this product owns, so the link is made first
-                      // and the tag left untouched if it is refused.
-                      if (!(await ensurePriceConnected(selectedId))) return;
+                    onChange={(selectedId) => {
+                      if (!ensurePriceConnected(selectedId)) return;
                       const newTags = [...tags];
                       newTags[index] = composeTag(spec, selectedId, colorId);
                       setTags(newTags);

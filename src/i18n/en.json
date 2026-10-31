@@ -475,7 +475,7 @@
   "noCategory": "No category",
   "connectedPrices": "Connected prices",
   "priceStillInUse": "This price is used by the base price or a variant. Clear that first.",
-  "connectPriceError": "Could not update the price connection.",
+  "priceTakenByAnotherProduct": "A price you picked is already connected to another product. Pick a different one.",
   "sortBy": "Sort by",
   "brandDeleteConfirm": "Are you sure you want to delete brand \"{name}\"? Products will be unlinked.",
   "createBrandError": "Failed to create brand",
