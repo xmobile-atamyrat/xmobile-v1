@@ -52,7 +52,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { isUUID, parseName } from '@/pages/lib/utils';
 import {
   fetchPriceRow,
-  computeProductPriceTags,
+  computeProductPrice,
   parseVariantTag,
   pickVariantColorForSpec,
 } from '@/pages/product/utils';
@@ -383,28 +383,50 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   useEffect(() => {
     if (initialProduct == null) return;
     (async () => {
-      const resolved = await Promise.all(
-        (initialProduct.tags ?? []).map(async (raw) => {
-          const { specText, priceId, colorId } = parseVariantTag(raw);
-          // One row per variant carries both its price and its stock state, so
-          // a single sold-out variant can be greyed out without the whole
-          // product being marked out of stock.
-          const price = priceId
-            ? await fetchPriceRow({ priceId, accessToken, fetchWithCreds })
-            : null;
-          return {
-            raw,
-            specText,
-            colorId,
-            priceTmt: displayPriceOrNull(price) ?? undefined,
-            // No resolvable price means nothing to charge, so the variant is
-            // unbuyable rather than free: this covers a tag whose price row was
-            // deleted and a tag that never carried a reference at all. The
-            // server reaches the same verdict in unavailableVariantTags.
-            isOutOfStock: price == null || price.outOfStockAt != null,
-          };
+      const tags = (initialProduct.tags ?? []).map((raw) => ({
+        raw,
+        ...parseVariantTag(raw),
+      }));
+      // Colours of one spec share a price row, so each row is fetched once
+      // rather than once per tag.
+      const priceIds = [
+        ...new Set(tags.map(({ priceId }) => priceId).filter(Boolean)),
+      ] as string[];
+      const [rows, pricedProduct] = await Promise.all([
+        Promise.all(
+          priceIds.map(
+            async (priceId) =>
+              [
+                priceId,
+                await fetchPriceRow({ priceId, accessToken, fetchWithCreds }),
+              ] as const,
+          ),
+        ).then((entries) => new Map(entries)),
+        computeProductPrice({
+          product: initialProduct,
+          accessToken,
+          fetchWithCreds,
         }),
-      );
+      ]);
+      const resolved = tags.map(({ raw, specText, priceId, colorId }) => {
+        // One row per variant carries both its price and its stock state, so
+        // a single sold-out variant can be greyed out without the whole
+        // product being marked out of stock.
+        const price = priceId ? rows.get(priceId) ?? null : null;
+        return {
+          raw,
+          specText,
+          colorId,
+          priceTmt: displayPriceOrNull(price) ?? undefined,
+          // No resolvable price means nothing to charge, so the variant is
+          // unbuyable rather than free: this covers a tag whose price row was
+          // deleted and a tag that never carried a reference at all. The
+          // server reaches the same verdict in unavailableVariantTags.
+          isOutOfStock: price == null || price.outOfStockAt != null,
+        };
+      });
+      // Set together so the base price never shows before the variant's.
+      setProduct(pricedProduct);
       setVariants(resolved);
       // Open on something the user can actually buy; fall back to the first
       // variant when every one of them is sold out.
@@ -651,21 +673,6 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       setSnackbarOpen(true);
       setSnackbarMessage({ message: 'serverError', severity: 'error' });
     }
-  }, [initialProduct]);
-
-  useEffect(() => {
-    // accessToken is intentionally left out as GET /api/prices and /api/prices/rate is public
-    if (initialProduct == null) return;
-    (async () => {
-      setProduct(
-        await computeProductPriceTags({
-          fetchWithCreds,
-          product: initialProduct,
-          accessToken,
-        }),
-      );
-    })();
-    // No need to include accessToken as logged out users don't have a token
   }, [initialProduct]);
 
   return product ? (
