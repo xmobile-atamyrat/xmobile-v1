@@ -28,7 +28,18 @@ describe('planStaleLinks', () => {
     expect(plan.stale).toEqual([{ priceId: 'stray', productId: 'A' }]);
   });
 
-  test('counts a bare-id base price as referenced', () => {
+  test('flags a base price that only repeats a removed variant price', () => {
+    const plan = planStaleLinks(
+      [product({ id: 'A', price: '[p512]', tags: ['256gb [p256]', '512gb'] })],
+      [
+        { id: 'p256', productId: 'A', outOfStockAt: null },
+        { id: 'p512', productId: 'A', outOfStockAt: null },
+      ],
+    );
+    expect(plan.stale).toEqual([{ priceId: 'p512', productId: 'A' }]);
+  });
+
+  test('counts a bare-id base price as owned when no tag carries a price', () => {
     const plan = planStaleLinks(
       [product({ id: 'A', price: 'bare' })],
       [{ id: 'bare', productId: 'A', outOfStockAt: null }],

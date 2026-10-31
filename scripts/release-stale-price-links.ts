@@ -1,11 +1,13 @@
 /**
- * Releases prices a product owns (`Prices.productId`) without referencing them
- * in its `price` or `tags`.
+ * Releases prices a product owns (`Prices.productId`) but no longer claims: a
+ * product claims the prices its variant tags carry, or its base price when no
+ * tag carries one — the rule src/lib/productPriceLinks.ts applies on save.
  *
- * Before ownership followed a product's references on save, picking a price in
- * the product form linked it on the spot, and removing the tag again — or
- * cancelling the dialog — never unlinked it. The wrongly picked price stayed
- * "taken" by that product, and no other product could select it.
+ * Before ownership followed that rule, picking a price in the product form
+ * linked it on the spot, and removing the tag again — or cancelling the
+ * dialog — never unlinked it. A base price that repeated a variant price kept
+ * it linked too. Either way the price stayed "taken" by that product, and no
+ * other product could select it.
  *
  * Each release is guarded on the price still having the owner this run saw, so
  * a concurrent admin edit is never overwritten. The out-of-stock state of every
@@ -16,8 +18,10 @@
  * `--include-deleted` is passed. They block other products the same way, but
  * releasing them is a separate decision from cleaning up a stray pick.
  *
- * The reverse drift — a price a product references but nobody owns — is only
- * counted here; `yarn backfill:product-prices-*` is what links those.
+ * The reverse drift — a price a product claims but nobody owns — is only
+ * counted here; the next save of that product links it. Not
+ * `yarn backfill:product-prices-*`: that one predates the rule and would link
+ * base prices again.
  *
  *   yarn cleanup:stale-price-links-dev                     # preview, writes nothing
  *   yarn cleanup:stale-price-links-dev --apply             # commit
@@ -46,13 +50,13 @@ export interface StaleLink {
 }
 
 export interface StaleLinkPlan {
-  /** Owned by an active product that does not reference it. */
+  /** Owned by an active product that does not claim it. */
   stale: StaleLink[];
   /** Owned by a soft-deleted product. */
   deletedOwner: StaleLink[];
   /** Owner id with no product row at all; the FK makes this unexpected. */
   missingOwner: StaleLink[];
-  /** Referenced by an active product, but owned by nobody. */
+  /** Claimed by an active product, but owned by nobody. */
   unlinkedReferenced: number;
 }
 
@@ -61,20 +65,21 @@ export interface StaleLinkPlan {
 // runs under plain ts-node, without tsconfig-paths to resolve `@/`.
 const squareBracketRegex = /\[([^\]]+)\]/;
 
-// The base price is "[priceId]" from the product form, or the bare id on older
-// rows. Dropping the bare form would release prices those rows really use.
-export function referencedPriceIds(
+// Mirrors ownedPriceIds in src/lib/productPriceLinks.ts. The base price is
+// "[priceId]" from the product form, or the bare id on older rows; dropping
+// the bare form would release prices those rows really use.
+export function ownedPriceIds(
   price: string | null,
   tags: string[],
 ): Set<string> {
-  const ids = new Set<string>();
-  const baseId = price?.match(squareBracketRegex)?.[1] ?? (price || undefined);
-  if (baseId) ids.add(baseId);
+  const tagIds = new Set<string>();
   tags.forEach((tag) => {
     const priceId = tag.match(squareBracketRegex)?.[1];
-    if (priceId) ids.add(priceId);
+    if (priceId) tagIds.add(priceId);
   });
-  return ids;
+  if (tagIds.size > 0) return tagIds;
+  const baseId = price?.match(squareBracketRegex)?.[1] ?? (price || undefined);
+  return new Set(baseId ? [baseId] : []);
 }
 
 export function planStaleLinks(
@@ -83,7 +88,7 @@ export function planStaleLinks(
 ): StaleLinkPlan {
   const productsById = new Map(products.map((p) => [p.id, p]));
   const refsByProduct = new Map(
-    products.map((p) => [p.id, referencedPriceIds(p.price, p.tags)]),
+    products.map((p) => [p.id, ownedPriceIds(p.price, p.tags)]),
   );
   const referencedByActive = new Set(
     products
@@ -204,7 +209,7 @@ async function main() {
       `      ${plan.missingOwner.length} owner ids with no product row`,
     );
     console.log(
-      `      ${plan.unlinkedReferenced} referenced but unowned (yarn backfill:product-prices-* links these)`,
+      `      ${plan.unlinkedReferenced} claimed but unowned (linked on the product's next save)`,
     );
 
     if (plan.stale.length > 0) {
