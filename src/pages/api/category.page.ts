@@ -1,4 +1,5 @@
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import { writeCategoryWebp } from '@/lib/categoryImage';
 import {
   recordCategoryCreated,
   recordCategoryDeleted,
@@ -50,6 +51,16 @@ function parsePopularField(fields: {
   if (['true', '1', 'on', 'yes'].includes(v)) return true;
   if (['false', '0', 'off', 'no', ''].includes(v)) return false;
   return undefined;
+}
+
+async function storeCategoryImage(uploadPath: string): Promise<string> {
+  try {
+    return await writeCategoryWebp(uploadPath);
+  } catch (error) {
+    // Best-effort: keep the upload as-is rather than failing the save.
+    console.error(filepath, 'Failed to compress category image:', error);
+    return uploadPath;
+  }
 }
 
 export async function getCategory(
@@ -266,6 +277,7 @@ async function handlePostCategory(req: NextApiRequest) {
       }
 
       const sortOrder = await nextSiblingSortOrder(predecessorKey);
+      const uploadPath = files.imageUrl?.[0].path;
 
       const category = await dbClient.category.create({
         data: {
@@ -273,7 +285,10 @@ async function handlePostCategory(req: NextApiRequest) {
           slug: categorySlug,
           predecessorId: predecessorKey,
           sortOrder,
-          imgUrl: files.imageUrl?.[0].path ?? fields.imageUrl?.[0],
+          imgUrl:
+            uploadPath != null
+              ? await storeCategoryImage(uploadPath)
+              : fields.imageUrl?.[0],
           popular: popular ?? false,
         },
       });
@@ -371,7 +386,7 @@ async function handleEditCategory(req: NextApiRequest) {
         if (existingCat.imgUrl != null && fs.existsSync(existingCat.imgUrl)) {
           fs.unlinkSync(existingCat.imgUrl);
         }
-        data.imgUrl = files.imageUrl?.[0].path;
+        data.imgUrl = await storeCategoryImage(files.imageUrl[0].path);
       } else if (fields.imageUrl?.length > 0) data.imgUrl = fields.imageUrl[0];
 
       const category = await dbClient.category.update({
