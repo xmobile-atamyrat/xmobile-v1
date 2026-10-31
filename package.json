@@ -34,6 +34,8 @@
     "backfill:price-categories-prod": "dotenv -e .env -- ts-node --project tsconfig.scripts.json scripts/backfill-price-categories.ts",
     "backfill:product-prices-dev": "dotenv -e .env.local -- ts-node --project tsconfig.scripts.json scripts/backfill-product-prices.ts",
     "backfill:product-prices-prod": "dotenv -e .env -- ts-node --project tsconfig.scripts.json scripts/backfill-product-prices.ts",
+    "cleanup:stale-price-links-dev": "dotenv -e .env.local -- ts-node --project tsconfig.scripts.json scripts/release-stale-price-links.ts",
+    "cleanup:stale-price-links-prod": "dotenv -e .env -- ts-node --project tsconfig.scripts.json scripts/release-stale-price-links.ts",
     "prepare": "husky",
     "tunnel": "./tunnel-client.sh",
     "docker:media-up": "docker compose up -d nginx-media",
