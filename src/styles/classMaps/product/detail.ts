@@ -115,9 +115,36 @@ export const detailPageClasses = {
     rowValLong: 'flex flex-col flex-1 min-w-0',
     rowValLongLine: 'text-[14px] leading-[1.65] text-ink',
   },
-  dialogImg: {
-    web: 'w-[90vw] h-auto',
-    mobile: 'w-auto h-[90vw] object-contain',
+  // Fullscreen viewer (ProductImageLightbox). Light stage like the gallery
+  // frame, so cut-out product shots on transparent backgrounds still read.
+  lightbox: {
+    paper: 'bg-white flex flex-col overflow-hidden',
+    header:
+      'flex flex-row items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-2 flex-shrink-0',
+    counter: 'text-[14px] font-semibold text-navy tabular-nums',
+    close:
+      'w-10 h-10 rounded-full bg-fill text-navy flex items-center justify-center active:scale-95 transition-transform',
+    closeIcon: 'w-5 h-5',
+    // touch-none: the stage owns every drag, so the WebView doesn't scroll or
+    // pull-to-refresh underneath a swipe
+    stage: 'relative flex-1 min-h-0 overflow-hidden touch-none',
+    track: 'flex flex-row h-full will-change-transform',
+    slide: {
+      web: 'relative w-full h-full flex-shrink-0 px-24 py-6',
+      mobile: 'relative w-full h-full flex-shrink-0 p-4',
+    },
+    slideInner: 'relative w-full h-full',
+    img: 'absolute inset-0 w-full h-full object-contain',
+    arrow:
+      'absolute top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white text-navy shadow-[0_4px_16px_rgba(20,16,60,0.12)] flex items-center justify-center hover:bg-fill transition-colors',
+    arrowPrev: 'left-6',
+    arrowNext: 'right-6',
+    arrowIcon: 'w-6 h-6',
+    footer: {
+      web: 'flex flex-row justify-center gap-3 px-4 pt-2 pb-6 overflow-x-auto flex-shrink-0',
+      mobile:
+        'flex flex-row justify-center items-center gap-[6px] pt-2 pb-[calc(env(safe-area-inset-bottom)+20px)] flex-shrink-0',
+    },
   },
   // Floating back button over the mobile gallery (sole back affordance on mobile —
   // the mobile Appbar returns null on non-home pages). Web uses the app header instead.
@@ -130,6 +157,11 @@ export const detailPageClasses = {
     web: 'hidden',
     mobile: 'w-5 h-5 text-navy',
   },
+  // Product photos never receive pointer events: a long press / right click then
+  // lands on the wrapper, so iOS, Android and desktop browsers offer no
+  // "Save image" or drag-out. Clicks are handled on the wrapper instead.
+  // touch-callout covers iOS WebViews that still resolve the img underneath.
+  protectedImg: 'pointer-events-none select-none [-webkit-touch-callout:none]',
   gallery: {
     // Web (spec 1506-1513): 72px thumbnail rail on the left, rounded-20 fill
     // frame on the right. The rail is absolutely positioned so the square main
@@ -146,7 +178,7 @@ export const detailPageClasses = {
     // overflowed into the info column.
     wrapperWithRail: 'pl-[86px]',
     mainImage: {
-      web: 'relative w-full aspect-square rounded-[20px] bg-fill overflow-hidden flex justify-center items-center',
+      web: 'relative w-full aspect-square rounded-[20px] bg-fill overflow-hidden flex justify-center items-center cursor-zoom-in',
       mobile:
         'relative w-full aspect-square bg-fill flex justify-center items-center overflow-hidden',
     },
@@ -172,6 +204,7 @@ export const detailPageClasses = {
         web: 'w-[72px] h-[72px]',
         mobile: 'w-[80px] h-[80px]',
       },
+      img: 'w-full h-full object-contain',
     },
   },
 };
