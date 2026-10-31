@@ -519,7 +519,10 @@ export async function addEditProduct({
 
   if (Object.keys(productDescriptions).length > 0)
     newFormData.append('description', JSON.stringify(productDescriptions));
-  if (price) newFormData.append('price', price);
+  // Sent even when empty, like `tags` below: the server takes an omitted field
+  // as "leave it alone", so a cleared base price would otherwise never save,
+  // and these two fields are what decides which prices the product owns.
+  newFormData.append('price', typeof price === 'string' ? price : '');
 
   if (productImageUrls.length > 0) {
     newFormData.append('imageUrls', JSON.stringify(productImageUrls));
@@ -539,9 +542,7 @@ export async function addEditProduct({
     newFormData.append('imageOrder', JSON.stringify(imageOrder));
   }
 
-  if (tags.length > 0) {
-    newFormData.append('tags', JSON.stringify(tags));
-  }
+  newFormData.append('tags', JSON.stringify(tags));
 
   if (videoUrls.length > 0) {
     newFormData.append('videoUrls', JSON.stringify(videoUrls));
