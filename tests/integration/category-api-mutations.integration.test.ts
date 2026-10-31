@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
@@ -30,11 +31,44 @@ function multipartBody(
   return chunks.join('\r\n');
 }
 
+function multipartBodyWithFile(
+  fields: Record<string, string>,
+  file: { name: string; content: Buffer },
+  boundary: string,
+): Buffer {
+  const parts: Buffer[] = Object.entries(fields).map(([name, value]) =>
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+    ),
+  );
+  parts.push(
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${file.name}"; filename="blob"\r\nContent-Type: image/png\r\n\r\n`,
+    ),
+    file.content,
+    Buffer.from(`\r\n--${boundary}--`),
+  );
+  return Buffer.concat(parts);
+}
+
+function categoryPng(): Promise<Buffer> {
+  return sharp({
+    create: {
+      width: 1024,
+      height: 682,
+      channels: 4,
+      background: { r: 32, g: 22, b: 110, alpha: 0.6 },
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
 async function invokeCategoryApi(options: {
   method: 'POST' | 'PUT' | 'DELETE';
   query?: Record<string, string>;
   headers?: Record<string, string>;
-  body?: string;
+  body?: string | Buffer;
 }): Promise<{ status: number; json: Record<string, unknown> }> {
   const categoryHandler = (await import('@/pages/api/category.page')).default;
   const { req: mockReq, res } = createMocks({
@@ -46,7 +80,9 @@ async function invokeCategoryApi(options: {
 
   let req: NextApiRequest;
   if (options.body != null) {
-    const buf = Buffer.from(options.body, 'utf8');
+    const buf = Buffer.isBuffer(options.body)
+      ? options.body
+      : Buffer.from(options.body, 'utf8');
     const bodyStream = Readable.from(buf);
     req = Object.assign(bodyStream, {
       url: '/api/category',
@@ -249,6 +285,76 @@ describe('/api/category mutations (integration)', () => {
     const row = await prisma.category.findUnique({ where: { id: data.id } });
     expect(row?.name).toContain('New root');
     await prisma.category.delete({ where: { id: data.id } });
+  });
+
+  it('ADMIN POST stores an uploaded image as a 720px WebP', async () => {
+    const boundary = 'intboundimgpost';
+    const body = multipartBodyWithFile(
+      { name: '{"en":"With image"}' },
+      { name: 'imageUrl', content: await categoryPng() },
+      boundary,
+    );
+    const { status, json } = await invokeCategoryApi({
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+    expect(status).toBe(200);
+    const data = json.data as { id: string; imgUrl: string };
+    try {
+      expect(data.imgUrl.startsWith(uploadDir)).toBe(true);
+      expect(data.imgUrl.endsWith('.webp')).toBe(true);
+      expect(fs.existsSync(data.imgUrl.replace(/\.webp$/, ''))).toBe(false);
+      const meta = await sharp(fs.readFileSync(data.imgUrl)).metadata();
+      expect(meta).toMatchObject({
+        format: 'webp',
+        width: 720,
+        hasAlpha: true,
+      });
+    } finally {
+      await prisma.category.delete({ where: { id: data.id } });
+    }
+  });
+
+  it('ADMIN PUT swaps the image for a 720px WebP and removes the old one', async () => {
+    const oldImage = path.join(uploadDir, 'old-image');
+    fs.writeFileSync(oldImage, await categoryPng());
+    const cat = await prisma.category.create({
+      data: {
+        name: '{"en":"Image swap"}',
+        slug: 'image-swap',
+        sortOrder: 0,
+        imgUrl: oldImage,
+      },
+    });
+    try {
+      const boundary = 'intboundimgput';
+      const body = multipartBodyWithFile(
+        { name: '{"en":"Image swap"}' },
+        { name: 'imageUrl', content: await categoryPng() },
+        boundary,
+      );
+      const { status } = await invokeCategoryApi({
+        method: 'PUT',
+        query: { categoryId: cat.id },
+        headers: {
+          authorization: `Bearer ${adminToken}`,
+          'content-type': `multipart/form-data; boundary=${boundary}`,
+        },
+        body,
+      });
+      expect(status).toBe(200);
+      const row = await prisma.category.findUnique({ where: { id: cat.id } });
+      expect(fs.existsSync(oldImage)).toBe(false);
+      expect(row?.imgUrl?.endsWith('.webp')).toBe(true);
+      const meta = await sharp(fs.readFileSync(row!.imgUrl!)).metadata();
+      expect(meta).toMatchObject({ format: 'webp', width: 720 });
+    } finally {
+      await prisma.category.delete({ where: { id: cat.id } });
+    }
   });
 
   // ── Slug validation tests ──────────────────────────────────────────────────
