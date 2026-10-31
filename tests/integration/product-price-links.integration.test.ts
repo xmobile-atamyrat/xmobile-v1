@@ -144,6 +144,51 @@ describe('/api/product price ownership (integration)', () => {
     expect(await ownerOf(wrong.id)).toBe(productB);
   });
 
+  it('frees a variant price that is still the base price once its tag drops it', async () => {
+    // The reported case: the base price repeats the 512 GB variant price.
+    const p256 = await newPrice('256 GB');
+    const p512 = await newPrice('512 GB');
+    const created = await createProduct(`[${p512.id}]`, [
+      `256GB [${p256.id}]`,
+      `512GB [${p512.id}]`,
+    ]);
+    expect(created.status).toBe(200);
+    const productA = created.json.data.id as string;
+    expect(await ownerOf(p512.id)).toBe(productA);
+
+    const saved = await saveProduct(productA, `[${p512.id}]`, [
+      `256GB [${p256.id}]`,
+      '512GB',
+    ]);
+    expect(saved.status).toBe(200);
+    expect(saved.json.data.price).toBe(`[${p512.id}]`);
+    expect(await ownerOf(p512.id)).toBeNull();
+    expect(await ownerOf(p256.id)).toBe(productA);
+
+    const productB = (await createProduct('', [])).json.data.id as string;
+    const claimed = await saveProduct(productB, '', [`512GB [${p512.id}]`]);
+    expect(claimed.status).toBe(200);
+    expect(await ownerOf(p512.id)).toBe(productB);
+
+    // A keeps saving fine with its base price now owned by B.
+    const resaved = await saveProduct(productA, `[${p512.id}]`, [
+      `256GB [${p256.id}]`,
+    ]);
+    expect(resaved.status).toBe(200);
+  });
+
+  it('a base-only product hands its base price over to its first tag price', async () => {
+    const base = await newPrice('base only');
+    const variant = await newPrice('first variant');
+    const productId = (await createProduct(`[${base.id}]`, [])).json.data
+      .id as string;
+    expect(await ownerOf(base.id)).toBe(productId);
+
+    await saveProduct(productId, `[${base.id}]`, [`64GB [${variant.id}]`]);
+    expect(await ownerOf(base.id)).toBeNull();
+    expect(await ownerOf(variant.id)).toBe(productId);
+  });
+
   it('swapping or clearing the base price releases the old one', async () => {
     const first = await newPrice('first base');
     const second = await newPrice('second base');

@@ -9,17 +9,17 @@ import type { Prisma } from '@prisma/client';
  * is what the product form's picker greys out as "taken" and what the
  * out-of-stock rule derives from.
  *
- * The references are the source of truth, and ownership follows them whenever
- * a product's `price` or `tags` are saved:
+ * Ownership follows the variant tags, recomputed whenever a product's `price`
+ * or `tags` are saved (see `ownedPriceIds` for which references count):
  *
- * - a price the product owns but no longer references is released, so a wrong
- *   pick that was removed again stops blocking every other product;
- * - a price it references and nobody owns is claimed;
- * - a price it newly references that another product owns is a conflict, and
- *   the whole save is refused.
+ * - a price the product owns but no longer claims is released, so a wrong pick
+ *   that was removed again stops blocking every other product;
+ * - a price it claims and nobody owns is claimed;
+ * - a price it newly claims that another product owns is a conflict, and the
+ *   whole save is refused.
  *
- * A price that was already referenced before the save but is owned elsewhere
- * is left alone rather than refused. Products that shared a price before
+ * A price that was already claimed before the save but is owned elsewhere is
+ * left alone rather than refused. Products that shared a price before
  * ownership existed still carry such references, and failing every later save
  * of theirs — a rename, a new photo — over a choice made long ago would make
  * them uneditable.
@@ -36,25 +36,31 @@ export class PriceLinkConflictError extends Error {
 }
 
 /**
- * Every price id a product's `price` and `tags` point at.
+ * The price ids a product owns: the ones its variant tags carry, or its base
+ * price when no tag carries one.
+ *
+ * The base price usually repeats one of the variant prices as the "from" figure
+ * on product cards, so it never counts alongside them. Otherwise removing a
+ * price from a tag would keep it owned through the base price, still blocking
+ * the product it was meant for.
  *
  * The product form writes the base price as "[priceId]", but older rows hold
  * the bare id, which `getPrice` and the cachedPrice sync both still accept. A
  * legacy literal such as "1200" comes through as a candidate too; it matches
  * no price row, so it never claims or protects anything.
  */
-export function referencedPriceIds(
+export function ownedPriceIds(
   price: string | null | undefined,
   tags: string[],
 ): string[] {
-  const ids = new Set<string>();
-  const baseId = price?.match(squareBracketRegex)?.[1] ?? (price || undefined);
-  if (baseId) ids.add(baseId);
+  const tagIds = new Set<string>();
   tags.forEach((tag) => {
     const priceId = tag.match(squareBracketRegex)?.[1];
-    if (priceId) ids.add(priceId);
+    if (priceId) tagIds.add(priceId);
   });
-  return [...ids];
+  if (tagIds.size > 0) return [...tagIds];
+  const baseId = price?.match(squareBracketRegex)?.[1] ?? (price || undefined);
+  return baseId ? [baseId] : [];
 }
 
 export interface PriceLinkPlan {

@@ -1,26 +1,38 @@
 import { describe, expect, test } from 'vitest';
 
-import { planPriceLinks, referencedPriceIds } from '@/lib/productPriceLinks';
+import { ownedPriceIds, planPriceLinks } from '@/lib/productPriceLinks';
 
-describe('referencedPriceIds', () => {
-  test('collects the base price and every variant tag, deduped', () => {
+describe('ownedPriceIds', () => {
+  test('takes every variant tag price, deduped, and ignores the base price', () => {
     expect(
-      referencedPriceIds('[base]', [
+      ownedPriceIds('[base]', [
         '128gb [p1]{red}',
         '256gb [p2]',
         '512gb [p1]{blue}',
         'no price here{red}',
       ]).sort(),
-    ).toEqual(['base', 'p1', 'p2']);
+    ).toEqual(['p1', 'p2']);
+  });
+
+  test('a base price repeating a removed variant price is not owned', () => {
+    // The 512 GB price came off its tag but is still the base price.
+    expect(ownedPriceIds('[p512]', ['256gb [p256]', '512gb'])).toEqual([
+      'p256',
+    ]);
+  });
+
+  test('falls back to the base price when no tag carries one', () => {
+    expect(ownedPriceIds('[base]', [])).toEqual(['base']);
+    expect(ownedPriceIds('[base]', ['128gb{red}', ''])).toEqual(['base']);
   });
 
   test('accepts a bare-id base price from older rows', () => {
-    expect(referencedPriceIds('bare-id', [])).toEqual(['bare-id']);
+    expect(ownedPriceIds('bare-id', [])).toEqual(['bare-id']);
   });
 
   test('returns nothing for an empty or missing base price', () => {
-    expect(referencedPriceIds('', [])).toEqual([]);
-    expect(referencedPriceIds(null, [])).toEqual([]);
+    expect(ownedPriceIds('', [])).toEqual([]);
+    expect(ownedPriceIds(null, [])).toEqual([]);
   });
 });
 

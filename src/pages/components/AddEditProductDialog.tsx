@@ -304,12 +304,12 @@ export default function AddEditProductDialog({
   }, [categoryPrices, connectedPrices]);
 
   // Picking a price only stages it. Ownership is written by the product save,
-  // which links every price the saved `price`/`tags` reference and releases
-  // the ones they no longer do, so a wrong pick that is removed again, or a
-  // dialog that is cancelled, leaves no link behind. Staging keeps the pick in
-  // `priceOptions` as one of this product's own, even when it sits outside the
-  // category list. Returns false when the pick cannot be resolved, in which
-  // case the caller must leave the reference alone.
+  // which links the prices the saved tags carry (or the base price, when no
+  // tag carries one) and releases the rest, so a wrong pick that is removed
+  // again, or a dialog that is cancelled, leaves no link behind. Staging keeps
+  // the pick in `priceOptions` as one of this product's own, even when it sits
+  // outside the category list. Returns false when the pick cannot be resolved,
+  // in which case the caller must leave the reference alone.
   const ensurePriceConnected = (priceId: string): boolean => {
     setConnectError('');
     if (priceId === '') return true;

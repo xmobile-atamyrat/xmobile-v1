@@ -14,7 +14,7 @@ import {
   PRICE_TAKEN_MESSAGE,
   PriceLinkConflictError,
   reconcileProductPriceLinks,
-  referencedPriceIds,
+  ownedPriceIds,
 } from '@/lib/productPriceLinks';
 import {
   recordProductCreated,
@@ -305,7 +305,7 @@ async function createProduct(
         : [];
       const variantColumns = deriveVariantColumns(productTags);
 
-      const linkedPriceIds = referencedPriceIds(basePrice, productTags);
+      const linkedPriceIds = ownedPriceIds(basePrice, productTags);
       if (await hasPriceLinkConflict(dbClient, null, [], linkedPriceIds)) {
         resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
         return;
@@ -765,11 +765,11 @@ async function handleEditProduct(
       // follows. The products overview posts category/brand/stock alone, and
       // must not release prices on a product whose references it never saw.
       const priceLinksTouched = data.price !== undefined || data.tags != null;
-      const previousPriceIds = referencedPriceIds(
+      const previousPriceIds = ownedPriceIds(
         currProduct.price,
         currProduct.tags,
       );
-      const nextPriceIds = referencedPriceIds(
+      const nextPriceIds = ownedPriceIds(
         data.price !== undefined ? data.price : currProduct.price,
         data.tags ?? currProduct.tags,
       );
