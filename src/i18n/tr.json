@@ -474,7 +474,7 @@
   "noCategory": "Kategori yok",
   "connectedPrices": "Bağlı fiyatlar",
   "priceStillInUse": "Bu fiyat temel fiyatta veya bir varyantta kullanılıyor. Önce onu temizleyin.",
-  "connectPriceError": "Fiyat bağlantısı güncellenemedi.",
+  "priceTakenByAnotherProduct": "Seçtiğiniz fiyatlardan biri zaten başka bir ürüne bağlı. Farklı bir fiyat seçin.",
   "sortBy": "Sırala",
   "brandDeleteConfirm": "\"{name}\" markasını silmek istediğinizden emin misiniz? Ürünlerin bağlantısı kaldırılacak.",
   "createBrandError": "Marka oluşturulamadı",

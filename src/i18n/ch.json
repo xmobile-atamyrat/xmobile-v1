@@ -477,7 +477,7 @@
   "noCategory": "Kategoriýa ýok",
   "connectedPrices": "Baglanan praýslar",
   "priceStillInUse": "Bu praýs esasy praýsda ýa-da wariantda ulanylotran. Başda şondan aýryň.",
-  "connectPriceError": "Praýs baglanyşygyny tazalap bolmady.",
+  "priceTakenByAnotherProduct": "Saýlan praýslaryňyzyň biri eýýäm başga haryda baglanan. Başga praýs saýlaň.",
   "sortBy": "Sortirowka",
   "brandDeleteConfirm": "\"{name}\" brendini öçürmäk islotranyňyza uwerenmi? Towarlar bilän baglanyşyk aýrylady.",
   "createBrandError": "Brend dörädip bolmady",
