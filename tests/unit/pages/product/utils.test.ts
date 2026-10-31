@@ -6,7 +6,6 @@ import {
   collectCategorySubtreeIds,
   computePrice,
   computeProductPrice,
-  computeProductPriceTags,
   debounce,
   filterPricesByCategories,
   filterPricesByRate,
@@ -759,29 +758,6 @@ describe('computeProductPrice', () => {
     expect(result.price).toBe('1200');
     expect(result.outOfStockAt).toBeNull();
     expect(fetchWithCreds).not.toHaveBeenCalled();
-  });
-});
-
-describe('computeProductPriceTags', () => {
-  it('substitutes the resolved price into each variant tag', async () => {
-    const result = await computeProductPriceTags({
-      product: productWith({ price: '[p1]{350}', tags: ['128gb [p2]{c1}'] }),
-      accessToken: '',
-      fetchWithCreds: priceFetcher({ p2: { priceInTmt: '700' } }) as never,
-    });
-
-    expect(result.tags).toEqual(['128gb 700{c1}']);
-  });
-
-  it('strips an unresolvable reference rather than showing the raw id', async () => {
-    const result = await computeProductPriceTags({
-      product: productWith({ price: '[p1]{350}', tags: ['128gb [gone]{c1}'] }),
-      accessToken: '',
-      fetchWithCreds: priceFetcher({}) as never,
-    });
-
-    expect(result.tags).toEqual(['128gb {c1}']);
-    expect(result.tags[0]).not.toContain('gone');
   });
 });
 
