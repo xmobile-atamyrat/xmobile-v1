@@ -477,7 +477,7 @@
   "noCategory": "Kategoriýa ýok",
   "connectedPrices": "Baglanyşdyrylan bahalar",
   "priceStillInUse": "Bu baha esasy bahada ýa-da wariantda ulanylýar. Ilki ony aýryň.",
-  "connectPriceError": "Baha baglanyşygyny täzeläp bolmady.",
+  "priceTakenByAnotherProduct": "Saýlan bahalaryňyzyň biri eýýäm başga haryda baglanan. Başga baha saýlaň.",
   "sortBy": "Tertiple",
   "brandDeleteConfirm": "\"{name}\" brendini pozmak isleýändigiňize ynanýarsyňyzmy? Harytlar bilen baglanyşyk aýrylar.",
   "createBrandError": "Brend döredip bolmady",

@@ -5,8 +5,17 @@ import {
   initialOutOfStockFields,
   outOfStockCascade,
   setProductOutOfStock,
+  syncProductOutOfStockFromPrices,
 } from '@/lib/outOfStock';
+import { recordPricesUpdated } from '@/lib/priceActivity';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import {
+  hasPriceLinkConflict,
+  PRICE_TAKEN_MESSAGE,
+  PriceLinkConflictError,
+  reconcileProductPriceLinks,
+  ownedPriceIds,
+} from '@/lib/productPriceLinks';
 import {
   recordProductCreated,
   recordProductDeleted,
@@ -78,6 +87,10 @@ function toArray(value?: string | string[]): string[] | undefined {
   return Array.isArray(value) ? value : [value];
 }
 
+type PriceLinkChange = Awaited<
+  ReturnType<typeof reconcileProductPriceLinks>
+>[number];
+
 interface CreateProductReturnType {
   success: boolean;
   message?: string;
@@ -91,6 +104,8 @@ interface CreateProductReturnType {
   previousCategoryId?: string | null;
   /** Edit only. The row as it was before the edit, for the activity log. */
   previous?: Product;
+  /** Prices whose owner the save moved, for the activity log. */
+  priceLinkChanges?: PriceLinkChange[];
 }
 
 // changes url from images/products/img -> images/compressed/products/img
@@ -281,36 +296,84 @@ async function createProduct(
         return;
       }
 
-      const basePriceRow = await getPrice(fields.price?.[0]);
+      // The form always posts `price`, empty when no base price was picked.
+      const basePrice = fields.price?.[0] || null;
+      const basePriceRow = await getPrice(basePrice);
       const cachedPrice = cachedPriceFrom(basePriceRow);
       const productTags: string[] = fields.tags
         ? JSON.parse(fields.tags[0])
         : [];
       const variantColumns = deriveVariantColumns(productTags);
-      const product = await dbClient.product.create({
-        data: {
-          name: fields.name[0],
-          slug: productSlug,
-          categoryId: fields.categoryId[0],
-          brandId: fields.brandId?.[0] || null,
-          description: fields.description?.[0],
-          tags: productTags,
-          colors: { connect: variantColumns.colors.map((id) => ({ id })) },
-          videoUrls: fields.videoUrls ? JSON.parse(fields.videoUrls[0]) : [],
-          imgUrls: orderedImgUrls([], fields, files),
-          price: fields.price?.[0],
-          cachedPrice,
-          // A product can be created already sold out. The timestamp travels
-          // with the flag so the retention job, which ignores rows without one,
-          // can see it from day one.
-          ...initialOutOfStockFields(fields.isOutOfStock?.[0] === 'true'),
-        },
-      });
+
+      const linkedPriceIds = ownedPriceIds(basePrice, productTags);
+      if (await hasPriceLinkConflict(dbClient, null, [], linkedPriceIds)) {
+        resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
+        return;
+      }
+
+      let product: Product;
+      let priceLinkChanges: PriceLinkChange[];
+      try {
+        [product, priceLinkChanges] = await dbClient.$transaction(
+          async (tx) => {
+            const created = await tx.product.create({
+              data: {
+                name: fields.name[0],
+                slug: productSlug,
+                categoryId: fields.categoryId[0],
+                brandId: fields.brandId?.[0] || null,
+                description: fields.description?.[0],
+                tags: productTags,
+                colors: {
+                  connect: variantColumns.colors.map((id) => ({ id })),
+                },
+                videoUrls: fields.videoUrls
+                  ? JSON.parse(fields.videoUrls[0])
+                  : [],
+                imgUrls: orderedImgUrls([], fields, files),
+                price: basePrice,
+                cachedPrice,
+                // A product can be created already sold out. The timestamp
+                // travels with the flag so the retention job, which ignores
+                // rows without one, can see it from day one.
+                ...initialOutOfStockFields(fields.isOutOfStock?.[0] === 'true'),
+              },
+            });
+            return [
+              created,
+              await reconcileProductPriceLinks(
+                tx,
+                created.id,
+                [],
+                linkedPriceIds,
+              ),
+            ];
+          },
+        );
+      } catch (error) {
+        if (!(error instanceof PriceLinkConflictError)) throw error;
+        resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
+        return;
+      }
+
+      // The claimed prices start out with their own stock state. A product
+      // created sold out pushes its state down onto them; otherwise its state
+      // is derived from them, as for any other change of ownership.
+      if (priceLinkChanges.length > 0) {
+        if (product.outOfStockAt != null) {
+          await setProductOutOfStock(product.id, true);
+        } else {
+          await syncProductOutOfStockFromPrices(product.id);
+        }
+        product = await dbClient.product.findUniqueOrThrow({
+          where: { id: product.id },
+        });
+      }
 
       if (product.brandId) {
         await syncBrandProductCount(product.brandId);
       }
-      resolve({ success: true, data: product, status: 200 });
+      resolve({ success: true, data: product, status: 200, priceLinkChanges });
     });
   });
   const res = await promise;
@@ -648,8 +711,9 @@ async function handleEditProduct(
         data.description = fields.description[0];
       }
       if (fields.price?.length > 0) {
-        data.price = fields.price[0];
-        const basePriceRow = await getPrice(fields.price[0]);
+        // Empty clears the base price; the form always posts the field.
+        data.price = fields.price[0] || null;
+        const basePriceRow = await getPrice(data.price);
         data.cachedPrice = cachedPriceFrom(basePriceRow);
       }
       if (fields.brandId?.length > 0) {
@@ -697,6 +761,33 @@ async function handleEditProduct(
         currProduct.outOfStockAt != null,
       );
 
+      // Ownership is only reconciled when the save carries the references it
+      // follows. The products overview posts category/brand/stock alone, and
+      // must not release prices on a product whose references it never saw.
+      const priceLinksTouched = data.price !== undefined || data.tags != null;
+      const previousPriceIds = ownedPriceIds(
+        currProduct.price,
+        currProduct.tags,
+      );
+      const nextPriceIds = ownedPriceIds(
+        data.price !== undefined ? data.price : currProduct.price,
+        data.tags ?? currProduct.tags,
+      );
+      // Checked before the image files below are deleted, which no rollback
+      // can bring back.
+      if (
+        priceLinksTouched &&
+        (await hasPriceLinkConflict(
+          dbClient,
+          currProduct.id,
+          previousPriceIds,
+          nextPriceIds,
+        ))
+      ) {
+        resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
+        return;
+      }
+
       const deleteImageUrls = fields.deleteImageUrls
         ? JSON.parse(fields.deleteImageUrls[0])
         : [];
@@ -731,15 +822,45 @@ async function handleEditProduct(
         }
       }
 
-      let product = await dbClient.product.update({
-        where: {
-          id: productId as string,
-        },
-        data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
-      });
+      let product: Product;
+      let priceLinkChanges: PriceLinkChange[];
+      try {
+        [product, priceLinkChanges] = await dbClient.$transaction(
+          async (tx) => {
+            const updated = await tx.product.update({
+              where: {
+                id: productId as string,
+              },
+              data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
+            });
+            return [
+              updated,
+              priceLinksTouched
+                ? await reconcileProductPriceLinks(
+                    tx,
+                    updated.id,
+                    previousPriceIds,
+                    nextPriceIds,
+                  )
+                : [],
+            ];
+          },
+        );
+      } catch (error) {
+        if (!(error instanceof PriceLinkConflictError)) throw error;
+        resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
+        return;
+      }
 
+      // Runs after the reconcile, so a cascade reaches exactly the prices the
+      // product owns once this save lands. Without one, a change of ownership
+      // re-derives the product the same way PUT /api/prices does.
       if (outOfStockUpdate != null) {
         await setProductOutOfStock(product.id, outOfStockUpdate);
+      } else if (priceLinkChanges.length > 0) {
+        await syncProductOutOfStockFromPrices(product.id);
+      }
+      if (outOfStockUpdate != null || priceLinkChanges.length > 0) {
         // Re-read so the response carries the flag and timestamp the cascade
         // settled on rather than the pre-cascade row.
         product = await dbClient.product.findUniqueOrThrow({
@@ -760,6 +881,7 @@ async function handleEditProduct(
         status: 200,
         previousCategoryId: currProduct.categoryId,
         previous: currProduct,
+        priceLinkChanges,
       });
     });
   });
@@ -777,12 +899,15 @@ export default async function handler(
     const actor = await requireStaffBearerAuth(req, res);
     if (!actor) return undefined;
     try {
-      const retData = await createProduct(req);
+      const { priceLinkChanges, ...retData } = await createProduct(req);
       if (retData.success && retData.data != null) {
         // Captured outside the thunk: the `!= null` narrowing above doesn't
         // survive into a deferred callback.
         const created = retData.data;
         recordProductCreated(actor.userId, created).catch(() => undefined);
+        recordPricesUpdated(actor.userId, priceLinkChanges ?? []).catch(
+          () => undefined,
+        );
         revalidateInBackground(res, () =>
           productRevalidationPaths([created.id]),
         );
@@ -888,7 +1013,7 @@ export default async function handler(
     }
 
     try {
-      const retData = await handleEditProduct(req);
+      const { priceLinkChanges, ...retData } = await handleEditProduct(req);
       if (retData.success && retData.data != null) {
         if (retData.previous != null) {
           recordProductUpdated(
@@ -897,6 +1022,9 @@ export default async function handler(
             retData.data,
           ).catch(() => undefined);
         }
+        recordPricesUpdated(actor.userId, priceLinkChanges ?? []).catch(
+          () => undefined,
+        );
         // Both categories: the listing the product left loses a card, the one
         // it joined gains one. `previousCategoryId` is deduped away when the
         // product didn't move.
