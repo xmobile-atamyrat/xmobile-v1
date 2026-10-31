@@ -3,6 +3,7 @@ import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Layout from '@/pages/components/Layout';
 import ProductImageGallery from '@/pages/components/ProductImageGallery';
+import ProductImageLightbox from '@/pages/components/ProductImageLightbox';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import TikTokIcon from '@/pages/components/TikTokIcon';
@@ -24,7 +25,6 @@ import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   getAbsoluteProductMediaUrl,
   getProductMediaUrl,
-  PRODUCT_IMAGE_FALLBACK,
   tierForProductGallery,
 } from '@/pages/lib/mediaUrls';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
@@ -62,15 +62,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import YouTubeIcon from '@mui/icons-material/YouTube';
-import {
-  Alert,
-  Box,
-  CardMedia,
-  Dialog,
-  IconButton,
-  Snackbar,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, IconButton, Snackbar, Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import type { Color, Prices, Product } from '@prisma/client';
 import {
@@ -351,10 +343,20 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       u.startsWith('http') ? u : getProductMediaUrl(tier, u) ?? u,
     );
   }, [product?.imgUrls, network]);
+  // Originals for the fullscreen viewer, index-aligned with displayImgUrls
+  const fullImgUrls = useMemo(
+    () =>
+      (product?.imgUrls ?? []).map((u) =>
+        u.startsWith('http') ? u : getProductMediaUrl('original', u) ?? u,
+      ),
+    [product?.imgUrls],
+  );
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
-  const [dialogStatus, setDialogStatus] = useState(false);
-  const [carouselDialogImage, setCarouselDialogImage] = useState<string>('');
+  // One index for both the inline gallery and the fullscreen viewer, so moving
+  // through images in either keeps the other in step.
+  const [imageIndex, setImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Selectable variants derived from the product's tags ("<spec> [priceId]{colorId}")
   const [variants, setVariants] = useState<
@@ -613,18 +615,10 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
     displayPrice === '' || (displayPrice?.includes('null') ?? false);
   const priceIsLoading = displayPrice == null || displayPrice.includes('[');
 
-  const handleDialogClose = () => {
-    setDialogStatus(false);
-  };
-
-  const handleDialogOpen = (index: number) => {
+  const handleLightboxOpen = (index: number) => {
     if (!product?.imgUrls[index]) return;
-    const raw = product.imgUrls[index];
-    const full = raw.startsWith('http')
-      ? raw
-      : getProductMediaUrl('original', raw) ?? raw;
-    setCarouselDialogImage(full);
-    setDialogStatus(true);
+    setImageIndex(index);
+    setLightboxOpen(true);
   };
 
   // Build category path when categoryId is available
@@ -692,7 +686,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               <ProductImageGallery
                 displayImgUrls={displayImgUrls}
                 altText={product?.name ?? ''}
-                onExpand={handleDialogOpen}
+                selectedIndex={imageIndex}
+                onSelect={setImageIndex}
+                onExpand={handleLightboxOpen}
               />
             )}
             {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
@@ -1006,7 +1002,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 <ProductImageGallery
                   displayImgUrls={displayImgUrls}
                   altText={product?.name ?? ''}
-                  onExpand={handleDialogOpen}
+                  selectedIndex={imageIndex}
+                  onSelect={setImageIndex}
+                  onExpand={handleLightboxOpen}
                 />
               )}
               {product.videoUrls.some((videoUrl) => videoUrl.length !== 0) && (
@@ -1237,20 +1235,18 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           )}
         </>
       )}
-      {/* full-size image viewer — shared by both platforms */}
-      <Dialog open={dialogStatus} onClose={handleDialogClose}>
-        <CardMedia
-          component="img"
-          image={carouselDialogImage}
-          alt={product?.name}
-          className={detailPageClasses.dialogImg[platform]}
-          onError={(e) => {
-            const el = e.currentTarget;
-            el.onerror = null;
-            el.src = PRODUCT_IMAGE_FALLBACK;
-          }}
+      {/* fullscreen image viewer — shared by both platforms */}
+      {displayImgUrls.length > 0 && (
+        <ProductImageLightbox
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+          previewUrls={displayImgUrls}
+          fullUrls={fullImgUrls}
+          index={imageIndex}
+          onIndexChange={setImageIndex}
+          altText={product?.name ?? ''}
         />
-      </Dialog>
+      )}
       {showDeleteProductDialog?.show && (
         <DeleteDialog
           title={t('deleteProduct')}

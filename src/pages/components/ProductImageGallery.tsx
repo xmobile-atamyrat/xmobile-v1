@@ -10,17 +10,22 @@ const SWIPE_THRESHOLD = 40; // px of horizontal travel before it counts as a swi
 interface ProductImageGalleryProps {
   displayImgUrls: string[];
   altText: string;
+  // Owned by the page so the fullscreen viewer and this gallery always show
+  // the same image: swiping in one moves the other.
+  selectedIndex: number;
+  onSelect: (index: number) => void;
   onExpand: (index: number) => void;
 }
 
 export default function ProductImageGallery({
   displayImgUrls,
   altText,
+  selectedIndex,
+  onSelect,
   onExpand,
 }: ProductImageGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  // Once the user swipes or taps a dot, stop the auto-advance so it doesn't
-  // fight their intent while they read the page.
+  // Once the user swipes, taps a dot or opens the viewer, stop the
+  // auto-advance so it doesn't fight their intent while they read the page.
   const [interacted, setInteracted] = useState(false);
   const platform = usePlatform();
   const classes = detailPageClasses.gallery;
@@ -34,17 +39,20 @@ export default function ProductImageGallery({
   const touchStartX = useRef<number | null>(null);
   const didSwipe = useRef(false);
 
+  // A timeout per image rather than one interval, so the clock restarts
+  // whenever the index changes from outside (e.g. the fullscreen viewer).
   useEffect(() => {
     if (total <= 1 || interacted) return undefined;
-    const timer = setInterval(() => {
-      setSelectedIndex((prev) => (prev + 1) % total);
-    }, AUTO_ADVANCE_MS);
-    return () => clearInterval(timer);
-  }, [total, interacted]);
+    const timer = setTimeout(
+      () => onSelect((safeIndex + 1) % total),
+      AUTO_ADVANCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [total, interacted, safeIndex, onSelect]);
 
   const goTo = (index: number) => {
     setInteracted(true);
-    setSelectedIndex(((index % total) + total) % total);
+    onSelect(((index % total) + total) % total);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -67,6 +75,7 @@ export default function ProductImageGallery({
       didSwipe.current = false;
       return;
     }
+    setInteracted(true);
     onExpand(safeIndex);
   };
 
@@ -76,9 +85,11 @@ export default function ProductImageGallery({
         hasWebRail ? classes.wrapperWithRail : ''
       }`}
     >
-      {/* Main image */}
+      {/* Main image. The click lives on the frame because the img itself
+          takes no pointer events (see protectedImg). */}
       <Box
         className={classes.mainImage[platform]}
+        onClick={handleImageClick}
         onTouchStart={platform === 'mobile' ? handleTouchStart : undefined}
         onTouchEnd={platform === 'mobile' ? handleTouchEnd : undefined}
       >
@@ -86,10 +97,10 @@ export default function ProductImageGallery({
           component="img"
           image={displayImgUrls[safeIndex]}
           alt={altText}
-          className={`${detailPageClasses.cardMedia[platform]} cursor-pointer`}
+          className={`${detailPageClasses.cardMedia[platform]} ${detailPageClasses.protectedImg}`}
           loading="lazy"
           decoding="async"
-          onClick={handleImageClick}
+          draggable={false}
         />
 
         {/* Mobile: page counter + dot indicators overlaid on the gallery */}
@@ -105,7 +116,10 @@ export default function ProductImageGallery({
                   role="button"
                   aria-label={`Go to image ${i + 1}`}
                   className={i === safeIndex ? classes.dotActive : classes.dot}
-                  onClick={() => goTo(i)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // a dot tap is navigation, not expand
+                    goTo(i);
+                  }}
                 />
               ))}
             </Box>
@@ -117,11 +131,10 @@ export default function ProductImageGallery({
       {hasWebRail && (
         <Box className={classes.thumbnailStrip.web}>
           {displayImgUrls.map((url, i) => (
-            <CardMedia
+            <Box
               key={i}
-              component="img"
-              image={url}
-              alt={`${altText} ${i + 1}`}
+              role="button"
+              aria-label={`Go to image ${i + 1}`}
               className={[
                 classes.thumbnail.base,
                 classes.thumbnail.size.web,
@@ -129,9 +142,16 @@ export default function ProductImageGallery({
                   ? classes.thumbnail.active
                   : classes.thumbnail.inactive,
               ].join(' ')}
-              sx={{ objectFit: 'contain' }}
-              onClick={() => setSelectedIndex(i)}
-            />
+              onClick={() => goTo(i)}
+            >
+              <CardMedia
+                component="img"
+                image={url}
+                alt={`${altText} ${i + 1}`}
+                className={`${classes.thumbnail.img} ${detailPageClasses.protectedImg}`}
+                draggable={false}
+              />
+            </Box>
           ))}
         </Box>
       )}
