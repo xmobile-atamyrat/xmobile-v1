@@ -716,6 +716,23 @@ describe('computeProductPrice', () => {
     expect(result.outOfStockAt).toBeNull();
   });
 
+  it('fetches a price shared by several variants once', async () => {
+    const fetchWithCreds = priceFetcher({
+      p2: { priceInTmt: '900', outOfStockAt: null },
+    });
+    const result = await computeProductPrice({
+      product: productWith({
+        price: '[deleted]',
+        tags: ['128gb [p2]{c1}', '128gb [p2]{c2}'],
+      }),
+      accessToken: '',
+      fetchWithCreds: fetchWithCreds as never,
+    });
+
+    expect(result.price).toBe('900');
+    expect(fetchWithCreds).toHaveBeenCalledTimes(2);
+  });
+
   it('does not advertise a sold-out variant as the fallback price', async () => {
     const result = await computeProductPrice({
       product: productWith({
