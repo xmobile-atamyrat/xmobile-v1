@@ -748,6 +748,26 @@ describe('computeProductPrice', () => {
     expect(result.outOfStockAt).toBeInstanceOf(Date);
   });
 
+  it('falls back to a sellable variant when the base price is sold out', async () => {
+    const result = await computeProductPrice({
+      product: productWith({
+        price: '[p1]',
+        tags: ['256gb [p1]{c1}', '512gb [p2]{c1}'],
+      }),
+      accessToken: '',
+      fetchWithCreds: priceFetcher({
+        p1: {
+          priceInTmt: '700',
+          outOfStockAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+        p2: { priceInTmt: '900', outOfStockAt: null },
+      }) as never,
+    });
+
+    expect(result.price).toBe('900');
+    expect(result.outOfStockAt).toBeNull();
+  });
+
   it('leaves a legacy literal price untouched', async () => {
     const fetchWithCreds = priceFetcher({});
     const result = await computeProductPrice({
