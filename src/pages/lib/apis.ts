@@ -7,7 +7,7 @@ import {
   PromoBannerData,
   ResponseApi,
 } from '@/pages/lib/types';
-import { Color, Product } from '@prisma/client';
+import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
@@ -175,28 +175,6 @@ export const fetchAllProductSlugs = async (): Promise<string[]> => {
     throw new Error(message ?? 'Failed to fetch product slugs');
   }
   return data;
-};
-
-// todo: legacy func, fetchProducts applies default sortBy=newest parameter
-export const fetchNewProducts = async ({
-  searchKeyword,
-  page,
-}: {
-  searchKeyword?: string;
-  page?: number;
-}): Promise<Product[]> => {
-  let url = `${BASE_URL}/api/product/new?page=${page || 1}`;
-  if (searchKeyword) {
-    url += `&searchKeyword=${encodeURIComponent(searchKeyword)}`;
-  }
-
-  const { success, data, message }: ResponseApi<Product[]> = await (
-    await fetch(url)
-  ).json();
-  if (!success || data == null) {
-    throw new Error(message);
-  }
-  return Array.isArray(data) ? data : [];
 };
 
 // Several components ask for the same reference list on one page load; they
