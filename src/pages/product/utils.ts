@@ -466,13 +466,14 @@ const cheapestSellableVariantPrice = async ({
 };
 
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
-// If {value} doesn't exist, computePrice function is used for safety.
+// If {value} doesn't exist, the price row is fetched instead.
 //
-// When the base reference resolves to nothing the product still has to show
-// something honest, so it falls back to its cheapest sellable variant, and
-// failing that reports itself out of stock — which every consumer (both product
-// cards, the cart line, the checkout total) already knows how to render. Both
-// fallbacks sit behind a failed lookup, so the ordinary path is still one fetch.
+// When the base reference resolves to nothing, or to a sold-out row, the
+// product still has to show something honest, so it falls back to its cheapest
+// sellable variant, and failing that reports itself out of stock — which every
+// consumer (both product cards, the cart line, the checkout total) already
+// knows how to render. Both fallbacks sit behind a failed lookup, so the
+// ordinary path is still one fetch.
 export const computeProductPrice = async ({
   accessToken,
   fetchWithCreds,
@@ -494,13 +495,13 @@ export const computeProductPrice = async ({
   // A legacy literal price is a usable value, so it is left exactly as stored.
   if (priceMatchId == null) return processedProduct;
 
-  const resolved = await computePrice({
+  const base = await fetchPriceRow({
     priceId: priceMatchId[1],
     accessToken,
     fetchWithCreds,
   });
-  if (resolved != null) {
-    processedProduct.price = resolved;
+  if (base != null && base.outOfStockAt == null) {
+    processedProduct.price = displayPriceOf(base);
     return processedProduct;
   }
 
