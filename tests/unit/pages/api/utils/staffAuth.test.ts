@@ -6,11 +6,19 @@ import type { ResponseApi } from '@/pages/lib/types';
 
 const verifyTokenMock = vi.fn();
 const refreshFromCookieMock = vi.fn();
+const currentGradeMock = vi.fn();
 
 vi.mock('@/pages/api/utils/authMiddleware', () => ({
   verifyToken: (...args: unknown[]) => verifyTokenMock(...args),
   refreshFromCookie: (...args: unknown[]) => refreshFromCookieMock(...args),
+  currentGrade: (...args: unknown[]) => currentGradeMock(...args),
 }));
+
+/** A valid access token whose account still has the grade it was minted with. */
+const validToken = (payload: { userId?: string; grade: UserRole }) => {
+  verifyTokenMock.mockResolvedValueOnce(payload);
+  currentGradeMock.mockResolvedValueOnce(payload.grade);
+};
 
 const expired = () =>
   Object.assign(new Error('jwt expired'), { name: 'TokenExpiredError' });
@@ -92,7 +100,7 @@ describe('staffAuth', () => {
     });
 
     it('returns false when grade is not staff', async () => {
-      verifyTokenMock.mockResolvedValueOnce({ grade: UserRole.FREE });
+      validToken({ grade: UserRole.FREE });
       const req = {
         headers: { authorization: 'Bearer valid' },
       } as unknown as NextApiRequest;
@@ -106,7 +114,7 @@ describe('staffAuth', () => {
 
     it('returns true for ADMIN or SUPERUSER without writing error response', async () => {
       for (const grade of [UserRole.ADMIN, UserRole.SUPERUSER]) {
-        verifyTokenMock.mockResolvedValueOnce({ grade });
+        validToken({ grade });
         const req = {
           headers: { authorization: 'Bearer valid' },
         } as unknown as NextApiRequest;
@@ -120,7 +128,7 @@ describe('staffAuth', () => {
       }
     });
     it('returns the actor id from the token', async () => {
-      verifyTokenMock.mockResolvedValueOnce({
+      validToken({
         userId: 'admin-1',
         grade: UserRole.ADMIN,
       });
@@ -132,6 +140,41 @@ describe('staffAuth', () => {
 
       expect(actor).toEqual({ userId: 'admin-1', grade: UserRole.ADMIN });
       expect(refreshFromCookieMock).not.toHaveBeenCalled();
+    });
+
+    it('goes by the current grade of an account demoted since sign-in', async () => {
+      verifyTokenMock.mockResolvedValueOnce({
+        userId: 'fired-admin',
+        grade: UserRole.ADMIN,
+      });
+      currentGradeMock.mockResolvedValueOnce(UserRole.FREE);
+      const res = createMockRes();
+
+      const actor = await requireStaffBearerAuth(
+        { headers: { authorization: 'Bearer valid' } } as NextApiRequest,
+        res,
+      );
+
+      expect(actor).toBeNull();
+      expect(currentGradeMock).toHaveBeenCalledWith('fired-admin');
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('sends 401 for a deleted account with a still-valid token', async () => {
+      verifyTokenMock.mockResolvedValueOnce({
+        userId: 'gone',
+        grade: UserRole.SUPERUSER,
+      });
+      currentGradeMock.mockResolvedValueOnce(null);
+      const res = createMockRes();
+
+      const actor = await requireSuperuserBearerAuth(
+        { headers: { authorization: 'Bearer valid' } } as NextApiRequest,
+        res,
+      );
+
+      expect(actor).toBeNull();
+      expect(res.status).toHaveBeenCalledWith(401);
     });
 
     it('renews an expired token from the refresh cookie', async () => {
@@ -220,7 +263,7 @@ describe('staffAuth', () => {
     });
 
     it('returns false and sends 403 for a valid ADMIN token', async () => {
-      verifyTokenMock.mockResolvedValueOnce({ grade: UserRole.ADMIN });
+      validToken({ grade: UserRole.ADMIN });
       const req = {
         headers: { authorization: 'Bearer valid' },
       } as unknown as NextApiRequest;
@@ -237,7 +280,7 @@ describe('staffAuth', () => {
     });
 
     it('returns true for SUPERUSER without writing error response', async () => {
-      verifyTokenMock.mockResolvedValueOnce({ grade: UserRole.SUPERUSER });
+      validToken({ grade: UserRole.SUPERUSER });
       const req = {
         headers: { authorization: 'Bearer valid' },
       } as unknown as NextApiRequest;
