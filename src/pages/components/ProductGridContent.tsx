@@ -372,12 +372,12 @@ export default function ProductGridContent({
     landingCategoryId,
   ]);
 
-  // Monotonic token identifying the newest product query. `filters` gets a fresh
-  // object identity on every router.query change, so this effect legitimately
-  // re-fires and overlaps itself; without a token the slowest response won
-  // regardless of age. That is what made the list order look random between
-  // loads -- an older page-1 response landing on top of newer results, or an
-  // infinite-scroll page appending onto a list the reset below had emptied.
+  // Monotonic token identifying the newest product query. Quick filter changes
+  // re-fire this effect while the previous query is still in flight; without a
+  // token the slowest response won regardless of age. That is what made the
+  // list order look random between loads -- an older page-1 response landing
+  // on top of newer results, or an infinite-scroll page appending onto a list
+  // the reset below had emptied.
   // Bumped only here: loadMoreProducts continues the same query and merely
   // checks that its token is still current before committing.
   const requestGenerationRef = useRef(0);

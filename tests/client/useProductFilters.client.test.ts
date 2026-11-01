@@ -57,3 +57,23 @@ describe('useProductFilters inStock', () => {
     expect(pushedQuery()).toEqual({ searchKeyword: 'iphone' });
   });
 });
+
+describe('useProductFilters URL sync', () => {
+  afterEach(() => {
+    mockRouter.query = {};
+    vi.clearAllMocks();
+  });
+
+  it('keeps the same filters when the URL echoes them back', () => {
+    const { result, rerender } = renderHook(() => useProductFilters());
+    act(() => {
+      result.current.setFilters({ inStock: true });
+    });
+    const applied = result.current.filters;
+
+    mockRouter.query = { inStock: '1' };
+    rerender();
+
+    expect(result.current.filters).toBe(applied);
+  });
+});
