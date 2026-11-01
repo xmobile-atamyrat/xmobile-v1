@@ -36,7 +36,12 @@ export const setListSnapshot = (key: string, snap: ListSnapshot) =>
  * the restored list isn't clobbered.
  */
 export function useListRestoration(
-  current: Omit<ListSnapshot, 'scrollY'>,
+  current: {
+    products: Product[];
+    page: number;
+    hasMore: boolean;
+    totalCount: number | null;
+  },
   restored: ListSnapshot | undefined,
 ) {
   const router = useRouter();
