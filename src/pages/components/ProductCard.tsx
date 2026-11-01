@@ -72,6 +72,11 @@ export default function ProductCard({
 
   useEffect(() => {
     if (initialProduct == null) return () => {};
+    // A sold-out card shows no price, so there is nothing to look up.
+    if (initialProduct.outOfStockAt != null) {
+      setProduct(initialProduct);
+      return () => {};
+    }
 
     let cancelled = false;
     (async () => {
