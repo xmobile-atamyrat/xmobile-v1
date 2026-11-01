@@ -5,7 +5,7 @@ import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import Footer from '@/pages/components/Footer';
 import FcmManager from '@/pages/components/FcmManager';
-import { fetchProducts } from '@/pages/lib/apis';
+import { fetchCategories, fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { MAIN_BG_COLOR, mobileBottomNavHeight } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -70,8 +70,7 @@ export default function Layout({
   useEffect(() => {
     if (categories.length > 0) return;
     (async () => {
-      const { success, data: categoriesData }: ResponseApi<ExtendedCategory[]> =
-        await (await fetch(`${BASE_URL}/api/category`)).json();
+      const { success, data: categoriesData } = await fetchCategories();
 
       if (success && categoriesData) {
         setCategories(categoriesData);

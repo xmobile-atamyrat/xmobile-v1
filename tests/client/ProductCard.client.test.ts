@@ -60,6 +60,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 
 describe('ProductCard', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
     vi.mocked(useProductContext).mockReturnValue({
       setSelectedProduct: vi.fn(),
     } as never);
@@ -135,6 +137,15 @@ describe('ProductCard', () => {
       expect(screen.getByText('Out of stock')).toBeInTheDocument();
     });
     expect(screen.queryByText(/5\.00/)).not.toBeInTheDocument();
+  });
+
+  it('does not look up the price of a sold-out product', async () => {
+    renderCard(makeProduct({ outOfStockAt: new Date(), price: '[p1]' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Out of stock')).toBeInTheDocument();
+    });
+    expect(computeProductPrice).not.toHaveBeenCalled();
   });
 
   it('shows the price when in stock', async () => {
