@@ -198,7 +198,20 @@ export const fetchNewProducts = async ({
   return Array.isArray(data) ? data : [];
 };
 
-export const fetchBrands = async (): Promise<BrandProps[]> => {
+// Several components ask for the same reference list on one page load; they
+// share the request in flight. Nothing is kept once it settles, so the next
+// call (a later page, or a refresh after an admin edit) goes to the server.
+const inFlight = new Map<string, Promise<unknown>>();
+
+const shareInFlight = <T>(key: string, load: () => Promise<T>): Promise<T> => {
+  const pending = inFlight.get(key) as Promise<T> | undefined;
+  if (pending) return pending;
+  const request = load().finally(() => inFlight.delete(key));
+  inFlight.set(key, request);
+  return request;
+};
+
+const loadBrands = async (): Promise<BrandProps[]> => {
   const { success, data, message }: ResponseApi<any[]> = await (
     await fetch(`${BASE_URL}/api/brand`)
   ).json();
@@ -210,7 +223,9 @@ export const fetchBrands = async (): Promise<BrandProps[]> => {
   return data;
 };
 
-export const fetchColors = async (): Promise<Color[]> => {
+export const fetchBrands = () => shareInFlight('brands', loadBrands);
+
+const loadColors = async (): Promise<Color[]> => {
   const { success, data, message }: ResponseApi<Color[]> = await (
     await fetch(`${BASE_URL}/api/colors`)
   ).json();
@@ -221,6 +236,8 @@ export const fetchColors = async (): Promise<Color[]> => {
   }
   return data;
 };
+
+export const fetchColors = () => shareInFlight('colors', loadColors);
 
 /**
  * Prices, optionally narrowed. `productId` returns just that product's
