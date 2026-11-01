@@ -1,6 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import {
-  isProductListingRoute,
+  HOME_PATHNAME,
+  keepsSearchInUrl,
   pushProductSearch,
   readSearchKeyword,
   replaceProductSearch,
@@ -148,9 +149,13 @@ export default function CustomAppBar({
   // field from the active keyword — otherwise the header search goes blank the
   // moment it lands on the results page. The URL wins over context: on a cold
   // load of a shared /product?searchKeyword=… link the context is still empty
-  // at this point, since the grid only mirrors it in after mount.
+  // at this point, since the grid only mirrors it in after mount. Home reads
+  // the URL only, so a term left over from a /product search isn't shown there.
   const [localSearchKeyword, setLocalSearchKeyword] = useState(
-    () => readSearchKeyword(router.query) || searchKeyword || '',
+    () =>
+      readSearchKeyword(router.query) ||
+      (router.pathname === HOME_PATHNAME ? '' : searchKeyword) ||
+      '',
   );
   // This Appbar mounts on every page (Layout), returning null on non-home
   // mobile pages *after* hooks run. Skip the first debounce so an unused
@@ -191,10 +196,9 @@ export default function CustomAppBar({
     }
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
-      // On a listing page the grid reads the term from the URL, so retarget the
-      // current URL in place. Anywhere else (home) the context write above is
-      // what gets picked up and bounced to the listing.
-      if (isProductListingRoute(router.pathname)) {
+      // On a listing page and on home the results read the term from the URL,
+      // so retarget the current URL in place.
+      if (keepsSearchInUrl(router.pathname)) {
         replaceProductSearch(router, localSearchKeyword);
       }
     }, 500);
@@ -288,7 +292,10 @@ export default function CustomAppBar({
     const keyword = localSearchKeyword.trim();
     if (!keyword) return;
     setSearchKeyword(keyword);
-    pushProductSearch(router, keyword);
+    // Home shows results in place of its banner rather than leaving.
+    if (router.pathname === HOME_PATHNAME)
+      replaceProductSearch(router, keyword);
+    else pushProductSearch(router, keyword);
   };
 
   // Same branch the categories index uses: leaf categories go straight to the
