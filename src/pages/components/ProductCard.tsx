@@ -71,17 +71,25 @@ export default function ProductCard({
   }, [product?.tags, colorsMap]);
 
   useEffect(() => {
-    if (initialProduct == null) return;
+    if (initialProduct == null) return () => {};
+    // A sold-out card shows no price, so there is nothing to look up.
+    if (initialProduct.outOfStockAt != null) {
+      setProduct(initialProduct);
+      return () => {};
+    }
 
+    let cancelled = false;
     (async () => {
-      setProduct(
-        await computeProductPrice({
-          product: initialProduct,
-          accessToken,
-          fetchWithCreds,
-        }),
-      );
+      const priced = await computeProductPrice({
+        product: initialProduct,
+        accessToken,
+        fetchWithCreds,
+      });
+      if (!cancelled) setProduct(priced);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [initialProduct]);
 
   // Out-of-stock products show no price; the badge on the image carries the

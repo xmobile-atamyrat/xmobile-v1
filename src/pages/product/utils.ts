@@ -439,13 +439,15 @@ const cheapestSellableVariantPrice = async ({
   accessToken: string;
   fetchWithCreds: FetchWithCredsType;
 }): Promise<string | null> => {
-  const priceIds = (tags ?? [])
-    .map((tag) => tag.match(squareBracketRegex)?.[1])
-    .filter((priceId): priceId is string => priceId != null);
-  if (priceIds.length === 0) return null;
+  const priceIds = new Set(
+    (tags ?? [])
+      .map((tag) => tag.match(squareBracketRegex)?.[1])
+      .filter((priceId): priceId is string => priceId != null),
+  );
+  if (priceIds.size === 0) return null;
 
   const rows = await Promise.all(
-    priceIds.map((priceId) =>
+    [...priceIds].map((priceId) =>
       fetchPriceRow({ priceId, accessToken, fetchWithCreds }),
     ),
   );
@@ -515,49 +517,6 @@ export const computeProductPrice = async ({
   if (fallback == null) processedProduct.outOfStockAt = new Date();
 
   return processedProduct;
-};
-
-// ProductPriceTags have only [id], value is fetched in computePrice function.
-export const computeProductPriceTags = async ({
-  accessToken,
-  fetchWithCreds,
-  product,
-}: {
-  product: Product;
-  accessToken: string;
-  fetchWithCreds: FetchWithCredsType;
-}): Promise<Product> => {
-  const priceComputedTags = await computeProductPrice({
-    product,
-    accessToken,
-    fetchWithCreds,
-  });
-  const priceTagsComputedProduct = {
-    ...priceComputedTags,
-    tags: await Promise.all(
-      priceComputedTags.tags.map(async (tag) => {
-        const tagMatch = tag.match(squareBracketRegex);
-        if (tagMatch != null) {
-          const idTag = tagMatch[1];
-          const price = await computePrice({
-            priceId: idTag,
-            accessToken,
-            fetchWithCreds,
-          });
-
-          // An unresolvable reference is dropped rather than substituted: the
-          // raw id used to end up in the variant label the customer reads.
-          if (price == null) {
-            return tag.replace(`[${idTag}]`, '').replace(/\s+/g, ' ').trim();
-          }
-          return tag.replace(`[${idTag}]`, price);
-        }
-        return tag;
-      }),
-    ),
-  };
-
-  return priceTagsComputedProduct;
 };
 
 // Use this function inside useCallBack to retain timeoutId across renders.
