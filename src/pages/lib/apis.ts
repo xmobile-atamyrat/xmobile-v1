@@ -176,7 +176,6 @@ export const fetchAllProductSlugs = async (): Promise<string[]> => {
   return data;
 };
 
-// todo: legacy func, fetchProducts applies default sortBy=newest parameter
 export const fetchBrands = async (): Promise<BrandProps[]> => {
   const { success, data, message }: ResponseApi<any[]> = await (
     await fetch(`${BASE_URL}/api/brand`)
