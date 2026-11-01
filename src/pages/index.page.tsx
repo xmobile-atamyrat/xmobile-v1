@@ -17,8 +17,9 @@ import {
   POST_SOVIET_COUNTRIES,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
+import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { pushProductSearch } from '@/pages/lib/productSearch';
+import { readSearchKeyword } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   generateHreflangLinks,
@@ -26,11 +27,16 @@ import {
   generateOrganizationSchema,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
-import { PageSeoData, StorefrontBanner } from '@/pages/lib/types';
+import {
+  ExtendedProduct,
+  PageSeoData,
+  StorefrontBanner,
+} from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { fontClassName } from '@/styles/theme';
+import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
@@ -46,7 +52,7 @@ import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 
 const web = homePageClasses.web;
 
@@ -148,15 +154,31 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   }
 
   // The newest in-stock products, rendered on the server so their links are
-  // in the raw HTML.
+  // in the raw HTML. With a term in the URL (back from a product opened from
+  // home results) the results are what's on screen, so seed those too and save
+  // the client its own round-trip. The newest list still loads: clearing the
+  // search is a shallow route change, so nothing would fetch it afterwards.
+  const searchTerm = readSearchKeyword(context.query);
   let initialProducts: Product[] = [];
+  let initialSearch: { term: string; results: ExtendedProduct[] } | null = null;
   try {
-    initialProducts = await fetchProducts({
-      page: 1,
-      locale: routeLocale ?? finalLocale,
-      inStock: true,
-      sortBy: SORT_OPTIONS.NEWEST,
-    });
+    const [newest, results] = await Promise.all([
+      fetchProducts({
+        page: 1,
+        locale: routeLocale ?? finalLocale,
+        inStock: true,
+        sortBy: SORT_OPTIONS.NEWEST,
+      }),
+      searchTerm
+        ? fetchProducts({
+            page: 1,
+            searchKeyword: searchTerm,
+            locale: routeLocale ?? finalLocale,
+          })
+        : null,
+    ]);
+    initialProducts = newest;
+    if (results) initialSearch = { term: searchTerm, results };
   } catch (error) {
     console.error('Failed to load initial products:', error);
   }
@@ -169,6 +191,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       seoData,
       banners,
       initialProducts,
+      initialSearch,
     },
   };
 }) satisfies GetServerSideProps<{
@@ -176,24 +199,27 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   seoData: PageSeoData;
   banners: StorefrontBanner[];
   initialProducts: Product[];
+  initialSearch: { term: string; results: ExtendedProduct[] } | null;
 }>;
 
 export default function Home({
   locale,
   banners,
   initialProducts,
+  initialSearch,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
   const t = useTranslations();
   const { categories } = useCategoryContext();
-  const {
-    searchKeyword,
-    setSearchKeyword,
-    setProducts: setContextProducts,
-  } = useProductContext();
+  const { setProducts: setContextProducts } = useProductContext();
   const products: Product[] = initialProducts ?? [];
-  const isFirstRender = useRef(true);
+  // A header search on home stays on home: the results replace the banner and
+  // sections, and clearing the field brings them back. The term is read from
+  // home's URL (see HOME_PATHNAME), so back from a product restores them.
+  const searchTerm = readSearchKeyword(router.query);
+  const search = useHomeSearch(searchTerm, router.locale, initialSearch);
+  const searchTitle = t('searchResultsFor', { keyword: searchTerm });
 
   // Web "Shop by category" row (spec 1357-1366): real top-level categories,
   // admin-flagged popular ones first, capped at the design's 8 tiles.
@@ -232,23 +258,47 @@ export default function Home({
     },
   ];
 
-  // A search on the home page belongs on the dedicated results page.
-  // Skip the first run so a stale keyword (e.g. coming back from /product)
-  // is just cleared instead of bouncing straight back.
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      if (searchKeyword) setSearchKeyword('');
-      return;
-    }
-    if (searchKeyword) pushProductSearch(router, searchKeyword);
-  }, [searchKeyword, router, setSearchKeyword]);
-
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
     router.push(router.pathname, router.asPath, { locale });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
+
+  if (platform === 'web' && search.isSearching) {
+    return (
+      <Layout showHomeHeader>
+        <Box className={web.page}>
+          <Box className={web.sectionHead}>
+            <Typography
+              className={`${fontClassName.className} ${web.sectionTitle}`}
+            >
+              {searchTitle}
+            </Typography>
+          </Box>
+          <Box className={web.productGrid}>
+            {search.results.map((product) => (
+              <ProductCard
+                product={product}
+                key={product.id}
+                cartProps={{ cartAction: 'add' }}
+              />
+            ))}
+          </Box>
+          {search.isLoading && (
+            <ProductGridSkeleton count={search.results.length ? 5 : 10} />
+          )}
+          {search.results.length === 0 && !search.isLoading && (
+            <Typography
+              className={`${fontClassName.className} ${web.emptyText}`}
+            >
+              {t('noProductsFound')}
+            </Typography>
+          )}
+          <div ref={search.sentinelRef} />
+        </Box>
+      </Layout>
+    );
+  }
 
   if (platform === 'web') {
     return (
@@ -385,12 +435,20 @@ export default function Home({
     );
   }
 
+  const mobileProducts = search.isSearching ? search.results : products;
+  const mobileLoading = search.isSearching && search.isLoading;
+  // Search pages append below the grid, so only its first page gets the
+  // full-height skeleton on top.
+  const isAppending = search.isSearching && search.results.length > 0;
+
   return (
     <Layout showHomeHeader>
-      <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
-        <PromoBannerSection banners={banners} />
-        <PopularCategoriesSection categories={categories} />
-      </Box>
+      {!search.isSearching && (
+        <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
+          <PromoBannerSection banners={banners} />
+          <PopularCategoriesSection categories={categories} />
+        </Box>
+      )}
       <Box className="flex flex-row gap-6 w-full">
         <Box className={homePageClasses.main[platform]}>
           <Box className="w-full">
@@ -403,23 +461,26 @@ export default function Home({
               <Typography
                 className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
               >
-                {t('newProducts')}
+                {search.isSearching ? searchTitle : t('newProducts')}
               </Typography>
             </Box>
 
+            {mobileLoading && !isAppending && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
-              {products.length > 0 &&
-                products.map((product, idx) => (
+              {mobileProducts.length > 0 &&
+                mobileProducts.map((product, idx) => (
                   <ProductCard
                     product={product}
-                    key={idx}
+                    key={search.isSearching ? product.id : idx}
                     cartProps={{ cartAction: 'add' }}
                   />
                 ))}
             </Box>
-            {products.length === 0 && (
+            {mobileLoading && isAppending && <ProductGridSkeleton count={2} />}
+            {mobileProducts.length === 0 && !mobileLoading && (
               <Typography>{t('noProductsFound')}</Typography>
             )}
+            {search.isSearching && <div ref={search.sentinelRef} />}
           </Box>
         </Box>
       </Box>
