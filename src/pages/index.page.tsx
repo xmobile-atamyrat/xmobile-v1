@@ -5,7 +5,7 @@ import PopularCategoriesSection, {
 } from '@/pages/components/PopularCategoriesSection';
 import ProductCard from '@/pages/components/ProductCard';
 import PromoBannerSection from '@/pages/components/PromoBannerSection';
-import { fetchNewProducts, fetchProducts } from '@/pages/lib/apis';
+import { fetchProducts } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { isSecureRequest } from '@/pages/api/utils/requestScheme';
 import {
@@ -15,6 +15,7 @@ import {
   LOCALE_COOKIE_NAME,
   LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
+  SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { pushProductSearch } from '@/pages/lib/productSearch';
@@ -30,7 +31,6 @@ import { parseName } from '@/pages/lib/utils';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { fontClassName } from '@/styles/theme';
-import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import { Box, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
@@ -46,7 +46,7 @@ import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 const web = homePageClasses.web;
 
@@ -147,13 +147,15 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     console.error('Failed to load promo banners:', error);
   }
 
-  // Seed the first page server-side so product links are in the raw HTML,
-  // not just after the client fetch.
+  // The newest in-stock products, rendered on the server so their links are
+  // in the raw HTML.
   let initialProducts: Product[] = [];
   try {
     initialProducts = await fetchProducts({
       page: 1,
       locale: routeLocale ?? finalLocale,
+      inStock: true,
+      sortBy: SORT_OPTIONS.NEWEST,
     });
   } catch (error) {
     console.error('Failed to load initial products:', error);
@@ -190,10 +192,7 @@ export default function Home({
     setSearchKeyword,
     setProducts: setContextProducts,
   } = useProductContext();
-  // Seeded from the server-rendered first page so the grid isn't empty in the
-  // raw HTML; the effect below swaps in the newest-products feed on mount.
-  const [products, setProducts] = useState<Product[]>(initialProducts ?? []);
-  const [isLoading, setIsLoading] = useState(false);
+  const products: Product[] = initialProducts ?? [];
   const isFirstRender = useRef(true);
 
   // Web "Shop by category" row (spec 1357-1366): real top-level categories,
@@ -232,26 +231,6 @@ export default function Home({
       subtitle: `${t('supportHoursDays')}, ${t('supportHoursTime')}`,
     },
   ];
-
-  // Home shows only the newest products — no filters, no infinite scroll, so
-  // there is no list snapshot to restore here (that lives on /product).
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setIsLoading(true);
-      try {
-        const fetched = await fetchNewProducts({ page: 1 });
-        if (mounted) setProducts(fetched);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   // A search on the home page belongs on the dedicated results page.
   // Skip the first run so a stale keyword (e.g. coming back from /product)
@@ -385,7 +364,6 @@ export default function Home({
               <ArrowRight size={16} />
             </Link>
           </Box>
-          {isLoading && <ProductGridSkeleton count={10} />}
           <Box className={web.productGrid}>
             {gridProducts.map((product) => (
               <ProductCard
@@ -395,7 +373,7 @@ export default function Home({
               />
             ))}
           </Box>
-          {products.length === 0 && !isLoading && (
+          {products.length === 0 && (
             <Typography
               className={`${fontClassName.className} ${web.emptyText}`}
             >
@@ -429,7 +407,6 @@ export default function Home({
               </Typography>
             </Box>
 
-            {isLoading && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
               {products.length > 0 &&
                 products.map((product, idx) => (
@@ -440,7 +417,7 @@ export default function Home({
                   />
                 ))}
             </Box>
-            {products.length === 0 && !isLoading && (
+            {products.length === 0 && (
               <Typography>{t('noProductsFound')}</Typography>
             )}
           </Box>
