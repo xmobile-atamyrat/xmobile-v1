@@ -1,5 +1,5 @@
 import { SORT_OPTIONS } from '@/pages/lib/constants';
-import { useRouter } from 'next/router';
+import { NextRouter, useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface FilterState {
@@ -26,19 +26,53 @@ export function normalizeQueryStringArray(
   return Array.isArray(value) ? value : [value];
 }
 
+function filtersFromQuery(
+  query: NextRouter['query'],
+  initialSortBy: string,
+): FilterState {
+  const {
+    categoryIds,
+    brandIds,
+    colorIds,
+    minPrice,
+    maxPrice,
+    sortBy,
+    inStock,
+  } = query;
+
+  return {
+    categoryIds: normalizeQueryStringArray(categoryIds),
+    brandIds: normalizeQueryStringArray(brandIds),
+    colorIds: normalizeQueryStringArray(colorIds),
+    minPrice: (minPrice as string) || '',
+    maxPrice: (maxPrice as string) || '',
+    sortBy: (sortBy as string) || initialSortBy,
+    inStock: inStock === '1',
+  };
+}
+
+const sameList = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((value, i) => value === b[i]);
+
+function sameFilters(a: FilterState, b: FilterState): boolean {
+  return (
+    sameList(a.categoryIds, b.categoryIds) &&
+    sameList(a.brandIds, b.brandIds) &&
+    sameList(a.colorIds, b.colorIds) &&
+    a.minPrice === b.minPrice &&
+    a.maxPrice === b.maxPrice &&
+    a.sortBy === b.sortBy &&
+    a.inStock === b.inStock
+  );
+}
+
 export function useProductFilters(
   initialSortBy: string = SORT_OPTIONS.NEWEST,
 ): UseProductFiltersReturn {
   const router = useRouter();
-  const [filters, setFiltersState] = useState<FilterState>({
-    categoryIds: [],
-    brandIds: [],
-    colorIds: [],
-    minPrice: '',
-    maxPrice: '',
-    sortBy: initialSortBy,
-    inStock: false,
-  });
+  const [filters, setFiltersState] = useState<FilterState>(() =>
+    filtersFromQuery(router.isReady ? router.query : {}, initialSortBy),
+  );
 
   const updateUrl = useCallback(
     (newFilters: FilterState) => {
@@ -101,29 +135,13 @@ export function useProductFilters(
     [router, initialSortBy],
   );
 
-  // Sync state from URL on page load/navigation
+  // Sync state from URL on page load/navigation. Mostly the URL just echoes
+  // what setFilters already applied, and a new object would refetch the list.
   useEffect(() => {
     if (!router.isReady) return;
 
-    const {
-      categoryIds,
-      brandIds,
-      colorIds,
-      minPrice,
-      maxPrice,
-      sortBy,
-      inStock,
-    } = router.query;
-
-    setFiltersState({
-      categoryIds: normalizeQueryStringArray(categoryIds),
-      brandIds: normalizeQueryStringArray(brandIds),
-      colorIds: normalizeQueryStringArray(colorIds),
-      minPrice: (minPrice as string) || '',
-      maxPrice: (maxPrice as string) || '',
-      sortBy: (sortBy as string) || initialSortBy,
-      inStock: inStock === '1',
-    });
+    const next = filtersFromQuery(router.query, initialSortBy);
+    setFiltersState((prev) => (sameFilters(prev, next) ? prev : next));
   }, [router.isReady, router.query, initialSortBy]);
 
   const setFilters = (newFilters: Partial<FilterState>) => {
