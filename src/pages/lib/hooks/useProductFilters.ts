@@ -14,6 +14,9 @@ export interface FilterState {
 
 interface UseProductFiltersReturn {
   filters: FilterState;
+  // False until `filters` reflects the URL, which a full load with a query
+  // string only knows after hydration.
+  ready: boolean;
   setFilters: (filters: Partial<FilterState>) => void;
   updateUrl: (newFilters: FilterState) => void;
 }
@@ -73,6 +76,7 @@ export function useProductFilters(
   const [filters, setFiltersState] = useState<FilterState>(() =>
     filtersFromQuery(router.isReady ? router.query : {}, initialSortBy),
   );
+  const [ready, setReady] = useState(router.isReady);
 
   const updateUrl = useCallback(
     (newFilters: FilterState) => {
@@ -142,6 +146,7 @@ export function useProductFilters(
 
     const next = filtersFromQuery(router.query, initialSortBy);
     setFiltersState((prev) => (sameFilters(prev, next) ? prev : next));
+    setReady(true);
   }, [router.isReady, router.query, initialSortBy]);
 
   const setFilters = (newFilters: Partial<FilterState>) => {
@@ -152,5 +157,5 @@ export function useProductFilters(
     });
   };
 
-  return { filters, setFilters, updateUrl };
+  return { filters, ready, setFilters, updateUrl };
 }
