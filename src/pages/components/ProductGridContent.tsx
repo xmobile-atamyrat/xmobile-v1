@@ -129,7 +129,7 @@ export default function ProductGridContent({
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   // Web paginates (spec 1473); mobile keeps the infinite-scroll list.
-  const [webPage, setWebPage] = useState(1);
+  const [webPage, setWebPage] = useState(restored?.page || 1);
   // Reference lists, only for labelling the active-filter chips in the sort bar.
   const [brands, setBrands] = useState<BrandProps[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
