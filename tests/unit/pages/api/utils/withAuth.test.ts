@@ -266,4 +266,79 @@ describe('withAuth', () => {
     expect(handler).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
   });
+
+  it('picks up a promotion when the session refreshes', async () => {
+    vi.mocked(jwt.verify).mockImplementation(
+      (_token, secret, callback: any) => {
+        if (secret === 'unit-access-secret') {
+          callback(
+            Object.assign(new Error('jwt expired'), {
+              name: 'TokenExpiredError',
+            }),
+          );
+        } else {
+          callback(null, { userId: 'user-2', grade: UserRole.FREE });
+        }
+      },
+    );
+    findUniqueMock.mockResolvedValue({
+      grade: UserRole.ADMIN,
+      deletedAt: null,
+    });
+    const handler = vi.fn(
+      async (req: AuthenticatedRequest, res: NextApiResponse) => {
+        expect(req.grade).toBe(UserRole.ADMIN);
+        res.status(200).end();
+      },
+    );
+
+    await withAuth(handler)(
+      {
+        url: '/api/cart',
+        method: 'POST',
+        headers: { authorization: 'Bearer expired-access' },
+        cookies: { [AUTH_REFRESH_COOKIE_NAME]: 'refresh-token-value' },
+      } as unknown as NextApiRequest,
+      createMockRes(),
+    );
+
+    expect(generateTokens).toHaveBeenCalledWith('user-2', UserRole.ADMIN);
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it('does not refresh a session whose account was deleted', async () => {
+    vi.mocked(jwt.verify).mockImplementation(
+      (_token, secret, callback: any) => {
+        if (secret === 'unit-access-secret') {
+          callback(
+            Object.assign(new Error('jwt expired'), {
+              name: 'TokenExpiredError',
+            }),
+          );
+        } else {
+          callback(null, { userId: 'user-2', grade: UserRole.FREE });
+        }
+      },
+    );
+    findUniqueMock.mockResolvedValue({
+      grade: UserRole.FREE,
+      deletedAt: new Date(),
+    });
+    const handler = vi.fn();
+    const res = createMockRes();
+
+    await withAuth(handler)(
+      {
+        url: '/api/cart',
+        method: 'POST',
+        headers: { authorization: 'Bearer expired-access' },
+        cookies: { [AUTH_REFRESH_COOKIE_NAME]: 'refresh-token-value' },
+      } as unknown as NextApiRequest,
+      res,
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(generateTokens).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
 });
