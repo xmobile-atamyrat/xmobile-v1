@@ -10,6 +10,7 @@ const snap = (page: number): ListSnapshot => ({
   products: [{ id: `p${page}` } as Product],
   page,
   hasMore: true,
+  totalCount: 60,
   scrollY: page * 100,
 });
 

@@ -6,6 +6,7 @@ export interface ListSnapshot {
   products: Product[];
   page: number;
   hasMore: boolean;
+  totalCount: number | null;
   scrollY: number;
 }
 
@@ -35,16 +36,19 @@ export const setListSnapshot = (key: string, snap: ListSnapshot) =>
  * the restored list isn't clobbered.
  */
 export function useListRestoration(
-  current: { products: Product[]; page: number; hasMore: boolean },
+  current: {
+    products: Product[];
+    page: number;
+    hasMore: boolean;
+    totalCount: number | null;
+  },
   restored: ListSnapshot | undefined,
 ) {
   const router = useRouter();
   const restoringRef = useRef(!!restored);
 
-  // Clear the restore guard after hydration settles. The filters hook re-sets
-  // `filters` synchronously on mount, which would otherwise retrigger the
-  // page-1 fetch and clobber the restored list; that rerun runs before this
-  // timer fires, so it's skipped.
+  // Clear the restore guard after hydration settles: the page-1 fetch is
+  // skipped on a restoring mount, but a later filter change must still run it.
   // ponytail: setTimeout(0) is the knob — bump if a slow hydrate still clobbers.
   useEffect(() => {
     if (!restoringRef.current) return undefined;
@@ -74,12 +78,19 @@ export function useListRestoration(
         products: current.products,
         page: current.page,
         hasMore: current.hasMore,
+        totalCount: current.totalCount,
         scrollY: window.scrollY,
       });
     };
     router.events.on('routeChangeStart', save);
     return () => router.events.off('routeChangeStart', save);
-  }, [router, current.products, current.page, current.hasMore]);
+  }, [
+    router,
+    current.products,
+    current.page,
+    current.hasMore,
+    current.totalCount,
+  ]);
 
   return { restoringRef };
 }

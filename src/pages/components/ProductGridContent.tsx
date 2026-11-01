@@ -117,7 +117,9 @@ export default function ProductGridContent({
   const lastPushedKeywordRef = useRef<string | null>(null);
   // Total number of products matching the current query (all pages), so the
   // header count reflects the real total rather than the loaded page.
-  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(
+    restored?.totalCount ?? null,
+  );
   const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -127,7 +129,7 @@ export default function ProductGridContent({
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   // Web paginates (spec 1473); mobile keeps the infinite-scroll list.
-  const [webPage, setWebPage] = useState(1);
+  const [webPage, setWebPage] = useState(restored?.page || 1);
   // Reference lists, only for labelling the active-filter chips in the sort bar.
   const [brands, setBrands] = useState<BrandProps[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -150,10 +152,10 @@ export default function ProductGridContent({
   const t = useTranslations();
   const platform = usePlatform();
 
-  const { filters, setFilters } = useProductFilters();
+  const { filters, ready: filtersReady, setFilters } = useProductFilters();
 
   const { restoringRef } = useListRestoration(
-    { products, page, hasMore },
+    { products, page, hasMore, totalCount },
     restored,
   );
 
@@ -370,12 +372,12 @@ export default function ProductGridContent({
     landingCategoryId,
   ]);
 
-  // Monotonic token identifying the newest product query. `filters` gets a fresh
-  // object identity on every router.query change, so this effect legitimately
-  // re-fires and overlaps itself; without a token the slowest response won
-  // regardless of age. That is what made the list order look random between
-  // loads -- an older page-1 response landing on top of newer results, or an
-  // infinite-scroll page appending onto a list the reset below had emptied.
+  // Monotonic token identifying the newest product query. Quick filter changes
+  // re-fire this effect while the previous query is still in flight; without a
+  // token the slowest response won regardless of age. That is what made the
+  // list order look random between loads -- an older page-1 response landing
+  // on top of newer results, or an infinite-scroll page appending onto a list
+  // the reset below had emptied.
   // Bumped only here: loadMoreProducts continues the same query and merely
   // checks that its token is still current before committing.
   const requestGenerationRef = useRef(0);
@@ -386,6 +388,8 @@ export default function ProductGridContent({
     // so infinite scroll keeps working. Later filter changes clear the guard and
     // reset normally.
     if (restoringRef.current) return;
+    // A shared link would otherwise load the unfiltered list first.
+    if (!filtersReady) return;
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
     const isCurrent = () => generation === requestGenerationRef.current;
@@ -452,8 +456,8 @@ export default function ProductGridContent({
     })();
   }, [
     filters,
+    filtersReady,
     searchKeyword,
-    router.isReady,
     effectiveCategoryIds,
     platform,
     webPage,
