@@ -60,6 +60,7 @@ describe('useProductFilters inStock', () => {
 
 describe('useProductFilters URL sync', () => {
   afterEach(() => {
+    mockRouter.isReady = true;
     mockRouter.query = {};
     vi.clearAllMocks();
   });
@@ -75,5 +76,18 @@ describe('useProductFilters URL sync', () => {
     rerender();
 
     expect(result.current.filters).toBe(applied);
+  });
+
+  it('is not ready until the router has the URL filters', () => {
+    mockRouter.isReady = false;
+    const { result, rerender } = renderHook(() => useProductFilters());
+    expect(result.current.ready).toBe(false);
+
+    mockRouter.isReady = true;
+    mockRouter.query = { sortBy: 'price_asc' };
+    rerender();
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.filters.sortBy).toBe('price_asc');
   });
 });

@@ -152,7 +152,7 @@ export default function ProductGridContent({
   const t = useTranslations();
   const platform = usePlatform();
 
-  const { filters, setFilters } = useProductFilters();
+  const { filters, ready: filtersReady, setFilters } = useProductFilters();
 
   const { restoringRef } = useListRestoration(
     { products, page, hasMore, totalCount },
@@ -388,6 +388,8 @@ export default function ProductGridContent({
     // so infinite scroll keeps working. Later filter changes clear the guard and
     // reset normally.
     if (restoringRef.current) return;
+    // A shared link would otherwise load the unfiltered list first.
+    if (!filtersReady) return;
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
     const isCurrent = () => generation === requestGenerationRef.current;
@@ -454,8 +456,8 @@ export default function ProductGridContent({
     })();
   }, [
     filters,
+    filtersReady,
     searchKeyword,
-    router.isReady,
     effectiveCategoryIds,
     platform,
     webPage,
