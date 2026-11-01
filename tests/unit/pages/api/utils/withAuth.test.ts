@@ -10,6 +10,14 @@ vi.mock('jsonwebtoken', () => ({
   },
 }));
 
+const findUniqueMock = vi.fn();
+
+vi.mock('@/lib/dbClient', () => ({
+  default: {
+    user: { findUnique: (...args: unknown[]) => findUniqueMock(...args) },
+  },
+}));
+
 vi.mock('@/pages/api/utils/tokenUtils', () => ({
   ACCESS_SECRET: 'unit-access-secret',
   generateTokens: vi.fn(() => ({
@@ -38,6 +46,10 @@ function createMockRes() {
 describe('withAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    findUniqueMock.mockImplementation(async ({ where }) => ({
+      grade: where.id === 'user-1' ? UserRole.ADMIN : UserRole.FREE,
+      deletedAt: null,
+    }));
     vi.stubEnv('REFRESH_TOKEN_SECRET', 'unit-refresh-secret');
     vi.stubEnv('NODE_ENV', 'test');
   });
@@ -180,5 +192,78 @@ describe('withAuth', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Unauthorized: Invalid token',
     });
+  });
+
+  it('uses the database grade, not the one in the access token', async () => {
+    vi.mocked(jwt.verify).mockImplementation((_t, _s, callback: any) => {
+      callback(null, { userId: 'demoted', grade: UserRole.ADMIN });
+    });
+    const handler = vi.fn(
+      async (req: AuthenticatedRequest, res: NextApiResponse) => {
+        expect(req.grade).toBe(UserRole.FREE);
+        res.status(200).end();
+      },
+    );
+    const req = {
+      url: '/api/cart',
+      method: 'POST',
+      headers: { authorization: 'Bearer access-token' },
+      cookies: {},
+    } as unknown as NextApiRequest;
+
+    await withAuth(handler)(req, createMockRes());
+
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it('re-mints a refreshed token with the database grade', async () => {
+    vi.mocked(jwt.verify).mockImplementation(
+      (_token, secret, callback: any) => {
+        if (secret === 'unit-access-secret') {
+          callback(
+            Object.assign(new Error('expired'), { name: 'TokenExpiredError' }),
+          );
+        } else {
+          callback(null, { userId: 'demoted', grade: UserRole.SUPERUSER });
+        }
+      },
+    );
+    const req = {
+      url: '/api/cart',
+      method: 'POST',
+      headers: { authorization: 'Bearer expired-access' },
+      cookies: { [AUTH_REFRESH_COOKIE_NAME]: 'old-superuser-refresh' },
+    } as unknown as NextApiRequest;
+
+    await withAuth(
+      vi.fn(async (_req: AuthenticatedRequest, res: NextApiResponse) => {
+        res.status(200).end();
+      }),
+    )(req, createMockRes());
+
+    expect(generateTokens).toHaveBeenCalledWith('demoted', UserRole.FREE);
+  });
+
+  it('returns 401 for a deleted account with a still-valid token', async () => {
+    findUniqueMock.mockResolvedValueOnce({
+      grade: UserRole.ADMIN,
+      deletedAt: new Date(),
+    });
+    vi.mocked(jwt.verify).mockImplementation((_t, _s, callback: any) => {
+      callback(null, { userId: 'user-1', grade: UserRole.ADMIN });
+    });
+    const handler = vi.fn();
+    const req = {
+      url: '/api/cart',
+      method: 'POST',
+      headers: { authorization: 'Bearer access-token' },
+      cookies: {},
+    } as unknown as NextApiRequest;
+    const res = createMockRes();
+
+    await withAuth(handler)(req, res);
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 });

@@ -1,5 +1,5 @@
 import dbClient from '@/lib/dbClient';
-import { verifyToken } from '@/pages/api/utils/authMiddleware';
+import { currentGrade, verifyToken } from '@/pages/api/utils/authMiddleware';
 import {
   ACCESS_SECRET,
   generateTokens,
@@ -105,7 +105,13 @@ const authenticateConnection = async (
       return { safeConnection: null };
     }
 
-    const { userId, grade } = await verifyToken(accessToken, ACCESS_SECRET);
+    const { userId } = await verifyToken(accessToken, ACCESS_SECRET);
+    // The token's grade is from sign-in; a demoted admin must not join as one
+    const grade = await currentGrade(userId);
+    if (grade == null) {
+      safeCloseConnection(1008, 'Unauthorized: User not found', connection);
+      return { safeConnection: null };
+    }
     safeConnection.userId = userId;
     safeConnection.userGrade = grade;
 
@@ -119,11 +125,8 @@ const authenticateConnection = async (
         const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
 
         // Read current grade from DB so a role change is reflected in new tokens
-        const freshUser = await dbClient.user.findUnique({
-          where: { id: userId },
-          select: { grade: true },
-        });
-        if (!freshUser) {
+        const grade = await currentGrade(userId);
+        if (grade == null) {
           safeCloseConnection(
             1008,
             'Unauthorized: User not found',
@@ -133,10 +136,10 @@ const authenticateConnection = async (
         }
 
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-          generateTokens(userId, freshUser.grade);
+          generateTokens(userId, grade);
 
         safeConnection.userId = userId;
-        safeConnection.userGrade = freshUser.grade;
+        safeConnection.userGrade = grade;
 
         return {
           safeConnection,
