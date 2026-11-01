@@ -6,6 +6,7 @@ export interface ListSnapshot {
   products: Product[];
   page: number;
   hasMore: boolean;
+  totalCount: number | null;
   scrollY: number;
 }
 
@@ -35,7 +36,7 @@ export const setListSnapshot = (key: string, snap: ListSnapshot) =>
  * the restored list isn't clobbered.
  */
 export function useListRestoration(
-  current: { products: Product[]; page: number; hasMore: boolean },
+  current: Omit<ListSnapshot, 'scrollY'>,
   restored: ListSnapshot | undefined,
 ) {
   const router = useRouter();
@@ -74,12 +75,19 @@ export function useListRestoration(
         products: current.products,
         page: current.page,
         hasMore: current.hasMore,
+        totalCount: current.totalCount,
         scrollY: window.scrollY,
       });
     };
     router.events.on('routeChangeStart', save);
     return () => router.events.off('routeChangeStart', save);
-  }, [router, current.products, current.page, current.hasMore]);
+  }, [
+    router,
+    current.products,
+    current.page,
+    current.hasMore,
+    current.totalCount,
+  ]);
 
   return { restoringRef };
 }

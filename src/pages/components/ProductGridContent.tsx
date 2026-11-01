@@ -117,7 +117,9 @@ export default function ProductGridContent({
   const lastPushedKeywordRef = useRef<string | null>(null);
   // Total number of products matching the current query (all pages), so the
   // header count reflects the real total rather than the loaded page.
-  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(
+    restored?.totalCount ?? null,
+  );
   const { setPrevSearchKeyword, setPrevCategory, setPrevProducts } =
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
@@ -153,7 +155,7 @@ export default function ProductGridContent({
   const { filters, setFilters } = useProductFilters();
 
   const { restoringRef } = useListRestoration(
-    { products, page, hasMore },
+    { products, page, hasMore, totalCount },
     restored,
   );
 
