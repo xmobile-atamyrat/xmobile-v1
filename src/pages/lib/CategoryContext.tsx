@@ -1,9 +1,5 @@
-import BASE_URL from '@/lib/ApiEndpoints';
-import {
-  CategoryContextProps,
-  ExtendedCategory,
-  ResponseApi,
-} from '@/pages/lib/types';
+import { fetchCategories } from '@/pages/lib/apis';
+import { CategoryContextProps, ExtendedCategory } from '@/pages/lib/types';
 import {
   ReactNode,
   createContext,
@@ -42,8 +38,7 @@ export default function CategoryContextProvider({
   useEffect(() => {
     (async () => {
       try {
-        const { success, data, message }: ResponseApi<ExtendedCategory[]> =
-          await (await fetch(`${BASE_URL}/api/category`)).json();
+        const { success, data, message } = await fetchCategories();
         if (success && data != null) {
           setCategories(data);
         } else {

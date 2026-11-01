@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import {
   BrandProps,
+  ExtendedCategory,
   ExtendedProduct,
   PriceWithOwner,
   PromoBannerData,
@@ -210,6 +211,13 @@ const shareInFlight = <T>(key: string, load: () => Promise<T>): Promise<T> => {
   inFlight.set(key, request);
   return request;
 };
+
+export const fetchCategories = () =>
+  shareInFlight(
+    'categories',
+    async (): Promise<ResponseApi<ExtendedCategory[]>> =>
+      (await fetch(`${BASE_URL}/api/category`)).json(),
+  );
 
 const loadBrands = async (): Promise<BrandProps[]> => {
   const { success, data, message }: ResponseApi<any[]> = await (

@@ -1,4 +1,4 @@
-import { fetchColors } from '@/pages/lib/apis';
+import { fetchCategories, fetchColors } from '@/pages/lib/apis';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const respond = (data: unknown) =>
@@ -28,5 +28,18 @@ describe('shared reference requests', () => {
     await fetchColors();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks again after a failed request', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(respond([{ id: 'root' }]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchCategories()).rejects.toThrow('offline');
+    await expect(fetchCategories()).resolves.toMatchObject({
+      data: [{ id: 'root' }],
+    });
   });
 });
