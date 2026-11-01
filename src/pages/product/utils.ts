@@ -439,13 +439,15 @@ const cheapestSellableVariantPrice = async ({
   accessToken: string;
   fetchWithCreds: FetchWithCredsType;
 }): Promise<string | null> => {
-  const priceIds = (tags ?? [])
-    .map((tag) => tag.match(squareBracketRegex)?.[1])
-    .filter((priceId): priceId is string => priceId != null);
-  if (priceIds.length === 0) return null;
+  const priceIds = new Set(
+    (tags ?? [])
+      .map((tag) => tag.match(squareBracketRegex)?.[1])
+      .filter((priceId): priceId is string => priceId != null),
+  );
+  if (priceIds.size === 0) return null;
 
   const rows = await Promise.all(
-    priceIds.map((priceId) =>
+    [...priceIds].map((priceId) =>
       fetchPriceRow({ priceId, accessToken, fetchWithCreds }),
     ),
   );
