@@ -6,7 +6,7 @@ import {
   PromoBannerData,
   ResponseApi,
 } from '@/pages/lib/types';
-import { Color, Product } from '@prisma/client';
+import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
@@ -177,27 +177,6 @@ export const fetchAllProductSlugs = async (): Promise<string[]> => {
 };
 
 // todo: legacy func, fetchProducts applies default sortBy=newest parameter
-export const fetchNewProducts = async ({
-  searchKeyword,
-  page,
-}: {
-  searchKeyword?: string;
-  page?: number;
-}): Promise<Product[]> => {
-  let url = `${BASE_URL}/api/product/new?page=${page || 1}`;
-  if (searchKeyword) {
-    url += `&searchKeyword=${encodeURIComponent(searchKeyword)}`;
-  }
-
-  const { success, data, message }: ResponseApi<Product[]> = await (
-    await fetch(url)
-  ).json();
-  if (!success || data == null) {
-    throw new Error(message);
-  }
-  return Array.isArray(data) ? data : [];
-};
-
 export const fetchBrands = async (): Promise<BrandProps[]> => {
   const { success, data, message }: ResponseApi<any[]> = await (
     await fetch(`${BASE_URL}/api/brand`)
