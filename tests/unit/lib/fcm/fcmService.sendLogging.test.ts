@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { sendFCMNotificationToUser } from '@/lib/fcm/fcmService';
+import { FCMNotificationPayload } from '@/lib/fcm/types';
+
 const { mockFindMany, mockDeleteMany, mockSendEachForMulticast, mockApp } =
   vi.hoisted(() => ({
     mockFindMany: vi.fn(),
@@ -22,9 +25,6 @@ vi.mock('firebase-admin', () => ({
   messaging: () => ({ sendEachForMulticast: mockSendEachForMulticast }),
   initializeApp: vi.fn(),
 }));
-
-import { sendFCMNotificationToUser } from '@/lib/fcm/fcmService';
-import { FCMNotificationPayload } from '@/lib/fcm/types';
 
 const payload = {
   title: 't',

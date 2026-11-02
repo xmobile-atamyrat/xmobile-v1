@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  buildPriceUpdateMeta,
+  PRICE_ROW_LOG_LIMIT,
+  recordPricesUpdated,
+} from '@/lib/priceActivity';
+import type { Prices } from '@prisma/client';
+
 const { mockLog, mockLogMany } = vi.hoisted(() => ({
   mockLog: vi.fn(),
   mockLogMany: vi.fn(),
@@ -18,13 +25,6 @@ vi.mock('@/lib/dbClient', () => ({
     dollarRate: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
-
-import {
-  buildPriceUpdateMeta,
-  PRICE_ROW_LOG_LIMIT,
-  recordPricesUpdated,
-} from '@/lib/priceActivity';
-import type { Prices } from '@prisma/client';
 
 const price = {
   id: 'pr1',

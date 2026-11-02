@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockExecute } = vi.hoisted(() => ({ mockExecute: vi.fn() }));
-
-vi.mock('@/lib/dbClient', () => ({
-  default: { $executeRaw: mockExecute },
-}));
-
 import {
   ADMIN_ACTIVITY_RETENTION_MONTHS,
   pruneAdminActivity,
   retentionCutoff,
 } from '@/lib/adminActivityRetention';
+
+const { mockExecute } = vi.hoisted(() => ({ mockExecute: vi.fn() }));
+
+vi.mock('@/lib/dbClient', () => ({
+  default: { $executeRaw: mockExecute },
+}));
 
 describe('retentionCutoff', () => {
   it('is 13 calendar months back', () => {

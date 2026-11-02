@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { recordNotificationDelivery } from '@/lib/fcm/fcmService';
+
 const { mockUpdateMany } = vi.hoisted(() => ({
   mockUpdateMany: vi.fn(),
 }));
@@ -9,8 +11,6 @@ vi.mock('@/lib/dbClient', () => ({
     inAppNotification: { updateMany: mockUpdateMany },
   },
 }));
-
-import { recordNotificationDelivery } from '@/lib/fcm/fcmService';
 
 describe('recordNotificationDelivery', () => {
   beforeEach(() => {

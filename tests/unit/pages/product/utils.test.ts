@@ -1,4 +1,4 @@
-import { Color, Prices } from '@prisma/client';
+import { Color, Prices, Product } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -32,7 +32,6 @@ import {
   resolveVariantDisplay,
   tmtFromUsd,
 } from '@/pages/product/utils';
-import { Product } from '@prisma/client';
 import { ExtendedCategory } from '@/pages/lib/types';
 
 describe('parsePrice', () => {

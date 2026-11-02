@@ -1,15 +1,15 @@
 import type { Prices } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getPrice } from '@/pages/api/prices/index.page';
+import { buildOrderItemsData } from '@/pages/api/order/services/orderService';
+
 vi.mock('@/pages/api/prices/index.page', () => ({
   getPrice: vi.fn(),
 }));
 vi.mock('@/pages/api/colors/index.page', () => ({
   getColor: vi.fn().mockResolvedValue(null),
 }));
-
-import { getPrice } from '@/pages/api/prices/index.page';
-import { buildOrderItemsData } from '@/pages/api/order/services/orderService';
 
 const cartItem = (over: Record<string, unknown> = {}) => ({
   quantity: 1,

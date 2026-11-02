@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  categoryRevalidationPaths,
+  productIdsReferencingPrices,
+  productRevalidationPaths,
+} from '@/lib/revalidateTargets';
+
 const { mockProductFindMany, mockCategoryFindMany } = vi.hoisted(() => ({
   mockProductFindMany: vi.fn(),
   mockCategoryFindMany: vi.fn(),
@@ -11,12 +17,6 @@ vi.mock('@/lib/dbClient', () => ({
     category: { findMany: mockCategoryFindMany },
   },
 }));
-
-import {
-  categoryRevalidationPaths,
-  productIdsReferencingPrices,
-  productRevalidationPaths,
-} from '@/lib/revalidateTargets';
 
 describe('productRevalidationPaths', () => {
   beforeEach(() => {
