@@ -58,17 +58,35 @@ describe('RolesPanel', () => {
     );
   });
 
-  it('loads staff first and locks the viewer out of their own role', async () => {
+  it('loads everyone without a filter and locks the viewer out of their own role', async () => {
     renderWithProviders(createElement(RolesPanel, { onRoleChanged: vi.fn() }));
 
     expect(await screen.findByText('Aman')).toBeTruthy();
-    expect(fetchMock.mock.calls[0][0].path).toBe('/api/admin/users?role=STAFF');
+    expect(fetchMock.mock.calls[0][0].path).toBe('/api/admin/users');
+
+    expect(screen.queryByRole('button', { name: 'Staff' })).toBeNull();
 
     const own = screen.getByText('Merdan').closest('li') as HTMLElement;
     expect(within(own).getByText('(you)')).toBeTruthy();
     expect(
       within(own).getByRole('combobox').getAttribute('aria-disabled'),
     ).toBe('true');
+  });
+
+  it('searches by the debounced, trimmed term', async () => {
+    renderWithProviders(createElement(RolesPanel, { onRoleChanged: vi.fn() }));
+    await screen.findByText('Aman');
+
+    await userEvent.type(
+      screen.getByLabelText('Name, phone or email'),
+      '  Aman ',
+    );
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ path: '/api/admin/users?q=Aman' }),
+      ),
+    );
   });
 
   it('asks before changing a role, then saves it', async () => {

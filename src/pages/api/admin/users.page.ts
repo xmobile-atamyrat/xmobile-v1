@@ -35,7 +35,6 @@ async function handler(
   if (req.method === 'GET') {
     const parsed = userListQuerySchema.safeParse({
       q: first(req.query.q) || undefined,
-      role: first(req.query.role) || undefined,
       cursor: first(req.query.cursor) || undefined,
     });
     if (!parsed.success) {
