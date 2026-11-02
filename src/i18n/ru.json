@@ -804,5 +804,21 @@
   "activityFieldTags": "варианты",
   "activityFieldVideos": "видео",
   "brandColorsClash": "Нельзя удалить бренд: у него есть цвета с тем же названием или кодом, что и у цветов без бренда. Сначала переименуйте или удалите их.",
-  "colorNotFound": "Один из цветов уже удалён. Обновите страницу."
+  "colorNotFound": "Один из цветов уже удалён. Обновите страницу.",
+  "activityTabActivity": "Активность",
+  "activityTabRoles": "Роли",
+  "roleFree": "Покупатель",
+  "roleAdmin": "Администратор",
+  "roleSuperuser": "Суперпользователь",
+  "rolesFilterStaff": "Сотрудники",
+  "rolesFilterAll": "Все",
+  "rolesSearch": "Имя, телефон или email",
+  "rolesRole": "Роль",
+  "rolesYou": "вы",
+  "rolesOwnRoleHint": "Свою роль изменить нельзя",
+  "rolesConfirmTitle": "Изменить роль",
+  "rolesConfirmText": "Изменить роль пользователя {name}: {from} → {to}?",
+  "rolesEmpty": "Пользователи не найдены",
+  "rolesLoadError": "Не удалось загрузить пользователей. Попробуйте ещё раз.",
+  "rolesChangeError": "Не удалось изменить роль. Попробуйте ещё раз."
 }

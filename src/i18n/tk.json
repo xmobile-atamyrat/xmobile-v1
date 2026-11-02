@@ -804,5 +804,21 @@
   "activityFieldTags": "görnüşler",
   "activityFieldVideos": "wideolar",
   "brandColorsClash": "Brendi pozup bolmaýar: onuň käbir reňkleriniň ady ýa-da kody brendsiz reňk bilen gabat gelýär. Ilki olaryň adyny üýtgediň ýa-da pozuň.",
-  "colorNotFound": "Reňkleriň biri eýýäm pozuldy. Sahypany täzeläň."
+  "colorNotFound": "Reňkleriň biri eýýäm pozuldy. Sahypany täzeläň.",
+  "activityTabActivity": "Işjeňlik",
+  "activityTabRoles": "Wezipeler",
+  "roleFree": "Müşderi",
+  "roleAdmin": "Dolandyryjy",
+  "roleSuperuser": "Zvezda",
+  "rolesFilterStaff": "Işgärler",
+  "rolesFilterAll": "Hemmesi",
+  "rolesSearch": "Ady, telefony ýa-da email",
+  "rolesRole": "Wezipe",
+  "rolesYou": "siz",
+  "rolesOwnRoleHint": "Öz wezipäňizi üýtgedip bilmeýärsiňiz",
+  "rolesConfirmTitle": "Wezipäni üýtget",
+  "rolesConfirmText": "{name} üçin wezipäni üýtgetmeli: {from} → {to}?",
+  "rolesEmpty": "Ulanyjy tapylmady",
+  "rolesLoadError": "Ulanyjylary ýükläp bolmady. Gaýtadan synanyşyň.",
+  "rolesChangeError": "Wezipäni üýtgedip bolmady. Gaýtadan synanyşyň."
 }

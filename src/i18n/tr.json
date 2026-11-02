@@ -802,5 +802,21 @@
   "activityFieldTags": "varyasyonlar",
   "activityFieldVideos": "videolar",
   "brandColorsClash": "Marka silinemiyor: bazı renkleri markasız bir renkle aynı ada veya hex koduna sahip. Önce bunları yeniden adlandırın veya silin.",
-  "colorNotFound": "Renklerden biri silinmiş. Sayfayı yenileyin."
+  "colorNotFound": "Renklerden biri silinmiş. Sayfayı yenileyin.",
+  "activityTabActivity": "Etkinlik",
+  "activityTabRoles": "Roller",
+  "roleFree": "Müşteri",
+  "roleAdmin": "Yönetici",
+  "roleSuperuser": "Süper kullanıcı",
+  "rolesFilterStaff": "Personel",
+  "rolesFilterAll": "Herkes",
+  "rolesSearch": "Ad, telefon veya e-posta",
+  "rolesRole": "Rol",
+  "rolesYou": "siz",
+  "rolesOwnRoleHint": "Kendi rolünüzü değiştiremezsiniz",
+  "rolesConfirmTitle": "Rolü değiştir",
+  "rolesConfirmText": "{name} kullanıcısının rolü değiştirilsin mi: {from} → {to}?",
+  "rolesEmpty": "Kullanıcı bulunamadı",
+  "rolesLoadError": "Kullanıcılar yüklenemedi. Tekrar deneyin.",
+  "rolesChangeError": "Rol değiştirilemedi. Tekrar deneyin."
 }
