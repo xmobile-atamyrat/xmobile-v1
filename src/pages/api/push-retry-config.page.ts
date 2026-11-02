@@ -1,8 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
-import { verifyToken } from '@/pages/api/utils/authMiddleware';
-import { ACCESS_SECRET } from '@/pages/api/utils/tokenUtils';
-import { UserRole } from '@prisma/client';
+import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
@@ -53,25 +51,7 @@ export default async function handler(
   }
 
   if (req.method === 'PUT') {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        message: 'Unauthorized: Missing or invalid Authorization header',
-      });
-    }
-
-    const accessToken = authHeader.split(' ')[1];
-    let grade: UserRole;
-    try {
-      const decoded = await verifyToken(accessToken, ACCESS_SECRET);
-      grade = decoded.grade as UserRole;
-    } catch {
-      return res.status(401).json({ message: 'Unauthorized: Invalid token' });
-    }
-
-    if (grade !== UserRole.SUPERUSER) {
-      return res.status(403).json({ message: 'Forbidden: Superuser only' });
-    }
+    if (!(await requireSuperuserBearerAuth(req, res))) return undefined;
 
     let data: z.infer<typeof ConfigSchema>;
     try {

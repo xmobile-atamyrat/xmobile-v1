@@ -1,3 +1,4 @@
+import dbClient from '@/lib/dbClient';
 import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
 import { ACCESS_SECRET, generateTokens } from '@/pages/api/utils/tokenUtils';
 import {
@@ -24,21 +25,40 @@ export const verifyToken = (
 };
 
 /**
+ * The account's current grade, or null when it no longer exists or is
+ * soft-deleted. A token carries the grade it was minted with, so role gates read
+ * it here instead: a demoted or removed account loses access on its next request
+ * rather than whenever its token happens to expire.
+ */
+export async function currentGrade(userId: unknown): Promise<UserRole | null> {
+  if (typeof userId !== 'string' || userId === '') return null;
+  const user = await dbClient.user.findUnique({
+    where: { id: userId },
+    select: { grade: true, deletedAt: true },
+  });
+  if (user == null || user.deletedAt != null) return null;
+  return user.grade;
+}
+
+/**
  * Mints a fresh token pair from the refresh cookie, for a request whose access
  * token has expired. The rotated cookie and an `Authorization` response header
  * (which `fetchWithCreds` stores) are set on `res`, and the request's own header
- * is rewritten so anything later in the request sees the new token. Rejects
- * when the cookie is missing or invalid.
+ * is rewritten so anything later in the request sees the new token. The grade
+ * comes from the database, not the old cookie, so a role change sticks. Rejects
+ * when the cookie is missing or invalid, or the account is gone.
  */
 export async function refreshFromCookie(
   req: NextApiRequest,
   res: NextApiResponse,
 ): Promise<{ userId: string; grade: UserRole }> {
   const refreshToken = req.cookies?.[AUTH_REFRESH_COOKIE_NAME];
-  const { userId, grade } = await verifyToken(
+  const { userId } = await verifyToken(
     refreshToken,
     process.env.REFRESH_TOKEN_SECRET,
   );
+  const grade = await currentGrade(userId);
+  if (grade == null) throw new Error('User not found');
   const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
     generateTokens(userId, grade);
 
@@ -95,7 +115,13 @@ const withAuth = (
         error.name = 'TokenExpiredError';
         throw error;
       }
-      const { userId, grade } = await verifyToken(token, ACCESS_SECRET);
+      const { userId } = await verifyToken(token, ACCESS_SECRET);
+      const grade = await currentGrade(userId);
+      if (grade == null) {
+        return res
+          .status(401)
+          .json({ message: 'Unauthorized: User not found' });
+      }
       (req as AuthenticatedRequest).userId = userId;
       (req as AuthenticatedRequest).grade = grade;
       return handler(req as AuthenticatedRequest, res);
