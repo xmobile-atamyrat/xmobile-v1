@@ -1,23 +1,5 @@
 import { UserRole } from '@prisma/client';
 
-/** `STAFF` is ADMIN + SUPERUSER, the Roles tab's default view. */
-export const ROLE_FILTERS = [
-  'STAFF',
-  'ALL',
-  'FREE',
-  'ADMIN',
-  'SUPERUSER',
-] as const;
-export type RoleFilter = (typeof ROLE_FILTERS)[number];
-
-export const ROLE_FILTER_LABEL_KEYS: Record<RoleFilter, string> = {
-  STAFF: 'rolesFilterStaff',
-  ALL: 'rolesFilterAll',
-  FREE: 'roleFree',
-  ADMIN: 'roleAdmin',
-  SUPERUSER: 'roleSuperuser',
-};
-
 export const ROLE_LABEL_KEYS: Record<UserRole, string> = {
   FREE: 'roleFree',
   ADMIN: 'roleAdmin',

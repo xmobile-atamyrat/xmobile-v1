@@ -99,34 +99,55 @@ describe('Admin users API (integration)', () => {
     ).toBe(403);
   });
 
-  it('lists staff by default and searches everyone', async () => {
+  it('lists everyone, staff first, and searches case-insensitively', async () => {
     const customer = await makeUser('RoleApi Customer', {
       phoneNumber: '+99365111222',
     });
-    await makeUser('RoleApi Gone', { deletedAt: new Date() });
+    const gone = await makeUser('RoleApi Gone', { deletedAt: new Date() });
 
-    const staff = await call('GET', superToken);
-    expect(staff.status).toBe(200);
-    const staffIds = staff.body.data.items.map((u: { id: string }) => u.id);
-    expect(staffIds).toEqual(expect.arrayContaining([superId, adminId]));
-    expect(staffIds).not.toContain(customer.id);
-    expect(staff.body.data.items[0].grade).toBe('SUPERUSER');
-    expect(staff.body.data.items[0]).not.toHaveProperty('password');
+    // Page through everything: the default view has no role filter.
+    const all: { id: string; grade: UserRole }[] = [];
+    let cursor: string | null = null;
+    do {
+      const page = await call('GET', superToken, {
+        query: cursor ? { cursor } : {},
+      });
+      expect(page.status).toBe(200);
+      expect(page.body.data.items[0]).not.toHaveProperty('password');
+      all.push(...page.body.data.items);
+      cursor = page.body.data.nextCursor;
+    } while (cursor);
+    const ids = all.map((u) => u.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([superId, adminId, customer.id]),
+    );
+    expect(ids).not.toContain(gone.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const rank = { SUPERUSER: 0, ADMIN: 1, FREE: 2 } as const;
+    const ranks = all.map((u) => rank[u.grade]);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
 
-    const byName = await call('GET', superToken, {
-      query: { role: 'ALL', q: 'roleapi' },
-    });
+    const byName = await call('GET', superToken, { query: { q: 'ROLEAPI' } });
     expect(byName.body.data.items.map((u: { id: string }) => u.id)).toEqual([
       customer.id,
     ]);
 
-    const byPhone = await call('GET', superToken, {
-      query: { role: 'FREE', q: '65111222' },
+    const byEmail = await call('GET', superToken, {
+      query: { q: customer.email.toUpperCase() },
     });
-    expect(byPhone.body.data.items).toHaveLength(1);
+    expect(byEmail.body.data.items.map((u: { id: string }) => u.id)).toEqual([
+      customer.id,
+    ]);
+
+    const byPhone = await call('GET', superToken, {
+      query: { q: '65111222' },
+    });
+    expect(byPhone.body.data.items.map((u: { id: string }) => u.id)).toEqual([
+      customer.id,
+    ]);
 
     expect(
-      (await call('GET', superToken, { query: { role: 'OWNER' } })).status,
+      (await call('GET', superToken, { query: { q: 'x'.repeat(101) } })).status,
     ).toBe(400);
   });
 

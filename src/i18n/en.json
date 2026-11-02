@@ -808,8 +808,6 @@
   "roleFree": "Customer",
   "roleAdmin": "Admin",
   "roleSuperuser": "Superuser",
-  "rolesFilterStaff": "Staff",
-  "rolesFilterAll": "Everyone",
   "rolesSearch": "Name, phone or email",
   "rolesRole": "Role",
   "rolesYou": "you",
