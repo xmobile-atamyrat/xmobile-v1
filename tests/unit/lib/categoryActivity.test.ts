@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockFind } = vi.hoisted(() => ({ mockFind: vi.fn() }));
-
-vi.mock('@/lib/dbClient', () => ({
-  default: { category: { findUnique: mockFind } },
-}));
-
 import {
   buildCategoryUpdateMeta,
   categoryLabel,
   categoryNameById,
 } from '@/lib/categoryActivity';
+
+const { mockFind } = vi.hoisted(() => ({ mockFind: vi.fn() }));
+
+vi.mock('@/lib/dbClient', () => ({
+  default: { category: { findUnique: mockFind } },
+}));
 
 describe('categoryLabel', () => {
   it('prefers the English name from the locale blob', () => {

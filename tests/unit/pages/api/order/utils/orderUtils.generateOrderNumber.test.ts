@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { generateOrderNumber } from '@/pages/api/order/utils/orderUtils';
+
 const { mockTransaction } = vi.hoisted(() => ({
   mockTransaction: vi.fn(),
 }));
@@ -9,8 +11,6 @@ vi.mock('@/lib/dbClient', () => ({
     $transaction: mockTransaction,
   },
 }));
-
-import { generateOrderNumber } from '@/pages/api/order/utils/orderUtils';
 
 describe('generateOrderNumber', () => {
   beforeEach(() => {

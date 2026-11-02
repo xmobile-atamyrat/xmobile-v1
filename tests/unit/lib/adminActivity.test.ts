@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  changedFields,
+  logAdminActivity,
+  writeAdminActivities,
+  writeAdminActivity,
+} from '@/lib/adminActivity';
+
 const { mockUserFind, mockCreate } = vi.hoisted(() => ({
   mockUserFind: vi.fn(),
   mockCreate: vi.fn(),
@@ -11,13 +18,6 @@ vi.mock('@/lib/dbClient', () => ({
     adminActivity: { createMany: mockCreate },
   },
 }));
-
-import {
-  changedFields,
-  logAdminActivity,
-  writeAdminActivities,
-  writeAdminActivity,
-} from '@/lib/adminActivity';
 
 describe('writeAdminActivity', () => {
   beforeEach(() => {

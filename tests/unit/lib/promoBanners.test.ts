@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import dbClient from '@/lib/dbClient';
+import {
+  deriveBannerRedirect,
+  getActiveBanners,
+  getAllBanners,
+  getStorefrontBanners,
+} from '@/lib/promoBanners';
+
 const { mockFindMany } = vi.hoisted(() => ({
   mockFindMany: vi.fn(),
 }));
@@ -11,14 +19,6 @@ vi.mock('@/lib/dbClient', () => ({
     product: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
-
-import dbClient from '@/lib/dbClient';
-import {
-  deriveBannerRedirect,
-  getActiveBanners,
-  getAllBanners,
-  getStorefrontBanners,
-} from '@/lib/promoBanners';
 
 function makeBanner(overrides: Record<string, unknown> = {}) {
   const base = {

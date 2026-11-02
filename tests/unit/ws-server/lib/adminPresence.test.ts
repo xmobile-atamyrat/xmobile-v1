@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockUpdateMany } = vi.hoisted(() => ({ mockUpdateMany: vi.fn() }));
-
-vi.mock('@/lib/dbClient', () => ({
-  default: { user: { updateMany: mockUpdateMany } },
-}));
-
 import {
   adminUserIdsOnline,
   touchAdminLastSeen,
 } from '@/ws-server/lib/adminPresence';
 import type { AuthenticatedConnection } from '@/ws-server/lib/types';
+
+const { mockUpdateMany } = vi.hoisted(() => ({ mockUpdateMany: vi.fn() }));
+
+vi.mock('@/lib/dbClient', () => ({
+  default: { user: { updateMany: mockUpdateMany } },
+}));
 
 const conn = (userId: string, userGrade: string) =>
   ({ userId, userGrade }) as unknown as AuthenticatedConnection;

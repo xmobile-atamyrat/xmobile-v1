@@ -27,6 +27,19 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 
 const globalForLogger = global as unknown as { isLoggerInitialized: boolean };
 
+/**
+ * `next dev`, vitest and the e2e server all run with NODE_ENV development or
+ * test. A developer's `.env` holds the production webhooks, and Next reads it
+ * for any key `.env.local` leaves unset (and skips `.env.local` altogether
+ * under NODE_ENV=test), so a local error would otherwise land in the real
+ * alerts channel. Production builds run with NODE_ENV=production, and the
+ * VM's ws-server and batch-runner leave it unset; both keep alerting.
+ */
+function isLocalRuntime(): boolean {
+  const env = process.env.NODE_ENV;
+  return env === 'development' || env === 'test';
+}
+
 function getConfiguredLogLevel(): number {
   const level = process.env.SLACK_LOG_LEVEL?.toUpperCase() as LogLevel;
   return LOG_LEVELS[level] ?? LOG_LEVELS.ERROR; // Default to ERROR
@@ -104,6 +117,14 @@ function sendToSlack(level: LogLevel, args: any[]) {
 export function initSlackLogger() {
   if (globalForLogger.isLoggerInitialized) return;
   globalForLogger.isLoggerInitialized = true;
+
+  if (isLocalRuntime()) {
+    // Said once per dev server; under test it would repeat for every file.
+    if (process.env.NODE_ENV === 'development') {
+      process.stdout.write('[Logger] Slack logging is off in development.\n');
+    }
+    return;
+  }
 
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;

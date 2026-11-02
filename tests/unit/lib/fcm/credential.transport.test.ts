@@ -2,6 +2,8 @@ import { EventEmitter } from 'events';
 import { URL } from 'url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ipRotatingTransport } from '@/lib/fcm/credential';
+
 const { mockRequest, mockGetIpsToTry, mockMarkIpAsWorking } = vi.hoisted(
   () => ({
     mockRequest: vi.fn(),
@@ -29,8 +31,6 @@ vi.mock('@/lib/slack/ipCache', () => ({
     markIpAsWorking: mockMarkIpAsWorking,
   },
 }));
-
-import { ipRotatingTransport } from '@/lib/fcm/credential';
 
 const url = new URL('https://oauth2.googleapis.com/token');
 const FORM = 'grant_type=x&assertion=y';
