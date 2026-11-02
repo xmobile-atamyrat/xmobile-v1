@@ -804,5 +804,21 @@
   "activityFieldTags": "görnüşläri",
   "activityFieldVideos": "wideolar",
   "brandColorsClash": "Brendi öçürüp bolmaýar: onuň käbir reňkleriniň ady ýa-da kody brendsiz reňk bilen gabat gelýär. Ilki olaryň adyny üýtgediň ýa-da öçüriň.",
-  "colorNotFound": "Reňkleriň biri uže öçürildi. Sahypany täzeläň."
+  "colorNotFound": "Reňkleriň biri uže öçürildi. Sahypany täzeläň.",
+  "activityTabActivity": "Işjeňlik",
+  "activityTabRoles": "Roller",
+  "roleFree": "Klient",
+  "roleAdmin": "Admin",
+  "roleSuperuser": "Zvezda",
+  "rolesFilterStaff": "Işgärler",
+  "rolesFilterAll": "Hemmesi",
+  "rolesSearch": "Ady, telefony ýa-da email",
+  "rolesRole": "Rol",
+  "rolesYou": "siz",
+  "rolesOwnRoleHint": "Öz roluňyzy üýtgedip bilmeýärsiňiz",
+  "rolesConfirmTitle": "Roly üýtget",
+  "rolesConfirmText": "{name} üçin roly üýtgetmeli: {from} → {to}?",
+  "rolesEmpty": "Ulanyjy tapylmady",
+  "rolesLoadError": "Ulanyjylary ýükläp bolmady. Gaýtadan synanyşyň.",
+  "rolesChangeError": "Roly üýtgedip bolmady. Gaýtadan synanyşyň."
 }

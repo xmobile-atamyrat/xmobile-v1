@@ -21,6 +21,8 @@ import {
   Box,
   CircularProgress,
   Divider,
+  Tab,
+  Tabs,
   Typography,
   useMediaQuery,
   useTheme,
@@ -32,6 +34,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFeed, { ActivityFilters } from './ActivityFeed';
 import ActivityHeatmap from './ActivityHeatmap';
+import RolesPanel from './RolesPanel';
 import StaffCards from './StaffCards';
 
 const STAFF_REFRESH_MS = 30_000;
@@ -39,6 +42,7 @@ const STAFF_REFRESH_MS = 30_000;
 type FeedPage = { items: ActivityRow[]; nextCursor: string | null };
 type Heatmap = { from: string; to: string; days: HeatmapDay[] };
 type LoadErrors = { staff: boolean; feed: boolean; heatmap: boolean };
+type PageTab = 'feed' | 'roles';
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const home = {
@@ -78,6 +82,7 @@ export default function AdminActivityPage() {
   const { user, accessToken, isLoading: isUserLoading } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
+  const [tab, setTab] = useState<PageTab>('feed');
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [filters, setFilters] = useState<ActivityFilters>({});
   const [feed, setFeed] = useState<FeedPage>({ items: [], nextCursor: null });
@@ -277,71 +282,96 @@ export default function AdminActivityPage() {
           </Typography>
         </Box>
 
-        {(errors.staff || errors.feed || errors.heatmap) && (
+        <Tabs
+          value={tab}
+          onChange={(_event, value: PageTab) => setTab(value)}
+          sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 0 }}
+        >
+          <Tab
+            value="feed"
+            label={t('activityTabActivity')}
+            sx={{ textTransform: 'none' }}
+          />
+          <Tab
+            value="roles"
+            label={t('activityTabRoles')}
+            sx={{ textTransform: 'none' }}
+          />
+        </Tabs>
+
+        {tab === 'roles' && hasToken && (
+          <RolesPanel onRoleChanged={loadStaff} />
+        )}
+
+        {tab === 'feed' && (errors.staff || errors.feed || errors.heatmap) && (
           <Alert severity="error">{t('activityLoadError')}</Alert>
         )}
 
-        <Box className="flex flex-col gap-3">
-          <Typography fontWeight={600} className={fontClassName.className}>
-            {t('activityStaff')}
-          </Typography>
-          {staff.length === 0 ? (
-            <Typography color="text.secondary">
-              {t('activityNoStaff')}
-            </Typography>
-          ) : (
-            <StaffCards
-              staff={staff}
-              selectedId={filters.userId}
-              onSelect={(userId) =>
-                setFilters({
-                  ...filters,
-                  userId,
-                  from: undefined,
-                  to: undefined,
-                })
-              }
-            />
-          )}
-        </Box>
-
-        {selected && heatmap && (
+        {tab === 'feed' && (
           <>
+            <Box className="flex flex-col gap-3">
+              <Typography fontWeight={600} className={fontClassName.className}>
+                {t('activityStaff')}
+              </Typography>
+              {staff.length === 0 ? (
+                <Typography color="text.secondary">
+                  {t('activityNoStaff')}
+                </Typography>
+              ) : (
+                <StaffCards
+                  staff={staff}
+                  selectedId={filters.userId}
+                  onSelect={(userId) =>
+                    setFilters({
+                      ...filters,
+                      userId,
+                      from: undefined,
+                      to: undefined,
+                    })
+                  }
+                />
+              )}
+            </Box>
+
+            {selected && heatmap && (
+              <>
+                <Divider />
+                <ActivityHeatmap
+                  name={selected.name}
+                  from={heatmap.from}
+                  to={heatmap.to}
+                  days={heatmap.days}
+                  selectedDay={selectedDay}
+                  onSelectDay={(day) =>
+                    setFilters({ ...filters, from: day, to: day })
+                  }
+                />
+              </>
+            )}
+            {filters.userId && heatmapLoading && (
+              <Box className="flex flex-row justify-center">
+                <CircularProgress size={24} />
+              </Box>
+            )}
+
             <Divider />
-            <ActivityHeatmap
-              name={selected.name}
-              from={heatmap.from}
-              to={heatmap.to}
-              days={heatmap.days}
-              selectedDay={selectedDay}
-              onSelectDay={(day) =>
-                setFilters({ ...filters, from: day, to: day })
-              }
-            />
+
+            <Box className="flex flex-col gap-3">
+              <Typography fontWeight={600} className={fontClassName.className}>
+                {t('activityFeed')}
+              </Typography>
+              <ActivityFeed
+                staff={staff}
+                filters={filters}
+                onFiltersChange={setFilters}
+                items={feed.items}
+                loading={feedLoading}
+                hasMore={feed.nextCursor != null}
+                onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
+              />
+            </Box>
           </>
         )}
-        {filters.userId && heatmapLoading && (
-          <Box className="flex flex-row justify-center">
-            <CircularProgress size={24} />
-          </Box>
-        )}
-
-        <Divider />
-
-        <Box className="flex flex-col gap-3">
-          <Typography fontWeight={600} className={fontClassName.className}>
-            {t('activityFeed')}
-          </Typography>
-          <ActivityFeed
-            staff={staff}
-            filters={filters}
-            onFiltersChange={setFilters}
-            items={feed.items}
-            loading={feedLoading}
-            hasMore={feed.nextCursor != null}
-            onLoadMore={() => feed.nextCursor && loadFeed(feed.nextCursor)}
-          />
-        </Box>
       </Box>
     </Layout>
   );
