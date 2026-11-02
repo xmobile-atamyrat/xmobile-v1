@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import {
+  currentGrade,
   refreshFromCookie,
   verifyToken,
 } from '@/pages/api/utils/authMiddleware';
@@ -25,7 +26,8 @@ export type BearerActor = {
 };
 
 /**
- * Requires `Authorization: Bearer <access JWT>` whose grade passes `allow`.
+ * Requires `Authorization: Bearer <access JWT>` whose account's current grade
+ * (read from the database, not the token) passes `allow`.
  * An expired token is renewed from the refresh cookie the way `withAuth` does,
  * so an admin who left a form open past the access token's lifetime can still
  * save it. Otherwise a missing or invalid token is always 401; a valid token
@@ -57,20 +59,24 @@ async function requireBearerGrade(
     });
     return null;
   }
-  let payload: { userId?: unknown; grade?: UserRole };
+  let userId: unknown;
+  let grade: UserRole | null;
   try {
-    payload = (await verifyToken(token, secret)) as typeof payload;
+    ({ userId } = await verifyToken(token, secret));
+    // The token's own grade is whatever it was at sign-in; go by the current one.
+    grade = await currentGrade(userId);
   } catch (error) {
     if ((error as Error).name !== 'TokenExpiredError') return unauthorized();
     try {
-      payload = await refreshFromCookie(req, res);
+      ({ userId, grade } = await refreshFromCookie(req, res));
     } catch {
       return unauthorized();
     }
   }
+  if (grade == null) return unauthorized();
   const actor: BearerActor = {
-    userId: typeof payload.userId === 'string' ? payload.userId : undefined,
-    grade: payload.grade,
+    userId: typeof userId === 'string' ? userId : undefined,
+    grade,
   };
   if (!allow(actor.grade)) {
     res.status(rejectStatus).json({
