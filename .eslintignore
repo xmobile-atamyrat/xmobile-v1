@@ -1,9 +1,4 @@
 dist/
-mobile/
 batch-runner-dist/
-tests/integration/
-tests/unit/
-vitest.config.ts
-vitest.unit.config.ts
-vitest.client.config.ts
-xmobile-app-redesign/
+mobile/
+fcm-configs/

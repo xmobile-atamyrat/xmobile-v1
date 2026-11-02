@@ -3,13 +3,13 @@ import { PrismaClient } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { parseOrderVariant } from '@/pages/product/utils';
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
 import { signupTestUser } from './shared/signup-test-user';
 import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
 } from './shared/worker-env';
-import { parseOrderVariant } from '@/pages/product/utils';
 
 describe('Order — variant snapshots (integration)', () => {
   let prisma: PrismaClient;

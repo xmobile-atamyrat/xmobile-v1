@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { SlackIpCache } from '@/lib/slack/ipCache';
+
 const { mockResolve4 } = vi.hoisted(() => ({
   mockResolve4: vi.fn(),
 }));
@@ -9,8 +11,6 @@ vi.mock('dns/promises', () => ({
     resolve4: mockResolve4,
   },
 }));
-
-import { SlackIpCache } from '@/lib/slack/ipCache';
 
 describe('SlackIpCache', () => {
   let cache: SlackIpCache;

@@ -1,13 +1,13 @@
 import type { Prices } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/pages/api/prices/index.page', () => ({
-  getPrice: vi.fn(),
-}));
-
 import { getPrice } from '@/pages/api/prices/index.page';
 import { calculateTotalPrice } from '@/pages/api/order/utils/orderUtils';
 import { displayPriceOf } from '@/pages/lib/priceDisplay';
+
+vi.mock('@/pages/api/prices/index.page', () => ({
+  getPrice: vi.fn(),
+}));
 
 describe('calculateTotalPrice', () => {
   beforeEach(() => {

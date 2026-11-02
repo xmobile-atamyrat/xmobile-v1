@@ -1,5 +1,4 @@
-import { inject } from 'vitest';
-import { vi } from 'vitest';
+import { inject, vi } from 'vitest';
 
 import type { IntegrationCatalog } from './integration-types';
 import { resetPrismaGlobalSingleton } from '../helpers/reset-prisma-global';

@@ -1,11 +1,9 @@
-import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-import { PrismaClient } from '@prisma/client';
-
-import { E2E_ORIGIN, E2E_PORT } from './constants';
 import { startIntegrationDatabase } from '../integration/setup-database';
+import { E2E_ORIGIN, E2E_PORT } from './constants';
 import { seedE2eCatalog } from './seed-e2e-catalog';
 
 const ACCESS_TOKEN_SECRET = 'e2e-access-token-secret-32chars-min';
@@ -13,14 +11,20 @@ const REFRESH_TOKEN_SECRET = 'e2e-refresh-token-secret-32chars-min';
 
 const rootDir = process.cwd();
 
+const launchEnv: NodeJS.ProcessEnv = { ...process.env };
+
 let nextProcess: ChildProcess | undefined;
 
 function buildNextEnv(databaseUrl: string): NodeJS.ProcessEnv {
   return {
-    ...process.env,
+    ...launchEnv,
     DATABASE_URL: databaseUrl,
     ACCESS_TOKEN_SECRET,
     REFRESH_TOKEN_SECRET,
+    NEXT_PUBLIC_APP_ENV: 'local',
+    SLACK_ALERTS_BOT_WEBHOOK: '',
+    SLACK_ORDER_BOT_WEBHOOK: '',
+    SLACK_HEALTH_BOT_WEBHOOK: '',
     NODE_ENV: 'development',
     NEXT_PUBLIC_HOST: '127.0.0.1',
     NEXT_PUBLIC_PORT: E2E_PORT,
@@ -69,6 +73,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   process.env.NEXT_PUBLIC_PORT = E2E_PORT;
   process.env.E2E_ORIGIN = E2E_ORIGIN;
 
+  const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient({
     datasources: { db: { url: databaseUrl } },
   });

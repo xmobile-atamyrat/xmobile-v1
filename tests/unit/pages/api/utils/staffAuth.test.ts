@@ -4,6 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ResponseApi } from '@/pages/lib/types';
 
+import {
+  isStaff,
+  isSuperuser,
+  requireStaffBearerAuth,
+  requireSuperuserBearerAuth,
+} from '@/pages/api/utils/staffAuth';
+
 const verifyTokenMock = vi.fn();
 const refreshFromCookieMock = vi.fn();
 const currentGradeMock = vi.fn();
@@ -26,13 +33,6 @@ const expired = () =>
 vi.mock('@/pages/api/utils/tokenUtils', () => ({
   ACCESS_SECRET: 'unit-staff-access-secret',
 }));
-
-import {
-  isStaff,
-  isSuperuser,
-  requireStaffBearerAuth,
-  requireSuperuserBearerAuth,
-} from '@/pages/api/utils/staffAuth';
 
 function createMockRes() {
   const res = {
