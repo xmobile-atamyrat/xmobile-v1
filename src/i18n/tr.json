@@ -808,8 +808,6 @@
   "roleFree": "Müşteri",
   "roleAdmin": "Yönetici",
   "roleSuperuser": "Süper kullanıcı",
-  "rolesFilterStaff": "Personel",
-  "rolesFilterAll": "Herkes",
   "rolesSearch": "Ad, telefon veya e-posta",
   "rolesRole": "Rol",
   "rolesYou": "siz",

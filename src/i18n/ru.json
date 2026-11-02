@@ -810,8 +810,6 @@
   "roleFree": "Покупатель",
   "roleAdmin": "Администратор",
   "roleSuperuser": "Суперпользователь",
-  "rolesFilterStaff": "Сотрудники",
-  "rolesFilterAll": "Все",
   "rolesSearch": "Имя, телефон или email",
   "rolesRole": "Роль",
   "rolesYou": "вы",

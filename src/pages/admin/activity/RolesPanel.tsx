@@ -1,10 +1,7 @@
 import {
   ManagedUser,
   ManagedUserPage,
-  ROLE_FILTER_LABEL_KEYS,
-  ROLE_FILTERS,
   ROLE_LABEL_KEYS,
-  RoleFilter,
   USER_ROLES,
 } from '@/pages/lib/adminUsers';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
@@ -14,7 +11,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -38,11 +34,12 @@ type Props = {
   onRoleChanged: () => void;
 };
 
-const toQuery = (role: RoleFilter, q: string, cursor?: string) => {
-  const params = new URLSearchParams({ role });
+const toQuery = (q: string, cursor?: string) => {
+  const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (cursor) params.set('cursor', cursor);
-  return `?${params.toString()}`;
+  const query = params.toString();
+  return query ? `?${query}` : '';
 };
 
 export default function RolesPanel({ onRoleChanged }: Props) {
@@ -50,7 +47,6 @@ export default function RolesPanel({ onRoleChanged }: Props) {
   const { user: me, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  const [role, setRole] = useState<RoleFilter>('STAFF');
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState<ManagedUserPage>({
@@ -84,7 +80,7 @@ export default function RolesPanel({ onRoleChanged }: Props) {
       try {
         const response = await fetchWithCreds<ManagedUserPage>({
           accessToken: token,
-          path: `/api/admin/users${toQuery(role, query, cursor)}`,
+          path: `/api/admin/users${toQuery(query, cursor)}`,
           method: 'GET',
         });
         if (id !== requestId.current) return;
@@ -104,7 +100,7 @@ export default function RolesPanel({ onRoleChanged }: Props) {
         if (id === requestId.current) setLoading(false);
       }
     },
-    [fetchWithCreds, role, query],
+    [fetchWithCreds, query],
   );
 
   useEffect(() => {
@@ -126,8 +122,8 @@ export default function RolesPanel({ onRoleChanged }: Props) {
         setSaveError(true);
         return;
       }
-      // The row stays put even when the new role falls outside the filter, so
-      // it doesn't vanish from under the cursor.
+      // The row stays put even though the new role would sort it elsewhere, so
+      // it doesn't jump away from under the cursor.
       setPage((previous) => ({
         ...previous,
         items: previous.items.map((item) =>
@@ -157,18 +153,6 @@ export default function RolesPanel({ onRoleChanged }: Props) {
         value={search}
         onChange={(event) => setSearch(event.target.value)}
       />
-      <Box className="flex flex-row flex-wrap gap-2">
-        {ROLE_FILTERS.map((filter) => (
-          <Chip
-            key={filter}
-            label={t(ROLE_FILTER_LABEL_KEYS[filter])}
-            onClick={() => setRole(filter)}
-            color={filter === role ? 'primary' : 'default'}
-            variant={filter === role ? 'filled' : 'outlined'}
-          />
-        ))}
-      </Box>
-
       {loadError && <Alert severity="error">{t('rolesLoadError')}</Alert>}
 
       <Box
