@@ -1,0 +1,15 @@
+language: en-US
+reviews:
+  profile: chill
+  auto_review:
+    drafts: false
+  path_instructions:
+    - path: 'src/pages/api/**'
+      instructions: >-
+        Handlers must use withAuth where not public, call addCors(res) and
+        return ResponseApi. Check role checks use api/utils/staffAuth.ts.
+    - path: 'src/**'
+      instructions: >-
+        Storefront queries on products, categories and banners must include
+        the whereActive* scopes. New i18n keys must exist in all five
+        locale files. Flag new external hosts, CDNs or SaaS.
