@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import dbClient from '@/lib/dbClient';
+import {
+  categorySiblingOrderBy,
+  collectActiveSubtreeCategoryIds,
+  nextSiblingSortOrder,
+} from '@/lib/categoryHierarchy';
+
 vi.mock('@/lib/dbClient', () => ({
   default: {
     category: {
@@ -7,13 +14,6 @@ vi.mock('@/lib/dbClient', () => ({
     },
   },
 }));
-
-import dbClient from '@/lib/dbClient';
-import {
-  categorySiblingOrderBy,
-  collectActiveSubtreeCategoryIds,
-  nextSiblingSortOrder,
-} from '@/lib/categoryHierarchy';
 
 describe('categorySiblingOrderBy', () => {
   it('orders by sortOrder then createdAt ascending', () => {

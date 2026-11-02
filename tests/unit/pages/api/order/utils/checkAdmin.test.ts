@@ -1,6 +1,8 @@
 import { UserRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { checkAdmin } from '@/pages/api/order/utils/checkAdmin';
+
 const { mockFindUnique } = vi.hoisted(() => ({
   mockFindUnique: vi.fn(),
 }));
@@ -10,8 +12,6 @@ vi.mock('@/lib/dbClient', () => ({
     user: { findUnique: mockFindUnique },
   },
 }));
-
-import { checkAdmin } from '@/pages/api/order/utils/checkAdmin';
 
 describe('checkAdmin', () => {
   beforeEach(() => {

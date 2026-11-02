@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { unavailableVariantTags, variantPriceId } from '@/lib/variantStock';
+
 const { mockPricesFindMany } = vi.hoisted(() => ({
   mockPricesFindMany: vi.fn(),
 }));
@@ -7,8 +9,6 @@ const { mockPricesFindMany } = vi.hoisted(() => ({
 vi.mock('@/lib/dbClient', () => ({
   default: { prices: { findMany: mockPricesFindMany } },
 }));
-
-import { unavailableVariantTags, variantPriceId } from '@/lib/variantStock';
 
 describe('variantPriceId', () => {
   it('pulls the price reference out of a variant tag', () => {

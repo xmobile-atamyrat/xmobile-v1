@@ -1,6 +1,12 @@
 import { UserOrderStatus } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  notifyOrderCancelledByUser,
+  notifyOrderCreated,
+  notifyOrderStatusUpdated,
+} from '@/pages/api/order/utils/slackNotifications';
+
 const { mockGetSlack, mockSend } = vi.hoisted(() => ({
   mockGetSlack: vi.fn(),
   mockSend: vi.fn(),
@@ -9,12 +15,6 @@ const { mockGetSlack, mockSend } = vi.hoisted(() => ({
 vi.mock('@/lib/slack', () => ({
   getSlack: mockGetSlack,
 }));
-
-import {
-  notifyOrderCancelledByUser,
-  notifyOrderCreated,
-  notifyOrderStatusUpdated,
-} from '@/pages/api/order/utils/slackNotifications';
 
 const baseOrder = {
   id: 'order-id-1',

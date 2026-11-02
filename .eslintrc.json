@@ -24,5 +24,31 @@
     "@typescript-eslint/no-unused-vars": "error",
     "no-console": "off",
     "react-hooks/exhaustive-deps": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx"],
+      "rules": {
+        "no-underscore-dangle": [
+          "error",
+          {
+            "allow": [
+              "_getData",
+              "_getJSONData",
+              "_getStatusCode",
+              "_getHeaders",
+              "_getRedirectUrl",
+              "_isEndCalled"
+            ]
+          }
+        ],
+        "no-restricted-syntax": [
+          "error",
+          "ForInStatement",
+          "LabeledStatement",
+          "WithStatement"
+        ]
+      }
+    }
+  ]
 }

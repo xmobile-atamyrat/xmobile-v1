@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  deriveProductOutOfStock,
+  initialOutOfStockFields,
+  outOfStockCascade,
+  retireLongOutOfStockProducts,
+  setProductOutOfStock,
+  syncAllProductsOutOfStock,
+  syncProductOutOfStockFromPrices,
+} from '@/lib/outOfStock';
+
 const {
   mockProductUpdateMany,
   mockProductFindMany,
@@ -36,16 +46,6 @@ vi.mock('@/lib/dbClient', () => ({
 vi.mock('@/lib/brandProductCount', () => ({
   syncBrandProductCount: mockSyncBrandProductCount,
 }));
-
-import {
-  deriveProductOutOfStock,
-  initialOutOfStockFields,
-  outOfStockCascade,
-  retireLongOutOfStockProducts,
-  setProductOutOfStock,
-  syncAllProductsOutOfStock,
-  syncProductOutOfStockFromPrices,
-} from '@/lib/outOfStock';
 
 const PRODUCT = 'prod-iphone';
 const SOLD_OUT: { outOfStockAt: Date | null } = {

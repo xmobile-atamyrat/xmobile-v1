@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
 
+import jwt from 'jsonwebtoken';
+import withAuth, {
+  type AuthenticatedRequest,
+} from '@/pages/api/utils/authMiddleware';
+import { generateTokens } from '@/pages/api/utils/tokenUtils';
+
 vi.mock('jsonwebtoken', () => ({
   default: {
     verify: vi.fn(),
@@ -25,12 +31,6 @@ vi.mock('@/pages/api/utils/tokenUtils', () => ({
     refreshToken: 'new-refresh-token',
   })),
 }));
-
-import jwt from 'jsonwebtoken';
-import withAuth, {
-  type AuthenticatedRequest,
-} from '@/pages/api/utils/authMiddleware';
-import { generateTokens } from '@/pages/api/utils/tokenUtils';
 
 function createMockRes() {
   const res = {

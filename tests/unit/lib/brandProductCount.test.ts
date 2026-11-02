@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { syncBrandProductCount } from '@/lib/brandProductCount';
+
 const { mockCount, mockUpdate } = vi.hoisted(() => ({
   mockCount: vi.fn(),
   mockUpdate: vi.fn(),
@@ -11,8 +13,6 @@ vi.mock('@/lib/dbClient', () => ({
     brand: { update: mockUpdate },
   },
 }));
-
-import { syncBrandProductCount } from '@/lib/brandProductCount';
 
 describe('syncBrandProductCount', () => {
   beforeEach(() => {
