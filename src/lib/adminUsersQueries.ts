@@ -1,5 +1,4 @@
 import dbClient from '@/lib/dbClient';
-import { ROLE_FILTERS, RoleFilter } from '@/pages/lib/adminUsers';
 import { Prisma, UserRole } from '@prisma/client';
 import { z } from 'zod';
 
@@ -7,7 +6,6 @@ const PAGE_SIZE = 30;
 
 export const userListQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
-  role: z.enum(ROLE_FILTERS).default('STAFF'),
   cursor: z.string().min(1).optional(),
 });
 
@@ -16,32 +14,30 @@ export const roleChangeSchema = z.object({
   grade: z.nativeEnum(UserRole),
 });
 
-const gradeWhere = (role: RoleFilter): Prisma.UserWhereInput => {
-  if (role === 'ALL') return {};
-  if (role === 'STAFF') {
-    return { grade: { in: [UserRole.ADMIN, UserRole.SUPERUSER] } };
-  }
-  return { grade: role };
-};
-
 /**
- * One page of live accounts, superusers first, then admins, then customers
- * (the enum's declared order, reversed), each group by name.
+ * One page of live accounts. Without a search term, superusers come first,
+ * then admins, then customers (the enum's declared order, reversed), each
+ * group by name. With one, every account whose name, email or phone contains
+ * it (case-insensitively) is listed by name.
  */
 export async function listUsers(params: z.infer<typeof userListQuerySchema>) {
+  const { q } = params;
   const where: Prisma.UserWhereInput = {
     deletedAt: null,
-    ...gradeWhere(params.role),
-    ...(params.q
+    ...(q
       ? {
           OR: [
-            { name: { contains: params.q, mode: 'insensitive' } },
-            { email: { contains: params.q, mode: 'insensitive' } },
-            { phoneNumber: { contains: params.q } },
+            { name: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+            { phoneNumber: { contains: q, mode: 'insensitive' } },
           ],
         }
       : {}),
   };
+  const byName: Prisma.UserOrderByWithRelationInput[] = [
+    { name: 'asc' },
+    { id: 'asc' },
+  ];
 
   const rows = await dbClient.user.findMany({
     where,
@@ -53,7 +49,7 @@ export async function listUsers(params: z.infer<typeof userListQuerySchema>) {
       grade: true,
       createdAt: true,
     },
-    orderBy: [{ grade: 'desc' }, { name: 'asc' }, { id: 'asc' }],
+    orderBy: q ? byName : [{ grade: 'desc' }, ...byName],
     take: PAGE_SIZE + 1,
     ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
   });
