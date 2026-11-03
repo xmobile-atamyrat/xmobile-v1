@@ -173,6 +173,7 @@ export default function PrivacyPolicy() {
               <ArrowLeft size={20} className="text-navy" />
             </button>
             <Typography
+              component="h1"
               className={`${fontClassName.className} ${privacyPolicyClasses.headerTitle.mobile}`}
             >
               {t('privacyPolicyTitle')}
