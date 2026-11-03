@@ -184,12 +184,12 @@ export default function ProductGridContent({
   // has to run post-commit: scrolling inside the click handler gets undone
   // when React re-renders the pagination row, because the browser scrolls the
   // still-focused page button back into view.
-  const isFirstPageRun = useRef(true);
+  // Desktops switch platform after hydration, which re-runs this without a
+  // page change.
+  const prevWebPageRef = useRef(webPage);
   useEffect(() => {
-    if (isFirstPageRun.current) {
-      isFirstPageRun.current = false;
-      return;
-    }
+    if (prevWebPageRef.current === webPage) return;
+    prevWebPageRef.current = webPage;
     if (platform !== 'web') return;
     window.scrollTo(0, 0);
   }, [webPage, platform]);
@@ -781,7 +781,7 @@ export default function ProductGridContent({
           {/* Title block spans the full width above the rail — spec 1439-1442 */}
           <Box className={productIndexPageClasses.header[platform]}>
             <Typography
-              component={platform === 'web' ? 'h1' : 'p'}
+              component="h1"
               className={`${fontClassName.className} ${productIndexPageClasses.pageTitle[platform]}`}
             >
               {titleText}

@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { UserOrderStatus } from '@prisma/client';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface OrderFiltersProps {
   status?: UserOrderStatus;
@@ -43,6 +43,10 @@ export default function OrderFilters({
   const t = useTranslations();
   const platform = usePlatform();
   const [filtersOpen, setFiltersOpen] = useState(platform === 'web');
+
+  useEffect(() => {
+    setFiltersOpen(platform === 'web');
+  }, [platform]);
 
   const getDefaultDateFrom = () => {
     const date = new Date();
