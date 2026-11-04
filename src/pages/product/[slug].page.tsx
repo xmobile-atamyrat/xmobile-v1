@@ -1052,6 +1052,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 )}
                 <Typography
                   variant="h5"
+                  component="h1"
                   className={`${fontClassName.className} ${detailPageClasses.productName.mobile}`}
                 >
                   {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
