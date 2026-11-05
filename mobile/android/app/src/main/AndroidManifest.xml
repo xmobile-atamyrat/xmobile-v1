@@ -25,6 +25,16 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+      <!-- Shares procurement files built in the WebView (files/XFileShareModule.kt). -->
+      <provider
+        android:name=".files.XFileShareProvider"
+        android:authorities="${applicationId}.xfileshare"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/xfileshare_paths" />
+      </provider>
       <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
         android:value="xmobile_notifications"
