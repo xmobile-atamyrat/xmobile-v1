@@ -45,6 +45,11 @@ target 'mobile' do
         config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ''
         config.build_settings['CODE_SIGN_STYLE'] = 'Automatic'
         
+        # Xcode 27 rejects pod targets below iOS 15.0; align with the app's target.
+        if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.1
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+
         # Your existing fmt fix
         if target.name == 'fmt'
           config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'

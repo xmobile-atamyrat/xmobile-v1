@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files XFileShareModule hands to other apps (share sheet). -->
+<paths>
+    <cache-path name="xmobile_files" path="xmobile-files/" />
+</paths>

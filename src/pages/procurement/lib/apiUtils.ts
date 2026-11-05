@@ -127,14 +127,14 @@ export async function createProductUtil({
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;
-}) {
+}): Promise<ProcurementProduct | undefined> {
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
       message: 'nameRequired',
       severity: 'error',
     });
-    return;
+    return undefined;
   }
 
   try {
@@ -150,14 +150,14 @@ export async function createProductUtil({
         message: 'success',
         severity: 'success',
       });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data;
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -166,6 +166,8 @@ export async function createProductUtil({
       severity: 'error',
     });
   }
+
+  return undefined;
 }
 
 export async function createProductQuantityUtil({
@@ -235,7 +237,7 @@ export async function createHistoryUtil({
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;
-}) {
+}): Promise<ProcurementOrder | undefined> {
   try {
     const { success, data, message } = await createHistory({
       accessToken,
@@ -245,14 +247,14 @@ export async function createHistoryUtil({
     if (success) {
       setSelectedHistory(data);
       setHistory((current) => [data, ...current]);
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data;
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -261,6 +263,7 @@ export async function createHistoryUtil({
       severity: 'error',
     });
   }
+  return undefined;
 }
 
 export async function editHistoryUtil({
@@ -543,14 +546,14 @@ export async function createSupplierUtil({
   setSnackbarOpen: Dispatch<SetStateAction<boolean>>;
   setSnackbarMessage: Dispatch<SetStateAction<SnackbarProps>>;
   fetchWithCreds: FetchWithCredsType;
-}) {
+}): Promise<ProcurementSupplier | undefined> {
   if (keyword == null || keyword === '') {
     setSnackbarOpen(true);
     setSnackbarMessage({
       message: 'nameRequired',
       severity: 'error',
     });
-    return;
+    return undefined;
   }
 
   try {
@@ -566,14 +569,14 @@ export async function createSupplierUtil({
         message: 'success',
         severity: 'success',
       });
-    } else {
-      console.error(message);
-      setSnackbarOpen(true);
-      setSnackbarMessage({
-        message: 'serverError',
-        severity: 'error',
-      });
+      return data;
     }
+    console.error(message);
+    setSnackbarOpen(true);
+    setSnackbarMessage({
+      message: 'serverError',
+      severity: 'error',
+    });
   } catch (error) {
     console.error(error);
     setSnackbarOpen(true);
@@ -582,6 +585,8 @@ export async function createSupplierUtil({
       severity: 'error',
     });
   }
+
+  return undefined;
 }
 
 export async function getProductsUtil({

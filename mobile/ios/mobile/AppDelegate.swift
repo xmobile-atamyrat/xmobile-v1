@@ -37,15 +37,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "mobile",
-      in: window,
-      launchOptions: launchOptions
-    )
-
+    // The window and React Native root are created in SceneDelegate
+    // (UIScene life cycle is required for apps built with the iOS 27 SDK).
     return true
+  }
+
+  func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    config.delegateClass = SceneDelegate.self
+    return config
   }
 
 
@@ -89,6 +93,32 @@ extension AppDelegate: MessagingDelegate {
     guard let token = fcmRegistrationToken else { return }
     print("[FCM] Registration token refreshed: \(token)")
     // No manual posting needed — @react-native-firebase/messaging handles JS-side via onTokenRefresh()
+  }
+}
+
+// MARK: - SceneDelegate
+// Kept in this file so the Xcode project needs no new file reference.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let factory = appDelegate.reactNativeFactory else { return }
+
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+    appDelegate.window = window
+
+    factory.startReactNative(
+      withModuleName: "mobile",
+      in: window,
+      launchOptions: nil
+    )
   }
 }
 
