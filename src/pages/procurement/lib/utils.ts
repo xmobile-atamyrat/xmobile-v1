@@ -90,6 +90,20 @@ async function arrayToXlsxBlob(
   }
 }
 
+export const XLSX_MIME_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/**
+ * The same workbook `downloadXlsxFiles` writes (Order sheet + hidden IDs
+ * sheet + supplier id in keywords), as a Blob, so callers can share it
+ * instead of downloading it. Null when ExcelJS fails.
+ */
+export function xlsxBlobFromFileData(
+  file: ExcelFileData,
+): Promise<Blob | null> {
+  return arrayToXlsxBlob(file.data, file.supplierId, file.productIds);
+}
+
 export async function downloadXlsxFiles(files: ExcelFileData[]): Promise<void> {
   if (!Array.isArray(files) || files.length === 0) {
     console.error('No files data provided to zip.');
@@ -150,71 +164,6 @@ export const dayMonthYearFromDate = (date: Date) => {
   const formattedDay = String(day).padStart(2, '0');
   const formattedMonth = String(month).padStart(2, '0');
   return `${formattedDay}-${formattedMonth}-${year}`;
-};
-
-export const handleFilesSelected = async (
-  orderId: string,
-  event: React.ChangeEvent<HTMLInputElement>,
-): Promise<HistoryPrice> => {
-  const files = event.target.files;
-  const historyPrice: HistoryPrice = {};
-  await Promise.all(
-    Array.from(files).map(async (file) => {
-      const buffer = await file.arrayBuffer();
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer);
-
-      // There are two sheets in the uploaded excel files:
-      // - 'Order' sheet contains: ['Product Name', 'Quantity', 'Price'] columns
-      // - 'IDs' sheet contains: ['Supplier ID', 'Product IDs'] columns
-      // 'IDs' sheet is superhidden meaning it can be accessed only programmatically
-      let supplierId: string = '';
-      const productIds: string[] = [];
-      const idsSheet = workbook.getWorksheet(IDS_SHEET_NAME);
-      if (idsSheet) {
-        idsSheet.eachRow((row: ExcelJS.Row, rowNumber) => {
-          // ExcelJS Row numbering starts from 1
-          // rowNumber 1 is header
-          if (rowNumber === 1) {
-            return;
-          }
-          const values = row.values as ExcelJS.CellValue[];
-          // rowNumber 2 contains the supplier ID
-          // each excel file is from a single supplier
-          if (rowNumber === 2) {
-            supplierId = values[1] as string;
-          }
-          productIds.push(values[2] as string);
-        });
-      }
-
-      const orderSheet = workbook.getWorksheet(ORDER_SHEET_NAME);
-      if (orderSheet) {
-        orderSheet.eachRow((row, rowNumber) => {
-          if (rowNumber === 1) {
-            return;
-          }
-          const values = row.values as ExcelJS.CellValue[];
-          let price: number | undefined;
-          try {
-            price = parseInt(values[3].toString(), 10);
-          } catch (error) {
-            console.error('Error parsing price:', error);
-          }
-          const key = priceHash({
-            orderId,
-            productId: productIds[rowNumber - 2],
-            supplierId,
-          });
-          historyPrice[key] = {
-            value: Number.isNaN(price) ? undefined : price,
-            color: undefined,
-          };
-        });
-      }
-    }),
-  );
-  return historyPrice;
 };
 
 export const assignColorToPrices = ({

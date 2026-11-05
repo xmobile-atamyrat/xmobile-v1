@@ -1,778 +1,379 @@
+import { verifyToken } from '@/pages/api/utils/authMiddleware';
+import { REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
 import Layout from '@/pages/components/Layout';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
-import { useDollarRateContext } from '@/pages/lib/DollarRateContext';
-import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { SnackbarProps } from '@/pages/lib/types';
+import { AUTH_REFRESH_COOKIE_NAME } from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useUserContext } from '@/pages/lib/UserContext';
-import ActionsMenu from '@/pages/procurement/components/ActionsMenu';
-import AddEditHistoryDialog from '@/pages/procurement/components/AddEditHistoryDialog';
-import AddProductsSuppliersDialog from '@/pages/procurement/components/AddProductsSuppliersDialog';
-import HistoryListDialog from '@/pages/procurement/components/HistoryListDialog';
-import EmptyOrder from '@/pages/procurement/components/OrderTable';
+import CatalogSheet from '@/pages/procurement/components/CatalogSheet';
+import OrdersSheet from '@/pages/procurement/components/OrdersSheet';
+import PricesPanel from '@/pages/procurement/components/PricesPanel';
+import ProcurementHeader from '@/pages/procurement/components/ProcurementHeader';
+import ProductsPanel from '@/pages/procurement/components/ProductsPanel';
+import RateCard from '@/pages/procurement/components/RateCard';
+import SuppliersPanel from '@/pages/procurement/components/SuppliersPanel';
+import WorkflowPanel from '@/pages/procurement/components/WorkflowPanel';
 import {
-  createHistoryUtil,
-  createProductQuantityUtil,
-  createProductUtil,
-  createSupplierUtil,
-  deleteProductUtil,
-  deleteSupplierUtil,
-  editDollarRateUtil,
-  editHistoryUtil,
-  editProductUtil,
-  editSupplierUtil,
-  getHistoryListUtil,
-  getHistoryUtil,
-  handleProductSearchUtil,
-  handleSupplierSearchUtil,
-} from '@/pages/procurement/lib/apiUtils';
+  ProcurementProvider,
+  useProcurement,
+} from '@/pages/procurement/lib/ProcurementContext';
+import { procurementClasses as c } from '@/styles/classMaps/procurement';
+import { procurementShellClasses as s } from '@/styles/classMaps/procurement/shell';
+import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
+import { fontClassName } from '@/styles/theme';
 import {
-  DetailedOrder,
-  HistoryPrice,
-  ProductsSuppliersType,
-} from '@/pages/procurement/lib/types';
-import { priceHash } from '@/pages/procurement/lib/utils';
-import { debounce } from '@/pages/product/utils';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import {
-  Alert,
   Box,
-  Button,
+  ButtonBase,
   CircularProgress,
-  MenuItem,
-  Select,
   Snackbar,
-  TextField,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
+import { UserRole } from '@prisma/client';
 import {
-  CURRENCY,
-  DollarRate,
-  ProcurementOrder,
-  ProcurementOrderProductQuantity,
-  ProcurementProduct,
-  ProcurementSupplier,
-} from '@prisma/client';
-import { GetStaticProps } from 'next';
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  Info,
+  Plus,
+  XCircle,
+} from 'lucide-react';
+import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-// getStaticProps because translations are static
-export const getStaticProps = (async (context) => {
+// Superuser-only page: check the refresh cookie on the server so other users
+// are redirected before any procurement UI (or request) reaches them.
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const home = {
+    redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
+  };
+  const refreshToken = ctx.req.cookies[AUTH_REFRESH_COOKIE_NAME];
+  if (!refreshToken) return home;
+
+  try {
+    const decoded = await verifyToken(refreshToken, REFRESH_SECRET);
+    if (decoded.grade !== UserRole.SUPERUSER) return home;
+  } catch {
+    return home;
+  }
+
   return {
     props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
+      messages: (await import(`../../i18n/${ctx.locale}.json`)).default,
     },
   };
-}) satisfies GetStaticProps<object>;
+};
+
+export type ProcurementTab = 'products' | 'suppliers' | 'prices';
+
+const TABS: ProcurementTab[] = ['products', 'suppliers', 'prices'];
+
+const parseTab = (value: unknown): ProcurementTab =>
+  TABS.includes(value as ProcurementTab)
+    ? (value as ProcurementTab)
+    : 'products';
+
+const toastIcon = {
+  success: CheckCircle2,
+  error: XCircle,
+  warning: AlertTriangle,
+  info: Info,
+};
+
+function LoadingSkeleton() {
+  const platform = usePlatform();
+  const block = (height: number, key?: string) => (
+    <Box key={key} className={s.skeleton} sx={{ height }} />
+  );
+  const pills = (
+    <Box className="flex gap-2">
+      {[88, 108, 72].map((width) => (
+        <Box
+          key={width}
+          className={`${s.skeletonBar} animate-pulse bg-white`}
+          sx={{ width, height: 34 }}
+        />
+      ))}
+    </Box>
+  );
+
+  if (platform === 'mobile') {
+    return (
+      <Box className={c.content.mobile} aria-busy data-testid="loading">
+        {block(96)}
+        {block(132)}
+        {pills}
+        {block(280)}
+      </Box>
+    );
+  }
+  return (
+    <Box className={s.grid} aria-busy data-testid="loading">
+      <Box className={s.aside}>
+        {block(110)}
+        {block(220)}
+      </Box>
+      <Box className={s.main}>
+        {pills}
+        {block(420)}
+      </Box>
+    </Box>
+  );
+}
+
+function NoOrderState() {
+  const t = useTranslations();
+  const platform = usePlatform();
+  const { historyList, setNewOrderDialogOpen, setOrdersSheetOpen } =
+    useProcurement();
+  const font = fontClassName.className;
+  const hasOrders = historyList.length > 0;
+
+  return (
+    <Box className={s.emptyCard[platform]} data-testid="procurement-no-order">
+      <Box className={c.emptyIcon}>
+        <ClipboardList size={26} />
+      </Box>
+      <Typography className={`${font} ${s.emptyTitle}`}>
+        {hasOrders ? t('orderNotSelected') : t('procurementNoOrdersTitle')}
+      </Typography>
+      {!hasOrders && (
+        <Typography className={`${font} ${s.emptyText}`}>
+          {t('procurementNoOrdersHint')}
+        </Typography>
+      )}
+      {hasOrders ? (
+        <ButtonBase
+          disableRipple
+          onClick={() => setOrdersSheetOpen(true)}
+          className={`${font} ${c.btnSoft} mt-2`}
+        >
+          <ClipboardList size={18} />
+          {t('procurementSwitchOrder')}
+        </ButtonBase>
+      ) : (
+        <ButtonBase
+          disableRipple
+          onClick={() => setNewOrderDialogOpen(true)}
+          className={`${font} ${c.btnPrimary}`}
+        >
+          <Plus size={18} />
+          {t('procurementCreateFirstOrder')}
+        </ButtonBase>
+      )}
+    </Box>
+  );
+}
+
+function ProcurementScreen() {
+  const t = useTranslations();
+  const router = useRouter();
+  const platform = usePlatform();
+  const {
+    selectedHistory,
+    selectedProducts,
+    selectedSuppliers,
+    initialLoading,
+    loading,
+    snackbarOpen,
+    setSnackbarOpen,
+    snackbarMessage,
+  } = useProcurement();
+  const [tab, setTab] = useState<ProcurementTab>(() =>
+    parseTab(router.query.tab),
+  );
+  const font = fontClassName.className;
+
+  useEffect(() => {
+    setTab(parseTab(router.query.tab));
+  }, [router.query.tab]);
+
+  // Single owner of `?order=`: it follows the open order (select, create,
+  // delete -> fallback) so refresh / a shared link reopens it rather than
+  // the latest one; it is dropped once no order is open (last one deleted).
+  const selectedId = selectedHistory?.id;
+  useEffect(() => {
+    if (initialLoading) return;
+    const current = router.query.order;
+    if (current === selectedId || (selectedId == null && current == null)) {
+      return;
+    }
+    const query = { ...router.query };
+    if (selectedId == null) delete query.order;
+    else query.order = selectedId;
+    router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+      scroll: false,
+    });
+    // Only the open order drives this; router.query is read fresh above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, initialLoading]);
+
+  const selectTab = (next: ProcurementTab) => {
+    setTab(next);
+    const query = { ...router.query };
+    if (next === 'products') delete query.tab;
+    else query.tab = next;
+    router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+      scroll: false,
+    });
+  };
+
+  const tabs: { key: ProcurementTab; label: string; count?: number }[] = [
+    { key: 'products', label: t('products'), count: selectedProducts.length },
+    {
+      key: 'suppliers',
+      label: t('suppliers'),
+      count: selectedSuppliers.length,
+    },
+    { key: 'prices', label: t('prices') },
+  ];
+  const ToastIcon = toastIcon[snackbarMessage?.severity ?? 'info'];
+
+  const tabBar = (
+    <Box className={c.pills} role="tablist">
+      {tabs.map((item) => (
+        <ButtonBase
+          key={item.key}
+          role="tab"
+          aria-selected={tab === item.key}
+          disableRipple
+          onClick={() => selectTab(item.key)}
+          className={`${font} ${c.pill} ${
+            tab === item.key ? c.pillActive : c.pillIdle
+          }`}
+        >
+          {item.label}
+          {item.count != null && (
+            <span className={c.pillCount}>{item.count}</span>
+          )}
+        </ButtonBase>
+      ))}
+    </Box>
+  );
+  const panel = (
+    <Box role="tabpanel" className="flex flex-col gap-3 min-w-0">
+      {tab === 'products' && <ProductsPanel />}
+      {tab === 'suppliers' && <SuppliersPanel />}
+      {tab === 'prices' && <PricesPanel />}
+    </Box>
+  );
+
+  let body;
+  if (initialLoading) {
+    body = <LoadingSkeleton />;
+  } else if (selectedHistory == null) {
+    body = (
+      <Box className={platform === 'mobile' ? c.content.mobile : 'w-full'}>
+        <NoOrderState />
+      </Box>
+    );
+  } else if (platform === 'mobile') {
+    body = (
+      <Box className={c.content.mobile}>
+        <RateCard />
+        <WorkflowPanel />
+        {tabBar}
+        {panel}
+      </Box>
+    );
+  } else {
+    // Rate + workflow first in the DOM: on top below lg, sticky right
+    // column from lg (see shell.ts `grid`).
+    body = (
+      <Box className={s.grid}>
+        <Box component="aside" className={s.aside}>
+          <RateCard />
+          <WorkflowPanel />
+        </Box>
+        <Box className={s.main}>
+          {tabBar}
+          {panel}
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box className={c.page[platform]}>
+      <ProcurementHeader />
+      {body}
+
+      <CatalogSheet />
+      <OrdersSheet />
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={5000}
+        // Mobile: top. Bottom sheets (and their text fields / footers) fill
+        // the lower part of the screen, and many sheets are local to panels,
+        // so a bottom toast would cover them. Full-height sheets stop at
+        // 92dvh, which leaves the toast its own strip above them.
+        anchorOrigin={{
+          vertical: platform === 'mobile' ? 'top' : 'bottom',
+          horizontal: 'center',
+        }}
+        onClose={(_, reason) => {
+          if (reason !== 'clickaway') setSnackbarOpen(false);
+        }}
+        sx={
+          platform === 'mobile'
+            ? {
+                top: 'max(12px, env(safe-area-inset-top)) !important',
+                left: '16px !important',
+                right: '16px !important',
+              }
+            : undefined
+        }
+      >
+        <Box className={snackbarClasses.pill} role="status">
+          <ToastIcon
+            size={18}
+            className={
+              snackbarClasses.icon[snackbarMessage?.severity ?? 'info']
+            }
+          />
+          <Typography className={`${font} ${snackbarClasses.message}`}>
+            {snackbarMessage?.message && t(snackbarMessage.message)}
+          </Typography>
+        </Box>
+      </Snackbar>
+
+      {loading && (
+        <Box className={s.overlay} aria-busy aria-live="polite">
+          <Box className={s.overlayBox}>
+            <CircularProgress size={30} sx={{ color: '#20166E' }} />
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 export default function Procurement() {
   const router = useRouter();
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const t = useTranslations();
+  const platform = usePlatform();
+  const { user } = useUserContext();
 
-  const { user, accessToken } = useUserContext();
-  const { rates, setRates } = useDollarRateContext();
-  const fetchWithCreds = useFetchWithCreds();
-
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
-  const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null);
-  const [selectedSuppliers, setSelectedSuppliers] =
-    useState<ProcurementSupplier[]>();
-  const [selectedProducts, setSelectedProducts] =
-    useState<ProcurementProduct[]>();
-  const [searchedSuppliers, setSearchedSuppliers] = useState<
-    ProcurementSupplier[]
-  >([]);
-  const [searchedProducts, setSearchedProducts] = useState<
-    ProcurementProduct[]
-  >([]);
-  const [historyList, setHistoryList] = useState<ProcurementOrder[]>([]);
-  const [selectedHistory, setSelectedHistory] = useState<DetailedOrder>();
-  const [createHistoryDialog, setCreateHistoryDialog] = useState(false);
-  const [historyListDialog, setHistoryListDialog] = useState(false);
-  const [addProductsSuppliersDialog, setAddProductsSuppliersDialog] =
-    useState<ProductsSuppliersType>();
-  const [productQuantities, setProductQuantities] = useState<
-    ProcurementOrderProductQuantity[]
-  >([]);
-  const [prices, setPrices] = useState<HistoryPrice>({});
-  const [newOrderDialog, setNewOrderDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [hashedQuantities, setHashedQuantities] = useState<
-    Record<string, number>
-  >({});
-  const [orderCurrencyRate, setOrderCurrencyRate] = useState<DollarRate>();
-
-  const createProduct = useCallback(
-    async (keyword: string) => {
-      await createProductUtil({
-        accessToken,
-        keyword,
-        setProducts: setSearchedProducts,
-        setSnackbarOpen,
-        setSnackbarMessage,
-        fetchWithCreds,
-      });
-    },
-    [
-      accessToken,
-      setSearchedProducts,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-    ],
-  );
-
-  const createSupplier = useCallback(
-    async (keyword: string) => {
-      await createSupplierUtil({
-        accessToken,
-        keyword,
-        setSupplier: setSearchedSuppliers,
-        setSnackbarOpen,
-        setSnackbarMessage,
-        fetchWithCreds,
-      });
-    },
-    [
-      accessToken,
-      setSearchedSuppliers,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-    ],
-  );
-
-  const createHistory = useCallback(
-    async (name: string) => {
-      await createHistoryUtil({
-        accessToken,
-        name,
-        setHistory: setHistoryList,
-        setSelectedHistory,
-        setSnackbarOpen,
-        setSnackbarMessage,
-        fetchWithCreds,
-      });
-    },
-    [
-      accessToken,
-      setHistoryList,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-    ],
-  );
-
-  const handleProductSearch = useCallback(
-    debounce(async (keyword: string) => {
-      await handleProductSearchUtil({
-        accessToken,
-        keyword,
-        setProducts: setSearchedProducts,
-        setSnackbarOpen,
-        setSnackbarMessage,
-        fetchWithCreds,
-      });
-    }, 300),
-    [
-      debounce,
-      accessToken,
-      setSearchedProducts,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-    ],
-  );
-
-  const handleSupplierSearch = useCallback(
-    debounce(async (keyword: string) => {
-      await handleSupplierSearchUtil({
-        accessToken,
-        keyword,
-        setSuppliers: setSearchedSuppliers,
-        setSnackbarOpen,
-        setSnackbarMessage,
-        fetchWithCreds,
-      });
-    }, 300),
-    [debounce, accessToken],
-  );
-
-  const handleAddSearchedItem = useCallback(
-    async (item: ProcurementProduct | ProcurementSupplier) => {
-      if (addProductsSuppliersDialog === 'product') {
-        await editHistoryUtil({
-          id: selectedHistory.id,
-          accessToken,
-          addedProductIds: [item.id],
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        const productQuantity = await createProductQuantityUtil({
-          accessToken,
-          orderId: selectedHistory.id,
-          productId: item.id,
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        if (productQuantity) {
-          setSelectedProducts((prev) => [item as ProcurementProduct, ...prev]);
-          setProductQuantities((prev) => [productQuantity, ...prev]);
-        }
-      } else if (addProductsSuppliersDialog === 'supplier') {
-        await editHistoryUtil({
-          id: selectedHistory.id,
-          accessToken,
-          addedSupplierIds: [item.id],
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        setSelectedSuppliers((prev) => [item as ProcurementSupplier, ...prev]);
-      }
-    },
-    [
-      addProductsSuppliersDialog,
-      accessToken,
-      selectedHistory?.id,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-      setSelectedProducts,
-      setProductQuantities,
-      setSelectedSuppliers,
-    ],
-  );
-
-  const handleEditItem = useCallback(
-    async ({
-      id,
-      name,
-      description,
-    }: {
-      id: string;
-      name: string;
-      description?: string;
-    }) => {
-      if (addProductsSuppliersDialog === 'product') {
-        const editedProduct = await editProductUtil({
-          accessToken,
-          id,
-          name,
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        if (editedProduct) {
-          setSearchedProducts((products) =>
-            products.map((product) =>
-              product.id === editedProduct.id ? editedProduct : product,
-            ),
-          );
-          setSelectedProducts((products) =>
-            products.map((product) =>
-              product.id === editedProduct.id ? editedProduct : product,
-            ),
-          );
-        }
-      } else if (addProductsSuppliersDialog === 'supplier') {
-        const editedSupplier = await editSupplierUtil({
-          accessToken,
-          id,
-          name,
-          description,
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        if (editedSupplier) {
-          setSearchedSuppliers((suppliers) =>
-            suppliers.map((supplier) =>
-              supplier.id === editedSupplier.id ? editedSupplier : supplier,
-            ),
-          );
-          setSelectedSuppliers((suppliers) =>
-            suppliers.map((supplier) =>
-              supplier.id === editedSupplier.id ? editedSupplier : supplier,
-            ),
-          );
-        }
-      }
-    },
-    [
-      addProductsSuppliersDialog,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-      setSearchedProducts,
-      setSearchedSuppliers,
-      setSelectedProducts,
-      setSelectedSuppliers,
-    ],
-  );
-
-  const handleDeleteItem = useCallback(
-    async (id: string) => {
-      if (addProductsSuppliersDialog === 'product') {
-        const deletedProduct = await deleteProductUtil({
-          accessToken,
-          id,
-          setSnackbarMessage,
-          setSnackbarOpen,
-          fetchWithCreds,
-        });
-        if (deletedProduct) {
-          setSearchedProducts((products) =>
-            products.filter((product) => product.id !== deletedProduct.id),
-          );
-          setSelectedProducts((products) =>
-            products.filter((product) => product.id !== deletedProduct.id),
-          );
-        }
-      } else if (addProductsSuppliersDialog === 'supplier') {
-        const deletedSupplier = await deleteSupplierUtil({
-          accessToken,
-          id,
-          fetchWithCreds,
-          setSnackbarMessage,
-          setSnackbarOpen,
-        });
-        if (deletedSupplier) {
-          setSearchedSuppliers((suppliers) =>
-            suppliers.filter((supplier) => supplier.id !== deletedSupplier.id),
-          );
-          setSelectedSuppliers((suppliers) =>
-            suppliers.filter((supplier) => supplier.id !== deletedSupplier.id),
-          );
-        }
-      }
-    },
-    [
-      accessToken,
-      addProductsSuppliersDialog,
-      setSnackbarMessage,
-      setSnackbarOpen,
-      fetchWithCreds,
-    ],
-  );
-
+  // Fallback for a client-side session that changed after the server check.
   useEffect(() => {
-    if (user?.grade === 'SUPERUSER' && accessToken) {
-      (async () => {
-        const latestHistory = await getHistoryListUtil({
-          accessToken,
-          setHistoryList,
-          setSnackbarOpen,
-          setSnackbarMessage,
-          fetchWithCreds,
-        });
-        if (latestHistory) {
-          await getHistoryUtil({
-            accessToken,
-            id: latestHistory.id,
-            setSelectedHistory,
-            setSelectedSuppliers,
-            setSelectedProducts,
-            setSnackbarOpen,
-            setSnackbarMessage,
-            setProductQuantities,
-            fetchWithCreds,
-          });
-        }
-      })();
-    }
-  }, [accessToken, user]);
-
-  useEffect(() => {
-    if (selectedHistory == null) {
-      return;
-    }
-
-    setOrderCurrencyRate(
-      rates.find((rate) => rate.currency === selectedHistory.currency),
-    );
-
-    if (selectedHistory.prices == null) {
-      setPrices({});
-      return;
-    }
-
-    const newPrices: HistoryPrice = {};
-    selectedHistory.prices.forEach(
-      ({ orderId, productId, supplierId, price, color }) => {
-        const key = priceHash({
-          orderId,
-          productId,
-          supplierId,
-        });
-        newPrices[key] = {
-          value: price,
-          color,
-        };
-      },
-    );
-    setPrices(newPrices);
-  }, [selectedHistory]);
-
-  useEffect(() => {
-    if (productQuantities == null) return;
-    setHashedQuantities((currQuantities) => {
-      const newHashedQuantities = { ...currQuantities };
-      productQuantities.forEach(({ productId, quantity }) => {
-        newHashedQuantities[productId] = quantity;
-      });
-      return newHashedQuantities;
-    });
-  }, [productQuantities]);
-
-  useEffect(() => {
-    if (user == null) return;
-    if (user.grade !== 'SUPERUSER') {
-      router.push('/');
-    }
-  }, [user]);
+    if (user != null && user.grade !== 'SUPERUSER') router.push('/');
+  }, [user, router]);
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
-      {user?.grade === 'SUPERUSER' && (
-        <Box
-          sx={{
-            mt: isMdUp ? `${appBarHeight}px` : `${mobileAppBarHeight}px`,
-            p: isMdUp ? 2 : 1,
-          }}
-          className="flex flex-col gap-4 w-full h-full"
-        >
-          <Box className="flex flex-row justify-between items-center">
-            <Typography fontWeight={600} fontSize={20}>
-              {t('procurement')} - {selectedHistory?.name}
-            </Typography>
-            <Box className="flex flex-row gap-2 items-center">
-              <Box className="flex flex-row gap-2 items-center mr-8">
-                <Typography>1 USD = </Typography>
-                <TextField
-                  size="small"
-                  className="w-[120px]"
-                  value={orderCurrencyRate?.rate ?? ''}
-                  onChange={async (e) => {
-                    const target = e.target.value;
-                    const newRate =
-                      target === '' ? undefined : parseInt(e.target.value, 10);
-                    const currRate = orderCurrencyRate.rate;
-                    setOrderCurrencyRate((curr) => {
-                      return {
-                        ...curr,
-                        rate: newRate,
-                      };
-                    });
-                    if (newRate == null) return;
-
-                    setRates((curr) =>
-                      curr.map((rate) => {
-                        if (rate.currency === orderCurrencyRate.currency) {
-                          return { ...rate, rate: newRate };
-                        }
-                        return rate;
-                      }),
-                    );
-
-                    const updatedRate = await editDollarRateUtil({
-                      accessToken,
-                      currency: orderCurrencyRate.currency,
-                      rate: newRate,
-                      fetchWithCreds,
-                      setSnackbarMessage,
-                      setSnackbarOpen,
-                    });
-                    if (updatedRate == null) {
-                      setOrderCurrencyRate((curr) => {
-                        return {
-                          ...curr,
-                          rate: currRate,
-                        };
-                      });
-                      setRates((curr) =>
-                        curr.map((rate) => {
-                          if (rate.currency === orderCurrencyRate.currency) {
-                            return { ...rate, rate: currRate };
-                          }
-                          return rate;
-                        }),
-                      );
-                    }
-                  }}
-                />
-                <Select
-                  value={orderCurrencyRate?.currency ?? ''}
-                  onChange={async (e) => {
-                    if (selectedHistory == null || orderCurrencyRate == null)
-                      return;
-                    const oldCurrency = orderCurrencyRate;
-                    const newCurrency = e.target.value as CURRENCY;
-                    setSelectedHistory((curr) => {
-                      return {
-                        ...curr,
-                        currency: newCurrency,
-                      };
-                    });
-                    setOrderCurrencyRate(
-                      rates.find((rate) => rate.currency === newCurrency),
-                    );
-                    const updatedHistory = await editHistoryUtil({
-                      accessToken,
-                      id: selectedHistory.id,
-                      currency: newCurrency,
-                      setSnackbarMessage,
-                      setSnackbarOpen,
-                      fetchWithCreds,
-                    });
-                    if (updatedHistory == null) {
-                      setSelectedHistory((curr) => {
-                        return {
-                          ...curr,
-                          currency: oldCurrency.currency,
-                        };
-                      });
-                      setOrderCurrencyRate(oldCurrency);
-                    }
-                  }}
-                  size="small"
-                >
-                  {rates.map((rate) => (
-                    <MenuItem value={rate.currency} key={rate.currency}>
-                      {rate.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Box>
-              <Button
-                onClick={(event) => {
-                  setActionsAnchor(event.currentTarget);
-                }}
-                sx={{ textTransform: 'none' }}
-                variant="outlined"
-              >
-                {t('actions')}
-                {actionsAnchor == null ? (
-                  <KeyboardArrowDownIcon />
-                ) : (
-                  <KeyboardArrowUpIcon />
-                )}
-              </Button>
-              <Button
-                className="h-9"
-                onClick={() => {
-                  setHistoryListDialog(true);
-                }}
-                sx={{ textTransform: 'none' }}
-                variant="outlined"
-              >
-                {t('history')}
-              </Button>
-            </Box>
-          </Box>
-          <Box className="flex flex-row justify-between items-center">
-            <Button
-              sx={{ textTransform: 'none' }}
-              variant="outlined"
-              onClick={() => {
-                setAddProductsSuppliersDialog('product');
-              }}
-            >
-              {t('addProducts')}
-            </Button>
-
-            <Button
-              sx={{ textTransform: 'none' }}
-              variant="outlined"
-              onClick={() => {
-                setAddProductsSuppliersDialog('supplier');
-              }}
-            >
-              {t('addSuppliers')}
-            </Button>
-          </Box>
-
-          {selectedHistory &&
-            productQuantities &&
-            selectedProducts &&
-            selectedSuppliers &&
-            prices && (
-              <EmptyOrder
-                setProductQuantities={setProductQuantities}
-                selectedProducts={selectedProducts}
-                selectedSuppliers={selectedSuppliers}
-                setSelectedProducts={setSelectedProducts}
-                setSelectedSuppliers={setSelectedSuppliers}
-                setSnackbarMessage={setSnackbarMessage}
-                setSnackbarOpen={setSnackbarOpen}
-                selectedHistory={selectedHistory}
-                prices={prices}
-                setPrices={setPrices}
-                hashedQuantities={hashedQuantities}
-                setHashedQuantities={setHashedQuantities}
-              />
-            )}
-
-          {createHistoryDialog && (
-            <AddEditHistoryDialog
-              handleClose={() => setCreateHistoryDialog(false)}
-              setSnackbarMessage={setSnackbarMessage}
-              setSnackbarOpen={setSnackbarOpen}
-              handleSubmit={async (title: string) => {
-                await createHistory(title);
-              }}
-            />
-          )}
-
-          {historyListDialog && historyList && (
-            <HistoryListDialog
-              handleClose={() => setHistoryListDialog(false)}
-              historyList={historyList}
-              setHistoryList={setHistoryList}
-              setSnackbarMessage={setSnackbarMessage}
-              setSnackbarOpen={setSnackbarOpen}
-              setSelectedHistory={setSelectedHistory}
-              selectedHistory={selectedHistory}
-              handleSelectHistory={async (id: string) => {
-                await getHistoryUtil({
-                  accessToken,
-                  id,
-                  setSelectedHistory,
-                  setSelectedSuppliers,
-                  setSelectedProducts,
-                  setSnackbarOpen,
-                  setSnackbarMessage,
-                  setProductQuantities,
-                  fetchWithCreds,
-                });
-                setHistoryListDialog(false);
-              }}
-            />
-          )}
-
-          {addProductsSuppliersDialog && (
-            <AddProductsSuppliersDialog
-              itemType={addProductsSuppliersDialog}
-              handleClose={() => {
-                setAddProductsSuppliersDialog(undefined);
-                setSearchedProducts([]);
-                setSearchedSuppliers([]);
-              }}
-              handleItemSearch={
-                addProductsSuppliersDialog === 'product'
-                  ? handleProductSearch
-                  : handleSupplierSearch
-              }
-              searchedItems={
-                addProductsSuppliersDialog === 'product'
-                  ? searchedProducts
-                  : searchedSuppliers
-              }
-              selectedItems={
-                addProductsSuppliersDialog === 'product'
-                  ? selectedProducts
-                  : selectedSuppliers
-              }
-              handleAddItem={
-                addProductsSuppliersDialog === 'product'
-                  ? createProduct
-                  : createSupplier
-              }
-              handleAddSearchedItem={handleAddSearchedItem}
-              handleEditItem={handleEditItem}
-              handleDeleteItem={handleDeleteItem}
-            />
-          )}
-
-          {newOrderDialog && (
-            <AddEditHistoryDialog
-              handleClose={() => {
-                setNewOrderDialog(false);
-              }}
-              setSnackbarMessage={setSnackbarMessage}
-              setSnackbarOpen={setSnackbarOpen}
-              handleSubmit={async (title: string) => {
-                await createHistoryUtil({
-                  accessToken,
-                  name: title,
-                  setHistory: setHistoryList,
-                  setSelectedHistory,
-                  setSnackbarOpen,
-                  setSnackbarMessage,
-                  fetchWithCreds,
-                });
-                setSelectedProducts([]);
-                setSelectedSuppliers([]);
-                setProductQuantities([]);
-                setNewOrderDialog(false);
-              }}
-            />
-          )}
-
-          <ActionsMenu
-            actionsAnchor={actionsAnchor}
-            prices={prices}
-            productQuantities={productQuantities}
-            selectedHistory={selectedHistory}
-            selectedProducts={selectedProducts}
-            selectedSuppliers={selectedSuppliers}
-            setActionsAnchor={setActionsAnchor}
-            setLoading={setLoading}
-            setNewOrderDialog={setNewOrderDialog}
-            setPrices={setPrices}
-            setSnackbarMessage={setSnackbarMessage}
-            setSnackbarOpen={setSnackbarOpen}
-            hashedQuantities={hashedQuantities}
-          />
-
-          <Snackbar
-            open={snackbarOpen}
-            autoHideDuration={6000}
-            onClose={(_, reason) => {
-              if (reason === 'clickaway') {
-                return;
-              }
-              setSnackbarOpen(false);
-            }}
-          >
-            <Alert
-              onClose={() => setSnackbarOpen(false)}
-              severity={snackbarMessage?.severity}
-              variant="filled"
-              sx={{ width: '100%' }}
-            >
-              {snackbarMessage?.message && t(snackbarMessage.message)}
-            </Alert>
-          </Snackbar>
-
-          {loading && (
-            <Box
-              sx={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                bgcolor: 'rgba(255,255,255,0.5)',
-                zIndex: 2000,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          )}
+    <Layout handleHeaderBackButton={() => router.push('/user')}>
+      {/* The server already checked the role; show the skeleton while the
+          client session restores instead of a blank page. */}
+      {user == null && (
+        <Box className={c.page[platform]}>
+          <LoadingSkeleton />
         </Box>
+      )}
+      {user?.grade === 'SUPERUSER' && (
+        <ProcurementProvider>
+          <ProcurementScreen />
+        </ProcurementProvider>
       )}
     </Layout>
   );
