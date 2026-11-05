@@ -35,6 +35,11 @@ import {
   formatDiagnostics,
   WebViewErrorDetail,
 } from '../lib/webviewErrors';
+import {
+  filesResultScript,
+  handleFilesRequest,
+  NATIVE_FILES_FLAG_JS,
+} from '../lib/nativeFiles';
 import OnboardingScreen, { ONBOARDING_SEEN_KEY } from './OnboardingScreen';
 
 const NAVY = '#20166E';
@@ -672,6 +677,7 @@ function WebAppScreen() {
       return `
         document.cookie = "REFRESH_TOKEN=${storedToken}; path=/${domainAttr}; max-age=315360000${secureAttr}; SameSite=Strict";
         ${localeCookie}
+        ${NATIVE_FILES_FLAG_JS}
         true;
       `;
     } else {
@@ -683,6 +689,7 @@ function WebAppScreen() {
             : ''
         }
         ${localeCookie}
+        ${NATIVE_FILES_FLAG_JS}
         true;
       `;
     }
@@ -921,6 +928,18 @@ function WebAppScreen() {
               if (isSupportedLocale(chosen)) {
                 await AsyncStorage.setItem('NEXT_LOCALE', chosen);
                 setStoredLocale(chosen);
+              }
+            } else if (
+              data.type === 'SHARE_FILES' ||
+              data.type === 'SAVE_FILES'
+            ) {
+              // Files built in the page (procurement .xlsx); see lib/nativeFiles.
+              const result = await handleFilesRequest(
+                data.type === 'SHARE_FILES' ? 'share' : 'save',
+                data.payload,
+              );
+              if (result && webViewRef.current) {
+                webViewRef.current.injectJavaScript(filesResultScript(result));
               }
             } else if (data.type === 'LOGOUT') {
               await AsyncStorage.removeItem('REFRESH_TOKEN');

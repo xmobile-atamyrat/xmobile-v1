@@ -5,6 +5,7 @@ import path from 'node:path';
 import { startIntegrationDatabase } from '../integration/setup-database';
 import { E2E_ORIGIN, E2E_PORT } from './constants';
 import { seedE2eCatalog } from './seed-e2e-catalog';
+import { seedE2eProcurement } from './seed-e2e-procurement';
 
 const ACCESS_TOKEN_SECRET = 'e2e-access-token-secret-32chars-min';
 const REFRESH_TOKEN_SECRET = 'e2e-refresh-token-secret-32chars-min';
@@ -79,6 +80,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   });
   await prisma.$connect();
   await seedE2eCatalog(prisma);
+  await seedE2eProcurement(prisma);
   await prisma.$disconnect();
 
   const nextCli = path.join(rootDir, 'node_modules/next/dist/bin/next');
