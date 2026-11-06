@@ -914,5 +914,7 @@
   "procurementRateSaveHint": "Saves when you leave the field or press Enter",
   "procurementUpdateAppForFiles": "Update the app to save and send files, or open the site in a browser.",
   "procurementFilesSaved": "Files saved",
-  "procurementFilesSavedDownloads": "Saved to Downloads/Xmobile"
+  "procurementFilesSavedDownloads": "Saved to Downloads/Xmobile",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites"
 }

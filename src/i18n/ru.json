@@ -916,5 +916,7 @@
   "procurementRateSaveHint": "Сохранится, когда выйдете из поля или нажмёте Enter",
   "procurementUpdateAppForFiles": "Обновите приложение, чтобы сохранять и отправлять файлы. Или откройте сайт в браузере.",
   "procurementFilesSaved": "Файлы сохранены",
-  "procurementFilesSavedDownloads": "Сохранено в «Загрузки/Xmobile»"
+  "procurementFilesSavedDownloads": "Сохранено в «Загрузки/Xmobile»",
+  "addToFavorites": "Добавить в избранное",
+  "removeFromFavorites": "Удалить из избранного"
 }
