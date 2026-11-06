@@ -21,7 +21,7 @@ const FavoriteSchema = z.object({ productId: z.string().min(1) });
 async function listFavorites(userId: string, locale: unknown) {
   const products = await dbClient.product.findMany({
     where: whereActiveFavorite(userId),
-    include: { brand: true },
+    include: { brand: true, colors: { select: { id: true } } },
     orderBy: [inStockFirst, { createdAt: 'desc' }],
   });
 

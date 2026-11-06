@@ -17,6 +17,7 @@ describe('Favorites API (integration)', () => {
   let productId: string;
   let categoryId: string;
   let roundedProductSlug: string;
+  const createdProductIds: string[] = [];
 
   beforeAll(async () => {
     const { databaseUrl, catalog } = await prepareIntegrationWorker();
@@ -31,6 +32,11 @@ describe('Favorites API (integration)', () => {
   }, 180_000);
 
   afterAll(async () => {
+    // The database is shared, and these would push the seeded product off the
+    // first page of newest products that later files read.
+    await prisma?.product.deleteMany({
+      where: { id: { in: createdProductIds } },
+    });
     await prisma?.$disconnect();
     await resetPrismaGlobalSingleton();
     teardownIntegrationWorker();
@@ -64,7 +70,7 @@ describe('Favorites API (integration)', () => {
     (await callFavorites('GET', session, { query: { ids: '1' } })).json.data;
 
   async function createProduct(slug: string) {
-    return prisma.product.create({
+    const product = await prisma.product.create({
       data: {
         slug: `${slug}-${Date.now()}`,
         name: `{"en":"${slug}"}`,
@@ -74,6 +80,8 @@ describe('Favorites API (integration)', () => {
         videoUrls: [],
       },
     });
+    createdProductIds.push(product.id);
+    return product;
   }
 
   it('returns 401 when Authorization is missing', async () => {
@@ -238,6 +246,23 @@ describe('Favorites API (integration)', () => {
       older.id,
       soldOut.id,
     ]);
+  });
+
+  it('sends color ids, which the page filters by', async () => {
+    const session = await signupTestUser('fav-colors');
+    const color = await prisma.color.create({
+      data: { name: 'Fav black', hex: '#000000' },
+    });
+    const product = await createProduct('fav-colors');
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { colors: { connect: { id: color.id } } },
+    });
+    await addFavorite(session, product.id);
+
+    const { json } = await callFavorites('GET', session);
+
+    expect(json.data[0].colors).toEqual([{ id: color.id }]);
   });
 
   it('leaves the description out of the list, which cards never show', async () => {

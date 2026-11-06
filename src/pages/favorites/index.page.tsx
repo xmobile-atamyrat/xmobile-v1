@@ -1,24 +1,38 @@
+import ActiveFilterChips from '@/pages/components/ActiveFilterChips';
+import FilterSheet from '@/pages/components/FilterSheet';
+import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
+import SortDropdown from '@/pages/components/SortDropdown';
+import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import {
   BUSINESS_NAME,
   DEFAULT_LOCALE,
   LOCALE_TO_OG_LOCALE,
 } from '@/pages/lib/constants';
 import { useFavoritesContext } from '@/pages/lib/FavoritesContext';
+import {
+  FavoriteProduct,
+  filterAndSortFavorites,
+} from '@/pages/lib/favoritesFilter';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
+import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
-import { ExtendedProduct, PageSeoData } from '@/pages/lib/types';
+import { PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { homePageClasses } from '@/styles/classMaps';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { buttonClasses } from '@/styles/classMaps/components/button';
 import { favoriteButtonClasses } from '@/styles/classMaps/components/favoriteButton';
+import { favoritesClasses } from '@/styles/classMaps/favorites';
 import { ordersIndexClasses } from '@/styles/classMaps/orders';
+import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
 import { Box, ButtonBase, Typography } from '@mui/material';
+import { SearchX, SlidersHorizontal } from 'lucide-react';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -52,12 +66,15 @@ export default function FavoritesPage() {
   const { user, accessToken, isLoading } = useUserContext();
   const { isFavorite, addFavorites } = useFavoritesContext();
   const fetchWithCreds = useFetchWithCreds();
-  const [products, setProducts] = useState<ExtendedProduct[]>([]);
+  const { categories } = useCategoryContext();
+  const { filters, setFilters } = useProductFilters();
+  const [products, setProducts] = useState<FavoriteProduct[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
   );
   // Removed cards still shrinking away, which the context has already dropped.
   const [leavingIds, setLeavingIds] = useState<ReadonlySet<string>>(new Set());
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const userId = user?.id;
 
   const setLeaving = (productId: string, leaving: boolean) => {
@@ -76,7 +93,7 @@ export default function FavoritesPage() {
     (async () => {
       try {
         const { success, data, message } = await fetchWithCreds<
-          ExtendedProduct[]
+          FavoriteProduct[]
         >({
           accessToken,
           path: `/api/favorites?locale=${router.locale}`,
@@ -124,32 +141,44 @@ export default function FavoritesPage() {
     </Box>
   );
 
-  const renderContent = () => {
-    if (isLoading || (user != null && status === 'loading')) {
-      return <ProductGridSkeleton count={8} />;
-    }
-    if (user == null) {
-      return notice(t('favoritesSignIn'), [t('signin'), '/user/signin']);
-    }
-    if (status === 'failed') return notice(t('favoritesLoadError'));
+  // Filtered through the context so removing a heart here drops the card once
+  // it has shrunk away, and a save that fails brings it back.
+  const favorites = products.filter(
+    ({ id }) => isFavorite(id) || leavingIds.has(id),
+  );
+  const canFilter =
+    !isLoading && user != null && status === 'ready' && favorites.length > 0;
 
-    // Filtered through the context so removing a heart here drops the card once
-    // it has shrunk away, and a save that fails brings it back.
-    const favorites = products.filter(
-      ({ id }) => isFavorite(id) || leavingIds.has(id),
+  const renderCards = () => {
+    const visible = filterAndSortFavorites(
+      favorites,
+      filters,
+      categories,
+      router.locale ?? DEFAULT_LOCALE,
     );
-    if (favorites.length === 0) {
-      return notice(t('favoritesEmpty'), [t('startShopping'), '/product']);
+    if (visible.length === 0) {
+      return (
+        <Box className={productIndexPageClasses.emptyState.wrap}>
+          <Box className={productIndexPageClasses.emptyState.iconWrap}>
+            <SearchX size={28} color="#8B8A98" />
+          </Box>
+          <Typography
+            className={`${fontClassName.className} ${productIndexPageClasses.emptyState.title}`}
+          >
+            {t('noProductsFound')}
+          </Typography>
+        </Box>
+      );
     }
     return (
       <Box
         className={
           platform === 'web'
-            ? homePageClasses.web.productGrid
+            ? productIndexPageClasses.boxes.productsGrid.web
             : homePageClasses.newProductsBox.mobile
         }
       >
-        {favorites.map((product) => (
+        {visible.map((product) => (
           <Box
             key={product.id}
             className={`${favoriteButtonClasses.cardSlot} ${
@@ -173,10 +202,48 @@ export default function FavoritesPage() {
     );
   };
 
+  const renderContent = () => {
+    if (isLoading || (user != null && status === 'loading')) {
+      return <ProductGridSkeleton count={8} />;
+    }
+    if (user == null) {
+      return notice(t('favoritesSignIn'), [t('signin'), '/user/signin']);
+    }
+    if (status === 'failed') return notice(t('favoritesLoadError'));
+    if (favorites.length === 0) {
+      return notice(t('favoritesEmpty'), [t('startShopping'), '/product']);
+    }
+    if (platform !== 'web') return renderCards();
+    return (
+      <Box className={productIndexPageClasses.boxes.layout.web}>
+        <FilterSidebar
+          categories={categories}
+          selectedCategoryIds={filters.categoryIds}
+          selectedBrandIds={filters.brandIds}
+          selectedColorIds={filters.colorIds}
+          minPrice={filters.minPrice}
+          maxPrice={filters.maxPrice}
+          inStock={filters.inStock}
+          onFilterChange={setFilters}
+        />
+        <Box className="flex flex-col w-full min-w-0">
+          <Box className={productIndexPageClasses.resultsBar.web}>
+            <ActiveFilterChips filters={filters} onChange={setFilters} />
+            <SortDropdown
+              value={filters.sortBy}
+              onChange={(sortBy) => setFilters({ sortBy })}
+            />
+          </Box>
+          {renderCards()}
+        </Box>
+      </Box>
+    );
+  };
+
   if (platform === 'web') {
     return (
       <Layout>
-        <Box className={ordersIndexClasses.web.grid}>
+        <Box className={favoritesClasses.grid}>
           <AccountNav active="favorites" />
           <Box className={ordersIndexClasses.web.col}>
             <Box className={ordersIndexClasses.web.headRow}>
@@ -195,13 +262,31 @@ export default function FavoritesPage() {
 
   return (
     <Layout>
+      <FilterSheet
+        open={mobileFilterOpen}
+        onClose={() => setMobileFilterOpen(false)}
+        filters={filters}
+        onApply={setFilters}
+      />
       <Box className={ordersIndexClasses.container.mobile}>
-        <Box className={ordersIndexClasses.headerWrap.mobile}>
+        <Box
+          className={`${ordersIndexClasses.headerWrap.mobile} ${favoritesClasses.mobileHeader}`}
+        >
           <Typography
             className={`${fontClassName.className} ${ordersIndexClasses.title.mobile}`}
           >
             {t('favorites')}
           </Typography>
+          {canFilter && (
+            <button
+              className={appbarClasses.filterButton.mobile}
+              onClick={() => setMobileFilterOpen(true)}
+              type="button"
+              aria-label={t('filters')}
+            >
+              <SlidersHorizontal size={20} />
+            </button>
+          )}
         </Box>
         <Box className={ordersIndexClasses.content.mobile}>
           {renderContent()}
