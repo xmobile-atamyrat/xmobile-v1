@@ -254,6 +254,20 @@ export const applyPendingEdits = (
     return next;
   });
 
+// Folds a saved edit into the master list the table derives from. The stamp it
+// sets is local only, since the PUT body is built from the edits themselves: the
+// table and the out-of-stock filter just need it non-null until the next load
+// brings the server's own.
+export const foldSavedEdit = (price: Prices, edit: PriceEdit): Prices => {
+  const { isOutOfStock, ...columns } = edit;
+  const folded = { ...price, ...columns };
+  if (isOutOfStock == null) return folded;
+  return {
+    ...folded,
+    outOfStockAt: isOutOfStock ? price.outOfStockAt ?? new Date() : null,
+  };
+};
+
 // Sort/filter helpers for the update-prices page. Pure functions over Prices[]
 // so the page can sort/filter client-side without touching the edit/save flow.
 export type PriceSortKey =
