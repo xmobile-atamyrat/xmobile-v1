@@ -19,6 +19,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { DollarRate } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -32,15 +33,20 @@ interface AddPriceProps {
     priceInDollars: string,
     priceInManat: string,
     categoryId: string | null,
+    dollarRateId: number | null,
   ) => Promise<boolean>;
-  dollarRate: number;
+  rates: DollarRate[];
+  defaultRateId: number | null;
+  defaultCategoryId: string | null;
   categoryOptions: CategoryOption[];
 }
 
 export default function AddPrice({
   handleClose,
   handleCreate,
-  dollarRate,
+  rates,
+  defaultRateId,
+  defaultCategoryId,
   categoryOptions,
 }: AddPriceProps) {
   const t = useTranslations();
@@ -51,7 +57,14 @@ export default function AddPrice({
   const [valueInDollars, setValueInDollars] = useState('');
   const [valueInManat, setValueInManat] = useState('');
   // Optional: a price may be created uncategorized and assigned from the table.
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  // Null until the admin picks one, so a dialog opened before the rates load
+  // still lands on the default once they arrive.
+  const [pickedRateId, setPickedRateId] = useState<number | null>(null);
+  const rateId = pickedRateId ?? defaultRateId;
+  const rateValue = (id: number | null) =>
+    rates.find((rate) => rate.id === id)?.rate ?? 0;
+  const dollarRate = rateValue(rateId);
   return (
     <Dialog open onClose={handleClose}>
       <DialogTitle>{t('addPrice')}</DialogTitle>
@@ -67,6 +80,34 @@ export default function AddPrice({
             }}
             required
           />
+          <FormControl sx={{ width: isMdUp ? '450px' : '250px' }} size="medium">
+            <InputLabel>{t('rate')}</InputLabel>
+            <Select
+              label={t('rate')}
+              value={rateId == null ? '' : String(rateId)}
+              onChange={(e) => {
+                const nextRateId = Number(e.target.value);
+                setPickedRateId(nextRateId);
+                // Dollars are the base figure, so they stay put and the manat
+                // follows the new rate.
+                if (valueInDollars !== '') {
+                  setValueInManat(
+                    parsePrice(
+                      (
+                        parseFloat(valueInDollars) * rateValue(nextRateId)
+                      ).toString(),
+                    ).toString(),
+                  );
+                }
+              }}
+            >
+              {rates.map((rate) => (
+                <MenuItem key={rate.id} value={String(rate.id)}>
+                  {rate.name} ({rate.rate})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <TextField
             value={valueInDollars ?? '0'}
             placeholder={t('priceInDollars')}
@@ -136,6 +177,7 @@ export default function AddPrice({
               valueInDollars,
               valueInManat,
               categoryId,
+              rateId,
             );
             if (success) handleClose();
             setLoading(false);

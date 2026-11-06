@@ -12,6 +12,7 @@ import {
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  foldSavedEdit,
   isEditablePriceCell,
   isPriceValid,
   parseOrderVariant,
@@ -330,6 +331,56 @@ describe('applyPendingEdits', () => {
       p1: { id: 'p1', productId: 'prod-9' },
     });
     expect(result[1]).toEqual(table[1]);
+  });
+});
+
+describe('foldSavedEdit', () => {
+  const base = {
+    id: 'p1',
+    name: 'iPhone',
+    price: '10',
+    outOfStockAt: null,
+  } as Prices;
+
+  it('merges column edits onto the row', () => {
+    expect(foldSavedEdit(base, { name: 'iPhone 16', price: '12' })).toEqual({
+      ...base,
+      name: 'iPhone 16',
+      price: '12',
+    });
+  });
+
+  it('marks a row out of stock without leaking the edit-only flag', () => {
+    const folded = foldSavedEdit(base, { isOutOfStock: true });
+
+    expect(folded.outOfStockAt).toBeInstanceOf(Date);
+    expect(folded).not.toHaveProperty('isOutOfStock');
+  });
+
+  it('keeps the original stamp when the row was already out of stock', () => {
+    const stamp = new Date('2026-01-01T00:00:00Z');
+
+    expect(
+      foldSavedEdit({ ...base, outOfStockAt: stamp }, { isOutOfStock: true })
+        .outOfStockAt,
+    ).toBe(stamp);
+  });
+
+  it('clears the stamp when the row comes back in stock', () => {
+    const outOfStock = { ...base, outOfStockAt: new Date() };
+
+    expect(
+      foldSavedEdit(outOfStock, { isOutOfStock: false }).outOfStockAt,
+    ).toBeNull();
+  });
+
+  it('leaves stock alone when the edit does not touch it', () => {
+    const stamp = new Date('2026-01-01T00:00:00Z');
+
+    expect(
+      foldSavedEdit({ ...base, outOfStockAt: stamp }, { name: 'Renamed' })
+        .outOfStockAt,
+    ).toBe(stamp);
   });
 });
 
