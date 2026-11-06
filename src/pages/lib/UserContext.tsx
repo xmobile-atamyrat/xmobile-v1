@@ -35,6 +35,7 @@ export default function UserContextProvider({
   const [accessToken, setAccessToken] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [initialCartCount, setInitialCartCount] = useState<number>();
+  const [initialFavoriteIds, setInitialFavoriteIds] = useState<string[]>();
 
   useEffect(() => {
     if (getCookie(AUTH_REFRESH_COOKIE_NAME) != null) {
@@ -44,6 +45,7 @@ export default function UserContextProvider({
             accessToken: string;
             user: User;
             cartCount?: number;
+            favoriteProductIds?: string[];
           }> = await (
             await fetch('/api/user', {
               method: 'GET',
@@ -58,10 +60,12 @@ export default function UserContextProvider({
               accessToken: fetchedAccessToken,
               user: fetchedUser,
               cartCount,
+              favoriteProductIds,
             } = response.data;
             setAccessToken(fetchedAccessToken);
             setUser(fetchedUser);
             setInitialCartCount(cartCount);
+            setInitialFavoriteIds(favoriteProductIds);
           }
         } catch (error) {
           console.error(error);
@@ -84,8 +88,17 @@ export default function UserContextProvider({
       setAccessToken,
       isLoading,
       initialCartCount,
+      initialFavoriteIds,
     } as UserContextProps;
-  }, [user, setUser, accessToken, setAccessToken, isLoading, initialCartCount]);
+  }, [
+    user,
+    setUser,
+    accessToken,
+    setAccessToken,
+    isLoading,
+    initialCartCount,
+    initialFavoriteIds,
+  ]);
   return (
     <UserContext.Provider value={userContextState}>
       {children}
