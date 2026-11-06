@@ -57,10 +57,27 @@ function setUp({
   vi.mocked(useFavoritesContext).mockReturnValue({
     isFavorite: (id: string) => favorites.includes(id),
     toggleFavorite: vi.fn(),
+    addFavorites: vi.fn(),
   });
 }
 
 const renderPage = () => renderWithProviders(createElement(FavoritesPage));
+
+async function renderPageWithRealContext(initialFavoriteIds?: string[]) {
+  const actual = await vi.importActual<
+    typeof import('@/pages/lib/FavoritesContext')
+  >('@/pages/lib/FavoritesContext');
+  vi.mocked(useUserContext).mockReturnValue({
+    user: { id: 'u1' },
+    accessToken: 'token',
+    isLoading: false,
+    initialFavoriteIds,
+  } as never);
+  vi.mocked(useFavoritesContext).mockImplementation(actual.useFavoritesContext);
+  return renderWithProviders(
+    createElement(actual.default, null, createElement(FavoritesPage)),
+  );
+}
 
 describe('Favorites page', () => {
   beforeEach(() => {
@@ -156,6 +173,26 @@ describe('Favorites page', () => {
     expect(
       screen.queryByText('You have no favorites yet'),
     ).not.toBeInTheDocument();
+  });
+
+  it('still lists the favorites when the ids request fails', async () => {
+    fetchWithCreds.mockImplementation(async ({ path }: { path: string }) => {
+      if (path.includes('ids=1')) throw new Error('offline');
+      return { success: true, data: [phone, tablet] };
+    });
+
+    await renderPageWithRealContext();
+
+    expect(await screen.findAllByTestId('card')).toHaveLength(2);
+    expect(
+      screen.queryByText('You have no favorites yet'),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a favorite the session's ids do not have yet", async () => {
+    await renderPageWithRealContext(['p1']);
+
+    expect(await screen.findAllByTestId('card')).toHaveLength(2);
   });
 
   it('reports a refused request the same way', async () => {

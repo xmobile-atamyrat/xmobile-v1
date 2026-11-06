@@ -223,6 +223,48 @@ describe('FavoritesContext', () => {
     expect(result.current.isFavorite('p1')).toBe(true);
   });
 
+  it('adds ids that a fresher list brought in', () => {
+    setSession(signedIn('u1', ['p1']));
+    const { result } = renderFavorites();
+
+    act(() => result.current.addFavorites(['p2']));
+
+    expect(result.current.isFavorite('p1')).toBe(true);
+    expect(result.current.isFavorite('p2')).toBe(true);
+  });
+
+  it('removes an id the list added with DELETE', async () => {
+    setSession(signedIn('u1', []));
+    const { result } = renderFavorites();
+    act(() => result.current.addFavorites(['p1']));
+
+    await act(() => result.current.toggleFavorite('p1'));
+
+    expect(result.current.isFavorite('p1')).toBe(false);
+    expect(fetchWithCreds).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('does not let a list undo a removal that is still saving', async () => {
+    setSession(signedIn('u1', ['p1']));
+    let finish: (value: object) => void = () => undefined;
+    fetchWithCreds.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { result } = renderFavorites();
+    act(() => {
+      result.current.toggleFavorite('p1');
+    });
+
+    act(() => result.current.addFavorites(['p1']));
+    await act(async () => finish({ success: true }));
+
+    expect(result.current.isFavorite('p1')).toBe(false);
+  });
+
   it('can toggle again once the save has finished', async () => {
     setSession(signedIn('u1', []));
     const { result } = renderFavorites();
