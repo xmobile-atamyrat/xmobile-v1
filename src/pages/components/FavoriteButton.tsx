@@ -5,21 +5,27 @@ import { ButtonBase } from '@mui/material';
 import { Heart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 
 interface FavoriteButtonProps {
   productId: string;
   variant: 'card' | 'detail';
+  onRemove?: () => void;
 }
 
 export default function FavoriteButton({
   productId,
   variant,
+  onRemove,
 }: FavoriteButtonProps) {
   const t = useTranslations();
   const router = useRouter();
   const { user, isLoading } = useUserContext();
   const { isFavorite, toggleFavorite } = useFavoritesContext();
   const favorite = isFavorite(productId);
+  // Set by a tap, not by `favorite` changing, or every heart would animate when
+  // the ids arrive after load.
+  const [animating, setAnimating] = useState(false);
 
   const handleClick = () => {
     if (isLoading) return;
@@ -28,8 +34,14 @@ export default function FavoriteButton({
       router.push('/user/signin');
       return;
     }
+    setAnimating(true);
+    if (favorite) onRemove?.();
     toggleFavorite(productId);
   };
+
+  const animation = favorite
+    ? favoriteButtonClasses.iconAdded
+    : favoriteButtonClasses.iconRemoved;
 
   return (
     <ButtonBase
@@ -40,11 +52,12 @@ export default function FavoriteButton({
       className={favoriteButtonClasses.button[variant]}
     >
       <Heart
+        onAnimationEnd={() => setAnimating(false)}
         className={`${favoriteButtonClasses.icon[variant]} ${
           favorite
             ? favoriteButtonClasses.iconActive
             : favoriteButtonClasses.iconIdle
-        }`}
+        } ${animating ? animation : ''}`}
       />
     </ButtonBase>
   );

@@ -12,4 +12,12 @@ export const favoriteButtonClasses = {
   },
   iconActive: 'text-red fill-current',
   iconIdle: 'text-muted',
+  iconAdded: 'motion-safe:animate-favorite-pop',
+  iconRemoved: 'motion-safe:animate-favorite-shrink',
+  // Grid so the card still fills its row, as it does as a direct grid item.
+  cardSlot: 'grid grid-cols-1 min-w-0',
+  // The page drops the card when this ends, so it has to run even with reduced
+  // motion, where it finishes at once instead.
+  cardLeaving:
+    'animate-favorite-card-leave motion-reduce:[animation-duration:1ms] pointer-events-none',
 };

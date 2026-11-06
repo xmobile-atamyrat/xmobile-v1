@@ -15,6 +15,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { homePageClasses } from '@/styles/classMaps';
 import { buttonClasses } from '@/styles/classMaps/components/button';
+import { favoriteButtonClasses } from '@/styles/classMaps/components/favoriteButton';
 import { ordersIndexClasses } from '@/styles/classMaps/orders';
 import { fontClassName } from '@/styles/theme';
 import { Box, ButtonBase, Typography } from '@mui/material';
@@ -55,7 +56,18 @@ export default function FavoritesPage() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
   );
+  // Removed cards still shrinking away, which the context has already dropped.
+  const [leavingIds, setLeavingIds] = useState<ReadonlySet<string>>(new Set());
   const userId = user?.id;
+
+  const setLeaving = (productId: string, leaving: boolean) => {
+    setLeavingIds((prev) => {
+      const next = new Set(prev);
+      if (leaving) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -121,9 +133,11 @@ export default function FavoritesPage() {
     }
     if (status === 'failed') return notice(t('favoritesLoadError'));
 
-    // Filtered through the context so removing a heart here drops the card at
-    // once, and a save that fails brings it back.
-    const favorites = products.filter(({ id }) => isFavorite(id));
+    // Filtered through the context so removing a heart here drops the card once
+    // it has shrunk away, and a save that fails brings it back.
+    const favorites = products.filter(
+      ({ id }) => isFavorite(id) || leavingIds.has(id),
+    );
     if (favorites.length === 0) {
       return notice(t('favoritesEmpty'), [t('startShopping'), '/product']);
     }
@@ -136,11 +150,24 @@ export default function FavoritesPage() {
         }
       >
         {favorites.map((product) => (
-          <ProductCard
+          <Box
             key={product.id}
-            product={product}
-            cartProps={{ cartAction: 'add' }}
-          />
+            className={`${favoriteButtonClasses.cardSlot} ${
+              leavingIds.has(product.id)
+                ? favoriteButtonClasses.cardLeaving
+                : ''
+            }`}
+            onAnimationEnd={(e) => {
+              // The heart's own animation bubbles up to here.
+              if (e.target === e.currentTarget) setLeaving(product.id, false);
+            }}
+          >
+            <ProductCard
+              product={product}
+              cartProps={{ cartAction: 'add' }}
+              onFavoriteRemove={() => setLeaving(product.id, true)}
+            />
+          </Box>
         ))}
       </Box>
     );
