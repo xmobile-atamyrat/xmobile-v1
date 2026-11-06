@@ -1,10 +1,16 @@
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
+import {
+  BUSINESS_NAME,
+  DEFAULT_LOCALE,
+  LOCALE_TO_OG_LOCALE,
+} from '@/pages/lib/constants';
 import { useFavoritesContext } from '@/pages/lib/FavoritesContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { ExtendedProduct } from '@/pages/lib/types';
+import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
+import { ExtendedProduct, PageSeoData } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { homePageClasses } from '@/styles/classMaps';
@@ -18,11 +24,24 @@ import { useRouter } from 'next/router';
 import { startTransition, useEffect, useState } from 'react';
 
 export const getStaticProps = (async (context) => {
-  return {
-    props: {
-      messages: (await import(`../../i18n/${context.locale}.json`)).default,
-    },
+  const locale = context.locale ?? DEFAULT_LOCALE;
+  const messages = (await import(`../../i18n/${context.locale}.json`)).default;
+  const title = `${messages.favorites} | ${BUSINESS_NAME}`;
+  const seoData: PageSeoData = {
+    title,
+    description: title,
+    canonicalUrl: getCanonicalUrl(locale, 'favorites'),
+    hreflangLinks: generateHreflangLinks('favorites'),
+    ogTitle: title,
+    ogDescription: title,
+    ogLocale:
+      LOCALE_TO_OG_LOCALE[locale as keyof typeof LOCALE_TO_OG_LOCALE] ||
+      'ru_RU',
+    // Crawlers are signed out, so all they would ever index is the sign-in
+    // notice. Not in robots.txt: a blocked page can't show them this tag.
+    noIndex: true,
   };
+  return { props: { messages, seoData } };
 }) satisfies GetStaticProps<object>;
 
 export default function FavoritesPage() {

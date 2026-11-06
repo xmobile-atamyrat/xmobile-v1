@@ -8,8 +8,6 @@ Disallow: /cart/
 Disallow: /*/cart/
 Disallow: /orders/
 Disallow: /*/orders/
-Disallow: /favorites/
-Disallow: /*/favorites/
 Disallow: /analytics/
 Disallow: /*/analytics/
 Disallow: /procurement/
