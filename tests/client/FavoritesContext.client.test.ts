@@ -265,6 +265,51 @@ describe('FavoritesContext', () => {
     expect(result.current.isFavorite('p1')).toBe(false);
   });
 
+  describe('while the ids are still loading', () => {
+    let finishIds: (ids: string[]) => void;
+
+    beforeEach(() => {
+      const ids = new Promise((resolve) => {
+        finishIds = (data) => resolve({ success: true, data });
+      });
+      fetchWithCreds.mockImplementation(({ method }: { method: string }) =>
+        method === 'GET' ? ids : Promise.resolve({ success: true }),
+      );
+      setSession(signedIn('u1'));
+    });
+
+    it('keeps a heart added before the ids arrive', async () => {
+      const { result } = renderFavorites();
+
+      await act(() => result.current.toggleFavorite('p1'));
+      await act(async () => finishIds(['p2']));
+
+      expect(result.current.isFavorite('p1')).toBe(true);
+      expect(result.current.isFavorite('p2')).toBe(true);
+    });
+
+    it('keeps a heart removed before the ids arrive', async () => {
+      const { result } = renderFavorites();
+      act(() => result.current.addFavorites(['p1']));
+
+      await act(() => result.current.toggleFavorite('p1'));
+      await act(async () => finishIds(['p1', 'p2']));
+
+      expect(result.current.isFavorite('p1')).toBe(false);
+      expect(result.current.isFavorite('p2')).toBe(true);
+    });
+
+    it('lets the ids decide when the tap failed to save', async () => {
+      const { result } = renderFavorites();
+      fetchWithCreds.mockRejectedValueOnce(new Error('offline'));
+
+      await act(() => result.current.toggleFavorite('p1'));
+      await act(async () => finishIds(['p1']));
+
+      expect(result.current.isFavorite('p1')).toBe(true);
+    });
+  });
+
   it('can toggle again once the save has finished', async () => {
     setSession(signedIn('u1', []));
     const { result } = renderFavorites();
