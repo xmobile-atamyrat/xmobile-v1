@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-import { E2E_CATALOG } from './fixtures/catalog-slugs';
+import { E2E_CATALOG, E2E_VARIANT_PRODUCT } from './fixtures/catalog-slugs';
 import { signInAs } from './helpers/auth';
 
 /**
@@ -40,7 +40,48 @@ async function tapAndSave(page: Page, heart: ReturnType<typeof addHeart>) {
   expect((await saved).ok()).toBe(true);
 }
 
+/** Favorites both seeded products; only the variant phone has a color. */
+async function saveBothProducts(page: Page) {
+  await openSignedIn(page, productPath);
+  await tapAndSave(page, addHeart(page));
+  await openSignedIn(page, `/product/${E2E_VARIANT_PRODUCT.slug}`);
+  await tapAndSave(page, addHeart(page));
+}
+
+/** Clears the list from `/favorites`, with no filters on. */
+async function removeBothProducts(page: Page) {
+  await tapAndSave(page, removeHeart(page).first());
+  await expect(removeHeart(page)).toHaveCount(1);
+  await tapAndSave(page, removeHeart(page).first());
+  await expect(page.getByText('В избранном пока ничего нет')).toBeVisible();
+}
+
 test.describe('Favorites on desktop', () => {
+  test('the list filters by color, and the chip takes the filter off', async ({
+    page,
+    context,
+  }) => {
+    await signInAs(context, 'free');
+    await saveBothProducts(page);
+    await openSignedIn(page, '/favorites');
+    await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
+
+    await page.getByTitle(E2E_VARIANT_PRODUCT.colorName).click();
+
+    await expect(page).toHaveURL(/colorIds=/);
+    await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: E2E_VARIANT_PRODUCT.name }),
+    ).toBeVisible();
+
+    await page
+      .getByRole('button', { name: E2E_VARIANT_PRODUCT.colorName })
+      .click();
+
+    await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
+    await removeBothProducts(page);
+  });
+
   test('a favorite survives a reload, shows on the page, and can be removed', async ({
     page,
     context,
@@ -108,5 +149,23 @@ test.describe('Favorites on a phone', () => {
 
     await tapAndSave(page, removeHeart(page));
     await expect(page.getByText('В избранном пока ничего нет')).toBeVisible();
+  });
+
+  test('the sheet filters the list once applied', async ({ page, context }) => {
+    await signInAs(context, 'free');
+    await saveBothProducts(page);
+    await openSignedIn(page, '/favorites');
+    await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Фильтры' }).click();
+    await page.getByTitle(E2E_VARIANT_PRODUCT.colorName).click();
+    await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Применить' }).click();
+
+    await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
+
+    await openSignedIn(page, '/favorites');
+    await removeBothProducts(page);
   });
 });

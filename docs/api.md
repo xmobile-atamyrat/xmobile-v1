@@ -17,7 +17,7 @@ REST API lives under **`src/pages/api/`**. File name `*.page.ts` → route by pa
 | ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Auth          | `api/user/signin`, `signup`, `api/user/index` (refresh)          | JWT issue/refresh                                                               |
 | Cart          | `api/cart`                                                       | CRUD cart items (auth); `GET ?count=1` returns `{ count }` for the header badge |
-| Favorites     | `api/favorites`                                                  | List, add, remove by `productId` (auth); `GET ?ids=1` returns ids only          |
+| Favorites     | `api/favorites`                                                  | List with color ids, add, remove (auth); `GET ?ids=1` returns ids only          |
 | Orders        | `api/order`, `api/order/[id]`                                    | Create, list, get (auth)                                                        |
 | Admin orders  | `api/order/admin`, `api/order/admin/[id]`                        | List/update orders (admin)                                                      |
 | Products      | `api/product`, `api/product/new`, `api/category`                 | List, create (admin)                                                            |
