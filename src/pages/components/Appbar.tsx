@@ -21,6 +21,7 @@ import {
   ChevronUp,
   Clock,
   Globe,
+  Heart,
   Menu as MenuIcon,
   Phone,
   Search,
@@ -513,6 +514,15 @@ export default function CustomAppBar({
                 />
               </>
             )}
+            <button
+              type="button"
+              aria-label={t('favorites')}
+              title={t('favorites')}
+              className={web.iconAction}
+              onClick={() => router.push('/favorites')}
+            >
+              <Heart className={web.actionIcon} />
+            </button>
             <button
               type="button"
               aria-label={t('cart')}

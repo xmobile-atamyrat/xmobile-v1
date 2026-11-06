@@ -15,12 +15,12 @@ import {
   Banknote,
   Clock,
   Headset,
+  Heart,
   Home,
   LayoutGrid,
   Mail,
   MapPin,
   Phone,
-  Search,
   ShieldCheck,
   ShoppingBag,
   Truck,
@@ -44,7 +44,7 @@ const mapsUrl = 'https://maps.app.goo.gl/sYc6VJSSFJW1aUd76';
 const navItems = [
   { href: '/', labelKey: 'home', Icon: Home },
   { href: '/category', labelKey: 'categories', Icon: LayoutGrid },
-  { href: '/search', labelKey: 'searchNav', Icon: Search },
+  { href: '/favorites', labelKey: 'favorites', Icon: Heart },
   { href: '/cart', labelKey: 'cart', Icon: ShoppingBag },
   { href: '/user', labelKey: 'profileNav', Icon: User },
 ] as const;
