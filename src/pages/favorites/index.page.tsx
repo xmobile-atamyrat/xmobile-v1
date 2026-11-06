@@ -15,7 +15,7 @@ import { Box, ButtonBase, Typography } from '@mui/material';
 import { GetStaticProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 
 export const getStaticProps = (async (context) => {
   return {
@@ -30,7 +30,7 @@ export default function FavoritesPage() {
   const t = useTranslations();
   const platform = usePlatform();
   const { user, accessToken, isLoading } = useUserContext();
-  const { isFavorite } = useFavoritesContext();
+  const { isFavorite, addFavorites } = useFavoritesContext();
   const fetchWithCreds = useFetchWithCreds();
   const [products, setProducts] = useState<ExtendedProduct[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
@@ -53,8 +53,13 @@ export default function FavoritesPage() {
         });
         if (!success) throw new Error(message);
         if (cancelled) return;
-        setProducts(data);
-        setStatus('ready');
+        // Together, or the cards render before the context knows their ids and
+        // the empty notice flashes.
+        startTransition(() => {
+          addFavorites(data.map(({ id }) => id));
+          setProducts(data);
+          setStatus('ready');
+        });
       } catch (error) {
         console.error('Failed to load favorites:', error);
         if (!cancelled) setStatus('failed');

@@ -15,11 +15,13 @@ import {
 interface FavoritesContextProps {
   isFavorite: (productId: string) => boolean;
   toggleFavorite: (productId: string) => Promise<void>;
+  addFavorites: (productIds: string[]) => void;
 }
 
 const FavoritesContext = createContext<FavoritesContextProps>({
   isFavorite: () => false,
   toggleFavorite: async () => {},
+  addFavorites: () => {},
 });
 
 export const useFavoritesContext = () => useContext(FavoritesContext);
@@ -120,12 +122,26 @@ export default function FavoritesContextProvider({
     [favoriteIds, fetchWithCreds, setFavorite],
   );
 
+  // A full list is newer than the session's ids, which may also have failed to
+  // load. Ids still saving are skipped: the list may predate that removal.
+  const addFavorites = useCallback((productIds: string[]) => {
+    const settledIds = productIds.filter((id) => !savingRef.current.has(id));
+    startTransition(() => {
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        settledIds.forEach((id) => next.add(id));
+        return next.size === prev.size ? prev : next;
+      });
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       isFavorite: (productId: string) => favoriteIds.has(productId),
       toggleFavorite,
+      addFavorites,
     }),
-    [favoriteIds, toggleFavorite],
+    [favoriteIds, toggleFavorite, addFavorites],
   );
 
   return (

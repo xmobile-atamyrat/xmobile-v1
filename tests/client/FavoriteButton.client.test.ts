@@ -36,6 +36,7 @@ function renderButton({
   vi.mocked(useFavoritesContext).mockReturnValue({
     isFavorite: () => favorite,
     toggleFavorite,
+    addFavorites: vi.fn(),
   });
   return renderWithProviders(
     createElement(FavoriteButton, { productId: 'p1', variant: 'card' }),
