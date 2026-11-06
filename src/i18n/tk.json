@@ -451,8 +451,6 @@
   "openSettings": "Sazlamalar",
   "serverLogs": "Serwer Ýazgylary",
   "brands": "Brendler",
-  "recentSearches": "Soňky gözlegler",
-  "trendingNow": "Meşhur",
   "noBrands": "Brend tapylmady",
   "showMore": "Köpräk görmek",
   "showLess": "Azrak görmek",
@@ -918,5 +916,9 @@
   "procurementFilesSaved": "Faýllar saklandy",
   "procurementFilesSavedDownloads": "«Downloads/Xmobile» bukjasyna saklandy",
   "addToFavorites": "Halanlaryma goş",
-  "removeFromFavorites": "Halanlarymdan aýyr"
+  "removeFromFavorites": "Halanlarymdan aýyr",
+  "favorites": "Halanlarym",
+  "favoritesEmpty": "Entek halanlaryňyz ýok",
+  "favoritesSignIn": "Halanlaryňyzy görmek üçin ulgama giriň",
+  "favoritesLoadError": "Halanlaryňyz ýüklenmedi"
 }

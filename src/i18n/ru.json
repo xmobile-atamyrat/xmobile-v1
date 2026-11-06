@@ -451,8 +451,6 @@
   "openSettings": "Настройки",
   "serverLogs": "Журналы сервера",
   "brands": "Бренды",
-  "recentSearches": "Недавние",
-  "trendingNow": "Популярное",
   "noBrands": "Бренды не найдены",
   "showMore": "Ещё",
   "showLess": "Скрыть",
@@ -918,5 +916,9 @@
   "procurementFilesSaved": "Файлы сохранены",
   "procurementFilesSavedDownloads": "Сохранено в «Загрузки/Xmobile»",
   "addToFavorites": "Добавить в избранное",
-  "removeFromFavorites": "Удалить из избранного"
+  "removeFromFavorites": "Удалить из избранного",
+  "favorites": "Избранное",
+  "favoritesEmpty": "В избранном пока ничего нет",
+  "favoritesSignIn": "Войдите, чтобы увидеть избранное",
+  "favoritesLoadError": "Не удалось загрузить избранное"
 }
