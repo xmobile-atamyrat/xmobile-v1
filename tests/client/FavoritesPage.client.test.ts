@@ -3,7 +3,7 @@
 import { useFavoritesContext } from '@/pages/lib/FavoritesContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
-import FavoritesPage from '@/pages/favorites/index.page';
+import FavoritesPage, { getStaticProps } from '@/pages/favorites/index.page';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import mockRouter from 'next-router-mock';
 import { createElement, ReactNode } from 'react';
@@ -91,6 +91,15 @@ describe('Favorites page', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockRouter.setCurrentUrl('/favorites');
     mockRouter.locale = 'en';
+  });
+
+  it('keeps the page out of search results', async () => {
+    const { props } = (await getStaticProps({ locale: 'en' })) as {
+      props: { seoData?: { noIndex: boolean; canonicalUrl: string } };
+    };
+
+    expect(props.seoData?.noIndex).toBe(true);
+    expect(props.seoData?.canonicalUrl).toMatch(/\/en\/favorites$/);
   });
 
   it('lists the favorites in the active language', async () => {
