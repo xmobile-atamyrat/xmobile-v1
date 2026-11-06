@@ -16,6 +16,7 @@ import {
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { mergeSameColors } from '@/pages/lib/colorGroups';
 import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
   getListSnapshot,
@@ -381,6 +382,8 @@ export default function ProductGridContent({
   // Bumped only here: loadMoreProducts continues the same query and merely
   // checks that its token is still current before committing.
   const requestGenerationRef = useRef(0);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const loadMorePausedRef = useRef(false);
 
   useEffect(() => {
     // Skip the page-1 reset while restoring a snapshot (incl. the filters-hydration
@@ -390,6 +393,7 @@ export default function ProductGridContent({
     if (restoringRef.current) return;
     // A shared link would otherwise load the unfiltered list first.
     if (!filtersReady) return;
+    loadMorePausedRef.current = false;
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
     const isCurrent = () => generation === requestGenerationRef.current;
@@ -509,33 +513,20 @@ export default function ProductGridContent({
       }
     } catch (error) {
       console.error('Failed to load products:', error);
+      if (isCurrent()) loadMorePausedRef.current = true;
     } finally {
       if (isCurrent()) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
 
-  useEffect(() => {
+  useLoadMoreSentinel({
+    sentinelRef: loadMoreTriggerRef,
+    pausedRef: loadMorePausedRef,
+    loadMore: loadMoreProducts,
     // Web uses numbered pagination instead of infinite scroll.
-    if (platform === 'web') return () => undefined;
-    const loadMoreTrigger = document.getElementById('load-more-trigger');
-    if (!loadMoreTrigger) return () => undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreProducts();
-        }
-      },
-      { rootMargin: '100px' },
-    );
-
-    observer.observe(loadMoreTrigger);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadMoreProducts, platform]);
+    enabled: platform !== 'web',
+  });
 
   const handleBackButton = () => {
     if (categoryPath.length > 1) {
@@ -978,7 +969,7 @@ export default function ProductGridContent({
                   </Box>
                 );
               })()}
-              {platform === 'mobile' && <div id="load-more-trigger"></div>}
+              {platform === 'mobile' && <div ref={loadMoreTriggerRef}></div>}
               {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">
                   <CircularProgress />
