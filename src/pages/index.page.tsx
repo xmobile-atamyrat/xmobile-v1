@@ -35,9 +35,10 @@ import {
 import { parseName } from '@/pages/lib/utils';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
+import { buttonClasses } from '@/styles/classMaps/components/button';
 import { fontClassName } from '@/styles/theme';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
-import { Box, Typography } from '@mui/material';
+import { Box, ButtonBase, Typography } from '@mui/material';
 import { Product } from '@prisma/client';
 import cookie, { serialize } from 'cookie';
 import geoip from 'geoip-lite';
@@ -221,6 +222,22 @@ export default function Home({
   const searchTerm = readSearchKeyword(router.query);
   const search = useHomeSearch(searchTerm, router.locale, initialSearch);
   const searchTitle = t('searchResultsFor', { keyword: searchTerm });
+  const searchFailure = (
+    <Box className="text-center">
+      <Typography className={`${fontClassName.className} ${web.emptyText}`}>
+        {t('searchLoadError')}
+      </Typography>
+      <Box className="mt-4 mx-auto max-w-[280px]">
+        <ButtonBase
+          disableRipple
+          onClick={search.retry}
+          className={`${fontClassName.className} ${buttonClasses.primary[platform]}`}
+        >
+          {t('tryAgain')}
+        </ButtonBase>
+      </Box>
+    </Box>
+  );
 
   // Web "Shop by category" row (spec 1357-1366): real top-level categories,
   // admin-flagged popular ones first, capped at the design's 8 tiles.
@@ -288,13 +305,16 @@ export default function Home({
           {search.isLoading && (
             <ProductGridSkeleton count={search.results.length ? 5 : 10} />
           )}
-          {search.results.length === 0 && !search.isLoading && (
-            <Typography
-              className={`${fontClassName.className} ${web.emptyText}`}
-            >
-              {t('noProductsFound')}
-            </Typography>
-          )}
+          {search.failed && searchFailure}
+          {search.results.length === 0 &&
+            !search.isLoading &&
+            !search.failed && (
+              <Typography
+                className={`${fontClassName.className} ${web.emptyText}`}
+              >
+                {t('noProductsFound')}
+              </Typography>
+            )}
           <div ref={search.sentinelRef} />
         </Box>
       </Layout>
@@ -478,9 +498,10 @@ export default function Home({
                 ))}
             </Box>
             {mobileLoading && isAppending && <ProductGridSkeleton count={2} />}
-            {mobileProducts.length === 0 && !mobileLoading && (
-              <Typography>{t('noProductsFound')}</Typography>
-            )}
+            {search.failed && searchFailure}
+            {mobileProducts.length === 0 &&
+              !mobileLoading &&
+              !search.failed && <Typography>{t('noProductsFound')}</Typography>}
             {search.isSearching && <div ref={search.sentinelRef} />}
           </Box>
         </Box>

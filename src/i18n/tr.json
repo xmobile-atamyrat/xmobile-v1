@@ -918,5 +918,7 @@
   "favorites": "Favoriler",
   "favoritesEmpty": "Henüz favoriniz yok",
   "favoritesSignIn": "Favorilerinizi görmek için giriş yapın",
-  "favoritesLoadError": "Favorileriniz yüklenemedi"
+  "favoritesLoadError": "Favorileriniz yüklenemedi",
+  "searchLoadError": "Sonuçlar yüklenemedi",
+  "tryAgain": "Tekrar dene"
 }

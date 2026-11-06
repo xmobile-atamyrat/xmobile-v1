@@ -920,5 +920,7 @@
   "favorites": "Избранное",
   "favoritesEmpty": "В избранном пока ничего нет",
   "favoritesSignIn": "Войдите, чтобы увидеть избранное",
-  "favoritesLoadError": "Не удалось загрузить избранное"
+  "favoritesLoadError": "Не удалось загрузить избранное",
+  "searchLoadError": "Не удалось загрузить результаты",
+  "tryAgain": "Повторить"
 }

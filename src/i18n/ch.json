@@ -920,5 +920,7 @@
   "favorites": "Halanlarym",
   "favoritesEmpty": "Entek halanlaryňyz ýok",
   "favoritesSignIn": "Halanlaryňyzy görmek üçin akkoundyňyza giriň",
-  "favoritesLoadError": "Halanlaryňyz ýüklenmedi"
+  "favoritesLoadError": "Halanlaryňyz ýüklenmedi",
+  "searchLoadError": "Netijeler ýüklenmedi",
+  "tryAgain": "Gaýtadan synanyşyň"
 }
