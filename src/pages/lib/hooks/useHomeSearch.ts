@@ -1,5 +1,6 @@
 import { fetchProducts } from '@/pages/lib/apis';
 import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { ExtendedProduct } from '@/pages/lib/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -32,6 +33,7 @@ export function useHomeSearch(
   const [isLoading, setIsLoading] = useState(false);
   const generationRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMorePausedRef = useRef(false);
   // The query the list on screen belongs to. Compared rather than consumed, so
   // a dev StrictMode double-run of the effect doesn't refetch the seed.
   const loadedKeyRef = useRef(seeded ? `${term}\n${locale}` : null);
@@ -40,6 +42,7 @@ export function useHomeSearch(
     const key = `${term}\n${locale}`;
     if (loadedKeyRef.current === key) return;
     loadedKeyRef.current = key;
+    loadMorePausedRef.current = false;
     generationRef.current += 1;
     const generation = generationRef.current;
     const isCurrent = () => generation === generationRef.current;
@@ -78,26 +81,21 @@ export function useHomeSearch(
         setPage(nextPage);
         setHasMore(fetched.length >= PRODUCTS_PER_PAGE);
       })
-      .catch((error) => console.error('Failed to load more products:', error))
+      .catch((error) => {
+        console.error('Failed to load more products:', error);
+        if (isCurrent()) loadMorePausedRef.current = true;
+      })
       .finally(() => {
         if (isCurrent()) setIsLoading(false);
       });
   }, [isLoading, hasMore, term, page, locale]);
 
-  // Re-observed whenever loadMore changes, so a sentinel that is still in view
-  // after a page lands fires again instead of waiting for a scroll.
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node || !hasMore) return () => undefined;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { rootMargin: '100px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [loadMore, hasMore]);
+  useLoadMoreSentinel({
+    sentinelRef,
+    pausedRef: loadMorePausedRef,
+    loadMore,
+    enabled: hasMore,
+  });
 
   return {
     isSearching: term !== '',

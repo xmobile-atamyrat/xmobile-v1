@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { MutableRefObject } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fetchProducts = vi.fn();
 vi.mock('@/pages/lib/apis', () => ({
@@ -102,6 +103,131 @@ describe('useHomeSearch', () => {
       page: 1,
       searchKeyword: 'samsung',
       locale: 'ru',
+    });
+  });
+
+  describe('loading more from the sentinel', () => {
+    type Entries = [{ isIntersecting: boolean }];
+    const observers = new Set<{ callback: (entries: Entries) => void }>();
+    let inView = true;
+
+    // Like the real one, reports the current state right after observe().
+    class FakeObserver {
+      callback: (entries: Entries) => void;
+
+      constructor(callback: (entries: Entries) => void) {
+        this.callback = callback;
+      }
+
+      observe() {
+        observers.add(this);
+        queueMicrotask(() => {
+          if (observers.has(this)) this.callback([{ isIntersecting: inView }]);
+        });
+      }
+
+      disconnect() {
+        observers.delete(this);
+      }
+    }
+
+    const scroll = (visible: boolean) =>
+      act(async () => {
+        inView = visible;
+        observers.forEach(({ callback }) =>
+          callback([{ isIntersecting: visible }]),
+        );
+      });
+
+    // Takes a moment like a real request. An instant rejection batches with the
+    // loading flag, so the render that restarts the observer never happens.
+    const offline = () =>
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('offline')), 5);
+      });
+
+    // Outside act(), which would hold back the renders a retry loop runs on.
+    const settle = () =>
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, 100);
+      });
+
+    function renderSearch() {
+      const hook = renderHook(({ keyword }) => useHomeSearch(keyword, 'ru'), {
+        initialProps: { keyword: 'iphone' },
+      });
+      const { sentinelRef } = hook.result.current;
+      (sentinelRef as MutableRefObject<HTMLDivElement>).current =
+        document.createElement('div');
+      return hook;
+    }
+
+    beforeEach(() => {
+      observers.clear();
+      inView = true;
+      fetchProducts.mockReset();
+      vi.stubGlobal('IntersectionObserver', FakeObserver);
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      fetchProducts.mockReset();
+    });
+
+    it('keeps going while the sentinel stays in view', async () => {
+      fetchProducts
+        .mockResolvedValueOnce(products('a', 20))
+        .mockResolvedValueOnce(products('b', 20))
+        .mockResolvedValueOnce(products('c', 3));
+
+      const { result } = renderSearch();
+
+      await waitFor(() => expect(result.current.results).toHaveLength(43));
+      expect(result.current.hasMore).toBe(false);
+    });
+
+    it('does not retry a failed page while the sentinel stays in view', async () => {
+      fetchProducts
+        .mockResolvedValueOnce(products('a', 20))
+        .mockImplementation(offline);
+
+      const { result } = renderSearch();
+
+      await waitFor(() => expect(fetchProducts).toHaveBeenCalledTimes(2));
+      await settle();
+      expect(fetchProducts).toHaveBeenCalledTimes(2);
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('retries a failed page once the sentinel comes back into view', async () => {
+      fetchProducts
+        .mockResolvedValueOnce(products('a', 20))
+        .mockImplementationOnce(offline)
+        .mockResolvedValueOnce(products('b', 3));
+      const { result } = renderSearch();
+      await waitFor(() => expect(fetchProducts).toHaveBeenCalledTimes(2));
+      await settle();
+
+      await scroll(false);
+      await scroll(true);
+
+      await waitFor(() => expect(result.current.results).toHaveLength(23));
+    });
+
+    it('does not carry a failure over to a new keyword', async () => {
+      fetchProducts
+        .mockResolvedValueOnce(products('a', 20))
+        .mockImplementationOnce(offline)
+        .mockResolvedValueOnce(products('b', 20))
+        .mockResolvedValueOnce(products('c', 3));
+      const { result, rerender } = renderSearch();
+      await waitFor(() => expect(fetchProducts).toHaveBeenCalledTimes(2));
+      await settle();
+
+      rerender({ keyword: 'ipad' });
+
+      await waitFor(() => expect(result.current.results).toHaveLength(23));
     });
   });
 
