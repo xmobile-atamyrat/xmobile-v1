@@ -914,5 +914,7 @@
   "procurementRateSaveHint": "Alandan çıktığınızda veya Enter tuşuna bastığınızda kaydedilir",
   "procurementUpdateAppForFiles": "Dosyaları kaydetmek ve göndermek için uygulamayı güncelleyin ya da siteyi tarayıcıda açın.",
   "procurementFilesSaved": "Dosyalar kaydedildi",
-  "procurementFilesSavedDownloads": "İndirilenler/Xmobile klasörüne kaydedildi"
+  "procurementFilesSavedDownloads": "İndirilenler/Xmobile klasörüne kaydedildi",
+  "addToFavorites": "Favorilere ekle",
+  "removeFromFavorites": "Favorilerden çıkar"
 }

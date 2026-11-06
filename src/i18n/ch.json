@@ -916,5 +916,7 @@
   "procurementRateSaveHint": "Meýdançadan çykanyňyzda ýa-da Enter basanyňyzda ýatda saklanar",
   "procurementUpdateAppForFiles": "Faýllary saklamak we ibermek üçin programmany täzeläň ýa-da saýty brauzerde açyň.",
   "procurementFilesSaved": "Faýllar saklandy",
-  "procurementFilesSavedDownloads": "«Downloads/Xmobile» bukjasyna saklandy"
+  "procurementFilesSavedDownloads": "«Downloads/Xmobile» bukjasyna saklandy",
+  "addToFavorites": "Lýubimilere goş",
+  "removeFromFavorites": "Lýubimilerden aýyr"
 }
