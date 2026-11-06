@@ -918,5 +918,7 @@
   "favorites": "Favorites",
   "favoritesEmpty": "You have no favorites yet",
   "favoritesSignIn": "Sign in to see your favorites",
-  "favoritesLoadError": "Couldn't load your favorites"
+  "favoritesLoadError": "Couldn't load your favorites",
+  "searchLoadError": "Couldn't load the results",
+  "tryAgain": "Try again"
 }

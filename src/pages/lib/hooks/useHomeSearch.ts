@@ -24,6 +24,7 @@ export function useHomeSearch(
   seed?: { term: string; results: ExtendedProduct[] } | null,
 ) {
   const term = keyword.trim();
+  const key = `${term}\n${locale}`;
   const seeded = seed != null && seed.term === term ? seed.results : null;
   const [results, setResults] = useState<ExtendedProduct[]>(seeded ?? []);
   const [page, setPage] = useState(seeded ? 1 : 0);
@@ -31,15 +32,16 @@ export function useHomeSearch(
     (seeded?.length ?? 0) >= PRODUCTS_PER_PAGE,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const generationRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadMorePausedRef = useRef(false);
   // The query the list on screen belongs to. Compared rather than consumed, so
   // a dev StrictMode double-run of the effect doesn't refetch the seed.
-  const loadedKeyRef = useRef(seeded ? `${term}\n${locale}` : null);
+  const loadedKeyRef = useRef(seeded ? key : null);
 
   useEffect(() => {
-    const key = `${term}\n${locale}`;
     if (loadedKeyRef.current === key) return;
     loadedKeyRef.current = key;
     loadMorePausedRef.current = false;
@@ -49,6 +51,7 @@ export function useHomeSearch(
     setResults([]);
     setPage(0);
     setHasMore(false);
+    setFailed(false);
     if (!term) {
       setIsLoading(false);
       return;
@@ -61,11 +64,19 @@ export function useHomeSearch(
         setPage(1);
         setHasMore(fetched.length >= PRODUCTS_PER_PAGE);
       })
-      .catch((error) => console.error('Failed to search products:', error))
+      .catch((error) => {
+        console.error('Failed to search products:', error);
+        if (isCurrent()) setFailed(true);
+      })
       .finally(() => {
         if (isCurrent()) setIsLoading(false);
       });
-  }, [term, locale]);
+  }, [key, term, locale, attempt]);
+
+  const retry = useCallback(() => {
+    loadedKeyRef.current = null;
+    setAttempt((prev) => prev + 1);
+  }, []);
 
   const loadMore = useCallback(() => {
     if (isLoading || !hasMore || !term) return;
@@ -97,11 +108,18 @@ export function useHomeSearch(
     enabled: hasMore,
   });
 
+  // The effect resets the state one render late, so the render a new query
+  // arrives in reports what it is about to set. Otherwise that frame pairs the
+  // new title with the old cards, or paints "no products" before any request.
+  const isPending = loadedKeyRef.current !== key;
+
   return {
     isSearching: term !== '',
-    results,
-    isLoading,
-    hasMore,
+    results: isPending ? [] : results,
+    isLoading: isLoading || (isPending && term !== ''),
+    hasMore: hasMore && !isPending,
+    failed: failed && !isPending,
+    retry,
     sentinelRef,
   };
 }
