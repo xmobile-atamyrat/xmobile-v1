@@ -1,6 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { activeFavoriteIds, whereActiveFavorite } from '@/lib/favorites';
-import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { inStockFirst, whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -22,7 +22,7 @@ async function listFavorites(userId: string, locale: unknown) {
   const products = await dbClient.product.findMany({
     where: whereActiveFavorite(userId),
     include: { brand: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [inStockFirst, { createdAt: 'desc' }],
   });
 
   const priceIdOf = (price: string | null) =>
@@ -47,9 +47,11 @@ async function listFavorites(userId: string, locale: unknown) {
 
   const priced = products.map((product) => {
     const displayPrice = pricesById.get(priceIdOf(product.price));
+    // Cards never show the description, and it is most of a row's size.
+    const card = { ...product, description: null as string | null };
     return displayPrice == null
-      ? product
-      : { ...product, price: `${product.price}{${displayPrice}}` };
+      ? card
+      : { ...card, price: `${product.price}{${displayPrice}}` };
   });
 
   return typeof locale === 'string' && localeOptions.includes(locale)
