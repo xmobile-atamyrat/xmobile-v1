@@ -8,6 +8,7 @@ import mockRouter from 'next-router-mock';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { endAnimation } from './helpers/endAnimation';
 import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('@/pages/lib/UserContext', () => ({
@@ -92,5 +93,109 @@ describe('FavoriteButton', () => {
 
     expect(mockRouter.asPath).toBe('/product');
     expect(toggleFavorite).not.toHaveBeenCalled();
+  });
+
+  describe('animation', () => {
+    const heart = () => screen.getByRole('button').querySelector('svg');
+
+    // Flips like the real context, which changes the set before it saves.
+    function renderToggling(initial: boolean) {
+      let favorite = initial;
+      toggleFavorite.mockImplementation(() => {
+        favorite = !favorite;
+      });
+      vi.mocked(useUserContext).mockReturnValue({
+        user: { id: 'u1' },
+        isLoading: false,
+      } as never);
+      vi.mocked(useFavoritesContext).mockReturnValue({
+        isFavorite: () => favorite,
+        toggleFavorite,
+        addFavorites: vi.fn(),
+      });
+      return renderWithProviders(
+        createElement(FavoriteButton, { productId: 'p1', variant: 'card' }),
+      );
+    }
+
+    it('pops the heart when a product is added', () => {
+      renderToggling(false);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(heart()?.getAttribute('class')).toContain('animate-favorite-pop');
+    });
+
+    it('shrinks the heart when a product is removed', () => {
+      renderToggling(true);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(heart()?.getAttribute('class')).toContain(
+        'animate-favorite-shrink',
+      );
+    });
+
+    it('stays still when a heart is already filled on load', () => {
+      renderButton({ favorite: true });
+
+      expect(heart()?.getAttribute('class')).not.toContain('animate-');
+    });
+
+    it('stays still when a guest is sent to sign in', () => {
+      renderButton({ user: null });
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(heart()?.getAttribute('class')).not.toContain('animate-');
+    });
+
+    it('clears the animation so the next tap can play it again', () => {
+      renderToggling(false);
+      fireEvent.click(screen.getByRole('button'));
+
+      endAnimation(heart() as Element);
+
+      expect(heart()?.getAttribute('class')).not.toContain('animate-');
+    });
+  });
+
+  describe('onRemove', () => {
+    const renderWithOnRemove = (favorite: boolean, onRemove: () => void) => {
+      vi.mocked(useUserContext).mockReturnValue({
+        user: { id: 'u1' },
+        isLoading: false,
+      } as never);
+      vi.mocked(useFavoritesContext).mockReturnValue({
+        isFavorite: () => favorite,
+        toggleFavorite,
+        addFavorites: vi.fn(),
+      });
+      return renderWithProviders(
+        createElement(FavoriteButton, {
+          productId: 'p1',
+          variant: 'card',
+          onRemove,
+        }),
+      );
+    };
+
+    it('reports a removal', () => {
+      const onRemove = vi.fn();
+      renderWithOnRemove(true, onRemove);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(onRemove).toHaveBeenCalledOnce();
+    });
+
+    it('does not report an addition', () => {
+      const onRemove = vi.fn();
+      renderWithOnRemove(false, onRemove);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(onRemove).not.toHaveBeenCalled();
+    });
   });
 });

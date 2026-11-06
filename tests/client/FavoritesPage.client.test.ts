@@ -9,6 +9,7 @@ import mockRouter from 'next-router-mock';
 import { createElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { endAnimation } from './helpers/endAnimation';
 import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('@/pages/lib/UserContext', () => ({
@@ -32,8 +33,18 @@ vi.mock('@/pages/user/components/AccountNav', () => ({
 }));
 
 vi.mock('@/pages/components/ProductCard', () => ({
-  default: ({ product }: { product: { name: string } }) =>
-    createElement('div', { 'data-testid': 'card' }, product.name),
+  default: ({
+    product,
+    onFavoriteRemove,
+  }: {
+    product: { name: string };
+    onFavoriteRemove?: () => void;
+  }) =>
+    createElement(
+      'div',
+      { 'data-testid': 'card', onClick: onFavoriteRemove },
+      product.name,
+    ),
 }));
 
 const fetchWithCreds = vi.fn();
@@ -122,6 +133,68 @@ describe('Favorites page', () => {
 
     expect(await screen.findByText('Tablet')).toBeInTheDocument();
     expect(screen.queryByText('Phone')).not.toBeInTheDocument();
+  });
+
+  describe('removing a card', () => {
+    // Clicking the mocked card stands in for its heart: the context drops the
+    // id, and the button reports the removal.
+    async function removePhone(favorites: string[]) {
+      setUp({ favorites });
+      renderPage();
+      const card = await screen.findByText('Phone');
+      favorites.splice(favorites.indexOf('p1'), 1);
+      fireEvent.click(card);
+      return card;
+    }
+
+    it('keeps the card on screen while it shrinks away', async () => {
+      const card = await removePhone(['p1', 'p2']);
+
+      expect(card).toBeInTheDocument();
+      expect(card.parentElement?.className).toContain(
+        'animate-favorite-card-leave',
+      );
+    });
+
+    it('drops the card when its exit ends', async () => {
+      const card = await removePhone(['p1', 'p2']);
+
+      endAnimation(card.parentElement as Element);
+
+      expect(screen.queryByText('Phone')).not.toBeInTheDocument();
+      expect(screen.getByText('Tablet')).toBeInTheDocument();
+    });
+
+    it('ignores animations ending inside the card', async () => {
+      const card = await removePhone(['p1', 'p2']);
+
+      endAnimation(card);
+
+      expect(screen.getByText('Phone')).toBeInTheDocument();
+    });
+
+    it('holds the empty notice until the last card has left', async () => {
+      fetchWithCreds.mockResolvedValue({ success: true, data: [phone] });
+      const card = await removePhone(['p1']);
+
+      expect(
+        screen.queryByText('You have no favorites yet'),
+      ).not.toBeInTheDocument();
+
+      endAnimation(card.parentElement as Element);
+
+      expect(screen.getByText('You have no favorites yet')).toBeInTheDocument();
+    });
+
+    it('keeps the card when the save fails during its exit', async () => {
+      const favorites = ['p1', 'p2'];
+      const card = await removePhone(favorites);
+      favorites.push('p1');
+
+      endAnimation(card.parentElement as Element);
+
+      expect(screen.getByText('Phone')).toBeInTheDocument();
+    });
   });
 
   it('says so when there are no favorites', async () => {
