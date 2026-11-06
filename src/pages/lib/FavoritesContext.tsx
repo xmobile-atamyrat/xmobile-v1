@@ -3,6 +3,7 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import {
   createContext,
   ReactNode,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -41,19 +42,30 @@ export default function FavoritesContextProvider({
   const accessTokenRef = useRef(accessToken);
   accessTokenRef.current = accessToken;
 
+  // Runs while the page may still be hydrating, and an urgent context change
+  // above a next/dynamic boundary throws there. Hence the transition, and
+  // keeping the old set so a guest's load changes nothing at all.
+  const replaceFavorites = useCallback((ids: string[]) => {
+    startTransition(() => {
+      setFavoriteIds((prev) =>
+        prev.size === 0 && ids.length === 0 ? prev : new Set(ids),
+      );
+    });
+  }, []);
+
   useEffect(() => {
     if (isLoading) return undefined;
     const isFirstLoad = !loadedRef.current;
     loadedRef.current = true;
 
     if (!userId) {
-      setFavoriteIds(new Set());
+      replaceFavorites([]);
       return undefined;
     }
     // The session's ids belong to whoever was signed in at page load, so a
     // later sign-in has to fetch its own: sign-in responses carry none.
     if (isFirstLoad && initialFavoriteIds != null) {
-      setFavoriteIds(new Set(initialFavoriteIds));
+      replaceFavorites(initialFavoriteIds);
       return undefined;
     }
 
@@ -65,7 +77,7 @@ export default function FavoritesContextProvider({
           path: '/api/favorites?ids=1',
           method: 'GET',
         });
-        if (success && !cancelled) setFavoriteIds(new Set(data));
+        if (success && !cancelled) replaceFavorites(data);
       } catch (error) {
         console.error('Failed to fetch favorites:', error);
       }
@@ -73,7 +85,7 @@ export default function FavoritesContextProvider({
     return () => {
       cancelled = true;
     };
-  }, [isLoading, userId, initialFavoriteIds, fetchWithCreds]);
+  }, [isLoading, userId, initialFavoriteIds, fetchWithCreds, replaceFavorites]);
 
   const setFavorite = useCallback((productId: string, favorite: boolean) => {
     setFavoriteIds((prev) => {
