@@ -48,6 +48,7 @@ export const detailPageClasses = {
     web: 'w-[30px] h-[30px]',
     mobile: 'w-[24px] h-[24px]',
   },
+  titleRow: 'flex flex-row items-start justify-between gap-3 w-full',
   // Web info column (spec 1517-1524)
   brandEyebrow:
     'text-[13px] font-semibold text-muted uppercase tracking-[0.1em] mb-2',

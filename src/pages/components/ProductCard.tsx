@@ -1,3 +1,4 @@
+import FavoriteButton from '@/pages/components/FavoriteButton';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   PRODUCT_IMAGE_FALLBACK,
@@ -170,6 +171,9 @@ export default function ProductCard({
               </Box>
             )}
           </Link>
+          {cartProps.cartAction !== 'delete' && (
+            <FavoriteButton productId={product.id} variant="card" />
+          )}
           <Box className={productCardClasses.boxes.detail[platform]}>
             {product.brand?.name != null && (
               <Typography

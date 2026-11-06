@@ -6,6 +6,7 @@ import CartContextProvider from '@/pages/lib/CartContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
 import { ChatContextProvider } from '@/pages/lib/ChatContext';
 import DollarRateContextProvider from '@/pages/lib/DollarRateContext';
+import FavoritesContextProvider from '@/pages/lib/FavoritesContext';
 import NetworkContextProvider from '@/pages/lib/NetworkContext';
 import { parseBridgeMessage } from '@/pages/lib/nativeBridge';
 import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
@@ -285,7 +286,9 @@ export default function App({ Component, pageProps }: AppProps) {
                                   <UpdateModal type="hard" />
                                 ) : (
                                   <NotificationPromptProvider>
-                                    <Component {...pageProps} />
+                                    <FavoritesContextProvider>
+                                      <Component {...pageProps} />
+                                    </FavoritesContextProvider>
                                     {isLoading && <Loader />}
                                   </NotificationPromptProvider>
                                 )}
