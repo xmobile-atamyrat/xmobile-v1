@@ -218,6 +218,46 @@ describe('Favorites API (integration)', () => {
     ]);
   });
 
+  it('lists sold-out favorites last, newest first within each group', async () => {
+    const session = await signupTestUser('fav-order');
+    const older = await createProduct('fav-order-older');
+    const newer = await createProduct('fav-order-newer');
+    const soldOut = await createProduct('fav-order-sold-out');
+    await prisma.product.update({
+      where: { id: soldOut.id },
+      data: { outOfStockAt: new Date() },
+    });
+    await addFavorite(session, soldOut.id);
+    await addFavorite(session, older.id);
+    await addFavorite(session, newer.id);
+
+    const { json } = await callFavorites('GET', session);
+
+    expect(json.data.map((item: { id: string }) => item.id)).toEqual([
+      newer.id,
+      older.id,
+      soldOut.id,
+    ]);
+  });
+
+  it('leaves the description out of the list, which cards never show', async () => {
+    const session = await signupTestUser('fav-description');
+    const product = await createProduct('fav-description');
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { description: '{"en":"A long description"}' },
+    });
+    await addFavorite(session, product.id);
+
+    const raw = await callFavorites('GET', session);
+    const localized = await callFavorites('GET', session, {
+      query: { locale: 'en' },
+    });
+
+    expect(raw.json.data[0].description).toBeNull();
+    expect(localized.json.data[0].description).toBeNull();
+  });
+
   it("does not show or change another user's favorites", async () => {
     const owner = await signupTestUser('fav-owner');
     const other = await signupTestUser('fav-other');
