@@ -12,6 +12,7 @@ import {
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  foldSavedEdit,
   isEditablePriceCell,
   NO_CATEGORY_FILTER,
   NO_PRODUCT_FILTER,
@@ -94,6 +95,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 // stringified ids, so this cannot collide with one.
 const ADD_RATE_OPTION = '__add_rate__';
 
+const pricesPath = (keyword: string) =>
+  keyword === ''
+    ? '/api/prices'
+    : `/api/prices?searchKeyword=${encodeURIComponent(keyword)}`;
+
 export default function UpdatePrices() {
   const router = useRouter();
   const theme = useTheme();
@@ -137,6 +143,10 @@ export default function UpdatePrices() {
   const { user, accessToken } = useUserContext();
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
+  // The first load waits for a token, but must not repeat when one rotates: the
+  // server can rotate it in the response to any save, and reloading then would
+  // throw away the search results on screen.
+  const hasAccessToken = Boolean(accessToken);
 
   // The rate the filter is pinned to, or null for "all rates".
   const selectedRate = useMemo(
@@ -218,7 +228,7 @@ export default function UpdatePrices() {
   ]);
 
   useEffect(() => {
-    if (accessToken) {
+    if (hasAccessToken) {
       (async () => {
         const pricesResponse = await fetchWithCreds<Prices[]>({
           accessToken,
@@ -258,7 +268,7 @@ export default function UpdatePrices() {
         }
       })();
     }
-  }, [accessToken]);
+  }, [hasAccessToken]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
@@ -456,14 +466,15 @@ export default function UpdatePrices() {
 
   // Server-side repricing rewrites manat figures under the table, so the page
   // re-reads rather than patching rows, and drops pending edits: saving those
-  // afterwards would push pre-recalculation numbers back over fresh ones.
+  // afterwards would push pre-recalculation numbers back over fresh ones. The
+  // search runs server-side, so the re-read has to repeat it to keep it applied.
   const refreshAfterReprice = useCallback(async () => {
     setUpdatedPrices({});
     updatedPricesRef.current = {};
     const [pricesResponse, ratesResponse] = await Promise.all([
       fetchWithCreds<Prices[]>({
         accessToken,
-        path: '/api/prices',
+        path: pricesPath(searchKeyword),
         method: 'GET',
       }),
       fetchWithCreds<DollarRate[]>({
@@ -480,14 +491,14 @@ export default function UpdatePrices() {
         ratesResponse.data.filter((rate) => String(rate.currency) === 'TMT'),
       );
     }
-  }, [accessToken]);
+  }, [accessToken, searchKeyword]);
 
   const handleSearch = useCallback(
     async (keyword: string) => {
       try {
         const { success, data, message } = await fetchWithCreds<Prices[]>({
           accessToken,
-          path: `/api/prices?searchKeyword=${keyword}`,
+          path: pricesPath(keyword),
           method: 'GET',
         });
         if (success) {
@@ -729,7 +740,7 @@ export default function UpdatePrices() {
                           setAllPrices((prev) =>
                             prev.map((p) =>
                               updatedPrices[p.id]
-                                ? { ...p, ...updatedPrices[p.id] }
+                                ? foldSavedEdit(p, updatedPrices[p.id])
                                 : p,
                             ),
                           );
@@ -1214,13 +1225,26 @@ export default function UpdatePrices() {
           {showCreatePriceDialog && (
             <AddPrice
               handleClose={() => setShowCreatePriceDialog(false)}
-              dollarRate={editingRate?.rate ?? 0}
+              rates={rates}
+              // Opens on the rate the page is filtered to, so a price created
+              // while working inside one rate lands on it by default.
+              defaultRateId={editingRate?.id ?? null}
+              // Same for the category, so the new price stays in the filtered
+              // view. The two sentinels are views, not categories to file under.
+              defaultCategoryId={
+                categoryFilter === '' ||
+                categoryFilter === NO_CATEGORY_FILTER ||
+                categoryFilter === NO_PRODUCT_FILTER
+                  ? null
+                  : categoryFilter
+              }
               categoryOptions={flattenedCats}
               handleCreate={async (
                 name: string,
                 priceInDollars: string,
                 priceInManat: string,
                 categoryId: string | null,
+                dollarRateId: number | null,
               ): Promise<boolean> => {
                 if (
                   name === '' ||
@@ -1253,19 +1277,12 @@ export default function UpdatePrices() {
                       price: priceInDollars,
                       priceInTmt: priceInManat,
                       categoryId,
-                      // The rate the page is filtered to, so a price created
-                      // while working inside one rate lands on it.
-                      dollarRateId: editingRate?.id ?? null,
+                      dollarRateId,
                     },
                   });
 
                   if (success && data != null) {
                     setAllPrices((prev) => [data, ...prev]);
-                    // A brand-new price may carry no category and is always in
-                    // stock, so either active filter would hide it. Clear both
-                    // so it stays visible.
-                    setCategoryFilter('');
-                    setOutOfStockOnly(false);
                     setSnackbarOpen(true);
                     setSnackbarMessage({
                       message: 'priceCreateSuccess',
