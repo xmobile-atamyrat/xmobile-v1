@@ -158,30 +158,31 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // home results) the results are what's on screen, so seed those too and save
   // the client its own round-trip. The newest list still loads: clearing the
   // search is a shallow route change, so nothing would fetch it afterwards.
+  // Each failure stays its own for the same reason: the client refetches a
+  // missing search, but never a missing newest list.
   const searchTerm = readSearchKeyword(context.query);
-  let initialProducts: Product[] = [];
-  let initialSearch: { term: string; results: ExtendedProduct[] } | null = null;
-  try {
-    const [newest, results] = await Promise.all([
-      fetchProducts({
-        page: 1,
-        locale: routeLocale ?? finalLocale,
-        inStock: true,
-        sortBy: SORT_OPTIONS.NEWEST,
-      }),
-      searchTerm
-        ? fetchProducts({
-            page: 1,
-            searchKeyword: searchTerm,
-            locale: routeLocale ?? finalLocale,
-          })
-        : null,
-    ]);
-    initialProducts = newest;
-    if (results) initialSearch = { term: searchTerm, results };
-  } catch (error) {
-    console.error('Failed to load initial products:', error);
-  }
+  const [initialProducts, results] = await Promise.all([
+    fetchProducts({
+      page: 1,
+      locale: routeLocale ?? finalLocale,
+      inStock: true,
+      sortBy: SORT_OPTIONS.NEWEST,
+    }).catch((error): ExtendedProduct[] => {
+      console.error('Failed to load initial products:', error);
+      return [];
+    }),
+    searchTerm
+      ? fetchProducts({
+          page: 1,
+          searchKeyword: searchTerm,
+          locale: routeLocale ?? finalLocale,
+        }).catch((error): null => {
+          console.error('Failed to load search results:', error);
+          return null;
+        })
+      : null,
+  ]);
+  const initialSearch = results ? { term: searchTerm, results } : null;
 
   return {
     props: {
