@@ -56,6 +56,26 @@ describe('FavoritesContext', () => {
     expect(fetchWithCreds).not.toHaveBeenCalled();
   });
 
+  // A context change while a next/dynamic boundary is still hydrating throws
+  // "This Suspense boundary received an update before it finished hydrating".
+  it('leaves the context alone when a guest loads a page', () => {
+    setSession(guest);
+    let renders = 0;
+
+    renderHook(
+      () => {
+        renders += 1;
+        return useFavoritesContext();
+      },
+      {
+        wrapper: ({ children }: { children: ReactNode }) =>
+          createElement(FavoritesContextProvider, null, children),
+      },
+    );
+
+    expect(renders).toBe(1);
+  });
+
   it('waits for the session to load before fetching', () => {
     setSession({ ...guest, isLoading: true });
 
