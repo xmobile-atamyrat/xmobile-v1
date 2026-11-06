@@ -39,6 +39,8 @@ export default function FavoritesContextProvider({
   const userId = user?.id;
   const loadedRef = useRef(false);
   const savingRef = useRef(new Set<string>());
+  // Hearts tapped since the ids request started, which its response may predate.
+  const tappedRef = useRef(new Set<string>());
   // Read at call time: the token is set in the same update as the user, and
   // refreshing it must not refetch the list.
   const accessTokenRef = useRef(accessToken);
@@ -47,13 +49,22 @@ export default function FavoritesContextProvider({
   // Runs while the page may still be hydrating, and an urgent context change
   // above a next/dynamic boundary throws there. Hence the transition, and
   // keeping the old set so a guest's load changes nothing at all.
-  const replaceFavorites = useCallback((ids: string[]) => {
-    startTransition(() => {
-      setFavoriteIds((prev) =>
-        prev.size === 0 && ids.length === 0 ? prev : new Set(ids),
-      );
-    });
-  }, []);
+  const replaceFavorites = useCallback(
+    (ids: string[], tapped: ReadonlySet<string> = new Set()) => {
+      startTransition(() => {
+        setFavoriteIds((prev) => {
+          if (prev.size === 0 && ids.length === 0) return prev;
+          const next = new Set(ids);
+          tapped.forEach((id) => {
+            if (prev.has(id)) next.add(id);
+            else next.delete(id);
+          });
+          return next;
+        });
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isLoading) return undefined;
@@ -72,6 +83,7 @@ export default function FavoritesContextProvider({
     }
 
     let cancelled = false;
+    tappedRef.current = new Set();
     (async () => {
       try {
         const { success, data } = await fetchWithCreds<string[]>({
@@ -79,7 +91,7 @@ export default function FavoritesContextProvider({
           path: '/api/favorites?ids=1',
           method: 'GET',
         });
-        if (success && !cancelled) replaceFavorites(data);
+        if (success && !cancelled) replaceFavorites(data, tappedRef.current);
       } catch (error) {
         console.error('Failed to fetch favorites:', error);
       }
@@ -102,6 +114,7 @@ export default function FavoritesContextProvider({
     async (productId: string) => {
       if (savingRef.current.has(productId)) return;
       savingRef.current.add(productId);
+      tappedRef.current.add(productId);
       const wasFavorite = favoriteIds.has(productId);
       setFavorite(productId, !wasFavorite);
       try {
@@ -114,6 +127,7 @@ export default function FavoritesContextProvider({
         if (!success) throw new Error(message);
       } catch (error) {
         console.error('Failed to update favorite:', error);
+        tappedRef.current.delete(productId);
         setFavorite(productId, wasFavorite);
       } finally {
         savingRef.current.delete(productId);
