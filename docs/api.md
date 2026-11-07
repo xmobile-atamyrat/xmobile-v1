@@ -13,21 +13,22 @@ REST API lives under **`src/pages/api/`**. File name `*.page.ts` → route by pa
 
 ## Main endpoint groups
 
-| Area | Path | Notes |
-|------|------|--------|
-| Auth | `api/user/signin`, `signup`, `api/user/index` (refresh) | JWT issue/refresh |
-| Cart | `api/cart` | CRUD cart items (auth); `GET ?count=1` returns `{ count }` for the header badge |
-| Orders | `api/order`, `api/order/[id]` | Create, list, get (auth) |
-| Admin orders | `api/order/admin`, `api/order/admin/[id]` | List/update orders (admin) |
-| Products | `api/product`, `api/product/new`, `api/category` | List, create (admin) |
-| Prices | `api/prices`, `api/prices/rate` | Prices list, rate (rate public) |
-| Brands | `api/brand` | List (auth) |
-| Chat | `api/chat/session`, `api/chat/message` | Sessions and messages (auth) |
-| Notifications | `api/notifications`, `api/notifications/count`, `mark-read` | In-app notifications (auth) |
-| FCM | `api/fcm/token` | Register FCM token (auth) |
-| Procurement | `api/procurement/supplier`, `product`, `api/procurement/order/*` | Suppliers, products, orders (auth) |
-| App version | `api/app-version` | Min versions for mobile (auth) |
-| Server logs | `api/server-logs`, `api/server-logs/[filename]` | Admin log access |
-| Health | `api/ping` | No auth |
+| Area          | Path                                                             | Notes                                                                           |
+| ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Auth          | `api/user/signin`, `signup`, `api/user/index` (refresh)          | JWT issue/refresh                                                               |
+| Cart          | `api/cart`                                                       | CRUD cart items (auth); `GET ?count=1` returns `{ count }` for the header badge |
+| Favorites     | `api/favorites`                                                  | List with color ids, add, remove (auth); `GET ?ids=1` returns ids only          |
+| Orders        | `api/order`, `api/order/[id]`                                    | Create, list, get (auth)                                                        |
+| Admin orders  | `api/order/admin`, `api/order/admin/[id]`                        | List/update orders (admin)                                                      |
+| Products      | `api/product`, `api/product/new`, `api/category`                 | List, create (admin)                                                            |
+| Prices        | `api/prices`, `api/prices/rate`                                  | Prices list, rate (rate public)                                                 |
+| Brands        | `api/brand`                                                      | List (auth)                                                                     |
+| Chat          | `api/chat/session`, `api/chat/message`                           | Sessions and messages (auth)                                                    |
+| Notifications | `api/notifications`, `api/notifications/count`, `mark-read`      | In-app notifications (auth)                                                     |
+| FCM           | `api/fcm/token`                                                  | Register FCM token (auth)                                                       |
+| Procurement   | `api/procurement/supplier`, `product`, `api/procurement/order/*` | Suppliers, products, orders (auth)                                              |
+| App version   | `api/app-version`                                                | Min versions for mobile (auth)                                                  |
+| Server logs   | `api/server-logs`, `api/server-logs/[filename]`                  | Admin log access                                                                |
+| Health        | `api/ping`                                                       | No auth                                                                         |
 
 Shared auth types: `AuthenticatedRequest` (req with `userId`, `grade`). Admin checks use `grade === ADMIN` (or equivalent) where needed.

@@ -1,6 +1,7 @@
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import {
-  isProductListingRoute,
+  HOME_PATHNAME,
+  keepsSearchInUrl,
   pushProductSearch,
   readSearchKeyword,
   replaceProductSearch,
@@ -20,6 +21,7 @@ import {
   ChevronUp,
   Clock,
   Globe,
+  Heart,
   Menu as MenuIcon,
   Phone,
   Search,
@@ -148,10 +150,17 @@ export default function CustomAppBar({
   // field from the active keyword — otherwise the header search goes blank the
   // moment it lands on the results page. The URL wins over context: on a cold
   // load of a shared /product?searchKeyword=… link the context is still empty
-  // at this point, since the grid only mirrors it in after mount.
+  // at this point, since the grid only mirrors it in after mount. Pages that
+  // keep the term in their URL read only that, so a term left over from an
+  // earlier search isn't shown above a list it doesn't filter.
+  const urlKeyword = readSearchKeyword(router.query);
   const [localSearchKeyword, setLocalSearchKeyword] = useState(
-    () => readSearchKeyword(router.query) || searchKeyword || '',
+    () =>
+      urlKeyword ||
+      (keepsSearchInUrl(router.pathname) ? '' : searchKeyword) ||
+      '',
   );
+  const lastPushedKeywordRef = useRef(urlKeyword);
   // This Appbar mounts on every page (Layout), returning null on non-home
   // mobile pages *after* hooks run. Skip the first debounce so an unused
   // instance doesn't clobber the shared searchKeyword with its empty state.
@@ -191,10 +200,11 @@ export default function CustomAppBar({
     }
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
-      // On a listing page the grid reads the term from the URL, so retarget the
-      // current URL in place. Anywhere else (home) the context write above is
-      // what gets picked up and bounced to the listing.
-      if (isProductListingRoute(router.pathname)) {
+      // On a listing page and on home the results read the term from the URL,
+      // so retarget the current URL in place.
+      const next = localSearchKeyword.trim();
+      if (keepsSearchInUrl(router.pathname) && next !== urlKeyword) {
+        lastPushedKeywordRef.current = next;
         replaceProductSearch(router, localSearchKeyword);
       }
     }, 500);
@@ -204,6 +214,21 @@ export default function CustomAppBar({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSearchKeyword]);
+
+  // A navigation within the same page keeps this Appbar mounted, so take on a
+  // term that changed outside this field: the logo, or back/forward. Skipped
+  // while the URL is merely echoing this field's own debounced write, which
+  // holds the trimmed term and would eat a space typed mid-search.
+  useEffect(() => {
+    if (!keepsSearchInUrl(router.pathname)) return;
+    // Only a term left by an earlier page can get here, never a cold load, so
+    // this can't change the context during hydration.
+    if (!urlKeyword && searchKeyword) setSearchKeyword('');
+    if (urlKeyword === lastPushedKeywordRef.current) return;
+    lastPushedKeywordRef.current = urlKeyword;
+    setLocalSearchKeyword(urlKeyword);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlKeyword]);
 
   if (platform === 'mobile' && !showHomeHeader) {
     return null;
@@ -287,8 +312,12 @@ export default function CustomAppBar({
   const runWebSearch = () => {
     const keyword = localSearchKeyword.trim();
     if (!keyword) return;
+    lastPushedKeywordRef.current = keyword;
     setSearchKeyword(keyword);
-    pushProductSearch(router, keyword);
+    // Home shows results in place of its banner rather than leaving.
+    if (router.pathname === HOME_PATHNAME)
+      replaceProductSearch(router, keyword);
+    else pushProductSearch(router, keyword);
   };
 
   // Same branch the categories index uses: leaf categories go straight to the
@@ -506,6 +535,15 @@ export default function CustomAppBar({
                 />
               </>
             )}
+            <button
+              type="button"
+              aria-label={t('favorites')}
+              title={t('favorites')}
+              className={web.iconAction}
+              onClick={() => router.push('/favorites')}
+            >
+              <Heart className={web.actionIcon} />
+            </button>
             <button
               type="button"
               aria-label={t('cart')}

@@ -1,6 +1,8 @@
 import {
+  HOME_PATHNAME,
   PRODUCT_LISTING_PATHNAME,
   SEARCH_QUERY_KEY,
+  keepsSearchInUrl,
   productSearchPath,
   readSearchKeyword,
 } from '@/pages/lib/productSearch';
@@ -74,5 +76,18 @@ describe('list-restoration key isolation', () => {
 
   it('gives two different searches different keys', () => {
     expect(productSearchPath('iphone')).not.toBe(productSearchPath('samsung'));
+  });
+});
+
+describe('keepsSearchInUrl', () => {
+  it('covers home and the listings', () => {
+    expect(keepsSearchInUrl(HOME_PATHNAME)).toBe(true);
+    expect(keepsSearchInUrl(PRODUCT_LISTING_PATHNAME)).toBe(true);
+    expect(keepsSearchInUrl('/product-category/[categorySlug]')).toBe(true);
+  });
+
+  it('leaves other pages to navigate to the listing', () => {
+    expect(keepsSearchInUrl('/cart')).toBe(false);
+    expect(keepsSearchInUrl('/product/[slug]')).toBe(false);
   });
 });

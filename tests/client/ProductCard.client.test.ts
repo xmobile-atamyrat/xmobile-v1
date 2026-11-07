@@ -98,6 +98,26 @@ describe('ProductCard', () => {
     );
   }
 
+  it('offers the heart on a grid card, outside the card links', async () => {
+    renderCard(makeProduct());
+
+    const heart = await screen.findByRole('button', {
+      name: 'Add to favorites',
+    });
+
+    expect(heart.closest('a')).toBeNull();
+  });
+
+  it('leaves the heart off a cart line', async () => {
+    renderCard(makeProduct(), 'delete');
+
+    await screen.findByText('5.00', { exact: false });
+
+    expect(
+      screen.queryByRole('button', { name: 'Add to favorites' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows out-of-stock overlay when out of stock', async () => {
     renderCard(makeProduct({ outOfStockAt: new Date() }));
 

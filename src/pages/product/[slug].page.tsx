@@ -1,6 +1,7 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
+import FavoriteButton from '@/pages/components/FavoriteButton';
 import Layout from '@/pages/components/Layout';
 import ProductImageGallery from '@/pages/components/ProductImageGallery';
 import ProductImageLightbox from '@/pages/components/ProductImageLightbox';
@@ -751,12 +752,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   {brandName}
                 </Typography>
               )}
-              <Typography
-                variant="h1"
-                className={`${fontClassName.className} ${detailPageClasses.productName.web}`}
-              >
-                {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-              </Typography>
+              <Box className={detailPageClasses.titleRow}>
+                <Typography
+                  variant="h1"
+                  className={`${fontClassName.className} ${detailPageClasses.productName.web} min-w-0`}
+                >
+                  {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+                </Typography>
+                <FavoriteButton productId={product.id} variant="detail" />
+              </Box>
             </Box>
 
             {/* colors — spec 1523 */}
@@ -1050,12 +1054,15 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     {brandName}
                   </Typography>
                 )}
-                <Typography
-                  variant="h5"
-                  className={`${fontClassName.className} ${detailPageClasses.productName.mobile}`}
-                >
-                  {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
-                </Typography>
+                <Box className={detailPageClasses.titleRow}>
+                  <Typography
+                    variant="h5"
+                    className={`${fontClassName.className} ${detailPageClasses.productName.mobile} min-w-0`}
+                  >
+                    {parseName(product?.name ?? '{}', router.locale ?? 'tk')}
+                  </Typography>
+                  <FavoriteButton productId={product.id} variant="detail" />
+                </Box>
                 {/* Out-of-stock products never show a price. */}
                 {!selectionOutOfStock && (
                   <Box className="flex items-baseline gap-2 mt-[10px]">

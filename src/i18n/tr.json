@@ -448,8 +448,6 @@
   "openSettings": "Ayarlar",
   "serverLogs": "Sunucu Günlükleri",
   "brands": "Markalar",
-  "recentSearches": "Son aramalar",
-  "trendingNow": "Trend olanlar",
   "noBrands": "Marka bulunamadı",
   "showMore": "Daha fazla göster",
   "showLess": "Daha az göster",
@@ -914,5 +912,13 @@
   "procurementRateSaveHint": "Alandan çıktığınızda veya Enter tuşuna bastığınızda kaydedilir",
   "procurementUpdateAppForFiles": "Dosyaları kaydetmek ve göndermek için uygulamayı güncelleyin ya da siteyi tarayıcıda açın.",
   "procurementFilesSaved": "Dosyalar kaydedildi",
-  "procurementFilesSavedDownloads": "İndirilenler/Xmobile klasörüne kaydedildi"
+  "procurementFilesSavedDownloads": "İndirilenler/Xmobile klasörüne kaydedildi",
+  "addToFavorites": "Favorilere ekle",
+  "removeFromFavorites": "Favorilerden çıkar",
+  "favorites": "Favoriler",
+  "favoritesEmpty": "Henüz favoriniz yok",
+  "favoritesSignIn": "Favorilerinizi görmek için giriş yapın",
+  "favoritesLoadError": "Favorileriniz yüklenemedi",
+  "searchLoadError": "Sonuçlar yüklenemedi",
+  "tryAgain": "Tekrar dene"
 }

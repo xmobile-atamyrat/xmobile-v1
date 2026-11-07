@@ -38,6 +38,7 @@ import {
   FileSpreadsheet,
   FolderTree,
   Headphones,
+  Heart,
   Images,
   Languages,
   LogOut,
@@ -393,6 +394,11 @@ export default function Profile() {
       icon: <Package className={profileClasses.icon.primary} />,
       label: isAdmin ? t('userOrders') : t('myOrders'),
       onClick: handleToggleMyOrders,
+    },
+    {
+      icon: <Heart className={profileClasses.icon.primary} />,
+      label: t('favorites'),
+      onClick: () => router.push('/favorites'),
     },
     ...(notifSupported
       ? [

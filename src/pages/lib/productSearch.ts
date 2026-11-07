@@ -36,6 +36,24 @@ export function isProductListingRoute(pathname: string): boolean {
   return LISTING_PATHNAMES.includes(pathname);
 }
 
+/**
+ * Home renders results in place of its banner. The term goes in home's own
+ * URL rather than only in ProductContext, for the same reason as the listing:
+ * context outlives the page, so a term searched on /product would otherwise
+ * resurface as home results, while back from a product opened from home
+ * results still needs them restored.
+ */
+export const HOME_PATHNAME = '/';
+
+/**
+ * Whether the current page keeps the term in its own URL -- a listing, or
+ * home's in-place results. On these routes typing retargets the URL in place;
+ * anywhere else a search has to navigate to the listing.
+ */
+export function keepsSearchInUrl(pathname: string): boolean {
+  return pathname === HOME_PATHNAME || isProductListingRoute(pathname);
+}
+
 /** The active search term in a router query; '' when there is none. */
 export function readSearchKeyword(query: ParsedUrlQuery): string {
   const raw = query[SEARCH_QUERY_KEY];
@@ -69,8 +87,8 @@ export function pushProductSearch(router: NextRouter, keyword: string) {
 }
 
 /**
- * Retargets the term on a listing the user is already on, keeping the filter
- * params. `replace`, not `push`, so search-as-you-type doesn't leave a history
+ * Retargets the term on a listing (or home) the user is already on, keeping
+ * the filter params. `replace`, not `push`, so search-as-you-type doesn't leave a history
  * entry per keystroke; shallow, because the page reads the term off the query
  * itself and no getServerSideProps rerun is needed.
  *

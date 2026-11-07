@@ -451,8 +451,6 @@
   "openSettings": "Настройки",
   "serverLogs": "Журналы сервера",
   "brands": "Бренды",
-  "recentSearches": "Недавние",
-  "trendingNow": "Популярное",
   "noBrands": "Бренды не найдены",
   "showMore": "Ещё",
   "showLess": "Скрыть",
@@ -916,5 +914,13 @@
   "procurementRateSaveHint": "Сохранится, когда выйдете из поля или нажмёте Enter",
   "procurementUpdateAppForFiles": "Обновите приложение, чтобы сохранять и отправлять файлы. Или откройте сайт в браузере.",
   "procurementFilesSaved": "Файлы сохранены",
-  "procurementFilesSavedDownloads": "Сохранено в «Загрузки/Xmobile»"
+  "procurementFilesSavedDownloads": "Сохранено в «Загрузки/Xmobile»",
+  "addToFavorites": "Добавить в избранное",
+  "removeFromFavorites": "Удалить из избранного",
+  "favorites": "Избранное",
+  "favoritesEmpty": "В избранном пока ничего нет",
+  "favoritesSignIn": "Войдите, чтобы увидеть избранное",
+  "favoritesLoadError": "Не удалось загрузить избранное",
+  "searchLoadError": "Не удалось загрузить результаты",
+  "tryAgain": "Повторить"
 }

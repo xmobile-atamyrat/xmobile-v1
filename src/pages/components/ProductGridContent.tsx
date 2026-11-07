@@ -1,5 +1,7 @@
+import ActiveFilterChips from '@/pages/components/ActiveFilterChips';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
+import FilterSheet from '@/pages/components/FilterSheet';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -7,15 +9,13 @@ import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import SortDropdown from '@/pages/components/SortDropdown';
 import {
   CategoryFacet,
-  fetchBrands,
   fetchCategoryFacets,
-  fetchColors,
   fetchProducts,
   fetchProductsCount,
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { mergeSameColors } from '@/pages/lib/colorGroups';
-import { FILTER_MAX_PRICE, PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
   getListSnapshot,
@@ -37,14 +37,12 @@ import {
 import { useProductContext } from '@/pages/lib/ProductContext';
 import {
   AddEditProductProps,
-  BrandProps,
   ExtendedCategory,
   SnackbarProps,
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
-import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
 import {
@@ -52,31 +50,15 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
   IconButton,
-  Slide,
   Snackbar,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, ChevronLeft, ChevronRight, SearchX, X } from 'lucide-react';
-import { Color, Product } from '@prisma/client';
-import { TransitionProps } from '@mui/material/transitions';
+import { ArrowLeft, ChevronLeft, ChevronRight, SearchX } from 'lucide-react';
+import { Product } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-
-const SlideTransition = React.forwardRef(function Transition(
-  props: TransitionProps & { children: React.ReactElement },
-  ref: React.Ref<unknown>,
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface ProductGridContentProps {
   landingCategoryId?: string;
@@ -130,24 +112,10 @@ export default function ProductGridContent({
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   // Web paginates (spec 1473); mobile keeps the infinite-scroll list.
   const [webPage, setWebPage] = useState(restored?.page || 1);
-  // Reference lists, only for labelling the active-filter chips in the sort bar.
-  const [brands, setBrands] = useState<BrandProps[]>([]);
-  const [colors, setColors] = useState<Color[]>([]);
   // Per-category breakdown of the current search, for the pills (spec 1707).
   const [categoryFacets, setCategoryFacets] = useState<CategoryFacet[] | null>(
     null,
   );
-
-  // local state for mobile (doesn't automatically apply filters) - trigger 'Apply Button'
-  const [localFilters, setLocalFilters] = useState({
-    categoryIds: [] as string[],
-    brandIds: [] as string[],
-    colorIds: [] as string[],
-    minPrice: '',
-    maxPrice: '',
-    sortBy: '',
-    inStock: false,
-  });
 
   const t = useTranslations();
   const platform = usePlatform();
@@ -194,18 +162,6 @@ export default function ProductGridContent({
     window.scrollTo(0, 0);
   }, [webPage, platform]);
 
-  // Chip labels need the brand/colour names the sidebar already fetches.
-  // Web-only: the mobile sheet has no active-chip row.
-  useEffect(() => {
-    if (platform !== 'web') return;
-    fetchBrands()
-      .then(setBrands)
-      .catch(() => setBrands([]));
-    fetchColors()
-      .then(setColors)
-      .catch(() => setColors([]));
-  }, [platform]);
-
   // Debounce the editable search field into the URL (skip the mount run so we
   // don't clobber a keyword handed off from the home page).
   useEffect(() => {
@@ -239,20 +195,6 @@ export default function ProductGridContent({
   useEffect(() => {
     setSearchKeyword(searchKeyword || undefined);
   }, [searchKeyword, setSearchKeyword]);
-
-  useEffect(() => {
-    if (mobileFilterOpen) {
-      setLocalFilters({
-        categoryIds: filters.categoryIds,
-        brandIds: filters.brandIds,
-        colorIds: filters.colorIds,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        sortBy: filters.sortBy,
-        inStock: filters.inStock,
-      });
-    }
-  }, [mobileFilterOpen, filters]);
 
   // Landing Mode: user navigated to a specific category endpoint
   // Filter Mode: user selected categories from sidebar (root categories only)
@@ -381,6 +323,8 @@ export default function ProductGridContent({
   // Bumped only here: loadMoreProducts continues the same query and merely
   // checks that its token is still current before committing.
   const requestGenerationRef = useRef(0);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const loadMorePausedRef = useRef(false);
 
   useEffect(() => {
     // Skip the page-1 reset while restoring a snapshot (incl. the filters-hydration
@@ -390,6 +334,7 @@ export default function ProductGridContent({
     if (restoringRef.current) return;
     // A shared link would otherwise load the unfiltered list first.
     if (!filtersReady) return;
+    loadMorePausedRef.current = false;
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
     const isCurrent = () => generation === requestGenerationRef.current;
@@ -509,33 +454,20 @@ export default function ProductGridContent({
       }
     } catch (error) {
       console.error('Failed to load products:', error);
+      if (isCurrent()) loadMorePausedRef.current = true;
     } finally {
       if (isCurrent()) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
 
-  useEffect(() => {
+  useLoadMoreSentinel({
+    sentinelRef: loadMoreTriggerRef,
+    pausedRef: loadMorePausedRef,
+    loadMore: loadMoreProducts,
     // Web uses numbered pagination instead of infinite scroll.
-    if (platform === 'web') return () => undefined;
-    const loadMoreTrigger = document.getElementById('load-more-trigger');
-    if (!loadMoreTrigger) return () => undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreProducts();
-        }
-      },
-      { rootMargin: '100px' },
-    );
-
-    observer.observe(loadMoreTrigger);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadMoreProducts, platform]);
+    enabled: platform !== 'web',
+  });
 
   const handleBackButton = () => {
     if (categoryPath.length > 1) {
@@ -566,82 +498,6 @@ export default function ProductGridContent({
   // Real total for the current query (all pages); fall back to the loaded
   // count until the count request resolves.
   const displayCount = totalCount != null ? totalCount : products.length;
-
-  // --- Active filter chips (spec 1457) ---------------------------------
-  // Every chip is a real selected filter; there is no fabricated state here.
-  const categoryById = new Map<string, ExtendedCategory>();
-  const collectCategories = (cats: ExtendedCategory[]) => {
-    cats.forEach((cat) => {
-      categoryById.set(cat.id, cat);
-      if (cat.successorCategories?.length) {
-        collectCategories(cat.successorCategories);
-      }
-    });
-  };
-  collectCategories(allCategories ?? []);
-
-  const activeChips: { key: string; label: string; onRemove: () => void }[] =
-    [];
-
-  filters.categoryIds.forEach((id) => {
-    const cat = categoryById.get(id);
-    if (!cat) return;
-    activeChips.push({
-      key: `category-${id}`,
-      label: parseName(cat.name, router.locale ?? 'ru'),
-      onRemove: () =>
-        applyFilters({
-          categoryIds: filters.categoryIds.filter((cid) => cid !== id),
-        }),
-    });
-  });
-
-  filters.brandIds.forEach((id) => {
-    const brand = brands.find((b) => b.id === id);
-    if (!brand) return;
-    activeChips.push({
-      key: `brand-${id}`,
-      label: brand.name,
-      onRemove: () =>
-        applyFilters({
-          brandIds: filters.brandIds.filter((bid) => bid !== id),
-        }),
-    });
-  });
-
-  // One swatch in the sidebar can stand for the same color in several brands,
-  // so its ids share one chip and removing the chip clears all of them.
-  const selectedColors = filters.colorIds
-    .map((id) => colors.find((c) => c.id === id))
-    .filter((c): c is Color => c != null);
-  mergeSameColors(selectedColors).forEach((swatch) => {
-    activeChips.push({
-      key: `color-${swatch.key}`,
-      label: swatch.name,
-      onRemove: () =>
-        applyFilters({
-          colorIds: filters.colorIds.filter((cid) => !swatch.ids.includes(cid)),
-        }),
-    });
-  });
-
-  if (filters.minPrice || filters.maxPrice) {
-    activeChips.push({
-      key: 'price',
-      label: `${filters.minPrice || 0} – ${
-        filters.maxPrice || FILTER_MAX_PRICE
-      } TMT`,
-      onRemove: () => applyFilters({ minPrice: '', maxPrice: '' }),
-    });
-  }
-
-  if (filters.inStock) {
-    activeChips.push({
-      key: 'in-stock',
-      label: t('inStockOnly'),
-      onRemove: () => applyFilters({ inStock: false }),
-    });
-  }
 
   // --- Pagination (spec 1473) ------------------------------------------
   const totalPages =
@@ -682,97 +538,13 @@ export default function ProductGridContent({
         )}
       </Box>
       <Layout handleHeaderBackButton={handleBackButton}>
-        <Dialog
+        <FilterSheet
           open={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
-          TransitionComponent={SlideTransition}
-          fullWidth
-          PaperProps={{
-            sx: {
-              position: 'fixed',
-              bottom: 0,
-              m: 0,
-              width: '100%',
-              maxHeight: '88vh',
-              '@supports (height: 1dvh)': { maxHeight: '88dvh' },
-              overflow: 'hidden',
-              borderRadius: '26px 26px 0 0',
-            },
-          }}
-        >
-          <Box className="flex min-h-0 flex-1 flex-col bg-white">
-            <Box className={filterSidebarClasses.dragHandle} />
-            <Box className={filterSidebarClasses.header}>
-              <Typography
-                className={`${fontClassName.className} ${filterSidebarClasses.title}`}
-              >
-                {t('filter') || 'Filter'}
-              </Typography>
-              <Typography
-                className={`${fontClassName.className} ${filterSidebarClasses.resetButton}`}
-                onClick={() =>
-                  setLocalFilters({
-                    categoryIds: [],
-                    brandIds: [],
-                    colorIds: [],
-                    minPrice: '',
-                    maxPrice: '',
-                    sortBy: '',
-                    inStock: false,
-                  })
-                }
-              >
-                {t('clear') || 'Clear'}
-              </Typography>
-            </Box>
-            <Box className={filterSidebarClasses.body}>
-              <FilterSidebar
-                variant="mobile"
-                categories={allCategories}
-                selectedCategoryIds={localFilters.categoryIds}
-                selectedBrandIds={localFilters.brandIds}
-                selectedColorIds={localFilters.colorIds}
-                minPrice={localFilters.minPrice}
-                maxPrice={localFilters.maxPrice}
-                sortBy={localFilters.sortBy}
-                inStock={localFilters.inStock}
-                onFilterChange={(newFilters) => {
-                  setLocalFilters((prev) => ({ ...prev, ...newFilters }));
-                }}
-                hideSections={hideSections}
-              />
-            </Box>
-            <Box className={filterSidebarClasses.footer}>
-              <Button
-                disableElevation
-                className={`${fontClassName.className} ${filterSidebarClasses.clearButton}`}
-                onClick={() =>
-                  setLocalFilters({
-                    categoryIds: [],
-                    brandIds: [],
-                    colorIds: [],
-                    minPrice: '',
-                    maxPrice: '',
-                    sortBy: '',
-                    inStock: false,
-                  })
-                }
-              >
-                {t('clear') || 'Clear'}
-              </Button>
-              <Button
-                disableElevation
-                className={`${fontClassName.className} ${filterSidebarClasses.applyButton}`}
-                onClick={() => {
-                  applyFilters(localFilters);
-                  setMobileFilterOpen(false);
-                }}
-              >
-                {t('apply') || 'Apply'}
-              </Button>
-            </Box>
-          </Box>
-        </Dialog>
+          filters={filters}
+          onApply={applyFilters}
+          hideSections={hideSections}
+        />
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
             <SimpleBreadcrumbs categoryPath={categoryPath} />
@@ -817,38 +589,10 @@ export default function ProductGridContent({
             <Box className="flex flex-col w-full min-w-0">
               {platform === 'web' && (
                 <Box className={productIndexPageClasses.resultsBar.web}>
-                  <Box className={productIndexPageClasses.activeFilters.wrap}>
-                    {activeChips.length > 0 && (
-                      <Typography
-                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.label}`}
-                      >
-                        {`${t('activeFilters')}:`}
-                      </Typography>
-                    )}
-                    {activeChips.map((chip) => (
-                      <Button
-                        key={chip.key}
-                        disableRipple
-                        disableElevation
-                        onClick={chip.onRemove}
-                        className={`${fontClassName.className} ${productIndexPageClasses.activeFilters.chip}`}
-                      >
-                        <span
-                          className={
-                            productIndexPageClasses.activeFilters.chipLabel
-                          }
-                        >
-                          {chip.label}
-                        </span>
-                        <X
-                          size={13}
-                          className={
-                            productIndexPageClasses.activeFilters.chipIcon
-                          }
-                        />
-                      </Button>
-                    ))}
-                  </Box>
+                  <ActiveFilterChips
+                    filters={filters}
+                    onChange={applyFilters}
+                  />
                   <SortDropdown
                     value={filters.sortBy}
                     onChange={(val) => applyFilters({ sortBy: val })}
@@ -978,7 +722,7 @@ export default function ProductGridContent({
                   </Box>
                 );
               })()}
-              {platform === 'mobile' && <div id="load-more-trigger"></div>}
+              {platform === 'mobile' && <div ref={loadMoreTriggerRef}></div>}
               {isLoading && products.length > 0 && (
                 <Box className="w-full flex justify-center py-4">
                   <CircularProgress />

@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { activeFavoriteIds } from '@/lib/favorites';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import { verifyToken } from '@/pages/api/utils/authMiddleware';
@@ -21,7 +22,12 @@ const filepath = 'src/pages/api/user/signin.page.ts';
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<
-    ResponseApi<{ accessToken: string; user: User; cartCount?: number }>
+    ResponseApi<{
+      accessToken: string;
+      user: User;
+      cartCount?: number;
+      favoriteProductIds?: string[];
+    }>
   >,
 ) {
   addCors(res);
@@ -68,13 +74,16 @@ export default async function handler(
         `${AUTH_REFRESH_COOKIE_NAME}=${newRefreshToken}; ${secureCookieAttr(req)}SameSite=Strict; Max-Age=${REFRESH_TOKEN_EXPIRY_COOKIE}; Path=/`,
       );
 
-      const cartCount = await dbClient.cartItem.count({
-        where: { userId: user.id, product: whereActiveProduct },
-      });
+      const [cartCount, favoriteProductIds] = await Promise.all([
+        dbClient.cartItem.count({
+          where: { userId: user.id, product: whereActiveProduct },
+        }),
+        activeFavoriteIds(user.id),
+      ]);
 
       return res.status(200).json({
         success: true,
-        data: { user, accessToken, cartCount },
+        data: { user, accessToken, cartCount, favoriteProductIds },
       });
     } catch (error) {
       console.error(error);

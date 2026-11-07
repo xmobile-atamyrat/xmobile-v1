@@ -1,7 +1,7 @@
 // Mobile filter bottom sheet chrome, see xmobile-app-redesign/project/XMobile.dc.html:1899-1919
 // FilterSidebar.tsx itself stays MUI-sx styled (Slider/Checkbox/TextField internals
-// need CSS-in-JS anyway) — these classes only cover the sheet wrapper built inline
-// in index.page.tsx / ProductGridContent.tsx.
+// need CSS-in-JS anyway) — these classes only cover the sheet wrapper in
+// FilterSheet.tsx.
 export const filterSidebarClasses = {
   dragHandle: 'w-10 h-[5px] rounded-full bg-[#E4E3EB] mx-auto mt-2.5 mb-3.5',
   header: 'flex items-center justify-between px-[22px] pb-1',

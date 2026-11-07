@@ -40,6 +40,7 @@ model User {
   inAppNotifications  InAppNotification[]
   fcmTokens       FCMToken[]
   adminActivities AdminActivity[] @relation("AdminActivityActor")
+  favorites       Product[]       @relation("UserFavorites")
 
   lastSeenAt      DateTime?
   deletedAt       DateTime?
@@ -183,6 +184,7 @@ model Product {
   cartItems       CartItem[]
   guestCartItems  GuestCartItem[]
   userOrderItems  UserOrderItem[]
+  favoritedBy     User[]      @relation("UserFavorites")
 
   tags            String[]
   videoUrls       String[]

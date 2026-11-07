@@ -8,7 +8,7 @@ import {
   syncProductOutOfStockFromPrices,
 } from '@/lib/outOfStock';
 import { recordPricesUpdated } from '@/lib/priceActivity';
-import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { inStockFirst, whereActiveProduct } from '@/lib/prismaActiveScope';
 import {
   hasPriceLinkConflict,
   PRICE_TAKEN_MESSAGE,
@@ -625,12 +625,6 @@ async function handleGetProduct(query: {
       status: 200,
     };
   }
-
-  // In-stock first. `nulls: 'first'` is required: Postgres sorts ASC as NULLS
-  // LAST, which would bury every available product below the sold-out ones.
-  const inStockFirst = {
-    outOfStockAt: { sort: 'asc', nulls: 'first' },
-  } satisfies Prisma.ProductOrderByWithRelationInput;
 
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
     inStockFirst,

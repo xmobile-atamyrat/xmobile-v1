@@ -6,6 +6,7 @@ import { fontClassName } from '@/styles/theme';
 import { Box, ButtonBase, Dialog, Typography } from '@mui/material';
 import {
   Headphones,
+  Heart,
   LogIn,
   LogOut,
   Package,
@@ -19,14 +20,14 @@ import { ReactNode, useState } from 'react';
 
 /**
  * Left account nav rail for the desktop account section (spec 1745-1755),
- * shared by `/user`, `/orders` and `/orders/[id]` on web.
+ * shared by `/user`, `/orders`, `/orders/[id]` and `/favorites` on web.
  *
- * Every row is a real destination. The mockup's Wishlist / Addresses / Payment
- * methods / Settings rows are skipped: there is no `Wishlist` model, no address
- * book (`User.address` is one free-text string), COD is the only payment
- * method, and there is no settings surface (plan step 42).
+ * Every row is a real destination. The mockup's Addresses / Payment methods /
+ * Settings rows are skipped: there is no address book (`User.address` is one
+ * free-text string), COD is the only payment method, and there is no settings
+ * surface (plan step 42).
  */
-export type AccountNavSection = 'orders' | 'account';
+export type AccountNavSection = 'orders' | 'favorites' | 'account';
 
 interface NavRow {
   key: AccountNavSection | 'support' | 'privacy';
@@ -67,6 +68,12 @@ export default function AccountNav({ active }: { active: AccountNavSection }) {
       icon: <Package className={iconCls(active === 'orders')} />,
       label: isAdmin ? t('userOrders') : t('myOrders'),
       onClick: () => router.push(isAdmin ? '/orders/admin' : '/orders'),
+    },
+    {
+      key: 'favorites',
+      icon: <Heart className={iconCls(active === 'favorites')} />,
+      label: t('favorites'),
+      onClick: () => router.push('/favorites'),
     },
     {
       key: 'account',
