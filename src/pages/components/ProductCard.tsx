@@ -1,3 +1,4 @@
+import FavoriteButton from '@/pages/components/FavoriteButton';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   PRODUCT_IMAGE_FALLBACK,
@@ -44,12 +45,14 @@ interface ProductCardProps {
   product?: ExtendedProduct;
   handleClickAddProduct?: () => void;
   cartProps?: AddToCartProps;
+  onFavoriteRemove?: () => void;
 }
 
 export default function ProductCard({
   product: initialProduct,
   handleClickAddProduct,
   cartProps,
+  onFavoriteRemove,
 }: ProductCardProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -170,6 +173,13 @@ export default function ProductCard({
               </Box>
             )}
           </Link>
+          {cartProps.cartAction !== 'delete' && (
+            <FavoriteButton
+              productId={product.id}
+              variant="card"
+              onRemove={onFavoriteRemove}
+            />
+          )}
           <Box className={productCardClasses.boxes.detail[platform]}>
             {product.brand?.name != null && (
               <Typography

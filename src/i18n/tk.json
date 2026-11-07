@@ -451,8 +451,6 @@
   "openSettings": "Sazlamalar",
   "serverLogs": "Serwer Ýazgylary",
   "brands": "Brendler",
-  "recentSearches": "Soňky gözlegler",
-  "trendingNow": "Meşhur",
   "noBrands": "Brend tapylmady",
   "showMore": "Köpräk görmek",
   "showLess": "Azrak görmek",
@@ -916,5 +914,13 @@
   "procurementRateSaveHint": "Meýdançadan çykanyňyzda ýa-da Enter basanyňyzda ýatda saklanar",
   "procurementUpdateAppForFiles": "Faýllary saklamak we ibermek üçin programmany täzeläň ýa-da saýty brauzerde açyň.",
   "procurementFilesSaved": "Faýllar saklandy",
-  "procurementFilesSavedDownloads": "«Downloads/Xmobile» bukjasyna saklandy"
+  "procurementFilesSavedDownloads": "«Downloads/Xmobile» bukjasyna saklandy",
+  "addToFavorites": "Halanlaryma goş",
+  "removeFromFavorites": "Halanlarymdan aýyr",
+  "favorites": "Halanlarym",
+  "favoritesEmpty": "Entek halanlaryňyz ýok",
+  "favoritesSignIn": "Halanlaryňyzy görmek üçin ulgama giriň",
+  "favoritesLoadError": "Halanlaryňyz ýüklenmedi",
+  "searchLoadError": "Netijeler ýüklenmedi",
+  "tryAgain": "Gaýtadan synanyşyň"
 }

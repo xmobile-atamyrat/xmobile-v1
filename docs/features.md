@@ -19,6 +19,10 @@ Short reference to major features and where they live.
 - **Cart:** `api/cart` (CRUD); cart state/UI in `pages/cart/`, `components/AddToCart`. The header/bottom-nav item count lives in `lib/CartContext` (fetched once via `?count=1`, then updated locally on add/remove/order).
 - **Checkout:** `pages/cart/checkout/` (flow + success). Orders created via `api/order`.
 
+## Favorites
+
+- **Favorites:** `api/favorites` (list, add, remove) for signed-in users, stored in the `_UserFavorites` join table. Heart state lives in `lib/FavoritesContext`, seeded from the session in `api/user`; the list is at `pages/favorites/`. It reuses the catalog's filter rail, sort and mobile sheet, but filters in the browser (`lib/favoritesFilter`), because `api/favorites` sends the whole list unpaged.
+
 ## Orders
 
 - **Customer:** List/detail in `pages/orders/`; create via API from checkout.

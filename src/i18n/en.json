@@ -449,8 +449,6 @@
   "openSettings": "Settings",
   "serverLogs": "Server Logs",
   "brands": "Brands",
-  "recentSearches": "Recent",
-  "trendingNow": "Trending now",
   "noBrands": "No brands found",
   "showMore": "Show more",
   "showLess": "Show less",
@@ -914,5 +912,13 @@
   "procurementRateSaveHint": "Saves when you leave the field or press Enter",
   "procurementUpdateAppForFiles": "Update the app to save and send files, or open the site in a browser.",
   "procurementFilesSaved": "Files saved",
-  "procurementFilesSavedDownloads": "Saved to Downloads/Xmobile"
+  "procurementFilesSavedDownloads": "Saved to Downloads/Xmobile",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites",
+  "favorites": "Favorites",
+  "favoritesEmpty": "You have no favorites yet",
+  "favoritesSignIn": "Sign in to see your favorites",
+  "favoritesLoadError": "Couldn't load your favorites",
+  "searchLoadError": "Couldn't load the results",
+  "tryAgain": "Try again"
 }

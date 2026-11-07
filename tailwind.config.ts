@@ -28,9 +28,25 @@ const config: Config = {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.06)' },
         },
+        'favorite-pop': {
+          '0%': { transform: 'scale(0.8)' },
+          '45%': { transform: 'scale(1.35)' },
+          '75%': { transform: 'scale(0.92)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        'favorite-shrink': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(0.6)' },
+        },
+        'favorite-card-leave': {
+          to: { opacity: '0', transform: 'scale(0.85)' },
+        },
       },
       animation: {
         breathe: 'breathe 2.4s ease-in-out infinite',
+        'favorite-pop': 'favorite-pop 320ms ease-out',
+        'favorite-shrink': 'favorite-shrink 240ms ease-in-out',
+        'favorite-card-leave': 'favorite-card-leave 200ms ease-in forwards',
       },
     },
   },
