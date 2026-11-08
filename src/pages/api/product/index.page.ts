@@ -84,6 +84,17 @@ export function deriveVariantColumns(tags: string[]): { colors: string[] } {
   return { colors: [...colors] };
 }
 
+async function brandFieldError(
+  brandId: string | undefined,
+): Promise<'brandRequired' | 'brandNotFound' | null> {
+  if (!brandId) return 'brandRequired';
+  const brand = await dbClient.brand.findUnique({
+    where: { id: brandId },
+    select: { id: true },
+  });
+  return brand ? null : 'brandNotFound';
+}
+
 type PriceLinkChange = Awaited<
   ReturnType<typeof reconcileProductPriceLinks>
 >[number];
@@ -250,6 +261,12 @@ async function createProduct(
         return;
       }
 
+      const brandError = await brandFieldError(fields.brandId?.[0]);
+      if (brandError) {
+        resolve({ success: false, message: brandError, status: 400 });
+        return;
+      }
+
       const parsedName = JSON.parse(fields.name?.[0] ?? '{}');
       const productEnglishName = parsedName?.en;
 
@@ -318,7 +335,7 @@ async function createProduct(
                 name: fields.name[0],
                 slug: productSlug,
                 categoryId: fields.categoryId[0],
-                brandId: fields.brandId?.[0] || null,
+                brandId: fields.brandId[0],
                 description: fields.description?.[0],
                 tags: productTags,
                 colors: {
@@ -599,7 +616,12 @@ async function handleEditProduct(
         data.cachedPrice = cachedPriceFrom(basePriceRow);
       }
       if (fields.brandId?.length > 0) {
-        data.brandId = fields.brandId[0] || null;
+        const brandError = await brandFieldError(fields.brandId[0]);
+        if (brandError) {
+          resolve({ success: false, message: brandError, status: 400 });
+          return;
+        }
+        data.brandId = fields.brandId[0];
       }
       if (fields.tags?.length > 0) {
         const editTags: string[] = JSON.parse(fields.tags[0]);

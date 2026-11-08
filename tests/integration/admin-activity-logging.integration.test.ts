@@ -17,6 +17,7 @@ describe('Admin activity logging (integration)', () => {
   let adminToken: string;
   let adminUserId: string;
   let adminName: string;
+  let catalogBrandId: string;
 
   const call = async (
     modulePath: string,
@@ -99,7 +100,8 @@ describe('Admin activity logging (integration)', () => {
     });
 
   beforeAll(async () => {
-    const { databaseUrl } = await prepareIntegrationWorker();
+    const { databaseUrl, catalog } = await prepareIntegrationWorker();
+    catalogBrandId = catalog.brandId;
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
     await prisma.$connect();
 
@@ -414,6 +416,7 @@ describe('Admin activity logging (integration)', () => {
       fields: {
         name: JSON.stringify({ en: 'ActLog Phone' }),
         categoryId: category.id,
+        brandId: catalogBrandId,
         imageUrls: JSON.stringify([img('a'), img('b')]),
       },
     });

@@ -662,6 +662,8 @@
   "productsOverview": "Ürünlere genel bakış",
   "selectCategory": "Kategori seçin",
   "categoryRequired": "Lütfen bir kategori seçin",
+  "brandRequired": "Lütfen bir marka seçin",
+  "brandNotFound": "Marka bulunamadı. Sayfayı yenileyip markayı tekrar seçin",
   "outOfStockOnly": "Sadece stokta olmayanlar",
   "availability": "Stok durumu",
   "inStockOnly": "Sadece stoktakiler",

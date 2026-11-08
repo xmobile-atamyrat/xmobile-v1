@@ -305,24 +305,16 @@ describe('buildProductEditFields', () => {
     ]);
   });
 
-  // The PUT handler reads `fields.brandId[0] || null`, so an empty string is
-  // what unlinks a brand. Omitting the field would leave the old brand in place.
-  it('sends an empty string to clear the brand rather than omitting it', () => {
-    expect(buildProductEditFields({ brandId: null })).toEqual([
-      ['brandId', ''],
-    ]);
-  });
-
   it('combines every touched field in one payload', () => {
     expect(
       buildProductEditFields({
         categoryId: 'phones',
-        brandId: null,
+        brandId: 'apple',
         isOutOfStock: true,
       }),
     ).toEqual([
       ['categoryId', 'phones'],
-      ['brandId', ''],
+      ['brandId', 'apple'],
       ['isOutOfStock', 'true'],
     ]);
   });

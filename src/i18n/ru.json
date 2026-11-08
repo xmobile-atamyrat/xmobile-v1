@@ -664,6 +664,8 @@
   "productsOverview": "Обзор товаров",
   "selectCategory": "Выберите категорию",
   "categoryRequired": "Пожалуйста, выберите категорию",
+  "brandRequired": "Пожалуйста, выберите бренд",
+  "brandNotFound": "Бренд не найден. Обновите страницу и выберите бренд снова",
   "outOfStockOnly": "Только нет в наличии",
   "availability": "Наличие",
   "inStockOnly": "Только в наличии",

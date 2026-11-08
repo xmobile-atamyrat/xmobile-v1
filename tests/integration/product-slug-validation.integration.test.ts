@@ -69,6 +69,7 @@ describe('/api/product slug validation (integration)', () => {
   let prisma: PrismaClient;
   let adminToken: string;
   let categoryId: string;
+  let brandId: string;
   let uploadDir: string;
 
   beforeAll(async () => {
@@ -84,6 +85,7 @@ describe('/api/product slug validation (integration)', () => {
     const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
     adminToken = admin.accessToken;
     categoryId = catalog.categoryId;
+    brandId = catalog.brandId;
   }, 180_000);
 
   afterAll(async () => {
@@ -100,6 +102,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"tk":"Telefon"}',
         categoryId,
+        brandId,
         price: '100',
       },
       boundary,
@@ -123,6 +126,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"en":"","ru":"Телефон"}',
         categoryId,
+        brandId,
         price: '100',
       },
       boundary,
@@ -146,6 +150,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"en":"    "}',
         categoryId,
+        brandId,
         price: '100',
       },
       boundary,
@@ -170,6 +175,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"en":"!!! @@@ ###"}',
         categoryId,
+        brandId,
         price: '100',
       },
       boundary,
@@ -193,6 +199,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"en":"Galaxy S24 Ultra","ru":"Галакси С24 Ультра"}',
         categoryId,
+        brandId,
         price: '1299',
       },
       boundary,
@@ -221,6 +228,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: '{"en":"Ýetir Şöhle"}',
         categoryId,
+        brandId,
         price: '200',
       },
       boundary,
@@ -247,6 +255,7 @@ describe('/api/product slug validation (integration)', () => {
       {
         name: JSON.stringify({ en: longName }),
         categoryId,
+        brandId,
         price: '100',
       },
       boundary,

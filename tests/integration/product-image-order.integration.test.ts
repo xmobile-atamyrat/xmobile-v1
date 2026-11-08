@@ -67,6 +67,7 @@ describe('/api/product image order (integration)', () => {
   let prisma: PrismaClient;
   let adminToken: string;
   let categoryId: string;
+  let brandId: string;
   let uploadDir: string;
 
   beforeAll(async () => {
@@ -82,6 +83,7 @@ describe('/api/product image order (integration)', () => {
     const admin = await createStaffPrincipal(prisma, UserRole.ADMIN);
     adminToken = admin.accessToken;
     categoryId = catalog.categoryId;
+    brandId = catalog.brandId;
   }, 180_000);
 
   afterAll(async () => {
@@ -98,6 +100,7 @@ describe('/api/product image order (integration)', () => {
       fields: {
         name: '{"en":"Image Order Phone"}',
         categoryId,
+        brandId,
         imageUrls: JSON.stringify([url('a'), url('b'), url('c')]),
         imageOrder: JSON.stringify([url('c'), url('a'), url('b')]),
       },
@@ -142,6 +145,7 @@ describe('/api/product image order (integration)', () => {
       fields: {
         name: '{"en":"Legacy Order Phone"}',
         categoryId,
+        brandId,
         imageUrls: JSON.stringify([url('x'), url('y')]),
       },
     });

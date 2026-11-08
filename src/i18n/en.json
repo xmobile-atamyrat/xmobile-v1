@@ -662,6 +662,8 @@
   "productsOverview": "Products overview",
   "selectCategory": "Select a category",
   "categoryRequired": "Please select a category",
+  "brandRequired": "Please select a brand",
+  "brandNotFound": "Brand not found. Refresh the page and pick the brand again",
   "outOfStockOnly": "Out of stock only",
   "availability": "Availability",
   "inStockOnly": "In stock only",
