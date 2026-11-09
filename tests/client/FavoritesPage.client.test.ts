@@ -32,7 +32,6 @@ vi.mock('@/pages/lib/apis', async (importOriginal) => ({
     { id: 'b3', name: 'Xiaomi', productCount: 0 },
   ],
   fetchColors: async (): Promise<never[]> => [],
-  fetchProductFilterOptions: async () => ({ colors: [] as string[] }),
 }));
 
 vi.mock('@/pages/components/Layout', () => ({

@@ -1,5 +1,6 @@
-import { colorFamilyOf } from '@/pages/lib/colorFamilies';
+import { colorFamilyOf, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import { SORT_OPTIONS } from '@/pages/lib/constants';
+import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { ExtendedCategory, ExtendedProduct } from '@/pages/lib/types';
 
@@ -88,4 +89,40 @@ export function filterAndSortFavorites(
       Number(a.outOfStockAt != null) - Number(b.outOfStockAt != null) ||
       compare(a, b),
   );
+}
+
+/**
+ * The rail options that still match the rest of the filters, the favorites
+ * twin of /api/product/filters: each dimension ignores its own selection.
+ */
+export function favoriteFilterOptions(
+  products: FavoriteProduct[],
+  filters: FilterState,
+  categories: ExtendedCategory[],
+  locale: string,
+): FilterOptions {
+  const brandScope = filterAndSortFavorites(
+    products,
+    { ...filters, brandIds: [] },
+    categories,
+    locale,
+  );
+  const colorScope = filterAndSortFavorites(
+    products,
+    { ...filters, colors: [] },
+    categories,
+    locale,
+  );
+  return {
+    brandIds: [
+      ...new Set(
+        brandScope
+          .map(({ brandId }) => brandId)
+          .filter((id): id is string => id != null),
+      ),
+    ],
+    colorFamilies: groupColorsByFamily(
+      colorScope.flatMap(({ colors }) => colors),
+    ).map(({ family }) => family),
+  };
 }

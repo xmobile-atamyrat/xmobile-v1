@@ -207,6 +207,41 @@ describe('Product color filter (integration)', () => {
     expect(body.data.colors).toContain(colorBId);
   });
 
+  it('GET /api/product/filters ignores the colour filter when listing colours', async () => {
+    const filtersHandler = (await import('@/pages/api/product/filters.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product/filters',
+      query: { colors: 'blue' },
+    });
+    await filtersHandler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    const body = JSON.parse(res._getData() as string);
+    expect(body.data.colorFamilies).toEqual(
+      expect.arrayContaining(['blue', 'pink']),
+    );
+  });
+
+  it('GET /api/product/filters narrows colours by the other filters', async () => {
+    const filtersHandler = (await import('@/pages/api/product/filters.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product/filters',
+      query: { brandIds: '00000000-0000-4000-8000-000000000098' },
+    });
+    await filtersHandler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    const body = JSON.parse(res._getData() as string);
+    expect(body.data.colors).toEqual([]);
+    expect(body.data.colorFamilies).toEqual([]);
+  });
+
   it('GET /api/product/filters returns 405 for non-GET requests', async () => {
     const filtersHandler = (await import('@/pages/api/product/filters.page'))
       .default;

@@ -1,6 +1,7 @@
 import { SORT_OPTIONS } from '@/pages/lib/constants';
 import {
   FavoriteProduct,
+  favoriteFilterOptions,
   filterAndSortFavorites,
 } from '@/pages/lib/favoritesFilter';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
@@ -223,5 +224,35 @@ describe('filterAndSortFavorites', () => {
 
       expect(products.map(({ id }) => id)).toEqual(['mid', 'cheap', 'dear']);
     });
+  });
+});
+
+describe('favoriteFilterOptions', () => {
+  const black = { id: 'k', name: 'Black', hex: '#000000' };
+  const blue = { id: 'b', name: 'Blue', hex: '#0000ff' };
+  const products = [
+    product({ id: 'iphone', brandId: 'apple', colors: [black] }),
+    product({ id: 'galaxy', brandId: 'samsung', colors: [blue] }),
+    product({ id: 'cable', brandId: null, colors: [] }),
+  ];
+  const options = (filters: Partial<FilterState>) =>
+    favoriteFilterOptions(products, { ...noFilters, ...filters }, [], 'en');
+
+  it('offers the brands and colours present in the list', () => {
+    expect(options({})).toEqual({
+      brandIds: ['apple', 'samsung'],
+      colorFamilies: ['black', 'blue'],
+    });
+  });
+
+  it('narrows colours by the chosen brand but keeps every brand on offer', () => {
+    expect(options({ brandIds: ['apple'] })).toEqual({
+      brandIds: ['apple', 'samsung'],
+      colorFamilies: ['black'],
+    });
+  });
+
+  it('narrows brands by the chosen colour', () => {
+    expect(options({ colors: ['blue'] }).brandIds).toEqual(['samsung']);
   });
 });

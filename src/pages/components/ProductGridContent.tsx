@@ -15,6 +15,7 @@ import {
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { useFilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
@@ -289,11 +290,9 @@ export default function ProductGridContent({
     [isLandingMode, showCategoryPills],
   );
 
-  // Fallback from filter state to explicit prop or URL param for fetching
-  const effectiveCategoryIds = useMemo(() => {
-    if (filters.categoryIds.length > 0) {
-      return filters.categoryIds;
-    }
+  // The listing's own category (landing page or URL param), before any rail
+  // filter picks categories of its own.
+  const baseCategoryIds = useMemo(() => {
     if (landingCategoryId) {
       return [landingCategoryId];
     }
@@ -307,12 +306,24 @@ export default function ProductGridContent({
       return [router.query.categoryId as string];
     }
     return [];
-  }, [
-    filters.categoryIds,
-    router.query.categoryIds,
-    router.query.categoryId,
-    landingCategoryId,
-  ]);
+  }, [router.query.categoryIds, router.query.categoryId, landingCategoryId]);
+
+  const effectiveCategoryIds = useMemo(
+    () =>
+      filters.categoryIds.length > 0 ? filters.categoryIds : baseCategoryIds,
+    [filters.categoryIds, baseCategoryIds],
+  );
+
+  const filterScope = useMemo(
+    () => ({ categoryIds: baseCategoryIds, searchKeyword }),
+    [baseCategoryIds, searchKeyword],
+  );
+  // Mobile asks from inside its sheet, for the choices not yet applied.
+  const filterOptions = useFilterOptions(
+    filterScope,
+    filters,
+    filtersReady && platform === 'web',
+  );
 
   // Monotonic token identifying the newest product query. Quick filter changes
   // re-fire this effect while the previous query is still in flight; without a
@@ -544,6 +555,7 @@ export default function ProductGridContent({
           filters={filters}
           onApply={applyFilters}
           hideSections={hideSections}
+          optionsScope={filterScope}
         />
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
@@ -579,6 +591,7 @@ export default function ProductGridContent({
                 inStock={filters.inStock}
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
+                options={filterOptions}
                 // Brand.productCount counts the whole catalogue (step 54), so
                 // it only tells the truth on the unscoped listing — inside a
                 // search it would promise more hits than the filter returns.

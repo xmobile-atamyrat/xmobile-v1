@@ -1,13 +1,13 @@
+import { fetchBrands } from '@/pages/lib/apis';
 import {
-  fetchBrands,
-  fetchColors,
-  fetchProductFilterOptions,
-  ProductFilterOptions,
-} from '@/pages/lib/apis';
-import { ColorFamily, groupColorsByFamily } from '@/pages/lib/colorFamilies';
+  COLOR_FAMILIES,
+  COLOR_FAMILY_HEX,
+  COLOR_FAMILY_LABEL_KEY,
+  ColorFamily,
+} from '@/pages/lib/colorFamilies';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
+import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { Color } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
 import { filterRailClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName, hairline, ink, muted, navy, red } from '@/styles/theme';
@@ -48,6 +48,11 @@ interface FilterSidebarProps {
   }) => void;
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
+  /**
+   * The brands and colour families that still match the listing. Null while
+   * unknown: every brand shows, and the colour section waits.
+   */
+  options: FilterOptions | null;
   /**
    * Show the real Brand.productCount beside each brand (spec 1448).
    * That column counts the whole catalogue, so it's only truthful on the
@@ -129,6 +134,7 @@ export default function FilterSidebar({
   onFilterChange,
   hideSections = [],
   variant = 'sidebar',
+  options,
   showBrandCounts = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
@@ -141,23 +147,14 @@ export default function FilterSidebar({
   const [limitBrands, setLimitBrands] = useState(true);
   const [limitCategories, setLimitCategories] = useState(true);
 
-  const [colors, setColors] = useState<Color[]>([]);
-  const [filterOptions, setFilterOptions] = useState<ProductFilterOptions>({
-    colors: [],
-  });
   const [colorsOpen, setColorsOpen] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setColors(await fetchColors());
-      setFilterOptions(await fetchProductFilterOptions());
-    })();
-  }, []);
-
-  // Only show colors that are actually used by some product, grouped into
-  // basic families so "Phantom Black" and "Midnight" share one "Black" row.
-  const colorsToShow = groupColorsByFamily(
-    colors.filter((c) => filterOptions.colors.includes(c.id)),
+  // Only families some matching product comes in. A ticked one stays even
+  // when other filters rule it out, so it can still be unticked.
+  const colorsToShow = COLOR_FAMILIES.filter(
+    (family) =>
+      options?.colorFamilies.includes(family) ||
+      selectedColors.includes(family),
   );
 
   const toggleColor = (family: ColorFamily) => {
@@ -296,7 +293,17 @@ export default function FilterSidebar({
   );
 
   // -- Brand Logic --
-  const brandsToShow = limitBrands ? brands.slice(0, 7) : brands;
+  const availableBrands =
+    options == null
+      ? brands
+      : brands.filter(
+          (brand) =>
+            options.brandIds.includes(brand.id) ||
+            selectedBrandIds.includes(brand.id),
+        );
+  const brandsToShow = limitBrands
+    ? availableBrands.slice(0, 7)
+    : availableBrands;
 
   const handleBrandToggle = (brandId: string) => {
     const newBrands = selectedBrandIds.includes(brandId)
@@ -492,7 +499,7 @@ export default function FilterSidebar({
             flexDirection="column"
             sx={{ maxHeight: '300px', overflowY: 'auto' }}
           >
-            {brands.length === 0 && (
+            {availableBrands.length === 0 && (
               <Typography
                 className={fontClassName.className}
                 fontSize="14px"
@@ -511,7 +518,7 @@ export default function FilterSidebar({
                 count={showBrandCounts ? brand.productCount : undefined}
               />
             ))}
-            {brands.length > 7 && (
+            {availableBrands.length > 7 && (
               <Box mt={1} pl={1}>
                 <Typography
                   className={fontClassName.className}
@@ -546,13 +553,13 @@ export default function FilterSidebar({
               flexDirection="column"
               sx={{ maxHeight: '300px', overflowY: 'auto' }}
             >
-              {colorsToShow.map((color) => (
+              {colorsToShow.map((family) => (
                 <FilterItem
-                  key={color.family}
-                  label={t(color.labelKey)}
-                  swatchHex={color.hex}
-                  isSelected={selectedColors.includes(color.family)}
-                  onClick={() => toggleColor(color.family)}
+                  key={family}
+                  label={t(COLOR_FAMILY_LABEL_KEY[family])}
+                  swatchHex={COLOR_FAMILY_HEX[family]}
+                  isSelected={selectedColors.includes(family)}
+                  onClick={() => toggleColor(family)}
                 />
               ))}
             </Box>

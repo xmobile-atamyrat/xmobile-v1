@@ -7,10 +7,13 @@ import {
   PromoBannerData,
   ResponseApi,
 } from '@/pages/lib/types';
+import { ColorFamily } from '@/pages/lib/colorFamilies';
 import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
+  colorFamilies: ColorFamily[];
+  brandIds: string[];
 }
 
 export const fetchProducts = async ({
@@ -308,14 +311,41 @@ export const deleteBanner = async (
   return success;
 };
 
-export const fetchProductFilterOptions =
-  async (): Promise<ProductFilterOptions> => {
-    const { success, data, message }: ResponseApi<ProductFilterOptions> =
-      await (await fetch(`${BASE_URL}/api/product/filters`)).json();
+/**
+ * The brands and colour families that still match the rest of a filter set,
+ * so the rail never offers a choice that empties the list.
+ */
+export const fetchProductFilterOptions = async ({
+  categoryIds,
+  brandIds,
+  colors,
+  minPrice,
+  maxPrice,
+  searchKeyword,
+  inStock,
+}: {
+  categoryIds?: string[];
+  brandIds?: string[];
+  colors?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  searchKeyword?: string;
+  inStock?: boolean;
+}): Promise<ProductFilterOptions> => {
+  const params = new URLSearchParams();
+  categoryIds?.forEach((cid) => params.append('categoryIds', cid));
+  brandIds?.forEach((bid) => params.append('brandIds', bid));
+  colors?.forEach((family) => params.append('colors', family));
+  if (minPrice) params.set('minPrice', minPrice);
+  if (maxPrice) params.set('maxPrice', maxPrice);
+  if (searchKeyword) params.set('searchKeyword', searchKeyword);
+  if (inStock) params.set('inStock', '1');
 
-    if (!success || data == null) {
-      console.error('Failed to fetch product filter options:', message);
-      return { colors: [] };
-    }
-    return data;
-  };
+  const { success, data, message }: ResponseApi<ProductFilterOptions> = await (
+    await fetch(`${BASE_URL}/api/product/filters?${params}`)
+  ).json();
+  if (!success || data == null) {
+    throw new Error(message || 'Failed to fetch product filter options');
+  }
+  return data;
+};

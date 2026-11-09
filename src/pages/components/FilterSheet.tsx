@@ -1,5 +1,10 @@
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import {
+  FilterOptions,
+  FilterScope,
+  useFilterOptions,
+} from '@/pages/lib/hooks/useFilterOptions';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { filterSidebarClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName } from '@/styles/theme';
@@ -31,6 +36,10 @@ interface FilterSheetProps {
   filters: FilterState;
   onApply: (filters: FilterState) => void;
   hideSections?: ('categories' | 'brands')[];
+  /** Fetch the rail options for the listing the sheet filters... */
+  optionsScope?: FilterScope;
+  /** ...or work them out locally, for a list already in the browser. */
+  computeOptions?: (filters: FilterState) => FilterOptions;
 }
 
 /** Mobile bottom sheet around FilterSidebar. Choices only apply on 'Apply'. */
@@ -40,6 +49,8 @@ export default function FilterSheet({
   filters,
   onApply,
   hideSections,
+  optionsScope,
+  computeOptions,
 }: FilterSheetProps) {
   const t = useTranslations();
   const { categories } = useCategoryContext();
@@ -48,6 +59,16 @@ export default function FilterSheet({
   useEffect(() => {
     if (open) setLocalFilters(filters);
   }, [open, filters]);
+
+  // Options follow the choices inside the sheet, before they are applied.
+  const fetchedOptions = useFilterOptions(
+    optionsScope ?? { categoryIds: [] },
+    localFilters,
+    open && optionsScope != null && computeOptions == null,
+  );
+  const options = computeOptions
+    ? computeOptions(localFilters)
+    : fetchedOptions;
 
   return (
     <Dialog
@@ -98,6 +119,7 @@ export default function FilterSheet({
               setLocalFilters((prev) => ({ ...prev, ...newFilters }));
             }}
             hideSections={hideSections}
+            options={options}
           />
         </Box>
         <Box className={filterSidebarClasses.footer}>

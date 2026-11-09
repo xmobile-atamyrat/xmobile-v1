@@ -14,10 +14,14 @@ import {
 import { useFavoritesContext } from '@/pages/lib/FavoritesContext';
 import {
   FavoriteProduct,
+  favoriteFilterOptions,
   filterAndSortFavorites,
 } from '@/pages/lib/favoritesFilter';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import {
+  FilterState,
+  useProductFilters,
+} from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
@@ -148,6 +152,13 @@ export default function FavoritesPage() {
   );
   const canFilter =
     !isLoading && user != null && status === 'ready' && favorites.length > 0;
+  const optionsFor = (chosen: FilterState) =>
+    favoriteFilterOptions(
+      favorites,
+      chosen,
+      categories,
+      router.locale ?? DEFAULT_LOCALE,
+    );
 
   const renderCards = () => {
     const visible = filterAndSortFavorites(
@@ -225,6 +236,7 @@ export default function FavoritesPage() {
           maxPrice={filters.maxPrice}
           inStock={filters.inStock}
           onFilterChange={setFilters}
+          options={optionsFor(filters)}
         />
         <Box className="flex flex-col w-full min-w-0">
           <Box className={productIndexPageClasses.resultsBar.web}>
@@ -267,6 +279,7 @@ export default function FavoritesPage() {
         onClose={() => setMobileFilterOpen(false)}
         filters={filters}
         onApply={setFilters}
+        computeOptions={optionsFor}
       />
       <Box className={ordersIndexClasses.container.mobile}>
         <Box
