@@ -248,7 +248,7 @@ describe('Favorites API (integration)', () => {
     ]);
   });
 
-  it('sends color ids, which the page filters by', async () => {
+  it('sends color name and hex, which the page groups into families', async () => {
     const session = await signupTestUser('fav-colors');
     const color = await prisma.color.create({
       data: { name: 'Fav black', hex: '#000000' },
@@ -262,7 +262,9 @@ describe('Favorites API (integration)', () => {
 
     const { json } = await callFavorites('GET', session);
 
-    expect(json.data[0].colors).toEqual([{ id: color.id }]);
+    expect(json.data[0].colors).toEqual([
+      { id: color.id, name: 'Fav black', hex: '#000000' },
+    ]);
   });
 
   it('leaves the description out of the list, which cards never show', async () => {
