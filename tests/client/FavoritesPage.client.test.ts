@@ -96,6 +96,9 @@ const cardNames = () =>
 
 // The rail rebuilds its rows as each reference list arrives, so a checkbox found
 // too early is gone by the time it is clicked.
+// The sheet's Apply button says what it will show: "Show 2 products".
+const showProducts = /^Show \d+ products?$/;
+
 // Rail rows read "Apple 2": the name, then how many products it would show.
 const railRow = (name: string) => new RegExp(`^${name}( \\d+)?$`);
 
@@ -520,7 +523,7 @@ describe('Favorites page', () => {
         await openSheet();
         await tick('Apple');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+        fireEvent.click(screen.getByRole('button', { name: showProducts }));
 
         await waitFor(() => expect(cardNames()).toEqual(['Phone']));
       });
@@ -529,7 +532,7 @@ describe('Favorites page', () => {
         await openSheet();
 
         fireEvent.click(screen.getByText('Price Low-to-High'));
-        fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+        fireEvent.click(screen.getByRole('button', { name: showProducts }));
 
         await waitFor(() => expect(cardNames()).toEqual(['Tablet', 'Phone']));
       });

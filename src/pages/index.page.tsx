@@ -33,6 +33,7 @@ import {
   StorefrontBanner,
 } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
+import { switchLocale } from '@/pages/lib/switchLocale';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { buttonClasses } from '@/styles/classMaps/components/button';
@@ -278,7 +279,7 @@ export default function Home({
 
   useEffect(() => {
     if (locale == null || router.locale === locale) return;
-    router.push(router.pathname, router.asPath, { locale });
+    switchLocale(router, locale);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 

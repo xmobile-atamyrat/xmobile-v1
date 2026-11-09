@@ -269,6 +269,28 @@ describe('favoriteFilterOptions', () => {
     ).toEqual({ black: 1 });
   });
 
+  it('counts what the whole filter set shows', () => {
+    expect(options({ brandIds: ['apple'] }).total).toBe(1);
+  });
+
+  it('says what dropping each active filter would bring back when empty', () => {
+    const result = options({ brandIds: ['apple'], colors: ['blue'] });
+
+    expect(result.total).toBe(0);
+    expect(result.relaxations).toEqual({ brands: 1, colors: 1 });
+  });
+
+  it('never suggests dropping the price, the customer’s budget', () => {
+    const result = options({ brandIds: ['apple'], minPrice: '99999' });
+
+    expect(result.total).toBe(0);
+    expect(result.relaxations).toEqual({ brands: 0 });
+  });
+
+  it('skips that work while something matches', () => {
+    expect(options({ brandIds: ['apple'] }).relaxations).toEqual({});
+  });
+
   it('spans the prices of the list, ignoring its own price filter', () => {
     const priced = [
       product({ id: 'cheap', cachedPrice: 300 }),

@@ -1,4 +1,5 @@
 import ActiveFilterChips from '@/pages/components/ActiveFilterChips';
+import FilterEmptyState from '@/pages/components/FilterEmptyState';
 import FilterSheet from '@/pages/components/FilterSheet';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
@@ -178,6 +179,10 @@ export default function FavoritesPage() {
           >
             {t('noProductsFound')}
           </Typography>
+          <FilterEmptyState
+            options={optionsFor(filters)}
+            onChange={setFilters}
+          />
         </Box>
       );
     }

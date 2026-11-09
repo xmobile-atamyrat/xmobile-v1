@@ -1,11 +1,14 @@
 import { fetchProductFilterOptions } from '@/pages/lib/apis';
 import { ColorFamily } from '@/pages/lib/colorFamilies';
+import { FilterRelaxations } from '@/pages/lib/filterRelaxations';
 import { PriceFacet } from '@/pages/lib/priceFacet';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { useEffect, useState } from 'react';
 
 /** Products each option would show; an option missing here matches none. */
 export interface FilterOptions {
+  total: number;
+  relaxations: FilterRelaxations;
   brandCounts: Record<string, number>;
   colorCounts: Partial<Record<ColorFamily, number>>;
   price: PriceFacet | null;
@@ -19,15 +22,20 @@ export interface FilterScope {
 
 /**
  * The rail options that still match the rest of `filters` inside `scope`.
- * Null until the first answer (or after a failure with nothing to show);
- * a refetch keeps the previous options up so the rail doesn't flicker.
+ * `options` is null until the first answer (or after a failure with nothing
+ * to show); a refetch keeps the previous ones up so the rail doesn't flicker.
+ * `isCurrent` says whether they answer these exact filters, for numbers that
+ * must not lag behind, like the sheet's "Show 37 products".
  */
 export function useFilterOptions(
   scope: FilterScope,
   filters: FilterState,
   enabled = true,
-): FilterOptions | null {
-  const [options, setOptions] = useState<FilterOptions | null>(null);
+): { options: FilterOptions | null; isCurrent: boolean } {
+  const [answer, setAnswer] = useState<{
+    key: string;
+    options: FilterOptions;
+  } | null>(null);
 
   const params = {
     categoryIds:
@@ -45,8 +53,13 @@ export function useFilterOptions(
     if (!enabled) return () => undefined;
     let cancelled = false;
     fetchProductFilterOptions(JSON.parse(key))
-      .then(({ brandCounts, colorCounts, price }) => {
-        if (!cancelled) setOptions({ brandCounts, colorCounts, price });
+      .then(({ total, relaxations, brandCounts, colorCounts, price }) => {
+        if (!cancelled) {
+          setAnswer({
+            key,
+            options: { total, relaxations, brandCounts, colorCounts, price },
+          });
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -54,5 +67,8 @@ export function useFilterOptions(
     };
   }, [key, enabled]);
 
-  return options;
+  return {
+    options: answer?.options ?? null,
+    isCurrent: answer?.key === key,
+  };
 }

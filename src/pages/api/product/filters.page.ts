@@ -4,17 +4,22 @@ import {
   ProductFilterQuery,
 } from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
-import type { Color } from '@prisma/client';
+import type { Color, Prisma } from '@prisma/client';
 import { ColorFamily, groupColorsByFamily } from '@/pages/lib/colorFamilies';
+import {
+  FilterDimension,
+  FilterRelaxations,
+} from '@/pages/lib/filterRelaxations';
 import { priceFacet } from '@/pages/lib/priceFacet';
 import { ResponseApi } from '@/pages/lib/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/product/filters.page.ts';
 
-// Returns how many products each brand and colour family would show for a
-// storefront query (options that lead nowhere are absent), and the price
-// range with quick brackets. Each dimension is
+// Returns, for a storefront query: how many products it matches, how many each
+// brand and colour family would show (options that lead nowhere are absent),
+// the price range with quick brackets, and, when nothing matches, what
+// dropping each filter would bring back. Each dimension is
 // scoped by every filter except its own, so ticking Apple narrows the colours
 // but keeps Samsung on offer (with its own count) as a second brand.
 export default async function handler(
@@ -30,13 +35,23 @@ export default async function handler(
 
   try {
     const query = req.query as ProductFilterQuery;
-    const [brandWhere, colorWhere, priceWhere] = await Promise.all([
-      buildProductWhere({ ...query, brandIds: undefined }),
-      buildProductWhere({ ...query, colors: undefined, colorIds: undefined }),
-      buildProductWhere({ ...query, minPrice: undefined, maxPrice: undefined }),
-    ]);
+    const [where, brandWhere, colorWhere, priceWhere, stockWhere] =
+      await Promise.all([
+        buildProductWhere(query),
+        buildProductWhere({ ...query, brandIds: undefined }),
+        buildProductWhere({ ...query, colors: undefined, colorIds: undefined }),
+        buildProductWhere({
+          ...query,
+          minPrice: undefined,
+          maxPrice: undefined,
+        }),
+        buildProductWhere({ ...query, inStock: undefined }),
+      ]);
+    const count = (scope: Prisma.ProductWhereInput | null) =>
+      scope ? dbClient.product.count({ where: scope }) : Promise.resolve(0);
 
-    const [brandRows, products, priced] = await Promise.all([
+    const [total, brandRows, products, priced] = await Promise.all([
+      count(where),
       brandWhere
         ? dbClient.product.groupBy({
             by: ['brandId'],
@@ -78,9 +93,33 @@ export default async function handler(
       },
     );
 
+    // Only an empty result pays for these: what dropping each active filter
+    // would bring back.
+    const relaxations: FilterRelaxations = {};
+    if (total === 0) {
+      const active: [
+        FilterDimension,
+        boolean,
+        Prisma.ProductWhereInput | null,
+      ][] = [
+        ['brands', query.brandIds != null, brandWhere],
+        ['colors', query.colors != null || query.colorIds != null, colorWhere],
+        ['inStock', query.inStock === '1', stockWhere],
+      ];
+      await Promise.all(
+        active
+          .filter(([, isActive]) => isActive)
+          .map(async ([dimension, , scope]) => {
+            relaxations[dimension] = await count(scope);
+          }),
+      );
+    }
+
     return res.status(200).json({
       success: true,
       data: {
+        total,
+        relaxations,
         colors: [...colorIds],
         brandCounts,
         colorCounts,

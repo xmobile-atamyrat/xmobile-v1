@@ -8,10 +8,15 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { ColorFamily } from '@/pages/lib/colorFamilies';
+import { FilterRelaxations } from '@/pages/lib/filterRelaxations';
 import { PriceFacet } from '@/pages/lib/priceFacet';
 import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
+  /** Products the whole filter set matches. */
+  total: number;
+  /** Only when `total` is 0: what dropping each active filter would show. */
+  relaxations: FilterRelaxations;
   colors: string[]; // colorIds in use
   /** Products per brand id, given the other filters. */
   brandCounts: Record<string, number>;

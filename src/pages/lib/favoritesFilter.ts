@@ -1,5 +1,6 @@
 import { colorFamilyOf, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import { SORT_OPTIONS } from '@/pages/lib/constants';
+import { FilterRelaxations } from '@/pages/lib/filterRelaxations';
 import { priceFacet } from '@/pages/lib/priceFacet';
 import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
@@ -135,5 +136,24 @@ export function favoriteFilterOptions(
       cachedPrice == null ? [] : [cachedPrice],
     ),
   );
-  return { brandCounts, colorCounts, price };
+  const total = filterAndSortFavorites(
+    products,
+    filters,
+    categories,
+    locale,
+  ).length;
+  const relaxations: FilterRelaxations = {};
+  if (total === 0) {
+    if (filters.brandIds.length > 0) relaxations.brands = brandScope.length;
+    if (filters.colors.length > 0) relaxations.colors = colorScope.length;
+    if (filters.inStock) {
+      relaxations.inStock = filterAndSortFavorites(
+        products,
+        { ...filters, inStock: false },
+        categories,
+        locale,
+      ).length;
+    }
+  }
+  return { total, relaxations, brandCounts, colorCounts, price };
 }

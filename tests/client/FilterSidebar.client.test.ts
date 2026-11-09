@@ -43,7 +43,13 @@ async function renderSidebar(
       minPrice: '',
       maxPrice: '',
       onFilterChange,
-      options: { colorCounts: { red: 4 }, brandCounts: {}, price: null },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: { red: 4 },
+        brandCounts: {},
+        price: null,
+      },
       ...overrides,
     }),
   );
@@ -99,6 +105,8 @@ describe('FilterSidebar — color filter section', () => {
   it('lists families with the most products first, ties in family order', async () => {
     await renderSidebar({
       options: {
+        total: 1,
+        relaxations: {},
         colorCounts: { blue: 1, black: 1, green: 9 },
         brandCounts: {},
         price: null,
@@ -116,7 +124,13 @@ describe('FilterSidebar — color filter section', () => {
   it('keeps a ticked family that other filters ruled out, so it can be unticked', async () => {
     await renderSidebar({
       selectedColors: ['green'],
-      options: { colorCounts: { red: 4 }, brandCounts: {}, price: null },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: { red: 4 },
+        brandCounts: {},
+        price: null,
+      },
     });
 
     expect(await screen.findByTitle('Green')).toBeInTheDocument();
@@ -125,6 +139,8 @@ describe('FilterSidebar — color filter section', () => {
   it('collapses a long colour list behind "Show more"', async () => {
     await renderSidebar({
       options: {
+        total: 1,
+        relaxations: {},
         colorCounts: {
           black: 1,
           white: 1,
@@ -152,7 +168,13 @@ describe('FilterSidebar — color filter section', () => {
 
   it('hides the color section when no family matches', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: {}, price: null },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price: null,
+      },
     });
 
     expect(screen.queryByText('Color')).not.toBeInTheDocument();
@@ -171,6 +193,8 @@ describe('FilterSidebar — brand section', () => {
   it('lists only brands that match the listing', async () => {
     await renderSidebar({
       options: {
+        total: 1,
+        relaxations: {},
         colorCounts: {},
         brandCounts: { apple: 7, xiaomi: 2 },
         price: null,
@@ -184,7 +208,13 @@ describe('FilterSidebar — brand section', () => {
 
   it('counts brands for this listing, not the whole catalogue', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: { apple: 7 }, price: null },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 7 },
+        price: null,
+      },
     });
 
     const row = (await screen.findByText('Apple')).closest(
@@ -196,6 +226,8 @@ describe('FilterSidebar — brand section', () => {
   it('lists brands with the most products first, ties by name', async () => {
     await renderSidebar({
       options: {
+        total: 1,
+        relaxations: {},
         colorCounts: {},
         brandCounts: { apple: 2, samsung: 9, xiaomi: 2 },
         price: null,
@@ -213,7 +245,13 @@ describe('FilterSidebar — brand section', () => {
   it('keeps a ticked brand that other filters ruled out', async () => {
     await renderSidebar({
       selectedBrandIds: ['samsung'],
-      options: { colorCounts: {}, brandCounts: { apple: 7 }, price: null },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 7 },
+        price: null,
+      },
     });
 
     const row = (await screen.findByText('Samsung')).closest(
@@ -249,7 +287,13 @@ describe('FilterSidebar — price section', () => {
 
   it('offers quick price ranges with their counts', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: {}, price },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price,
+      },
     });
 
     expect(screen.getByLabelText('0 – 3 000 TMT 4')).toBeInTheDocument();
@@ -260,7 +304,15 @@ describe('FilterSidebar — price section', () => {
   it('applies a quick range, and clears it when clicked again', async () => {
     const onFilterChange = vi.fn();
     await renderSidebar(
-      { options: { colorCounts: {}, brandCounts: {}, price } },
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
       onFilterChange,
     );
     fireEvent.click(screen.getByLabelText('3 000 – 9 000 TMT 6'));
@@ -274,7 +326,13 @@ describe('FilterSidebar — price section', () => {
       {
         minPrice: '3000',
         maxPrice: '9000',
-        options: { colorCounts: {}, brandCounts: {}, price },
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
       },
       onFilterChange,
     );
@@ -287,7 +345,13 @@ describe('FilterSidebar — price section', () => {
 
   it('hints the real price range in the inputs', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: {}, price },
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price,
+      },
     });
 
     expect(screen.getByPlaceholderText('1200')).toBeInTheDocument();
@@ -297,7 +361,15 @@ describe('FilterSidebar — price section', () => {
   it('applies a typed price on Enter, not on every keystroke', async () => {
     const onFilterChange = vi.fn();
     await renderSidebar(
-      { options: { colorCounts: {}, brandCounts: {}, price } },
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
       onFilterChange,
     );
     const min = screen.getByPlaceholderText('1200');
@@ -315,7 +387,15 @@ describe('FilterSidebar — price section', () => {
   it('applies a typed price when the field loses focus', async () => {
     const onFilterChange = vi.fn();
     await renderSidebar(
-      { options: { colorCounts: {}, brandCounts: {}, price } },
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
       onFilterChange,
     );
     const max = screen.getByPlaceholderText('24000');

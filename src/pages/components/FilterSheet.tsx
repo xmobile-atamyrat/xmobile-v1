@@ -61,14 +61,16 @@ export default function FilterSheet({
   }, [open, filters]);
 
   // Options follow the choices inside the sheet, before they are applied.
-  const fetchedOptions = useFilterOptions(
+  const fetched = useFilterOptions(
     optionsScope ?? { categoryIds: [] },
     localFilters,
     open && optionsScope != null && computeOptions == null,
   );
   const options = computeOptions
     ? computeOptions(localFilters)
-    : fetchedOptions;
+    : fetched.options;
+  // The count must match what Apply will show; while it reloads, plain Apply.
+  const total = computeOptions || fetched.isCurrent ? options?.total : null;
 
   return (
     <Dialog
@@ -138,7 +140,9 @@ export default function FilterSheet({
               onClose();
             }}
           >
-            {t('apply') || 'Apply'}
+            {total != null
+              ? t('showProductsCount', { count: total })
+              : t('apply') || 'Apply'}
           </Button>
         </Box>
       </Box>

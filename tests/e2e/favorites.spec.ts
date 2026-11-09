@@ -161,7 +161,7 @@ test.describe('Favorites on a phone', () => {
     await page.getByTitle(E2E_VARIANT_PRODUCT.colorFamilyLabel).click();
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Применить' }).click();
+    await page.getByRole('button', { name: /^Показать \d+ товар/ }).click();
 
     await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
 
