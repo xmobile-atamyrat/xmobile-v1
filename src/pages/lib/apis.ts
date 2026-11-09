@@ -16,7 +16,7 @@ export interface ProductFilterOptions {
 export const fetchProducts = async ({
   categoryIds,
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   sortBy,
@@ -29,7 +29,8 @@ export const fetchProducts = async ({
 }: {
   categoryIds?: string[];
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   sortBy?: string;
@@ -60,9 +61,7 @@ export const fetchProducts = async ({
     categoryIds.forEach((cid) => appendParam('categoryIds', cid));
   }
 
-  if (colorIds && colorIds.length > 0) {
-    colorIds.forEach((cid) => appendParam('colorIds', cid));
-  }
+  colors?.forEach((family) => appendParam('colors', family));
 
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
@@ -86,7 +85,7 @@ export const fetchProducts = async ({
 export const fetchProductsCount = async ({
   categoryIds,
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   searchKeyword,
@@ -94,7 +93,8 @@ export const fetchProductsCount = async ({
 }: {
   categoryIds?: string[];
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
@@ -106,7 +106,7 @@ export const fetchProductsCount = async ({
   };
   brandIds?.forEach((bid) => appendParam('brandIds', bid));
   categoryIds?.forEach((cid) => appendParam('categoryIds', cid));
-  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  colors?.forEach((family) => appendParam('colors', family));
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
@@ -133,14 +133,15 @@ export interface CategoryFacet {
  */
 export const fetchCategoryFacets = async ({
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   searchKeyword,
   inStock,
 }: {
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
@@ -151,7 +152,7 @@ export const fetchCategoryFacets = async ({
     if (val) url += `&${key}=${encodeURIComponent(val)}`;
   };
   brandIds?.forEach((bid) => appendParam('brandIds', bid));
-  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  colors?.forEach((family) => appendParam('colors', family));
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);

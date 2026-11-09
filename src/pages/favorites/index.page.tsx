@@ -220,7 +220,7 @@ export default function FavoritesPage() {
           categories={categories}
           selectedCategoryIds={filters.categoryIds}
           selectedBrandIds={filters.brandIds}
-          selectedColorIds={filters.colorIds}
+          selectedColors={filters.colors}
           minPrice={filters.minPrice}
           maxPrice={filters.maxPrice}
           inStock={filters.inStock}

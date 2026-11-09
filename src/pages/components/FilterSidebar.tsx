@@ -4,7 +4,7 @@ import {
   fetchProductFilterOptions,
   ProductFilterOptions,
 } from '@/pages/lib/apis';
-import { mergeSameColors } from '@/pages/lib/colorGroups';
+import { ColorFamily, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { Color } from '@prisma/client';
@@ -32,7 +32,7 @@ interface FilterSidebarProps {
   categories: ExtendedCategory[];
   selectedCategoryIds: string[];
   selectedBrandIds: string[];
-  selectedColorIds?: string[];
+  selectedColors?: ColorFamily[];
   minPrice: string;
   maxPrice: string;
   sortBy?: string;
@@ -40,7 +40,7 @@ interface FilterSidebarProps {
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
-    colorIds?: string[];
+    colors?: ColorFamily[];
     minPrice?: string;
     maxPrice?: string;
     sortBy?: string;
@@ -121,7 +121,7 @@ export default function FilterSidebar({
   categories,
   selectedCategoryIds,
   selectedBrandIds,
-  selectedColorIds = [],
+  selectedColors = [],
   minPrice,
   maxPrice,
   sortBy,
@@ -154,20 +154,17 @@ export default function FilterSidebar({
     })();
   }, []);
 
-  // Only show colors that are actually used by some product; brands can each
-  // have their own "Black", so identical ones share a single swatch.
-  const colorsToShow = mergeSameColors(
+  // Only show colors that are actually used by some product, grouped into
+  // basic families so "Phantom Black" and "Midnight" share one "Black" row.
+  const colorsToShow = groupColorsByFamily(
     colors.filter((c) => filterOptions.colors.includes(c.id)),
   );
 
-  const isColorSelected = (ids: string[]) =>
-    ids.some((id) => selectedColorIds.includes(id));
-
-  const toggleColor = (ids: string[]) => {
-    const next = isColorSelected(ids)
-      ? selectedColorIds.filter((v) => !ids.includes(v))
-      : [...selectedColorIds, ...ids];
-    onFilterChange({ colorIds: next });
+  const toggleColor = (family: ColorFamily) => {
+    const next = selectedColors.includes(family)
+      ? selectedColors.filter((v) => v !== family)
+      : [...selectedColors, family];
+    onFilterChange({ colors: next });
   };
 
   // -- Section Visibility Logic --
@@ -230,7 +227,7 @@ export default function FilterSidebar({
       maxPrice: '',
       categoryIds: [],
       brandIds: [],
-      colorIds: [],
+      colors: [],
       sortBy: SORT_OPTIONS.NEWEST,
       inStock: false,
     });
@@ -551,11 +548,11 @@ export default function FilterSidebar({
             >
               {colorsToShow.map((color) => (
                 <FilterItem
-                  key={color.key}
-                  label={color.name}
+                  key={color.family}
+                  label={t(color.labelKey)}
                   swatchHex={color.hex}
-                  isSelected={isColorSelected(color.ids)}
-                  onClick={() => toggleColor(color.ids)}
+                  isSelected={selectedColors.includes(color.family)}
+                  onClick={() => toggleColor(color.family)}
                 />
               ))}
             </Box>

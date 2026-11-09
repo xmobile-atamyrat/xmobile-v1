@@ -18,7 +18,7 @@ const SlideTransition = React.forwardRef(function Transition(
 const noFilters: FilterState = {
   categoryIds: [],
   brandIds: [],
-  colorIds: [],
+  colors: [],
   minPrice: '',
   maxPrice: '',
   sortBy: '',
@@ -89,7 +89,7 @@ export default function FilterSheet({
             categories={categories}
             selectedCategoryIds={localFilters.categoryIds}
             selectedBrandIds={localFilters.brandIds}
-            selectedColorIds={localFilters.colorIds}
+            selectedColors={localFilters.colors}
             minPrice={localFilters.minPrice}
             maxPrice={localFilters.maxPrice}
             sortBy={localFilters.sortBy}

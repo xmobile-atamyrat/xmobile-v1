@@ -1,9 +1,10 @@
+import { colorFamilyOf } from '@/pages/lib/colorFamilies';
 import { SORT_OPTIONS } from '@/pages/lib/constants';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { ExtendedCategory, ExtendedProduct } from '@/pages/lib/types';
 
 export interface FavoriteProduct extends ExtendedProduct {
-  colors: { id: string }[];
+  colors: { id: string; name: string; hex: string }[];
 }
 
 type Compare = (a: FavoriteProduct, b: FavoriteProduct) => number;
@@ -71,8 +72,10 @@ export function filterAndSortFavorites(
       (categoryIds.size === 0 || categoryIds.has(categoryId)) &&
       (filters.brandIds.length === 0 ||
         (brandId != null && filters.brandIds.includes(brandId))) &&
-      (filters.colorIds.length === 0 ||
-        colors.some(({ id }) => filters.colorIds.includes(id))) &&
+      (filters.colors.length === 0 ||
+        colors.some((color) =>
+          filters.colors.includes(colorFamilyOf(color)),
+        )) &&
       (!filters.inStock || outOfStockAt == null) &&
       (min == null || (cachedPrice != null && cachedPrice >= min)) &&
       (max == null || (cachedPrice != null && cachedPrice <= max)),

@@ -215,7 +215,7 @@ export default function ProductGridContent({
     let cancelled = false;
     fetchCategoryFacets({
       brandIds: filters.brandIds,
-      colorIds: filters.colorIds,
+      colors: filters.colors,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       searchKeyword,
@@ -234,7 +234,7 @@ export default function ProductGridContent({
     canShowCategoryPills,
     searchKeyword,
     filters.brandIds,
-    filters.colorIds,
+    filters.colors,
     filters.minPrice,
     filters.maxPrice,
     filters.inStock,
@@ -354,7 +354,7 @@ export default function ProductGridContent({
           page: requestedPage,
           categoryIds: effectiveCategoryIds,
           brandIds: filters.brandIds,
-          colorIds: filters.colorIds,
+          colors: filters.colors,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
@@ -428,7 +428,7 @@ export default function ProductGridContent({
         page: page + 1,
         categoryIds: effectiveCategoryIds,
         brandIds: filters.brandIds,
-        colorIds: filters.colorIds,
+        colors: filters.colors,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
@@ -573,7 +573,7 @@ export default function ProductGridContent({
                 categories={allCategories}
                 selectedCategoryIds={filters.categoryIds}
                 selectedBrandIds={filters.brandIds}
-                selectedColorIds={filters.colorIds}
+                selectedColors={filters.colors}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
                 inStock={filters.inStock}

@@ -52,7 +52,7 @@ function renderSidebar(
       categories: [],
       selectedCategoryIds: [],
       selectedBrandIds: [],
-      selectedColorIds: [],
+      selectedColors: [],
       minPrice: '',
       maxPrice: '',
       onFilterChange,
@@ -77,18 +77,18 @@ describe('FilterSidebar — color filter section', () => {
     });
   });
 
-  it('clicking the color swatch calls onFilterChange with the toggled colorId', async () => {
+  it('clicking the color swatch calls onFilterChange with its family', async () => {
     const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: [] }, onFilterChange);
+    renderSidebar({ selectedColors: [] }, onFilterChange);
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: ['c1'] });
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: ['red'] });
   });
 
-  it('the checkbox is checked when colorId is in selectedColorIds', async () => {
-    renderSidebar({ selectedColorIds: ['c1'] });
+  it('the checkbox is checked when its family is selected', async () => {
+    renderSidebar({ selectedColors: ['red'] });
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
 
@@ -103,17 +103,17 @@ describe('FilterSidebar — color filter section', () => {
     expect(screen.getByLabelText('Red')).toHaveAttribute('type', 'checkbox');
   });
 
-  it('clicking a checked color calls onFilterChange with the colorId removed', async () => {
+  it('clicking a checked color calls onFilterChange with its family removed', async () => {
     const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: ['c1'] }, onFilterChange);
+    renderSidebar({ selectedColors: ['red'] }, onFilterChange);
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: [] });
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: [] });
   });
 
-  it('shows one swatch for identical colors from different brands and toggles all of them', async () => {
+  it('shows one swatch for identical colors from different brands', async () => {
     const apis = await getApis();
     apis.fetchColors.mockResolvedValue([
       RED_COLOR,
@@ -121,13 +121,30 @@ describe('FilterSidebar — color filter section', () => {
     ]);
     apis.fetchProductFilterOptions.mockResolvedValue({ colors: ['c1', 'c2'] });
     const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: [] }, onFilterChange);
+    renderSidebar({ selectedColors: [] }, onFilterChange);
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
     expect(screen.getAllByTitle('Red')).toHaveLength(1);
 
     fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: ['c1', 'c2'] });
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: ['red'] });
+  });
+
+  it('groups differently named shades into one family row', async () => {
+    const apis = await getApis();
+    apis.fetchColors.mockResolvedValue([
+      { ...RED_COLOR, id: 'k1', name: 'Phantom Black', hex: '#1a1a1a' },
+      { ...RED_COLOR, id: 'k2', name: 'Midnight', hex: '#000002' },
+    ]);
+    apis.fetchProductFilterOptions.mockResolvedValue({ colors: ['k1', 'k2'] });
+    const onFilterChange = vi.fn();
+    renderSidebar({ selectedColors: [] }, onFilterChange);
+
+    await waitFor(() => expect(screen.getByTitle('Black')).toBeInTheDocument());
+    expect(screen.queryByText('Phantom Black')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Black'));
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: ['black'] });
   });
 
   it('hides the color section when filterOptions.colors is empty', async () => {

@@ -43,6 +43,7 @@ import {
   SORT_OPTIONS,
   localeOptions,
 } from '@/pages/lib/constants';
+import { colorFamilyOf, isColorFamily } from '@/pages/lib/colorFamilies';
 import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import {
@@ -441,6 +442,7 @@ async function handleGetProduct(query: {
   categoryIds?: string | string[];
   brandIds?: string | string[];
   colorIds?: string | string[];
+  colors?: string | string[];
   productId?: string;
   productSlug?: string;
   page?: string;
@@ -460,6 +462,7 @@ async function handleGetProduct(query: {
     categoryIds,
     brandIds,
     colorIds,
+    colors,
     page,
     minPrice,
     maxPrice,
@@ -566,8 +569,23 @@ async function handleGetProduct(query: {
     };
   }
 
-  // Color filter (OR within the dimension)
-  const colorFilter = toArray(colorIds);
+  // Color filter (OR within the dimension). The storefront sends family names
+  // (`colors=black`) so its URLs stay short; they resolve to every colour row
+  // in that family here.
+  const families = toArray(colors)?.filter(isColorFamily);
+  const familyColorIds = families?.length
+    ? (
+        await dbClient.color.findMany({
+          select: { id: true, name: true, hex: true },
+        })
+      )
+        .filter((color) => families.includes(colorFamilyOf(color)))
+        .map((color) => color.id)
+    : undefined;
+  const colorFilter =
+    familyColorIds || colorIds
+      ? [...(familyColorIds ?? []), ...(toArray(colorIds) ?? [])]
+      : undefined;
   if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
 
   if (searchKeyword) {

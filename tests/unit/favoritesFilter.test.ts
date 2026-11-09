@@ -22,7 +22,7 @@ const product = (overrides: Partial<FavoriteProduct>) =>
 const noFilters: FilterState = {
   categoryIds: [],
   brandIds: [],
-  colorIds: [],
+  colors: [],
   minPrice: '',
   maxPrice: '',
   sortBy: SORT_OPTIONS.NEWEST,
@@ -69,14 +69,17 @@ describe('filterAndSortFavorites', () => {
       expect(apply(products, { brandIds: ['b1'] })).toEqual(['apple']);
     });
 
-    it('keeps a product carrying any of the chosen colors', () => {
+    it('keeps a product carrying any shade of the chosen color families', () => {
+      const black = { id: 'k', name: 'Phantom Black', hex: '#1a1a1a' };
+      const red = { id: 'r', name: 'Ruby Red', hex: '#b81d24' };
+      const blue = { id: 'b', name: 'Sapphire Blue', hex: '#0f52ba' };
       const products = [
-        product({ id: 'both', colors: [{ id: 'black' }, { id: 'red' }] }),
-        product({ id: 'blue', colors: [{ id: 'blue' }] }),
+        product({ id: 'both', colors: [black, red] }),
+        product({ id: 'blue', colors: [blue] }),
         product({ id: 'none', colors: [] }),
       ];
 
-      expect(apply(products, { colorIds: ['red', 'green'] })).toEqual(['both']);
+      expect(apply(products, { colors: ['red', 'green'] })).toEqual(['both']);
     });
 
     it('reaches subcategories of a chosen category at any depth', () => {

@@ -1,3 +1,4 @@
+import { ColorFamily, isColorFamily } from '@/pages/lib/colorFamilies';
 import { SORT_OPTIONS } from '@/pages/lib/constants';
 import { NextRouter, useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 export interface FilterState {
   categoryIds: string[];
   brandIds: string[];
-  colorIds: string[];
+  colors: ColorFamily[];
   minPrice: string;
   maxPrice: string;
   sortBy: string;
@@ -33,20 +34,13 @@ function filtersFromQuery(
   query: NextRouter['query'],
   initialSortBy: string,
 ): FilterState {
-  const {
-    categoryIds,
-    brandIds,
-    colorIds,
-    minPrice,
-    maxPrice,
-    sortBy,
-    inStock,
-  } = query;
+  const { categoryIds, brandIds, colors, minPrice, maxPrice, sortBy, inStock } =
+    query;
 
   return {
     categoryIds: normalizeQueryStringArray(categoryIds),
     brandIds: normalizeQueryStringArray(brandIds),
-    colorIds: normalizeQueryStringArray(colorIds),
+    colors: normalizeQueryStringArray(colors).filter(isColorFamily),
     minPrice: (minPrice as string) || '',
     maxPrice: (maxPrice as string) || '',
     sortBy: (sortBy as string) || initialSortBy,
@@ -61,7 +55,7 @@ function sameFilters(a: FilterState, b: FilterState): boolean {
   return (
     sameList(a.categoryIds, b.categoryIds) &&
     sameList(a.brandIds, b.brandIds) &&
-    sameList(a.colorIds, b.colorIds) &&
+    sameList(a.colors, b.colors) &&
     a.minPrice === b.minPrice &&
     a.maxPrice === b.maxPrice &&
     a.sortBy === b.sortBy &&
@@ -88,6 +82,7 @@ export function useProductFilters(
         'categoryId',
         'categoryIds',
         'brandIds',
+        'colors',
         'colorIds',
         'minPrice',
         'maxPrice',
@@ -115,8 +110,8 @@ export function useProductFilters(
         query.brandIds = newFilters.brandIds;
       }
 
-      if (newFilters.colorIds.length > 0) {
-        query.colorIds = newFilters.colorIds;
+      if (newFilters.colors.length > 0) {
+        query.colors = newFilters.colors;
       }
 
       if (newFilters.minPrice) query.minPrice = newFilters.minPrice;

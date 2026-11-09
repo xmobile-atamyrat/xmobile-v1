@@ -53,11 +53,11 @@ test.describe('Color filter', () => {
 
     // FilterSidebar renders after async fetches — wait for color swatch to appear
     await expect(
-      page.locator(`[title="${E2E_VARIANT_PRODUCT.colorName}"]`).first(),
+      page.locator(`[title="${E2E_VARIANT_PRODUCT.colorFamilyLabel}"]`).first(),
     ).toBeVisible({ timeout: 60_000 });
   });
 
-  test('clicking a color filter checkbox updates the URL with colorIds', async ({
+  test('clicking a color filter checkbox puts its family in the URL', async ({
     page,
   }) => {
     await page.goto(`/category/${E2E_CATALOG.subSlug}`, {
@@ -65,14 +65,11 @@ test.describe('Color filter', () => {
     });
 
     const swatch = page
-      .locator(`[title="${E2E_VARIANT_PRODUCT.colorName}"]`)
+      .locator(`[title="${E2E_VARIANT_PRODUCT.colorFamilyLabel}"]`)
       .first();
     await swatch.waitFor({ state: 'visible', timeout: 60_000 });
     await swatch.click();
 
-    await expect(page).toHaveURL(
-      new RegExp(`colorIds=${E2E_VARIANT_PRODUCT.colorUuid}`),
-      { timeout: 10_000 },
-    );
+    await expect(page).toHaveURL(/colors=red/, { timeout: 10_000 });
   });
 });
