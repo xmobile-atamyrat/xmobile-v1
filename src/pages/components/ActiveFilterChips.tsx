@@ -1,14 +1,13 @@
-import { fetchBrands, fetchColors } from '@/pages/lib/apis';
+import { fetchBrands } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { mergeSameColors } from '@/pages/lib/colorGroups';
-import { FILTER_MAX_PRICE } from '@/pages/lib/constants';
+import { COLOR_FAMILY_LABEL_KEY } from '@/pages/lib/colorFamilies';
+import { priceRangeLabel } from '@/pages/lib/priceFacet';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { BrandProps, ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName } from '@/styles/theme';
 import { Box, Button, Typography } from '@mui/material';
-import { Color } from '@prisma/client';
 import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
@@ -30,17 +29,13 @@ export default function ActiveFilterChips({
   const t = useTranslations();
   const router = useRouter();
   const { categories } = useCategoryContext();
-  // Reference lists, only for labelling the chips.
+  // Reference list, only for labelling the brand chips.
   const [brands, setBrands] = useState<BrandProps[]>([]);
-  const [colors, setColors] = useState<Color[]>([]);
 
   useEffect(() => {
     fetchBrands()
       .then(setBrands)
       .catch(() => setBrands([]));
-    fetchColors()
-      .then(setColors)
-      .catch(() => setColors([]));
   }, []);
 
   const categoryById = new Map<string, ExtendedCategory>();
@@ -82,28 +77,22 @@ export default function ActiveFilterChips({
     });
   });
 
-  // One swatch in the sidebar can stand for the same color in several brands,
-  // so its ids share one chip and removing the chip clears all of them.
-  const selectedColors = filters.colorIds
-    .map((id) => colors.find((c) => c.id === id))
-    .filter((c): c is Color => c != null);
-  mergeSameColors(selectedColors).forEach((swatch) => {
+  filters.colors.forEach((family) => {
     chips.push({
-      key: `color-${swatch.key}`,
-      label: swatch.name,
+      key: `color-${family}`,
+      label: t(COLOR_FAMILY_LABEL_KEY[family]),
       onRemove: () =>
-        onChange({
-          colorIds: filters.colorIds.filter((cid) => !swatch.ids.includes(cid)),
-        }),
+        onChange({ colors: filters.colors.filter((f) => f !== family) }),
     });
   });
 
   if (filters.minPrice || filters.maxPrice) {
     chips.push({
       key: 'price',
-      label: `${filters.minPrice || 0} – ${
-        filters.maxPrice || FILTER_MAX_PRICE
-      } TMT`,
+      label: `${priceRangeLabel(
+        filters.minPrice ? Number(filters.minPrice) : null,
+        filters.maxPrice ? Number(filters.maxPrice) : null,
+      )} TMT`,
       onRemove: () => onChange({ minPrice: '', maxPrice: '' }),
     });
   }

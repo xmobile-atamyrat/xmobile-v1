@@ -1,6 +1,7 @@
 import { SORT_OPTIONS } from '@/pages/lib/constants';
 import {
   FavoriteProduct,
+  favoriteFilterOptions,
   filterAndSortFavorites,
 } from '@/pages/lib/favoritesFilter';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
@@ -22,7 +23,7 @@ const product = (overrides: Partial<FavoriteProduct>) =>
 const noFilters: FilterState = {
   categoryIds: [],
   brandIds: [],
-  colorIds: [],
+  colors: [],
   minPrice: '',
   maxPrice: '',
   sortBy: SORT_OPTIONS.NEWEST,
@@ -69,14 +70,17 @@ describe('filterAndSortFavorites', () => {
       expect(apply(products, { brandIds: ['b1'] })).toEqual(['apple']);
     });
 
-    it('keeps a product carrying any of the chosen colors', () => {
+    it('keeps a product carrying any shade of the chosen color families', () => {
+      const black = { id: 'k', name: 'Phantom Black', hex: '#1a1a1a' };
+      const red = { id: 'r', name: 'Ruby Red', hex: '#b81d24' };
+      const blue = { id: 'b', name: 'Sapphire Blue', hex: '#0f52ba' };
       const products = [
-        product({ id: 'both', colors: [{ id: 'black' }, { id: 'red' }] }),
-        product({ id: 'blue', colors: [{ id: 'blue' }] }),
+        product({ id: 'both', colors: [black, red] }),
+        product({ id: 'blue', colors: [blue] }),
         product({ id: 'none', colors: [] }),
       ];
 
-      expect(apply(products, { colorIds: ['red', 'green'] })).toEqual(['both']);
+      expect(apply(products, { colors: ['red', 'green'] })).toEqual(['both']);
     });
 
     it('reaches subcategories of a chosen category at any depth', () => {
@@ -220,5 +224,85 @@ describe('filterAndSortFavorites', () => {
 
       expect(products.map(({ id }) => id)).toEqual(['mid', 'cheap', 'dear']);
     });
+  });
+});
+
+describe('favoriteFilterOptions', () => {
+  const black = { id: 'k', name: 'Black', hex: '#000000' };
+  const blue = { id: 'b', name: 'Blue', hex: '#0000ff' };
+  const products = [
+    product({ id: 'iphone', brandId: 'apple', colors: [black] }),
+    product({ id: 'galaxy', brandId: 'samsung', colors: [blue] }),
+    product({ id: 'cable', brandId: null, colors: [] }),
+  ];
+  const options = (filters: Partial<FilterState>) =>
+    favoriteFilterOptions(products, { ...noFilters, ...filters }, [], 'en');
+
+  it('counts the brands and colours present in the list', () => {
+    expect(options({})).toMatchObject({
+      brandCounts: { apple: 1, samsung: 1 },
+      colorCounts: { black: 1, blue: 1 },
+    });
+  });
+
+  it('narrows colours by the chosen brand but keeps every brand on offer', () => {
+    expect(options({ brandIds: ['apple'] })).toMatchObject({
+      brandCounts: { apple: 1, samsung: 1 },
+      colorCounts: { black: 1 },
+    });
+  });
+
+  it('narrows brands by the chosen colour', () => {
+    expect(options({ colors: ['blue'] }).brandCounts).toEqual({ samsung: 1 });
+  });
+
+  it('counts a product once per family, however many shades it has', () => {
+    const twoBlacks = product({
+      id: 'two-blacks',
+      colors: [
+        { id: 'k1', name: 'Phantom Black', hex: '#1a1a1a' },
+        { id: 'k2', name: 'Midnight Black', hex: '#000002' },
+      ],
+    });
+    expect(
+      favoriteFilterOptions([twoBlacks], noFilters, [], 'en').colorCounts,
+    ).toEqual({ black: 1 });
+  });
+
+  it('counts what the whole filter set shows', () => {
+    expect(options({ brandIds: ['apple'] }).total).toBe(1);
+  });
+
+  it('says what dropping each active filter would bring back when empty', () => {
+    const result = options({ brandIds: ['apple'], colors: ['blue'] });
+
+    expect(result.total).toBe(0);
+    expect(result.relaxations).toEqual({ brands: 1, colors: 1 });
+  });
+
+  it('never suggests dropping the price, the customer’s budget', () => {
+    const result = options({ brandIds: ['apple'], minPrice: '99999' });
+
+    expect(result.total).toBe(0);
+    expect(result.relaxations).toEqual({ brands: 0 });
+  });
+
+  it('skips that work while something matches', () => {
+    expect(options({ brandIds: ['apple'] }).relaxations).toEqual({});
+  });
+
+  it('spans the prices of the list, ignoring its own price filter', () => {
+    const priced = [
+      product({ id: 'cheap', cachedPrice: 300 }),
+      product({ id: 'dear', cachedPrice: 9000 }),
+    ];
+    expect(
+      favoriteFilterOptions(
+        priced,
+        { ...noFilters, minPrice: '5000' },
+        [],
+        'en',
+      ).price,
+    ).toMatchObject({ min: 300, max: 9000 });
   });
 });

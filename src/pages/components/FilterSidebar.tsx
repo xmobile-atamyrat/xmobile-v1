@@ -1,13 +1,15 @@
+import { fetchBrands } from '@/pages/lib/apis';
 import {
-  fetchBrands,
-  fetchColors,
-  fetchProductFilterOptions,
-  ProductFilterOptions,
-} from '@/pages/lib/apis';
-import { mergeSameColors } from '@/pages/lib/colorGroups';
+  COLOR_FAMILIES,
+  COLOR_FAMILY_HEX,
+  COLOR_FAMILY_LABEL_KEY,
+  ColorFamily,
+} from '@/pages/lib/colorFamilies';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
+import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
+import { DISPLAY_PRICE_STEP } from '@/pages/lib/priceDisplay';
+import { formatTmt, priceRangeLabel } from '@/pages/lib/priceFacet';
 import { ExtendedCategory } from '@/pages/lib/types';
-import { Color } from '@prisma/client';
 import { parseName } from '@/pages/lib/utils';
 import { filterRailClasses } from '@/styles/classMaps/components/filterSidebar';
 import { fontClassName, hairline, ink, muted, navy, red } from '@/styles/theme';
@@ -32,7 +34,7 @@ interface FilterSidebarProps {
   categories: ExtendedCategory[];
   selectedCategoryIds: string[];
   selectedBrandIds: string[];
-  selectedColorIds?: string[];
+  selectedColors?: ColorFamily[];
   minPrice: string;
   maxPrice: string;
   sortBy?: string;
@@ -40,7 +42,7 @@ interface FilterSidebarProps {
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
-    colorIds?: string[];
+    colors?: ColorFamily[];
     minPrice?: string;
     maxPrice?: string;
     sortBy?: string;
@@ -49,13 +51,47 @@ interface FilterSidebarProps {
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
   /**
-   * Show the real Brand.productCount beside each brand (spec 1448).
-   * That column counts the whole catalogue, so it's only truthful on the
-   * unscoped listing — inside a category it would promise more hits than the
-   * filter returns. Category-scoped facet counts would need a new API.
+   * How many products each brand and colour family would show. Null while
+   * unknown: every brand shows without a count, and the colour section waits.
    */
-  showBrandCounts?: boolean;
+  options: FilterOptions | null;
 }
+
+// Brand and colour lists scroll past 300px. Reserving the scrollbar's gutter
+// whether or not it shows keeps counts on one edge across both sections.
+const scrollingListSx = {
+  maxHeight: '300px',
+  overflowY: 'auto',
+  scrollbarGutter: 'stable',
+} as const;
+
+// Lists longer than this collapse behind a "Show more" link.
+const COLLAPSED_ROWS = 7;
+
+const ShowMoreToggle = ({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) => {
+  const t = useTranslations();
+  return (
+    <Box mt={1} pl={1}>
+      <Typography
+        className={fontClassName.className}
+        fontWeight={700}
+        fontSize="13px"
+        lineHeight="20px"
+        color={navy}
+        sx={{ cursor: 'pointer', '&:hover': { color: red } }}
+        onClick={onToggle}
+      >
+        {collapsed ? t('showMore') : t('showLess')}
+      </Typography>
+    </Box>
+  );
+};
 
 const FilterSection = ({
   title,
@@ -121,7 +157,7 @@ export default function FilterSidebar({
   categories,
   selectedCategoryIds,
   selectedBrandIds,
-  selectedColorIds = [],
+  selectedColors = [],
   minPrice,
   maxPrice,
   sortBy,
@@ -129,7 +165,7 @@ export default function FilterSidebar({
   onFilterChange,
   hideSections = [],
   variant = 'sidebar',
-  showBrandCounts = false,
+  options,
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -140,34 +176,25 @@ export default function FilterSidebar({
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
   const [limitCategories, setLimitCategories] = useState(true);
+  const [limitColors, setLimitColors] = useState(true);
 
-  const [colors, setColors] = useState<Color[]>([]);
-  const [filterOptions, setFilterOptions] = useState<ProductFilterOptions>({
-    colors: [],
-  });
   const [colorsOpen, setColorsOpen] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setColors(await fetchColors());
-      setFilterOptions(await fetchProductFilterOptions());
-    })();
-  }, []);
-
-  // Only show colors that are actually used by some product; brands can each
-  // have their own "Black", so identical ones share a single swatch.
-  const colorsToShow = mergeSameColors(
-    colors.filter((c) => filterOptions.colors.includes(c.id)),
+  // Only families some matching product comes in, most products first (ties
+  // keep the fixed family order: sort is stable). A ticked one stays even
+  // when other filters rule it out, so it can still be unticked.
+  const colorsToShow = COLOR_FAMILIES.filter(
+    (family) =>
+      options?.colorCounts[family] != null || selectedColors.includes(family),
+  ).sort(
+    (a, b) => (options?.colorCounts[b] ?? 0) - (options?.colorCounts[a] ?? 0),
   );
 
-  const isColorSelected = (ids: string[]) =>
-    ids.some((id) => selectedColorIds.includes(id));
-
-  const toggleColor = (ids: string[]) => {
-    const next = isColorSelected(ids)
-      ? selectedColorIds.filter((v) => !ids.includes(v))
-      : [...selectedColorIds, ...ids];
-    onFilterChange({ colorIds: next });
+  const toggleColor = (family: ColorFamily) => {
+    const next = selectedColors.includes(family)
+      ? selectedColors.filter((v) => v !== family)
+      : [...selectedColors, family];
+    onFilterChange({ colors: next });
   };
 
   // -- Section Visibility Logic --
@@ -198,30 +225,52 @@ export default function FilterSidebar({
     })();
   }, []);
 
+  // The slider spans what the listing actually costs, not 0-100 000.
+  const priceRange = options?.price ?? null;
+  const sliderMin = priceRange?.min ?? 0;
+  const sliderMax = priceRange?.max ?? FILTER_MAX_PRICE;
+
   const [localPriceRange, setLocalPriceRange] = useState<number[]>([
-    0,
-    FILTER_MAX_PRICE,
+    sliderMin,
+    sliderMax,
   ]);
 
   useEffect(() => {
-    const min = minPrice ? parseFloat(minPrice) : 0;
-    const max = maxPrice ? parseFloat(maxPrice) : FILTER_MAX_PRICE;
-    setLocalPriceRange([min, max]);
-  }, [minPrice, maxPrice]);
+    const clamp = (value: number) =>
+      Math.min(Math.max(value, sliderMin), sliderMax);
+    setLocalPriceRange([
+      clamp(minPrice ? parseFloat(minPrice) : sliderMin),
+      clamp(maxPrice ? parseFloat(maxPrice) : sliderMax),
+    ]);
+  }, [minPrice, maxPrice, sliderMin, sliderMax]);
 
+  // A thumb dragged back to its end means "no bound", not that exact price.
   const handlePriceCommit = (
     _: Event | React.SyntheticEvent | Event,
     value: number | number[],
   ) => {
     const [min, max] = value as number[];
-    onFilterChange({ minPrice: min.toString(), maxPrice: max.toString() });
+    onFilterChange({
+      minPrice: min <= sliderMin ? '' : min.toString(),
+      maxPrice: max >= sliderMax ? '' : max.toString(),
+    });
   };
 
-  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ minPrice: e.target.value });
+  // Typed prices apply on Enter or leaving the field, not per keystroke:
+  // each keystroke used to refetch the whole list.
+  const [minDraft, setMinDraft] = useState(minPrice);
+  const [maxDraft, setMaxDraft] = useState(maxPrice);
+  useEffect(() => setMinDraft(minPrice), [minPrice]);
+  useEffect(() => setMaxDraft(maxPrice), [maxPrice]);
+
+  const digitsOnly = (value: string) => value.replace(/\D/g, '');
+  const commitTypedPrice = () => {
+    if (minDraft !== minPrice || maxDraft !== maxPrice) {
+      onFilterChange({ minPrice: minDraft, maxPrice: maxDraft });
+    }
   };
-  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ maxPrice: e.target.value });
+  const commitOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commitTypedPrice();
   };
 
   const handleClearFilters = () => {
@@ -230,7 +279,7 @@ export default function FilterSidebar({
       maxPrice: '',
       categoryIds: [],
       brandIds: [],
-      colorIds: [],
+      colors: [],
       sortBy: SORT_OPTIONS.NEWEST,
       inStock: false,
     });
@@ -241,7 +290,7 @@ export default function FilterSidebar({
     (category) => !category.predecessorId,
   );
   const categoriesToShow = limitCategories
-    ? topLevelCategories.slice(0, 7)
+    ? topLevelCategories.slice(0, COLLAPSED_ROWS)
     : topLevelCategories;
 
   const handleCategoryClick = (categoryId: string) => {
@@ -299,7 +348,25 @@ export default function FilterSidebar({
   );
 
   // -- Brand Logic --
-  const brandsToShow = limitBrands ? brands.slice(0, 7) : brands;
+  // Most products first, then by name, once the counts are known.
+  const availableBrands =
+    options == null
+      ? brands
+      : brands
+          .filter(
+            (brand) =>
+              options.brandCounts[brand.id] != null ||
+              selectedBrandIds.includes(brand.id),
+          )
+          .sort(
+            (a, b) =>
+              (options.brandCounts[b.id] ?? 0) -
+                (options.brandCounts[a.id] ?? 0) ||
+              a.name.localeCompare(b.name, locale),
+          );
+  const brandsToShow = limitBrands
+    ? availableBrands.slice(0, COLLAPSED_ROWS)
+    : availableBrands;
 
   const handleBrandToggle = (brandId: string) => {
     const newBrands = selectedBrandIds.includes(brandId)
@@ -313,12 +380,14 @@ export default function FilterSidebar({
     isSelected,
     onClick,
     count,
+    swatchHex,
   }: {
     label: string;
     isSelected: boolean;
     onClick: () => void;
-    /** Real Brand.productCount — omitted where the schema has no count. */
+    /** Products the option would show; omitted while unknown. */
     count?: number;
+    swatchHex?: string;
   }) => (
     <Box display="flex" flexDirection="column">
       <FormControlLabel
@@ -332,6 +401,9 @@ export default function FilterSidebar({
           py: 0.5,
           alignItems: 'center',
           width: '100%',
+          // MUI sizes the label to its text, which left every row's count at
+          // a different x. Filling the row pins counts to one right edge.
+          '& .MuiFormControlLabel-label': { flex: 1, minWidth: 0 },
         }}
         control={<CustomCheckbox checked={isSelected} onChange={onClick} />}
         label={
@@ -339,19 +411,40 @@ export default function FilterSidebar({
             display="flex"
             justifyContent="space-between"
             width="100%"
-            minWidth={180}
             alignItems="center"
           >
+            {swatchHex != null && (
+              <Box
+                title={label}
+                sx={{
+                  width: 18,
+                  height: 18,
+                  flexShrink: 0,
+                  borderRadius: '50%',
+                  border: isSelected
+                    ? `2px solid ${navy}`
+                    : '1px solid #D6D5DE',
+                  backgroundColor: swatchHex,
+                  ml: 1,
+                }}
+              />
+            )}
             <Typography
               className={fontClassName.className}
               fontSize="14px"
               fontWeight={isSelected ? 700 : 400}
               lineHeight="22px"
               color={isSelected ? ink : '#4A4959'}
-              sx={{ ml: 1 }}
+              noWrap
+              // A swatch already carries the name as its tooltip.
+              title={swatchHex == null ? label : undefined}
+              sx={{ ml: 1, flex: 1, minWidth: 0 }}
             >
               {label}
             </Typography>
+            {/* Flex drops this space visually; it keeps the accessible name
+                "Apple 7" rather than "Apple7". */}
+            {count != null && ' '}
             {count != null && (
               <Typography
                 component="span"
@@ -443,25 +536,11 @@ export default function FilterSidebar({
                 />
               ))}
             </Box>
-            {topLevelCategories.length > 7 && (
-              <Box mt={1} pl={1}>
-                <Typography
-                  className={fontClassName.className}
-                  fontWeight={700}
-                  fontSize="13px"
-                  lineHeight="20px"
-                  color={navy}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: red,
-                    },
-                  }}
-                  onClick={() => setLimitCategories(!limitCategories)}
-                >
-                  {limitCategories ? t('showMore') : t('showLess')}
-                </Typography>
-              </Box>
+            {topLevelCategories.length > COLLAPSED_ROWS && (
+              <ShowMoreToggle
+                collapsed={limitCategories}
+                onToggle={() => setLimitCategories(!limitCategories)}
+              />
             )}
           </FilterSection>
         )}
@@ -472,12 +551,8 @@ export default function FilterSidebar({
           onToggle={() => setBrandsOpen(!brandsOpen)}
           variant={variant}
         >
-          <Box
-            display="flex"
-            flexDirection="column"
-            sx={{ maxHeight: '300px', overflowY: 'auto' }}
-          >
-            {brands.length === 0 && (
+          <Box display="flex" flexDirection="column" sx={scrollingListSx}>
+            {availableBrands.length === 0 && (
               <Typography
                 className={fontClassName.className}
                 fontSize="14px"
@@ -493,28 +568,14 @@ export default function FilterSidebar({
                 label={brand.name}
                 isSelected={selectedBrandIds.includes(brand.id)}
                 onClick={() => handleBrandToggle(brand.id)}
-                count={showBrandCounts ? brand.productCount : undefined}
+                count={options ? options.brandCounts[brand.id] ?? 0 : undefined}
               />
             ))}
-            {brands.length > 7 && (
-              <Box mt={1} pl={1}>
-                <Typography
-                  className={fontClassName.className}
-                  fontWeight={700}
-                  fontSize="13px"
-                  lineHeight="20px"
-                  color={navy}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: red,
-                    },
-                  }}
-                  onClick={() => setLimitBrands(!limitBrands)}
-                >
-                  {limitBrands ? t('showMore') : t('showLess')}
-                </Typography>
-              </Box>
+            {availableBrands.length > COLLAPSED_ROWS && (
+              <ShowMoreToggle
+                collapsed={limitBrands}
+                onToggle={() => setLimitBrands(!limitBrands)}
+              />
             )}
           </Box>
         </FilterSection>
@@ -526,34 +587,26 @@ export default function FilterSidebar({
             onToggle={() => setColorsOpen(!colorsOpen)}
             variant={variant}
           >
-            <Box
-              display="flex"
-              flexDirection="column"
-              sx={{ maxHeight: '300px', overflowY: 'auto' }}
-            >
-              {colorsToShow.map((color) => (
-                <Box key={color.key} display="flex" alignItems="center">
-                  <CustomCheckbox
-                    checked={isColorSelected(color.ids)}
-                    onChange={() => toggleColor(color.ids)}
-                  />
-                  <Box
-                    title={color.name}
-                    onClick={() => toggleColor(color.ids)}
-                    sx={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: '50%',
-                      border: isColorSelected(color.ids)
-                        ? `2px solid ${navy}`
-                        : '1px solid #D6D5DE',
-                      backgroundColor: color.hex,
-                      mx: 1,
-                      cursor: 'pointer',
-                    }}
-                  />
-                </Box>
+            <Box display="flex" flexDirection="column" sx={scrollingListSx}>
+              {(limitColors
+                ? colorsToShow.slice(0, COLLAPSED_ROWS)
+                : colorsToShow
+              ).map((family) => (
+                <FilterItem
+                  key={family}
+                  label={t(COLOR_FAMILY_LABEL_KEY[family])}
+                  swatchHex={COLOR_FAMILY_HEX[family]}
+                  isSelected={selectedColors.includes(family)}
+                  onClick={() => toggleColor(family)}
+                  count={options?.colorCounts[family] ?? 0}
+                />
               ))}
+              {colorsToShow.length > COLLAPSED_ROWS && (
+                <ShowMoreToggle
+                  collapsed={limitColors}
+                  onToggle={() => setLimitColors(!limitColors)}
+                />
+              )}
             </Box>
           </FilterSection>
         )}
@@ -581,13 +634,40 @@ export default function FilterSidebar({
           onToggle={() => setPriceOpen(!priceOpen)}
           variant={variant}
         >
+          {priceRange != null && priceRange.buckets.length > 0 && (
+            <Box display="flex" flexDirection="column" mb={1}>
+              {priceRange.buckets.map((bucket) => {
+                const lower = bucket.min == null ? '' : String(bucket.min);
+                const upper = bucket.max == null ? '' : String(bucket.max);
+                const selected = minPrice === lower && maxPrice === upper;
+                return (
+                  <FilterItem
+                    key={`${lower}-${upper}`}
+                    label={`${priceRangeLabel(bucket.min, bucket.max)} TMT`}
+                    isSelected={selected}
+                    count={bucket.count}
+                    onClick={() =>
+                      onFilterChange(
+                        selected
+                          ? { minPrice: '', maxPrice: '' }
+                          : { minPrice: lower, maxPrice: upper },
+                      )
+                    }
+                  />
+                );
+              })}
+            </Box>
+          )}
           <Box px={1} pt={1}>
             <Box display="flex" gap={1.5} mb={2}>
               <TextField
                 size="small"
-                value={minPrice}
-                onChange={handleMinInputChange}
-                placeholder="0"
+                value={minDraft}
+                onChange={(e) => setMinDraft(digitsOnly(e.target.value))}
+                onBlur={commitTypedPrice}
+                onKeyDown={commitOnEnter}
+                inputProps={{ inputMode: 'numeric' }}
+                placeholder={String(sliderMin)}
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
@@ -630,9 +710,12 @@ export default function FilterSidebar({
               />
               <TextField
                 size="small"
-                value={maxPrice}
-                onChange={handleMaxInputChange}
-                placeholder={FILTER_MAX_PRICE.toString()}
+                value={maxDraft}
+                onChange={(e) => setMaxDraft(digitsOnly(e.target.value))}
+                onBlur={commitTypedPrice}
+                onKeyDown={commitOnEnter}
+                inputProps={{ inputMode: 'numeric' }}
+                placeholder={String(sliderMax)}
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
@@ -679,8 +762,11 @@ export default function FilterSidebar({
               onChange={(_, value) => setLocalPriceRange(value as number[])}
               onChangeCommitted={handlePriceCommit}
               valueLabelDisplay="auto"
-              min={0}
-              max={FILTER_MAX_PRICE}
+              valueLabelFormat={formatTmt}
+              min={sliderMin}
+              max={sliderMax}
+              step={DISPLAY_PRICE_STEP}
+              disabled={sliderMin >= sliderMax}
               sx={{
                 color: navy,
                 height: 4,

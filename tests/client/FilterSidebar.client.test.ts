@@ -1,21 +1,13 @@
 // @vitest-environment jsdom
 
 import FilterSidebar from '@/pages/components/FilterSidebar';
-import {
-  act,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('@/pages/lib/apis', () => ({
-  fetchColors: vi.fn(),
-  fetchProductFilterOptions: vi.fn(),
   fetchBrands: vi.fn(),
 }));
 
@@ -23,132 +15,406 @@ vi.mock('@/pages/components/SortDropdown', () => ({
   default: () => createElement('div', { 'data-testid': 'sort-dropdown' }),
 }));
 
-const RED_COLOR = {
-  id: 'c1',
-  name: 'Red',
-  hex: '#ff0000',
-  brandId: null as string | null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+const BRANDS = [
+  { id: 'apple', name: 'Apple', productCount: 3 },
+  { id: 'samsung', name: 'Samsung', productCount: 5 },
+  { id: 'xiaomi', name: 'Xiaomi', productCount: 2 },
+];
 
-async function getApis() {
-  const { fetchColors, fetchProductFilterOptions, fetchBrands } = await import(
-    '@/pages/lib/apis'
+async function mockBrands(brands: typeof BRANDS) {
+  const { fetchBrands } = await import('@/pages/lib/apis');
+  vi.mocked(fetchBrands).mockResolvedValue(
+    brands as Awaited<ReturnType<typeof fetchBrands>>,
   );
-  return {
-    fetchColors: vi.mocked(fetchColors),
-    fetchProductFilterOptions: vi.mocked(fetchProductFilterOptions),
-    fetchBrands: vi.mocked(fetchBrands),
-  };
 }
 
-function renderSidebar(
+// Settles the mount-time brand fetch: its re-render remounts the rail's rows,
+// which would leave a test holding a detached element.
+async function renderSidebar(
   overrides: Partial<Parameters<typeof FilterSidebar>[0]> = {},
   onFilterChange = vi.fn(),
 ) {
-  return renderWithProviders(
+  const view = renderWithProviders(
     createElement(FilterSidebar, {
       categories: [],
       selectedCategoryIds: [],
       selectedBrandIds: [],
-      selectedColorIds: [],
+      selectedColors: [],
       minPrice: '',
       maxPrice: '',
       onFilterChange,
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: { red: 4 },
+        brandCounts: {},
+        price: null,
+      },
       ...overrides,
     }),
   );
+  await act(async () => {});
+  return view;
 }
 
 describe('FilterSidebar — color filter section', () => {
-  beforeEach(async () => {
-    const apis = await getApis();
-    apis.fetchColors.mockResolvedValue([RED_COLOR]);
-    apis.fetchProductFilterOptions.mockResolvedValue({ colors: ['c1'] });
-    apis.fetchBrands.mockResolvedValue([]);
+  beforeEach(() => mockBrands([]));
+
+  it('shows a labelled swatch for each available colour family', async () => {
+    await renderSidebar();
+
+    expect(await screen.findByTitle('Red')).toBeInTheDocument();
+    expect(screen.getByText('Red')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Red/)).toHaveAttribute('type', 'checkbox');
   });
 
-  it('renders a checkbox for each color returned by fetchColors that is in filterOptions', async () => {
-    renderSidebar();
-    await waitFor(() => {
-      // The swatch has title={color.name}
-      expect(screen.getByTitle('Red')).toBeInTheDocument();
-    });
+  it('shows how many products each family would show', async () => {
+    await renderSidebar();
+
+    const row = (await screen.findByTitle('Red')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('4')).toBeInTheDocument();
   });
 
-  it('clicking the color swatch calls onFilterChange with the toggled colorId', async () => {
+  it('clicking the color swatch calls onFilterChange with its family', async () => {
     const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: [] }, onFilterChange);
+    await renderSidebar({ selectedColors: [] }, onFilterChange);
 
-    await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: ['c1'] });
+    fireEvent.click(await screen.findByTitle('Red'));
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: ['red'] });
   });
 
-  it('the checkbox is checked when colorId is in selectedColorIds', async () => {
-    renderSidebar({ selectedColorIds: ['c1'] });
+  it('the checkbox is checked when its family is selected', async () => {
+    await renderSidebar({ selectedColors: ['red'] });
 
-    await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
-
-    const row = screen.getByTitle('Red').parentElement as HTMLElement;
+    const row = (await screen.findByTitle('Red')).closest(
+      'label',
+    ) as HTMLElement;
     expect(within(row).getByRole('checkbox')).toBeChecked();
   });
 
-  it('clicking a checked color calls onFilterChange with the colorId removed', async () => {
+  it('clicking a checked color calls onFilterChange with its family removed', async () => {
     const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: ['c1'] }, onFilterChange);
+    await renderSidebar({ selectedColors: ['red'] }, onFilterChange);
 
-    await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: [] });
+    fireEvent.click(await screen.findByTitle('Red'));
+    expect(onFilterChange).toHaveBeenCalledWith({ colors: [] });
   });
 
-  it('shows one swatch for identical colors from different brands and toggles all of them', async () => {
-    const apis = await getApis();
-    apis.fetchColors.mockResolvedValue([
-      RED_COLOR,
-      { ...RED_COLOR, id: 'c2', brandId: 'b1' },
-    ]);
-    apis.fetchProductFilterOptions.mockResolvedValue({ colors: ['c1', 'c2'] });
-    const onFilterChange = vi.fn();
-    renderSidebar({ selectedColorIds: [] }, onFilterChange);
+  it('lists families with the most products first, ties in family order', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: { blue: 1, black: 1, green: 9 },
+        brandCounts: {},
+        price: null,
+      },
+    });
 
-    await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
-    expect(screen.getAllByTitle('Red')).toHaveLength(1);
-
-    fireEvent.click(screen.getByTitle('Red'));
-    expect(onFilterChange).toHaveBeenCalledWith({ colorIds: ['c1', 'c2'] });
+    await screen.findByTitle('Black');
+    const labels = screen
+      .getAllByRole('checkbox')
+      .map((box) => box.closest('label')?.textContent)
+      .filter((text) => text !== 'In stock only');
+    expect(labels).toEqual(['Green 9', 'Black 1', 'Blue 1']);
   });
 
-  it('hides the color section when filterOptions.colors is empty', async () => {
-    const apis = await getApis();
-    apis.fetchProductFilterOptions.mockResolvedValue({ colors: [] });
+  it('keeps a ticked family that other filters ruled out, so it can be unticked', async () => {
+    await renderSidebar({
+      selectedColors: ['green'],
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: { red: 4 },
+        brandCounts: {},
+        price: null,
+      },
+    });
 
-    renderSidebar();
+    expect(await screen.findByTitle('Green')).toBeInTheDocument();
+  });
 
-    // Wait for async effects to settle, then verify swatch is absent
-    await waitFor(() => {
-      expect(screen.queryByTitle('Red')).not.toBeInTheDocument();
+  it('collapses a long colour list behind "Show more"', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {
+          black: 1,
+          white: 1,
+          silver: 1,
+          gray: 1,
+          gold: 1,
+          brown: 1,
+          red: 1,
+          orange: 1,
+          blue: 1,
+        },
+        brandCounts: {},
+        price: null,
+      },
+    });
+
+    expect(await screen.findByTitle('Red')).toBeInTheDocument();
+    expect(screen.queryByTitle('Orange')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Show more'));
+
+    expect(await screen.findByTitle('Blue')).toBeInTheDocument();
+    expect(screen.getByText('Show less')).toBeInTheDocument();
+  });
+
+  it('hides the color section when no family matches', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price: null,
+      },
+    });
+
+    expect(screen.queryByText('Color')).not.toBeInTheDocument();
+  });
+
+  it('hides the color section until the options arrive', async () => {
+    await renderSidebar({ options: null });
+
+    expect(screen.queryByText('Color')).not.toBeInTheDocument();
+  });
+});
+
+describe('FilterSidebar — brand section', () => {
+  beforeEach(() => mockBrands(BRANDS));
+
+  it('lists only brands that match the listing', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 7, xiaomi: 2 },
+        price: null,
+      },
+    });
+
+    expect(await screen.findByText('Apple')).toBeInTheDocument();
+    expect(screen.getByText('Xiaomi')).toBeInTheDocument();
+    expect(screen.queryByText('Samsung')).not.toBeInTheDocument();
+  });
+
+  it('counts brands for this listing, not the whole catalogue', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 7 },
+        price: null,
+      },
+    });
+
+    const row = (await screen.findByText('Apple')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('7')).toBeInTheDocument();
+  });
+
+  it('lists brands with the most products first, ties by name', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 2, samsung: 9, xiaomi: 2 },
+        price: null,
+      },
+    });
+
+    await screen.findByText('Samsung');
+    const labels = screen
+      .getAllByRole('checkbox')
+      .map((box) => box.closest('label')?.textContent)
+      .filter((text) => text !== 'In stock only');
+    expect(labels).toEqual(['Samsung 9', 'Apple 2', 'Xiaomi 2']);
+  });
+
+  it('keeps a ticked brand that other filters ruled out', async () => {
+    await renderSidebar({
+      selectedBrandIds: ['samsung'],
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: { apple: 7 },
+        price: null,
+      },
+    });
+
+    const row = (await screen.findByText('Samsung')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('0')).toBeInTheDocument();
+    expect(screen.queryByText('Xiaomi')).not.toBeInTheDocument();
+  });
+
+  it('lists every brand while the options are unknown', async () => {
+    await renderSidebar({ options: null });
+
+    expect(await screen.findByText('Samsung')).toBeInTheDocument();
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+    expect(screen.getByText('Xiaomi')).toBeInTheDocument();
+    // Brand.productCount spans the whole catalogue; no count beats a wrong one.
+    expect(screen.queryByText('5')).not.toBeInTheDocument();
+  });
+});
+
+describe('FilterSidebar — price section', () => {
+  beforeEach(() => mockBrands([]));
+
+  const price = {
+    min: 1200,
+    max: 24000,
+    buckets: [
+      { min: null, max: 3000, count: 4 },
+      { min: 3000, max: 9000, count: 6 },
+      { min: 9000, max: null, count: 2 },
+    ],
+  };
+
+  it('offers quick price ranges with their counts', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price,
+      },
+    });
+
+    expect(screen.getByLabelText('0 – 3 000 TMT 4')).toBeInTheDocument();
+    expect(screen.getByLabelText('3 000 – 9 000 TMT 6')).toBeInTheDocument();
+    expect(screen.getByLabelText('9 000+ TMT 2')).toBeInTheDocument();
+  });
+
+  it('applies a quick range, and clears it when clicked again', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
+      onFilterChange,
+    );
+    fireEvent.click(screen.getByLabelText('3 000 – 9 000 TMT 6'));
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '3000',
+      maxPrice: '9000',
+    });
+
+    onFilterChange.mockClear();
+    await renderSidebar(
+      {
+        minPrice: '3000',
+        maxPrice: '9000',
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
+      onFilterChange,
+    );
+    const ticked = screen
+      .getAllByLabelText('3 000 – 9 000 TMT 6')
+      .find((box) => (box as HTMLInputElement).checked) as HTMLElement;
+    fireEvent.click(ticked);
+    expect(onFilterChange).toHaveBeenCalledWith({ minPrice: '', maxPrice: '' });
+  });
+
+  it('hints the real price range in the inputs', async () => {
+    await renderSidebar({
+      options: {
+        total: 1,
+        relaxations: {},
+        colorCounts: {},
+        brandCounts: {},
+        price,
+      },
+    });
+
+    expect(screen.getByPlaceholderText('1200')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('24000')).toBeInTheDocument();
+  });
+
+  it('applies a typed price on Enter, not on every keystroke', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
+      onFilterChange,
+    );
+    const min = screen.getByPlaceholderText('1200');
+
+    fireEvent.change(min, { target: { value: '25a00' } });
+    expect(onFilterChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(min, { key: 'Enter' });
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '2500',
+      maxPrice: '',
+    });
+  });
+
+  it('applies a typed price when the field loses focus', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      {
+        options: {
+          total: 1,
+          relaxations: {},
+          colorCounts: {},
+          brandCounts: {},
+          price,
+        },
+      },
+      onFilterChange,
+    );
+    const max = screen.getByPlaceholderText('24000');
+
+    fireEvent.change(max, { target: { value: '8000' } });
+    fireEvent.blur(max);
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '',
+      maxPrice: '8000',
     });
   });
 });
 
 describe('FilterSidebar — availability section', () => {
-  beforeEach(async () => {
-    const apis = await getApis();
-    apis.fetchColors.mockResolvedValue([]);
-    apis.fetchProductFilterOptions.mockResolvedValue({ colors: [] });
-    apis.fetchBrands.mockResolvedValue([]);
-  });
+  beforeEach(() => mockBrands([]));
 
   it('turns the in-stock filter on', async () => {
     const onFilterChange = vi.fn();
-    renderSidebar({ inStock: false }, onFilterChange);
-    // The mount-time fetches re-render the rail, which remounts its rows.
-    await act(async () => {});
+    await renderSidebar({ inStock: false }, onFilterChange);
 
     fireEvent.click(screen.getByLabelText('In stock only'));
 
@@ -156,7 +422,7 @@ describe('FilterSidebar — availability section', () => {
   });
 
   it('shows the in-stock filter as checked when active', async () => {
-    renderSidebar({ inStock: true });
+    await renderSidebar({ inStock: true });
 
     expect(await screen.findByLabelText('In stock only')).toBeChecked();
   });

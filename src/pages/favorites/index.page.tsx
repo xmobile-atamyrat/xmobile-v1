@@ -1,4 +1,5 @@
 import ActiveFilterChips from '@/pages/components/ActiveFilterChips';
+import FilterEmptyState from '@/pages/components/FilterEmptyState';
 import FilterSheet from '@/pages/components/FilterSheet';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
@@ -14,10 +15,14 @@ import {
 import { useFavoritesContext } from '@/pages/lib/FavoritesContext';
 import {
   FavoriteProduct,
+  favoriteFilterOptions,
   filterAndSortFavorites,
 } from '@/pages/lib/favoritesFilter';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
-import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import {
+  FilterState,
+  useProductFilters,
+} from '@/pages/lib/hooks/useProductFilters';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { generateHreflangLinks, getCanonicalUrl } from '@/pages/lib/seo';
 import { PageSeoData } from '@/pages/lib/types';
@@ -148,6 +153,13 @@ export default function FavoritesPage() {
   );
   const canFilter =
     !isLoading && user != null && status === 'ready' && favorites.length > 0;
+  const optionsFor = (chosen: FilterState) =>
+    favoriteFilterOptions(
+      favorites,
+      chosen,
+      categories,
+      router.locale ?? DEFAULT_LOCALE,
+    );
 
   const renderCards = () => {
     const visible = filterAndSortFavorites(
@@ -167,6 +179,10 @@ export default function FavoritesPage() {
           >
             {t('noProductsFound')}
           </Typography>
+          <FilterEmptyState
+            options={optionsFor(filters)}
+            onChange={setFilters}
+          />
         </Box>
       );
     }
@@ -220,11 +236,12 @@ export default function FavoritesPage() {
           categories={categories}
           selectedCategoryIds={filters.categoryIds}
           selectedBrandIds={filters.brandIds}
-          selectedColorIds={filters.colorIds}
+          selectedColors={filters.colors}
           minPrice={filters.minPrice}
           maxPrice={filters.maxPrice}
           inStock={filters.inStock}
           onFilterChange={setFilters}
+          options={optionsFor(filters)}
         />
         <Box className="flex flex-col w-full min-w-0">
           <Box className={productIndexPageClasses.resultsBar.web}>
@@ -267,6 +284,7 @@ export default function FavoritesPage() {
         onClose={() => setMobileFilterOpen(false)}
         filters={filters}
         onApply={setFilters}
+        computeOptions={optionsFor}
       />
       <Box className={ordersIndexClasses.container.mobile}>
         <Box

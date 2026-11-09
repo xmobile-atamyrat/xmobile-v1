@@ -147,6 +147,48 @@ describe('Product color filter (integration)', () => {
     expect(ids).not.toContain(productCId);
   });
 
+  it('GET /api/product?colors=<family> returns products in any shade of it', async () => {
+    const handler = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      // #aaaaff reads as blue, #ffaaaa as pink.
+      query: { colors: 'blue' },
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    expect(res._getStatusCode()).toBe(200);
+    const body = JSON.parse(res._getData() as string);
+    const ids = (body.data?.products ?? body.data ?? []).map(
+      (p: { id: string }) => p.id,
+    );
+    expect(ids).toContain(productAId);
+    expect(ids).not.toContain(productBId);
+    expect(ids).not.toContain(productCId);
+  });
+
+  it('GET /api/product?colors with two families returns both (OR logic)', async () => {
+    const handler = (await import('@/pages/api/product/index.page')).default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product',
+      query: { colors: ['blue', 'pink'] },
+    });
+    await handler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    const body = JSON.parse(res._getData() as string);
+    const ids = (body.data?.products ?? body.data ?? []).map(
+      (p: { id: string }) => p.id,
+    );
+    expect(ids).toContain(productAId);
+    expect(ids).toContain(productBId);
+    expect(ids).not.toContain(productCId);
+  });
+
   it('GET /api/product/filters returns color IDs in use', async () => {
     const filtersHandler = (await import('@/pages/api/product/filters.page'))
       .default;
@@ -163,6 +205,40 @@ describe('Product color filter (integration)', () => {
     expect(body.success).toBe(true);
     expect(body.data.colors).toContain(colorAId);
     expect(body.data.colors).toContain(colorBId);
+  });
+
+  it('GET /api/product/filters ignores the colour filter when listing colours', async () => {
+    const filtersHandler = (await import('@/pages/api/product/filters.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product/filters',
+      query: { colors: 'blue' },
+    });
+    await filtersHandler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    const body = JSON.parse(res._getData() as string);
+    expect(body.data.colorCounts.blue).toBeGreaterThanOrEqual(1);
+    expect(body.data.colorCounts.pink).toBeGreaterThanOrEqual(1);
+  });
+
+  it('GET /api/product/filters narrows colours by the other filters', async () => {
+    const filtersHandler = (await import('@/pages/api/product/filters.page'))
+      .default;
+    const { req, res } = createMocks({
+      method: 'GET',
+      url: '/api/product/filters',
+      query: { brandIds: '00000000-0000-4000-8000-000000000098' },
+    });
+    await filtersHandler(
+      req as unknown as NextApiRequest,
+      res as unknown as NextApiResponse,
+    );
+    const body = JSON.parse(res._getData() as string);
+    expect(body.data.colors).toEqual([]);
+    expect(body.data.colorCounts).toEqual({});
   });
 
   it('GET /api/product/filters returns 405 for non-GET requests', async () => {

@@ -25,5 +25,7 @@ export const E2E_VARIANT_PRODUCT = {
   specText: '128gb',
   colorHex: '#cc0000',
   colorName: 'E2E Red',
+  /** The storefront filter groups shades into families; ru is the e2e locale. */
+  colorFamilyLabel: 'Красный',
   colorUuid: '55555555-e2e0-4555-b555-555555555555',
 } as const;

@@ -14,6 +14,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { clearSessionOnDevice } from '@/pages/lib/signOut';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie, setCookie } from '@/pages/lib/utils';
+import { switchLocale } from '@/pages/lib/switchLocale';
 import AccountNav from '@/pages/user/components/AccountNav';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
@@ -240,7 +241,7 @@ export default function Profile() {
   const applyLang = () => {
     setSelectedLocale(pendingLocale);
     setCookie(LOCALE_COOKIE_NAME, pendingLocale);
-    router.push(router.pathname, router.asPath, { locale: pendingLocale });
+    switchLocale(router, pendingLocale);
     setOpenLang(false);
   };
   const handleToggle = () => setOpen(!open);

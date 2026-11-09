@@ -2,6 +2,7 @@ import ActiveFilterChips from '@/pages/components/ActiveFilterChips';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import { ProductGridSkeleton } from '@/pages/components/SkeletonLoader';
 import FilterSheet from '@/pages/components/FilterSheet';
+import FilterEmptyState from '@/pages/components/FilterEmptyState';
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import Layout from '@/pages/components/Layout';
 import ProductCard from '@/pages/components/ProductCard';
@@ -15,6 +16,7 @@ import {
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { useFilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
 import {
@@ -80,6 +82,9 @@ export default function ProductGridContent({
   const [isLoading, setIsLoading] = useState(
     restored ? false : !hasInitialProducts,
   );
+  // Whether a client query has answered yet. Until then the seeded first page
+  // stands in; after it, an empty answer must show as empty.
+  const [hasAnswered, setHasAnswered] = useState(restored != null);
   const [hasMore, setHasMore] = useState(restored?.hasMore ?? true);
   const [page, setPage] = useState(restored?.page ?? 0);
   const { categories: allCategories } = useCategoryContext();
@@ -215,7 +220,7 @@ export default function ProductGridContent({
     let cancelled = false;
     fetchCategoryFacets({
       brandIds: filters.brandIds,
-      colorIds: filters.colorIds,
+      colors: filters.colors,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       searchKeyword,
@@ -234,7 +239,7 @@ export default function ProductGridContent({
     canShowCategoryPills,
     searchKeyword,
     filters.brandIds,
-    filters.colorIds,
+    filters.colors,
     filters.minPrice,
     filters.maxPrice,
     filters.inStock,
@@ -289,11 +294,9 @@ export default function ProductGridContent({
     [isLandingMode, showCategoryPills],
   );
 
-  // Fallback from filter state to explicit prop or URL param for fetching
-  const effectiveCategoryIds = useMemo(() => {
-    if (filters.categoryIds.length > 0) {
-      return filters.categoryIds;
-    }
+  // The listing's own category (landing page or URL param), before any rail
+  // filter picks categories of its own.
+  const baseCategoryIds = useMemo(() => {
     if (landingCategoryId) {
       return [landingCategoryId];
     }
@@ -307,12 +310,28 @@ export default function ProductGridContent({
       return [router.query.categoryId as string];
     }
     return [];
-  }, [
-    filters.categoryIds,
-    router.query.categoryIds,
-    router.query.categoryId,
-    landingCategoryId,
-  ]);
+  }, [router.query.categoryIds, router.query.categoryId, landingCategoryId]);
+
+  const effectiveCategoryIds = useMemo(
+    () =>
+      filters.categoryIds.length > 0 ? filters.categoryIds : baseCategoryIds,
+    [filters.categoryIds, baseCategoryIds],
+  );
+
+  const filterScope = useMemo(
+    () => ({ categoryIds: baseCategoryIds, searchKeyword }),
+    [baseCategoryIds, searchKeyword],
+  );
+  // Web's rail needs these always. Mobile asks from inside its sheet, for the
+  // choices not yet applied, so here it only wants them to explain an empty
+  // result.
+  const resultIsEmpty = !isLoading && products.length === 0;
+  const { options: filterOptions, isCurrent: filterOptionsCurrent } =
+    useFilterOptions(
+      filterScope,
+      filters,
+      filtersReady && (platform === 'web' || resultIsEmpty),
+    );
 
   // Monotonic token identifying the newest product query. Quick filter changes
   // re-fire this effect while the previous query is still in flight; without a
@@ -354,7 +373,7 @@ export default function ProductGridContent({
           page: requestedPage,
           categoryIds: effectiveCategoryIds,
           brandIds: filters.brandIds,
-          colorIds: filters.colorIds,
+          colors: filters.colors,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
           sortBy: filters.sortBy,
@@ -396,7 +415,10 @@ export default function ProductGridContent({
       } finally {
         // Only the newest query owns the spinner; a superseded one clearing it
         // would hide the load that is still running.
-        if (isCurrent()) setIsLoading(false);
+        if (isCurrent()) {
+          setIsLoading(false);
+          setHasAnswered(true);
+        }
       }
     })();
   }, [
@@ -428,7 +450,7 @@ export default function ProductGridContent({
         page: page + 1,
         categoryIds: effectiveCategoryIds,
         brandIds: filters.brandIds,
-        colorIds: filters.colorIds,
+        colors: filters.colors,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
         sortBy: filters.sortBy,
@@ -490,10 +512,11 @@ export default function ProductGridContent({
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   }
 
-  // products resets to [] on every fetch, so fall back to the seeded first
-  // page to keep links in the SSR HTML.
+  // The seeded first page keeps links in the SSR HTML until the first client
+  // query answers. Only until then: it is the unfiltered list, so standing in
+  // for a filter that matched nothing would show products that don't match.
   const displayProducts =
-    products.length > 0 ? products : initialProducts ?? [];
+    products.length > 0 || hasAnswered ? products : initialProducts ?? [];
 
   // Real total for the current query (all pages); fall back to the loaded
   // count until the count request resolves.
@@ -544,6 +567,7 @@ export default function ProductGridContent({
           filters={filters}
           onApply={applyFilters}
           hideSections={hideSections}
+          optionsScope={filterScope}
         />
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
@@ -573,16 +597,13 @@ export default function ProductGridContent({
                 categories={allCategories}
                 selectedCategoryIds={filters.categoryIds}
                 selectedBrandIds={filters.brandIds}
-                selectedColorIds={filters.colorIds}
+                selectedColors={filters.colors}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
                 inStock={filters.inStock}
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
-                // Brand.productCount counts the whole catalogue (step 54), so
-                // it only tells the truth on the unscoped listing — inside a
-                // search it would promise more hits than the filter returns.
-                showBrandCounts={!isLandingMode && !searchKeyword}
+                options={filterOptions}
               />
             )}
 
@@ -692,6 +713,10 @@ export default function ProductGridContent({
                           {t('searchResultsFor', { keyword: searchKeyword })}
                         </Typography>
                       )}
+                      <FilterEmptyState
+                        options={filterOptionsCurrent ? filterOptions : null}
+                        onChange={applyFilters}
+                      />
                     </Box>
                   );
                 }

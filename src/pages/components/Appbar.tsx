@@ -38,6 +38,7 @@ import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
+import { switchLocale } from '@/pages/lib/switchLocale';
 import {
   DeleteCategoriesProps,
   EditCategoriesProps,
@@ -396,9 +397,7 @@ export default function CustomAppBar({
                 const newLocale = event.target.value;
                 setSelectedLocale(newLocale);
                 setCookie(LOCALE_COOKIE_NAME, newLocale);
-                router.push(router.pathname, router.asPath, {
-                  locale: newLocale,
-                });
+                switchLocale(router, newLocale);
               }}
             >
               {languages.map((lang) => (

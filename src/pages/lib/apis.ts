@@ -7,16 +7,29 @@ import {
   PromoBannerData,
   ResponseApi,
 } from '@/pages/lib/types';
+import { ColorFamily } from '@/pages/lib/colorFamilies';
+import { FilterRelaxations } from '@/pages/lib/filterRelaxations';
+import { PriceFacet } from '@/pages/lib/priceFacet';
 import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
+  /** Products the whole filter set matches. */
+  total: number;
+  /** Only when `total` is 0: what dropping each active filter would show. */
+  relaxations: FilterRelaxations;
   colors: string[]; // colorIds in use
+  /** Products per brand id, given the other filters. */
+  brandCounts: Record<string, number>;
+  /** Products per colour family, given the other filters. */
+  colorCounts: Partial<Record<ColorFamily, number>>;
+  /** Price range and quick brackets, given the other filters. */
+  price: PriceFacet | null;
 }
 
 export const fetchProducts = async ({
   categoryIds,
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   sortBy,
@@ -29,7 +42,8 @@ export const fetchProducts = async ({
 }: {
   categoryIds?: string[];
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   sortBy?: string;
@@ -60,9 +74,7 @@ export const fetchProducts = async ({
     categoryIds.forEach((cid) => appendParam('categoryIds', cid));
   }
 
-  if (colorIds && colorIds.length > 0) {
-    colorIds.forEach((cid) => appendParam('colorIds', cid));
-  }
+  colors?.forEach((family) => appendParam('colors', family));
 
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
@@ -86,7 +98,7 @@ export const fetchProducts = async ({
 export const fetchProductsCount = async ({
   categoryIds,
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   searchKeyword,
@@ -94,7 +106,8 @@ export const fetchProductsCount = async ({
 }: {
   categoryIds?: string[];
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
@@ -106,7 +119,7 @@ export const fetchProductsCount = async ({
   };
   brandIds?.forEach((bid) => appendParam('brandIds', bid));
   categoryIds?.forEach((cid) => appendParam('categoryIds', cid));
-  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  colors?.forEach((family) => appendParam('colors', family));
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
@@ -133,14 +146,15 @@ export interface CategoryFacet {
  */
 export const fetchCategoryFacets = async ({
   brandIds,
-  colorIds,
+  colors,
   minPrice,
   maxPrice,
   searchKeyword,
   inStock,
 }: {
   brandIds?: string[];
-  colorIds?: string[];
+  /** Colour family names, e.g. `black`; the API resolves them to colours. */
+  colors?: string[];
   minPrice?: string;
   maxPrice?: string;
   searchKeyword?: string;
@@ -151,7 +165,7 @@ export const fetchCategoryFacets = async ({
     if (val) url += `&${key}=${encodeURIComponent(val)}`;
   };
   brandIds?.forEach((bid) => appendParam('brandIds', bid));
-  colorIds?.forEach((cid) => appendParam('colorIds', cid));
+  colors?.forEach((family) => appendParam('colors', family));
   appendParam('maxPrice', maxPrice);
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
@@ -307,14 +321,41 @@ export const deleteBanner = async (
   return success;
 };
 
-export const fetchProductFilterOptions =
-  async (): Promise<ProductFilterOptions> => {
-    const { success, data, message }: ResponseApi<ProductFilterOptions> =
-      await (await fetch(`${BASE_URL}/api/product/filters`)).json();
+/**
+ * The brands and colour families that still match the rest of a filter set,
+ * so the rail never offers a choice that empties the list.
+ */
+export const fetchProductFilterOptions = async ({
+  categoryIds,
+  brandIds,
+  colors,
+  minPrice,
+  maxPrice,
+  searchKeyword,
+  inStock,
+}: {
+  categoryIds?: string[];
+  brandIds?: string[];
+  colors?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  searchKeyword?: string;
+  inStock?: boolean;
+}): Promise<ProductFilterOptions> => {
+  const params = new URLSearchParams();
+  categoryIds?.forEach((cid) => params.append('categoryIds', cid));
+  brandIds?.forEach((bid) => params.append('brandIds', bid));
+  colors?.forEach((family) => params.append('colors', family));
+  if (minPrice) params.set('minPrice', minPrice);
+  if (maxPrice) params.set('maxPrice', maxPrice);
+  if (searchKeyword) params.set('searchKeyword', searchKeyword);
+  if (inStock) params.set('inStock', '1');
 
-    if (!success || data == null) {
-      console.error('Failed to fetch product filter options:', message);
-      return { colors: [] };
-    }
-    return data;
-  };
+  const { success, data, message }: ResponseApi<ProductFilterOptions> = await (
+    await fetch(`${BASE_URL}/api/product/filters?${params}`)
+  ).json();
+  if (!success || data == null) {
+    throw new Error(message || 'Failed to fetch product filter options');
+  }
+  return data;
+};

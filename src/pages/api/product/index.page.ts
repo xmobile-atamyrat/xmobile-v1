@@ -1,5 +1,4 @@
 import dbClient from '@/lib/dbClient';
-import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import {
   initialOutOfStockFields,
@@ -8,7 +7,7 @@ import {
   syncProductOutOfStockFromPrices,
 } from '@/lib/outOfStock';
 import { recordPricesUpdated } from '@/lib/priceActivity';
-import { inStockFirst, whereActiveProduct } from '@/lib/prismaActiveScope';
+import { inStockFirst } from '@/lib/prismaActiveScope';
 import {
   hasPriceLinkConflict,
   PRICE_TAKEN_MESSAGE,
@@ -26,13 +25,16 @@ import {
   fileToken,
   parseImageOrder,
 } from '@/lib/productImageOrder';
-import { productSearchWhere } from '@/lib/productSearchWhere';
 import { revalidateInBackground } from '@/lib/revalidate';
 import {
   categoryListingPaths,
   productRevalidationPaths,
 } from '@/lib/revalidateTargets';
 import { getPrice } from '@/pages/api/prices/index.page';
+import {
+  buildProductWhere,
+  ProductFilterQuery,
+} from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import {
@@ -80,11 +82,6 @@ export function deriveVariantColumns(tags: string[]): { colors: string[] } {
     if (colorId) colors.add(colorId);
   });
   return { colors: [...colors] };
-}
-
-function toArray(value?: string | string[]): string[] | undefined {
-  if (value == null) return undefined;
-  return Array.isArray(value) ? value : [value];
 }
 
 type PriceLinkChange = Awaited<
@@ -406,69 +403,18 @@ async function getProduct(
   return product;
 }
 
-async function getRecursiveCategoryIds(
-  rootId: string,
-  visited: Set<string> = new Set(),
-): Promise<string[]> {
-  if (visited.has(rootId)) return [];
-  visited.add(rootId);
-
-  const category = await dbClient.category.findFirst({
-    where: { id: rootId, deletedAt: null },
-    include: {
-      successorCategories: {
-        where: { deletedAt: null },
-        orderBy: categorySiblingOrderBy,
-      },
-    },
-  });
-  if (!category) return [];
-  const ids = [rootId];
-  if (category.successorCategories) {
-    const nestedIds = await Promise.all(
-      category.successorCategories.map((sub) =>
-        getRecursiveCategoryIds(sub.id, visited),
-      ),
-    );
-    ids.push(...nestedIds.flat());
-  }
-  return ids;
-}
-
-async function handleGetProduct(query: {
-  searchKeyword?: string;
-  categoryId?: string | string[];
-  categoryIds?: string | string[];
-  brandIds?: string | string[];
-  colorIds?: string | string[];
-  productId?: string;
-  productSlug?: string;
-  page?: string;
-  minPrice?: string;
-  maxPrice?: string;
-  sortBy?: SortOption;
-  count?: string;
-  facets?: string;
-  locale?: string | string[];
-  inStock?: string;
-}): Promise<{ resp: ResponseApi; status: number }> {
-  const {
-    searchKeyword,
-    productId,
-    productSlug,
-    categoryId,
-    categoryIds,
-    brandIds,
-    colorIds,
-    page,
-    minPrice,
-    maxPrice,
-    sortBy,
-    count,
-    facets,
-    locale,
-    inStock,
-  } = query;
+async function handleGetProduct(
+  query: ProductFilterQuery & {
+    productId?: string;
+    productSlug?: string;
+    page?: string;
+    sortBy?: SortOption;
+    count?: string;
+    facets?: string;
+    locale?: string | string[];
+  },
+): Promise<{ resp: ResponseApi; status: number }> {
+  const { productId, productSlug, page, sortBy, count, facets, locale } = query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
   const wantCount = count === 'true';
@@ -532,70 +478,12 @@ async function handleGetProduct(query: {
     };
   }
 
-  const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
-
-  const categories: string[] = [];
-  if (categoryId) {
-    if (Array.isArray(categoryId)) categories.push(...categoryId);
-    else categories.push(categoryId);
-  }
-  if (categoryIds) {
-    if (Array.isArray(categoryIds)) categories.push(...categoryIds);
-    else categories.push(categoryIds);
-  }
-
-  if (categories.length > 0) {
-    const ids: string[] = [];
-    const recursiveIds = await Promise.all(
-      categories.map((catId) => getRecursiveCategoryIds(catId)),
-    );
-    ids.push(...recursiveIds.flat());
-    const uniqueIds = [...new Set(ids)];
-    if (uniqueIds.length === 0) {
-      return {
-        resp: { success: true, data: wantCount ? 0 : [] },
-        status: 200,
-      };
-    }
-    where.categoryId = { in: uniqueIds };
-  }
-
-  if (brandIds) {
-    where.brandId = {
-      in: Array.isArray(brandIds) ? brandIds : [brandIds],
+  const where = await buildProductWhere(query);
+  if (where == null) {
+    return {
+      resp: { success: true, data: wantCount ? 0 : [] },
+      status: 200,
     };
-  }
-
-  // Color filter (OR within the dimension)
-  const colorFilter = toArray(colorIds);
-  if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
-
-  if (searchKeyword) {
-    where.AND = productSearchWhere(searchKeyword);
-  }
-
-  if (inStock === '1') {
-    where.outOfStockAt = null;
-  }
-
-  // Both bounds and cachedPrice are the shown manat, so they compare directly.
-  if (minPrice || maxPrice) {
-    if (minPrice) {
-      const minTmt = parseFloat(minPrice);
-      if (!Number.isNaN(minTmt)) {
-        const currentFilter =
-          typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, gte: minTmt };
-      }
-    }
-    if (maxPrice) {
-      const maxTmt = parseFloat(maxPrice);
-      if (!Number.isNaN(maxTmt)) {
-        const currentFilter =
-          typeof where.cachedPrice === 'object' ? where.cachedPrice : {};
-        where.cachedPrice = { ...currentFilter, lte: maxTmt };
-      }
-    }
   }
 
   if (wantCount) {

@@ -66,16 +66,16 @@ test.describe('Favorites on desktop', () => {
     await openSignedIn(page, '/favorites');
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
-    await page.getByTitle(E2E_VARIANT_PRODUCT.colorName).click();
+    await page.getByTitle(E2E_VARIANT_PRODUCT.colorFamilyLabel).click();
 
-    await expect(page).toHaveURL(/colorIds=/);
+    await expect(page).toHaveURL(/colors=red/);
     await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
     await expect(
       page.getByRole('link', { name: E2E_VARIANT_PRODUCT.name }),
     ).toBeVisible();
 
     await page
-      .getByRole('button', { name: E2E_VARIANT_PRODUCT.colorName })
+      .getByRole('button', { name: E2E_VARIANT_PRODUCT.colorFamilyLabel })
       .click();
 
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
@@ -158,10 +158,10 @@ test.describe('Favorites on a phone', () => {
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
     await page.getByRole('button', { name: 'Фильтры' }).click();
-    await page.getByTitle(E2E_VARIANT_PRODUCT.colorName).click();
+    await page.getByTitle(E2E_VARIANT_PRODUCT.colorFamilyLabel).click();
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Применить' }).click();
+    await page.getByRole('button', { name: /^Показать \d+ товар/ }).click();
 
     await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
 

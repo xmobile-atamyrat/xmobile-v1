@@ -91,3 +91,28 @@ describe('useProductFilters URL sync', () => {
     expect(result.current.filters.sortBy).toBe('price_asc');
   });
 });
+
+describe('useProductFilters colors', () => {
+  afterEach(() => {
+    mockRouter.query = {};
+    vi.clearAllMocks();
+  });
+
+  it('reads colour families from the URL and ignores unknown ones', () => {
+    mockRouter.query = { colors: ['black', 'not-a-colour', 'blue'] };
+    const { result } = renderHook(() => useProductFilters());
+
+    expect(result.current.filters.colors).toEqual(['black', 'blue']);
+  });
+
+  it('writes family names, not colour ids, to the URL', () => {
+    mockRouter.query = { colorIds: 'legacy-id' };
+    const { result } = renderHook(() => useProductFilters());
+
+    act(() => {
+      result.current.setFilters({ colors: ['black'] });
+    });
+
+    expect(pushedQuery()).toEqual({ colors: ['black'] });
+  });
+});

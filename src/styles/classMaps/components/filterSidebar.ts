@@ -26,6 +26,8 @@ export const filterRailClasses = {
   title: 'text-[16px] font-bold text-ink',
   clearAll:
     'text-[13px] font-semibold text-red cursor-pointer normal-case hover:opacity-80',
-  // Per-brand/category count pulled from the real Brand.productCount column.
-  count: 'text-[13px] text-[#B6B5C2] shrink-0 ml-3',
+  // Products an option would show. Right-aligned tabular digits so "3" and
+  // "73" end on the same edge in every row and every language.
+  count:
+    'text-[13px] text-[#B6B5C2] shrink-0 ml-3 mr-2 min-w-[3ch] text-right tabular-nums',
 };
