@@ -43,7 +43,7 @@ async function renderSidebar(
       minPrice: '',
       maxPrice: '',
       onFilterChange,
-      options: { colorFamilies: ['red'], brandIds: [] },
+      options: { colorCounts: { red: 4 }, brandCounts: {} },
       ...overrides,
     }),
   );
@@ -59,7 +59,16 @@ describe('FilterSidebar — color filter section', () => {
 
     expect(await screen.findByTitle('Red')).toBeInTheDocument();
     expect(screen.getByText('Red')).toBeInTheDocument();
-    expect(screen.getByLabelText('Red')).toHaveAttribute('type', 'checkbox');
+    expect(screen.getByLabelText(/^Red/)).toHaveAttribute('type', 'checkbox');
+  });
+
+  it('shows how many products each family would show', async () => {
+    await renderSidebar();
+
+    const row = (await screen.findByTitle('Red')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('4')).toBeInTheDocument();
   });
 
   it('clicking the color swatch calls onFilterChange with its family', async () => {
@@ -87,29 +96,60 @@ describe('FilterSidebar — color filter section', () => {
     expect(onFilterChange).toHaveBeenCalledWith({ colors: [] });
   });
 
-  it('lists families in a fixed order, whatever order they arrive in', async () => {
+  it('lists families with the most products first, ties in family order', async () => {
     await renderSidebar({
-      options: { colorFamilies: ['blue', 'black'], brandIds: [] },
+      options: {
+        colorCounts: { blue: 1, black: 1, green: 9 },
+        brandCounts: {},
+      },
     });
 
     await screen.findByTitle('Black');
     const labels = screen
       .getAllByRole('checkbox')
-      .map((box) => box.closest('label')?.textContent);
-    expect(labels.indexOf('Black')).toBeLessThan(labels.indexOf('Blue'));
+      .map((box) => box.closest('label')?.textContent)
+      .filter((text) => text !== 'In stock only');
+    expect(labels).toEqual(['Green 9', 'Black 1', 'Blue 1']);
   });
 
   it('keeps a ticked family that other filters ruled out, so it can be unticked', async () => {
     await renderSidebar({
       selectedColors: ['green'],
-      options: { colorFamilies: ['red'], brandIds: [] },
+      options: { colorCounts: { red: 4 }, brandCounts: {} },
     });
 
     expect(await screen.findByTitle('Green')).toBeInTheDocument();
   });
 
+  it('collapses a long colour list behind "Show more"', async () => {
+    await renderSidebar({
+      options: {
+        colorCounts: {
+          black: 1,
+          white: 1,
+          silver: 1,
+          gray: 1,
+          gold: 1,
+          brown: 1,
+          red: 1,
+          orange: 1,
+          blue: 1,
+        },
+        brandCounts: {},
+      },
+    });
+
+    expect(await screen.findByTitle('Red')).toBeInTheDocument();
+    expect(screen.queryByTitle('Orange')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Show more'));
+
+    expect(await screen.findByTitle('Blue')).toBeInTheDocument();
+    expect(screen.getByText('Show less')).toBeInTheDocument();
+  });
+
   it('hides the color section when no family matches', async () => {
-    await renderSidebar({ options: { colorFamilies: [], brandIds: [] } });
+    await renderSidebar({ options: { colorCounts: {}, brandCounts: {} } });
 
     expect(screen.queryByText('Color')).not.toBeInTheDocument();
   });
@@ -126,7 +166,7 @@ describe('FilterSidebar — brand section', () => {
 
   it('lists only brands that match the listing', async () => {
     await renderSidebar({
-      options: { colorFamilies: [], brandIds: ['apple', 'xiaomi'] },
+      options: { colorCounts: {}, brandCounts: { apple: 7, xiaomi: 2 } },
     });
 
     expect(await screen.findByText('Apple')).toBeInTheDocument();
@@ -134,13 +174,43 @@ describe('FilterSidebar — brand section', () => {
     expect(screen.queryByText('Samsung')).not.toBeInTheDocument();
   });
 
+  it('counts brands for this listing, not the whole catalogue', async () => {
+    await renderSidebar({
+      options: { colorCounts: {}, brandCounts: { apple: 7 } },
+    });
+
+    const row = (await screen.findByText('Apple')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('7')).toBeInTheDocument();
+  });
+
+  it('lists brands with the most products first, ties by name', async () => {
+    await renderSidebar({
+      options: {
+        colorCounts: {},
+        brandCounts: { apple: 2, samsung: 9, xiaomi: 2 },
+      },
+    });
+
+    await screen.findByText('Samsung');
+    const labels = screen
+      .getAllByRole('checkbox')
+      .map((box) => box.closest('label')?.textContent)
+      .filter((text) => text !== 'In stock only');
+    expect(labels).toEqual(['Samsung 9', 'Apple 2', 'Xiaomi 2']);
+  });
+
   it('keeps a ticked brand that other filters ruled out', async () => {
     await renderSidebar({
       selectedBrandIds: ['samsung'],
-      options: { colorFamilies: [], brandIds: ['apple'] },
+      options: { colorCounts: {}, brandCounts: { apple: 7 } },
     });
 
-    expect(await screen.findByText('Samsung')).toBeInTheDocument();
+    const row = (await screen.findByText('Samsung')).closest(
+      'label',
+    ) as HTMLElement;
+    expect(within(row).getByText('0')).toBeInTheDocument();
     expect(screen.queryByText('Xiaomi')).not.toBeInTheDocument();
   });
 
@@ -150,6 +220,8 @@ describe('FilterSidebar — brand section', () => {
     expect(await screen.findByText('Samsung')).toBeInTheDocument();
     expect(screen.getByText('Apple')).toBeInTheDocument();
     expect(screen.getByText('Xiaomi')).toBeInTheDocument();
+    // Brand.productCount spans the whole catalogue; no count beats a wrong one.
+    expect(screen.queryByText('5')).not.toBeInTheDocument();
   });
 });
 

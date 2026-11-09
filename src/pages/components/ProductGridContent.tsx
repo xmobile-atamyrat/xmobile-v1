@@ -592,10 +592,6 @@ export default function ProductGridContent({
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
                 options={filterOptions}
-                // Brand.productCount counts the whole catalogue (step 54), so
-                // it only tells the truth on the unscoped listing — inside a
-                // search it would promise more hits than the filter returns.
-                showBrandCounts={!isLandingMode && !searchKeyword}
               />
             )}
 

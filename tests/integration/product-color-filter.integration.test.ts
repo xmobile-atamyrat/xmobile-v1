@@ -220,9 +220,8 @@ describe('Product color filter (integration)', () => {
       res as unknown as NextApiResponse,
     );
     const body = JSON.parse(res._getData() as string);
-    expect(body.data.colorFamilies).toEqual(
-      expect.arrayContaining(['blue', 'pink']),
-    );
+    expect(body.data.colorCounts.blue).toBeGreaterThanOrEqual(1);
+    expect(body.data.colorCounts.pink).toBeGreaterThanOrEqual(1);
   });
 
   it('GET /api/product/filters narrows colours by the other filters', async () => {
@@ -239,7 +238,7 @@ describe('Product color filter (integration)', () => {
     );
     const body = JSON.parse(res._getData() as string);
     expect(body.data.colors).toEqual([]);
-    expect(body.data.colorFamilies).toEqual([]);
+    expect(body.data.colorCounts).toEqual({});
   });
 
   it('GET /api/product/filters returns 405 for non-GET requests', async () => {

@@ -3,9 +3,10 @@ import { ColorFamily } from '@/pages/lib/colorFamilies';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { useEffect, useState } from 'react';
 
+/** Products each option would show; an option missing here matches none. */
 export interface FilterOptions {
-  colorFamilies: ColorFamily[];
-  brandIds: string[];
+  brandCounts: Record<string, number>;
+  colorCounts: Partial<Record<ColorFamily, number>>;
 }
 
 /** What the listing is about before any rail filter: its category or search. */
@@ -42,8 +43,8 @@ export function useFilterOptions(
     if (!enabled) return () => undefined;
     let cancelled = false;
     fetchProductFilterOptions(JSON.parse(key))
-      .then(({ colorFamilies, brandIds }) => {
-        if (!cancelled) setOptions({ colorFamilies, brandIds });
+      .then(({ brandCounts, colorCounts }) => {
+        if (!cancelled) setOptions({ brandCounts, colorCounts });
       })
       .catch(() => undefined);
     return () => {

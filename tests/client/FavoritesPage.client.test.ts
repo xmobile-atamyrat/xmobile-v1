@@ -96,8 +96,11 @@ const cardNames = () =>
 
 // The rail rebuilds its rows as each reference list arrives, so a checkbox found
 // too early is gone by the time it is clicked.
+// Rail rows read "Apple 2": the name, then how many products it would show.
+const railRow = (name: string) => new RegExp(`^${name}( \\d+)?$`);
+
 async function settleRail(name: string) {
-  await screen.findByRole('checkbox', { name });
+  await screen.findByRole('checkbox', { name: railRow(name) });
   await act(async () => {
     await new Promise((resolve) => {
       setTimeout(resolve);
@@ -107,7 +110,7 @@ async function settleRail(name: string) {
 
 async function tick(name: string) {
   await settleRail(name);
-  fireEvent.click(screen.getByRole('checkbox', { name }));
+  fireEvent.click(screen.getByRole('checkbox', { name: railRow(name) }));
 }
 
 function setMobile(mobile: boolean) {
@@ -434,7 +437,7 @@ describe('Favorites page', () => {
       renderPage();
 
       expect(
-        await screen.findByRole('checkbox', { name: 'Xiaomi' }),
+        await screen.findByRole('checkbox', { name: railRow('Xiaomi') }),
       ).toBeChecked();
     });
 
@@ -507,7 +510,9 @@ describe('Favorites page', () => {
 
         await tick('Apple');
 
-        expect(screen.getByRole('checkbox', { name: 'Apple' })).toBeChecked();
+        expect(
+          screen.getByRole('checkbox', { name: railRow('Apple') }),
+        ).toBeChecked();
         expect(cardNames()).toEqual(['Phone', 'Tablet']);
       });
 

@@ -4,15 +4,17 @@ import {
   ProductFilterQuery,
 } from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
-import { groupColorsByFamily } from '@/pages/lib/colorFamilies';
+import type { Color } from '@prisma/client';
+import { ColorFamily, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import { ResponseApi } from '@/pages/lib/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const filepath = 'src/pages/api/product/filters.page.ts';
 
-// Returns the filter options that still lead somewhere for a storefront query.
-// Each dimension is scoped by every filter except its own, so ticking Apple
-// narrows the colours but keeps Samsung on offer as a second brand.
+// Returns how many products each brand and colour family would show for a
+// storefront query; options that lead nowhere are absent. Each dimension is
+// scoped by every filter except its own, so ticking Apple narrows the colours
+// but keeps Samsung on offer (with its own count) as a second brand.
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseApi>,
@@ -31,29 +33,45 @@ export default async function handler(
       buildProductWhere({ ...query, colors: undefined, colorIds: undefined }),
     ]);
 
-    const [brandRows, colors] = await Promise.all([
+    const [brandRows, products] = await Promise.all([
       brandWhere
-        ? dbClient.product.findMany({
+        ? dbClient.product.groupBy({
+            by: ['brandId'],
             where: { ...brandWhere, brandId: { not: null } },
-            select: { brandId: true },
-            distinct: ['brandId'],
+            // `true` rather than `{ _all: true }` so the row carries a number.
+            _count: true,
           })
         : [],
       colorWhere
-        ? dbClient.color.findMany({
-            where: { products: { some: colorWhere } },
-            select: { id: true, name: true, hex: true },
+        ? dbClient.product.findMany({
+            where: { ...colorWhere, colors: { some: {} } },
+            select: { colors: { select: { id: true, name: true, hex: true } } },
           })
         : [],
     ]);
 
+    const brandCounts: Record<string, number> = {};
+    brandRows.forEach((row) => {
+      // _count is Prisma's own groupBy result shape, not our naming.
+      // eslint-disable-next-line no-underscore-dangle
+      if (row.brandId != null) brandCounts[row.brandId] = row._count;
+    });
+
+    // Products, not colour rows: a phone in two black shades counts once.
+    const colorCounts: Partial<Record<ColorFamily, number>> = {};
+    const colorIds = new Set<string>();
+    products.forEach(
+      ({ colors }: { colors: Pick<Color, 'id' | 'name' | 'hex'>[] }) => {
+        colors.forEach(({ id }) => colorIds.add(id));
+        groupColorsByFamily(colors).forEach(({ family }) => {
+          colorCounts[family] = (colorCounts[family] ?? 0) + 1;
+        });
+      },
+    );
+
     return res.status(200).json({
       success: true,
-      data: {
-        colors: colors.map((c) => c.id),
-        colorFamilies: groupColorsByFamily(colors).map((g) => g.family),
-        brandIds: brandRows.map((row) => row.brandId),
-      },
+      data: { colors: [...colorIds], brandCounts, colorCounts },
     });
   } catch (error) {
     console.error(filepath, error);

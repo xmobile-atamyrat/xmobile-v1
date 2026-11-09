@@ -12,8 +12,10 @@ import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
   colors: string[]; // colorIds in use
-  colorFamilies: ColorFamily[];
-  brandIds: string[];
+  /** Products per brand id, given the other filters. */
+  brandCounts: Record<string, number>;
+  /** Products per colour family, given the other filters. */
+  colorCounts: Partial<Record<ColorFamily, number>>;
 }
 
 export const fetchProducts = async ({

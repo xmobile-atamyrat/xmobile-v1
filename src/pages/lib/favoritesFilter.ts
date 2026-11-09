@@ -113,16 +113,15 @@ export function favoriteFilterOptions(
     categories,
     locale,
   );
-  return {
-    brandIds: [
-      ...new Set(
-        brandScope
-          .map(({ brandId }) => brandId)
-          .filter((id): id is string => id != null),
-      ),
-    ],
-    colorFamilies: groupColorsByFamily(
-      colorScope.flatMap(({ colors }) => colors),
-    ).map(({ family }) => family),
-  };
+  const brandCounts: Record<string, number> = {};
+  brandScope.forEach(({ brandId }) => {
+    if (brandId != null) brandCounts[brandId] = (brandCounts[brandId] ?? 0) + 1;
+  });
+  const colorCounts: FilterOptions['colorCounts'] = {};
+  colorScope.forEach(({ colors }) => {
+    groupColorsByFamily(colors).forEach(({ family }) => {
+      colorCounts[family] = (colorCounts[family] ?? 0) + 1;
+    });
+  });
+  return { brandCounts, colorCounts };
 }

@@ -49,18 +49,47 @@ interface FilterSidebarProps {
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
   /**
-   * The brands and colour families that still match the listing. Null while
-   * unknown: every brand shows, and the colour section waits.
+   * How many products each brand and colour family would show. Null while
+   * unknown: every brand shows without a count, and the colour section waits.
    */
   options: FilterOptions | null;
-  /**
-   * Show the real Brand.productCount beside each brand (spec 1448).
-   * That column counts the whole catalogue, so it's only truthful on the
-   * unscoped listing — inside a category it would promise more hits than the
-   * filter returns. Category-scoped facet counts would need a new API.
-   */
-  showBrandCounts?: boolean;
 }
+
+// Brand and colour lists scroll past 300px. Reserving the scrollbar's gutter
+// whether or not it shows keeps counts on one edge across both sections.
+const scrollingListSx = {
+  maxHeight: '300px',
+  overflowY: 'auto',
+  scrollbarGutter: 'stable',
+} as const;
+
+// Lists longer than this collapse behind a "Show more" link.
+const COLLAPSED_ROWS = 7;
+
+const ShowMoreToggle = ({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) => {
+  const t = useTranslations();
+  return (
+    <Box mt={1} pl={1}>
+      <Typography
+        className={fontClassName.className}
+        fontWeight={700}
+        fontSize="13px"
+        lineHeight="20px"
+        color={navy}
+        sx={{ cursor: 'pointer', '&:hover': { color: red } }}
+        onClick={onToggle}
+      >
+        {collapsed ? t('showMore') : t('showLess')}
+      </Typography>
+    </Box>
+  );
+};
 
 const FilterSection = ({
   title,
@@ -135,7 +164,6 @@ export default function FilterSidebar({
   hideSections = [],
   variant = 'sidebar',
   options,
-  showBrandCounts = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -146,15 +174,18 @@ export default function FilterSidebar({
   >([]);
   const [limitBrands, setLimitBrands] = useState(true);
   const [limitCategories, setLimitCategories] = useState(true);
+  const [limitColors, setLimitColors] = useState(true);
 
   const [colorsOpen, setColorsOpen] = useState(true);
 
-  // Only families some matching product comes in. A ticked one stays even
+  // Only families some matching product comes in, most products first (ties
+  // keep the fixed family order: sort is stable). A ticked one stays even
   // when other filters rule it out, so it can still be unticked.
   const colorsToShow = COLOR_FAMILIES.filter(
     (family) =>
-      options?.colorFamilies.includes(family) ||
-      selectedColors.includes(family),
+      options?.colorCounts[family] != null || selectedColors.includes(family),
+  ).sort(
+    (a, b) => (options?.colorCounts[b] ?? 0) - (options?.colorCounts[a] ?? 0),
   );
 
   const toggleColor = (family: ColorFamily) => {
@@ -235,7 +266,7 @@ export default function FilterSidebar({
     (category) => !category.predecessorId,
   );
   const categoriesToShow = limitCategories
-    ? topLevelCategories.slice(0, 7)
+    ? topLevelCategories.slice(0, COLLAPSED_ROWS)
     : topLevelCategories;
 
   const handleCategoryClick = (categoryId: string) => {
@@ -293,16 +324,24 @@ export default function FilterSidebar({
   );
 
   // -- Brand Logic --
+  // Most products first, then by name, once the counts are known.
   const availableBrands =
     options == null
       ? brands
-      : brands.filter(
-          (brand) =>
-            options.brandIds.includes(brand.id) ||
-            selectedBrandIds.includes(brand.id),
-        );
+      : brands
+          .filter(
+            (brand) =>
+              options.brandCounts[brand.id] != null ||
+              selectedBrandIds.includes(brand.id),
+          )
+          .sort(
+            (a, b) =>
+              (options.brandCounts[b.id] ?? 0) -
+                (options.brandCounts[a.id] ?? 0) ||
+              a.name.localeCompare(b.name, locale),
+          );
   const brandsToShow = limitBrands
-    ? availableBrands.slice(0, 7)
+    ? availableBrands.slice(0, COLLAPSED_ROWS)
     : availableBrands;
 
   const handleBrandToggle = (brandId: string) => {
@@ -322,7 +361,7 @@ export default function FilterSidebar({
     label: string;
     isSelected: boolean;
     onClick: () => void;
-    /** Real Brand.productCount — omitted where the schema has no count. */
+    /** Products the option would show; omitted while unknown. */
     count?: number;
     swatchHex?: string;
   }) => (
@@ -338,6 +377,9 @@ export default function FilterSidebar({
           py: 0.5,
           alignItems: 'center',
           width: '100%',
+          // MUI sizes the label to its text, which left every row's count at
+          // a different x. Filling the row pins counts to one right edge.
+          '& .MuiFormControlLabel-label': { flex: 1, minWidth: 0 },
         }}
         control={<CustomCheckbox checked={isSelected} onChange={onClick} />}
         label={
@@ -345,7 +387,6 @@ export default function FilterSidebar({
             display="flex"
             justifyContent="space-between"
             width="100%"
-            minWidth={180}
             alignItems="center"
           >
             {swatchHex != null && (
@@ -370,10 +411,16 @@ export default function FilterSidebar({
               fontWeight={isSelected ? 700 : 400}
               lineHeight="22px"
               color={isSelected ? ink : '#4A4959'}
-              sx={{ ml: 1, flex: 1 }}
+              noWrap
+              // A swatch already carries the name as its tooltip.
+              title={swatchHex == null ? label : undefined}
+              sx={{ ml: 1, flex: 1, minWidth: 0 }}
             >
               {label}
             </Typography>
+            {/* Flex drops this space visually; it keeps the accessible name
+                "Apple 7" rather than "Apple7". */}
+            {count != null && ' '}
             {count != null && (
               <Typography
                 component="span"
@@ -465,25 +512,11 @@ export default function FilterSidebar({
                 />
               ))}
             </Box>
-            {topLevelCategories.length > 7 && (
-              <Box mt={1} pl={1}>
-                <Typography
-                  className={fontClassName.className}
-                  fontWeight={700}
-                  fontSize="13px"
-                  lineHeight="20px"
-                  color={navy}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: red,
-                    },
-                  }}
-                  onClick={() => setLimitCategories(!limitCategories)}
-                >
-                  {limitCategories ? t('showMore') : t('showLess')}
-                </Typography>
-              </Box>
+            {topLevelCategories.length > COLLAPSED_ROWS && (
+              <ShowMoreToggle
+                collapsed={limitCategories}
+                onToggle={() => setLimitCategories(!limitCategories)}
+              />
             )}
           </FilterSection>
         )}
@@ -494,11 +527,7 @@ export default function FilterSidebar({
           onToggle={() => setBrandsOpen(!brandsOpen)}
           variant={variant}
         >
-          <Box
-            display="flex"
-            flexDirection="column"
-            sx={{ maxHeight: '300px', overflowY: 'auto' }}
-          >
+          <Box display="flex" flexDirection="column" sx={scrollingListSx}>
             {availableBrands.length === 0 && (
               <Typography
                 className={fontClassName.className}
@@ -515,28 +544,14 @@ export default function FilterSidebar({
                 label={brand.name}
                 isSelected={selectedBrandIds.includes(brand.id)}
                 onClick={() => handleBrandToggle(brand.id)}
-                count={showBrandCounts ? brand.productCount : undefined}
+                count={options ? options.brandCounts[brand.id] ?? 0 : undefined}
               />
             ))}
-            {availableBrands.length > 7 && (
-              <Box mt={1} pl={1}>
-                <Typography
-                  className={fontClassName.className}
-                  fontWeight={700}
-                  fontSize="13px"
-                  lineHeight="20px"
-                  color={navy}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: red,
-                    },
-                  }}
-                  onClick={() => setLimitBrands(!limitBrands)}
-                >
-                  {limitBrands ? t('showMore') : t('showLess')}
-                </Typography>
-              </Box>
+            {availableBrands.length > COLLAPSED_ROWS && (
+              <ShowMoreToggle
+                collapsed={limitBrands}
+                onToggle={() => setLimitBrands(!limitBrands)}
+              />
             )}
           </Box>
         </FilterSection>
@@ -548,20 +563,26 @@ export default function FilterSidebar({
             onToggle={() => setColorsOpen(!colorsOpen)}
             variant={variant}
           >
-            <Box
-              display="flex"
-              flexDirection="column"
-              sx={{ maxHeight: '300px', overflowY: 'auto' }}
-            >
-              {colorsToShow.map((family) => (
+            <Box display="flex" flexDirection="column" sx={scrollingListSx}>
+              {(limitColors
+                ? colorsToShow.slice(0, COLLAPSED_ROWS)
+                : colorsToShow
+              ).map((family) => (
                 <FilterItem
                   key={family}
                   label={t(COLOR_FAMILY_LABEL_KEY[family])}
                   swatchHex={COLOR_FAMILY_HEX[family]}
                   isSelected={selectedColors.includes(family)}
                   onClick={() => toggleColor(family)}
+                  count={options?.colorCounts[family] ?? 0}
                 />
               ))}
+              {colorsToShow.length > COLLAPSED_ROWS && (
+                <ShowMoreToggle
+                  collapsed={limitColors}
+                  onToggle={() => setLimitColors(!limitColors)}
+                />
+              )}
             </Box>
           </FilterSection>
         )}

@@ -238,21 +238,34 @@ describe('favoriteFilterOptions', () => {
   const options = (filters: Partial<FilterState>) =>
     favoriteFilterOptions(products, { ...noFilters, ...filters }, [], 'en');
 
-  it('offers the brands and colours present in the list', () => {
+  it('counts the brands and colours present in the list', () => {
     expect(options({})).toEqual({
-      brandIds: ['apple', 'samsung'],
-      colorFamilies: ['black', 'blue'],
+      brandCounts: { apple: 1, samsung: 1 },
+      colorCounts: { black: 1, blue: 1 },
     });
   });
 
   it('narrows colours by the chosen brand but keeps every brand on offer', () => {
     expect(options({ brandIds: ['apple'] })).toEqual({
-      brandIds: ['apple', 'samsung'],
-      colorFamilies: ['black'],
+      brandCounts: { apple: 1, samsung: 1 },
+      colorCounts: { black: 1 },
     });
   });
 
   it('narrows brands by the chosen colour', () => {
-    expect(options({ colors: ['blue'] }).brandIds).toEqual(['samsung']);
+    expect(options({ colors: ['blue'] }).brandCounts).toEqual({ samsung: 1 });
+  });
+
+  it('counts a product once per family, however many shades it has', () => {
+    const twoBlacks = product({
+      id: 'two-blacks',
+      colors: [
+        { id: 'k1', name: 'Phantom Black', hex: '#1a1a1a' },
+        { id: 'k2', name: 'Midnight Black', hex: '#000002' },
+      ],
+    });
+    expect(
+      favoriteFilterOptions([twoBlacks], noFilters, [], 'en').colorCounts,
+    ).toEqual({ black: 1 });
   });
 });
