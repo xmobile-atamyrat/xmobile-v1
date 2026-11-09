@@ -239,14 +239,14 @@ describe('favoriteFilterOptions', () => {
     favoriteFilterOptions(products, { ...noFilters, ...filters }, [], 'en');
 
   it('counts the brands and colours present in the list', () => {
-    expect(options({})).toEqual({
+    expect(options({})).toMatchObject({
       brandCounts: { apple: 1, samsung: 1 },
       colorCounts: { black: 1, blue: 1 },
     });
   });
 
   it('narrows colours by the chosen brand but keeps every brand on offer', () => {
-    expect(options({ brandIds: ['apple'] })).toEqual({
+    expect(options({ brandIds: ['apple'] })).toMatchObject({
       brandCounts: { apple: 1, samsung: 1 },
       colorCounts: { black: 1 },
     });
@@ -267,5 +267,20 @@ describe('favoriteFilterOptions', () => {
     expect(
       favoriteFilterOptions([twoBlacks], noFilters, [], 'en').colorCounts,
     ).toEqual({ black: 1 });
+  });
+
+  it('spans the prices of the list, ignoring its own price filter', () => {
+    const priced = [
+      product({ id: 'cheap', cachedPrice: 300 }),
+      product({ id: 'dear', cachedPrice: 9000 }),
+    ];
+    expect(
+      favoriteFilterOptions(
+        priced,
+        { ...noFilters, minPrice: '5000' },
+        [],
+        'en',
+      ).price,
+    ).toMatchObject({ min: 300, max: 9000 });
   });
 });

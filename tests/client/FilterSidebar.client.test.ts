@@ -43,7 +43,7 @@ async function renderSidebar(
       minPrice: '',
       maxPrice: '',
       onFilterChange,
-      options: { colorCounts: { red: 4 }, brandCounts: {} },
+      options: { colorCounts: { red: 4 }, brandCounts: {}, price: null },
       ...overrides,
     }),
   );
@@ -101,6 +101,7 @@ describe('FilterSidebar — color filter section', () => {
       options: {
         colorCounts: { blue: 1, black: 1, green: 9 },
         brandCounts: {},
+        price: null,
       },
     });
 
@@ -115,7 +116,7 @@ describe('FilterSidebar — color filter section', () => {
   it('keeps a ticked family that other filters ruled out, so it can be unticked', async () => {
     await renderSidebar({
       selectedColors: ['green'],
-      options: { colorCounts: { red: 4 }, brandCounts: {} },
+      options: { colorCounts: { red: 4 }, brandCounts: {}, price: null },
     });
 
     expect(await screen.findByTitle('Green')).toBeInTheDocument();
@@ -136,6 +137,7 @@ describe('FilterSidebar — color filter section', () => {
           blue: 1,
         },
         brandCounts: {},
+        price: null,
       },
     });
 
@@ -149,7 +151,9 @@ describe('FilterSidebar — color filter section', () => {
   });
 
   it('hides the color section when no family matches', async () => {
-    await renderSidebar({ options: { colorCounts: {}, brandCounts: {} } });
+    await renderSidebar({
+      options: { colorCounts: {}, brandCounts: {}, price: null },
+    });
 
     expect(screen.queryByText('Color')).not.toBeInTheDocument();
   });
@@ -166,7 +170,11 @@ describe('FilterSidebar — brand section', () => {
 
   it('lists only brands that match the listing', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: { apple: 7, xiaomi: 2 } },
+      options: {
+        colorCounts: {},
+        brandCounts: { apple: 7, xiaomi: 2 },
+        price: null,
+      },
     });
 
     expect(await screen.findByText('Apple')).toBeInTheDocument();
@@ -176,7 +184,7 @@ describe('FilterSidebar — brand section', () => {
 
   it('counts brands for this listing, not the whole catalogue', async () => {
     await renderSidebar({
-      options: { colorCounts: {}, brandCounts: { apple: 7 } },
+      options: { colorCounts: {}, brandCounts: { apple: 7 }, price: null },
     });
 
     const row = (await screen.findByText('Apple')).closest(
@@ -190,6 +198,7 @@ describe('FilterSidebar — brand section', () => {
       options: {
         colorCounts: {},
         brandCounts: { apple: 2, samsung: 9, xiaomi: 2 },
+        price: null,
       },
     });
 
@@ -204,7 +213,7 @@ describe('FilterSidebar — brand section', () => {
   it('keeps a ticked brand that other filters ruled out', async () => {
     await renderSidebar({
       selectedBrandIds: ['samsung'],
-      options: { colorCounts: {}, brandCounts: { apple: 7 } },
+      options: { colorCounts: {}, brandCounts: { apple: 7 }, price: null },
     });
 
     const row = (await screen.findByText('Samsung')).closest(
@@ -222,6 +231,101 @@ describe('FilterSidebar — brand section', () => {
     expect(screen.getByText('Xiaomi')).toBeInTheDocument();
     // Brand.productCount spans the whole catalogue; no count beats a wrong one.
     expect(screen.queryByText('5')).not.toBeInTheDocument();
+  });
+});
+
+describe('FilterSidebar — price section', () => {
+  beforeEach(() => mockBrands([]));
+
+  const price = {
+    min: 1200,
+    max: 24000,
+    buckets: [
+      { min: null, max: 3000, count: 4 },
+      { min: 3000, max: 9000, count: 6 },
+      { min: 9000, max: null, count: 2 },
+    ],
+  };
+
+  it('offers quick price ranges with their counts', async () => {
+    await renderSidebar({
+      options: { colorCounts: {}, brandCounts: {}, price },
+    });
+
+    expect(screen.getByLabelText('0 – 3 000 TMT 4')).toBeInTheDocument();
+    expect(screen.getByLabelText('3 000 – 9 000 TMT 6')).toBeInTheDocument();
+    expect(screen.getByLabelText('9 000+ TMT 2')).toBeInTheDocument();
+  });
+
+  it('applies a quick range, and clears it when clicked again', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      { options: { colorCounts: {}, brandCounts: {}, price } },
+      onFilterChange,
+    );
+    fireEvent.click(screen.getByLabelText('3 000 – 9 000 TMT 6'));
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '3000',
+      maxPrice: '9000',
+    });
+
+    onFilterChange.mockClear();
+    await renderSidebar(
+      {
+        minPrice: '3000',
+        maxPrice: '9000',
+        options: { colorCounts: {}, brandCounts: {}, price },
+      },
+      onFilterChange,
+    );
+    const ticked = screen
+      .getAllByLabelText('3 000 – 9 000 TMT 6')
+      .find((box) => (box as HTMLInputElement).checked) as HTMLElement;
+    fireEvent.click(ticked);
+    expect(onFilterChange).toHaveBeenCalledWith({ minPrice: '', maxPrice: '' });
+  });
+
+  it('hints the real price range in the inputs', async () => {
+    await renderSidebar({
+      options: { colorCounts: {}, brandCounts: {}, price },
+    });
+
+    expect(screen.getByPlaceholderText('1200')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('24000')).toBeInTheDocument();
+  });
+
+  it('applies a typed price on Enter, not on every keystroke', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      { options: { colorCounts: {}, brandCounts: {}, price } },
+      onFilterChange,
+    );
+    const min = screen.getByPlaceholderText('1200');
+
+    fireEvent.change(min, { target: { value: '25a00' } });
+    expect(onFilterChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(min, { key: 'Enter' });
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '2500',
+      maxPrice: '',
+    });
+  });
+
+  it('applies a typed price when the field loses focus', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar(
+      { options: { colorCounts: {}, brandCounts: {}, price } },
+      onFilterChange,
+    );
+    const max = screen.getByPlaceholderText('24000');
+
+    fireEvent.change(max, { target: { value: '8000' } });
+    fireEvent.blur(max);
+    expect(onFilterChange).toHaveBeenCalledWith({
+      minPrice: '',
+      maxPrice: '8000',
+    });
   });
 });
 

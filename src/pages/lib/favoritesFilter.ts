@@ -1,5 +1,6 @@
 import { colorFamilyOf, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import { SORT_OPTIONS } from '@/pages/lib/constants';
+import { priceFacet } from '@/pages/lib/priceFacet';
 import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { ExtendedCategory, ExtendedProduct } from '@/pages/lib/types';
@@ -113,6 +114,12 @@ export function favoriteFilterOptions(
     categories,
     locale,
   );
+  const priceScope = filterAndSortFavorites(
+    products,
+    { ...filters, minPrice: '', maxPrice: '' },
+    categories,
+    locale,
+  );
   const brandCounts: Record<string, number> = {};
   brandScope.forEach(({ brandId }) => {
     if (brandId != null) brandCounts[brandId] = (brandCounts[brandId] ?? 0) + 1;
@@ -123,5 +130,10 @@ export function favoriteFilterOptions(
       colorCounts[family] = (colorCounts[family] ?? 0) + 1;
     });
   });
-  return { brandCounts, colorCounts };
+  const price = priceFacet(
+    priceScope.flatMap(({ cachedPrice }) =>
+      cachedPrice == null ? [] : [cachedPrice],
+    ),
+  );
+  return { brandCounts, colorCounts, price };
 }

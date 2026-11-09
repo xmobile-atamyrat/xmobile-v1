@@ -7,6 +7,8 @@ import {
 } from '@/pages/lib/colorFamilies';
 import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
+import { DISPLAY_PRICE_STEP } from '@/pages/lib/priceDisplay';
+import { formatTmt, priceRangeLabel } from '@/pages/lib/priceFacet';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { filterRailClasses } from '@/styles/classMaps/components/filterSidebar';
@@ -223,30 +225,52 @@ export default function FilterSidebar({
     })();
   }, []);
 
+  // The slider spans what the listing actually costs, not 0-100 000.
+  const priceRange = options?.price ?? null;
+  const sliderMin = priceRange?.min ?? 0;
+  const sliderMax = priceRange?.max ?? FILTER_MAX_PRICE;
+
   const [localPriceRange, setLocalPriceRange] = useState<number[]>([
-    0,
-    FILTER_MAX_PRICE,
+    sliderMin,
+    sliderMax,
   ]);
 
   useEffect(() => {
-    const min = minPrice ? parseFloat(minPrice) : 0;
-    const max = maxPrice ? parseFloat(maxPrice) : FILTER_MAX_PRICE;
-    setLocalPriceRange([min, max]);
-  }, [minPrice, maxPrice]);
+    const clamp = (value: number) =>
+      Math.min(Math.max(value, sliderMin), sliderMax);
+    setLocalPriceRange([
+      clamp(minPrice ? parseFloat(minPrice) : sliderMin),
+      clamp(maxPrice ? parseFloat(maxPrice) : sliderMax),
+    ]);
+  }, [minPrice, maxPrice, sliderMin, sliderMax]);
 
+  // A thumb dragged back to its end means "no bound", not that exact price.
   const handlePriceCommit = (
     _: Event | React.SyntheticEvent | Event,
     value: number | number[],
   ) => {
     const [min, max] = value as number[];
-    onFilterChange({ minPrice: min.toString(), maxPrice: max.toString() });
+    onFilterChange({
+      minPrice: min <= sliderMin ? '' : min.toString(),
+      maxPrice: max >= sliderMax ? '' : max.toString(),
+    });
   };
 
-  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ minPrice: e.target.value });
+  // Typed prices apply on Enter or leaving the field, not per keystroke:
+  // each keystroke used to refetch the whole list.
+  const [minDraft, setMinDraft] = useState(minPrice);
+  const [maxDraft, setMaxDraft] = useState(maxPrice);
+  useEffect(() => setMinDraft(minPrice), [minPrice]);
+  useEffect(() => setMaxDraft(maxPrice), [maxPrice]);
+
+  const digitsOnly = (value: string) => value.replace(/\D/g, '');
+  const commitTypedPrice = () => {
+    if (minDraft !== minPrice || maxDraft !== maxPrice) {
+      onFilterChange({ minPrice: minDraft, maxPrice: maxDraft });
+    }
   };
-  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ maxPrice: e.target.value });
+  const commitOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commitTypedPrice();
   };
 
   const handleClearFilters = () => {
@@ -610,13 +634,40 @@ export default function FilterSidebar({
           onToggle={() => setPriceOpen(!priceOpen)}
           variant={variant}
         >
+          {priceRange != null && priceRange.buckets.length > 0 && (
+            <Box display="flex" flexDirection="column" mb={1}>
+              {priceRange.buckets.map((bucket) => {
+                const lower = bucket.min == null ? '' : String(bucket.min);
+                const upper = bucket.max == null ? '' : String(bucket.max);
+                const selected = minPrice === lower && maxPrice === upper;
+                return (
+                  <FilterItem
+                    key={`${lower}-${upper}`}
+                    label={`${priceRangeLabel(bucket.min, bucket.max)} TMT`}
+                    isSelected={selected}
+                    count={bucket.count}
+                    onClick={() =>
+                      onFilterChange(
+                        selected
+                          ? { minPrice: '', maxPrice: '' }
+                          : { minPrice: lower, maxPrice: upper },
+                      )
+                    }
+                  />
+                );
+              })}
+            </Box>
+          )}
           <Box px={1} pt={1}>
             <Box display="flex" gap={1.5} mb={2}>
               <TextField
                 size="small"
-                value={minPrice}
-                onChange={handleMinInputChange}
-                placeholder="0"
+                value={minDraft}
+                onChange={(e) => setMinDraft(digitsOnly(e.target.value))}
+                onBlur={commitTypedPrice}
+                onKeyDown={commitOnEnter}
+                inputProps={{ inputMode: 'numeric' }}
+                placeholder={String(sliderMin)}
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
@@ -659,9 +710,12 @@ export default function FilterSidebar({
               />
               <TextField
                 size="small"
-                value={maxPrice}
-                onChange={handleMaxInputChange}
-                placeholder={FILTER_MAX_PRICE.toString()}
+                value={maxDraft}
+                onChange={(e) => setMaxDraft(digitsOnly(e.target.value))}
+                onBlur={commitTypedPrice}
+                onKeyDown={commitOnEnter}
+                inputProps={{ inputMode: 'numeric' }}
+                placeholder={String(sliderMax)}
                 sx={{
                   bgcolor: '#fff',
                   borderRadius: '11px',
@@ -708,8 +762,11 @@ export default function FilterSidebar({
               onChange={(_, value) => setLocalPriceRange(value as number[])}
               onChangeCommitted={handlePriceCommit}
               valueLabelDisplay="auto"
-              min={0}
-              max={FILTER_MAX_PRICE}
+              valueLabelFormat={formatTmt}
+              min={sliderMin}
+              max={sliderMax}
+              step={DISPLAY_PRICE_STEP}
+              disabled={sliderMin >= sliderMax}
               sx={{
                 color: navy,
                 height: 4,

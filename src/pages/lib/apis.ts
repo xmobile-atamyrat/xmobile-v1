@@ -8,6 +8,7 @@ import {
   ResponseApi,
 } from '@/pages/lib/types';
 import { ColorFamily } from '@/pages/lib/colorFamilies';
+import { PriceFacet } from '@/pages/lib/priceFacet';
 import { Color } from '@prisma/client';
 
 export interface ProductFilterOptions {
@@ -16,6 +17,8 @@ export interface ProductFilterOptions {
   brandCounts: Record<string, number>;
   /** Products per colour family, given the other filters. */
   colorCounts: Partial<Record<ColorFamily, number>>;
+  /** Price range and quick brackets, given the other filters. */
+  price: PriceFacet | null;
 }
 
 export const fetchProducts = async ({

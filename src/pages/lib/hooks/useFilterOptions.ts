@@ -1,5 +1,6 @@
 import { fetchProductFilterOptions } from '@/pages/lib/apis';
 import { ColorFamily } from '@/pages/lib/colorFamilies';
+import { PriceFacet } from '@/pages/lib/priceFacet';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { useEffect, useState } from 'react';
 
@@ -7,6 +8,7 @@ import { useEffect, useState } from 'react';
 export interface FilterOptions {
   brandCounts: Record<string, number>;
   colorCounts: Partial<Record<ColorFamily, number>>;
+  price: PriceFacet | null;
 }
 
 /** What the listing is about before any rail filter: its category or search. */
@@ -43,8 +45,8 @@ export function useFilterOptions(
     if (!enabled) return () => undefined;
     let cancelled = false;
     fetchProductFilterOptions(JSON.parse(key))
-      .then(({ brandCounts, colorCounts }) => {
-        if (!cancelled) setOptions({ brandCounts, colorCounts });
+      .then(({ brandCounts, colorCounts, price }) => {
+        if (!cancelled) setOptions({ brandCounts, colorCounts, price });
       })
       .catch(() => undefined);
     return () => {

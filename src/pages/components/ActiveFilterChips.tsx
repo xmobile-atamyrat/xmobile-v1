@@ -1,7 +1,7 @@
 import { fetchBrands } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { COLOR_FAMILY_LABEL_KEY } from '@/pages/lib/colorFamilies';
-import { FILTER_MAX_PRICE } from '@/pages/lib/constants';
+import { priceRangeLabel } from '@/pages/lib/priceFacet';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
 import { BrandProps, ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -89,9 +89,10 @@ export default function ActiveFilterChips({
   if (filters.minPrice || filters.maxPrice) {
     chips.push({
       key: 'price',
-      label: `${filters.minPrice || 0} – ${
-        filters.maxPrice || FILTER_MAX_PRICE
-      } TMT`,
+      label: `${priceRangeLabel(
+        filters.minPrice ? Number(filters.minPrice) : null,
+        filters.maxPrice ? Number(filters.maxPrice) : null,
+      )} TMT`,
       onRemove: () => onChange({ minPrice: '', maxPrice: '' }),
     });
   }
