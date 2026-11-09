@@ -92,8 +92,15 @@ describe('FilterSidebar — color filter section', () => {
 
     await waitFor(() => expect(screen.getByTitle('Red')).toBeInTheDocument());
 
-    const row = screen.getByTitle('Red').parentElement as HTMLElement;
+    const row = screen.getByTitle('Red').closest('label') as HTMLElement;
     expect(within(row).getByRole('checkbox')).toBeChecked();
+  });
+
+  it('labels each swatch with the color name', async () => {
+    renderSidebar();
+
+    expect(await screen.findByText('Red')).toBeInTheDocument();
+    expect(screen.getByLabelText('Red')).toHaveAttribute('type', 'checkbox');
   });
 
   it('clicking a checked color calls onFilterChange with the colorId removed', async () => {

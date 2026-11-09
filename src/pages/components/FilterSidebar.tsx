@@ -313,12 +313,14 @@ export default function FilterSidebar({
     isSelected,
     onClick,
     count,
+    swatchHex,
   }: {
     label: string;
     isSelected: boolean;
     onClick: () => void;
     /** Real Brand.productCount — omitted where the schema has no count. */
     count?: number;
+    swatchHex?: string;
   }) => (
     <Box display="flex" flexDirection="column">
       <FormControlLabel
@@ -342,13 +344,29 @@ export default function FilterSidebar({
             minWidth={180}
             alignItems="center"
           >
+            {swatchHex != null && (
+              <Box
+                title={label}
+                sx={{
+                  width: 18,
+                  height: 18,
+                  flexShrink: 0,
+                  borderRadius: '50%',
+                  border: isSelected
+                    ? `2px solid ${navy}`
+                    : '1px solid #D6D5DE',
+                  backgroundColor: swatchHex,
+                  ml: 1,
+                }}
+              />
+            )}
             <Typography
               className={fontClassName.className}
               fontSize="14px"
               fontWeight={isSelected ? 700 : 400}
               lineHeight="22px"
               color={isSelected ? ink : '#4A4959'}
-              sx={{ ml: 1 }}
+              sx={{ ml: 1, flex: 1 }}
             >
               {label}
             </Typography>
@@ -532,27 +550,13 @@ export default function FilterSidebar({
               sx={{ maxHeight: '300px', overflowY: 'auto' }}
             >
               {colorsToShow.map((color) => (
-                <Box key={color.key} display="flex" alignItems="center">
-                  <CustomCheckbox
-                    checked={isColorSelected(color.ids)}
-                    onChange={() => toggleColor(color.ids)}
-                  />
-                  <Box
-                    title={color.name}
-                    onClick={() => toggleColor(color.ids)}
-                    sx={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: '50%',
-                      border: isColorSelected(color.ids)
-                        ? `2px solid ${navy}`
-                        : '1px solid #D6D5DE',
-                      backgroundColor: color.hex,
-                      mx: 1,
-                      cursor: 'pointer',
-                    }}
-                  />
-                </Box>
+                <FilterItem
+                  key={color.key}
+                  label={color.name}
+                  swatchHex={color.hex}
+                  isSelected={isColorSelected(color.ids)}
+                  onClick={() => toggleColor(color.ids)}
+                />
               ))}
             </Box>
           </FilterSection>
