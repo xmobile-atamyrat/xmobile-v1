@@ -941,5 +941,11 @@
   "favoritesLoadError": "Halanlaryňyz ýüklenmedi",
   "searchLoadError": "Netijeler ýüklenmedi",
   "tryAgain": "Gaýtadan synanyşyň",
-  "activityBrandsReordered": "Brendleriň tertibi üýtgedildi"
+  "activityBrandsReordered": "Brendleriň tertibi üýtgedildi",
+  "brandOrder": "Brendleriň tertibi",
+  "brandOrderSubtitle": "Peýkamlar bilen filtrdäki brendleriň tertibini belläň. Her bölümde diňe şol ýerde harytlary bolan brendler görkezilýär: ilkinji 7-si derrew, galanlary «Köprak görkäz» düwmesi bilen.",
+  "moveBrandUp": "Ýokary",
+  "moveBrandDown": "Aşak",
+  "brandOrderSaveError": "Brendleriň tertibini ýatda saklap bolmady.",
+  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň."
 }

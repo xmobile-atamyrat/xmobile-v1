@@ -939,5 +939,11 @@
   "favoritesLoadError": "Favorileriniz yüklenemedi",
   "searchLoadError": "Sonuçlar yüklenemedi",
   "tryAgain": "Tekrar dene",
-  "activityBrandsReordered": "Marka sırası değiştirildi"
+  "activityBrandsReordered": "Marka sırası değiştirildi",
+  "brandOrder": "Marka sırası",
+  "brandOrderSubtitle": "Oklarla filtredeki markaların sırasını belirleyin. Her bölümde yalnızca orada ürünü olan markalar gösterilir: ilk 7 marka hemen, kalanlar “Daha fazla göster” ile.",
+  "moveBrandUp": "Yukarı taşı",
+  "moveBrandDown": "Aşağı taşı",
+  "brandOrderSaveError": "Marka sırası kaydedilemedi.",
+  "brandOrderStale": "Marka listesi değişti. Güncel sıra gösteriliyor, lütfen tekrar deneyin."
 }

@@ -939,5 +939,11 @@
   "favoritesLoadError": "Couldn't load your favorites",
   "searchLoadError": "Couldn't load the results",
   "tryAgain": "Try again",
-  "activityBrandsReordered": "Changed the brand order"
+  "activityBrandsReordered": "Changed the brand order",
+  "brandOrder": "Brand order",
+  "brandOrderSubtitle": "Use the arrows to set the order of brands in the filter. Each section shows only the brands that have products in it: the first 7 right away, the rest behind “Show more”.",
+  "moveBrandUp": "Move up",
+  "moveBrandDown": "Move down",
+  "brandOrderSaveError": "Could not save the brand order.",
+  "brandOrderStale": "The brand list has changed. The current order is shown, please try again."
 }
