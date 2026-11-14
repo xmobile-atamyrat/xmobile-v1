@@ -429,9 +429,11 @@ async function handleGetProduct(
     count?: string;
     facets?: string;
     locale?: string | string[];
+    limit?: string;
   },
 ): Promise<{ resp: ResponseApi; status: number }> {
-  const { productId, productSlug, page, sortBy, count, facets, locale } = query;
+  const { productId, productSlug, page, sortBy, count, facets, locale, limit } =
+    query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
   const wantCount = count === 'true';
@@ -447,7 +449,14 @@ async function handleGetProduct(
       ? locale
       : undefined;
   const parsedPage = parseInt(page || '1', 10);
-  const skip = (parsedPage - 1) * productsPerPage;
+  // Home sections ask for just the cards they show (plus one, to know whether
+  // "show more" applies) rather than a full page.
+  const parsedLimit = parseInt(limit || '', 10);
+  const pageSize =
+    parsedLimit >= 1 && parsedLimit <= productsPerPage
+      ? parsedLimit
+      : productsPerPage;
+  const skip = (parsedPage - 1) * pageSize;
 
   if (
     productId != null &&
@@ -549,6 +558,15 @@ async function handleGetProduct(
       case SORT_OPTIONS.NEWEST:
         orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
+      // The admin-picked order first, then everything else newest first, so
+      // the "show more" listing continues past the picks instead of ending.
+      case SORT_OPTIONS.RECOMMENDED:
+        orderBy = [
+          inStockFirst,
+          { recommendedOrder: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ];
+        break;
       default:
         break;
     }
@@ -558,7 +576,7 @@ async function handleGetProduct(
     where,
     orderBy,
     skip,
-    take: productsPerPage,
+    take: pageSize,
     include: { brand: true },
   });
 
@@ -881,7 +899,7 @@ export default async function handler(
       await dbClient.$transaction([
         dbClient.product.update({
           where: { id: existing.id },
-          data: { deletedAt: now },
+          data: { deletedAt: now, recommendedOrder: null },
         }),
         dbClient.cartItem.deleteMany({ where: { productId: existing.id } }),
       ]);

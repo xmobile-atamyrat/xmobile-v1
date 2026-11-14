@@ -39,6 +39,8 @@ export const fetchProducts = async ({
   page,
   locale,
   inStock,
+  recommended,
+  limit,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -52,6 +54,10 @@ export const fetchProducts = async ({
   productId?: string;
   productSlug?: string;
   page?: number;
+  /** Only products an admin picked for the home page's recommended row. */
+  recommended?: boolean;
+  /** Page size, capped at PRODUCTS_PER_PAGE by the API. */
+  limit?: number;
   /**
    * When set, the API strips names/descriptions down to this locale.
    * Leave unset for admin flows that need the raw multi-locale JSON
@@ -84,6 +90,8 @@ export const fetchProducts = async ({
   appendParam('sortBy', sortBy);
   appendParam('locale', locale);
   appendParam('inStock', inStock ? '1' : undefined);
+  appendParam('recommended', recommended ? '1' : undefined);
+  appendParam('limit', limit);
 
   const { success, data, message }: ResponseApi<ExtendedProduct[]> = await (
     await fetch(url)

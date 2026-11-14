@@ -18,6 +18,7 @@ export interface ProductFilterQuery {
   minPrice?: string;
   maxPrice?: string;
   inStock?: string;
+  recommended?: string;
 }
 
 export function toArray(value?: QueryValue): string[] | undefined {
@@ -71,6 +72,7 @@ export async function buildProductWhere(
     minPrice,
     maxPrice,
     inStock,
+    recommended,
   } = query;
   const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
 
@@ -116,6 +118,10 @@ export async function buildProductWhere(
 
   if (inStock === '1') {
     where.outOfStockAt = null;
+  }
+
+  if (recommended === '1') {
+    where.recommendedOrder = { not: null };
   }
 
   // Both bounds and cachedPrice are the shown manat, so they compare directly.

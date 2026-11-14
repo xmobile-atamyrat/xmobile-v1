@@ -817,6 +817,7 @@
   "activityFieldDescription": "description",
   "activityFieldTags": "variations",
   "activityFieldVideos": "videos",
+  "activityFieldRecommended": "recommended position",
   "brandColorsClash": "Cannot delete the brand: some of its colors share a name or hex with an unbranded color. Rename or delete them first.",
   "colorNotFound": "One of the colors has been deleted. Reload the page.",
   "activityTabActivity": "Activity",

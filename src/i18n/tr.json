@@ -817,6 +817,7 @@
   "activityFieldDescription": "açıklama",
   "activityFieldTags": "varyasyonlar",
   "activityFieldVideos": "videolar",
+  "activityFieldRecommended": "önerilenlerdeki sıra",
   "brandColorsClash": "Marka silinemiyor: bazı renkleri markasız bir renkle aynı ada veya hex koduna sahip. Önce bunları yeniden adlandırın veya silin.",
   "colorNotFound": "Renklerden biri silinmiş. Sayfayı yenileyin.",
   "activityTabActivity": "Etkinlik",

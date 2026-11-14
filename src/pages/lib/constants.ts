@@ -173,6 +173,7 @@ export const SORT_OPTIONS = {
   PRICE_DESC: 'price_desc',
   NEWEST: 'newest',
   A_Z: 'a_z',
+  RECOMMENDED: 'recommended',
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;
@@ -180,6 +181,7 @@ export const FILTER_MAX_PRICE = 100000;
 // Page size for the product grid. Shared so the web pagination control derives
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;
+export const RECOMMENDED_PRODUCTS_MAX = 50;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart
