@@ -18,6 +18,8 @@ export interface FilterOptions {
 export interface FilterScope {
   categoryIds: string[];
   searchKeyword?: string;
+  /** Home's "view all" for the admin's recommended picks. */
+  recommended?: boolean;
   /** The staff-only listing of products without images. */
   imageless?: boolean;
   /**
@@ -54,6 +56,7 @@ export function useFilterOptions(
     maxPrice: filters.maxPrice,
     searchKeyword: scope.searchKeyword,
     inStock: filters.inStock,
+    recommended: scope.recommended,
     imageless: scope.imageless,
     // Whether, not which: becoming staff changes the answer, a refresh doesn't.
     asStaff: scope.staffToken != null,

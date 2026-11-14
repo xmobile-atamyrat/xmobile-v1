@@ -131,6 +131,7 @@ export const fetchProductsCount = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  recommended,
   imageless,
   staffToken,
 }: {
@@ -142,6 +143,8 @@ export const fetchProductsCount = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** Only the admin's recommended picks. */
+  recommended?: boolean;
   /** Only products without images; needs a staff `staffToken`. */
   imageless?: boolean;
   /** See {@link staffInit}. */
@@ -158,6 +161,7 @@ export const fetchProductsCount = async ({
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
   appendParam('inStock', inStock ? '1' : undefined);
+  appendParam('recommended', recommended ? '1' : undefined);
   appendParam('imageless', imageless ? '1' : undefined);
 
   const { success, data }: ResponseApi<number> = await (
@@ -371,6 +375,7 @@ export const fetchProductFilterOptions = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  recommended,
   imageless,
   staffToken,
 }: {
@@ -381,6 +386,8 @@ export const fetchProductFilterOptions = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** Only the admin's recommended picks. */
+  recommended?: boolean;
   /** Only products without images; needs a staff `staffToken`. */
   imageless?: boolean;
   /** See {@link staffInit}. */
@@ -394,6 +401,7 @@ export const fetchProductFilterOptions = async ({
   if (maxPrice) params.set('maxPrice', maxPrice);
   if (searchKeyword) params.set('searchKeyword', searchKeyword);
   if (inStock) params.set('inStock', '1');
+  if (recommended) params.set('recommended', '1');
   if (imageless) params.set('imageless', '1');
 
   const { success, data, message }: ResponseApi<ProductFilterOptions> = await (

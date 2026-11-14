@@ -125,6 +125,8 @@ export default function ProductGridContent({
   // anyone else with nothing, so the query waits until the session is known.
   const imagelessOnly = router.query.imageless === '1';
   const waitForStaff = imagelessOnly && isUserLoading;
+  // Home's recommended "view all": only the admin's picks, rail filters on top.
+  const recommendedOnly = router.query.recommended === '1';
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -336,10 +338,18 @@ export default function ProductGridContent({
     () => ({
       categoryIds: baseCategoryIds,
       searchKeyword,
+      recommended: recommendedOnly || undefined,
       imageless: imagelessOnly || undefined,
       staffToken: isStaffViewer ? accessToken : undefined,
     }),
-    [baseCategoryIds, searchKeyword, imagelessOnly, isStaffViewer, accessToken],
+    [
+      baseCategoryIds,
+      searchKeyword,
+      recommendedOnly,
+      imagelessOnly,
+      isStaffViewer,
+      accessToken,
+    ],
   );
   // Web's rail needs these always. Mobile asks from inside its sheet, for the
   // choices not yet applied, so here it only wants them to explain an empty
@@ -399,6 +409,7 @@ export default function ProductGridContent({
           sortBy: filters.sortBy,
           locale: router.locale,
           inStock: filters.inStock,
+          recommended: recommendedOnly || undefined,
           imageless: imagelessOnly || undefined,
           staffToken: staffTokenRef.current,
         };
@@ -451,6 +462,7 @@ export default function ProductGridContent({
     platform,
     webPage,
     isStaffViewer,
+    recommendedOnly,
     imagelessOnly,
     waitForStaff,
     setProducts,
@@ -481,6 +493,7 @@ export default function ProductGridContent({
         sortBy: filters.sortBy,
         locale: router.locale,
         inStock: filters.inStock,
+        recommended: recommendedOnly || undefined,
         imageless: imagelessOnly || undefined,
         staffToken: staffTokenRef.current,
       };
@@ -539,6 +552,8 @@ export default function ProductGridContent({
     titleText = t('searchResultsFor', { keyword: searchKeyword });
   } else if (imagelessOnly) {
     titleText = t('imagelessProducts');
+  } else if (recommendedOnly) {
+    titleText = t('recommendedProducts');
   }
 
   // The seeded first page keeps links in the SSR HTML until the first client

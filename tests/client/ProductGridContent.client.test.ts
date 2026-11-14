@@ -143,6 +143,31 @@ describe('ProductGridContent listing products without photos', () => {
   });
 });
 
+describe("ProductGridContent as home's recommended view all", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFilterApis();
+    session.current = { user: null, isLoading: false };
+    apis.fetchProducts.mockResolvedValue([
+      { id: 'p7', name: 'Picked Phone' } as Product,
+    ]);
+    mockRouter.setCurrentUrl('/product?recommended=1&sortBy=recommended');
+  });
+
+  it('asks for the picks only, its counts and rail options too', async () => {
+    renderWithProviders(grid({}));
+
+    expect(await screen.findByText('Picked Phone')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Recommended products' }),
+    ).toBeInTheDocument();
+    const picksOnly = expect.objectContaining({ recommended: true });
+    expect(apis.fetchProducts).toHaveBeenCalledWith(picksOnly);
+    expect(apis.fetchProductsCount).toHaveBeenCalledWith(picksOnly);
+    expect(apis.fetchProductFilterOptions).toHaveBeenCalledWith(picksOnly);
+  });
+});
+
 describe('ProductGridContent with a seeded first page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
