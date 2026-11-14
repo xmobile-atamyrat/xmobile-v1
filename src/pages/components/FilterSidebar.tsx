@@ -348,22 +348,15 @@ export default function FilterSidebar({
   );
 
   // -- Brand Logic --
-  // Most products first, then by name, once the counts are known.
+  // In the order admins set, which `/api/brand` already returns.
   const availableBrands =
     options == null
       ? brands
-      : brands
-          .filter(
-            (brand) =>
-              options.brandCounts[brand.id] != null ||
-              selectedBrandIds.includes(brand.id),
-          )
-          .sort(
-            (a, b) =>
-              (options.brandCounts[b.id] ?? 0) -
-                (options.brandCounts[a.id] ?? 0) ||
-              a.name.localeCompare(b.name, locale),
-          );
+      : brands.filter(
+          (brand) =>
+            options.brandCounts[brand.id] != null ||
+            selectedBrandIds.includes(brand.id),
+        );
   const brandsToShow = limitBrands
     ? availableBrands.slice(0, COLLAPSED_ROWS)
     : availableBrands;

@@ -223,7 +223,7 @@ describe('FilterSidebar — brand section', () => {
     expect(within(row).getByText('7')).toBeInTheDocument();
   });
 
-  it('lists brands with the most products first, ties by name', async () => {
+  it('keeps the admin order whatever the counts', async () => {
     await renderSidebar({
       options: {
         total: 1,
@@ -239,7 +239,7 @@ describe('FilterSidebar — brand section', () => {
       .getAllByRole('checkbox')
       .map((box) => box.closest('label')?.textContent)
       .filter((text) => text !== 'In stock only');
-    expect(labels).toEqual(['Samsung 9', 'Apple 2', 'Xiaomi 2']);
+    expect(labels).toEqual(['Apple 2', 'Samsung 9', 'Xiaomi 2']);
   });
 
   it('keeps a ticked brand that other filters ruled out', async () => {
