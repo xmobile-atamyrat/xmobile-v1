@@ -959,5 +959,12 @@
   "sortRecommended": "Recommended",
   "recommended": "Recommended",
   "recommendedListFull": "The recommended list is full. Remove a product from it first.",
-  "recommendedOnly": "Recommended only"
+  "recommendedOnly": "Recommended only",
+  "activityBrandsReordered": "Changed the brand order",
+  "brandOrder": "Brand order",
+  "brandOrderSubtitle": "Use the arrows to set the order of brands in the filter. Each section shows only the brands that have products in it: the first {count} right away, the rest behind “Show more”.",
+  "moveBrandUp": "Move up",
+  "moveBrandDown": "Move down",
+  "brandOrderSaveError": "Could not save the brand order.",
+  "brandOrderStale": "The brand list has changed. The current order is shown, please try again."
 }

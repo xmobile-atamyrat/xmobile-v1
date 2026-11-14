@@ -959,5 +959,12 @@
   "sortRecommended": "Önerilenler",
   "recommended": "Önerilen",
   "recommendedListFull": "Önerilenler listesi dolu. Önce listeden bir ürün çıkarın.",
-  "recommendedOnly": "Sadece önerilenler"
+  "recommendedOnly": "Sadece önerilenler",
+  "activityBrandsReordered": "Marka sırası değiştirildi",
+  "brandOrder": "Marka sırası",
+  "brandOrderSubtitle": "Oklarla filtredeki markaların sırasını belirleyin. Her bölümde yalnızca orada ürünü olan markalar gösterilir: ilk {count} marka hemen, kalanlar “Daha fazla göster” ile.",
+  "moveBrandUp": "Yukarı taşı",
+  "moveBrandDown": "Aşağı taşı",
+  "brandOrderSaveError": "Marka sırası kaydedilemedi.",
+  "brandOrderStale": "Marka listesi değişti. Güncel sıra gösteriliyor, lütfen tekrar deneyin."
 }

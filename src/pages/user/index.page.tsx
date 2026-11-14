@@ -42,6 +42,7 @@ import {
   Heart,
   Images,
   Languages,
+  ListOrdered,
   LogOut,
   Package,
   Palette,
@@ -347,6 +348,11 @@ export default function Profile() {
       icon: <FolderTree className={profileClasses.icon.primary} />,
       label: t('categoryHierarchy'),
       onClick: () => router.push('/user/category-hierarchy'),
+    },
+    {
+      icon: <ListOrdered className={profileClasses.icon.primary} />,
+      label: t('brandOrder'),
+      onClick: () => router.push('/user/brand-order'),
     },
     {
       icon: <Images className={profileClasses.icon.primary} />,

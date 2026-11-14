@@ -178,6 +178,9 @@ export const SORT_OPTIONS = {
 
 export const FILTER_MAX_PRICE = 100000;
 
+// Filter lists longer than this collapse behind a "Show more" link.
+export const FILTER_COLLAPSED_ROWS = 7;
+
 // Page size for the product grid. Shared so the web pagination control derives
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;

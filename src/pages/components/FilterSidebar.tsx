@@ -5,7 +5,11 @@ import {
   COLOR_FAMILY_LABEL_KEY,
   ColorFamily,
 } from '@/pages/lib/colorFamilies';
-import { FILTER_MAX_PRICE, SORT_OPTIONS } from '@/pages/lib/constants';
+import {
+  FILTER_COLLAPSED_ROWS,
+  FILTER_MAX_PRICE,
+  SORT_OPTIONS,
+} from '@/pages/lib/constants';
 import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { DISPLAY_PRICE_STEP } from '@/pages/lib/priceDisplay';
 import { formatTmt, priceRangeLabel } from '@/pages/lib/priceFacet';
@@ -66,9 +70,6 @@ const scrollingListSx = {
   overflowY: 'auto',
   scrollbarGutter: 'stable',
 } as const;
-
-// Lists longer than this collapse behind a "Show more" link.
-const COLLAPSED_ROWS = 7;
 
 const ShowMoreToggle = ({
   collapsed,
@@ -293,7 +294,7 @@ export default function FilterSidebar({
     (category) => !category.predecessorId,
   );
   const categoriesToShow = limitCategories
-    ? topLevelCategories.slice(0, COLLAPSED_ROWS)
+    ? topLevelCategories.slice(0, FILTER_COLLAPSED_ROWS)
     : topLevelCategories;
 
   const handleCategoryClick = (categoryId: string) => {
@@ -351,24 +352,17 @@ export default function FilterSidebar({
   );
 
   // -- Brand Logic --
-  // Most products first, then by name, once the counts are known.
+  // In the order admins set, which `/api/brand` already returns.
   const availableBrands =
     options == null
       ? brands
-      : brands
-          .filter(
-            (brand) =>
-              options.brandCounts[brand.id] != null ||
-              selectedBrandIds.includes(brand.id),
-          )
-          .sort(
-            (a, b) =>
-              (options.brandCounts[b.id] ?? 0) -
-                (options.brandCounts[a.id] ?? 0) ||
-              a.name.localeCompare(b.name, locale),
-          );
+      : brands.filter(
+          (brand) =>
+            options.brandCounts[brand.id] != null ||
+            selectedBrandIds.includes(brand.id),
+        );
   const brandsToShow = limitBrands
-    ? availableBrands.slice(0, COLLAPSED_ROWS)
+    ? availableBrands.slice(0, FILTER_COLLAPSED_ROWS)
     : availableBrands;
 
   const handleBrandToggle = (brandId: string) => {
@@ -539,7 +533,7 @@ export default function FilterSidebar({
                 />
               ))}
             </Box>
-            {topLevelCategories.length > COLLAPSED_ROWS && (
+            {topLevelCategories.length > FILTER_COLLAPSED_ROWS && (
               <ShowMoreToggle
                 collapsed={limitCategories}
                 onToggle={() => setLimitCategories(!limitCategories)}
@@ -574,7 +568,7 @@ export default function FilterSidebar({
                 count={options ? options.brandCounts[brand.id] ?? 0 : undefined}
               />
             ))}
-            {availableBrands.length > COLLAPSED_ROWS && (
+            {availableBrands.length > FILTER_COLLAPSED_ROWS && (
               <ShowMoreToggle
                 collapsed={limitBrands}
                 onToggle={() => setLimitBrands(!limitBrands)}
@@ -592,7 +586,7 @@ export default function FilterSidebar({
           >
             <Box display="flex" flexDirection="column" sx={scrollingListSx}>
               {(limitColors
-                ? colorsToShow.slice(0, COLLAPSED_ROWS)
+                ? colorsToShow.slice(0, FILTER_COLLAPSED_ROWS)
                 : colorsToShow
               ).map((family) => (
                 <FilterItem
@@ -604,7 +598,7 @@ export default function FilterSidebar({
                   count={options?.colorCounts[family] ?? 0}
                 />
               ))}
-              {colorsToShow.length > COLLAPSED_ROWS && (
+              {colorsToShow.length > FILTER_COLLAPSED_ROWS && (
                 <ShowMoreToggle
                   collapsed={limitColors}
                   onToggle={() => setLimitColors(!limitColors)}

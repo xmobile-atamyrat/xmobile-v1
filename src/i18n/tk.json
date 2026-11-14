@@ -961,5 +961,12 @@
   "sortRecommended": "Maslahat berilýänler",
   "recommended": "Maslahat berilýän",
   "recommendedListFull": "Maslahat berilýänleriň sanawy doly. Ilki ondan bir haryt aýyryň.",
-  "recommendedOnly": "Diňe maslahat berilýänler"
+  "recommendedOnly": "Diňe maslahat berilýänler",
+  "activityBrandsReordered": "Brendleriň tertibi üýtgedildi",
+  "brandOrder": "Brendleriň tertibi",
+  "brandOrderSubtitle": "Peýkamlar bilen süzgüçdäki brendleriň tertibini belläň. Her bölümde diňe şol ýerde harytlary bolan brendler görkezilýär: ilkinji {count}-si derrew, galanlary «Köpräk görmek» düwmesi bilen.",
+  "moveBrandUp": "Ýokary",
+  "moveBrandDown": "Aşak",
+  "brandOrderSaveError": "Brendleriň tertibini ýatda saklap bolmady.",
+  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň."
 }

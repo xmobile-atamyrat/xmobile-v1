@@ -10,6 +10,9 @@ import withAuth, {
 import { BrandProps, ResponseApi } from '@/pages/lib/types';
 import { UserRole } from '@prisma/client';
 import { NextApiResponse } from 'next';
+import { z } from 'zod';
+
+const BrandOrderSchema = z.object({ order: z.array(z.string().min(1)) });
 
 /**
  * A brand has no page of its own — its name is baked into each product's
@@ -35,7 +38,9 @@ async function handler(
     const { grade } = req;
 
     if (method === 'GET') {
-      const brands = await dbClient.brand.findMany();
+      const brands = await dbClient.brand.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      });
 
       return res.status(200).json({ success: true, data: brands });
     }
@@ -62,8 +67,12 @@ async function handler(
           .json({ success: false, message: 'Brand already exists' });
       }
 
+      const last = await dbClient.brand.findFirst({
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true },
+      });
       const brand = await dbClient.brand.create({
-        data: { name },
+        data: { name, sortOrder: (last?.sortOrder ?? -1) + 1 },
       });
 
       logAdminActivity({
@@ -152,6 +161,53 @@ async function handler(
       revalidateInBackground(res, paths);
 
       return res.status(200).json({ success: true, message: 'Deleted' });
+    }
+
+    if (method === 'PATCH') {
+      const parsed = BrandOrderSchema.safeParse(body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'order must list brand ids' });
+      }
+      const { order } = parsed.data;
+
+      const current = new Map(
+        (
+          await dbClient.brand.findMany({
+            select: { id: true, sortOrder: true },
+          })
+        ).map((brand) => [brand.id, brand.sortOrder]),
+      );
+      // The admin's list predates a brand being added or deleted.
+      if (
+        order.length !== current.size ||
+        new Set(order).size !== order.length ||
+        order.some((id) => !current.has(id))
+      ) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'brandOrderStale' });
+      }
+
+      const moved = order.flatMap((id, sortOrder) =>
+        current.get(id) === sortOrder ? [] : [{ id, sortOrder }],
+      );
+      if (moved.length > 0) {
+        await dbClient.$transaction(
+          moved.map(({ id, sortOrder }) =>
+            dbClient.brand.update({ where: { id }, data: { sortOrder } }),
+          ),
+        );
+        logAdminActivity({
+          userId: req.userId,
+          entity: 'BRAND',
+          action: 'UPDATE',
+          meta: { kind: 'REORDER' },
+        });
+      }
+
+      return res.status(200).json({ success: true });
     }
 
     return res
