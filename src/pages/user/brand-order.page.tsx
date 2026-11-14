@@ -1,5 +1,5 @@
 import Layout from '@/pages/components/Layout';
-import { appBarHeight } from '@/pages/lib/constants';
+import { appBarHeight, FILTER_COLLAPSED_ROWS } from '@/pages/lib/constants';
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { BrandProps, ResponseApi } from '@/pages/lib/types';
@@ -259,7 +259,7 @@ export default function BrandOrderPage() {
           className={fontClassName.className}
           sx={{ lineHeight: 1.5 }}
         >
-          {t('brandOrderSubtitle')}
+          {t('brandOrderSubtitle', { count: FILTER_COLLAPSED_ROWS })}
         </Typography>
 
         {list}
