@@ -1,6 +1,9 @@
 import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import dbClient from '@/lib/dbClient';
-import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import {
+  whereActiveProduct,
+  whereListableProduct,
+} from '@/lib/prismaActiveScope';
 import { productSearchWhere } from '@/lib/productSearchWhere';
 import { colorFamilyOf, isColorFamily } from '@/pages/lib/colorFamilies';
 import { Prisma } from '@prisma/client';
@@ -18,6 +21,9 @@ export interface ProductFilterQuery {
   minPrice?: string;
   maxPrice?: string;
   inStock?: string;
+  recommended?: string;
+  /** '1': only products without images. Staff only, see buildProductWhere. */
+  imageless?: string;
 }
 
 export function toArray(value?: QueryValue): string[] | undefined {
@@ -54,12 +60,21 @@ async function getRecursiveCategoryIds(
   return ids;
 }
 
+export interface ProductWhereOptions {
+  /**
+   * Also match products without images. Only for staff: shoppers never see
+   * them as cards, but an admin has to find one to give it a photo.
+   */
+  includeImageless?: boolean;
+}
+
 /**
  * Builds the Prisma filter for a storefront query. Returns null when the
  * query can match nothing (its categories no longer exist).
  */
 export async function buildProductWhere(
   query: ProductFilterQuery,
+  { includeImageless = false }: ProductWhereOptions = {},
 ): Promise<Prisma.ProductWhereInput | null> {
   const {
     searchKeyword,
@@ -71,8 +86,15 @@ export async function buildProductWhere(
     minPrice,
     maxPrice,
     inStock,
+    recommended,
+    imageless,
   } = query;
-  const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
+  // Asked for by staff only (home's "without photos" section). Anyone else
+  // gets nothing rather than a hint of which products those are.
+  if (imageless === '1' && !includeImageless) return null;
+  const where: Prisma.ProductWhereInput = includeImageless
+    ? { ...whereActiveProduct }
+    : { ...whereListableProduct };
 
   const categories = [
     ...(toArray(categoryId) ?? []),
@@ -114,8 +136,20 @@ export async function buildProductWhere(
     where.AND = productSearchWhere(searchKeyword);
   }
 
+  if (imageless === '1') {
+    where.imgUrls = { isEmpty: true };
+  }
+
   if (inStock === '1') {
     where.outOfStockAt = null;
+  }
+
+  // '0' is home's newest row, which leaves the picks to the recommended row
+  // so a product never shows twice there.
+  if (recommended === '1') {
+    where.recommendedOrder = { not: null };
+  } else if (recommended === '0') {
+    where.recommendedOrder = null;
   }
 
   // Both bounds and cachedPrice are the shown manat, so they compare directly.

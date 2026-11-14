@@ -4,6 +4,7 @@ import {
   ProductFilterQuery,
 } from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
+import { hasStaffBearer } from '@/pages/api/utils/staffAuth';
 import type { Color, Prisma } from '@prisma/client';
 import { ColorFamily, groupColorsByFamily } from '@/pages/lib/colorFamilies';
 import {
@@ -35,17 +36,21 @@ export default async function handler(
 
   try {
     const query = req.query as ProductFilterQuery;
+    // Staff count products without images too, matching the grid they see.
+    const options = { includeImageless: await hasStaffBearer(req) };
     const [where, brandWhere, colorWhere, priceWhere, stockWhere] =
       await Promise.all([
-        buildProductWhere(query),
-        buildProductWhere({ ...query, brandIds: undefined }),
-        buildProductWhere({ ...query, colors: undefined, colorIds: undefined }),
-        buildProductWhere({
-          ...query,
-          minPrice: undefined,
-          maxPrice: undefined,
-        }),
-        buildProductWhere({ ...query, inStock: undefined }),
+        buildProductWhere(query, options),
+        buildProductWhere({ ...query, brandIds: undefined }, options),
+        buildProductWhere(
+          { ...query, colors: undefined, colorIds: undefined },
+          options,
+        ),
+        buildProductWhere(
+          { ...query, minPrice: undefined, maxPrice: undefined },
+          options,
+        ),
+        buildProductWhere({ ...query, inStock: undefined }, options),
       ]);
     const count = (scope: Prisma.ProductWhereInput | null) =>
       scope ? dbClient.product.count({ where: scope }) : Promise.resolve(0);

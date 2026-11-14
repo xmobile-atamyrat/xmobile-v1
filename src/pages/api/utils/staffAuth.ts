@@ -89,6 +89,27 @@ async function requireBearerGrade(
 }
 
 /**
+ * True when the request carries a live staff access token. It never responds
+ * and never renews an expired token (no cookie rotation on a public GET), so a
+ * public route can widen what staff see without side effects; an expired or
+ * missing token just gets the public view.
+ */
+export async function hasStaffBearer(req: NextApiRequest): Promise<boolean> {
+  const authHeader = req.headers.authorization;
+  if (authHeader == null || !authHeader.startsWith('Bearer ')) return false;
+  if (ACCESS_SECRET == null || ACCESS_SECRET === '') return false;
+  try {
+    const { userId } = await verifyToken(
+      authHeader.split(' ')[1],
+      ACCESS_SECRET,
+    );
+    return isStaff((await currentGrade(userId)) ?? undefined);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Requires `Authorization: Bearer <access JWT>` with ADMIN or SUPERUSER.
  * Rejects with 401 (its long-standing contract; clients treat it as "not staff").
  * Use for routes that cannot use `withAuth` (e.g. bodyParser: false / multipart).

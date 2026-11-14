@@ -108,6 +108,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   description: 'activityFieldDescription',
   tags: 'activityFieldTags',
   videos: 'activityFieldVideos',
+  recommended: 'activityFieldRecommended',
 };
 
 const ORDER_STATUS_KEYS: Record<string, string> = {

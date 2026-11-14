@@ -40,6 +40,8 @@ interface FilterSheetProps {
   optionsScope?: FilterScope;
   /** ...or work them out locally, for a list already in the browser. */
   computeOptions?: (filters: FilterState) => FilterOptions;
+  /** Offer the admin-picked order among the sorts. */
+  showRecommendedSort?: boolean;
 }
 
 /** Mobile bottom sheet around FilterSidebar. Choices only apply on 'Apply'. */
@@ -51,6 +53,7 @@ export default function FilterSheet({
   hideSections,
   optionsScope,
   computeOptions,
+  showRecommendedSort = false,
 }: FilterSheetProps) {
   const t = useTranslations();
   const { categories } = useCategoryContext();
@@ -122,6 +125,7 @@ export default function FilterSheet({
             }}
             hideSections={hideSections}
             options={options}
+            showRecommendedSort={showRecommendedSort}
           />
         </Box>
         <Box className={filterSidebarClasses.footer}>

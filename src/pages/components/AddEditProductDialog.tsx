@@ -205,6 +205,7 @@ export default function AddEditProductDialog({
     categoryId: initCategoryId,
     brandId: initBrandId,
     isOutOfStock: initIsOutOfStock,
+    isRecommended: initIsRecommended,
   },
   snackbarErrorHandler,
   setProduct,
@@ -232,6 +233,9 @@ export default function AddEditProductDialog({
   >([]);
 
   const [isOutOfStock, setIsOutOfStock] = useState(initIsOutOfStock ?? false);
+  const [isRecommended, setIsRecommended] = useState(
+    initIsRecommended ?? false,
+  );
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
   const [brandId, setBrandId] = useState(initBrandId || '');
   const [brandSearch, setBrandSearch] = useState('');
@@ -528,6 +532,12 @@ export default function AddEditProductDialog({
               videoUrls,
               selectedProductId: id,
               isOutOfStock,
+              // Only an actual flip is sent, so saving other fields can't
+              // undo a change made on the recommended screen meanwhile.
+              isRecommended:
+                isRecommended === (initIsRecommended ?? false)
+                  ? undefined
+                  : isRecommended,
               accessToken,
             });
             setSelectedProduct(updatedProduct);
@@ -683,6 +693,18 @@ export default function AddEditProductDialog({
                 />
               }
               label={t('outOfStock')}
+            />
+
+            {/* Turning it on adds the product to the end of the home page's
+                recommended row; the order is set on the recommended screen. */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isRecommended}
+                  onChange={(e) => setIsRecommended(e.target.checked)}
+                />
+              }
+              label={t('recommended')}
             />
 
             {/* Brand Section */}

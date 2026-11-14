@@ -12,6 +12,11 @@ interface SortDropdownProps {
   value: string;
   onChange: (value: string) => void;
   variant?: 'dropdown' | 'chips';
+  /**
+   * Offer the admin-picked order. Only the catalog listing can sort by it;
+   * favorites sorts on its own and doesn't know the order.
+   */
+  showRecommended?: boolean;
 }
 
 // mobile
@@ -40,6 +45,7 @@ export default function SortDropdown({
   value,
   onChange,
   variant = 'dropdown',
+  showRecommended = false,
 }: SortDropdownProps) {
   const t = useTranslations();
 
@@ -48,6 +54,9 @@ export default function SortDropdown({
   };
 
   const sortOptions = [
+    ...(showRecommended
+      ? [{ value: SORT_OPTIONS.RECOMMENDED, label: t('sortRecommended') }]
+      : []),
     {
       value: SORT_OPTIONS.PRICE_ASC,
       label: t('priceLowToHigh') || 'Cheap first',

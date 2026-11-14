@@ -75,7 +75,7 @@ describe('Favorites API (integration)', () => {
         slug: `${slug}-${Date.now()}`,
         name: `{"en":"${slug}"}`,
         categoryId,
-        imgUrls: [],
+        imgUrls: ['/media/integration-phone.webp'],
         tags: [],
         videoUrls: [],
       },

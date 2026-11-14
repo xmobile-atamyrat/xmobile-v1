@@ -12,12 +12,15 @@ import {
   BUSINESS_NAME,
   COOKIE_EXPIRY_SECONDS,
   DEFAULT_LOCALE,
+  HOME_NEW_PRODUCTS,
+  HOME_RECOMMENDED_PRODUCTS,
   LOCALE_COOKIE_NAME,
   LOCALE_TO_OG_LOCALE,
   POST_SOVIET_COUNTRIES,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
+import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { readSearchKeyword } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -57,6 +60,17 @@ import { useRouter } from 'next/router';
 import { useEffect, useMemo } from 'react';
 
 const web = homePageClasses.web;
+
+// Web shows the two newest products as promo tiles beside the hero, so the
+// newest list is fetched with room for them on top of a full section.
+const HOME_PROMO_TILES = 2;
+
+// Each section's "view all" opens the catalog in the same order, which keeps
+// going past what home had room for.
+const RECOMMENDED_LISTING_HREF = `/product?sortBy=${SORT_OPTIONS.RECOMMENDED}`;
+const NEWEST_LISTING_HREF = '/product';
+// Staff only; see ProductGridContent.
+const IMAGELESS_LISTING_HREF = '/product?imageless=1';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -155,29 +169,45 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     console.error('Failed to load promo banners:', error);
   }
 
-  // The newest in-stock products, rendered on the server so their links are
-  // in the raw HTML. With a term in the URL (back from a product opened from
-  // home results) the results are what's on screen, so seed those too and save
-  // the client its own round-trip. The newest list still loads: clearing the
-  // search is a shallow route change, so nothing would fetch it afterwards.
-  // Each failure stays its own for the same reason: the client refetches a
-  // missing search, but never a missing newest list.
+  // The admin-picked and the newest in-stock products, rendered on the server
+  // so their links are in the raw HTML. With a term in the URL (back from a
+  // product opened from home results) the results are what's on screen, so
+  // seed those too and save the client its own round-trip. The sections still
+  // load: clearing the search is a shallow route change, so nothing would fetch
+  // them afterwards. Each failure stays its own for the same reason: the client
+  // refetches a missing search, but never a missing section.
   const searchTerm = readSearchKeyword(context.query);
-  const [initialProducts, results] = await Promise.all([
+  const productLocale = routeLocale ?? finalLocale;
+  // The newest row leaves out picks so no card appears in both sections; a
+  // pick past the recommended row's cap still shows in its "view all".
+  const [initialProducts, recommendedProducts, results] = await Promise.all([
     fetchProducts({
       page: 1,
-      locale: routeLocale ?? finalLocale,
+      locale: productLocale,
       inStock: true,
+      recommended: false,
       sortBy: SORT_OPTIONS.NEWEST,
+      limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
     }).catch((error): ExtendedProduct[] => {
       console.error('Failed to load initial products:', error);
+      return [];
+    }),
+    fetchProducts({
+      page: 1,
+      locale: productLocale,
+      inStock: true,
+      recommended: true,
+      sortBy: SORT_OPTIONS.RECOMMENDED,
+      limit: HOME_RECOMMENDED_PRODUCTS,
+    }).catch((error): ExtendedProduct[] => {
+      console.error('Failed to load recommended products:', error);
       return [];
     }),
     searchTerm
       ? fetchProducts({
           page: 1,
           searchKeyword: searchTerm,
-          locale: routeLocale ?? finalLocale,
+          locale: productLocale,
         }).catch((error): null => {
           console.error('Failed to load search results:', error);
           return null;
@@ -194,6 +224,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       seoData,
       banners,
       initialProducts,
+      recommendedProducts,
       initialSearch,
     },
   };
@@ -202,13 +233,39 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   seoData: PageSeoData;
   banners: StorefrontBanner[];
   initialProducts: Product[];
+  recommendedProducts: Product[];
   initialSearch: { term: string; results: ExtendedProduct[] } | null;
 }>;
+
+/** A mobile section's title row, with its way on to the full catalog. */
+function MobileSectionHead({ title, href }: { title: string; href?: string }) {
+  const t = useTranslations();
+  return (
+    <Box className={homePageClasses.mobileSectionHead}>
+      <Typography
+        component="h2"
+        className={`${fontClassName.className} ${homePageClasses.newProductsTitle.mobile}`}
+      >
+        {title}
+      </Typography>
+      {href && (
+        <Link
+          href={href}
+          className={`${fontClassName.className} ${homePageClasses.mobileViewAll}`}
+        >
+          {t('viewAll')}
+          <ArrowRight size={14} />
+        </Link>
+      )}
+    </Box>
+  );
+}
 
 export default function Home({
   locale,
   banners,
   initialProducts,
+  recommendedProducts,
   initialSearch,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
@@ -217,11 +274,16 @@ export default function Home({
   const { categories } = useCategoryContext();
   const { setProducts: setContextProducts } = useProductContext();
   const products: Product[] = initialProducts ?? [];
+  const recommended: Product[] = recommendedProducts ?? [];
   // A header search on home stays on home: the results replace the banner and
   // sections, and clearing the field brings them back. The term is read from
   // home's URL (see HOME_PATHNAME), so back from a product restores them.
   const searchTerm = readSearchKeyword(router.query);
   const search = useHomeSearch(searchTerm, router.locale, initialSearch);
+  // Staff only: what still needs a photo, above the picks (null for others).
+  const imageless = useImagelessProducts(router.locale);
+  const imagelessTitle =
+    imageless && `${t('imagelessProducts')} (${imageless.total})`;
   const searchTitle = t('searchResultsFor', { keyword: searchTerm });
   const searchFailure = (
     <Box className="text-center">
@@ -256,7 +318,9 @@ export default function Home({
   // below instead of showing the same card twice.
   const promoProducts =
     platform === 'web' && products.length >= 6 ? products.slice(0, 2) : [];
-  const gridProducts = products.slice(promoProducts.length);
+  const gridProducts = products
+    .slice(promoProducts.length)
+    .slice(0, HOME_NEW_PRODUCTS);
 
   const trustItems = [
     {
@@ -424,40 +488,104 @@ export default function Home({
             </Box>
           )}
 
-          {/* new arrivals grid — the design's "Recommended for you" slot (spec 1383-1390) */}
-          <Box className={web.sectionHead}>
-            <Typography
-              className={`${fontClassName.className} ${web.sectionTitle}`}
-            >
-              {t('newProducts')}
-            </Typography>
-            <Link href="/product" className={web.viewAll}>
-              {t('viewAll')}
-              <ArrowRight size={16} />
-            </Link>
-          </Box>
-          <Box className={web.productGrid}>
-            {gridProducts.map((product) => (
-              <ProductCard
-                product={product}
-                key={product.id}
-                cartProps={{ cartAction: 'add' }}
-              />
-            ))}
-          </Box>
-          {products.length === 0 && (
-            <Typography
-              className={`${fontClassName.className} ${web.emptyText}`}
-            >
-              {t('noProductsFound')}
-            </Typography>
+          {imageless && imageless.products.length > 0 && (
+            <Box component="section" className={web.sectionGap}>
+              <Box className={web.sectionHead}>
+                <Typography
+                  component="h2"
+                  className={`${fontClassName.className} ${web.sectionTitle}`}
+                >
+                  {imagelessTitle}
+                </Typography>
+                <Link href={IMAGELESS_LISTING_HREF} className={web.viewAll}>
+                  {t('viewAll')}
+                  <ArrowRight size={16} />
+                </Link>
+              </Box>
+              <Typography
+                className={`${fontClassName.className} ${homePageClasses.staffHint}`}
+              >
+                {t('imagelessProductsHint')}
+              </Typography>
+              <Box className={web.productGrid}>
+                {imageless.products.map((product) => (
+                  <ProductCard
+                    product={product}
+                    key={product.id}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+              </Box>
+            </Box>
           )}
+
+          {/* admin-picked products, in their order — the design's
+              "Recommended for you" slot (spec 1383-1390) */}
+          {recommended.length > 0 && (
+            <Box component="section" className={web.sectionGap}>
+              <Box className={web.sectionHead}>
+                <Typography
+                  component="h2"
+                  className={`${fontClassName.className} ${web.sectionTitle}`}
+                >
+                  {t('recommendedProducts')}
+                </Typography>
+                <Link href={RECOMMENDED_LISTING_HREF} className={web.viewAll}>
+                  {t('viewAll')}
+                  <ArrowRight size={16} />
+                </Link>
+              </Box>
+              <Box className={web.productGrid}>
+                {recommended.map((product) => (
+                  <ProductCard
+                    product={product}
+                    key={product.id}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* new arrivals grid */}
+          <Box component="section">
+            <Box className={web.sectionHead}>
+              <Typography
+                component="h2"
+                className={`${fontClassName.className} ${web.sectionTitle}`}
+              >
+                {t('newProducts')}
+              </Typography>
+              <Link href={NEWEST_LISTING_HREF} className={web.viewAll}>
+                {t('viewAll')}
+                <ArrowRight size={16} />
+              </Link>
+            </Box>
+            <Box className={web.productGrid}>
+              {gridProducts.map((product) => (
+                <ProductCard
+                  product={product}
+                  key={product.id}
+                  cartProps={{ cartAction: 'add' }}
+                />
+              ))}
+            </Box>
+            {products.length === 0 && (
+              <Typography
+                className={`${fontClassName.className} ${web.emptyText}`}
+              >
+                {t('noProductsFound')}
+              </Typography>
+            )}
+          </Box>
         </Box>
       </Layout>
     );
   }
 
-  const mobileProducts = search.isSearching ? search.results : products;
+  const mobileProducts = search.isSearching
+    ? search.results
+    : products.slice(0, HOME_NEW_PRODUCTS);
   const mobileLoading = search.isSearching && search.isLoading;
   // Search pages append below the grid, so only its first page gets the
   // full-height skeleton on top.
@@ -473,19 +601,55 @@ export default function Home({
       )}
       <Box className="flex flex-row gap-6 w-full">
         <Box className={homePageClasses.main[platform]}>
-          <Box className="w-full">
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={1.5}
-            >
-              <Typography
-                className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
+          {!search.isSearching &&
+            imageless &&
+            imageless.products.length > 0 && (
+              <Box
+                component="section"
+                className={homePageClasses.mobileSection}
               >
-                {search.isSearching ? searchTitle : t('newProducts')}
-              </Typography>
+                <MobileSectionHead
+                  title={imagelessTitle ?? ''}
+                  href={IMAGELESS_LISTING_HREF}
+                />
+                <Typography
+                  className={`${fontClassName.className} ${homePageClasses.staffHint}`}
+                >
+                  {t('imagelessProductsHint')}
+                </Typography>
+                <Box className={homePageClasses.newProductsBox[platform]}>
+                  {imageless.products.map((product) => (
+                    <ProductCard
+                      product={product}
+                      key={product.id}
+                      cartProps={{ cartAction: 'add' }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+          {!search.isSearching && recommended.length > 0 && (
+            <Box component="section" className={homePageClasses.mobileSection}>
+              <MobileSectionHead
+                title={t('recommendedProducts')}
+                href={RECOMMENDED_LISTING_HREF}
+              />
+              <Box className={homePageClasses.newProductsBox[platform]}>
+                {recommended.map((product) => (
+                  <ProductCard
+                    product={product}
+                    key={product.id}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+              </Box>
             </Box>
+          )}
+          <Box component="section" className="w-full">
+            <MobileSectionHead
+              title={search.isSearching ? searchTitle : t('newProducts')}
+              href={search.isSearching ? undefined : NEWEST_LISTING_HREF}
+            />
 
             {mobileLoading && !isAppending && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>

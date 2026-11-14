@@ -269,6 +269,7 @@ export interface AddEditProductProps {
   categoryId?: string;
   brandId?: string;
   isOutOfStock?: boolean;
+  isRecommended?: boolean;
 }
 
 export interface DeleteCategoriesProps {

@@ -316,6 +316,7 @@ function buildEditProductDialogProps(source: Product): AddEditProductProps {
     brandId: source.brandId,
     categoryId: source.categoryId,
     isOutOfStock: source.outOfStockAt != null,
+    isRecommended: source.recommendedOrder != null,
   };
 }
 
@@ -1300,6 +1301,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               if (refreshCategoryId != null) {
                 const prods = await fetchProducts({
                   categoryIds: [refreshCategoryId],
+                  staffToken: accessToken,
                 });
                 setProducts(prods);
                 setPrevCategory(refreshCategoryId);

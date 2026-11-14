@@ -25,6 +25,7 @@ export interface AdminProductListItem {
   categoryId: string;
   brandId: string | null;
   isOutOfStock: boolean;
+  isRecommended: boolean;
   /** ISO timestamp; the overview's "recently edited" sorts on it. */
   updatedAt: string;
   /** Resolved base price in manat, or null when there is none to show. */
@@ -101,6 +102,7 @@ export default async function handler(
         categoryId: true,
         brandId: true,
         outOfStockAt: true,
+        recommendedOrder: true,
         updatedAt: true,
         price: true,
       },
@@ -133,6 +135,7 @@ export default async function handler(
         categoryId: catId,
         brandId,
         outOfStockAt,
+        recommendedOrder,
         updatedAt,
         price,
       }) => ({
@@ -143,6 +146,7 @@ export default async function handler(
         // The column is a timestamp so the retention job can measure against
         // it; the table only ever asks the yes/no question.
         isOutOfStock: outOfStockAt != null,
+        isRecommended: recommendedOrder != null,
         updatedAt: updatedAt.toISOString(),
         ...resolveBasePrice(price, pricesById),
       }),

@@ -30,20 +30,33 @@ vi.mock('@/pages/components/SkeletonLoader', () => ({
 }));
 
 const newest = [{ id: 'new-1' }];
+const picks = [{ id: 'pick-1' }];
 const found = [{ id: 'found-1' }];
 
 function mockFetches({
   newestFails = false,
+  recommendedFails = false,
   searchFails = false,
 }: {
   newestFails?: boolean;
+  recommendedFails?: boolean;
   searchFails?: boolean;
 }) {
   fetchProducts.mockImplementation(
-    async ({ searchKeyword }: { searchKeyword?: string }) => {
+    async ({
+      searchKeyword,
+      recommended,
+    }: {
+      searchKeyword?: string;
+      recommended?: boolean;
+    }) => {
       if (searchKeyword != null) {
         if (searchFails) throw new Error('search down');
         return found;
+      }
+      if (recommended) {
+        if (recommendedFails) throw new Error('recommended down');
+        return picks;
       }
       if (newestFails) throw new Error('newest down');
       return newest;
@@ -103,6 +116,35 @@ describe('home getServerSideProps', () => {
 
     expect(props.initialProducts).toEqual(newest);
     expect(props.initialSearch).toBeNull();
-    expect(fetchProducts).toHaveBeenCalledTimes(1);
+    expect(fetchProducts).toHaveBeenCalledTimes(2);
+  });
+
+  it('seeds the picks in-stock, in their order, one section long', async () => {
+    mockFetches({});
+
+    const props = await loadHome({});
+
+    expect(props.recommendedProducts).toEqual(picks);
+    expect(fetchProducts).toHaveBeenCalledWith({
+      page: 1,
+      locale: 'en',
+      inStock: true,
+      recommended: true,
+      sortBy: 'recommended',
+      limit: 20,
+    });
+    // The newest list leaves room for the two web promo tiles on top.
+    expect(fetchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'newest', limit: 12 }),
+    );
+  });
+
+  it('keeps the newest list when the picks fail', async () => {
+    mockFetches({ recommendedFails: true });
+
+    const props = await loadHome({});
+
+    expect(props.recommendedProducts).toEqual([]);
+    expect(props.initialProducts).toEqual(newest);
   });
 });
