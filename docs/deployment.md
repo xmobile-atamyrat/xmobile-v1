@@ -49,6 +49,7 @@ Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
 
 - Staging has its own database (`staging`, on the same Postgres server as production). A deploy only runs migrations on it; production data is never copied in.
 - Staging uses production's image folders in `/home/ubuntu/images/`: its `.env` and nginx both point there. Uploading, replacing or deleting an image in the staging admin changes production's files, so don't change images on staging.
+- `https://dev.xmobile.com.tm` has a self-signed certificate. `scripts/staging_scripts/start-server.sh` passes it to Node in `NODE_EXTRA_CA_CERTS` so pages can fetch from their own address; update that path when the certificate is replaced (it expires 2027-09-18).
 
 ## Deploy Batch Runner
 
