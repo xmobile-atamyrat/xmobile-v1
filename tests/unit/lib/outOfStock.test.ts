@@ -280,7 +280,7 @@ describe('retireLongOutOfStockProducts', () => {
     expect(result).toEqual({ retired: 2, skippedWithActiveBanner: 0 });
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ['old-1', 'old-2'] }, deletedAt: null },
-      data: { deletedAt: expect.any(Date) },
+      data: { deletedAt: expect.any(Date), recommendedOrder: null },
     });
     expect(mockCartItemDeleteMany).toHaveBeenCalledWith({
       where: { productId: { in: ['old-1', 'old-2'] } },
@@ -319,7 +319,7 @@ describe('retireLongOutOfStockProducts', () => {
     expect(result).toEqual({ retired: 1, skippedWithActiveBanner: 1 });
     expect(mockProductUpdateMany).toHaveBeenCalledWith({
       where: { id: { in: ['old-1'] }, deletedAt: null },
-      data: { deletedAt: expect.any(Date) },
+      data: { deletedAt: expect.any(Date), recommendedOrder: null },
     });
   });
 

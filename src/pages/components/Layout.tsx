@@ -169,6 +169,7 @@ export default function Layout({
                   setSelectedCategoryId(updatedCategories[0].id);
                   const prods = await fetchProducts({
                     categoryIds: [updatedCategories[0].id],
+                    staffToken: accessToken,
                   });
                   setProducts(prods);
                   setPrevProducts(prods);

@@ -57,7 +57,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ArrowLeft, ChevronLeft, ChevronRight, SearchX } from 'lucide-react';
-import { Product } from '@prisma/client';
+import { Product, UserRole } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -111,7 +111,22 @@ export default function ProductGridContent({
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const { user } = useUserContext();
+  const { user, accessToken, isLoading: isUserLoading } = useUserContext();
+  // Staff also see products without images, so they can find and fix them.
+  // The token goes through a ref: its silent refreshes mustn't reset the list,
+  // only the switch to a staff view (once the session has loaded) does.
+  const isStaffViewer =
+    (user?.grade === UserRole.ADMIN || user?.grade === UserRole.SUPERUSER) &&
+    accessToken != null;
+  const staffTokenRef = useRef<string>();
+  staffTokenRef.current = isStaffViewer ? accessToken : undefined;
+  // Home's "view all" for products without photos. Kept in the URL like the
+  // search term, so rail filters narrow it. Staff only: the API answers
+  // anyone else with nothing, so the query waits until the session is known.
+  const imagelessOnly = router.query.imageless === '1';
+  const waitForStaff = imagelessOnly && isUserLoading;
+  // Home's recommended "view all": only the admin's picks, rail filters on top.
+  const recommendedOnly = router.query.recommended === '1';
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -225,6 +240,7 @@ export default function ProductGridContent({
       maxPrice: filters.maxPrice,
       searchKeyword,
       inStock: filters.inStock,
+      staffToken: staffTokenRef.current,
     })
       .then((data) => {
         if (!cancelled) setCategoryFacets(data);
@@ -319,8 +335,21 @@ export default function ProductGridContent({
   );
 
   const filterScope = useMemo(
-    () => ({ categoryIds: baseCategoryIds, searchKeyword }),
-    [baseCategoryIds, searchKeyword],
+    () => ({
+      categoryIds: baseCategoryIds,
+      searchKeyword,
+      recommended: recommendedOnly || undefined,
+      imageless: imagelessOnly || undefined,
+      staffToken: isStaffViewer ? accessToken : undefined,
+    }),
+    [
+      baseCategoryIds,
+      searchKeyword,
+      recommendedOnly,
+      imagelessOnly,
+      isStaffViewer,
+      accessToken,
+    ],
   );
   // Web's rail needs these always. Mobile asks from inside its sheet, for the
   // choices not yet applied, so here it only wants them to explain an empty
@@ -330,7 +359,7 @@ export default function ProductGridContent({
     useFilterOptions(
       filterScope,
       filters,
-      filtersReady && (platform === 'web' || resultIsEmpty),
+      filtersReady && !waitForStaff && (platform === 'web' || resultIsEmpty),
     );
 
   // Monotonic token identifying the newest product query. Quick filter changes
@@ -353,6 +382,7 @@ export default function ProductGridContent({
     if (restoringRef.current) return;
     // A shared link would otherwise load the unfiltered list first.
     if (!filtersReady) return;
+    if (waitForStaff) return;
     loadMorePausedRef.current = false;
     requestGenerationRef.current += 1;
     const generation = requestGenerationRef.current;
@@ -379,6 +409,9 @@ export default function ProductGridContent({
           sortBy: filters.sortBy,
           locale: router.locale,
           inStock: filters.inStock,
+          recommended: recommendedOnly || undefined,
+          imageless: imagelessOnly || undefined,
+          staffToken: staffTokenRef.current,
         };
 
         if (searchKeyword) {
@@ -428,6 +461,10 @@ export default function ProductGridContent({
     effectiveCategoryIds,
     platform,
     webPage,
+    isStaffViewer,
+    recommendedOnly,
+    imagelessOnly,
+    waitForStaff,
     setProducts,
     setPrevProducts,
     setPrevCategory,
@@ -456,6 +493,9 @@ export default function ProductGridContent({
         sortBy: filters.sortBy,
         locale: router.locale,
         inStock: filters.inStock,
+        recommended: recommendedOnly || undefined,
+        imageless: imagelessOnly || undefined,
+        staffToken: staffTokenRef.current,
       };
 
       if (searchKeyword) {
@@ -510,6 +550,10 @@ export default function ProductGridContent({
     titleText = parseName(category.name, router.locale ?? 'ru');
   } else if (searchKeyword) {
     titleText = t('searchResultsFor', { keyword: searchKeyword });
+  } else if (imagelessOnly) {
+    titleText = t('imagelessProducts');
+  } else if (recommendedOnly) {
+    titleText = t('recommendedProducts');
   }
 
   // The seeded first page keeps links in the SSR HTML until the first client
@@ -568,6 +612,7 @@ export default function ProductGridContent({
           onApply={applyFilters}
           hideSections={hideSections}
           optionsScope={filterScope}
+          showRecommendedSort
         />
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
@@ -615,6 +660,7 @@ export default function ProductGridContent({
                     onChange={applyFilters}
                   />
                   <SortDropdown
+                    showRecommended
                     value={filters.sortBy}
                     onChange={(val) => applyFilters({ sortBy: val })}
                   />

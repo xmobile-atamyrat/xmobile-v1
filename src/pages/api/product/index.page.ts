@@ -9,6 +9,13 @@ import {
 import { recordPricesUpdated } from '@/lib/priceActivity';
 import { inStockFirst } from '@/lib/prismaActiveScope';
 import {
+  lockRecommendedList,
+  RecommendedChange,
+  RecommendedListFullError,
+  recommendedListIsFull,
+  setProductRecommended,
+} from '@/lib/recommendedProducts';
+import {
   hasPriceLinkConflict,
   PRICE_TAKEN_MESSAGE,
   PriceLinkConflictError,
@@ -34,14 +41,19 @@ import { getPrice } from '@/pages/api/prices/index.page';
 import {
   buildProductWhere,
   ProductFilterQuery,
+  ProductWhereOptions,
 } from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  hasStaffBearer,
+  requireStaffBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
   IMG_COMPRESSION_OPTIONS,
   PRODUCTS_PER_PAGE,
+  RECOMMENDED_FULL_MESSAGE,
   SORT_OPTIONS,
   localeOptions,
 } from '@/pages/lib/constants';
@@ -114,6 +126,8 @@ interface CreateProductReturnType {
   previous?: Product;
   /** Prices whose owner the save moved, for the activity log. */
   priceLinkChanges?: PriceLinkChange[];
+  /** Edit only. How the save moved the product on the recommended list. */
+  recommendedChange?: RecommendedChange | null;
 }
 
 // changes url from images/products/img -> images/compressed/products/img
@@ -325,12 +339,23 @@ async function createProduct(
         return;
       }
 
+      const wantsRecommended = fields.isRecommended?.[0] === 'true';
+      if (wantsRecommended && (await recommendedListIsFull(dbClient))) {
+        resolve({
+          success: false,
+          message: RECOMMENDED_FULL_MESSAGE,
+          status: 400,
+        });
+        return;
+      }
+
       let product: Product;
       let priceLinkChanges: PriceLinkChange[];
       try {
         [product, priceLinkChanges] = await dbClient.$transaction(
           async (tx) => {
-            const created = await tx.product.create({
+            if (wantsRecommended) await lockRecommendedList(tx);
+            let created = await tx.product.create({
               data: {
                 name: fields.name[0],
                 slug: productSlug,
@@ -353,6 +378,12 @@ async function createProduct(
                 ...initialOutOfStockFields(fields.isOutOfStock?.[0] === 'true'),
               },
             });
+            if (wantsRecommended) {
+              await setProductRecommended(tx, created.id, true);
+              created = await tx.product.findUniqueOrThrow({
+                where: { id: created.id },
+              });
+            }
             return [
               created,
               await reconcileProductPriceLinks(
@@ -365,6 +396,14 @@ async function createProduct(
           },
         );
       } catch (error) {
+        if (error instanceof RecommendedListFullError) {
+          resolve({
+            success: false,
+            message: RECOMMENDED_FULL_MESSAGE,
+            status: 400,
+          });
+          return;
+        }
         if (!(error instanceof PriceLinkConflictError)) throw error;
         resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
         return;
@@ -429,9 +468,12 @@ async function handleGetProduct(
     count?: string;
     facets?: string;
     locale?: string | string[];
+    limit?: string;
   },
+  whereOptions: ProductWhereOptions = {},
 ): Promise<{ resp: ResponseApi; status: number }> {
-  const { productId, productSlug, page, sortBy, count, facets, locale } = query;
+  const { productId, productSlug, page, sortBy, count, facets, locale, limit } =
+    query;
   // count=true returns the total number of matches for the filter set
   // (reusing the same where-building) instead of a page of products.
   const wantCount = count === 'true';
@@ -447,7 +489,13 @@ async function handleGetProduct(
       ? locale
       : undefined;
   const parsedPage = parseInt(page || '1', 10);
-  const skip = (parsedPage - 1) * productsPerPage;
+  // Home sections ask for only the cards they show rather than a full page.
+  const parsedLimit = parseInt(limit || '', 10);
+  const pageSize =
+    parsedLimit >= 1 && parsedLimit <= productsPerPage
+      ? parsedLimit
+      : productsPerPage;
+  const skip = (parsedPage - 1) * pageSize;
 
   if (
     productId != null &&
@@ -495,7 +543,7 @@ async function handleGetProduct(
     };
   }
 
-  const where = await buildProductWhere(query);
+  const where = await buildProductWhere(query, whereOptions);
   if (where == null) {
     return {
       resp: { success: true, data: wantCount ? 0 : [] },
@@ -549,6 +597,15 @@ async function handleGetProduct(
       case SORT_OPTIONS.NEWEST:
         orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
+      // The admin-picked order first, then everything else newest first, so
+      // the "view all" listing continues past the picks instead of ending.
+      case SORT_OPTIONS.RECOMMENDED:
+        orderBy = [
+          inStockFirst,
+          { recommendedOrder: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ];
+        break;
       default:
         break;
     }
@@ -558,7 +615,7 @@ async function handleGetProduct(
     where,
     orderBy,
     skip,
-    take: productsPerPage,
+    take: pageSize,
     include: { brand: true },
   });
 
@@ -642,6 +699,13 @@ async function handleEditProduct(
       if (fields.isOutOfStock?.length > 0) {
         requestedOutOfStock = fields.isOutOfStock[0] === 'true';
       }
+      // Optional, unlike the stock flag: the form only posts it when the admin
+      // flipped the switch, so a stale prefill can't undo a change made on the
+      // recommended screen in the meantime.
+      let requestedRecommended: boolean | undefined;
+      if (fields.isRecommended?.length > 0) {
+        requestedRecommended = fields.isRecommended[0] === 'true';
+      }
 
       const currProduct = await dbClient.product.findFirst({
         where: {
@@ -664,6 +728,21 @@ async function handleEditProduct(
         requestedOutOfStock,
         currProduct.outOfStockAt != null,
       );
+
+      // Checked before the image files below are deleted; the transaction
+      // re-checks under the list lock.
+      if (
+        requestedRecommended === true &&
+        currProduct.recommendedOrder == null &&
+        (await recommendedListIsFull(dbClient))
+      ) {
+        resolve({
+          success: false,
+          message: RECOMMENDED_FULL_MESSAGE,
+          status: 400,
+        });
+        return;
+      }
 
       // Ownership is only reconciled when the save carries the references it
       // follows. The products overview posts category/brand/stock alone, and
@@ -728,15 +807,30 @@ async function handleEditProduct(
 
       let product: Product;
       let priceLinkChanges: PriceLinkChange[];
+      let recommendedChange: RecommendedChange | null;
       try {
-        [product, priceLinkChanges] = await dbClient.$transaction(
-          async (tx) => {
-            const updated = await tx.product.update({
+        [product, priceLinkChanges, recommendedChange] =
+          await dbClient.$transaction(async (tx) => {
+            if (requestedRecommended != null) await lockRecommendedList(tx);
+            let updated = await tx.product.update({
               where: {
                 id: productId as string,
               },
               data: { ...data, ...(colorsUpdate && { colors: colorsUpdate }) },
             });
+            const movedOnList =
+              requestedRecommended == null
+                ? null
+                : await setProductRecommended(
+                    tx,
+                    updated.id,
+                    requestedRecommended,
+                  );
+            if (movedOnList != null) {
+              updated = await tx.product.findUniqueOrThrow({
+                where: { id: updated.id },
+              });
+            }
             return [
               updated,
               priceLinksTouched
@@ -747,10 +841,18 @@ async function handleEditProduct(
                     nextPriceIds,
                   )
                 : [],
+              movedOnList,
             ];
-          },
-        );
+          });
       } catch (error) {
+        if (error instanceof RecommendedListFullError) {
+          resolve({
+            success: false,
+            message: RECOMMENDED_FULL_MESSAGE,
+            status: 400,
+          });
+          return;
+        }
         if (!(error instanceof PriceLinkConflictError)) throw error;
         resolve({ success: false, message: PRICE_TAKEN_MESSAGE, status: 409 });
         return;
@@ -786,6 +888,7 @@ async function handleEditProduct(
         previousCategoryId: currProduct.categoryId,
         previous: currProduct,
         priceLinkChanges,
+        recommendedChange,
       });
     });
   });
@@ -825,7 +928,11 @@ export default async function handler(
     }
   } else if (method === 'GET') {
     try {
-      const { resp, status } = await handleGetProduct(query);
+      // Only requests that send a token pay for the staff lookup.
+      const includeImageless = await hasStaffBearer(req);
+      const { resp, status } = await handleGetProduct(query, {
+        includeImageless,
+      });
       return res.status(status).json(resp);
     } catch (error) {
       console.error(filepath, error);
@@ -881,7 +988,7 @@ export default async function handler(
       await dbClient.$transaction([
         dbClient.product.update({
           where: { id: existing.id },
-          data: { deletedAt: now },
+          data: { deletedAt: now, recommendedOrder: null },
         }),
         dbClient.cartItem.deleteMany({ where: { productId: existing.id } }),
       ]);
@@ -917,13 +1024,15 @@ export default async function handler(
     }
 
     try {
-      const { priceLinkChanges, ...retData } = await handleEditProduct(req);
+      const { priceLinkChanges, recommendedChange, ...retData } =
+        await handleEditProduct(req);
       if (retData.success && retData.data != null) {
         if (retData.previous != null) {
           recordProductUpdated(
             actor.userId,
             retData.previous,
             retData.data,
+            recommendedChange ?? undefined,
           ).catch(() => undefined);
         }
         recordPricesUpdated(actor.userId, priceLinkChanges ?? []).catch(

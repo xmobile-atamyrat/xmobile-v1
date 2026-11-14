@@ -51,6 +51,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     categoryId: 'cat-1',
     brandId: null,
     outOfStockAt: null,
+    recommendedOrder: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),

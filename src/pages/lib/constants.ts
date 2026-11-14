@@ -173,6 +173,7 @@ export const SORT_OPTIONS = {
   PRICE_DESC: 'price_desc',
   NEWEST: 'newest',
   A_Z: 'a_z',
+  RECOMMENDED: 'recommended',
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;
@@ -183,6 +184,18 @@ export const FILTER_COLLAPSED_ROWS = 7;
 // Page size for the product grid. Shared so the web pagination control derives
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;
+export const RECOMMENDED_PRODUCTS_MAX = 50;
+// Product save refused because the recommended list is already at the max.
+// Doubles as the i18n key the admin forms show.
+export const RECOMMENDED_FULL_MESSAGE = 'recommendedListFull';
+// Cards per home section before its "view all". New products: two rows at
+// the usual five-column laptop width. Recommended gets more room since admins
+// curate it; 20 is also the API's page-size cap, so it stays one request.
+export const HOME_NEW_PRODUCTS = 10;
+export const HOME_RECOMMENDED_PRODUCTS = 20;
+// Staff-only home section of products still missing a photo. The heading
+// carries the full count and "view all" lists the rest.
+export const HOME_IMAGELESS_PRODUCTS = 10;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart

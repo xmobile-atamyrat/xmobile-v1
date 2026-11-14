@@ -16,6 +16,7 @@ const product = (
   categoryId: 'phones',
   brandId: 'apple',
   isOutOfStock: false,
+  isRecommended: false,
   updatedAt: '2026-01-01T00:00:00.000Z',
   basePriceTmt: '4200',
   basePriceIssue: null,
@@ -26,6 +27,7 @@ const noFilters = {
   searchKeyword: '',
   categoryId: '',
   outOfStockOnly: false,
+  recommendedOnly: false,
   brandId: '',
   missingPriceOnly: false,
   locale: 'en',
@@ -48,6 +50,18 @@ describe('filterOverviewProducts', () => {
     });
 
     expect(result).toEqual([sold]);
+  });
+
+  it('keeps only recommended products when the toggle is on', () => {
+    const plain = product({ id: 'a', isRecommended: false });
+    const picked = product({ id: 'b', isRecommended: true });
+
+    const result = filterOverviewProducts([plain, picked], {
+      ...noFilters,
+      recommendedOnly: true,
+    });
+
+    expect(result).toEqual([picked]);
   });
 
   it('keeps only products of the selected category', () => {
@@ -172,6 +186,7 @@ describe('filterOverviewProducts', () => {
         categoryId: 'phones',
         brandId: 'samsung',
         outOfStockOnly: true,
+        recommendedOnly: false,
         missingPriceOnly: false,
         locale: 'en',
       },
@@ -296,6 +311,15 @@ describe('buildProductEditFields', () => {
     ]);
     expect(buildProductEditFields({ isOutOfStock: false })).toEqual([
       ['isOutOfStock', 'false'],
+    ]);
+  });
+
+  it('stringifies the recommended flag in both directions', () => {
+    expect(buildProductEditFields({ isRecommended: true })).toEqual([
+      ['isRecommended', 'true'],
+    ]);
+    expect(buildProductEditFields({ isRecommended: false })).toEqual([
+      ['isRecommended', 'false'],
     ]);
   });
 

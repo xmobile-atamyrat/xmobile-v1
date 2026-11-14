@@ -19,7 +19,7 @@ export const homePageClasses = {
   },
   newProductsTitle: {
     mobile:
-      'font-bold text-[16px] leading-none tracking-[-0.01em] text-[#17161D]',
+      'min-w-0 font-bold text-[16px] leading-tight tracking-[-0.01em] text-[#17161D]',
     web: 'font-medium text-[24px] mt-[20px] mb-[25px]',
   },
   newProductsBox: {
@@ -30,6 +30,12 @@ export const homePageClasses = {
     web: 'w-full',
     mobile: 'w-full px-5 pt-6',
   },
+  mobileSection: 'w-full mb-8',
+  mobileSectionHead: 'flex items-center justify-between gap-3 mb-3',
+  mobileViewAll:
+    'flex items-center gap-1 text-[13px] font-semibold text-navy shrink-0',
+  // Staff-only note under a section title (products without photos).
+  staffHint: 'text-[13px] text-muted -mt-2 mb-3',
   // Desktop storefront (spec 1268-1391). Horizontal padding comes from
   // Layout's px-[2vw] container, so only vertical rhythm lives here.
   web: {
@@ -46,10 +52,10 @@ export const homePageClasses = {
       'w-11 h-11 rounded-xl bg-[#F3F2F8] flex items-center justify-center text-navy shrink-0',
     trustTitle: 'text-[14px] font-semibold text-ink leading-tight',
     trustSub: 'text-[12px] text-muted leading-tight mt-[3px]',
-    sectionHead: 'flex items-center justify-between mb-[18px]',
+    sectionHead: 'flex items-center justify-between gap-4 mb-[18px]',
     sectionTitle: 'text-[24px] font-bold tracking-[-0.01em] text-ink',
     viewAll:
-      'flex items-center gap-1 text-[14px] font-semibold text-navy cursor-pointer hover:opacity-70 transition-opacity',
+      'flex shrink-0 items-center gap-1 text-[14px] font-semibold text-navy cursor-pointer hover:opacity-70 transition-opacity',
     categoryGrid: 'grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-[14px]',
     categoryTile:
       'flex flex-col items-center gap-3 text-center border border-hairline rounded-2xl px-3 py-5 cursor-pointer hover:border-navy hover:shadow-[0_6px_20px_rgba(20,16,60,0.06)] transition-all duration-200',

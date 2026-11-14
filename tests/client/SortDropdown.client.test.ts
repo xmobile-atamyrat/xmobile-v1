@@ -26,4 +26,43 @@ describe('SortDropdown (chips)', () => {
 
     expect(onChange).toHaveBeenCalledWith(SORT_OPTIONS.PRICE_DESC);
   });
+
+  it('offers the recommended order only when asked to', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = renderWithProviders(
+      createElement(SortDropdown, {
+        value: SORT_OPTIONS.NEWEST,
+        onChange,
+        variant: 'chips',
+      }),
+    );
+    expect(screen.queryByText('Recommended')).not.toBeInTheDocument();
+
+    rerender(
+      createElement(SortDropdown, {
+        value: SORT_OPTIONS.NEWEST,
+        onChange,
+        variant: 'chips',
+        showRecommended: true,
+      }),
+    );
+    await user.click(screen.getByText('Recommended'));
+
+    expect(onChange).toHaveBeenCalledWith(SORT_OPTIONS.RECOMMENDED);
+  });
+});
+
+describe('SortDropdown (dropdown)', () => {
+  it('names the recommended order when the listing is sorted by it', () => {
+    renderWithProviders(
+      createElement(SortDropdown, {
+        value: SORT_OPTIONS.RECOMMENDED,
+        onChange: vi.fn(),
+        showRecommended: true,
+      }),
+    );
+
+    expect(screen.getByText(/Recommended$/)).toBeInTheDocument();
+  });
 });

@@ -193,6 +193,8 @@ model Product {
 
   outOfStockAt    DateTime?
 
+  recommendedOrder Int?
+
   colors          Color[]
 
   promoBanners    PromoBanner[]
@@ -205,6 +207,7 @@ model Product {
   @@index([brandId])
   @@index([deletedAt])
   @@index([outOfStockAt])
+  @@index([recommendedOrder])
 }
 
 model GuestCartItem {

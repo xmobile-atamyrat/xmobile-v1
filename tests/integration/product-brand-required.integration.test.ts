@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -56,19 +56,66 @@ async function invokeProductApi(
   return { status: res._getStatusCode(), json: raw ? JSON.parse(raw) : {} };
 }
 
+async function invokeApi(
+  handler: NextApiHandler,
+  method: 'POST' | 'DELETE',
+  token: string,
+  {
+    query = {},
+    body,
+  }: { query?: Record<string, string>; body?: Record<string, string> } = {},
+): Promise<number> {
+  const { req, res } = createMocks({
+    method,
+    query,
+    body,
+    headers: { authorization: `Bearer ${token}` },
+  });
+  await handler(
+    req as unknown as NextApiRequest,
+    res as unknown as NextApiResponse,
+  );
+  return res._getStatusCode();
+}
+
 describe('product brand is required (integration)', () => {
   let prisma: PrismaClient;
   let adminToken: string;
   let categoryId: string;
   let brandId: string;
   let uploadDir: string;
+  let productHandler: NextApiHandler;
+  let brandHandler: NextApiHandler;
+  let seq = 0;
+  // Names and slugs are unique, and one test can create several in a millisecond.
+  const unique = () => {
+    seq += 1;
+    return `${Date.now()} ${seq}`;
+  };
 
   const createProduct = (fields: Record<string, string>) =>
     invokeProductApi('POST', adminToken, {
-      name: JSON.stringify({ en: `Brand Req Phone ${Date.now()}` }),
+      name: JSON.stringify({ en: `Brand Req Phone ${unique()}` }),
       categoryId,
       ...fields,
     });
+  const createProductId = async (fields: Record<string, string>) => {
+    const created = await createProduct(fields);
+    expect(created.status).toBe(200);
+    return (created.json.data as { id: string }).id;
+  };
+  const createBrandId = async () =>
+    (
+      await prisma.brand.create({
+        data: { name: `Lifecycle brand ${unique()}` },
+      })
+    ).id;
+  const deleteProduct = (productId: string) =>
+    invokeApi(productHandler, 'DELETE', adminToken, { query: { productId } });
+  const deleteBrand = (id: string) =>
+    invokeApi(brandHandler, 'DELETE', adminToken, { query: { id } });
+  const postBrand = (name: string) =>
+    invokeApi(brandHandler, 'POST', adminToken, { body: { name } });
 
   beforeAll(async () => {
     const { databaseUrl, catalog } = await prepareIntegrationWorker();
@@ -82,6 +129,8 @@ describe('product brand is required (integration)', () => {
       .accessToken;
     categoryId = catalog.categoryId;
     brandId = catalog.brandId;
+    productHandler = (await import('@/pages/api/product/index.page')).default;
+    brandHandler = (await import('@/pages/api/brand/index.page')).default;
   }, 180_000);
 
   afterAll(async () => {
@@ -106,9 +155,7 @@ describe('product brand is required (integration)', () => {
   });
 
   it('PUT cannot clear the brand', async () => {
-    const created = await createProduct({ brandId });
-    expect(created.status).toBe(200);
-    const productId = (created.json.data as { id: string }).id;
+    const productId = await createProductId({ brandId });
 
     const { status, json } = await invokeProductApi(
       'PUT',
@@ -120,5 +167,74 @@ describe('product brand is required (integration)', () => {
     expect(json.message).toBe('brandRequired');
     const after = await prisma.product.findUnique({ where: { id: productId } });
     expect(after?.brandId).toBe(brandId);
+  });
+
+  it('deleting a brand unlinks its products, deleted ones included', async () => {
+    const doomedBrandId = await createBrandId();
+    const activeId = await createProductId({ brandId: doomedBrandId });
+    const deletedId = await createProductId({ brandId: doomedBrandId });
+    expect(await deleteProduct(deletedId)).toBe(200);
+
+    expect(await deleteBrand(doomedBrandId)).toBe(200);
+    const products = await prisma.product.findMany({
+      where: { id: { in: [activeId, deletedId] } },
+    });
+    expect(products.map((product) => product.brandId)).toEqual([null, null]);
+  });
+
+  // Brands are hard-deleted today. Soft-deleting them would keep the name
+  // taken, the way a deleted product's name already is.
+  it('a deleted brand name can be created again', async () => {
+    const name = `Reused brand ${unique()}`;
+    expect(await postBrand(name)).toBe(201);
+    const { id } = await prisma.brand.findUniqueOrThrow({ where: { name } });
+    expect(await deleteBrand(id)).toBe(200);
+
+    expect(await postBrand(name)).toBe(201);
+  });
+
+  // Only clearing a brand is refused: a product that lost its brand must
+  // still take the overview's stock toggle, which sends no brand.
+  it('PUT without a brand still saves a brandless product', async () => {
+    const goneBrandId = await createBrandId();
+    const productId = await createProductId({ brandId: goneBrandId });
+    expect(await deleteBrand(goneBrandId)).toBe(200);
+
+    const stock = await invokeProductApi(
+      'PUT',
+      adminToken,
+      { isOutOfStock: 'true' },
+      { productId },
+    );
+    expect(stock.status).toBe(200);
+    const afterStock = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+    });
+    expect(afterStock.outOfStockAt).not.toBeNull();
+    expect(afterStock.brandId).toBeNull();
+
+    const fixed = await invokeProductApi(
+      'PUT',
+      adminToken,
+      { brandId },
+      { productId },
+    );
+    expect(fixed.status).toBe(200);
+    expect(
+      (await prisma.product.findUnique({ where: { id: productId } }))?.brandId,
+    ).toBe(brandId);
+  });
+
+  it('deleting a product lowers its brand count', async () => {
+    const countedBrandId = await createBrandId();
+    await createProductId({ brandId: countedBrandId });
+    const deletedId = await createProductId({ brandId: countedBrandId });
+    const count = async () =>
+      (await prisma.brand.findUniqueOrThrow({ where: { id: countedBrandId } }))
+        .productCount;
+    expect(await count()).toBe(2);
+
+    expect(await deleteProduct(deletedId)).toBe(200);
+    expect(await count()).toBe(1);
   });
 });

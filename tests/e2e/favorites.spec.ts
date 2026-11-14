@@ -70,9 +70,9 @@ test.describe('Favorites on desktop', () => {
 
     await expect(page).toHaveURL(/colors=red/);
     await expect(page.getByText(E2E_CATALOG.productName)).toHaveCount(0);
-    await expect(
-      page.getByRole('link', { name: E2E_VARIANT_PRODUCT.name }),
-    ).toBeVisible();
+    // By text, not link name: the card's image link is named by its alt too,
+    // so a seeded product with an image has two links with this name.
+    await expect(page.getByText(E2E_VARIANT_PRODUCT.name)).toBeVisible();
 
     await page
       .getByRole('button', { name: E2E_VARIANT_PRODUCT.colorFamilyLabel })

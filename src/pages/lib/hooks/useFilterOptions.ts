@@ -3,7 +3,7 @@ import { ColorFamily } from '@/pages/lib/colorFamilies';
 import { FilterRelaxations } from '@/pages/lib/filterRelaxations';
 import { PriceFacet } from '@/pages/lib/priceFacet';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** Products each option would show; an option missing here matches none. */
 export interface FilterOptions {
@@ -18,6 +18,16 @@ export interface FilterOptions {
 export interface FilterScope {
   categoryIds: string[];
   searchKeyword?: string;
+  /** Home's "view all" for the admin's recommended picks. */
+  recommended?: boolean;
+  /** The staff-only listing of products without images. */
+  imageless?: boolean;
+  /**
+   * A staff viewer's token, so the counts include products without images
+   * like their grid does. Not part of the cache key: a silent refresh changes
+   * it without changing the answer.
+   */
+  staffToken?: string;
 }
 
 /**
@@ -46,13 +56,23 @@ export function useFilterOptions(
     maxPrice: filters.maxPrice,
     searchKeyword: scope.searchKeyword,
     inStock: filters.inStock,
+    recommended: scope.recommended,
+    imageless: scope.imageless,
+    // Whether, not which: becoming staff changes the answer, a refresh doesn't.
+    asStaff: scope.staffToken != null,
   };
   const key = JSON.stringify(params);
+  const staffTokenRef = useRef(scope.staffToken);
+  staffTokenRef.current = scope.staffToken;
 
   useEffect(() => {
     if (!enabled) return () => undefined;
     let cancelled = false;
-    fetchProductFilterOptions(JSON.parse(key))
+    const { asStaff, ...request } = JSON.parse(key);
+    fetchProductFilterOptions({
+      ...request,
+      staffToken: asStaff ? staffTokenRef.current : undefined,
+    })
       .then(({ total, relaxations, brandCounts, colorCounts, price }) => {
         if (!cancelled) {
           setAnswer({
