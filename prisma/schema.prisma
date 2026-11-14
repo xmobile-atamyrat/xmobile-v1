@@ -236,6 +236,9 @@ model Brand {
   
   productCount Int       @default(0)
 
+  /// Position in the storefront brand filter. Lower values appear first.
+  sortOrder    Int       @default(0)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
