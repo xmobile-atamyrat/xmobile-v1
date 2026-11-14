@@ -47,7 +47,7 @@ Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
 
 **Staging Build and Deploy** (`.github/workflows/staging-build-and-deploy.yml`) follows the same flow for `https://dev.xmobile.com.tm`, which runs on the production VM from `/home/ubuntu/xmobile-staging/` (ports 3001 and 4001).
 
-- Staging has its own database (`staging`, on the same Postgres server as production). A deploy only runs migrations on it, unless `copy_prod_data` is ticked: then `scripts/staging_scripts/copy-prod-data.sh` first replaces its data with a fresh copy of production, minus push-notification tokens. Staging is down while it copies.
+- Staging has its own database (`staging`, on the same Postgres server as production). A deploy only runs migrations on it, unless `copy_prod_data` is ticked: then `scripts/staging_scripts/copy-prod-data.sh` first replaces its data with a fresh copy of production's catalog: products, categories, brands, colors, prices and banners. Users, orders, chats and every other table are left empty, so accounts have to be created again on staging after a copy. Staging is down while it copies.
 - Staging uses production's image folders in `/home/ubuntu/images/`: its `.env` and nginx both point there. Uploading, replacing or deleting an image in the staging admin changes production's files, so don't change images on staging.
 - `https://dev.xmobile.com.tm` has a self-signed certificate. `scripts/staging_scripts/start-server.sh` passes it to Node in `NODE_EXTRA_CA_CERTS` so pages can fetch from their own address; update that path when the certificate is replaced (it expires 2027-09-18).
 
