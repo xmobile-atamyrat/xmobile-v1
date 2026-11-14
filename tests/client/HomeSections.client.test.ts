@@ -136,7 +136,10 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
   it('gives each section a view all link to the matching listing', () => {
     renderHome(platform);
 
-    expect(viewAllHrefs()).toEqual(['/product?sortBy=recommended', '/product']);
+    expect(viewAllHrefs()).toEqual([
+      '/product?recommended=1&sortBy=recommended',
+      '/product',
+    ]);
   });
 
   it('caps the newest section at ten cards', () => {
