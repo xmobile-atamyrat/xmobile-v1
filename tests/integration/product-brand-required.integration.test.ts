@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -56,35 +56,20 @@ async function invokeProductApi(
   return { status: res._getStatusCode(), json: raw ? JSON.parse(raw) : {} };
 }
 
-async function invokeDelete(
-  api: 'product' | 'brand',
+async function invokeApi(
+  handler: NextApiHandler,
+  method: 'POST' | 'DELETE',
   token: string,
-  query: Record<string, string>,
+  {
+    query = {},
+    body,
+  }: { query?: Record<string, string>; body?: Record<string, string> } = {},
 ): Promise<number> {
-  const handler =
-    api === 'product'
-      ? (await import('@/pages/api/product/index.page')).default
-      : (await import('@/pages/api/brand/index.page')).default;
   const { req, res } = createMocks({
-    method: 'DELETE',
-    url: `/api/${api}`,
+    method,
     query,
+    body,
     headers: { authorization: `Bearer ${token}` },
-  });
-  await handler(
-    req as unknown as NextApiRequest,
-    res as unknown as NextApiResponse,
-  );
-  return res._getStatusCode();
-}
-
-async function postBrand(token: string, name: string): Promise<number> {
-  const handler = (await import('@/pages/api/brand/index.page')).default;
-  const { req, res } = createMocks({
-    method: 'POST',
-    url: '/api/brand',
-    headers: { authorization: `Bearer ${token}` },
-    body: { name },
   });
   await handler(
     req as unknown as NextApiRequest,
@@ -99,6 +84,8 @@ describe('product brand is required (integration)', () => {
   let categoryId: string;
   let brandId: string;
   let uploadDir: string;
+  let productHandler: NextApiHandler;
+  let brandHandler: NextApiHandler;
   let seq = 0;
   // Names and slugs are unique, and one test can create several in a millisecond.
   const unique = () => {
@@ -123,6 +110,12 @@ describe('product brand is required (integration)', () => {
         data: { name: `Lifecycle brand ${unique()}` },
       })
     ).id;
+  const deleteProduct = (productId: string) =>
+    invokeApi(productHandler, 'DELETE', adminToken, { query: { productId } });
+  const deleteBrand = (id: string) =>
+    invokeApi(brandHandler, 'DELETE', adminToken, { query: { id } });
+  const postBrand = (name: string) =>
+    invokeApi(brandHandler, 'POST', adminToken, { body: { name } });
 
   beforeAll(async () => {
     const { databaseUrl, catalog } = await prepareIntegrationWorker();
@@ -136,6 +129,8 @@ describe('product brand is required (integration)', () => {
       .accessToken;
     categoryId = catalog.categoryId;
     brandId = catalog.brandId;
+    productHandler = (await import('@/pages/api/product/index.page')).default;
+    brandHandler = (await import('@/pages/api/brand/index.page')).default;
   }, 180_000);
 
   afterAll(async () => {
@@ -160,9 +155,7 @@ describe('product brand is required (integration)', () => {
   });
 
   it('PUT cannot clear the brand', async () => {
-    const created = await createProduct({ brandId });
-    expect(created.status).toBe(200);
-    const productId = (created.json.data as { id: string }).id;
+    const productId = await createProductId({ brandId });
 
     const { status, json } = await invokeProductApi(
       'PUT',
@@ -180,13 +173,9 @@ describe('product brand is required (integration)', () => {
     const doomedBrandId = await createBrandId();
     const activeId = await createProductId({ brandId: doomedBrandId });
     const deletedId = await createProductId({ brandId: doomedBrandId });
-    expect(
-      await invokeDelete('product', adminToken, { productId: deletedId }),
-    ).toBe(200);
+    expect(await deleteProduct(deletedId)).toBe(200);
 
-    expect(await invokeDelete('brand', adminToken, { id: doomedBrandId })).toBe(
-      200,
-    );
+    expect(await deleteBrand(doomedBrandId)).toBe(200);
     const products = await prisma.product.findMany({
       where: { id: { in: [activeId, deletedId] } },
     });
@@ -195,11 +184,11 @@ describe('product brand is required (integration)', () => {
 
   it('a deleted brand name can be created again', async () => {
     const name = `Reused brand ${unique()}`;
-    expect(await postBrand(adminToken, name)).toBe(201);
+    expect(await postBrand(name)).toBe(201);
     const { id } = await prisma.brand.findUniqueOrThrow({ where: { name } });
-    expect(await invokeDelete('brand', adminToken, { id })).toBe(200);
+    expect(await deleteBrand(id)).toBe(200);
 
-    expect(await postBrand(adminToken, name)).toBe(201);
+    expect(await postBrand(name)).toBe(201);
   });
 
   // Only clearing a brand is refused: an edit that leaves the brand out must
@@ -243,9 +232,7 @@ describe('product brand is required (integration)', () => {
         .productCount;
     expect(await count()).toBe(2);
 
-    expect(
-      await invokeDelete('product', adminToken, { productId: deletedId }),
-    ).toBe(200);
+    expect(await deleteProduct(deletedId)).toBe(200);
     expect(await count()).toBe(1);
   });
 });
