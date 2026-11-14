@@ -283,7 +283,7 @@ export default function CategoryPage({
             {category && (
               <>
                 <Typography
-                  component={platform === 'web' ? 'h1' : 'p'}
+                  component="h1"
                   className={`${fontClassName.className} ${categoryIdClasses.title[platform]}`}
                 >
                   {parseName(category.name, router.locale ?? 'ru')}

@@ -74,7 +74,7 @@ export default function CategoriesPage() {
       <Box className={categoryPageClasses.main[platform]}>
         <Box className={categoryPageClasses.header[platform]}>
           <Typography
-            component={platform === 'web' ? 'h1' : 'p'}
+            component="h1"
             className={`${fontClassName.className} ${categoryPageClasses.categoriesText[platform]}`}
           >
             {t('categories')}
