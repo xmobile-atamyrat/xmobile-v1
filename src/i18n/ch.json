@@ -950,9 +950,10 @@
   "recommendedSaved": "Maslahat beriledron towarlar ýatda saklandy",
   "recommendedSaveError": "Maslahat beriledron towarlary ýatda saklap bolmady",
   "recommendedLoadError": "Maslahat beriledron towarlary ýükläp bolmady",
-  "recommendedProductGone": "Sanawdaky towarlaryň biri pozuldy. Sanaw tazzlandy.",
+  "recommendedProductGone": "Sanawdaky towarlaryň biri pozuldy. Sanaw tazalandy.",
   "recommendedAdded": "Koşuldy",
-  "recommendedHiddenOutOfStock": "Skladda ýok: glawny stranisada görkezilmeýär",
+  "recommendedHiddenOutOfStock": "Skladda ýok: glawny stranisada görkezilmidi",
+  "recommendedHiddenNoImage": "Fotosy ýok: polzowatellere gÖrkezilmidi",
   "moveUp": "Ýokary geçir",
   "moveDown": "Aşak geçir",
   "sortRecommended": "Maslahat beriledronlar"

@@ -951,6 +951,7 @@
   "recommendedProductGone": "Listedeki bir ürün silindi. Liste yeniden yüklendi.",
   "recommendedAdded": "Eklendi",
   "recommendedHiddenOutOfStock": "Stokta yok: ana sayfada gizli",
+  "recommendedHiddenNoImage": "Görsel yok: mağazada gizli",
   "moveUp": "Yukarı taşı",
   "moveDown": "Aşağı taşı",
   "sortRecommended": "Önerilenler"

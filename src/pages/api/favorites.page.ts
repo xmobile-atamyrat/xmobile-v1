@@ -1,6 +1,10 @@
 import dbClient from '@/lib/dbClient';
 import { activeFavoriteIds, whereActiveFavorite } from '@/lib/favorites';
-import { inStockFirst, whereActiveProduct } from '@/lib/prismaActiveScope';
+import {
+  inStockFirst,
+  whereActiveProduct,
+  whereListableProduct,
+} from '@/lib/prismaActiveScope';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -20,7 +24,9 @@ const FavoriteSchema = z.object({ productId: z.string().min(1) });
 // looked up in one query rather than one per product.
 async function listFavorites(userId: string, locale: unknown) {
   const products = await dbClient.product.findMany({
-    where: whereActiveFavorite(userId),
+    // The ids behind the hearts keep image-less favorites; only the list
+    // drops them, like every other storefront listing.
+    where: { ...whereActiveFavorite(userId), ...whereListableProduct },
     include: {
       brand: true,
       colors: { select: { id: true, name: true, hex: true } },

@@ -449,8 +449,7 @@ async function handleGetProduct(
       ? locale
       : undefined;
   const parsedPage = parseInt(page || '1', 10);
-  // Home sections ask for just the cards they show (plus one, to know whether
-  // "show more" applies) rather than a full page.
+  // Home sections ask for only the cards they show rather than a full page.
   const parsedLimit = parseInt(limit || '', 10);
   const pageSize =
     parsedLimit >= 1 && parsedLimit <= productsPerPage
@@ -559,7 +558,7 @@ async function handleGetProduct(
         orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
       // The admin-picked order first, then everything else newest first, so
-      // the "show more" listing continues past the picks instead of ending.
+      // the "view all" listing continues past the picks instead of ending.
       case SORT_OPTIONS.RECOMMENDED:
         orderBy = [
           inStockFirst,

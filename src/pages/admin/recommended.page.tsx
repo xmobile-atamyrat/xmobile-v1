@@ -465,6 +465,11 @@ export default function RecommendedProductsAdminPage() {
                     <Typography fontSize={14} className="truncate">
                       {parseName(item.name, locale)}
                     </Typography>
+                    {item.imgUrl == null && (
+                      <Typography fontSize={12} color="warning.main">
+                        {t('recommendedHiddenNoImage')}
+                      </Typography>
+                    )}
                     {item.isOutOfStock && (
                       <Typography fontSize={12} color="warning.main">
                         {t('recommendedHiddenOutOfStock')}

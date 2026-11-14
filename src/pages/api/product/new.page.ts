@@ -1,5 +1,5 @@
 import dbClient from '@/lib/dbClient';
-import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { whereListableProduct } from '@/lib/prismaActiveScope';
 import { productSearchWhere } from '@/lib/productSearchWhere';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
@@ -25,7 +25,7 @@ async function handleGetNewProducts(query: {
     // rather than client-side — otherwise a page of 20 could come back mostly
     // empty after filtering.
     const whereInStock: Prisma.ProductWhereInput = {
-      ...whereActiveProduct,
+      ...whereListableProduct,
       outOfStockAt: null,
     };
 

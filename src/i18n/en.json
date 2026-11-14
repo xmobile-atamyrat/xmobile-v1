@@ -951,6 +951,7 @@
   "recommendedProductGone": "A product in the list was deleted. The list was reloaded.",
   "recommendedAdded": "Added",
   "recommendedHiddenOutOfStock": "Out of stock: hidden on the home page",
+  "recommendedHiddenNoImage": "No image: hidden from the storefront",
   "moveUp": "Move up",
   "moveDown": "Move down",
   "sortRecommended": "Recommended"

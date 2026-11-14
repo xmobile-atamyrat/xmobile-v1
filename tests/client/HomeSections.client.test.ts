@@ -97,10 +97,12 @@ const cardNames = (section: HTMLElement) =>
     .getAllByTestId('card')
     .map((card) => card.textContent);
 
-const showMoreHrefs = () =>
+// Only the product sections' links: web also has one for categories.
+const viewAllHrefs = () =>
   screen
-    .getAllByRole('link', { name: 'Show more' })
-    .map((link) => link.getAttribute('href'));
+    .queryAllByRole('link', { name: 'View all' })
+    .map((link) => link.getAttribute('href'))
+    .filter((href) => href?.startsWith('/product'));
 
 describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
   beforeEach(() => {
@@ -124,13 +126,10 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
     ]);
   });
 
-  it('gives each section a show more link to the matching listing', () => {
+  it('gives each section a view all link to the matching listing', () => {
     renderHome(platform);
 
-    expect(showMoreHrefs()).toEqual([
-      '/product?sortBy=recommended',
-      '/product',
-    ]);
+    expect(viewAllHrefs()).toEqual(['/product?sortBy=recommended', '/product']);
   });
 
   it('caps the newest section at ten cards', () => {
@@ -151,11 +150,11 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
     expect(
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
-    expect(showMoreHrefs()).toEqual(['/product']);
+    expect(viewAllHrefs()).toEqual(['/product']);
   });
 
-  it('drops the show more link when there are no newest products', () => {
-    renderHome(platform, { newest: [], recommended: [] });
+  it('has no show more button under the grids', () => {
+    renderHome(platform);
 
     expect(
       screen.queryByRole('link', { name: 'Show more' }),
@@ -171,8 +170,6 @@ describe('home sections while searching on mobile', () => {
     expect(
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Show more' }),
-    ).not.toBeInTheDocument();
+    expect(viewAllHrefs()).toEqual([]);
   });
 });

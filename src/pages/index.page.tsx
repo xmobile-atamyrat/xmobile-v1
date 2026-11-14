@@ -64,7 +64,7 @@ const web = homePageClasses.web;
 // newest list is fetched with room for them on top of a full section.
 const HOME_PROMO_TILES = 2;
 
-// Each section's "show more" opens the catalog in the same order, which keeps
+// Each section's "view all" opens the catalog in the same order, which keeps
 // going past what home had room for.
 const RECOMMENDED_LISTING_HREF = `/product?sortBy=${SORT_OPTIONS.RECOMMENDED}`;
 const NEWEST_LISTING_HREF = '/product';
@@ -231,24 +231,26 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   initialSearch: { term: string; results: ExtendedProduct[] } | null;
 }>;
 
-/** A section's way on to the full catalog, under its last row of cards. */
-function ShowMoreLink({
-  href,
-  platform,
-}: {
-  href: string;
-  platform: 'web' | 'mobile';
-}) {
+/** A mobile section's title row, with its way on to the full catalog. */
+function MobileSectionHead({ title, href }: { title: string; href?: string }) {
   const t = useTranslations();
   return (
-    <Box className={homePageClasses.showMore[platform]}>
-      <Link
-        href={href}
-        className={`${fontClassName.className} ${buttonClasses.secondary[platform]} ${homePageClasses.showMoreButton[platform]}`}
+    <Box className={homePageClasses.mobileSectionHead}>
+      <Typography
+        component="h2"
+        className={`${fontClassName.className} ${homePageClasses.newProductsTitle.mobile}`}
       >
-        {t('showMore')}
-        <ArrowRight size={18} />
-      </Link>
+        {title}
+      </Typography>
+      {href && (
+        <Link
+          href={href}
+          className={`${fontClassName.className} ${homePageClasses.mobileViewAll}`}
+        >
+          {t('viewAll')}
+          <ArrowRight size={14} />
+        </Link>
+      )}
     </Box>
   );
 }
@@ -501,7 +503,6 @@ export default function Home({
                   />
                 ))}
               </Box>
-              <ShowMoreLink href={RECOMMENDED_LISTING_HREF} platform="web" />
             </Box>
           )}
 
@@ -528,14 +529,12 @@ export default function Home({
                 />
               ))}
             </Box>
-            {products.length === 0 ? (
+            {products.length === 0 && (
               <Typography
                 className={`${fontClassName.className} ${web.emptyText}`}
               >
                 {t('noProductsFound')}
               </Typography>
-            ) : (
-              <ShowMoreLink href={NEWEST_LISTING_HREF} platform="web" />
             )}
           </Box>
         </Box>
@@ -563,13 +562,10 @@ export default function Home({
         <Box className={homePageClasses.main[platform]}>
           {!search.isSearching && recommended.length > 0 && (
             <Box component="section" className={homePageClasses.mobileSection}>
-              <Typography
-                component="h2"
-                mb={1.5}
-                className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
-              >
-                {t('recommendedProducts')}
-              </Typography>
+              <MobileSectionHead
+                title={t('recommendedProducts')}
+                href={RECOMMENDED_LISTING_HREF}
+              />
               <Box className={homePageClasses.newProductsBox[platform]}>
                 {recommended.map((product) => (
                   <ProductCard
@@ -579,23 +575,13 @@ export default function Home({
                   />
                 ))}
               </Box>
-              <ShowMoreLink href={RECOMMENDED_LISTING_HREF} platform="mobile" />
             </Box>
           )}
           <Box component="section" className="w-full">
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={1.5}
-            >
-              <Typography
-                component="h2"
-                className={`${fontClassName.className} ${homePageClasses.newProductsTitle[platform]}`}
-              >
-                {search.isSearching ? searchTitle : t('newProducts')}
-              </Typography>
-            </Box>
+            <MobileSectionHead
+              title={search.isSearching ? searchTitle : t('newProducts')}
+              href={search.isSearching ? undefined : NEWEST_LISTING_HREF}
+            />
 
             {mobileLoading && !isAppending && <ProductGridSkeleton count={8} />}
             <Box className={homePageClasses.newProductsBox[platform]}>
@@ -613,9 +599,6 @@ export default function Home({
             {mobileProducts.length === 0 &&
               !mobileLoading &&
               !search.failed && <Typography>{t('noProductsFound')}</Typography>}
-            {!search.isSearching && mobileProducts.length > 0 && (
-              <ShowMoreLink href={NEWEST_LISTING_HREF} platform="mobile" />
-            )}
             {search.isSearching && <div ref={search.sentinelRef} />}
           </Box>
         </Box>

@@ -1,6 +1,6 @@
 import { categorySiblingOrderBy } from '@/lib/categoryHierarchy';
 import dbClient from '@/lib/dbClient';
-import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { whereListableProduct } from '@/lib/prismaActiveScope';
 import { productSearchWhere } from '@/lib/productSearchWhere';
 import { colorFamilyOf, isColorFamily } from '@/pages/lib/colorFamilies';
 import { Prisma } from '@prisma/client';
@@ -74,7 +74,7 @@ export async function buildProductWhere(
     inStock,
     recommended,
   } = query;
-  const where: Prisma.ProductWhereInput = { ...whereActiveProduct };
+  const where: Prisma.ProductWhereInput = { ...whereListableProduct };
 
   const categories = [
     ...(toArray(categoryId) ?? []),

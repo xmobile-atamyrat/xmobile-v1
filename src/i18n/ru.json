@@ -953,6 +953,7 @@
   "recommendedProductGone": "Один из товаров списка был удалён. Список обновлён.",
   "recommendedAdded": "Добавлен",
   "recommendedHiddenOutOfStock": "Нет в наличии: скрыт на главной",
+  "recommendedHiddenNoImage": "Нет фото: скрыт в магазине",
   "moveUp": "Переместить вверх",
   "moveDown": "Переместить вниз",
   "sortRecommended": "Рекомендуемые"

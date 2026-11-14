@@ -49,7 +49,9 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
       slug: E2E_CATALOG.productSlug,
       name: name(E2E_CATALOG.productName),
       categoryId: sub.id,
-      imgUrls: [],
+      // The storefront only lists products with an image; the file needn't
+      // exist for that.
+      imgUrls: ['e2e-catalog-product.webp'],
       tags: [],
       videoUrls: [],
       price: `[${price.id}]`,
@@ -82,7 +84,7 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
       slug: E2E_VARIANT_PRODUCT.slug,
       name: name(E2E_VARIANT_PRODUCT.name),
       categoryId: sub.id,
-      imgUrls: [],
+      imgUrls: ['e2e-variant-product.webp'],
       videoUrls: [],
       tags: [
         `${E2E_VARIANT_PRODUCT.specText} [${variantPrice.id}]{${variantColor.id}}`,

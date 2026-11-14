@@ -26,11 +26,15 @@ vi.mock('@/pages/components/Layout', () => ({
   default: ({ children }: { children: ReactNode }) => children,
 }));
 
-const item = (id: string, name: string, isOutOfStock = false) => ({
+const item = (
+  id: string,
+  name: string,
+  { isOutOfStock = false, imgUrl = `/media/${id}.webp` as string | null } = {},
+) => ({
   id,
   slug: id,
   name: JSON.stringify({ en: name }),
-  imgUrl: null as string | null,
+  imgUrl,
   isOutOfStock,
 });
 
@@ -88,6 +92,21 @@ describe('Recommended products admin page', () => {
     expect(rowNames()).toEqual(['Phone', 'Tablet']);
     expect(screen.getByText('2/50')).toBeTruthy();
     expect((saveButton() as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('flags picks the storefront hides', async () => {
+    setUp([
+      item('p1', 'Phone', { imgUrl: null }),
+      item('p2', 'Tablet', { isOutOfStock: true }),
+    ]);
+    renderPage();
+    await screen.findByText('Tablet');
+    expect(
+      screen.getAllByText('No image: hidden from the storefront'),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByText('Out of stock: hidden on the home page'),
+    ).toHaveLength(1);
   });
 
   it('saves a reordered list in its new order', async () => {

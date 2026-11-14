@@ -4,7 +4,7 @@ import { E2E_CATALOG, E2E_VARIANT_PRODUCT } from './fixtures/catalog-slugs';
 
 // The suite runs in `ru`.
 const RECOMMENDED_TITLE = 'Рекомендуемые товары';
-const SHOW_MORE = 'Ещё';
+const VIEW_ALL = 'Смотреть все';
 
 test.describe('Home — recommended products', () => {
   test('shows the picks and opens the listing in their order', async ({
@@ -21,7 +21,7 @@ test.describe('Home — recommended products', () => {
     ).toBeVisible();
     await expect(section.getByText(E2E_VARIANT_PRODUCT.name)).toHaveCount(0);
 
-    await section.getByRole('link', { name: SHOW_MORE }).click();
+    await section.getByRole('link', { name: VIEW_ALL }).click();
     await expect(page).toHaveURL(/\/product\?sortBy=recommended$/);
 
     // The pick leads even though the variant product is newer.
