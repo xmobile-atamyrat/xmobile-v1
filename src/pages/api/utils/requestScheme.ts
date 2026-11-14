@@ -13,14 +13,14 @@ interface SchemeAwareRequest {
  * Whether the request actually arrived over HTTPS.
  *
  * Session cookies used to be marked `Secure` whenever NODE_ENV === 'production',
- * but a production build is also what runs on staging, which is served over
- * plain HTTP (see BASE_URL in src/lib/ApiEndpoints.ts). Browsers silently
- * discard `Secure` cookies on an insecure origin, so REFRESH_TOKEN and
- * GUEST_SESSION_ID were never stored there: every request minted a fresh guest
- * session, which made the guest cart look empty right after a successful add.
+ * but a production build can also be served over plain HTTP, as staging once
+ * was. Browsers silently discard `Secure` cookies on an insecure origin, so
+ * REFRESH_TOKEN and GUEST_SESSION_ID were never stored there: every request
+ * minted a fresh guest session, which made the guest cart look empty right
+ * after a successful add.
  *
  * Derive the flag from the request scheme instead of the build mode, so
- * production over TLS still gets `Secure` and staging over HTTP still works.
+ * production over TLS still gets `Secure` and a plain-HTTP origin still works.
  */
 export function isSecureRequest(req: SchemeAwareRequest): boolean {
   const forwardedProto = req.headers['x-forwarded-proto'];
