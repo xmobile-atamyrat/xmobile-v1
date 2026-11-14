@@ -622,7 +622,11 @@ async function handleGetProduct(
   const productsWithDisplayPrice = await Promise.all(
     products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
-      if (productPrice) {
+      // A sold-out base isn't what an in-stock product costs, so it is left
+      // uninlined for the client to replace with a buyable variant's price.
+      const baseSoldOut =
+        productPrice?.outOfStockAt != null && product.outOfStockAt == null;
+      if (productPrice && !baseSoldOut) {
         product.price = `${product.price}{${displayPriceOf(productPrice)}}`;
       }
       return product;
