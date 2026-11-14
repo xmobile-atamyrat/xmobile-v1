@@ -20,7 +20,7 @@ function makeReq({
 }
 
 describe('isSecureRequest', () => {
-  it('is false for a plain HTTP request (staging over http://)', () => {
+  it('is false for a plain HTTP request', () => {
     expect(isSecureRequest(makeReq({}))).toBe(false);
   });
 
