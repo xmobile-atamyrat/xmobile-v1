@@ -47,8 +47,8 @@ Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
 
 **Staging Build and Deploy** (`.github/workflows/staging-build-and-deploy.yml`) follows the same flow for `https://dev.xmobile.com.tm`, which runs on the production VM from `/home/ubuntu/xmobile-staging/` (ports 3001 and 4001).
 
-- Staging has its own database. A deploy only runs migrations on it; production data is never copied in.
-- That database started as a copy of production, so its image paths point at production's files in `/home/ubuntu/images/`. Replacing or deleting an image in the staging admin deletes the production file, so don't change images on staging.
+- Staging has its own database (`staging`, on the same Postgres server as production). A deploy only runs migrations on it; production data is never copied in.
+- Staging uses production's image folders in `/home/ubuntu/images/`: its `.env` and nginx both point there. Uploading, replacing or deleting an image in the staging admin changes production's files, so don't change images on staging.
 
 ## Deploy Batch Runner
 
