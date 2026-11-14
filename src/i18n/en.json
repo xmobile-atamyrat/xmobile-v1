@@ -941,6 +941,8 @@
   "searchLoadError": "Couldn't load the results",
   "tryAgain": "Try again",
   "recommendedProducts": "Recommended products",
+  "imagelessProducts": "Products without photos",
+  "imagelessProductsHint": "Only staff see this section. Shoppers don't see these products until a photo is added.",
   "recommendedProductsHint": "Shown on the home page in this order. Out-of-stock products stay in the list but are hidden from the home page until they're back in stock.",
   "recommendedSearchPlaceholder": "Search products to add",
   "recommendedEmpty": "No recommended products yet. Search above to add some.",

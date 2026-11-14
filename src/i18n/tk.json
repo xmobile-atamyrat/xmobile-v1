@@ -943,6 +943,8 @@
   "searchLoadError": "Netijeler ýüklenmedi",
   "tryAgain": "Gaýtadan synanyşyň",
   "recommendedProducts": "Maslahat berilýän harytlar",
+  "imagelessProducts": "Suraty ýok harytlar",
+  "imagelessProductsHint": "Bu bölümi diňe işgärler görýär. Surat goşulýança müşderiler bu harytlary görmeýär.",
   "recommendedProductsHint": "Baş sahypada şu tertipde görkezilýär. Ammarda ýok harytlar sanawda galýar, ýöne gaýtadan peýda bolýança baş sahypada görkezilmeýär.",
   "recommendedSearchPlaceholder": "Goşmak üçin haryt gözläň",
   "recommendedEmpty": "Entek maslahat berilýän haryt ýok. Goşmak üçin ýokarda gözläň.",

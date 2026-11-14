@@ -941,6 +941,8 @@
   "searchLoadError": "Sonuçlar yüklenemedi",
   "tryAgain": "Tekrar dene",
   "recommendedProducts": "Önerilen ürünler",
+  "imagelessProducts": "Fotoğrafı olmayan ürünler",
+  "imagelessProductsHint": "Bu bölümü yalnızca personel görür. Fotoğraf eklenene kadar müşteriler bu ürünleri görmez.",
   "recommendedProductsHint": "Ana sayfada bu sırayla gösterilir. Stokta olmayan ürünler listede kalır ancak tekrar stoğa girene kadar ana sayfada gizlenir.",
   "recommendedSearchPlaceholder": "Eklemek için ürün arayın",
   "recommendedEmpty": "Henüz önerilen ürün yok. Eklemek için yukarıdan arayın.",

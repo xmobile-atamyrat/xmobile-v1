@@ -2,6 +2,7 @@
 
 import Home from '@/pages/index.page';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
+import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { screen, within } from '@testing-library/react';
 import mockRouter from 'next-router-mock';
@@ -12,6 +13,10 @@ import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('@/pages/lib/hooks/useHomeSearch', () => ({
   useHomeSearch: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/hooks/useImagelessProducts', () => ({
+  useImagelessProducts: vi.fn(() => null),
 }));
 
 vi.mock('@/pages/lib/PlatformContext', async (importOriginal) => ({
@@ -107,6 +112,8 @@ const viewAllHrefs = () =>
 describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // A shopper's view unless a test signs in staff.
+    vi.mocked(useImagelessProducts).mockReturnValue(null);
     mockRouter.setCurrentUrl('/');
   });
 
@@ -151,6 +158,33 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
     expect(viewAllHrefs()).toEqual(['/product']);
+  });
+
+  it('shows staff the products without photos above the picks', () => {
+    vi.mocked(useImagelessProducts).mockReturnValue({
+      products: products('Bare', 2),
+      total: 7,
+    } as never);
+    renderHome(platform);
+
+    const title = 'Products without photos (7)';
+    const headings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(headings.indexOf(title)).toBeGreaterThanOrEqual(0);
+    expect(headings.indexOf(title)).toBeLessThan(
+      headings.indexOf('Recommended products'),
+    );
+    expect(cardNames(sectionOf(title))).toEqual(['Bare 0', 'Bare 1']);
+    expect(viewAllHrefs()[0]).toBe('/product?imageless=1');
+  });
+
+  it('has no products-without-photos section for everyone else', () => {
+    renderHome(platform);
+
+    expect(
+      screen.queryByRole('heading', { name: /Products without photos/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('has no show more button under the grids', () => {

@@ -187,6 +187,9 @@ export const RECOMMENDED_PRODUCTS_MAX = 50;
 // curate it; 20 is also the API's page-size cap, so it stays one request.
 export const HOME_NEW_PRODUCTS = 10;
 export const HOME_RECOMMENDED_PRODUCTS = 20;
+// Staff-only home section of products still missing a photo. The heading
+// carries the full count and "view all" lists the rest.
+export const HOME_IMAGELESS_PRODUCTS = 10;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart

@@ -22,6 +22,8 @@ export interface ProductFilterQuery {
   maxPrice?: string;
   inStock?: string;
   recommended?: string;
+  /** '1': only products without images. Staff only, see buildProductWhere. */
+  imageless?: string;
 }
 
 export function toArray(value?: QueryValue): string[] | undefined {
@@ -85,7 +87,11 @@ export async function buildProductWhere(
     maxPrice,
     inStock,
     recommended,
+    imageless,
   } = query;
+  // Asked for by staff only (home's "without photos" section). Anyone else
+  // gets nothing rather than a hint of which products those are.
+  if (imageless === '1' && !includeImageless) return null;
   const where: Prisma.ProductWhereInput = includeImageless
     ? { ...whereActiveProduct }
     : { ...whereListableProduct };
@@ -128,6 +134,10 @@ export async function buildProductWhere(
 
   if (searchKeyword) {
     where.AND = productSearchWhere(searchKeyword);
+  }
+
+  if (imageless === '1') {
+    where.imgUrls = { isEmpty: true };
   }
 
   if (inStock === '1') {

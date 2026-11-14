@@ -34,6 +34,8 @@ export const homePageClasses = {
   mobileSectionHead: 'flex items-center justify-between mb-3',
   mobileViewAll:
     'flex items-center gap-1 text-[13px] font-semibold text-navy shrink-0',
+  // Staff-only note under a section title (products without photos).
+  staffHint: 'text-[13px] text-muted -mt-2 mb-3',
   // Desktop storefront (spec 1268-1391). Horizontal padding comes from
   // Layout's px-[2vw] container, so only vertical rhythm lives here.
   web: {

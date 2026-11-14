@@ -20,6 +20,7 @@ import {
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
+import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { readSearchKeyword } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -68,6 +69,8 @@ const HOME_PROMO_TILES = 2;
 // going past what home had room for.
 const RECOMMENDED_LISTING_HREF = `/product?sortBy=${SORT_OPTIONS.RECOMMENDED}`;
 const NEWEST_LISTING_HREF = '/product';
+// Staff only; see ProductGridContent.
+const IMAGELESS_LISTING_HREF = '/product?imageless=1';
 
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
@@ -277,6 +280,10 @@ export default function Home({
   // home's URL (see HOME_PATHNAME), so back from a product restores them.
   const searchTerm = readSearchKeyword(router.query);
   const search = useHomeSearch(searchTerm, router.locale, initialSearch);
+  // Staff only: what still needs a photo, above the picks (null for others).
+  const imageless = useImagelessProducts(router.locale);
+  const imagelessTitle =
+    imageless && `${t('imagelessProducts')} (${imageless.total})`;
   const searchTitle = t('searchResultsFor', { keyword: searchTerm });
   const searchFailure = (
     <Box className="text-center">
@@ -481,6 +488,37 @@ export default function Home({
             </Box>
           )}
 
+          {imageless && imageless.products.length > 0 && (
+            <Box component="section" className={web.sectionGap}>
+              <Box className={web.sectionHead}>
+                <Typography
+                  component="h2"
+                  className={`${fontClassName.className} ${web.sectionTitle}`}
+                >
+                  {imagelessTitle}
+                </Typography>
+                <Link href={IMAGELESS_LISTING_HREF} className={web.viewAll}>
+                  {t('viewAll')}
+                  <ArrowRight size={16} />
+                </Link>
+              </Box>
+              <Typography
+                className={`${fontClassName.className} ${homePageClasses.staffHint}`}
+              >
+                {t('imagelessProductsHint')}
+              </Typography>
+              <Box className={web.productGrid}>
+                {imageless.products.map((product) => (
+                  <ProductCard
+                    product={product}
+                    key={product.id}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
           {/* admin-picked products, in their order — the design's
               "Recommended for you" slot (spec 1383-1390) */}
           {recommended.length > 0 && (
@@ -563,6 +601,33 @@ export default function Home({
       )}
       <Box className="flex flex-row gap-6 w-full">
         <Box className={homePageClasses.main[platform]}>
+          {!search.isSearching &&
+            imageless &&
+            imageless.products.length > 0 && (
+              <Box
+                component="section"
+                className={homePageClasses.mobileSection}
+              >
+                <MobileSectionHead
+                  title={imagelessTitle ?? ''}
+                  href={IMAGELESS_LISTING_HREF}
+                />
+                <Typography
+                  className={`${fontClassName.className} ${homePageClasses.staffHint}`}
+                >
+                  {t('imagelessProductsHint')}
+                </Typography>
+                <Box className={homePageClasses.newProductsBox[platform]}>
+                  {imageless.products.map((product) => (
+                    <ProductCard
+                      product={product}
+                      key={product.id}
+                      cartProps={{ cartAction: 'add' }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
           {!search.isSearching && recommended.length > 0 && (
             <Box component="section" className={homePageClasses.mobileSection}>
               <MobileSectionHead

@@ -140,6 +140,38 @@ describe('Products without images (integration)', () => {
     }
   });
 
+  it('lists only them with imageless=1, for staff only', async () => {
+    const staff = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const shopper = await signupTestUser('listable-imageless');
+    const query = { categoryId, imageless: '1' };
+    try {
+      const list = await call(productApi, '/api/product', {
+        query,
+        token: staff.accessToken,
+      });
+      expect(list.json.data.map(({ id }: { id: string }) => id)).toEqual([
+        noImageId,
+      ]);
+      const count = await call(productApi, '/api/product', {
+        query: { ...query, count: 'true' },
+        token: staff.accessToken,
+      });
+      expect(count.json.data).toBe(1);
+
+      // Anyone else learns nothing, rather than getting the normal list.
+      for (const token of [shopper.accessToken, undefined]) {
+        // eslint-disable-next-line no-await-in-loop
+        const denied = await call(productApi, '/api/product', {
+          query,
+          token,
+        });
+        expect(denied.json.data).toEqual([]);
+      }
+    } finally {
+      await prisma.user.deleteMany({ where: { id: staff.userId } });
+    }
+  });
+
   it('leaves them out of the filter counts', async () => {
     const { json } = await call(
       () => import('@/pages/api/product/filters.page'),
@@ -148,6 +180,27 @@ describe('Products without images (integration)', () => {
     );
     expect(json.data.total).toBe(1);
     expect(json.data.brandCounts).toEqual({ [brandId]: 1 });
+  });
+
+  it('counts them in the filters for staff, alone with imageless=1', async () => {
+    const filters = () => import('@/pages/api/product/filters.page');
+    const total = async (query: Record<string, string>, token?: string) =>
+      (await call(filters, '/api/product/filters', { query, token })).json.data
+        .total;
+    const staff = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const shopper = await signupTestUser('listable-filters');
+    try {
+      expect(await total({ categoryId }, staff.accessToken)).toBe(2);
+      expect(
+        await total({ categoryId, imageless: '1' }, staff.accessToken),
+      ).toBe(1);
+      expect(await total({ categoryId }, shopper.accessToken)).toBe(1);
+      expect(
+        await total({ categoryId, imageless: '1' }, shopper.accessToken),
+      ).toBe(0);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: staff.userId } });
+    }
   });
 
   it('leaves them out of new products', async () => {
