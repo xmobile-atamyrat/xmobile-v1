@@ -26,6 +26,16 @@ export interface ProductFilterOptions {
   price: PriceFacet | null;
 }
 
+/**
+ * A staff access token makes the product list also include products without
+ * images, which shoppers never see. Pass it from admin flows only: any other
+ * caller leaves it unset, so the API skips the role lookup for them.
+ */
+const staffInit = (staffToken?: string): RequestInit | undefined =>
+  staffToken
+    ? { headers: { Authorization: `Bearer ${staffToken}` } }
+    : undefined;
+
 export const fetchProducts = async ({
   categoryIds,
   brandIds,
@@ -41,6 +51,7 @@ export const fetchProducts = async ({
   inStock,
   recommended,
   limit,
+  staffToken,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -54,10 +65,15 @@ export const fetchProducts = async ({
   productId?: string;
   productSlug?: string;
   page?: number;
-  /** Only products an admin picked for the home page's recommended row. */
+  /**
+   * true: only the products an admin picked for home's recommended row.
+   * false: only products that aren't picks. Unset: both.
+   */
   recommended?: boolean;
   /** Page size, capped at PRODUCTS_PER_PAGE by the API. */
   limit?: number;
+  /** See {@link staffInit}. */
+  staffToken?: string;
   /**
    * When set, the API strips names/descriptions down to this locale.
    * Leave unset for admin flows that need the raw multi-locale JSON
@@ -90,11 +106,11 @@ export const fetchProducts = async ({
   appendParam('sortBy', sortBy);
   appendParam('locale', locale);
   appendParam('inStock', inStock ? '1' : undefined);
-  appendParam('recommended', recommended ? '1' : undefined);
+  if (recommended != null) appendParam('recommended', recommended ? '1' : '0');
   appendParam('limit', limit);
 
   const { success, data, message }: ResponseApi<ExtendedProduct[]> = await (
-    await fetch(url)
+    await fetch(url, staffInit(staffToken))
   ).json();
   if (!success || data == null) {
     throw new Error(message);
@@ -111,6 +127,7 @@ export const fetchProductsCount = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  staffToken,
 }: {
   categoryIds?: string[];
   brandIds?: string[];
@@ -120,6 +137,8 @@ export const fetchProductsCount = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** See {@link staffInit}. */
+  staffToken?: string;
 }): Promise<number> => {
   let url = `${BASE_URL}/api/product?count=true`;
   const appendParam = (key: string, val: any) => {
@@ -134,7 +153,7 @@ export const fetchProductsCount = async ({
   appendParam('inStock', inStock ? '1' : undefined);
 
   const { success, data }: ResponseApi<number> = await (
-    await fetch(url)
+    await fetch(url, staffInit(staffToken))
   ).json();
   if (!success || typeof data !== 'number') {
     throw new Error('Failed to fetch product count');

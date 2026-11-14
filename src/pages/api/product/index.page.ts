@@ -34,9 +34,13 @@ import { getPrice } from '@/pages/api/prices/index.page';
 import {
   buildProductWhere,
   ProductFilterQuery,
+  ProductWhereOptions,
 } from '@/pages/api/product/productWhere';
 import addCors from '@/pages/api/utils/addCors';
-import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
+import {
+  hasStaffBearer,
+  requireStaffBearerAuth,
+} from '@/pages/api/utils/staffAuth';
 import {
   IMG_COMPRESSION_MAX_QUALITY,
   IMG_COMPRESSION_MIN_QUALITY,
@@ -431,6 +435,7 @@ async function handleGetProduct(
     locale?: string | string[];
     limit?: string;
   },
+  whereOptions: ProductWhereOptions = {},
 ): Promise<{ resp: ResponseApi; status: number }> {
   const { productId, productSlug, page, sortBy, count, facets, locale, limit } =
     query;
@@ -503,7 +508,7 @@ async function handleGetProduct(
     };
   }
 
-  const where = await buildProductWhere(query);
+  const where = await buildProductWhere(query, whereOptions);
   if (where == null) {
     return {
       resp: { success: true, data: wantCount ? 0 : [] },
@@ -842,7 +847,11 @@ export default async function handler(
     }
   } else if (method === 'GET') {
     try {
-      const { resp, status } = await handleGetProduct(query);
+      // Only requests that send a token pay for the staff lookup.
+      const includeImageless = await hasStaffBearer(req);
+      const { resp, status } = await handleGetProduct(query, {
+        includeImageless,
+      });
       return res.status(status).json(resp);
     } catch (error) {
       console.error(filepath, error);

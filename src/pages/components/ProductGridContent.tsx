@@ -57,7 +57,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ArrowLeft, ChevronLeft, ChevronRight, SearchX } from 'lucide-react';
-import { Product } from '@prisma/client';
+import { Product, UserRole } from '@prisma/client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -111,7 +111,15 @@ export default function ProductGridContent({
     usePrevProductContext();
   const [addEditProductDialog, setAddEditProductDialog] =
     useState<AddEditProductProps>({ open: false, imageUrls: [] });
-  const { user } = useUserContext();
+  const { user, accessToken } = useUserContext();
+  // Staff also see products without images, so they can find and fix them.
+  // The token goes through a ref: its silent refreshes mustn't reset the list,
+  // only the switch to a staff view (once the session has loaded) does.
+  const isStaffViewer =
+    (user?.grade === UserRole.ADMIN || user?.grade === UserRole.SUPERUSER) &&
+    accessToken != null;
+  const staffTokenRef = useRef<string>();
+  staffTokenRef.current = isStaffViewer ? accessToken : undefined;
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -379,6 +387,7 @@ export default function ProductGridContent({
           sortBy: filters.sortBy,
           locale: router.locale,
           inStock: filters.inStock,
+          staffToken: staffTokenRef.current,
         };
 
         if (searchKeyword) {
@@ -428,6 +437,7 @@ export default function ProductGridContent({
     effectiveCategoryIds,
     platform,
     webPage,
+    isStaffViewer,
     setProducts,
     setPrevProducts,
     setPrevCategory,
@@ -456,6 +466,7 @@ export default function ProductGridContent({
         sortBy: filters.sortBy,
         locale: router.locale,
         inStock: filters.inStock,
+        staffToken: staffTokenRef.current,
       };
 
       if (searchKeyword) {

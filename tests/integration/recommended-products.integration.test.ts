@@ -193,6 +193,45 @@ describe('Recommended products (integration)', () => {
     expect(limited.map(({ id }) => id)).toEqual([ids[0], ids[1]]);
   });
 
+  it('keeps exactly one list when two saves race', async () => {
+    const first = [ids[0], ids[1]];
+    const second = [ids[2], ids[3]];
+    for (let round = 0; round < 5; round += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const results = await Promise.all([save(first), save(second)]);
+      expect(results.map(({ status }) => status)).toEqual([200, 200]);
+      // eslint-disable-next-line no-await-in-loop
+      const picked = await listProducts({
+        recommended: '1',
+        sortBy: 'recommended',
+      });
+      expect([first, second]).toContainEqual(picked.map(({ id }) => id));
+    }
+  });
+
+  it('clears the list with an empty save', async () => {
+    await save([ids[0], ids[1]]);
+    const { status, json } = await save([]);
+    expect(status).toBe(200);
+    expect(json.data).toEqual([]);
+    expect(Object.values(await storedOrder())).toEqual([
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it('leaves the picks out with recommended=0', async () => {
+    await save([ids[1], ids[2]]);
+    // Counts, since the shared catalog can push these old rows off page one.
+    const count = async (query: Record<string, string>) =>
+      (await listProducts({ ...query, count: 'true' })) as unknown as number;
+    const all = await count({ categoryId });
+    expect(await count({ categoryId, recommended: '0' })).toBe(all - 2);
+    expect(await count({ categoryId, recommended: '1' })).toBe(2);
+  });
+
   it('drops a product from the list when it is soft-deleted', async () => {
     const extra = await prisma.product.create({
       data: {

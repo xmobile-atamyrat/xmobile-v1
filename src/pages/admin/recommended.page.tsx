@@ -127,12 +127,19 @@ export default function RecommendedProductsAdminPage() {
   const isDirty = !sameOrder(items, saved);
   const isFull = items.length >= RECOMMENDED_PRODUCTS_MAX;
 
+  // Read through a ref: a silent token refresh must not rebuild `load` and
+  // re-run the initial fetch, which would overwrite unsaved edits.
+  const accessTokenRef = useRef(accessToken);
+  accessTokenRef.current = accessToken;
+  const hasAccessToken = accessToken != null;
+
   const load = useCallback(async () => {
-    if (!accessToken) return;
+    const token = accessTokenRef.current;
+    if (!token) return;
     setLoading(true);
     try {
       const res = await fetchWithCreds<RecommendedProductItem[]>({
-        accessToken,
+        accessToken: token,
         path: '/api/product/recommended',
         method: 'GET',
       });
@@ -148,11 +155,12 @@ export default function RecommendedProductsAdminPage() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, fetchWithCreds]);
+  }, [fetchWithCreds]);
 
+  // Once, when the page becomes usable; the booleans only ever flip to true.
   useEffect(() => {
-    if (isAuthorized) load();
-  }, [isAuthorized, load]);
+    if (isAuthorized && hasAccessToken) load();
+  }, [isAuthorized, hasAccessToken, load]);
 
   // Debounced, and a slower earlier response can't overwrite a newer one.
   useEffect(() => {
@@ -167,7 +175,12 @@ export default function RecommendedProductsAdminPage() {
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const products = await fetchProducts({ searchKeyword: term });
+        // The staff token brings in products without a photo too; picking
+        // one is allowed, it just stays off home until it gets an image.
+        const products = await fetchProducts({
+          searchKeyword: term,
+          staffToken: accessTokenRef.current,
+        });
         if (token !== searchToken.current) return;
         setResults(
           products.map((product) => ({

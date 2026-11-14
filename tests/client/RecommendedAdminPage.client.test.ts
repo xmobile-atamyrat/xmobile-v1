@@ -155,7 +155,10 @@ describe('Recommended products admin page', () => {
       target: { value: 'wa' },
     });
     await screen.findByText('Watch');
-    expect(fetchProducts).toHaveBeenCalledWith({ searchKeyword: 'wa' });
+    expect(fetchProducts).toHaveBeenCalledWith({
+      searchKeyword: 'wa',
+      staffToken: 'token',
+    });
     expect(
       (screen.getByRole('button', { name: 'Added' }) as HTMLButtonElement)
         .disabled,
@@ -166,6 +169,37 @@ describe('Recommended products admin page', () => {
     expect(
       screen.getByText('Out of stock: hidden on the home page'),
     ).toBeTruthy();
+  });
+
+  it('keeps unsaved edits when the access token is silently refreshed', async () => {
+    setUp();
+    const { rerender } = renderPage();
+    await screen.findByText('Tablet');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Move down' })[0]);
+    expect(rowNames()).toEqual(['Tablet', 'Phone']);
+
+    vi.mocked(useUserContext).mockReturnValue({
+      user: { id: 'u1', grade: 'ADMIN' },
+      accessToken: 'refreshed-token',
+      isLoading: false,
+    } as never);
+    rerender(createElement(RecommendedProductsAdminPage));
+
+    expect(rowNames()).toEqual(['Tablet', 'Phone']);
+    expect(
+      fetchWithCreds.mock.calls.filter(([args]) => args.method === 'GET'),
+    ).toHaveLength(1);
+
+    // The newer token is still the one a save sends.
+    fireEvent.click(saveButton());
+    await waitFor(() =>
+      expect(fetchWithCreds).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          method: 'PUT',
+          accessToken: 'refreshed-token',
+        }),
+      ),
+    );
   });
 
   it('removes a pick, and Cancel brings the saved list back', async () => {

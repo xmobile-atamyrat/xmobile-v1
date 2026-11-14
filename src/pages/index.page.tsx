@@ -175,11 +175,14 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // refetches a missing search, but never a missing section.
   const searchTerm = readSearchKeyword(context.query);
   const productLocale = routeLocale ?? finalLocale;
+  // The newest row leaves out picks so no card appears in both sections; a
+  // pick past the recommended row's cap still shows in its "view all".
   const [initialProducts, recommendedProducts, results] = await Promise.all([
     fetchProducts({
       page: 1,
       locale: productLocale,
       inStock: true,
+      recommended: false,
       sortBy: SORT_OPTIONS.NEWEST,
       limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
     }).catch((error): ExtendedProduct[] => {

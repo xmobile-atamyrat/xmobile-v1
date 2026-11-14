@@ -171,6 +171,7 @@ export default function AddEditBannerDialog({
       try {
         const results = await fetchProducts({
           searchKeyword: productInput || undefined,
+          staffToken: accessToken,
         });
         if (active) setProductOptions(results);
       } catch (error) {

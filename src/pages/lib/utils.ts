@@ -579,8 +579,10 @@ export async function addEditProduct({
     product = data;
   }
 
+  // Staff view, so a product saved without a photo shows up in the grid.
   const prods = await fetchProducts({
     categoryIds: [categoryId],
+    staffToken: accessToken,
   });
   setProducts(prods as Product[]);
   setPrevProducts(prods as Product[]);

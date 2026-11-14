@@ -1300,6 +1300,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
               if (refreshCategoryId != null) {
                 const prods = await fetchProducts({
                   categoryIds: [refreshCategoryId],
+                  staffToken: accessToken,
                 });
                 setProducts(prods);
                 setPrevCategory(refreshCategoryId);

@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { createMocks, RequestMethod } from 'node-mocks-http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
 import { signupTestUser } from './shared/signup-test-user';
+import { createStaffPrincipal } from './shared/staff-token';
 import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
@@ -109,6 +110,34 @@ describe('Products without images (integration)', () => {
       query: { categoryId, facets: 'categories' },
     });
     expect(facets.json.data).toEqual([{ categoryId, count: 1 }]);
+  });
+
+  it('lists them, and counts them, for a staff token only', async () => {
+    const listIds = async (token?: string) =>
+      (
+        await call(productApi, '/api/product', {
+          query: { categoryId },
+          token,
+        })
+      ).json.data.map(({ id }: { id: string }) => id);
+
+    const staff = await createStaffPrincipal(prisma, UserRole.ADMIN);
+    const shopper = await signupTestUser('listable-shopper');
+    try {
+      expect([...(await listIds(staff.accessToken))].sort()).toEqual(
+        [withImageId, noImageId].sort(),
+      );
+      const count = await call(productApi, '/api/product', {
+        query: { categoryId, count: 'true' },
+        token: staff.accessToken,
+      });
+      expect(count.json.data).toBe(2);
+
+      expect(await listIds(shopper.accessToken)).toEqual([withImageId]);
+      expect(await listIds('not-a-jwt')).toEqual([withImageId]);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: staff.userId } });
+    }
   });
 
   it('leaves them out of the filter counts', async () => {
