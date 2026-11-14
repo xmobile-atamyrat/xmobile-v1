@@ -12,6 +12,12 @@ describe('ApiEndpoints BASE_URL', () => {
     expect(base).toBe('https://xmobile.com.tm');
   });
 
+  it('uses the https staging host in staging', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'staging');
+    const { default: base } = await import('@/lib/ApiEndpoints');
+    expect(base).toBe('https://dev.xmobile.com.tm');
+  });
+
   it('builds dev URL from NEXT_PUBLIC_HOST and PORT', async () => {
     vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'development');
     vi.stubEnv('NEXT_PUBLIC_HOST', '192.168.1.5');
