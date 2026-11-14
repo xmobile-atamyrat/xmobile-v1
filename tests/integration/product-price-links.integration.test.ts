@@ -62,6 +62,7 @@ describe('/api/product price ownership (integration)', () => {
   let prisma: PrismaClient;
   let adminToken: string;
   let categoryId: string;
+  let brandId: string;
   let seq = 0;
 
   const newPrice = (name: string) =>
@@ -81,6 +82,7 @@ describe('/api/product price ownership (integration)', () => {
       fields: {
         name: JSON.stringify({ en: `Price Link Phone ${seq} ${Date.now()}` }),
         categoryId,
+        brandId,
         price,
         tags: JSON.stringify(tags),
         isOutOfStock: 'false',
@@ -109,6 +111,7 @@ describe('/api/product price ownership (integration)', () => {
     adminToken = (await createStaffPrincipal(prisma, UserRole.ADMIN))
       .accessToken;
     categoryId = catalog.categoryId;
+    brandId = catalog.brandId;
   }, 180_000);
 
   afterAll(async () => {
@@ -264,6 +267,7 @@ describe('/api/product price ownership (integration)', () => {
       fields: {
         name: JSON.stringify({ en: `Sold Out Link ${seq} ${Date.now()}` }),
         categoryId,
+        brandId,
         price: `[${price.id}]`,
         tags: '[]',
         isOutOfStock: 'true',

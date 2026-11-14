@@ -182,10 +182,9 @@ export default function ProductsOverview() {
     [],
   );
 
-  // Unlike a category, a brand is optional: null is a real choice here, staged
-  // as an explicit null so the save knows to unlink rather than skip the field.
   const handleBrandChange = useCallback(
     (productId: string, brandId: string | null) => {
+      if (brandId == null) return; // a product always needs a brand
       setUpdatedProducts((prev) => ({
         ...prev,
         [productId]: { ...prev[productId], brandId },
@@ -481,15 +480,14 @@ export default function ProductsOverview() {
                       />
                     </TableCell>
                     <TableCell>
-                      {/* Unlike the category, a brand can be cleared — the
-                          column is nullable — and a missing one can be filled
-                          in by typing a new name rather than opening the
-                          product form just to add a brand. */}
+                      {/* A new brand can be created by typing its name rather
+                          than opening the product form just to add one. */}
                       <SelectCell
                         id={product.id}
                         value={product.brandId}
                         options={brands}
                         emptyLabel={t('noBrand')}
+                        allowEmpty={false}
                         dirty={'brandId' in (updatedProducts[product.id] ?? {})}
                         onChange={handleBrandChange}
                         onCreate={handleCreateBrand}

@@ -21,6 +21,9 @@ export default async function globalSetup(project: TestProject) {
       slug: 'integration-category',
     },
   });
+  const brand = await prisma.brand.create({
+    data: { name: 'Integration brand' },
+  });
   const price = await prisma.prices.create({
     data: { name: 'Integration price', price: '1', priceInTmt: '99.99' },
   });
@@ -29,6 +32,7 @@ export default async function globalSetup(project: TestProject) {
       slug: 'integration-phone',
       name: '{"en":"Integration phone"}',
       categoryId: cat.id,
+      brandId: brand.id,
       imgUrls: [],
       tags: [],
       videoUrls: [],
@@ -52,6 +56,7 @@ export default async function globalSetup(project: TestProject) {
       slug: 'integration-rounded-phone',
       name: '{"en":"Integration rounded phone"}',
       categoryId: cat.id,
+      brandId: brand.id,
       imgUrls: [],
       tags: [],
       videoUrls: [],
@@ -65,6 +70,7 @@ export default async function globalSetup(project: TestProject) {
   const catalog: IntegrationCatalog = {
     categoryId: cat.id,
     categorySlug: cat.slug!,
+    brandId: brand.id,
     priceId: price.id,
     productId: product.id,
     productSlug: product.slug!,

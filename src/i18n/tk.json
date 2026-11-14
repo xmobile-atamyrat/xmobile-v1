@@ -664,6 +664,8 @@
   "productsOverview": "Harytlara syn",
   "selectCategory": "Kategoriýa saýlaň",
   "categoryRequired": "Haýyş, kategoriýa saýlaň",
+  "brandRequired": "Haýyş, brend saýlaň",
+  "brandNotFound": "Brend tapylmady. Sahypany täzeläň we brendi gaýtadan saýlaň",
   "outOfStockOnly": "Diňe gutaranlar",
   "availability": "Elýeterlilik",
   "inStockOnly": "Diňe barlar",

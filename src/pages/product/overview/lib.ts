@@ -10,29 +10,19 @@ export const NO_BRAND_FILTER = '__noBrand__';
 
 /**
  * A row's staged, not-yet-saved edits. A key being absent means "untouched",
- * which is what lets one save leave images, tags and the base price alone; a
- * present `brandId` of `null` is an explicit "unlink the brand".
+ * which is what lets one save leave images, tags and the base price alone.
  */
 export interface ProductEdit {
   categoryId?: string;
-  brandId?: string | null;
+  brandId?: string;
   isOutOfStock?: boolean;
 }
 
-/**
- * Turns staged edits into the multipart fields PUT /api/product expects.
- *
- * Kept separate from the page because the empty-string rule is easy to get
- * wrong and invisible until a brand refuses to clear: the handler reads
- * `fields.brandId[0] || null`, so `''` unlinks the brand while omitting the
- * field leaves the old one attached.
- */
+/** Turns staged edits into the multipart fields PUT /api/product expects. */
 export function buildProductEditFields(edit: ProductEdit): [string, string][] {
   const fields: [string, string][] = [];
   if (edit.categoryId != null) fields.push(['categoryId', edit.categoryId]);
-  // `in` rather than a null check: null is a meaningful value here, and only
-  // the key's absence means the admin never touched the brand.
-  if ('brandId' in edit) fields.push(['brandId', edit.brandId ?? '']);
+  if (edit.brandId != null) fields.push(['brandId', edit.brandId]);
   if (edit.isOutOfStock != null) {
     fields.push(['isOutOfStock', String(edit.isOutOfStock)]);
   }

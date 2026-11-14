@@ -499,6 +499,10 @@ export default function AddEditProductDialog({
             if (snackbarErrorHandler) snackbarErrorHandler('categoryRequired');
             return;
           }
+          if (!brandId) {
+            if (snackbarErrorHandler) snackbarErrorHandler('brandRequired');
+            return;
+          }
 
           setLoading(true);
 
@@ -511,7 +515,7 @@ export default function AddEditProductDialog({
             const updatedProduct = await addEditProduct({
               formJson: Object.fromEntries(formData.entries()),
               categoryId,
-              brandId: brandId || undefined,
+              brandId,
               setProducts,
               setPrevProducts,
               setPrevCategory,
