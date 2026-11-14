@@ -952,5 +952,6 @@
   "recommendedAdded": "Eklendi",
   "recommendedHiddenOutOfStock": "Stokta yok: ana sayfada gizli",
   "moveUp": "Yukarı taşı",
-  "moveDown": "Aşağı taşı"
+  "moveDown": "Aşağı taşı",
+  "sortRecommended": "Önerilenler"
 }

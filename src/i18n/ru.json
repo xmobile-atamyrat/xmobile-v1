@@ -954,5 +954,6 @@
   "recommendedAdded": "Добавлен",
   "recommendedHiddenOutOfStock": "Нет в наличии: скрыт на главной",
   "moveUp": "Переместить вверх",
-  "moveDown": "Переместить вниз"
+  "moveDown": "Переместить вниз",
+  "sortRecommended": "Рекомендуемые"
 }

@@ -53,6 +53,9 @@ export async function seedE2eCatalog(prisma: PrismaClient): Promise<void> {
       tags: [],
       videoUrls: [],
       price: `[${price.id}]`,
+      // The home page's only pick, so the variant product (created after it,
+      // so newer) shows it isn't just the newest-first order.
+      recommendedOrder: 0,
     },
   });
 

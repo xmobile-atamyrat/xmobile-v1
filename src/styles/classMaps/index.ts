@@ -30,6 +30,17 @@ export const homePageClasses = {
     web: 'w-full',
     mobile: 'w-full px-5 pt-6',
   },
+  mobileSection: 'w-full mb-8',
+  // A home section's "show more": centred and capped on web, full width under
+  // the thumb on mobile.
+  showMore: {
+    web: 'flex justify-center mt-6',
+    mobile: 'mt-4',
+  },
+  showMoreButton: {
+    web: 'flex items-center justify-center gap-2 max-w-[320px]',
+    mobile: 'flex items-center justify-center gap-2',
+  },
   // Desktop storefront (spec 1268-1391). Horizontal padding comes from
   // Layout's px-[2vw] container, so only vertical rhythm lives here.
   web: {

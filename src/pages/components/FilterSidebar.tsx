@@ -55,6 +55,8 @@ interface FilterSidebarProps {
    * unknown: every brand shows without a count, and the colour section waits.
    */
   options: FilterOptions | null;
+  /** Offer the admin-picked order in the mobile sort chips. */
+  showRecommendedSort?: boolean;
 }
 
 // Brand and colour lists scroll past 300px. Reserving the scrollbar's gutter
@@ -166,6 +168,7 @@ export default function FilterSidebar({
   hideSections = [],
   variant = 'sidebar',
   options,
+  showRecommendedSort = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -621,6 +624,7 @@ export default function FilterSidebar({
             >
               <SortDropdown
                 variant="chips"
+                showRecommended={showRecommendedSort}
                 value={sortBy || SORT_OPTIONS.NEWEST}
                 onChange={(v) => onFilterChange({ sortBy: v })}
               />

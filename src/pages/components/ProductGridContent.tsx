@@ -568,6 +568,7 @@ export default function ProductGridContent({
           onApply={applyFilters}
           hideSections={hideSections}
           optionsScope={filterScope}
+          showRecommendedSort
         />
         <Box className={productIndexPageClasses.boxes.products[platform]}>
           {isLandingMode && categoryPath.length > 0 && (
@@ -615,6 +616,7 @@ export default function ProductGridContent({
                     onChange={applyFilters}
                   />
                   <SortDropdown
+                    showRecommended
                     value={filters.sortBy}
                     onChange={(val) => applyFilters({ sortBy: val })}
                   />

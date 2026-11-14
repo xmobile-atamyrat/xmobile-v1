@@ -182,6 +182,11 @@ export const FILTER_MAX_PRICE = 100000;
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;
 export const RECOMMENDED_PRODUCTS_MAX = 50;
+// Cards per home section before its "show more". New products: two rows at
+// the usual five-column laptop width. Recommended gets more room since admins
+// curate it; 20 is also the API's page-size cap, so it stays one request.
+export const HOME_NEW_PRODUCTS = 10;
+export const HOME_RECOMMENDED_PRODUCTS = 20;
 
 /**
  * Thrown by the order service and matched by the checkout page when the cart

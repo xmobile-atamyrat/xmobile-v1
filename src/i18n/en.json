@@ -952,5 +952,6 @@
   "recommendedAdded": "Added",
   "recommendedHiddenOutOfStock": "Out of stock: hidden on the home page",
   "moveUp": "Move up",
-  "moveDown": "Move down"
+  "moveDown": "Move down",
+  "sortRecommended": "Recommended"
 }
