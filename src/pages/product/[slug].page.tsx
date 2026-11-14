@@ -316,6 +316,7 @@ function buildEditProductDialogProps(source: Product): AddEditProductProps {
     brandId: source.brandId,
     categoryId: source.categoryId,
     isOutOfStock: source.outOfStockAt != null,
+    isRecommended: source.recommendedOrder != null,
   };
 }
 

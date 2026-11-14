@@ -16,6 +16,7 @@ export interface ProductEdit {
   categoryId?: string;
   brandId?: string;
   isOutOfStock?: boolean;
+  isRecommended?: boolean;
 }
 
 /** Turns staged edits into the multipart fields PUT /api/product expects. */
@@ -25,6 +26,9 @@ export function buildProductEditFields(edit: ProductEdit): [string, string][] {
   if (edit.brandId != null) fields.push(['brandId', edit.brandId]);
   if (edit.isOutOfStock != null) {
     fields.push(['isOutOfStock', String(edit.isOutOfStock)]);
+  }
+  if (edit.isRecommended != null) {
+    fields.push(['isRecommended', String(edit.isRecommended)]);
   }
   return fields;
 }
@@ -71,6 +75,8 @@ export interface OverviewFilters {
   /** Empty string means "all categories". */
   categoryId: string;
   outOfStockOnly: boolean;
+  /** Keeps only products on the home page's recommended list. */
+  recommendedOnly: boolean;
   /** Empty string means "any brand"; NO_BRAND_FILTER means "no brand set". */
   brandId: string;
   /** Keeps only products whose base price is absent or points at a dead row. */
@@ -95,6 +101,7 @@ export function filterOverviewProducts(
     searchKeyword,
     categoryId,
     outOfStockOnly,
+    recommendedOnly,
     brandId,
     missingPriceOnly,
     locale,
@@ -104,6 +111,7 @@ export function filterOverviewProducts(
 
   return products.filter((product) => {
     if (outOfStockOnly && !product.isOutOfStock) return false;
+    if (recommendedOnly && !product.isRecommended) return false;
     if (categoryId !== '' && product.categoryId !== categoryId) return false;
     // A product with no base price and one whose reference is dead are the same
     // problem to an admin — neither shows a price to a customer — so one filter

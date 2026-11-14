@@ -956,5 +956,8 @@
   "recommendedHiddenNoImage": "No image: hidden from the storefront",
   "moveUp": "Move up",
   "moveDown": "Move down",
-  "sortRecommended": "Recommended"
+  "sortRecommended": "Recommended",
+  "recommended": "Recommended",
+  "recommendedListFull": "The recommended list is full. Remove a product from it first.",
+  "recommendedOnly": "Recommended only"
 }

@@ -7,6 +7,7 @@ import { fetchBrands, fetchProducts } from '@/pages/lib/apis';
 import {
   appBarHeight,
   mobileAppBarHeight,
+  RECOMMENDED_FULL_MESSAGE,
   squareBracketRegex,
 } from '@/pages/lib/constants';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
@@ -89,6 +90,7 @@ export default function ProductsOverview() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
+  const [recommendedOnly, setRecommendedOnly] = useState(false);
   const [missingPriceOnly, setMissingPriceOnly] = useState(false);
   const [sortKey, setSortKey] = useState<OverviewSortKey>('nameAsc');
   // Pending category/brand/stock edits keyed by product id, mirroring
@@ -150,6 +152,7 @@ export default function ProductsOverview() {
         searchKeyword,
         categoryId: categoryFilter,
         outOfStockOnly,
+        recommendedOnly,
         brandId: brandFilter,
         missingPriceOnly,
         locale: router.locale ?? 'tk',
@@ -163,6 +166,7 @@ export default function ProductsOverview() {
     searchKeyword,
     categoryFilter,
     outOfStockOnly,
+    recommendedOnly,
     brandFilter,
     missingPriceOnly,
     sortKey,
@@ -234,6 +238,16 @@ export default function ProductsOverview() {
     [],
   );
 
+  const handleRecommendedChange = useCallback(
+    (productId: string, isRecommended: boolean) => {
+      setUpdatedProducts((prev) => ({
+        ...prev,
+        [productId]: { ...prev[productId], isRecommended },
+      }));
+    },
+    [],
+  );
+
   // Each row is its own multipart PUT (the product API isn't a batch JSON
   // endpoint like /api/prices), fired in parallel and only for the fields the
   // admin actually touched — an omitted field is left untouched server-side,
@@ -275,6 +289,7 @@ export default function ProductsOverview() {
                 categoryId: result.data.categoryId,
                 brandId: result.data.brandId,
                 isOutOfStock: result.data.outOfStockAt != null,
+                isRecommended: result.data.recommendedOrder != null,
                 // The row really was just edited, so the "recently edited" sort
                 // has to see it move rather than keep the pre-save timestamp.
                 updatedAt: new Date(result.data.updatedAt).toISOString(),
@@ -288,7 +303,11 @@ export default function ProductsOverview() {
         return remaining;
       });
 
-      if (succeeded.length < results.length) {
+      // Rows that failed keep their staged edit, so a full recommended list
+      // gets its own message: the fix is on the recommended screen.
+      if (results.some((r) => r.message === RECOMMENDED_FULL_MESSAGE)) {
+        notify(RECOMMENDED_FULL_MESSAGE, 'error');
+      } else if (succeeded.length < results.length) {
         notify('updateProductsError', 'error');
       } else {
         notify('productsUpdated', 'success');
@@ -326,6 +345,7 @@ export default function ProductsOverview() {
         brandId: rawProduct.brandId,
         categoryId: rawProduct.categoryId,
         isOutOfStock: rawProduct.outOfStockAt != null,
+        isRecommended: rawProduct.recommendedOrder != null,
       });
     } catch (error) {
       console.error(error);
@@ -430,6 +450,15 @@ export default function ProductsOverview() {
               </ToggleButton>
               <ToggleButton
                 size="small"
+                color="primary"
+                value="recommendedOnly"
+                selected={recommendedOnly}
+                onChange={() => setRecommendedOnly((prev) => !prev)}
+              >
+                {t('recommendedOnly')}
+              </ToggleButton>
+              <ToggleButton
+                size="small"
                 color="warning"
                 value="missingPriceOnly"
                 selected={missingPriceOnly}
@@ -456,6 +485,7 @@ export default function ProductsOverview() {
                   <TableCell>{t('brand')}</TableCell>
                   <TableCell>{t('price')}</TableCell>
                   <TableCell>{t('outOfStock')}</TableCell>
+                  <TableCell>{t('recommended')}</TableCell>
                   <TableCell>{t('lastEdited')}</TableCell>
                   <TableCell />
                 </TableRow>
@@ -525,6 +555,22 @@ export default function ProductsOverview() {
                         // a pending edit is coloured until the save clears it.
                         color={
                           'isOutOfStock' in (updatedProducts[product.id] ?? {})
+                            ? 'warning'
+                            : 'primary'
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {/* Ticking adds to the end of the home row; the order
+                          itself is set on the recommended screen. */}
+                      <Checkbox
+                        size="small"
+                        checked={product.isRecommended}
+                        onChange={(e) =>
+                          handleRecommendedChange(product.id, e.target.checked)
+                        }
+                        color={
+                          'isRecommended' in (updatedProducts[product.id] ?? {})
                             ? 'warning'
                             : 'primary'
                         }

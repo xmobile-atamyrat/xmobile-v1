@@ -75,6 +75,21 @@ describe('buildProductUpdateActivity', () => {
     ).toBeNull();
   });
 
+  it('logs a recommended-only save as a position change', () => {
+    expect(
+      buildProductUpdateActivity(product, { ...product }, noNames, {
+        from: null,
+        to: 3,
+      }),
+    ).toEqual({
+      action: 'UPDATE',
+      meta: {
+        name: 'iPhone 15',
+        changes: { recommended: { from: null, to: 3 } },
+      },
+    });
+  });
+
   it('logs a pure image reorder as an UPDATE flagged imagesReordered', () => {
     expect(
       buildProductUpdateActivity(

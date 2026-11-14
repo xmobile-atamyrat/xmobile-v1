@@ -958,5 +958,8 @@
   "recommendedHiddenNoImage": "Suraty ýok: dükanda görkezilmeýär",
   "moveUp": "Ýokary süýşür",
   "moveDown": "Aşak süýşür",
-  "sortRecommended": "Maslahat berilýänler"
+  "sortRecommended": "Maslahat berilýänler",
+  "recommended": "Maslahat berilýän",
+  "recommendedListFull": "Maslahat berilýänleriň sanawy doly. Ilki ondan bir haryt aýyryň.",
+  "recommendedOnly": "Diňe maslahat berilýänler"
 }

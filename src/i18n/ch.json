@@ -958,5 +958,8 @@
   "recommendedHiddenNoImage": "Fotosy ýok: polzowatellere görkezilmidi",
   "moveUp": "Ýokary geçir",
   "moveDown": "Aşak geçir",
-  "sortRecommended": "Maslahat beriledronlar"
+  "sortRecommended": "Maslahat beriledronlar",
+  "recommended": "Maslahat berilemi?",
+  "recommendedListFull": "Maslahat beriledronlaryň limiti dolan. Başda ondan bir ikite towar aýyryň.",
+  "recommendedOnly": "Diňe maslahat beriledronlar"
 }

@@ -2,6 +2,7 @@ import { AdminActivityInput, logAdminActivities } from '@/lib/adminActivity';
 import { categoryLabel } from '@/lib/categoryActivity';
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { lockRecommendedList } from '@/lib/recommendedProducts';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { RECOMMENDED_PRODUCTS_MAX } from '@/pages/lib/constants';
@@ -73,7 +74,7 @@ async function writeRecommended(
     return await dbClient.$transaction(async (tx) => {
       // Saves run one at a time. Without this, two admins saving at once each
       // clear only the rows their snapshot saw and the lists merge.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('product:recommended'))`;
+      await lockRecommendedList(tx);
 
       // Row locks make a concurrent product delete wait for this commit, so
       // it clears the slot after us instead of us writing one back onto a

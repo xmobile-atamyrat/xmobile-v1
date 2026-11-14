@@ -455,6 +455,7 @@ export async function addEditProduct({
   selectedProductId,
   brandId,
   isOutOfStock,
+  isRecommended,
   accessToken,
 }: {
   type: AddEditProductProps['dialogType'];
@@ -473,6 +474,8 @@ export async function addEditProduct({
   videoUrls: string[];
   selectedProductId?: string;
   isOutOfStock?: boolean;
+  /** Omit to leave the product's place on the recommended list alone. */
+  isRecommended?: boolean;
   accessToken: string | undefined;
 }): Promise<Product> {
   const {
@@ -549,6 +552,9 @@ export async function addEditProduct({
   }
 
   newFormData.append('isOutOfStock', String(isOutOfStock ?? false));
+  if (isRecommended != null) {
+    newFormData.append('isRecommended', String(isRecommended));
+  }
 
   const authHeaders = accessToken
     ? { Authorization: `Bearer ${accessToken}` }

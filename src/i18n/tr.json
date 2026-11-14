@@ -956,5 +956,8 @@
   "recommendedHiddenNoImage": "Görsel yok: mağazada gizli",
   "moveUp": "Yukarı taşı",
   "moveDown": "Aşağı taşı",
-  "sortRecommended": "Önerilenler"
+  "sortRecommended": "Önerilenler",
+  "recommended": "Önerilen",
+  "recommendedListFull": "Önerilenler listesi dolu. Önce listeden bir ürün çıkarın.",
+  "recommendedOnly": "Sadece önerilenler"
 }

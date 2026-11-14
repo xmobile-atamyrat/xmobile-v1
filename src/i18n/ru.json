@@ -958,5 +958,8 @@
   "recommendedHiddenNoImage": "Нет фото: скрыт в магазине",
   "moveUp": "Переместить вверх",
   "moveDown": "Переместить вниз",
-  "sortRecommended": "Рекомендуемые"
+  "sortRecommended": "Рекомендуемые",
+  "recommended": "Рекомендуемый",
+  "recommendedListFull": "Список рекомендуемых заполнен. Сначала уберите из него товар.",
+  "recommendedOnly": "Только рекомендуемые"
 }

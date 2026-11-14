@@ -182,6 +182,9 @@ export const FILTER_MAX_PRICE = 100000;
 // the same page count the API pages by — see api/product/index.page.ts.
 export const PRODUCTS_PER_PAGE = 20;
 export const RECOMMENDED_PRODUCTS_MAX = 50;
+// Product save refused because the recommended list is already at the max.
+// Doubles as the i18n key the admin forms show.
+export const RECOMMENDED_FULL_MESSAGE = 'recommendedListFull';
 // Cards per home section before its "view all". New products: two rows at
 // the usual five-column laptop width. Recommended gets more room since admins
 // curate it; 20 is also the API's page-size cap, so it stays one request.

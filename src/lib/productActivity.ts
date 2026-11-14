@@ -5,6 +5,7 @@ import {
 } from '@/lib/adminActivity';
 import { categoryLabel, categoryNameById } from '@/lib/categoryActivity';
 import dbClient from '@/lib/dbClient';
+import type { RecommendedChange } from '@/lib/recommendedProducts';
 import type { AdminActivityAction, Prisma, Product } from '@prisma/client';
 
 type ProductSnapshot = Pick<
@@ -47,12 +48,16 @@ export function buildProductUpdateActivity(
   before: ProductSnapshot,
   after: ProductSnapshot,
   names: { category: NamePair; brand: NamePair },
+  recommended?: RecommendedChange,
 ): { action: AdminActivityAction; meta: Prisma.InputJsonObject } | null {
   const changes: Record<string, FieldChange> = changedFields(
     { name: categoryLabel(before.name) },
     { name: categoryLabel(after.name) },
     ['name'],
   );
+  // Positions rather than a yes/no, so the entry reads the same as one
+  // written by the recommended screen.
+  if (recommended != null) changes.recommended = recommended;
   if (before.categoryId !== after.categoryId) {
     changes.category = { from: names.category.from, to: names.category.to };
   }
@@ -133,6 +138,7 @@ export async function recordProductUpdated(
   userId: string | undefined,
   before: ProductSnapshot,
   after: ProductSnapshot,
+  recommended?: RecommendedChange,
 ): Promise<void> {
   const categoryMoved = before.categoryId !== after.categoryId;
   const brandMoved = before.brandId !== after.brandId;
@@ -142,10 +148,15 @@ export async function recordProductUpdated(
     brandMoved ? brandNameById(before.brandId) : null,
     brandMoved ? brandNameById(after.brandId) : null,
   ]);
-  const activity = buildProductUpdateActivity(before, after, {
-    category: { from: categoryFrom, to: categoryTo },
-    brand: { from: brandFrom, to: brandTo },
-  });
+  const activity = buildProductUpdateActivity(
+    before,
+    after,
+    {
+      category: { from: categoryFrom, to: categoryTo },
+      brand: { from: brandFrom, to: brandTo },
+    },
+    recommended,
+  );
   if (activity == null) return;
   logAdminActivity({
     userId,
