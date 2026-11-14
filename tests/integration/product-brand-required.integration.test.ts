@@ -182,6 +182,8 @@ describe('product brand is required (integration)', () => {
     expect(products.map((product) => product.brandId)).toEqual([null, null]);
   });
 
+  // Brands are hard-deleted today. Soft-deleting them would keep the name
+  // taken, the way a deleted product's name already is.
   it('a deleted brand name can be created again', async () => {
     const name = `Reused brand ${unique()}`;
     expect(await postBrand(name)).toBe(201);
@@ -191,30 +193,30 @@ describe('product brand is required (integration)', () => {
     expect(await postBrand(name)).toBe(201);
   });
 
-  // Only clearing a brand is refused: an edit that leaves the brand out must
-  // not block, say, a stock change on a product that lost its brand.
+  // Only clearing a brand is refused: a product that lost its brand must
+  // still take the overview's stock toggle, which sends no brand.
   it('PUT without a brand still saves a brandless product', async () => {
-    const productId = await createProductId({ brandId });
-    await prisma.product.update({
-      where: { id: productId },
-      data: { brandId: null },
-    });
+    const goneBrandId = await createBrandId();
+    const productId = await createProductId({ brandId: goneBrandId });
+    expect(await deleteBrand(goneBrandId)).toBe(200);
 
-    const unrelated = await invokeProductApi(
+    const stock = await invokeProductApi(
       'PUT',
       adminToken,
-      { categoryId },
+      { isOutOfStock: 'true' },
       { productId },
     );
-    expect(unrelated.status).toBe(200);
-    expect(
-      (await prisma.product.findUnique({ where: { id: productId } }))?.brandId,
-    ).toBeNull();
+    expect(stock.status).toBe(200);
+    const afterStock = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+    });
+    expect(afterStock.outOfStockAt).not.toBeNull();
+    expect(afterStock.brandId).toBeNull();
 
     const fixed = await invokeProductApi(
       'PUT',
       adminToken,
-      { categoryId, brandId },
+      { brandId },
       { productId },
     );
     expect(fixed.status).toBe(200);
