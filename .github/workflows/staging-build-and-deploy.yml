@@ -12,7 +12,7 @@ on:
         required: true
         default: 'staging'
       copy_prod_data:
-        description: 'Replace staging data with a fresh copy of production (push tokens removed)'
+        description: 'Replace staging data with a fresh copy of the production catalog (no customer data)'
         type: boolean
         default: false
 
