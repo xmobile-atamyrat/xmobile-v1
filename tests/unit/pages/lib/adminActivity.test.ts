@@ -188,6 +188,12 @@ describe('activitySentence', () => {
     ).toBe('activityCategoryMovedDown(name=Phones)');
   });
 
+  it('describes a brand reorder without a brand name', () => {
+    expect(
+      activitySentence(row('BRAND', 'UPDATE', { kind: 'REORDER' }), t),
+    ).toBe('activityBrandsReordered');
+  });
+
   it('lists edited fields and image changes on a product update', () => {
     expect(
       activitySentence(

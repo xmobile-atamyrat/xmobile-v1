@@ -938,5 +938,6 @@
   "favoritesSignIn": "Favorilerinizi görmek için giriş yapın",
   "favoritesLoadError": "Favorileriniz yüklenemedi",
   "searchLoadError": "Sonuçlar yüklenemedi",
-  "tryAgain": "Tekrar dene"
+  "tryAgain": "Tekrar dene",
+  "activityBrandsReordered": "Marka sırası değiştirildi"
 }

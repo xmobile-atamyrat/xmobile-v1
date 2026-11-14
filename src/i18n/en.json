@@ -938,5 +938,6 @@
   "favoritesSignIn": "Sign in to see your favorites",
   "favoritesLoadError": "Couldn't load your favorites",
   "searchLoadError": "Couldn't load the results",
-  "tryAgain": "Try again"
+  "tryAgain": "Try again",
+  "activityBrandsReordered": "Changed the brand order"
 }

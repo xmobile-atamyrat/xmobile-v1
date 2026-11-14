@@ -217,6 +217,9 @@ function headFor(row: ActivityRow, t: Translate): string {
       { name },
     );
   }
+  if (row.entity === 'BRAND' && meta.kind === 'REORDER') {
+    return t('activityBrandsReordered');
+  }
   if (row.entity === 'BANNER') {
     return t(HEAD_KEYS[`BANNER:${row.action}`], {
       position: String(meta.position ?? ''),

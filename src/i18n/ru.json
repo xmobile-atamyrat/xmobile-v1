@@ -940,5 +940,6 @@
   "favoritesSignIn": "Войдите, чтобы увидеть избранное",
   "favoritesLoadError": "Не удалось загрузить избранное",
   "searchLoadError": "Не удалось загрузить результаты",
-  "tryAgain": "Повторить"
+  "tryAgain": "Повторить",
+  "activityBrandsReordered": "Изменён порядок брендов"
 }
