@@ -939,5 +939,18 @@
   "favoritesSignIn": "Sign in to see your favorites",
   "favoritesLoadError": "Couldn't load your favorites",
   "searchLoadError": "Couldn't load the results",
-  "tryAgain": "Try again"
+  "tryAgain": "Try again",
+  "recommendedProducts": "Recommended products",
+  "recommendedProductsHint": "Shown on the home page in this order. Out-of-stock products stay in the list but are hidden from the home page until they're back in stock.",
+  "recommendedSearchPlaceholder": "Search products to add",
+  "recommendedEmpty": "No recommended products yet. Search above to add some.",
+  "recommendedLimitReached": "The list is full ({max} products). Remove one to add another.",
+  "recommendedSaved": "Recommended products saved",
+  "recommendedSaveError": "Couldn't save recommended products",
+  "recommendedLoadError": "Couldn't load recommended products",
+  "recommendedProductGone": "A product in the list was deleted. The list was reloaded.",
+  "recommendedAdded": "Added",
+  "recommendedHiddenOutOfStock": "Out of stock: hidden on the home page",
+  "moveUp": "Move up",
+  "moveDown": "Move down"
 }

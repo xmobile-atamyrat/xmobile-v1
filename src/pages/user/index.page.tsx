@@ -48,6 +48,7 @@ import {
   RotateCcw,
   ScrollText,
   ShieldCheck,
+  Star,
   Trash2,
   Truck,
   Upload,
@@ -351,6 +352,11 @@ export default function Profile() {
       icon: <Images className={profileClasses.icon.primary} />,
       label: t('promoBanners'),
       onClick: () => router.push('/admin/banners'),
+    },
+    {
+      icon: <Star className={profileClasses.icon.primary} />,
+      label: t('recommendedProducts'),
+      onClick: () => router.push('/admin/recommended'),
     },
     {
       icon: <BarChart3 className={profileClasses.icon.primary} />,

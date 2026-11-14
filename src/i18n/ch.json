@@ -941,5 +941,18 @@
   "favoritesSignIn": "Halanlaryňyzy görmek üçin akkoundyňyza giriň",
   "favoritesLoadError": "Halanlaryňyz ýüklenmedi",
   "searchLoadError": "Netijeler ýüklenmedi",
-  "tryAgain": "Gaýtadan synanyşyň"
+  "tryAgain": "Kaýtadan ediň",
+  "recommendedProducts": "Maslahat beriledron towarlar",
+  "recommendedProductsHint": "Glawny stranisada şu tertipde görkeziledi. Skladda ýok towarlar sanawda galýar, ýöne kaýtaldan sklada gelinçe glawny stranisada görkezilmidi.",
+  "recommendedSearchPlaceholder": "Koşmak üçin towar gözläň",
+  "recommendedEmpty": "Entek maslahat beriledron towar ýok. Koşmak üçin ýokarda gözläň.",
+  "recommendedLimitReached": "Sanaw doldy ({max} towar). Başgasyny koşmak üçin birini aýyryň.",
+  "recommendedSaved": "Maslahat beriledron towarlar ýatda saklandy",
+  "recommendedSaveError": "Maslahat beriledron towarlary ýatda saklap bolmady",
+  "recommendedLoadError": "Maslahat beriledron towarlary ýükläp bolmady",
+  "recommendedProductGone": "Sanawdaky towarlaryň biri pozuldy. Sanaw tazzlandy.",
+  "recommendedAdded": "Koşuldy",
+  "recommendedHiddenOutOfStock": "Skladda ýok: glawny stranisada görkezilmeýär",
+  "moveUp": "Ýokary geçir",
+  "moveDown": "Aşak geçir"
 }
