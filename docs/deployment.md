@@ -43,6 +43,13 @@ Configure these in **Settings → Secrets and variables → Actions** (only user
 
 Tar retention is controlled by `TAR_FILES_TO_KEEP` in the workflow (default: 3).
 
+## Staging
+
+**Staging Build and Deploy** (`.github/workflows/staging-build-and-deploy.yml`) follows the same flow for `https://dev.xmobile.com.tm`, which runs on the production VM from `/home/ubuntu/xmobile-staging/` (ports 3001 and 4001).
+
+- Staging has its own database. A deploy only runs migrations on it; production data is never copied in.
+- That database started as a copy of production, so its image paths point at production's files in `/home/ubuntu/images/`. Replacing or deleting an image in the staging admin deletes the production file, so don't change images on staging.
+
 ## Deploy Batch Runner
 
 The workflow **Deploy Batch Runner** (`.github/workflows/deploy-batch-runner.yml`) builds and deploys the central batch/cron runner to the VM. This single process runs:
