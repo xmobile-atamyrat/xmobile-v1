@@ -26,3 +26,30 @@ describe('ApiEndpoints BASE_URL', () => {
     expect(base).toBe('http://192.168.1.5:3003');
   });
 });
+
+describe('ApiEndpoints WS_BASE_URL', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('uses the production socket in production', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production');
+    const { WS_BASE_URL } = await import('@/lib/ApiEndpoints');
+    expect(WS_BASE_URL).toBe('wss://xmobile.com.tm');
+  });
+
+  it("uses staging's own socket in a staging production build", async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'staging');
+    vi.stubEnv('NODE_ENV', 'production');
+    const { WS_BASE_URL } = await import('@/lib/ApiEndpoints');
+    expect(WS_BASE_URL).toBe('wss://dev.xmobile.com.tm');
+  });
+
+  it('uses NEXT_PUBLIC_WS_URL locally', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'local');
+    vi.stubEnv('NEXT_PUBLIC_WS_URL', 'ws://localhost:4000');
+    const { WS_BASE_URL } = await import('@/lib/ApiEndpoints');
+    expect(WS_BASE_URL).toBe('ws://localhost:4000');
+  });
+});
