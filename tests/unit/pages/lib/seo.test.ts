@@ -92,3 +92,29 @@ describe('generateHreflangLinks', () => {
     );
   });
 });
+
+describe('getOgImageUrl', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('keeps the page image when there is one', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production');
+    const { getOgImageUrl } = await import('@/pages/lib/seo');
+    expect(getOgImageUrl('https://xmobile.com.tm/media/product/good/a')).toBe(
+      'https://xmobile.com.tm/media/product/good/a',
+    );
+  });
+
+  it.each([undefined, null, ''])(
+    'falls back to the absolute Xmobile logo for %j',
+    async (ogImage) => {
+      vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production');
+      const { getOgImageUrl } = await import('@/pages/lib/seo');
+      expect(getOgImageUrl(ogImage)).toBe(
+        'https://xmobile.com.tm/logo/xmobile-original-logo.jpeg',
+      );
+    },
+  );
+});
