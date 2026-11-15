@@ -12,6 +12,7 @@ import {
 } from 'vitest';
 
 import {
+  HOME_CATEGORY_GRID_SIZE,
   POPULAR_CATEGORIES_SECTION_MAX,
   buildPopularCategoriesSectionModel,
 } from '@/pages/lib/popularCategoriesLayout';
@@ -90,9 +91,8 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
     const model = buildPopularCategoriesSectionModel(tree);
 
     expect(model.shouldRender).toBe(true);
-    expect(model.fullWidthItems.some((c) => c.id === pop.id)).toBe(true);
-    expect(model.fullWidthItems.every((c) => c.popular === true)).toBe(true);
-    expect(model.showFullWidthMore).toBe(true);
+    expect(model.primary.some((c) => c.id === pop.id)).toBe(true);
+    expect(model.primary.length).toBeLessThanOrEqual(HOME_CATEGORY_GRID_SIZE);
   });
 
   it('includes seeded catalog root in the tree and yields a renderable section model', async () => {
@@ -104,7 +104,7 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
     expect(model.shouldRender).toBe(true);
   });
 
-  it('shows full-width items for all popular roots without capping locally', async () => {
+  it('splits every top-level root between primary and rest', async () => {
     for (let i = 0; i < POPULAR_CATEGORIES_SECTION_MAX; i += 1) {
       const r = await prisma.category.create({
         data: {
@@ -119,12 +119,12 @@ describe('Popular categories layout + GET /api/category (integration)', () => {
     const tree = await getCategoryTree();
     const model = buildPopularCategoriesSectionModel(tree);
 
-    // Check lengths match our generated popular count
-    const popularCount = tree.filter(
-      (cat) => cat.popular && !cat.predecessorId && !cat.deletedAt,
+    const topLevelCount = tree.filter(
+      (cat) => !cat.predecessorId && !cat.deletedAt,
     ).length;
 
-    expect(model.fullWidthItems).toHaveLength(popularCount);
-    expect(model.showFullWidthMore).toBe(true);
+    expect(model.primary).toHaveLength(HOME_CATEGORY_GRID_SIZE);
+    expect(model.primary.length + model.rest.length).toBe(topLevelCount);
+    expect(model.primary.every((c) => c.popular === true)).toBe(true);
   });
 });
