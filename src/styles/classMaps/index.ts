@@ -31,7 +31,10 @@ export const homePageClasses = {
     mobile: 'w-full px-5 pt-6',
   },
   mobileSection: 'w-full mb-8',
-  brandRow: 'flex flex-row gap-2 overflow-x-auto -mx-5 px-5 pb-1',
+  brandRow:
+    'flex flex-row overflow-x-auto overscroll-x-contain -mx-5 px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  // One set of chips; the trailing padding is the gap before the next copy.
+  brandCopy: 'flex flex-row gap-2 shrink-0 pr-2',
   brandChip:
     'shrink-0 rounded-full px-4 h-10 border font-bold text-[14px] shadow-sm',
   brandChipIdle: 'bg-white border-hairline text-ink',

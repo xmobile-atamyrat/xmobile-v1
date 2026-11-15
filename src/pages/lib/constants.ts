@@ -195,6 +195,9 @@ export const HOME_NEW_PRODUCTS = 10;
 export const HOME_RECOMMENDED_PRODUCTS = 20;
 // Home's selected brand chip lives in the URL under this key.
 export const HOME_BRAND_QUERY_KEY = 'brand';
+// A brand needs this many in-stock products to get a home chip, so a tap
+// never opens a near-empty section.
+export const HOME_BRAND_MIN_PRODUCTS = 10;
 // Staff-only home section of products still missing a photo. The heading
 // carries the full count and "view all" lists the rest.
 export const HOME_IMAGELESS_PRODUCTS = 10;

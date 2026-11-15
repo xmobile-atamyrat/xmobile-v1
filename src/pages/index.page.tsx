@@ -758,30 +758,39 @@ export default function Home({
               </Box>
             </Box>
           )}
-          <Box component="section" className="w-full">
-            <MobileSectionHead
-              title={search.isSearching ? searchTitle : t('newProducts')}
-              href={search.isSearching ? undefined : NEWEST_LISTING_HREF}
-            />
+          {/* A picked brand is the whole feed: New products would bury it. */}
+          {(search.isSearching || !selectedBrand) && (
+            <Box component="section" className="w-full">
+              <MobileSectionHead
+                title={search.isSearching ? searchTitle : t('newProducts')}
+                href={search.isSearching ? undefined : NEWEST_LISTING_HREF}
+              />
 
-            {mobileLoading && !isAppending && <ProductGridSkeleton count={8} />}
-            <Box className={homePageClasses.newProductsBox[platform]}>
-              {mobileProducts.length > 0 &&
-                mobileProducts.map((product, idx) => (
-                  <ProductCard
-                    product={product}
-                    key={search.isSearching ? product.id : idx}
-                    cartProps={{ cartAction: 'add' }}
-                  />
-                ))}
+              {mobileLoading && !isAppending && (
+                <ProductGridSkeleton count={8} />
+              )}
+              <Box className={homePageClasses.newProductsBox[platform]}>
+                {mobileProducts.length > 0 &&
+                  mobileProducts.map((product, idx) => (
+                    <ProductCard
+                      product={product}
+                      key={search.isSearching ? product.id : idx}
+                      cartProps={{ cartAction: 'add' }}
+                    />
+                  ))}
+              </Box>
+              {mobileLoading && isAppending && (
+                <ProductGridSkeleton count={2} />
+              )}
+              {search.failed && searchFailure}
+              {mobileProducts.length === 0 &&
+                !mobileLoading &&
+                !search.failed && (
+                  <Typography>{t('noProductsFound')}</Typography>
+                )}
+              {search.isSearching && <div ref={search.sentinelRef} />}
             </Box>
-            {mobileLoading && isAppending && <ProductGridSkeleton count={2} />}
-            {search.failed && searchFailure}
-            {mobileProducts.length === 0 &&
-              !mobileLoading &&
-              !search.failed && <Typography>{t('noProductsFound')}</Typography>}
-            {search.isSearching && <div ref={search.sentinelRef} />}
-          </Box>
+          )}
         </Box>
       </Box>
     </Layout>

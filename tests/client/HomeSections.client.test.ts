@@ -262,20 +262,15 @@ describe('brand chips on mobile', () => {
     ]);
   });
 
-  it('selecting a brand swaps Recommended for that brand', () => {
+  it('selecting a brand shows only that brand', () => {
     renderHome('mobile', { brands });
 
     fireEvent.click(screen.getByRole('button', { name: 'Samsung' }));
 
     expect(mockRouter.query.brand).toBe('b1');
-    expect(
-      screen.queryByRole('heading', { name: 'Recommended products' }),
-    ).not.toBeInTheDocument();
+    expect(h2s()).toEqual(['Samsung']);
     expect(cardNames(sectionOf('Samsung'))).toEqual(['Galaxy 0', 'Galaxy 1']);
-    expect(viewAllHrefs()).toEqual(['/product?brandIds=b1', '/product']);
-    expect(
-      screen.getByRole('heading', { name: 'New Products' }),
-    ).toBeInTheDocument();
+    expect(viewAllHrefs()).toEqual(['/product?brandIds=b1']);
   });
 
   it('tapping the selected brand brings Recommended back', () => {
@@ -286,9 +281,7 @@ describe('brand chips on mobile', () => {
 
     expect(mockRouter.query.brand).toBeUndefined();
     expect(mockRouter.query.x).toBe('1');
-    expect(
-      screen.getByRole('heading', { name: 'Recommended products' }),
-    ).toBeInTheDocument();
+    expect(h2s()).toEqual(['Recommended products', 'New Products']);
   });
 
   it('preselects the brand from ?brand=', () => {
