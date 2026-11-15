@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
 import Home from '@/pages/index.page';
+import { useBrandProducts } from '@/pages/lib/hooks/useBrandProducts';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
 import { usePlatform } from '@/pages/lib/PlatformContext';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import mockRouter from 'next-router-mock';
 import { createElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,6 +14,10 @@ import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('@/pages/lib/hooks/useHomeSearch', () => ({
   useHomeSearch: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/hooks/useBrandProducts', () => ({
+  useBrandProducts: vi.fn(),
 }));
 
 vi.mock('@/pages/lib/hooks/useImagelessProducts', () => ({
@@ -25,6 +30,7 @@ vi.mock('@/pages/lib/PlatformContext', async (importOriginal) => ({
 }));
 
 vi.mock('@/lib/promoBanners', () => ({ getStorefrontBanners: vi.fn() }));
+vi.mock('@/lib/homeBrands', () => ({ getHomeBrands: vi.fn() }));
 vi.mock('geoip-lite', () => ({ default: { lookup: vi.fn() } }));
 
 vi.mock('@/pages/components/Layout', () => ({
@@ -60,10 +66,12 @@ function renderHome(
     newest = products('New', 12),
     recommended = products('Pick', 3),
     isSearching = false,
+    brands = [],
   }: {
     newest?: { id: string; name: string }[];
     recommended?: { id: string; name: string }[];
     isSearching?: boolean;
+    brands?: { id: string; name: string }[];
   } = {},
 ) {
   vi.mocked(usePlatform).mockReturnValue(platform);
@@ -83,6 +91,8 @@ function renderHome(
       initialProducts: newest,
       recommendedProducts: recommended,
       initialSearch: null,
+      brands,
+      initialBrand: null,
     } as never),
     { locale: 'en' },
   );
@@ -109,12 +119,22 @@ const viewAllHrefs = () =>
     .map((link) => link.getAttribute('href'))
     .filter((href) => href?.startsWith('/product'));
 
+const brandHook = (over: Partial<ReturnType<typeof useBrandProducts>> = {}) =>
+  vi.mocked(useBrandProducts).mockReturnValue({
+    products: [],
+    isLoading: false,
+    failed: false,
+    retry: vi.fn(),
+    ...over,
+  });
+
 describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
   beforeEach(() => {
     vi.clearAllMocks();
     // A shopper's view unless a test signs in staff.
     vi.mocked(useImagelessProducts).mockReturnValue(null);
     mockRouter.setCurrentUrl('/');
+    brandHook();
   });
 
   it('shows the picks in their order above the newest products', () => {
@@ -208,5 +228,109 @@ describe('home sections while searching on mobile', () => {
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
     expect(viewAllHrefs()).toEqual([]);
+  });
+});
+
+describe('brand chips on mobile', () => {
+  const brands = [
+    { id: 'b1', name: 'Samsung' },
+    { id: 'b2', name: 'Apple' },
+  ];
+  const h2s = () =>
+    screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useImagelessProducts).mockReturnValue(null);
+    mockRouter.setCurrentUrl('/');
+    brandHook({ products: products('Galaxy', 2) as never });
+  });
+
+  it('orders sections: categories, brands, recommended, new', () => {
+    renderHome('mobile', { brands });
+
+    expect(h2s()).toEqual(['Recommended products', 'New Products']);
+    const order = screen
+      .getAllByText(/Choose a brand|Recommended products|New Products/)
+      .map((node) => node.textContent);
+    expect(order).toEqual([
+      'Choose a brand',
+      'Recommended products',
+      'New Products',
+    ]);
+  });
+
+  it('selecting a brand shows only that brand', () => {
+    renderHome('mobile', { brands });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Samsung' }));
+
+    expect(mockRouter.query.brand).toBe('b1');
+    expect(h2s()).toEqual(['Samsung']);
+    expect(cardNames(sectionOf('Samsung'))).toEqual(['Galaxy 0', 'Galaxy 1']);
+    expect(viewAllHrefs()).toEqual(['/product?brandIds=b1']);
+  });
+
+  it('tapping the selected brand brings Recommended back', () => {
+    mockRouter.setCurrentUrl('/?brand=b1&x=1');
+    renderHome('mobile', { brands });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Samsung' }));
+
+    expect(mockRouter.query.brand).toBeUndefined();
+    expect(mockRouter.query.x).toBe('1');
+    expect(h2s()).toEqual(['Recommended products', 'New Products']);
+  });
+
+  it('preselects the brand from ?brand=', () => {
+    mockRouter.setCurrentUrl('/?brand=b1');
+    renderHome('mobile', { brands });
+
+    expect(screen.getByRole('button', { name: 'Samsung' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(h2s()[0]).toBe('Samsung');
+  });
+
+  it('treats an unknown ?brand= as none', () => {
+    mockRouter.setCurrentUrl('/?brand=zzz');
+    renderHome('mobile', { brands });
+
+    expect(h2s()[0]).toBe('Recommended products');
+  });
+
+  it('shows retry when the brand fetch fails', () => {
+    const retry = vi.fn();
+    brandHook({ failed: true, retry });
+    mockRouter.setCurrentUrl('/?brand=b1');
+    renderHome('mobile', { brands });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no-products text for an empty brand', () => {
+    brandHook({ products: [] });
+    mockRouter.setCurrentUrl('/?brand=b1');
+    renderHome('mobile', { brands });
+
+    expect(screen.getByText('No Products Found!')).toBeInTheDocument();
+  });
+
+  it('hides brands and categories while searching', () => {
+    mockRouter.setCurrentUrl('/?searchKeyword=iphone');
+    renderHome('mobile', { brands, isSearching: true });
+
+    expect(screen.queryByText('Choose a brand')).not.toBeInTheDocument();
+  });
+
+  it('has no brand strip on web', () => {
+    renderHome('web', { brands });
+
+    expect(screen.queryByText('Choose a brand')).not.toBeInTheDocument();
   });
 });

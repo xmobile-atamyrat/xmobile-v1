@@ -220,6 +220,7 @@
   "allProducts": "Tüm Ürünler",
   "home": "Ana sayfa",
   "searchNav": "Ara",
+  "searchSubmit": "Ara",
   "profileNav": "Profil",
   "contact": "İletişim",
   "address": "Lebap vilayeti, Türkmenabat şehri, 3. mikrorayon, S.A. Niyazov Caddesi, \"Xmobile\" mağazası.",
@@ -608,7 +609,6 @@
   "pageNotFoundSubtitle": "Aradığınız sayfa taşınmış ya da hiç var olmamış olabilir. Alışverişe geri dönelim.",
   "homepage": "Ana sayfa",
   "startShopping": "Alışverişe başla",
-  "popularCategories": "Popüler Kategoriler",
   "moreCategories": "Diğer Kategoriler",
   "chatSessionUnavailable": "Bu sohbet artık kullanılamıyor.",
   "chatClosedChats": "Kapatılan Sohbetler",
@@ -966,5 +966,6 @@
   "moveBrandUp": "Yukarı taşı",
   "moveBrandDown": "Aşağı taşı",
   "brandOrderSaveError": "Marka sırası kaydedilemedi.",
-  "brandOrderStale": "Marka listesi değişti. Güncel sıra gösteriliyor, lütfen tekrar deneyin."
+  "brandOrderStale": "Marka listesi değişti. Güncel sıra gösteriliyor, lütfen tekrar deneyin.",
+  "chooseBrand": "Marka seçin"
 }

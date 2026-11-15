@@ -13,6 +13,7 @@ import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
+import { getOgImageUrl } from '@/pages/lib/seo';
 import {
   isServiceWorkerSupported,
   isWebView,
@@ -190,6 +191,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
 
         <title>{seoData?.title || 'Xmobile'}</title>
+        <meta property="og:image" content={getOgImageUrl(seoData?.ogImage)} />
 
         {seoData?.noIndex === true ? (
           <meta name="robots" content="noindex, follow" />
@@ -219,9 +221,6 @@ export default function App({ Component, pageProps }: AppProps) {
               property="og:description"
               content={seoData.ogDescription || seoData.description}
             />
-            {seoData.ogImage && (
-              <meta property="og:image" content={seoData.ogImage} />
-            )}
             <meta property="og:url" content={seoData.canonicalUrl} />
             <meta property="og:type" content={seoData.ogType || 'website'} />
             <meta property="og:locale" content={seoData.ogLocale} />

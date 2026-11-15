@@ -223,6 +223,7 @@
   "allProducts": "Ähli harytlar",
   "home": "Öý",
   "searchNav": "Gözleg",
+  "searchSubmit": "Gözle",
   "profileNav": "Profil",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýat,  Türkmenabat şãher , 3-nji kwartal  mikroraýony, S.A. Niýazow şaýoly ,  \"Xmobile\" dükany.",
@@ -611,7 +612,6 @@
   "pageNotFoundSubtitle": "Gözleýän sahypaňyz göçürilen ýa-da hiç haçan bolmadyk bolmagy mümkin. Söwda dowam edeliň.",
   "homepage": "Baş sahypa",
   "startShopping": "Söwda başla",
-  "popularCategories": "Meşhur Kategoriýalar",
   "moreCategories": "Başga kategoriýalar",
   "chatClosedChats": "Ýapyk söhbetdeşlikler",
   "chatNoClosedChats": "Ýapyk söhbetdeşlik ýok.",
@@ -968,5 +968,6 @@
   "moveBrandUp": "Ýokary",
   "moveBrandDown": "Aşak",
   "brandOrderSaveError": "Brendleriň tertibini ýatda saklap bolmady.",
-  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň."
+  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň.",
+  "chooseBrand": "Brendi saýlaň"
 }

@@ -36,6 +36,16 @@ export function getCanonicalUrl(locale: string, path: string): string {
 }
 
 /**
+ * og:image for a page, falling back to the Xmobile logo. Without an og:image,
+ * chat apps preview the first <img> in the HTML, which is the TikTok icon in
+ * the header. The logo is a JPEG because transparent PNGs render on black in
+ * some previews.
+ */
+export function getOgImageUrl(ogImage?: string | null): string {
+  return ogImage || `${BASE_URL}/logo/xmobile-original-logo.jpeg`;
+}
+
+/**
  * Generate hreflang links for indexable/canonical locales.
  *
  * @param path - Page path without locale, e.g., "product/123"

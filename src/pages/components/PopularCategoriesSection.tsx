@@ -6,6 +6,7 @@ import {
   getCategoryMediaUrl,
   PRODUCT_IMAGE_FALLBACK,
 } from '@/pages/lib/mediaUrls';
+import { useProductContext } from '@/pages/lib/ProductContext';
 import { buildPopularCategoriesSectionModel } from '@/pages/lib/popularCategoriesLayout';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
@@ -15,7 +16,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useCallback, useMemo } from 'react';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface CategoryImageProps {
   initialImgUrl?: string | null;
@@ -63,58 +65,69 @@ export default function PopularCategoriesSection({
 }: PopularCategoriesSectionProps) {
   const t = useTranslations();
   const router = useRouter();
+  const { setProducts } = useProductContext();
   const locale = router.locale ?? DEFAULT_LOCALE;
+  const [expanded, setExpanded] = useState(false);
 
   const handleNavigate = useCallback(
-    (categorySlug: string) => {
-      router.push(`/category/${categorySlug}`);
+    (category: ExtendedCategory) => {
+      if (
+        category.successorCategories == null ||
+        category.successorCategories.length === 0
+      ) {
+        setProducts([]);
+        router.push(`/product-category/${category.slug}`);
+        return;
+      }
+      router.push(`/category/${category.slug}`);
     },
-    [router],
+    [router, setProducts],
   );
 
-  const handleMore = useCallback(() => {
-    router.push('/category');
-  }, [router]);
-
-  const { shouldRender, fullWidthItems, showFullWidthMore } =
+  const { shouldRender, primary, rest } =
     buildPopularCategoriesSectionModel(categories);
 
   if (!shouldRender) return null;
 
+  const visible = expanded ? [...primary, ...rest] : primary;
+  const ToggleIcon = expanded ? ChevronUp : ChevronDown;
+
   return (
     <Box className={cls.section}>
-      <Box className={cls.header}>
-        <Typography
-          className={`${fontClassName.className} ${cls.sectionTitle}`}
-        >
-          {t('popularCategories')}
-        </Typography>
-        {showFullWidthMore && (
-          <Typography
-            className={`${fontClassName.className} ${cls.seeAll}`}
-            onClick={handleMore}
-          >
-            {t('moreCategories')}
-          </Typography>
-        )}
-      </Box>
+      <Typography className={`${fontClassName.className} ${cls.sectionTitle}`}>
+        {t('categories')}
+      </Typography>
 
-      <Box className={cls.rail}>
-        {fullWidthItems.map((cat) => (
-          <Box
+      <Box className={cls.grid}>
+        {visible.map((cat) => (
+          <button
             key={cat.id}
-            className={cls.item}
-            onClick={() => handleNavigate(cat.slug)}
+            type="button"
+            className={cls.tile}
+            onClick={() => handleNavigate(cat)}
           >
-            <Box className={cls.imageBox}>
-              <CategoryImage initialImgUrl={cat.imgUrl} className={cls.image} />
-            </Box>
-            <Typography className={`${fontClassName.className} ${cls.name}`}>
-              {parseName(cat.name, locale)}
-            </Typography>
-          </Box>
+            <CategoryImage initialImgUrl={cat.imgUrl} className={cls.image} />
+            <span className={`${fontClassName.className} ${cls.name}`}>
+              <span className={cls.nameText}>
+                {parseName(cat.name, locale)}
+              </span>
+              <ChevronRight size={14} className={cls.chevron} />
+            </span>
+          </button>
         ))}
       </Box>
+
+      {rest.length > 0 && (
+        <button
+          type="button"
+          className={`${fontClassName.className} ${cls.toggle}`}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          {expanded ? t('showLess') : t('moreCategories')}
+          <ToggleIcon size={16} />
+        </button>
+      )}
     </Box>
   );
 }

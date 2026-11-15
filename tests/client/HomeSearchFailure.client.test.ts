@@ -20,6 +20,7 @@ vi.mock('@/pages/lib/PlatformContext', async (importOriginal) => ({
 }));
 
 vi.mock('@/lib/promoBanners', () => ({ getStorefrontBanners: vi.fn() }));
+vi.mock('@/lib/homeBrands', () => ({ getHomeBrands: vi.fn() }));
 vi.mock('geoip-lite', () => ({ default: { lookup: vi.fn() } }));
 
 vi.mock('@/pages/components/Layout', () => ({
@@ -60,6 +61,8 @@ function renderHome(platform: 'web' | 'mobile', failed: boolean) {
       banners: [],
       initialProducts: [],
       initialSearch: null,
+      brands: [],
+      initialBrand: null,
     } as never),
   );
 }
