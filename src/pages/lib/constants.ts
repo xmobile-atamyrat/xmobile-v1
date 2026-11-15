@@ -193,6 +193,8 @@ export const RECOMMENDED_FULL_MESSAGE = 'recommendedListFull';
 // curate it; 20 is also the API's page-size cap, so it stays one request.
 export const HOME_NEW_PRODUCTS = 10;
 export const HOME_RECOMMENDED_PRODUCTS = 20;
+// Home's selected brand chip lives in the URL under this key.
+export const HOME_BRAND_QUERY_KEY = 'brand';
 // Staff-only home section of products still missing a photo. The heading
 // carries the full count and "view all" lists the rest.
 export const HOME_IMAGELESS_PRODUCTS = 10;

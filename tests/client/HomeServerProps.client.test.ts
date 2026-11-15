@@ -15,6 +15,11 @@ vi.mock('@/lib/promoBanners', () => ({
   getStorefrontBanners: vi.fn().mockResolvedValue([]),
 }));
 
+const getHomeBrands = vi.fn();
+vi.mock('@/lib/homeBrands', () => ({
+  getHomeBrands: () => getHomeBrands(),
+}));
+
 vi.mock('geoip-lite', () => ({ default: { lookup: vi.fn() } }));
 
 // Only the server half runs here, and these pull in the whole UI.
@@ -32,24 +37,34 @@ vi.mock('@/pages/components/SkeletonLoader', () => ({
 const newest = [{ id: 'new-1' }];
 const picks = [{ id: 'pick-1' }];
 const found = [{ id: 'found-1' }];
+const brandProducts = [{ id: 'brand-1' }];
+const brands = [{ id: 'b1', name: 'Samsung' }];
 
 function mockFetches({
   newestFails = false,
   recommendedFails = false,
   searchFails = false,
+  brandFails = false,
 }: {
   newestFails?: boolean;
   recommendedFails?: boolean;
   searchFails?: boolean;
+  brandFails?: boolean;
 }) {
   fetchProducts.mockImplementation(
     async ({
       searchKeyword,
       recommended,
+      brandIds,
     }: {
       searchKeyword?: string;
       recommended?: boolean;
+      brandIds?: string[];
     }) => {
+      if (brandIds) {
+        if (brandFails) throw new Error('brand down');
+        return brandProducts;
+      }
       if (searchKeyword != null) {
         if (searchFails) throw new Error('search down');
         return found;
@@ -64,7 +79,7 @@ function mockFetches({
   );
 }
 
-async function loadHome(query: Record<string, string>) {
+async function loadHome(query: Record<string, string | string[]>) {
   const result = await getServerSideProps({
     req: { headers: {}, socket: {} },
     res: { setHeader: vi.fn() },
@@ -78,6 +93,8 @@ async function loadHome(query: Record<string, string>) {
 describe('home getServerSideProps', () => {
   beforeEach(() => {
     fetchProducts.mockReset();
+    getHomeBrands.mockReset();
+    getHomeBrands.mockResolvedValue(brands);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
@@ -145,6 +162,76 @@ describe('home getServerSideProps', () => {
     const props = await loadHome({});
 
     expect(props.recommendedProducts).toEqual([]);
+    expect(props.initialProducts).toEqual(newest);
+  });
+
+  it('passes the brands through', async () => {
+    mockFetches({});
+
+    const props = await loadHome({});
+
+    expect(props.brands).toEqual(brands);
+    expect(props.initialBrand).toBeNull();
+  });
+
+  it('seeds the brand in the URL', async () => {
+    mockFetches({});
+
+    const props = await loadHome({ brand: 'b1' });
+
+    expect(fetchProducts).toHaveBeenCalledWith({
+      page: 1,
+      brandIds: ['b1'],
+      inStock: true,
+      sortBy: 'recommended',
+      limit: 20,
+      locale: 'en',
+    });
+    expect(props.initialBrand).toEqual({
+      brandId: 'b1',
+      products: brandProducts,
+    });
+  });
+
+  it('uses the first value of a repeated brand param', async () => {
+    mockFetches({});
+
+    const props = await loadHome({ brand: ['b1', 'zzz'] });
+
+    expect(props.initialBrand).toEqual({
+      brandId: 'b1',
+      products: brandProducts,
+    });
+  });
+
+  it('ignores an unknown brand id', async () => {
+    mockFetches({});
+
+    const props = await loadHome({ brand: 'zzz' });
+
+    expect(props.initialBrand).toBeNull();
+    expect(fetchProducts).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the page up when brands fail', async () => {
+    mockFetches({});
+    getHomeBrands.mockRejectedValue(new Error('db down'));
+
+    const props = await loadHome({ brand: 'b1' });
+
+    expect(props.brands).toEqual([]);
+    expect(props.initialBrand).toBeNull();
+    expect(props.initialProducts).toEqual(newest);
+    expect(props.recommendedProducts).toEqual(picks);
+  });
+
+  it('keeps the page up when the brand fetch fails', async () => {
+    mockFetches({ brandFails: true });
+
+    const props = await loadHome({ brand: 'b1' });
+
+    expect(props.initialBrand).toBeNull();
+    expect(props.brands).toEqual(brands);
     expect(props.initialProducts).toEqual(newest);
   });
 });

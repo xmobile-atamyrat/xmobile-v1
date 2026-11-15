@@ -1,3 +1,4 @@
+import HomeBrandChips from '@/pages/components/HomeBrandChips';
 import HomePromoTile from '@/pages/components/HomePromoTile';
 import Layout from '@/pages/components/Layout';
 import PopularCategoriesSection, {
@@ -12,6 +13,7 @@ import {
   BUSINESS_NAME,
   COOKIE_EXPIRY_SECONDS,
   DEFAULT_LOCALE,
+  HOME_BRAND_QUERY_KEY,
   HOME_NEW_PRODUCTS,
   HOME_RECOMMENDED_PRODUCTS,
   LOCALE_COOKIE_NAME,
@@ -19,6 +21,7 @@ import {
   POST_SOVIET_COUNTRIES,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
+import { useBrandProducts } from '@/pages/lib/hooks/useBrandProducts';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
 import { usePlatform } from '@/pages/lib/PlatformContext';
@@ -37,6 +40,7 @@ import {
 } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { switchLocale } from '@/pages/lib/switchLocale';
+import { getHomeBrands, HomeBrand } from '@/lib/homeBrands';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
 import { buttonClasses } from '@/styles/classMaps/components/button';
@@ -58,6 +62,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo } from 'react';
+import type { ParsedUrlQuery } from 'querystring';
 
 const web = homePageClasses.web;
 
@@ -178,43 +183,71 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // refetches a missing search, but never a missing section.
   const searchTerm = readSearchKeyword(context.query);
   const productLocale = routeLocale ?? finalLocale;
+  // The brand in the URL is seeded too, but only if it is one of the chips
+  // shown, so a stale or made-up id costs no query. Brands load first because
+  // they gate that seed; a failure leaves the strip empty, not the page broken.
+  let brands: HomeBrand[] = [];
+  try {
+    brands = await getHomeBrands();
+  } catch (error) {
+    console.error('Failed to load brands:', error);
+  }
+  const rawBrand = context.query[HOME_BRAND_QUERY_KEY];
+  const brandParam = Array.isArray(rawBrand) ? rawBrand[0] : rawBrand;
+  const brandId = brands.find((brand) => brand.id === brandParam)?.id ?? null;
   // The newest row leaves out picks so no card appears in both sections; a
   // pick past the recommended row's cap still shows in its "view all".
-  const [initialProducts, recommendedProducts, results] = await Promise.all([
-    fetchProducts({
-      page: 1,
-      locale: productLocale,
-      inStock: true,
-      recommended: false,
-      sortBy: SORT_OPTIONS.NEWEST,
-      limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
-    }).catch((error): ExtendedProduct[] => {
-      console.error('Failed to load initial products:', error);
-      return [];
-    }),
-    fetchProducts({
-      page: 1,
-      locale: productLocale,
-      inStock: true,
-      recommended: true,
-      sortBy: SORT_OPTIONS.RECOMMENDED,
-      limit: HOME_RECOMMENDED_PRODUCTS,
-    }).catch((error): ExtendedProduct[] => {
-      console.error('Failed to load recommended products:', error);
-      return [];
-    }),
-    searchTerm
-      ? fetchProducts({
-          page: 1,
-          searchKeyword: searchTerm,
-          locale: productLocale,
-        }).catch((error): null => {
-          console.error('Failed to load search results:', error);
-          return null;
-        })
-      : null,
-  ]);
+  const [initialProducts, recommendedProducts, results, brandProducts] =
+    await Promise.all([
+      fetchProducts({
+        page: 1,
+        locale: productLocale,
+        inStock: true,
+        recommended: false,
+        sortBy: SORT_OPTIONS.NEWEST,
+        limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
+      }).catch((error): ExtendedProduct[] => {
+        console.error('Failed to load initial products:', error);
+        return [];
+      }),
+      fetchProducts({
+        page: 1,
+        locale: productLocale,
+        inStock: true,
+        recommended: true,
+        sortBy: SORT_OPTIONS.RECOMMENDED,
+        limit: HOME_RECOMMENDED_PRODUCTS,
+      }).catch((error): ExtendedProduct[] => {
+        console.error('Failed to load recommended products:', error);
+        return [];
+      }),
+      searchTerm
+        ? fetchProducts({
+            page: 1,
+            searchKeyword: searchTerm,
+            locale: productLocale,
+          }).catch((error): null => {
+            console.error('Failed to load search results:', error);
+            return null;
+          })
+        : null,
+      brandId
+        ? fetchProducts({
+            page: 1,
+            brandIds: [brandId],
+            inStock: true,
+            sortBy: SORT_OPTIONS.RECOMMENDED,
+            limit: HOME_RECOMMENDED_PRODUCTS,
+            locale: productLocale,
+          }).catch((error): null => {
+            console.error('Failed to load brand products:', error);
+            return null;
+          })
+        : null,
+    ]);
   const initialSearch = results ? { term: searchTerm, results } : null;
+  const initialBrand =
+    brandId && brandProducts ? { brandId, products: brandProducts } : null;
 
   return {
     props: {
@@ -226,6 +259,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       initialProducts,
       recommendedProducts,
       initialSearch,
+      brands,
+      initialBrand,
     },
   };
 }) satisfies GetServerSideProps<{
@@ -235,6 +270,8 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   initialProducts: Product[];
   recommendedProducts: Product[];
   initialSearch: { term: string; results: ExtendedProduct[] } | null;
+  brands: HomeBrand[];
+  initialBrand: { brandId: string; products: ExtendedProduct[] } | null;
 }>;
 
 /** A mobile section's title row, with its way on to the full catalog. */
@@ -261,12 +298,43 @@ function MobileSectionHead({ title, href }: { title: string; href?: string }) {
   );
 }
 
+/** Retry prompt for a section whose fetch failed. */
+function LoadFailure({
+  onRetry,
+  platform,
+}: {
+  onRetry: () => void;
+  platform: 'web' | 'mobile';
+}) {
+  const t = useTranslations();
+  return (
+    <Box className="text-center">
+      <Typography
+        className={`${fontClassName.className} ${homePageClasses.web.emptyText}`}
+      >
+        {t('searchLoadError')}
+      </Typography>
+      <Box className="mt-4 mx-auto max-w-[280px]">
+        <ButtonBase
+          disableRipple
+          onClick={onRetry}
+          className={`${fontClassName.className} ${buttonClasses.primary[platform]}`}
+        >
+          {t('tryAgain')}
+        </ButtonBase>
+      </Box>
+    </Box>
+  );
+}
+
 export default function Home({
   locale,
   banners,
   initialProducts,
   recommendedProducts,
   initialSearch,
+  brands,
+  initialBrand,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
@@ -286,21 +354,30 @@ export default function Home({
     imageless && `${t('imagelessProducts')} (${imageless.total})`;
   const searchTitle = t('searchResultsFor', { keyword: searchTerm });
   const searchFailure = (
-    <Box className="text-center">
-      <Typography className={`${fontClassName.className} ${web.emptyText}`}>
-        {t('searchLoadError')}
-      </Typography>
-      <Box className="mt-4 mx-auto max-w-[280px]">
-        <ButtonBase
-          disableRipple
-          onClick={search.retry}
-          className={`${fontClassName.className} ${buttonClasses.primary[platform]}`}
-        >
-          {t('tryAgain')}
-        </ButtonBase>
-      </Box>
-    </Box>
+    <LoadFailure onRetry={search.retry} platform={platform} />
   );
+
+  // The brand picked on mobile lives in the URL so back from a product keeps
+  // it; an id that isn't one of the chips counts as no pick.
+  const brandParam = router.query[HOME_BRAND_QUERY_KEY];
+  const selectedBrand =
+    (brands as HomeBrand[]).find(
+      (brand) =>
+        brand.id === (Array.isArray(brandParam) ? brandParam[0] : brandParam),
+    ) ?? null;
+  const brandProducts = useBrandProducts(
+    selectedBrand?.id ?? null,
+    router.locale,
+    initialBrand,
+  );
+  const selectBrand = (id: string | null) => {
+    const query: ParsedUrlQuery = { ...router.query };
+    if (id) query[HOME_BRAND_QUERY_KEY] = id;
+    else delete query[HOME_BRAND_QUERY_KEY];
+    router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+    });
+  };
 
   // Web "Shop by category" row (spec 1357-1366): real top-level categories,
   // admin-flagged popular ones first, capped at the design's 8 tiles.
@@ -597,6 +674,13 @@ export default function Home({
         <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
           <PromoBannerSection banners={banners} />
           <PopularCategoriesSection categories={categories} />
+          <Box className="w-full px-5">
+            <HomeBrandChips
+              brands={brands}
+              selectedId={selectedBrand?.id ?? null}
+              onSelect={selectBrand}
+            />
+          </Box>
         </Box>
       )}
       <Box className="flex flex-row gap-6 w-full">
@@ -628,7 +712,36 @@ export default function Home({
                 </Box>
               </Box>
             )}
-          {!search.isSearching && recommended.length > 0 && (
+          {!search.isSearching && selectedBrand && (
+            <Box component="section" className={homePageClasses.mobileSection}>
+              <MobileSectionHead
+                title={selectedBrand.name}
+                href={`/product?brandIds=${encodeURIComponent(selectedBrand.id)}`}
+              />
+              {brandProducts.isLoading && <ProductGridSkeleton count={4} />}
+              <Box className={homePageClasses.newProductsBox[platform]}>
+                {brandProducts.products.map((product) => (
+                  <ProductCard
+                    product={product}
+                    key={product.id}
+                    cartProps={{ cartAction: 'add' }}
+                  />
+                ))}
+              </Box>
+              {brandProducts.failed && (
+                <LoadFailure
+                  onRetry={brandProducts.retry}
+                  platform={platform}
+                />
+              )}
+              {brandProducts.products.length === 0 &&
+                !brandProducts.isLoading &&
+                !brandProducts.failed && (
+                  <Typography>{t('noProductsFound')}</Typography>
+                )}
+            </Box>
+          )}
+          {!search.isSearching && !selectedBrand && recommended.length > 0 && (
             <Box component="section" className={homePageClasses.mobileSection}>
               <MobileSectionHead
                 title={t('recommendedProducts')}
