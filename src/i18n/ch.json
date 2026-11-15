@@ -223,6 +223,7 @@
   "allProducts": "Hämmä towarlar",
   "home": "Öý",
   "searchNav": "Gözleg",
+  "searchSubmit": "Ahtar",
   "profileNav": "Profil",
   "contact": "Habarlaşyň",
   "address": "Lebap welaýaty, Türkmenabat şäheri, 3-nji mikraýon, S.A.Niýazow şaýoly, \"Xmobile\" magazini.",
@@ -611,7 +612,6 @@
   "pageNotFoundSubtitle": "Gözleýän stranisaňyz göçürilipdir ýa-da hiç haçan bolmaýan. Söwdaňyzy dowam ediweriň.",
   "homepage": "Osnownoý stranisa",
   "startShopping": "Pokupka başla",
-  "popularCategories": "Populýarno Kategoriýalar",
   "moreCategories": "Başga kategoriýalar",
   "chatClosedChats": "Ýapylan Çatlar",
   "chatNoClosedChats": "Ýapylan çat ýok.",
@@ -968,5 +968,6 @@
   "moveBrandUp": "Ýokary",
   "moveBrandDown": "Aşak",
   "brandOrderSaveError": "Brendleriň tertibini ýatda saklap bolmady.",
-  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň."
+  "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň.",
+  "chooseBrand": "Brendi saýlaň"
 }

@@ -221,6 +221,7 @@
   "allProducts": "All Products",
   "home": "Home",
   "searchNav": "Search",
+  "searchSubmit": "Search",
   "profileNav": "Profile",
   "contact": "Contact us",
   "address": "Lebap province, Turkmenabat city, 3rd quarter microdistrict, S.A. Niyazov Avenue, \"Xmobile\" store.",
@@ -609,7 +610,6 @@
   "pageNotFoundSubtitle": "The page you are looking for was moved or never existed. Let us get you back to shopping.",
   "homepage": "Homepage",
   "startShopping": "Start Shopping",
-  "popularCategories": "Popular Categories",
   "moreCategories": "Other Categories",
   "chatClosedChats": "Closed Chats",
   "chatNoClosedChats": "No closed chats.",
@@ -966,5 +966,6 @@
   "moveBrandUp": "Move up",
   "moveBrandDown": "Move down",
   "brandOrderSaveError": "Could not save the brand order.",
-  "brandOrderStale": "The brand list has changed. The current order is shown, please try again."
+  "brandOrderStale": "The brand list has changed. The current order is shown, please try again.",
+  "chooseBrand": "Choose a brand"
 }

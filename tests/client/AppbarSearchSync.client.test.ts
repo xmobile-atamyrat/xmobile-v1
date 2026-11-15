@@ -142,6 +142,19 @@ describe('header search field', () => {
       expect(mockRouter.query.searchKeyword).toBe('iphone');
     });
 
+    it('keeps a query param added while the debounce was pending', async () => {
+      renderAt('/');
+
+      type('iphone');
+      await navigate('/?brand=b1');
+      await waitForDebounce();
+
+      expect(mockRouter.query).toMatchObject({
+        searchKeyword: 'iphone',
+        brand: 'b1',
+      });
+    });
+
     // The URL holds the trimmed term. Echoing it back would eat the space
     // halfway through "iphone 15".
     it('keeps a trailing space after its own write comes back', async () => {

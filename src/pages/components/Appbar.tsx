@@ -78,6 +78,8 @@ export const SearchBar = ({
   showFilter,
   onFilterClick,
   formClassName,
+  onSubmit,
+  submitLabel,
 }: {
   handleSearch?: (keyword: string) => Promise<void> | void;
   searchPlaceholder: string;
@@ -88,14 +90,27 @@ export const SearchBar = ({
   showFilter?: boolean;
   onFilterClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   formClassName?: string;
+  onSubmit?: () => void;
+  submitLabel?: string;
 }) => {
   const platform = usePlatform();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const submit = () => {
+    if (!onSubmit) return;
+    onSubmit();
+    inputRef.current?.blur();
+  };
   return (
     <Box className={formClassName ?? appbarClasses.boxes.form[platform]}>
       <Paper
         component="form"
         className={`${appbarClasses.paper[platform]} mt-${mt} w-${width}`}
         elevation={0}
+        onSubmit={(e: React.FormEvent) => {
+          if (!onSubmit) return;
+          e.preventDefault();
+          submit();
+        }}
       >
         {platform === 'mobile' ? (
           <Search size={18} className="text-[#8B8A98] flex-shrink-0" />
@@ -113,12 +128,22 @@ export const SearchBar = ({
             }
           }}
           value={searchKeyword}
+          inputRef={inputRef}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
+              submit();
             }
           }}
         />
+        {onSubmit && (
+          <button
+            type="submit"
+            className={`${appbarClasses.searchSubmit.mobile} ${fontClassName.className}`}
+          >
+            {submitLabel}
+          </button>
+        )}
       </Paper>
       {showFilter && platform === 'mobile' && (
         <button
@@ -145,6 +170,8 @@ export default function CustomAppBar({
   const { unreadCount } = useNotificationContext();
   const { cartCount } = useCartContext();
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const t = useTranslations();
   const { searchKeyword, setSearchKeyword, setProducts } = useProductContext();
   // Layout (and with it this Appbar) remounts on every navigation, so seed the
@@ -202,11 +229,16 @@ export default function CustomAppBar({
     const handler = setTimeout(() => {
       setSearchKeyword(localSearchKeyword);
       // On a listing page and on home the results read the term from the URL,
-      // so retarget the current URL in place.
+      // so retarget the current URL in place. The router is read live: a brand
+      // chip tapped during the debounce must keep its `brand` in the query.
+      const liveRouter = routerRef.current;
       const next = localSearchKeyword.trim();
-      if (keepsSearchInUrl(router.pathname) && next !== urlKeyword) {
+      if (
+        keepsSearchInUrl(liveRouter.pathname) &&
+        next !== readSearchKeyword(liveRouter.query)
+      ) {
         lastPushedKeywordRef.current = next;
-        replaceProductSearch(router, localSearchKeyword);
+        replaceProductSearch(liveRouter, localSearchKeyword);
       }
     }, 500);
 
@@ -231,6 +263,17 @@ export default function CustomAppBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlKeyword]);
 
+  const submitSearch = () => {
+    const keyword = localSearchKeyword.trim();
+    if (!keyword) return;
+    lastPushedKeywordRef.current = keyword;
+    setSearchKeyword(keyword);
+    // Home shows results in place of its banner rather than leaving.
+    if (router.pathname === HOME_PATHNAME)
+      replaceProductSearch(router, keyword);
+    else pushProductSearch(router, keyword);
+  };
+
   if (platform === 'mobile' && !showHomeHeader) {
     return null;
   }
@@ -238,28 +281,15 @@ export default function CustomAppBar({
   if (platform === 'mobile') {
     return (
       <Box className={appbarClasses.appbar.mobile}>
-        {/* Header: guest greeting + Sign in, or logo + notification */}
+        {/* Header: logo, plus the notification bell for signed-in users */}
         <Box className={appbarClasses.boxes.header.mobile}>
-          {user ? (
-            <CardMedia
-              component="img"
-              src="/logo/xmobile-processed-logo.png"
-              alt="Xmobile"
-              className={appbarClasses.boxes.logo.mobile}
-            />
-          ) : (
-            <Box
-              className={`${appbarClasses.boxes.guestGreeting.mobile} ${fontClassName.className}`}
-            >
-              <div className="text-[11px] text-[#8B8A98] font-normal">
-                {t('welcomeToXmobile')} 👋
-              </div>
-              <div className="text-[18px] text-[#20166E] font-bold leading-tight">
-                {t('browsingAsGuest')}
-              </div>
-            </Box>
-          )}
-          {user ? (
+          <CardMedia
+            component="img"
+            src="/logo/xmobile-processed-logo.png"
+            alt="Xmobile"
+            className={appbarClasses.boxes.logo.mobile}
+          />
+          {user && (
             <>
               <button
                 className={appbarClasses.notificationButton.mobile}
@@ -280,14 +310,6 @@ export default function CustomAppBar({
                 onClose={() => setNotificationAnchorEl(null)}
               />
             </>
-          ) : (
-            <button
-              className={`${appbarClasses.guestSignInButton.mobile} ${fontClassName.className}`}
-              onClick={() => router.push('/user/signin')}
-              type="button"
-            >
-              {t('signin')}
-            </button>
           )}
         </Box>
 
@@ -296,6 +318,8 @@ export default function CustomAppBar({
           searchKeyword={localSearchKeyword}
           searchPlaceholder={t('search')}
           setSearchKeyword={setLocalSearchKeyword}
+          onSubmit={submitSearch}
+          submitLabel={t('searchSubmit')}
           showFilter={Boolean(onHomeFilterClick)}
           onFilterClick={
             onHomeFilterClick ? () => onHomeFilterClick() : undefined
@@ -309,17 +333,6 @@ export default function CustomAppBar({
   const web = appbarClasses.web;
   const activeCategorySlug = (router.query.slug ??
     router.query.categorySlug) as string | undefined;
-
-  const runWebSearch = () => {
-    const keyword = localSearchKeyword.trim();
-    if (!keyword) return;
-    lastPushedKeywordRef.current = keyword;
-    setSearchKeyword(keyword);
-    // Home shows results in place of its banner rather than leaving.
-    if (router.pathname === HOME_PATHNAME)
-      replaceProductSearch(router, keyword);
-    else pushProductSearch(router, keyword);
-  };
 
   // Same branch the categories index uses: leaf categories go straight to the
   // product listing, parents open the sub-category page.
@@ -470,7 +483,7 @@ export default function CustomAppBar({
             className={web.searchForm}
             onSubmit={(event) => {
               event.preventDefault();
-              runWebSearch();
+              submitSearch();
             }}
           >
             <button
