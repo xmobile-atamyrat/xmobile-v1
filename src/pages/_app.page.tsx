@@ -1,6 +1,7 @@
 import Loader from '@/pages/components/Loader';
 import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
+import { APP_STORE_ID } from '@/pages/lib/appDownload';
 import AbortControllerContextProvider from '@/pages/lib/AbortControllerContext';
 import CartContextProvider from '@/pages/lib/CartContext';
 import CategoryContextProvider from '@/pages/lib/CategoryContext';
@@ -189,6 +190,8 @@ export default function App({ Component, pageProps }: AppProps) {
           content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY}
         />
         <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
+        {/* Safari's own "open in the app" banner; WebViews ignore it. */}
+        <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />
 
         <title>{seoData?.title || 'Xmobile'}</title>
         <meta property="og:image" content={getOgImageUrl(seoData?.ogImage)} />

@@ -1,5 +1,6 @@
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditCategoriesDialog from '@/pages/components/AddEditCategoriesDialog';
+import AppInstallBar from '@/pages/components/AppInstallBar';
 import CustomAppBar from '@/pages/components/Appbar';
 import ChatWidget from '@/pages/components/chat/ChatWidget';
 import DeleteDialog from '@/pages/components/DeleteDialog';
@@ -81,6 +82,8 @@ export default function Layout({
 
   return (
     <Box className={layoutClasses.main[platform]}>
+      {/* Home has its own app card mid-page (AppDownloadBanner). */}
+      {platform === 'mobile' && !showHomeHeader && <AppInstallBar />}
       <CustomAppBar
         handleBackButton={handleHeaderBackButton}
         showHomeHeader={showHomeHeader}

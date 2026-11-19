@@ -1,4 +1,5 @@
 import CountBadge from '@/pages/components/CountBadge';
+import StoreBadge from '@/pages/components/StoreBadge';
 import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { SUPPORT_EMAIL, SUPPORT_PHONES } from '@/pages/lib/constants';
@@ -6,6 +7,7 @@ import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
+import { appDownloadClasses } from '@/styles/classMaps/components/appDownload';
 import { footerClasses } from '@/styles/classMaps/components/footer';
 import { fontClassName } from '@/styles/theme';
 // lucide 1.x dropped brand glyphs, so Instagram stays on the MUI icon.
@@ -58,6 +60,7 @@ const helpLinks = [
 ] as const;
 
 const web = footerClasses.web;
+const appFooter = appDownloadClasses.footer;
 
 export default function Footer() {
   const t = useTranslations();
@@ -272,8 +275,7 @@ export default function Footer() {
             </Box>
           </Box>
 
-          {/* contact — replaces the design's newsletter/app-store column, which
-              has no backing endpoint or store listing */}
+          {/* contact — the design's newsletter column has no backing endpoint */}
           <Box>
             <Typography
               className={`${fontClassName.className} ${web.colTitle}`}
@@ -324,6 +326,34 @@ export default function Footer() {
                 </Typography>
               </Box>
             </Box>
+          </Box>
+
+          {/* mobile app — a desktop visitor scans the code; the phone's
+              camera opens /app, which picks the store for that phone */}
+          <Box className={appFooter.col}>
+            <Typography
+              className={`${fontClassName.className} ${web.colTitle}`}
+            >
+              {t('mobileApp')}
+            </Typography>
+            <Box className={appFooter.body}>
+              <Box className={appFooter.qrBox}>
+                <img
+                  src="/app-download/qr.svg"
+                  alt={t('appScanQr')}
+                  className={appFooter.qr}
+                />
+              </Box>
+              <Box className={appFooter.badges}>
+                <StoreBadge os="ios" />
+                <StoreBadge os="android" />
+              </Box>
+            </Box>
+            <Typography
+              className={`${fontClassName.className} ${appFooter.hint}`}
+            >
+              {t('appScanQr')}
+            </Typography>
           </Box>
         </Box>
 
