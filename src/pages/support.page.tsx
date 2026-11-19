@@ -164,6 +164,7 @@ export default function SupportPage() {
               <ArrowLeft size={20} className="text-navy" />
             </button>
             <Typography
+              component="h1"
               className={`${fontClassName.className} ${supportClasses.headerTitle.mobile}`}
             >
               {t('supportTitle')}
