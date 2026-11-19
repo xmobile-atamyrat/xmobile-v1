@@ -530,6 +530,7 @@ export interface PageSeoData {
   productJsonLd?: ProductJsonLdData | null;
   breadcrumbJsonLd?: BreadcrumbListJsonLd;
   organizationJsonLd?: Record<string, any>;
+  websiteJsonLd?: Record<string, any>;
   localBusinessJsonLd?: Record<string, any> | Record<string, any>[];
 }
 
