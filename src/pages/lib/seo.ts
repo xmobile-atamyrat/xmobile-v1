@@ -422,6 +422,22 @@ export function generateOrganizationSchema() {
 }
 
 /**
+ * Generate WebSite Schema (JSON-LD). Google reads its name and alternateName
+ * to pick the site name shown above results instead of the bare domain.
+ */
+export function generateWebSiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${BASE_URL}/#website`,
+    name: BUSINESS_NAME,
+    alternateName: ['XMobile', 'xmobile.com.tm'],
+    url: `${BASE_URL}/`,
+    publisher: { '@id': ORGANIZATION_ID },
+  };
+}
+
+/**
  * Generate LocalBusiness Schema (JSON-LD)
  * Defines physical store locations for Google Maps integration.
  * Supports multiple locations dynamically.

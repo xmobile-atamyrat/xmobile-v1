@@ -32,6 +32,7 @@ import {
   generateHreflangLinks,
   generateLocalBusinessSchema,
   generateOrganizationSchema,
+  generateWebSiteSchema,
   getCanonicalUrl,
 } from '@/pages/lib/seo';
 import {
@@ -165,6 +166,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       LOCALE_TO_OG_LOCALE[routeLocale as keyof typeof LOCALE_TO_OG_LOCALE] ||
       'ru_RU',
     organizationJsonLd: generateOrganizationSchema(),
+    websiteJsonLd: generateWebSiteSchema(),
     localBusinessJsonLd: generateLocalBusinessSchema(),
   };
 

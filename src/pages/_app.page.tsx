@@ -14,6 +14,7 @@ import { NotificationContextProvider } from '@/pages/lib/NotificationContext';
 import PlatformContextProvider from '@/pages/lib/PlatformContext';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
+import { BUSINESS_NAME } from '@/pages/lib/constants';
 import { getOgImageUrl } from '@/pages/lib/seo';
 import {
   isServiceWorkerSupported,
@@ -63,6 +64,12 @@ export default function App({ Component, pageProps }: AppProps) {
     return true;
   };
   const seoData: PageSeoData = pageProps?.seoData;
+  // Pages with nothing to rank (cart, user, admin, chat…) pass no seoData at
+  // all. Catalog pages pass null when building their SEO data failed; those
+  // stay indexable so a transient fetch error can't drop them from search.
+  const noIndex = pageProps?.seoData === undefined || seoData?.noIndex === true;
+  const siteVerificationKey =
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY;
 
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {
@@ -185,18 +192,22 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="XMobile" />
-        <meta
-          name="google-site-verification"
-          content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY}
+        {siteVerificationKey && (
+          <meta name="google-site-verification" content={siteVerificationKey} />
+        )}
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/icons/apple-touch-icon.png"
         />
-        <link rel="apple-touch-icon" href="/logo/xm-logo.png" />
         {/* Safari's own "open in the app" banner; WebViews ignore it. */}
         <meta name="apple-itunes-app" content={`app-id=${APP_STORE_ID}`} />
 
-        <title>{seoData?.title || 'Xmobile'}</title>
+        <title>{seoData?.title || BUSINESS_NAME}</title>
+        <meta property="og:site_name" content={BUSINESS_NAME} />
         <meta property="og:image" content={getOgImageUrl(seoData?.ogImage)} />
 
-        {seoData?.noIndex === true ? (
+        {noIndex ? (
           <meta name="robots" content="noindex, follow" />
         ) : (
           <meta name="robots" content="index, follow" />
@@ -250,6 +261,14 @@ export default function App({ Component, pageProps }: AppProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                   __html: JSON.stringify(seoData.organizationJsonLd),
+                }}
+              />
+            )}
+            {seoData.websiteJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(seoData.websiteJsonLd),
                 }}
               />
             )}
