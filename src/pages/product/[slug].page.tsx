@@ -17,7 +17,6 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { displayPriceOrNull } from '@/pages/lib/priceDisplay';
 import { buildCategoryPath } from '@/pages/lib/categoryPathUtils';
 import {
-  curlyBracketRegex,
   LOCALE_TO_OG_LOCALE,
   mobileBottomNavHeight,
   squareBracketRegex,
@@ -54,6 +53,7 @@ import { isUUID, parseName } from '@/pages/lib/utils';
 import {
   fetchPriceRow,
   computeProductPrice,
+  extractPriceValue,
   parseVariantTag,
   pickVariantColorForSpec,
 } from '@/pages/product/utils';
@@ -197,12 +197,7 @@ export const getStaticProps: GetStaticProps = async ({
 
       const productName = parseName(product.name, locale);
 
-      let priceValue = product.price;
-      const priceMatch = product.price?.match(curlyBracketRegex);
-      if (priceMatch) {
-        priceValue = priceMatch[1];
-      }
-      priceValue = priceValue?.replace(/[^\d.]/g, '');
+      const priceValue = extractPriceValue(product.price);
 
       const productPath = `product/${product.slug}`;
 
