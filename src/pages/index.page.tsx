@@ -1,3 +1,4 @@
+import AppDownloadBanner from '@/pages/components/AppDownloadBanner';
 import HomeBrandChips from '@/pages/components/HomeBrandChips';
 import HomePromoTile from '@/pages/components/HomePromoTile';
 import Layout from '@/pages/components/Layout';
@@ -674,6 +675,7 @@ export default function Home({
         <Box className={homePageClasses.newProductsMobileAppbar[platform]}>
           <PromoBannerSection banners={banners} />
           <PopularCategoriesSection categories={categories} />
+          <AppDownloadBanner />
           <Box className="w-full px-5">
             <HomeBrandChips
               brands={brands}

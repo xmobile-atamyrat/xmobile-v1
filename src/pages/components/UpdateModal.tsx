@@ -1,3 +1,4 @@
+import { detectMobileOs, storeUrlFor } from '@/pages/lib/appDownload';
 import { buttonClasses } from '@/styles/classMaps/components/button';
 import { fontClassName, ink, muted, navy } from '@/styles/theme';
 import Box from '@mui/material/Box';
@@ -12,19 +13,15 @@ interface UpdateModalProps {
   onDismiss?: () => void;
 }
 
-// Replace when published on stores
-const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.xmobile.app';
-const APP_STORE_URL = 'https://apps.apple.com/app/YOUR_APP_ID';
-
 export default function UpdateModal({ type, onDismiss }: UpdateModalProps) {
   const isHard = type === 'hard';
   const t = useTranslations();
 
   const handleUpdate = () => {
-    const url = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      ? APP_STORE_URL
-      : PLAY_STORE_URL;
+    const url = storeUrlFor(
+      detectMobileOs(navigator.userAgent, navigator.maxTouchPoints) ??
+        'android',
+    );
     window.open(url, '_blank');
   };
 

@@ -42,7 +42,7 @@ export const footerClasses = {
 
     // link columns
     columns:
-      'grid grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1.4fr] gap-x-[32px] gap-y-[36px] pb-[32px] border-b border-white/10',
+      'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.4fr_1fr_1fr_1.3fr_auto] gap-x-[32px] gap-y-[36px] pb-[32px] border-b border-white/10',
     brandLogo: 'h-[40px] w-auto mb-4 brightness-0 invert cursor-pointer',
     tagline: 'text-[13px] leading-[1.7] text-white/60 mb-[18px] max-w-[240px]',
     socialRow: 'flex flex-row gap-[10px]',

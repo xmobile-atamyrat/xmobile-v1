@@ -967,5 +967,11 @@
   "moveBrandDown": "Aşağı taşı",
   "brandOrderSaveError": "Marka sırası kaydedilemedi.",
   "brandOrderStale": "Marka listesi değişti. Güncel sıra gösteriliyor, lütfen tekrar deneyin.",
-  "chooseBrand": "Marka seçin"
+  "chooseBrand": "Marka seçin",
+  "appDownloadTitle": "Xmobile uygulamasını indirin",
+  "appDownloadSubtitle": "Kolay alışveriş, kampanyalar ve sipariş takibi telefonunuzda",
+  "appInstallBarSubtitle": "Uygulamada daha kolay",
+  "appInstall": "Yükle",
+  "appScanQr": "Uygulamayı indirmek için telefon kameranızı QR koda tutun",
+  "mobileApp": "Mobil uygulama"
 }
