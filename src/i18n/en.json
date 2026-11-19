@@ -967,5 +967,11 @@
   "moveBrandDown": "Move down",
   "brandOrderSaveError": "Could not save the brand order.",
   "brandOrderStale": "The brand list has changed. The current order is shown, please try again.",
-  "chooseBrand": "Choose a brand"
+  "chooseBrand": "Choose a brand",
+  "appDownloadTitle": "Get the Xmobile app",
+  "appDownloadSubtitle": "Easy shopping, deals and order updates on your phone",
+  "appInstallBarSubtitle": "Better in the app",
+  "appInstall": "Install",
+  "appScanQr": "Point your phone camera at the QR code to get the app",
+  "mobileApp": "Mobile app"
 }

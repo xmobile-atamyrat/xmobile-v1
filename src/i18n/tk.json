@@ -969,5 +969,11 @@
   "moveBrandDown": "Aşak",
   "brandOrderSaveError": "Brendleriň tertibini ýatda saklap bolmady.",
   "brandOrderStale": "Brendleriň sanawy üýtgedi. Häzirki tertip görkezildi, gaýtadan synanyşyň.",
-  "chooseBrand": "Brendi saýlaň"
+  "chooseBrand": "Brendi saýlaň",
+  "appDownloadTitle": "Xmobile programmasyny ýükläň",
+  "appDownloadSubtitle": "Amatly söwda, aksiýalar we sargyt ýagdaýy telefonyňyzda",
+  "appInstallBarSubtitle": "Programmada has amatly",
+  "appInstall": "Gurnamak",
+  "appScanQr": "Programmany ýüklemek üçin telefonyňyzyň kamerasyny QR-koda tutuň",
+  "mobileApp": "Mobil programma"
 }

@@ -969,5 +969,11 @@
   "moveBrandDown": "Ниже",
   "brandOrderSaveError": "Не удалось сохранить порядок брендов.",
   "brandOrderStale": "Список брендов изменился. Показан актуальный порядок, попробуйте ещё раз.",
-  "chooseBrand": "Выберите бренд"
+  "chooseBrand": "Выберите бренд",
+  "appDownloadTitle": "Скачайте приложение Xmobile",
+  "appDownloadSubtitle": "Удобные покупки, акции и статус заказа в телефоне",
+  "appInstallBarSubtitle": "В приложении удобнее",
+  "appInstall": "Установить",
+  "appScanQr": "Наведите камеру телефона на QR-код, чтобы скачать приложение",
+  "mobileApp": "Мобильное приложение"
 }
