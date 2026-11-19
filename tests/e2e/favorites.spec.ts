@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 import { E2E_CATALOG, E2E_VARIANT_PRODUCT } from './fixtures/catalog-slugs';
 import { signInAs } from './helpers/auth';
@@ -38,6 +38,20 @@ async function tapAndSave(page: Page, heart: ReturnType<typeof addHeart>) {
   );
   await heart.click();
   expect((await saved).ok()).toBe(true);
+}
+
+/**
+ * Follows a link to `/favorites` and waits for the page's own list request.
+ * The URL changes before the new page renders, so until then the product
+ * page, which shows the product's name twice, is still on screen.
+ */
+async function goToFavorites(page: Page, link: Locator) {
+  const list = page.waitForResponse((res) =>
+    res.url().includes('/api/favorites?locale='),
+  );
+  await link.click();
+  await list;
+  await expect(page).toHaveURL(/\/favorites$/);
 }
 
 /** Favorites both seeded products; only the variant phone has a color. */
@@ -95,11 +109,10 @@ test.describe('Favorites on desktop', () => {
     await openSignedIn(page, productPath);
     await expect(removeHeart(page)).toBeVisible();
 
-    await page
-      .getByRole('banner')
-      .getByRole('button', { name: 'Избранное' })
-      .click();
-    await expect(page).toHaveURL(/\/favorites$/);
+    await goToFavorites(
+      page,
+      page.getByRole('banner').getByRole('button', { name: 'Избранное' }),
+    );
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
     await tapAndSave(page, removeHeart(page));
@@ -142,9 +155,8 @@ test.describe('Favorites on a phone', () => {
 
     const bar = page.getByRole('navigation').last();
     await expect(bar.getByRole('button', { name: 'Поиск' })).toHaveCount(0);
-    await bar.getByRole('button', { name: 'Избранное' }).click();
+    await goToFavorites(page, bar.getByRole('button', { name: 'Избранное' }));
 
-    await expect(page).toHaveURL(/\/favorites$/);
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
 
     await tapAndSave(page, removeHeart(page));
