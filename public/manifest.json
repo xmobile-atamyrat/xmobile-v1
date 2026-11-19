@@ -1,29 +1,44 @@
 {
+  "id": "/",
   "name": "XMobile",
   "short_name": "XMobile",
-  "description": "XMobile E-commerce Platform",
+  "description": "Xmobile — smartphones, accessories and electronics in Turkmenistan",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#d32f2f",
+  "theme_color": "#20166E",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo/xm-logo.png",
+      "src": "/icons/app-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo/xm-logo.png",
+      "src": "/icons/app-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/app-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["shopping", "ecommerce"],
-  "screenshots": [],
-  "shortcuts": [],
-  "share_target": {},
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.xmobile.app",
+      "id": "com.xmobile.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/id6768824805"
+    }
+  ],
   "prefer_related_applications": false
 }
