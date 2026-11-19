@@ -16,3 +16,4 @@ services:
       - ./docker/nginx-local/images/compressed/products/bad:/home/ubuntu/images/compressed/products/bad:ro
       - ./docker/nginx-local/images/compressed/products/good:/home/ubuntu/images/compressed/products/good:ro
       - ./docker/nginx-local/images/categories:/home/ubuntu/images/categories:ro
+      - ./docker/nginx-local/images/banners:/home/ubuntu/images/banners:ro
