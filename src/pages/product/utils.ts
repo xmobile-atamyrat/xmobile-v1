@@ -514,7 +514,7 @@ export const computeProductPrice = async ({
   const processedProduct = { ...product };
 
   if (priceMatchValue != null && priceMatchId != null) {
-    processedProduct.price = extractPriceValue(product.price) ?? '';
+    processedProduct.price = priceMatchValue[1];
     return processedProduct;
   }
 
