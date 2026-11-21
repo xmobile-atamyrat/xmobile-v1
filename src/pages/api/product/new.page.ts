@@ -46,6 +46,9 @@ async function handleGetNewProducts(query: {
     const productsWithPrices = await Promise.all(
       products.map(async (product) => {
         const productPrice = await getPrice(product?.price as string);
+        // Every product here is in stock, so a sold-out base isn't its price;
+        // left uninlined, the client falls back to a buyable variant.
+        if (productPrice?.outOfStockAt != null) return product;
         // `?? undefined` preserves the "{undefined}" text for a dangling ref.
         product.price = `${product?.price}{${
           displayPriceOrNull(productPrice) ?? undefined
