@@ -194,6 +194,53 @@ describe('Out-of-stock product API (integration)', () => {
     expect(orders.length).toBe(1);
   });
 
+  it('syncAllProductsOutOfStock marks a product whose price row is gone, and inStock=1 then drops it', async () => {
+    const { syncAllProductsOutOfStock } = await import('@/lib/outOfStock');
+    const { buildProductWhere } = await import(
+      '@/pages/api/product/productWhere'
+    );
+
+    const gone = await prisma.prices.create({
+      data: { name: 'oos-gone', price: '1', priceInTmt: '10.00' },
+    });
+    const orphan = await prisma.product.create({
+      data: {
+        slug: `oos-orphan-${Date.now()}`,
+        name: '{"en":"Orphan","tk":"Orphan","ru":"Orphan","ch":"Orphan"}',
+        categoryId,
+        imgUrls: ['/media/integration-phone.webp'],
+        tags: [],
+        videoUrls: [],
+        price: `[${gone.id}]`,
+        outOfStockAt: null,
+      },
+    });
+    await prisma.prices.delete({ where: { id: gone.id } });
+
+    const inStockWhere = await buildProductWhere({
+      categoryId,
+      inStock: '1',
+    });
+    const before = await prisma.product.findMany({
+      where: inStockWhere ?? { id: 'none' },
+      select: { id: true },
+    });
+    expect(before.map((p) => p.id)).toContain(orphan.id);
+
+    await syncAllProductsOutOfStock();
+
+    const after = await prisma.product.findMany({
+      where: inStockWhere ?? { id: 'none' },
+      select: { id: true },
+    });
+    expect(after.map((p) => p.id)).not.toContain(orphan.id);
+    expect(after.map((p) => p.id)).toContain(inStockProductId);
+    const row = await prisma.product.findUnique({ where: { id: orphan.id } });
+    expect(row?.outOfStockAt).not.toBeNull();
+
+    await prisma.product.delete({ where: { id: orphan.id } });
+  });
+
   it('POST /api/guest/order is rejected when the guest cart holds an out-of-stock product', async () => {
     const guestSessionId = `oos-guest-${Date.now()}`;
     await prisma.guestCartItem.create({

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   deriveProductOutOfStock,
   initialOutOfStockFields,
+  isProductPriceUnresolvable,
   outOfStockCascade,
   retireLongOutOfStockProducts,
   setProductOutOfStock,
@@ -65,6 +66,59 @@ describe('deriveProductOutOfStock', () => {
   it('is in stock while any single price remains', () => {
     expect(deriveProductOutOfStock([SOLD_OUT, IN_STOCK])).toBe(false);
     expect(deriveProductOutOfStock([IN_STOCK])).toBe(false);
+  });
+});
+
+describe('isProductPriceUnresolvable', () => {
+  const rows = (entries: [string, Date | null][]) => new Map(entries);
+
+  it('never flags a legacy literal price', () => {
+    expect(isProductPriceUnresolvable('1299', [], rows([]))).toBe(false);
+    expect(isProductPriceUnresolvable(null, [], rows([]))).toBe(false);
+  });
+
+  it('never flags a price that carries its {value}', () => {
+    expect(isProductPriceUnresolvable('[p1]{999}', [], rows([]))).toBe(false);
+  });
+
+  it('does not flag a base row that exists, even when sold out', () => {
+    expect(
+      isProductPriceUnresolvable(
+        '[p1]',
+        [],
+        rows([['p1', new Date('2026-01-01')]]),
+      ),
+    ).toBe(false);
+  });
+
+  it('flags a missing row with no variant tags', () => {
+    expect(isProductPriceUnresolvable('[p1]', [], rows([]))).toBe(true);
+    expect(isProductPriceUnresolvable('[p1]', ['plain-tag'], rows([]))).toBe(
+      true,
+    );
+  });
+
+  it('does not flag a missing row when a variant is sellable', () => {
+    expect(
+      isProductPriceUnresolvable(
+        '[p1]',
+        ['[v1]', '[v2]'],
+        rows([
+          ['v1', new Date('2026-01-01')],
+          ['v2', null],
+        ]),
+      ),
+    ).toBe(false);
+  });
+
+  it('flags a missing row when every variant is sold out or missing', () => {
+    expect(
+      isProductPriceUnresolvable(
+        '[p1]',
+        ['[v1]', '[v2]'],
+        rows([['v1', new Date('2026-01-01')]]),
+      ),
+    ).toBe(true);
   });
 });
 

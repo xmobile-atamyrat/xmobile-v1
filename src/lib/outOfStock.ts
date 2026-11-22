@@ -141,6 +141,55 @@ export async function syncProductOutOfStockFromPrices(
   });
 }
 
+// Local copies of the bracket regexes in src/pages/lib/constants.ts, so the
+// batch build does not reach into src/pages (same approach as variantStock.ts).
+const squareBracketRegex = /\[([^\]]+)\]/;
+const curlyBracketRegex = /\{([^}]+)\}/;
+
+/** The price ids a product's `price` and variant `tags` refer to. */
+export function referencedPriceIds(
+  price: string | null | undefined,
+  tags: string[] | null | undefined,
+): string[] {
+  const ids = new Set<string>();
+  const baseId = price?.match(squareBracketRegex)?.[1];
+  if (baseId != null) ids.add(baseId);
+  (tags ?? []).forEach((tag) => {
+    const id = tag.match(squareBracketRegex)?.[1];
+    if (id != null) ids.add(id);
+  });
+  return [...ids];
+}
+
+/**
+ * The storefront card's own sold-out rule (computeProductPrice in
+ * src/pages/product/utils.ts), mirrored server-side so the stored flag agrees
+ * with the label and the "In stock" filter does not list "sold out" cards.
+ *
+ * True exactly when `price` is "[id]" without a "{value}", the base price row
+ * no longer exists, and no variant tag ("[id]" in `tags`) points at an existing
+ * row that is in stock. A legacy literal price, a "{value}" price, or a base
+ * row that still exists (even sold out) is never unresolvable.
+ *
+ * `priceRows` maps every price id found by the caller to its `outOfStockAt`;
+ * an id absent from the map means the row does not exist.
+ */
+export function isProductPriceUnresolvable(
+  price: string | null | undefined,
+  tags: string[] | null | undefined,
+  priceRows: ReadonlyMap<string, Date | null>,
+): boolean {
+  const baseId = price?.match(squareBracketRegex)?.[1];
+  if (baseId == null) return false;
+  if (price != null && curlyBracketRegex.test(price)) return false;
+  if (priceRows.has(baseId)) return false;
+
+  return !(tags ?? []).some((tag) => {
+    const id = tag.match(squareBracketRegex)?.[1];
+    return id != null && priceRows.has(id) && priceRows.get(id) == null;
+  });
+}
+
 export interface OutOfStockSyncResult {
   markedOutOfStock: number;
   markedInStock: number;
@@ -149,7 +198,13 @@ export interface OutOfStockSyncResult {
 /**
  * The same upward rule applied to the whole catalog, for the daily batch.
  * Bulk-shaped rather than a loop over `syncProductOutOfStockFromPrices`: one
- * read of every active product's price state, then at most two writes.
+ * read of every active product's price state, one read of the price rows the
+ * products reference, then at most two writes.
+ *
+ * Precedence of the two rules: the card rule (`isProductPriceUnresolvable`)
+ * runs first and can only push a product to out of stock; it never flips
+ * anything back in stock. Products it does not flag fall through to the derive
+ * rule above, unchanged.
  */
 export async function syncAllProductsOutOfStock(): Promise<OutOfStockSyncResult> {
   const products = await dbClient.product.findMany({
@@ -157,14 +212,33 @@ export async function syncAllProductsOutOfStock(): Promise<OutOfStockSyncResult>
     select: {
       id: true,
       outOfStockAt: true,
+      price: true,
+      tags: true,
       prices: { select: { outOfStockAt: true } },
     },
   });
 
+  const referenced = new Set<string>();
+  products.forEach(({ price, tags }) =>
+    referencedPriceIds(price, tags).forEach((id) => referenced.add(id)),
+  );
+  const rows =
+    referenced.size > 0
+      ? await dbClient.prices.findMany({
+          where: { id: { in: [...referenced] } },
+          select: { id: true, outOfStockAt: true },
+        })
+      : [];
+  const priceRows = new Map(rows.map((row) => [row.id, row.outOfStockAt]));
+
   const toMarkOutOfStock: string[] = [];
   const toMarkInStock: string[] = [];
 
-  products.forEach(({ id, outOfStockAt, prices }) => {
+  products.forEach(({ id, outOfStockAt, prices, price, tags }) => {
+    if (isProductPriceUnresolvable(price, tags, priceRows)) {
+      if (outOfStockAt == null) toMarkOutOfStock.push(id);
+      return;
+    }
     const derived = deriveProductOutOfStock(prices);
     if (derived == null || derived === (outOfStockAt != null)) return;
     (derived ? toMarkOutOfStock : toMarkInStock).push(id);
