@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { getServerSideProps } from '@/pages/index.page';
+import geoip from 'geoip-lite';
 import type { GetServerSidePropsContext } from 'next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -233,5 +234,195 @@ describe('home getServerSideProps', () => {
     expect(props.initialBrand).toBeNull();
     expect(props.brands).toEqual(brands);
     expect(props.initialProducts).toEqual(newest);
+  });
+});
+
+// GeoIP is the last guess for the language, after the user's pick, the
+// browser's language and the link's (nginx handles those three in production).
+describe('home getServerSideProps GeoIP fallback', () => {
+  const CHROME =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  const lookup = vi.mocked(geoip.lookup);
+
+  beforeEach(() => {
+    fetchProducts.mockReset();
+    getHomeBrands.mockReset();
+    getHomeBrands.mockResolvedValue(brands);
+    mockFetches({});
+    lookup.mockReset();
+    lookup.mockReturnValue({ country: 'TR' } as ReturnType<
+      typeof geoip.lookup
+    >);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  function landOnHome({
+    headers = {},
+    locale = 'ru',
+    resolvedUrl = '/',
+  }: {
+    headers?: Record<string, string>;
+    locale?: string;
+    resolvedUrl?: string;
+  } = {}) {
+    const setHeader = vi.fn();
+    const result = getServerSideProps({
+      req: {
+        headers: {
+          'user-agent': CHROME,
+          'accept-language': 'de-DE,de;q=0.9,en;q=0.8',
+          'x-real-ip': '88.255.0.1',
+          ...headers,
+        },
+        socket: {},
+      },
+      res: { setHeader },
+      query: {},
+      resolvedUrl,
+      locale,
+      defaultLocale: 'ru',
+    } as unknown as GetServerSidePropsContext);
+    return { result, setHeader };
+  }
+
+  it('redirects on the server to the country’s language', async () => {
+    const { result } = landOnHome();
+    expect(await result).toEqual({
+      redirect: { destination: '/tr', permanent: false },
+    });
+  });
+
+  it('keeps the query on the way', async () => {
+    const { result } = landOnHome({ resolvedUrl: '/?brand=b1' });
+    expect(await result).toEqual({
+      redirect: { destination: '/tr?brand=b1', permanent: false },
+    });
+  });
+
+  it('does not redirect when the country means Russian', async () => {
+    lookup.mockReturnValue({ country: 'TM' } as ReturnType<
+      typeof geoip.lookup
+    >);
+    const { result } = landOnHome();
+    expect(await result).toHaveProperty('props');
+  });
+
+  // A browser in Russian already said Russian; GeoIP must not overrule it.
+  it('never overrules a browser language we ship', async () => {
+    const { result } = landOnHome({ headers: { 'accept-language': 'ru-RU' } });
+    expect(await result).toHaveProperty('props');
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('never overrules the user’s pick', async () => {
+    const { result } = landOnHome({ headers: { cookie: 'NEXT_LOCALE=ru' } });
+    expect(await result).toHaveProperty('props');
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  // Without the nginx snippet (staging, dev) home still honours the switcher.
+  it('sends home to the user’s pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=tk' },
+      resolvedUrl: '/?brand=b1',
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/tk?brand=b1', permanent: false },
+    });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('sends a prefixed home back to a ru pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=ru' },
+      locale: 'en',
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/', permanent: false },
+    });
+  });
+
+  it('leaves a client navigation alone even with a pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=tk', 'x-nextjs-data': '1' },
+    });
+    expect(await result).toHaveProperty('props');
+  });
+
+  it('never applies a pick for a crawler', async () => {
+    const { result } = landOnHome({
+      headers: {
+        cookie: 'NEXT_LOCALE=tk',
+        'user-agent':
+          'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      },
+    });
+    expect(await result).toHaveProperty('props');
+  });
+
+  it('looks up only the client address of an X-Forwarded-For list', async () => {
+    const { result } = landOnHome({
+      headers: {
+        'x-real-ip': '',
+        'x-forwarded-for': '88.255.0.1, 10.0.0.2',
+      },
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/tr', permanent: false },
+    });
+    expect(lookup).toHaveBeenCalledWith('88.255.0.1');
+  });
+
+  it('never overrules a link with a language', async () => {
+    const { result } = landOnHome({ locale: 'en' });
+    expect(await result).toHaveProperty('props');
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('serves crawlers the Russian home page as it is', async () => {
+    const { result } = landOnHome({
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      },
+    });
+    expect(await result).toHaveProperty('props');
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  // Clicking the logo mid-visit must not switch the language.
+  it('leaves client-side navigations to home alone', async () => {
+    const { result } = landOnHome({ headers: { 'x-nextjs-data': '1' } });
+    expect(await result).toHaveProperty('props');
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('treats a cookie that is not a locale as no pick, and drops it', async () => {
+    const { result, setHeader } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=xx' },
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/tr', permanent: false },
+    });
+    expect(setHeader).not.toHaveBeenCalled();
+  });
+
+  it('refreshes a real pick and never stores a guess', async () => {
+    const picked = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=tk' },
+      locale: 'tk',
+    });
+    await picked.result;
+    expect(picked.setHeader).toHaveBeenCalledWith(
+      'Set-Cookie',
+      expect.stringContaining('NEXT_LOCALE=tk'),
+    );
+
+    lookup.mockReturnValue({ country: 'TM' } as ReturnType<
+      typeof geoip.lookup
+    >);
+    const guessed = landOnHome();
+    await guessed.result;
+    expect(guessed.setHeader).not.toHaveBeenCalled();
   });
 });

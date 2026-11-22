@@ -19,9 +19,16 @@ import {
   HOME_RECOMMENDED_PRODUCTS,
   LOCALE_COOKIE_NAME,
   LOCALE_TO_OG_LOCALE,
-  POST_SOVIET_COUNTRIES,
   SORT_OPTIONS,
 } from '@/pages/lib/constants';
+import {
+  isCrawler,
+  isSupportedLocale,
+  Locale,
+  localeFromAcceptLanguage,
+  localeFromCountry,
+  localizedPath,
+} from '@/lib/localeDetection';
 import { useBrandProducts } from '@/pages/lib/hooks/useBrandProducts';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
@@ -41,7 +48,6 @@ import {
   StorefrontBanner,
 } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
-import { switchLocale } from '@/pages/lib/switchLocale';
 import { getHomeBrands, HomeBrand } from '@/lib/homeBrands';
 import { getStorefrontBanners } from '@/lib/promoBanners';
 import { homePageClasses } from '@/styles/classMaps';
@@ -59,11 +65,15 @@ import {
   ShieldCheck,
   Truck,
 } from 'lucide-react';
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
+import {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  InferGetServerSidePropsType,
+} from 'next';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { ParsedUrlQuery } from 'querystring';
 
 const web = homePageClasses.web;
@@ -79,52 +89,71 @@ const NEWEST_LISTING_HREF = '/product';
 // Staff only; see ProductGridContent.
 const IMAGELESS_LISTING_HREF = '/product?imageless=1';
 
+/** GeoIP's locale for the visitor's address, or null if it can't tell. */
+function localeFromIp(req: GetServerSidePropsContext['req']): Locale | null {
+  let ip =
+    req.headers['x-real-ip'] ||
+    req.headers['x-forwarded-for'] ||
+    req.socket.remoteAddress;
+  if (Array.isArray(ip)) {
+    [ip] = ip;
+  }
+  // X-Forwarded-For is "client, proxy1, proxy2"; geoip wants one address.
+  ip = ip?.split(',')[0].trim();
+  if (!ip) return null;
+  try {
+    const geo = geoip.lookup(ip);
+    return geo ? localeFromCountry(geo.country) : null;
+  } catch (error) {
+    console.error('GeoIP lookup failed:', error);
+    return null;
+  }
+}
+
 // getServerSideProps because we want to fetch the categories from the server on every request
 export const getServerSideProps: GetServerSideProps = (async (context) => {
   let messages = {};
+  const { req } = context;
   const cookieLocale =
-    cookie.parse(context.req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
-  let locale = cookieLocale;
-  let ip =
-    context.req.headers['x-real-ip'] ||
-    context.req.headers['x-forwarded-for'] ||
-    context.req.socket.remoteAddress;
-  if (Array.isArray(ip)) {
-    ip = ip[0];
-  }
+    cookie.parse(req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
+  const routeLocale = context.locale ?? DEFAULT_LOCALE;
+  const picked = isSupportedLocale(cookieLocale) ? cookieLocale : null;
 
-  if (ip && typeof ip === 'string') {
-    try {
-      if (locale == null) {
-        const geo = geoip.lookup(ip || '');
-        if (geo) {
-          const { country } = geo;
-          if (country === 'TR') {
-            locale = 'tr';
-          } else if (POST_SOVIET_COUNTRIES.includes(country)) {
-            locale = 'ru';
-          } else {
-            locale = 'en';
-          }
-        }
-      }
-    } catch (error) {
-      console.error('GeoIP lookup failed:', error);
+  // In production nginx already applied the cookie, the browser's language and
+  // the link's (scripts/prod_scripts/nginx-locale-*). Only full page loads from
+  // people are redirected: client navigations keep the visitor's language, and
+  // a crawler must index each home as the language its URL names.
+  //  - The pick is applied here again, so home still honours it when nginx
+  //    lacks the snippet (staging, dev, or a restart-nginx.sh that dropped it).
+  //    Behind nginx it already matches and this does nothing.
+  //  - GeoIP is the last guess and lives here, as it needs the GeoIP database:
+  //    plain `/`, no pick, and a browser language we don't ship.
+  if (!req.headers['x-nextjs-data'] && !isCrawler(req.headers['user-agent'])) {
+    let wanted: Locale | null = picked;
+    if (
+      !wanted &&
+      context.locale === context.defaultLocale &&
+      localeFromAcceptLanguage(req.headers['accept-language']) == null
+    ) {
+      wanted = localeFromIp(req);
+    }
+    if (wanted && wanted !== routeLocale) {
+      return {
+        redirect: {
+          destination: localizedPath(wanted, context.resolvedUrl),
+          permanent: false,
+        },
+      };
     }
   }
-
-  const routeLocale = context.locale;
-
-  // Ensure we have a locale for cookie setting/persistence
-  const finalLocale = locale || routeLocale || DEFAULT_LOCALE;
 
   // Only refresh a locale the user (or the native wrapper) actually chose.
   // Persisting a GeoIP guess would make it indistinguishable from a real
   // choice and pin that visitor to the guess for the next ten years.
-  if (cookieLocale != null) {
+  if (picked) {
     context.res.setHeader(
       'Set-Cookie',
-      serialize(LOCALE_COOKIE_NAME, finalLocale, {
+      serialize(LOCALE_COOKIE_NAME, picked, {
         // Staging runs a production build over plain HTTP, where a Secure
         // cookie is silently discarded -- follow the real request scheme.
         secure: isSecureRequest(context.req),
@@ -142,7 +171,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   }
 
   // SEO tags follow routeLocale so they match title/description strings from messages.
-  // `locale` (cookie / GeoIP) is still passed to the client to align the URL via router when needed.
   const t = messages as Record<string, string>;
   const businessName = BUSINESS_NAME;
 
@@ -172,7 +200,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
   let banners: StorefrontBanner[] = [];
   try {
-    banners = await getStorefrontBanners(routeLocale ?? finalLocale);
+    banners = await getStorefrontBanners(routeLocale);
   } catch (error) {
     console.error('Failed to load promo banners:', error);
   }
@@ -185,7 +213,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // them afterwards. Each failure stays its own for the same reason: the client
   // refetches a missing search, but never a missing section.
   const searchTerm = readSearchKeyword(context.query);
-  const productLocale = routeLocale ?? finalLocale;
+  const productLocale = routeLocale;
   // The brand in the URL is seeded too, but only if it is one of the chips
   // shown, so a stale or made-up id costs no query. Brands load first because
   // they gate that seed; a failure leaves the strip empty, not the page broken.
@@ -254,8 +282,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
 
   return {
     props: {
-      locale:
-        context.locale !== context.defaultLocale ? context.locale : locale,
       messages,
       seoData,
       banners,
@@ -267,7 +293,6 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
     },
   };
 }) satisfies GetServerSideProps<{
-  locale: string | null;
   seoData: PageSeoData;
   banners: StorefrontBanner[];
   initialProducts: Product[];
@@ -331,7 +356,6 @@ function LoadFailure({
 }
 
 export default function Home({
-  locale,
   banners,
   initialProducts,
   recommendedProducts,
@@ -420,12 +444,6 @@ export default function Home({
       subtitle: `${t('supportHoursDays')}, ${t('supportHoursTime')}`,
     },
   ];
-
-  useEffect(() => {
-    if (locale == null || router.locale === locale) return;
-    switchLocale(router, locale);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale]);
 
   if (platform === 'web' && search.isSearching) {
     return (
