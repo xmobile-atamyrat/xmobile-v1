@@ -98,6 +98,8 @@ function localeFromIp(req: GetServerSidePropsContext['req']): Locale | null {
   if (Array.isArray(ip)) {
     [ip] = ip;
   }
+  // X-Forwarded-For is "client, proxy1, proxy2"; geoip wants one address.
+  ip = ip?.split(',')[0].trim();
   if (!ip) return null;
   try {
     const geo = geoip.lookup(ip);
@@ -115,25 +117,30 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   const cookieLocale =
     cookie.parse(req.headers.cookie ?? '')[LOCALE_COOKIE_NAME] ?? null;
   const routeLocale = context.locale ?? DEFAULT_LOCALE;
+  const picked = isSupportedLocale(cookieLocale) ? cookieLocale : null;
 
   // In production nginx already applied the cookie, the browser's language and
-  // the link's (scripts/prod_scripts/nginx-locale-*). GeoIP is the last guess and lives
-  // here, as it needs the GeoIP database. It only fills that gap: a full load
-  // of plain `/` (client navigations keep the visitor's language), no pick, a
-  // browser language we don't ship, and never for a crawler, which must index
-  // `/` as the Russian page it is.
-  if (
-    !isSupportedLocale(cookieLocale) &&
-    context.locale === context.defaultLocale &&
-    !req.headers['x-nextjs-data'] &&
-    !isCrawler(req.headers['user-agent']) &&
-    localeFromAcceptLanguage(req.headers['accept-language']) == null
-  ) {
-    const guessed = localeFromIp(req);
-    if (guessed && guessed !== routeLocale) {
+  // the link's (scripts/prod_scripts/nginx-locale-*). Only full page loads from
+  // people are redirected: client navigations keep the visitor's language, and
+  // a crawler must index each home as the language its URL names.
+  //  - The pick is applied here again, so home still honours it when nginx
+  //    lacks the snippet (staging, dev, or a restart-nginx.sh that dropped it).
+  //    Behind nginx it already matches and this does nothing.
+  //  - GeoIP is the last guess and lives here, as it needs the GeoIP database:
+  //    plain `/`, no pick, and a browser language we don't ship.
+  if (!req.headers['x-nextjs-data'] && !isCrawler(req.headers['user-agent'])) {
+    let wanted: Locale | null = picked;
+    if (
+      !wanted &&
+      context.locale === context.defaultLocale &&
+      localeFromAcceptLanguage(req.headers['accept-language']) == null
+    ) {
+      wanted = localeFromIp(req);
+    }
+    if (wanted && wanted !== routeLocale) {
       return {
         redirect: {
-          destination: localizedPath(guessed, context.resolvedUrl),
+          destination: localizedPath(wanted, context.resolvedUrl),
           permanent: false,
         },
       };
@@ -143,10 +150,10 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   // Only refresh a locale the user (or the native wrapper) actually chose.
   // Persisting a GeoIP guess would make it indistinguishable from a real
   // choice and pin that visitor to the guess for the next ten years.
-  if (isSupportedLocale(cookieLocale)) {
+  if (picked) {
     context.res.setHeader(
       'Set-Cookie',
-      serialize(LOCALE_COOKIE_NAME, cookieLocale, {
+      serialize(LOCALE_COOKIE_NAME, picked, {
         // Staging runs a production build over plain HTTP, where a Secure
         // cookie is silently discarded -- follow the real request scheme.
         secure: isSecureRequest(context.req),

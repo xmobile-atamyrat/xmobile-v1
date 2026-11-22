@@ -63,6 +63,9 @@ describe('isCrawler', () => {
     'facebookexternalhit/1.1',
     'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)',
     'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)',
+    'Mozilla/5.0 (compatible; YandexImages/3.0; +http://yandex.com/bots)',
+    'Pinterest/0.2 (+http://www.pinterest.com/bot.html)',
+    'Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)',
     '',
   ])('treats %j as a crawler', (ua) => {
     expect(isCrawler(ua)).toBe(true);
@@ -74,6 +77,9 @@ describe('isCrawler', () => {
     'Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36',
     // The mobile app's WebView.
     'Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0 Mobile Safari/537.36',
+    // In-app browsers of the Yandex and Pinterest apps.
+    'Mozilla/5.0 (Linux; Android 11; M2101K6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0 YandexSearch/21.124.1 YandexSearchBrowser/21.124.1 BroPP/1.0 SA/3 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 13; SM-G991B; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36 [Pinterest/Android]',
   ])('treats %j as a person', (ua) => {
     expect(isCrawler(ua)).toBe(false);
   });

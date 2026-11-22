@@ -67,7 +67,7 @@ export const localeFromCountry = (country: string): Locale => {
  * (`$lc_bot`); change both together.
  */
 const CRAWLER_PATTERN =
-  /(?<!cu)bot\b|crawl|spider|slurp|mediapartners|google-inspectiontool|googleother|apis-google|facebookexternalhit|facebookcatalog|whatsapp|skypeuripreview|vkshare|yandex|bingpreview|embedly|quora link preview|pinterest|lighthouse|pagespeed/i;
+  /(?<!cu)bot\b|crawl|spider|slurp|mediapartners|google-inspectiontool|googleother|apis-google|facebookexternalhit|facebookcatalog|whatsapp|skypeuripreview|vkshare|yandex(?!search)|bingpreview|embedly|quora link preview|lighthouse|pagespeed/i;
 
 export const isCrawler = (userAgent: string | null | undefined): boolean =>
   !userAgent || CRAWLER_PATTERN.test(userAgent);

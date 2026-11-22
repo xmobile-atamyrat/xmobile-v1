@@ -237,8 +237,8 @@ describe('home getServerSideProps', () => {
   });
 });
 
-// GeoIP is the last guess for the language, after the user's pick, the link's
-// language and the browser's (the middleware handles those three).
+// GeoIP is the last guess for the language, after the user's pick, the
+// browser's language and the link's (nginx handles those three in production).
 describe('home getServerSideProps GeoIP fallback', () => {
   const CHROME =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -318,6 +318,59 @@ describe('home getServerSideProps GeoIP fallback', () => {
     const { result } = landOnHome({ headers: { cookie: 'NEXT_LOCALE=ru' } });
     expect(await result).toHaveProperty('props');
     expect(lookup).not.toHaveBeenCalled();
+  });
+
+  // Without the nginx snippet (staging, dev) home still honours the switcher.
+  it('sends home to the user’s pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=tk' },
+      resolvedUrl: '/?brand=b1',
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/tk?brand=b1', permanent: false },
+    });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('sends a prefixed home back to a ru pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=ru' },
+      locale: 'en',
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/', permanent: false },
+    });
+  });
+
+  it('leaves a client navigation alone even with a pick', async () => {
+    const { result } = landOnHome({
+      headers: { cookie: 'NEXT_LOCALE=tk', 'x-nextjs-data': '1' },
+    });
+    expect(await result).toHaveProperty('props');
+  });
+
+  it('never applies a pick for a crawler', async () => {
+    const { result } = landOnHome({
+      headers: {
+        cookie: 'NEXT_LOCALE=tk',
+        'user-agent':
+          'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      },
+    });
+    expect(await result).toHaveProperty('props');
+  });
+
+  it('looks up only the client address of an X-Forwarded-For list', async () => {
+    const { result } = landOnHome({
+      headers: {
+        'x-real-ip': '',
+        'x-forwarded-for': '88.255.0.1, 10.0.0.2',
+      },
+    });
+    expect(await result).toEqual({
+      redirect: { destination: '/tr', permanent: false },
+    });
+    expect(lookup).toHaveBeenCalledWith('88.255.0.1');
   });
 
   it('never overrules a link with a language', async () => {

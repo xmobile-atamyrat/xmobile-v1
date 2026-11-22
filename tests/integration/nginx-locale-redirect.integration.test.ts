@@ -17,6 +17,8 @@ http {
   include /etc/nginx/xmobile/nginx-locale-maps.conf;
   server {
     listen 80;
+    # Stands in for the VM's HSTS / security headers.
+    add_header Strict-Transport-Security "max-age=31536000" always;
     location / {
       include /etc/nginx/xmobile/nginx-locale-redirect.conf;
       return 200 "app";
@@ -324,6 +326,21 @@ const cases: [name: string, urlPath: string, req: Req, expected: string][] = [
     'app',
   ],
   [
+    'YandexImages',
+    '/product/x',
+    {
+      ua: 'Mozilla/5.0 (compatible; YandexImages/3.0; +http://yandex.com/bots)',
+      lang: 'en',
+    },
+    'app',
+  ],
+  [
+    'Pinterest crawler',
+    '/product/x',
+    { ua: 'Pinterest/0.2 (+http://www.pinterest.com/bot.html)', lang: 'en' },
+    'app',
+  ],
+  [
     'Telegram link preview',
     '/product/x',
     { ua: 'TelegramBot (like TwitterBot)', lang: 'en' },
@@ -402,6 +419,24 @@ const cases: [name: string, urlPath: string, req: Req, expected: string][] = [
     '-> /tr/category/x',
   ],
   [
+    'the Yandex app is a person',
+    '/product/x',
+    {
+      ua: 'Mozilla/5.0 (Linux; Android 11; M2101K6G) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0 YandexSearch/21.124.1 YandexSearchBrowser/21.124.1 BroPP/1.0 SA/3 Mobile Safari/537.36',
+      lang: 'en',
+    },
+    '-> /en/product/x',
+  ],
+  [
+    'the Pinterest app is a person',
+    '/product/x',
+    {
+      ua: 'Mozilla/5.0 (Linux; Android 13; SM-G991B; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36 [Pinterest/Android]',
+      lang: 'en',
+    },
+    '-> /en/product/x',
+  ],
+  [
     'HEAD is a page load too',
     '/product/x',
     { lang: 'en', method: 'HEAD' },
@@ -414,13 +449,15 @@ describe('nginx language redirect (integration)', () => {
     expect((await hit(urlPath, req)).got).toBe(expected);
   });
 
-  it('is temporary, relative, and never cached for others', async () => {
+  it('is temporary, relative, and keeps the server’s headers', async () => {
     const { got, headers } = await hit('/product/x', {
       lang: 'en',
       headers: { host: 'www.xmobile.com.tm' },
     });
     expect(got).toBe('-> /en/product/x');
-    expect(headers['cache-control']).toBe('private, no-store');
-    expect(headers.vary).toBe('Cookie, Accept-Language, User-Agent');
+    expect(headers['strict-transport-security']).toBe('max-age=31536000');
+    // Nothing that would let a cache store it.
+    expect(headers['cache-control']).toBeUndefined();
+    expect(headers.expires).toBeUndefined();
   });
 });
