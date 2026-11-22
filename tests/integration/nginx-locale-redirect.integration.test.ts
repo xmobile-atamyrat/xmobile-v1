@@ -199,6 +199,50 @@ const cases: [name: string, urlPath: string, req: Req, expected: string][] = [
     'app',
   ],
 
+  // Odd paths never redirect off-site or in a loop.
+  [
+    'double slash after the prefix is not sent as //host',
+    '/en//evil.com/',
+    { lang: 'ru' },
+    'app',
+  ],
+  [
+    'double slash with a deeper path',
+    '/tk//evil.com/x',
+    { cookie: 'NEXT_LOCALE=ru' },
+    'app',
+  ],
+  [
+    'backslash after the prefix is not sent as /\\host',
+    '/en/\\evil.com/',
+    { lang: 'ru' },
+    'app',
+  ],
+  [
+    'double slash to a prefixed language stays on the site',
+    '/en//evil.com/',
+    { lang: 'tk' },
+    '-> /tk//evil.com/',
+  ],
+  [
+    'an encoded prefix is not a locale (no loop for ru)',
+    '/%65n/product/x',
+    { lang: 'ru' },
+    'app',
+  ],
+  [
+    'an encoded prefix gets one prefix added',
+    '/%65n/product/x',
+    { lang: 'tk' },
+    '-> /tk/%65n/product/x',
+  ],
+  [
+    '...and that target then stays',
+    '/tk/%65n/product/x',
+    { lang: 'tk' },
+    'app',
+  ],
+
   // The visitor's pick beats everything.
   [
     'pick ch, shared /en link, tk browser',
