@@ -8,6 +8,7 @@ const SLACK_BOT_NAME = 'ORDER_BOT_WEBHOOK';
 const statusTranslations: Record<string, string> = {
   PENDING: 'Ожидает',
   IN_PROGRESS: 'В процессе',
+  ON_THE_WAY: 'В пути',
   COMPLETED: 'Завершен',
   USER_CANCELLED: 'Отменен пользователем',
   ADMIN_CANCELLED: 'Отменен администратором',
@@ -94,6 +95,8 @@ export async function notifyOrderStatusUpdated(
     order.status === 'USER_CANCELLED'
   ) {
     statusEmoji = '🚫';
+  } else if (order.status === 'ON_THE_WAY') {
+    statusEmoji = '🚚';
   } else if (order.status === 'IN_PROGRESS' || order.status === 'PENDING') {
     statusEmoji = '🔄';
   }

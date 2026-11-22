@@ -41,7 +41,7 @@ type TabType = 'all' | 'ongoing' | 'completed';
 // step 43 already shipped on mobile.
 const TAB_STATUSES: Record<TabType, UserOrderStatus[] | undefined> = {
   all: undefined,
-  ongoing: ['PENDING', 'IN_PROGRESS'],
+  ongoing: ['PENDING', 'IN_PROGRESS', 'ON_THE_WAY'],
   completed: ['COMPLETED', 'USER_CANCELLED', 'ADMIN_CANCELLED'],
 };
 

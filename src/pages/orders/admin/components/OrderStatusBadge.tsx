@@ -12,6 +12,7 @@ const statusColors: Record<
 > = {
   PENDING: 'default',
   IN_PROGRESS: 'primary',
+  ON_THE_WAY: 'primary',
   COMPLETED: 'success',
   USER_CANCELLED: 'error',
   ADMIN_CANCELLED: 'warning',
@@ -20,6 +21,7 @@ const statusColors: Record<
 const statusBgColors: Record<UserOrderStatus, string> = {
   PENDING: '#9e9e9e',
   IN_PROGRESS: '#1976d2',
+  ON_THE_WAY: '#7b1fa2',
   COMPLETED: '#2e7d32',
   USER_CANCELLED: '#d32f2f',
   ADMIN_CANCELLED: '#ed6c02',
@@ -31,6 +33,7 @@ export default function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
   const statusLabels: Record<UserOrderStatus, string> = {
     PENDING: t('pending'),
     IN_PROGRESS: t('inProgress'),
+    ON_THE_WAY: t('onTheWay'),
     COMPLETED: t('completed'),
     USER_CANCELLED: t('userCancelled'),
     ADMIN_CANCELLED: t('adminCancelled'),

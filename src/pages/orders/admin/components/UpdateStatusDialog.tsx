@@ -92,6 +92,7 @@ export default function UpdateStatusDialog({
           >
             <MenuItem value="PENDING">{t('pending')}</MenuItem>
             <MenuItem value="IN_PROGRESS">{t('inProgress')}</MenuItem>
+            <MenuItem value="ON_THE_WAY">{t('onTheWay')}</MenuItem>
             <MenuItem value="COMPLETED">{t('completed')}</MenuItem>
             <MenuItem value="USER_CANCELLED">{t('userCancelled')}</MenuItem>
             <MenuItem value="ADMIN_CANCELLED">{t('adminCancelled')}</MenuItem>

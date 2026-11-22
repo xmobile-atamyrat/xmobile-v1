@@ -436,6 +436,7 @@ export async function createNotificationForOrderStatusUpdate(
     const statusLabels: Record<UserOrderStatus, string> = {
       PENDING: 'Ожидает',
       IN_PROGRESS: 'В процессе',
+      ON_THE_WAY: 'В пути',
       COMPLETED: 'Завершен',
       USER_CANCELLED: 'Отменен',
       ADMIN_CANCELLED: 'Отменен',
