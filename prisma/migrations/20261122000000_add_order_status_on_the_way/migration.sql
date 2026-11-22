@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "UserOrderStatus" ADD VALUE 'ON_THE_WAY' AFTER 'IN_PROGRESS';
