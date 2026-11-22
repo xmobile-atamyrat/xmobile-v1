@@ -620,6 +620,7 @@ model UserOrderItem {
 enum UserOrderStatus {
   PENDING
   IN_PROGRESS
+  ON_THE_WAY
   COMPLETED
   USER_CANCELLED
   ADMIN_CANCELLED

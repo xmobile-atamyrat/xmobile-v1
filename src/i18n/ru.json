@@ -342,6 +342,7 @@
   "cancellationReason": "Причина отмены",
   "pending": "Ожидает",
   "inProgress": "В процессе",
+  "onTheWay": "В пути",
   "all": "Все",
   "completed": "Завершён",
   "userCancelled": "Отменён пользователем",

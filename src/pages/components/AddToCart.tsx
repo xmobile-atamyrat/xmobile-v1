@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchWithoutCreds, useFetchWithCreds } from '@/pages/lib/fetch';
 import {
@@ -26,7 +26,6 @@ import { debounce } from '@/pages/product/utils';
 import { addToCartClasses } from '@/styles/classMaps/components/addToCart';
 import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
 import { fontClassName } from '@/styles/theme';
-import CircularProgress from '@mui/material/CircularProgress';
 
 // The quantity field is free text, so it can briefly be empty while the user
 // retypes it. An empty field reads as 0, which is shown blank and never sent to
@@ -246,7 +245,7 @@ export default function AddToCart({
 
   return (
     <Box className={addToCartClasses.main[platform]}>
-      <Suspense fallback={<CircularProgress />}>
+      <>
         {/* cartButton */}
         {cartAction === 'add' && (
           <IconButton
@@ -404,7 +403,7 @@ export default function AddToCart({
             </Box>
           </Box>
         )}
-      </Suspense>
+      </>
 
       {/* snackbarPop-ups */}
       <Snackbar

@@ -368,6 +368,7 @@
   "cancellationReason": "İptal Nedeni",
   "pending": "Beklemede",
   "inProgress": "İşlemde",
+  "onTheWay": "Yolda",
   "all": "Tümü",
   "completed": "Tamamlandı",
   "userCancelled": "Kullanıcı Tarafından İptal Edildi",

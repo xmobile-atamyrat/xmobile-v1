@@ -82,4 +82,31 @@ describe('slack order notifications', () => {
     expect(msg).toContain('stock');
     expect(msg).toContain('note');
   });
+
+  it('notifyOrderStatusUpdated marks ON_THE_WAY with a truck and its Russian label', async () => {
+    mockGetSlack.mockReturnValue({ send: mockSend });
+    await notifyOrderStatusUpdated(
+      { ...baseOrder, status: UserOrderStatus.ON_THE_WAY },
+      UserOrderStatus.IN_PROGRESS,
+    );
+
+    const msg = mockSend.mock.calls[0][0] as string;
+    expect(msg.startsWith('🚚')).toBe(true);
+    expect(msg).toContain('*Предыдущий статус:* В процессе');
+    expect(msg).toContain('*Новый статус:* В пути');
+  });
+
+  it.each(Object.values(UserOrderStatus))(
+    'notifyOrderStatusUpdated shows %s by its Russian label, not the enum name',
+    async (status) => {
+      mockGetSlack.mockReturnValue({ send: mockSend });
+      await notifyOrderStatusUpdated(
+        { ...baseOrder, status },
+        UserOrderStatus.PENDING,
+      );
+
+      const msg = mockSend.mock.calls[0][0] as string;
+      expect(msg).not.toContain(`*Новый статус:* ${status}`);
+    },
+  );
 });

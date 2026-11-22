@@ -114,6 +114,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
 const ORDER_STATUS_KEYS: Record<string, string> = {
   PENDING: 'pending',
   IN_PROGRESS: 'inProgress',
+  ON_THE_WAY: 'onTheWay',
   COMPLETED: 'completed',
   USER_CANCELLED: 'userCancelled',
   ADMIN_CANCELLED: 'adminCancelled',

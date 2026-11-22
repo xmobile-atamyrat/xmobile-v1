@@ -1,5 +1,7 @@
+import { UserOrderStatus } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
+import en from '@/i18n/en.json';
 import {
   activitySentence,
   ActivityRow,
@@ -92,6 +94,39 @@ describe('activitySentence', () => {
       'activityOrderStatus(orderNumber=ORD-1): activityFieldStatus: pending → inProgress',
     );
   });
+
+  it('translates the on-the-way status', () => {
+    expect(
+      activitySentence(
+        row('ORDER', 'UPDATE', {
+          orderNumber: 'ORD-1',
+          kind: 'STATUS',
+          changes: { status: { from: 'IN_PROGRESS', to: 'ON_THE_WAY' } },
+        }),
+        t,
+      ),
+    ).toBe(
+      'activityOrderStatus(orderNumber=ORD-1): activityFieldStatus: inProgress → onTheWay',
+    );
+  });
+
+  it.each(Object.values(UserOrderStatus))(
+    'gives %s a translation key that exists in en.json',
+    (status) => {
+      const sentence = activitySentence(
+        row('ORDER', 'UPDATE', {
+          orderNumber: 'ORD-1',
+          kind: 'STATUS',
+          changes: { status: { from: 'PENDING', to: status } },
+        }),
+        t,
+      );
+      const label = sentence.split(' → ')[1];
+      // An unmapped status falls back to the raw enum value.
+      expect(label).not.toBe(status);
+      expect(en).toHaveProperty(label);
+    },
+  );
 
   it('picks the order head by kind and keeps the cancel reason', () => {
     expect(

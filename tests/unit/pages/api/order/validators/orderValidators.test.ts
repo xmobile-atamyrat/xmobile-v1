@@ -79,6 +79,13 @@ describe('updateOrderStatusSchema', () => {
     const r = updateOrderStatusSchema.safeParse({ status: 'INVALID' });
     expect(r.success).toBe(false);
   });
+
+  it('accepts ON_THE_WAY', () => {
+    const r = updateOrderStatusSchema.safeParse({
+      status: UserOrderStatus.ON_THE_WAY,
+    });
+    expect(r.success).toBe(true);
+  });
 });
 
 describe('updateAdminNotesSchema', () => {
@@ -113,6 +120,28 @@ describe('getOrdersQuerySchema', () => {
     });
     expect(r.status).toBe(UserOrderStatus.COMPLETED);
     expect(r.dateFrom).toBe('2024-01-01');
+  });
+
+  it('parses the ongoing tab list, ON_THE_WAY included, into an array', () => {
+    const r = getOrdersQuerySchema.parse({
+      status: 'PENDING,IN_PROGRESS,ON_THE_WAY',
+    });
+    expect(r.status).toEqual([
+      UserOrderStatus.PENDING,
+      UserOrderStatus.IN_PROGRESS,
+      UserOrderStatus.ON_THE_WAY,
+    ]);
+  });
+
+  it('accepts ON_THE_WAY on its own as a single status', () => {
+    const r = getOrdersQuerySchema.parse({ status: 'ON_THE_WAY' });
+    expect(r.status).toBe(UserOrderStatus.ON_THE_WAY);
+  });
+
+  it('rejects a list with an unknown status', () => {
+    expect(
+      getOrdersQuerySchema.safeParse({ status: 'PENDING,SHIPPED' }).success,
+    ).toBe(false);
   });
 });
 

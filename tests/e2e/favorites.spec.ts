@@ -1,4 +1,10 @@
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import {
+  test,
+  expect,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 
 import { E2E_CATALOG, E2E_VARIANT_PRODUCT } from './fixtures/catalog-slugs';
 import { signInAs } from './helpers/auth';
@@ -8,6 +14,20 @@ import { signInAs } from './helpers/auth';
  * leaves that user with no favorites.
  */
 test.describe.configure({ mode: 'serial' });
+
+/**
+ * Signs in the shared free user and clears its favorites, so a retry doesn't
+ * start from whatever a failed attempt left saved.
+ */
+async function signInWithNoFavorites(context: BrowserContext) {
+  await signInAs(context, 'free');
+  for (const productId of [E2E_CATALOG.productUuid, E2E_VARIANT_PRODUCT.uuid]) {
+    const res = await context.request.delete('/api/favorites', {
+      data: { productId },
+    });
+    expect(res.ok(), await res.text()).toBe(true);
+  }
+}
 
 const MOBILE = {
   viewport: { width: 390, height: 844 },
@@ -75,7 +95,7 @@ test.describe('Favorites on desktop', () => {
     page,
     context,
   }) => {
-    await signInAs(context, 'free');
+    await signInWithNoFavorites(context);
     await saveBothProducts(page);
     await openSignedIn(page, '/favorites');
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
@@ -100,7 +120,7 @@ test.describe('Favorites on desktop', () => {
     page,
     context,
   }) => {
-    await signInAs(context, 'free');
+    await signInWithNoFavorites(context);
     await openSignedIn(page, productPath);
 
     await tapAndSave(page, addHeart(page));
@@ -149,7 +169,7 @@ test.describe('Favorites on a phone', () => {
     page,
     context,
   }) => {
-    await signInAs(context, 'free');
+    await signInWithNoFavorites(context);
     await openSignedIn(page, productPath);
     await tapAndSave(page, addHeart(page));
 
@@ -164,7 +184,7 @@ test.describe('Favorites on a phone', () => {
   });
 
   test('the sheet filters the list once applied', async ({ page, context }) => {
-    await signInAs(context, 'free');
+    await signInWithNoFavorites(context);
     await saveBothProducts(page);
     await openSignedIn(page, '/favorites');
     await expect(page.getByText(E2E_CATALOG.productName)).toBeVisible();
