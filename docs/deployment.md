@@ -76,6 +76,42 @@ Or use `yarn start:batch-runner` if the app dir has `package.json` and `batch-ru
 
 Required env (in `.env` on the VM): `SLACK_HEALTH_BOT_WEBHOOK`, and for telekom alerts: `TELEKOM_USERNAME`, `TELEKOM_PASSWORD`, `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` (number in TMT; alert is sent when balance is below this).
 
+## Language redirect (nginx)
+
+The VM's nginx sends each visitor to their language before the request reaches Next: the switcher pick (`NEXT_LOCALE` cookie), then the browser's or phone's main language (even when the link is in another language), then the link's own language (`/en/...`). It answers with a temporary `307`, and it never redirects crawlers, link previews, API calls, Next's files or in-app navigations. GeoIP on the home page stays in Next (`src/pages/index.page.tsx`). nginx only reads the cookie and never sets it.
+
+The rules live in `scripts/prod_scripts/nginx-locale-maps.conf` and `nginx-locale-redirect.conf` and are not deployed by the workflow; copy them by hand after any change to them:
+
+```bash
+cd /home/ubuntu/xmobile-v1
+sudo cp /etc/nginx/sites-available/default ~/nginx-default.bak-$(date +%F)
+sudo cp scripts/prod_scripts/nginx-locale-maps.conf /etc/nginx/conf.d/xmobile-locale-maps.conf
+sudo cp scripts/prod_scripts/nginx-locale-redirect.conf /etc/nginx/snippets/xmobile-locale-redirect.conf
+```
+
+Then, in the HTTPS `server` block of `/etc/nginx/sites-available/default`, put this as the first line inside `location / {`:
+
+```nginx
+include /etc/nginx/snippets/xmobile-locale-redirect.conf;
+```
+
+`scripts/prod_scripts/restart-nginx.sh` copies `/home/ubuntu/xmobile-v1/nginx/default` (untracked, VM only) over that file, so add the same line there too, or the next run of the script removes it.
+
+Check and reload (a failed `nginx -t` changes nothing that is running):
+
+```bash
+sudo nginx -t && sudo nginx -s reload
+```
+
+Smoke test (expect `307` + `location: /tk`, then `200`):
+
+```bash
+curl -sI -A 'Mozilla/5.0 Chrome/131' -H 'Accept-Language: tk' https://xmobile.com.tm/ | grep -iE '^(HTTP|location)'
+curl -sI -A 'Mozilla/5.0 (compatible; Googlebot/2.1)' -H 'Accept-Language: tk' https://xmobile.com.tm/ | head -1
+```
+
+To turn it off, remove the `include` line and reload. The maps file does nothing on its own.
+
 ## Daily Backup to Drive
 
 The workflow **Daily Backup to Drive** (`.github/workflows/backup-to-drive.yml`) has **three independent jobs** that run in parallel: the DB dump, images, and script logs. If one job fails or times out (e.g. VM/network issues), the others can still succeed.
