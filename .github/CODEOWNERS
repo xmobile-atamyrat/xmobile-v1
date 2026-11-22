@@ -1,0 +1,5 @@
+# Every PR requests review from the admins team. Team code review
+# auto-assignment (org team settings) then swaps the team for one member.
+# The main ruleset requires code owner review, so one approval from this
+# team is needed to merge.
+* @xmobile-atamyrat/admins
