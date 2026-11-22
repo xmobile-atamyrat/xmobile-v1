@@ -11,6 +11,10 @@ on:
         description: 'Branch name or commit hash to deploy'
         required: true
         default: 'staging'
+      copy_prod_data:
+        description: 'Replace staging data with a fresh copy of the production catalog (no customer data)'
+        type: boolean
+        default: false
 
 env:
   TAR_DIR_ON_VM: /home/ubuntu/tar-file/staging
@@ -212,6 +216,7 @@ jobs:
         env:
           TAR_DIR_ON_VM: ${{ env.TAR_DIR_ON_VM }}
           APP_DIR_ON_VM: ${{ env.APP_DIR_ON_VM }}
+          COPY_PROD_DATA: ${{ inputs.copy_prod_data }}
         run: |
           SHORT_SHA="${{ needs.build.outputs.short_sha }}"
           TAR_NAME="xmobile-staging-${SHORT_SHA}.tar.gz"
@@ -224,6 +229,9 @@ jobs:
             rm -rf src && mv $TAR_DIR_ON_VM/app/xmobile-staging/src .
             rm -rf scripts && mv $TAR_DIR_ON_VM/app/xmobile-staging/scripts .
             rm -rf prisma && mv $TAR_DIR_ON_VM/app/xmobile-staging/prisma .
+            if [ '$COPY_PROD_DATA' = 'true' ]; then
+              $APP_DIR_ON_VM/scripts/staging_scripts/copy-prod-data.sh
+            fi
             yarn db:generate-prod
             yarn db:migrate-prod
             rm -rf node_modules && mv $TAR_DIR_ON_VM/app/xmobile-staging/node_modules .
