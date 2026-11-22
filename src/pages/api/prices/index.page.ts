@@ -1,7 +1,10 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import dbClient from '@/lib/dbClient';
 import { rateForPrice, recomputedPriceFields } from '@/lib/dollarRates';
-import { syncProductOutOfStockFromPrices } from '@/lib/outOfStock';
+import {
+  markProductsWithMissingPriceOutOfStock,
+  syncProductOutOfStockFromPrices,
+} from '@/lib/outOfStock';
 import {
   recordPriceCreated,
   recordPriceDeleted,
@@ -466,11 +469,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // Runs whether or not the FK was set: a product's `price` string still
       // carries the bracket reference after the row is gone, which is exactly
       // the dangling state its cached page needs to be rebuilt out of.
+      const affectedProductIds = [
+        deletedPrice.productId,
+        ...(await productIdsReferencingPrices([deletedPrice.id])),
+      ];
+      // Those same products now show "sold out" on the card, so the stored flag
+      // (read by the In stock filter) must follow. Runs after the sync above so
+      // the card rule wins, as it does in the daily batch.
+      await markProductsWithMissingPriceOutOfStock(affectedProductIds);
       revalidateInBackground(res, async () =>
-        productRevalidationPaths([
-          deletedPrice.productId,
-          ...(await productIdsReferencingPrices([deletedPrice.id])),
-        ]),
+        productRevalidationPaths(affectedProductIds),
       );
       return res.status(200).json({
         success: true,

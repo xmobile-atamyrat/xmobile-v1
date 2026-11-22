@@ -190,6 +190,50 @@ export function isProductPriceUnresolvable(
   });
 }
 
+/**
+ * Applies the card's sold-out rule (`isProductPriceUnresolvable`) to specific
+ * products, right after a price row was deleted, instead of waiting for the
+ * daily sync. Only ever pushes products to out of stock. Returns the number of
+ * products marked.
+ */
+export async function markProductsWithMissingPriceOutOfStock(
+  productIds: (string | null | undefined)[],
+): Promise<number> {
+  const ids = [...new Set(productIds.filter((id): id is string => id != null))];
+  if (ids.length === 0) return 0;
+
+  const products = await dbClient.product.findMany({
+    where: { id: { in: ids }, ...whereActiveProduct, outOfStockAt: null },
+    select: { id: true, price: true, tags: true },
+  });
+
+  const referenced = new Set<string>();
+  products.forEach(({ price, tags }) =>
+    referencedPriceIds(price, tags).forEach((id) => referenced.add(id)),
+  );
+  const rows =
+    referenced.size > 0
+      ? await dbClient.prices.findMany({
+          where: { id: { in: [...referenced] } },
+          select: { id: true, outOfStockAt: true },
+        })
+      : [];
+  const priceRows = new Map(rows.map((row) => [row.id, row.outOfStockAt]));
+
+  const toMark = products
+    .filter(({ price, tags }) =>
+      isProductPriceUnresolvable(price, tags, priceRows),
+    )
+    .map(({ id }) => id);
+  if (toMark.length === 0) return 0;
+
+  const { count } = await dbClient.product.updateMany({
+    where: { id: { in: toMark }, outOfStockAt: null },
+    data: { outOfStockAt: new Date() },
+  });
+  return count;
+}
+
 export interface OutOfStockSyncResult {
   markedOutOfStock: number;
   markedInStock: number;
