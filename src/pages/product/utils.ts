@@ -481,6 +481,17 @@ const cheapestSellableVariantPrice = async ({
   );
 };
 
+// Turns a stored product price ("[id]{value}", "{value}" or a bare "value")
+// into a digits-and-dot string for SEO/JSON-LD. Not parsePrice, which returns
+// a number.
+export const extractPriceValue = (
+  price: string | null | undefined,
+): string | undefined => {
+  if (price == null) return undefined;
+  const braced = price.match(curlyBracketRegex);
+  return (braced ? braced[1] : price).replace(/[^\d.]/g, '');
+};
+
 // ProductPrice has product.price = [id]{value} format. So only {value} extracted and returned.
 // If {value} doesn't exist, computePrice function is used for safety.
 //
