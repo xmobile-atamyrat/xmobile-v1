@@ -1,6 +1,7 @@
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { Prisma } from '@prisma/client';
 
 /**
  * Out-of-stock state lives on both `Product` and `Prices`, as a nullable
@@ -188,6 +189,81 @@ export function isProductPriceUnresolvable(
     const id = tag.match(squareBracketRegex)?.[1];
     return id != null && priceRows.has(id) && priceRows.get(id) == null;
   });
+}
+
+/**
+ * Products whose variant `tags` reference any of the given price ids, whether or
+ * not the price row is linked to them (`Prices.productId`).
+ *
+ * Kept out of `productIdsReferencingPrices` on purpose: that one feeds page
+ * revalidation, which only cares about the base price, and widening it would
+ * push bulk price edits over the revalidation batch cap. A tag is free text
+ * around the "[id]" (e.g. "128gb [id]"), so Prisma's array filters, which match
+ * whole elements, cannot express this; hence the raw query.
+ */
+export async function productIdsWithPriceInTags(
+  priceIds: (string | null | undefined)[],
+): Promise<string[]> {
+  const ids = [
+    ...new Set(priceIds.filter((id): id is string => id != null && id !== '')),
+  ];
+  if (ids.length === 0) return [];
+
+  const needles = ids.map((id) => `[${id}]`);
+  const rows = await dbClient.$queryRaw<{ id: string }[]>(Prisma.sql`
+    SELECT p."id"
+    FROM "Product" p
+    WHERE EXISTS (
+      SELECT 1
+      FROM unnest(p."tags") AS tag
+      CROSS JOIN unnest(ARRAY[${Prisma.join(needles)}]::text[]) AS needle
+      WHERE strpos(tag, needle) > 0
+    )`);
+  return rows.map(({ id }) => id);
+}
+
+/**
+ * Applies the card's sold-out rule (`isProductPriceUnresolvable`) to specific
+ * products, right after a price row was deleted, instead of waiting for the
+ * daily sync. Only ever pushes products to out of stock. Returns the number of
+ * products marked.
+ */
+export async function markProductsWithMissingPriceOutOfStock(
+  productIds: (string | null | undefined)[],
+): Promise<number> {
+  const ids = [...new Set(productIds.filter((id): id is string => id != null))];
+  if (ids.length === 0) return 0;
+
+  const products = await dbClient.product.findMany({
+    where: { id: { in: ids }, ...whereActiveProduct, outOfStockAt: null },
+    select: { id: true, price: true, tags: true },
+  });
+
+  const referenced = new Set<string>();
+  products.forEach(({ price, tags }) =>
+    referencedPriceIds(price, tags).forEach((id) => referenced.add(id)),
+  );
+  const rows =
+    referenced.size > 0
+      ? await dbClient.prices.findMany({
+          where: { id: { in: [...referenced] } },
+          select: { id: true, outOfStockAt: true },
+        })
+      : [];
+  const priceRows = new Map(rows.map((row) => [row.id, row.outOfStockAt]));
+
+  const toMark = products
+    .filter(({ price, tags }) =>
+      isProductPriceUnresolvable(price, tags, priceRows),
+    )
+    .map(({ id }) => id);
+  if (toMark.length === 0) return 0;
+
+  const { count } = await dbClient.product.updateMany({
+    where: { id: { in: toMark }, outOfStockAt: null },
+    data: { outOfStockAt: new Date() },
+  });
+  return count;
 }
 
 export interface OutOfStockSyncResult {

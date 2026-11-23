@@ -5,6 +5,7 @@ import {
   initialOutOfStockFields,
   isProductPriceUnresolvable,
   outOfStockCascade,
+  productIdsWithPriceInTags,
   retireLongOutOfStockProducts,
   setProductOutOfStock,
   syncAllProductsOutOfStock,
@@ -20,7 +21,9 @@ const {
   mockCartItemDeleteMany,
   mockTransaction,
   mockSyncBrandProductCount,
+  mockQueryRaw,
 } = vi.hoisted(() => ({
+  mockQueryRaw: vi.fn(),
   mockProductUpdateMany: vi.fn(),
   mockProductFindMany: vi.fn(),
   mockPricesUpdateMany: vi.fn(),
@@ -41,6 +44,7 @@ vi.mock('@/lib/dbClient', () => ({
     promoBanner: { findMany: mockBannerFindMany },
     cartItem: { deleteMany: mockCartItemDeleteMany },
     $transaction: mockTransaction,
+    $queryRaw: mockQueryRaw,
   },
 }));
 
@@ -119,6 +123,28 @@ describe('isProductPriceUnresolvable', () => {
         rows([['v1', new Date('2026-01-01')]]),
       ),
     ).toBe(true);
+  });
+});
+
+describe('productIdsWithPriceInTags', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not query for an empty id list', async () => {
+    expect(await productIdsWithPriceInTags([])).toEqual([]);
+    expect(await productIdsWithPriceInTags([null, undefined, ''])).toEqual([]);
+    expect(mockQueryRaw).not.toHaveBeenCalled();
+  });
+
+  it('returns the ids of products whose tags carry the price', async () => {
+    mockQueryRaw.mockResolvedValue([{ id: 'prod-1' }, { id: 'prod-2' }]);
+
+    expect(await productIdsWithPriceInTags(['p1', 'p1'])).toEqual([
+      'prod-1',
+      'prod-2',
+    ]);
+    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
   });
 });
 

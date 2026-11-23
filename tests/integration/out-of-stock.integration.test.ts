@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
 import { signupTestUser } from './shared/signup-test-user';
+import { createStaffPrincipal } from './shared/staff-token';
 import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
@@ -277,5 +278,146 @@ describe('Out-of-stock product API (integration)', () => {
       where: { guestSessionId },
     });
     expect(remainingCart.length).toBe(1);
+  });
+
+  describe('DELETE /api/prices', () => {
+    let adminToken: string;
+    let adminId: string;
+
+    beforeAll(async () => {
+      const admin = await createStaffPrincipal(prisma, 'ADMIN');
+      adminToken = admin.accessToken;
+      adminId = admin.userId;
+    });
+
+    afterAll(async () => {
+      await prisma.user.delete({ where: { id: adminId } });
+    });
+
+    /** A phone with `count` models: model 0 is the base price, the rest are variant tags. */
+    async function createPhoneWithModels(count: number) {
+      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const product = await prisma.product.create({
+        data: {
+          slug: `oos-del-${stamp}`,
+          name: '{"en":"Phone","tk":"Phone","ru":"Phone","ch":"Phone"}',
+          categoryId,
+          imgUrls: ['/media/integration-phone.webp'],
+          videoUrls: [],
+          tags: [],
+          price: '',
+          outOfStockAt: null,
+        },
+      });
+      const models = await Promise.all(
+        Array.from({ length: count }, (_, i) =>
+          prisma.prices.create({
+            data: {
+              name: `model-${i}`,
+              price: '1',
+              priceInTmt: '10.00',
+              productId: product.id,
+            },
+          }),
+        ),
+      );
+      await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          price: `[${models[0].id}]`,
+          tags: models.slice(1).map((model) => `Model [${model.id}]`),
+        },
+      });
+      return { productId: product.id, models };
+    }
+
+    async function deletePrice(id: string) {
+      const handler = (await import('@/pages/api/prices/index.page')).default;
+      const { req, res } = createMocks({
+        method: 'DELETE',
+        url: '/api/prices',
+        query: { id },
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      await handler(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+      expect(res._getStatusCode()).toBe(200);
+    }
+
+    it('keeps the phone in stock when one of its variant models is deleted', async () => {
+      const { productId, models } = await createPhoneWithModels(3);
+
+      await deletePrice(models[2].id);
+
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(product?.outOfStockAt).toBeNull();
+      const remaining = await prisma.prices.findMany({
+        where: { productId },
+      });
+      expect(remaining).toHaveLength(2);
+      expect(remaining.every((model) => model.outOfStockAt == null)).toBe(true);
+    });
+
+    it('keeps the phone in stock when its base model is deleted but other models are in stock', async () => {
+      const { productId, models } = await createPhoneWithModels(3);
+
+      await deletePrice(models[0].id);
+
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(product?.outOfStockAt).toBeNull();
+    });
+
+    it('marks the phone out of stock when its only model is deleted', async () => {
+      const { productId, models } = await createPhoneWithModels(1);
+
+      await deletePrice(models[0].id);
+
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(product?.outOfStockAt).not.toBeNull();
+    });
+
+    it('marks the phone out of stock when its last variant model is deleted, even if that model is not linked to the phone', async () => {
+      const { productId, models } = await createPhoneWithModels(2);
+      // Only the variant tag references models[1]; the price row has no owner.
+      await prisma.prices.update({
+        where: { id: models[1].id },
+        data: { productId: null },
+      });
+
+      await deletePrice(models[0].id);
+      const afterBase = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(afterBase?.outOfStockAt).toBeNull();
+
+      await deletePrice(models[1].id);
+      const afterLast = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(afterLast?.outOfStockAt).not.toBeNull();
+    });
+
+    it('marks the phone out of stock when its base model is deleted and the other models are sold out', async () => {
+      const { productId, models } = await createPhoneWithModels(2);
+      await prisma.prices.update({
+        where: { id: models[1].id },
+        data: { outOfStockAt: new Date() },
+      });
+
+      await deletePrice(models[0].id);
+
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(product?.outOfStockAt).not.toBeNull();
+    });
   });
 });
