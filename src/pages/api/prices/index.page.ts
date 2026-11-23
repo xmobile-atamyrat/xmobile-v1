@@ -475,8 +475,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       ];
       // Those same products now show "sold out" on the card, so the stored flag
       // (read by the In stock filter) must follow. Runs after the sync above so
-      // the card rule wins, as it does in the daily batch.
-      await markProductsWithMissingPriceOutOfStock(affectedProductIds);
+      // the card rule wins, as it does in the daily batch. The price row is
+      // already gone at this point, so a failure here must not turn the
+      // response into a 500 or skip revalidation; the nightly sync catches up.
+      try {
+        await markProductsWithMissingPriceOutOfStock(affectedProductIds);
+      } catch (error) {
+        console.error(
+          `${filepath}: failed to mark products out of stock after price delete`,
+          error,
+        );
+      }
       revalidateInBackground(res, async () =>
         productRevalidationPaths(affectedProductIds),
       );
