@@ -3,6 +3,7 @@ import dbClient from '@/lib/dbClient';
 import { rateForPrice, recomputedPriceFields } from '@/lib/dollarRates';
 import {
   markProductsWithMissingPriceOutOfStock,
+  productIdsWithPriceInTags,
   syncProductOutOfStockFromPrices,
 } from '@/lib/outOfStock';
 import {
@@ -478,8 +479,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       // the card rule wins, as it does in the daily batch. The price row is
       // already gone at this point, so a failure here must not turn the
       // response into a 500 or skip revalidation; the nightly sync catches up.
+      // Products that only reference the row through a variant tag are checked
+      // too: their link to it may be unset, so the lookups above miss them.
       try {
-        await markProductsWithMissingPriceOutOfStock(affectedProductIds);
+        await markProductsWithMissingPriceOutOfStock([
+          ...affectedProductIds,
+          ...(await productIdsWithPriceInTags([deletedPrice.id])),
+        ]);
       } catch (error) {
         console.error(
           `${filepath}: failed to mark products out of stock after price delete`,

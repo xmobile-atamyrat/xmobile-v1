@@ -384,6 +384,27 @@ describe('Out-of-stock product API (integration)', () => {
       expect(product?.outOfStockAt).not.toBeNull();
     });
 
+    it('marks the phone out of stock when its last variant model is deleted, even if that model is not linked to the phone', async () => {
+      const { productId, models } = await createPhoneWithModels(2);
+      // Only the variant tag references models[1]; the price row has no owner.
+      await prisma.prices.update({
+        where: { id: models[1].id },
+        data: { productId: null },
+      });
+
+      await deletePrice(models[0].id);
+      const afterBase = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(afterBase?.outOfStockAt).toBeNull();
+
+      await deletePrice(models[1].id);
+      const afterLast = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      expect(afterLast?.outOfStockAt).not.toBeNull();
+    });
+
     it('marks the phone out of stock when its base model is deleted and the other models are sold out', async () => {
       const { productId, models } = await createPhoneWithModels(2);
       await prisma.prices.update({
