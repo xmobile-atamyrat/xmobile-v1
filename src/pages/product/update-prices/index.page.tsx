@@ -81,6 +81,7 @@ import {
 import SelectCell from '@/pages/product/components/SelectCell';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditableText from '@/pages/product/components/EditableText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -291,11 +292,11 @@ export default function UpdatePrices() {
         rowIndex: number,
         row: any[],
       ) => {
-        if (
-          value == null ||
-          value === '' ||
-          (cellIndex !== PRICE_NAME_IDX && Number.isNaN(parseFloat(value)))
-        ) {
+        // A cleared box is just the admin mid-edit (e.g. holding Backspace):
+        // ignore it quietly. The cell restores the last value on blur.
+        if (value == null || value.trim() === '') return;
+
+        if (cellIndex !== PRICE_NAME_IDX && Number.isNaN(parseFloat(value))) {
           setSnackbarOpen(true);
           setSnackbarMessage({
             message: 'invalidPrice',
@@ -381,6 +382,9 @@ export default function UpdatePrices() {
                 ) {
                   return roundToDisplayTmt(parseFloat(value));
                 }
+                // The cell being typed in keeps what was typed, so the table
+                // data matches the screen and a re-render never reverts it.
+                if (idx === cellIndex) return value;
                 return cell;
               });
             }
@@ -819,23 +823,12 @@ export default function UpdatePrices() {
                     {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
                       <TableCell
                         className="relative"
-                        contentEditable={isEditablePriceCell(cellIndex)}
-                        suppressContentEditableWarning
+                        sx={
+                          isEditablePriceCell(cellIndex)
+                            ? { p: 0, height: '1px' }
+                            : undefined
+                        }
                         key={cellIndex}
-                        onInput={(e) => {
-                          // The out-of-stock checkbox is a real <input>, so its
-                          // native input event bubbles into this cell handler.
-                          // Letting it through submits an empty value: an
-                          // invalidPrice error on every toggle, and a price
-                          // typed within the shared debounce window is lost.
-                          if (!isEditablePriceCell(cellIndex)) return;
-                          handlePriceUpdate(
-                            e.currentTarget.textContent,
-                            cellIndex,
-                            rowIndex,
-                            row,
-                          );
-                        }}
                       >
                         {cellIndex === PRICE_NAME_IDX &&
                           hoveredPrice === rowIndex && (
@@ -850,6 +843,24 @@ export default function UpdatePrices() {
                             </IconButton>
                           )}
                         {(() => {
+                          // Only the text span is editable, never the whole
+                          // cell: see EditableText for why React must not own
+                          // the edited text.
+                          if (isEditablePriceCell(cellIndex)) {
+                            return (
+                              <EditableText
+                                value={cell as string | number | null}
+                                onTextChange={(text) =>
+                                  handlePriceUpdate(
+                                    text,
+                                    cellIndex,
+                                    rowIndex,
+                                    row,
+                                  )
+                                }
+                              />
+                            );
+                          }
                           if (cellIndex === PRICE_CATEGORY_IDX) {
                             return (
                               <SelectCell
