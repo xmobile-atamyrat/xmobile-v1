@@ -975,6 +975,7 @@
   "appInstall": "Install",
   "appScanQr": "Point your phone camera at the QR code to get the app",
   "mobileApp": "Mobile app",
+  "priceColumnName": "Name",
   "priceColumnDollars": "Dollars",
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Display",

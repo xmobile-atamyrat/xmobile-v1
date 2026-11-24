@@ -975,6 +975,7 @@
   "appInstall": "Yükle",
   "appScanQr": "Uygulamayı indirmek için telefon kameranızı QR koda tutun",
   "mobileApp": "Mobil uygulama",
+  "priceColumnName": "Ad",
   "priceColumnDollars": "Dolar",
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Gösterilen",

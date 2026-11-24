@@ -977,6 +977,7 @@
   "appInstall": "Установить",
   "appScanQr": "Наведите камеру телефона на QR-код, чтобы скачать приложение",
   "mobileApp": "Мобильное приложение",
+  "priceColumnName": "Название",
   "priceColumnDollars": "Доллары",
   "priceColumnManat": "Манат",
   "priceColumnDisplay": "Отображаемая",

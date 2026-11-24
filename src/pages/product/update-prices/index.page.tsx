@@ -97,7 +97,7 @@ const ADD_RATE_OPTION = '__add_rate__';
 
 // Translation key for each table column, in the PRICE_*_IDX order.
 const PRICE_HEADER_KEYS = [
-  'name',
+  'priceColumnName',
   'rate',
   'priceColumnDollars',
   'priceColumnManat',
