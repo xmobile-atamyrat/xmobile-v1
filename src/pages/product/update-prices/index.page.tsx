@@ -131,7 +131,6 @@ export default function UpdatePrices() {
   // without adding updatedPrices to its deps (which would re-sort mid-typing).
   const updatedPricesRef = useRef<Record<string, Partial<Prices>>>({});
   const [discardCount, setDiscardCount] = useState(0);
-  const [hoveredPrice, setHoveredPrice] = useState<number>();
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
@@ -809,20 +808,15 @@ export default function UpdatePrices() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {tableData.slice(1).map((row, rowIndex) => (
+                  {tableData.slice(1).map((row) => (
                     <TableRow
                       hover
+                      className="group"
                       // Keyed by price id so a re-sort moves each row's cells
                       // with it: an open editor stays on the price being
                       // edited. The discard counter forces a remount so
                       // discarded text never lingers in an editor.
                       key={`${discardCount}-${row[PRICE_ID_IDX] as string}`}
-                      onMouseOver={() => {
-                        setHoveredPrice(rowIndex);
-                      }}
-                      onMouseOut={() => {
-                        setHoveredPrice(undefined);
-                      }}
                     >
                       {/* The id trails every row as the edit key and is not a
                         column, so only the header's worth of cells is drawn. */}
@@ -840,18 +834,22 @@ export default function UpdatePrices() {
                           }
                           key={cellIndex}
                         >
-                          {cellIndex === PRICE_NAME_IDX &&
-                            hoveredPrice === rowIndex && (
-                              <IconButton
-                                className="absolute -left-4 top-1"
-                                onClick={() => {
-                                  setSelectedPrice(row[PRICE_ID_IDX] as string);
-                                  setShowDeleteDialog(true);
-                                }}
-                              >
-                                <DeleteIcon color="error" />
-                              </IconButton>
-                            )}
+                          {/* Shown by CSS on row hover, not by React state:
+                              a hover state re-rendered the whole table every
+                              time the pointer crossed a row, which janked
+                              wheel scrolling on long lists. */}
+                          {cellIndex === PRICE_NAME_IDX && (
+                            <IconButton
+                              disableRipple
+                              className="absolute -left-4 top-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              onClick={() => {
+                                setSelectedPrice(row[PRICE_ID_IDX] as string);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <DeleteIcon color="error" />
+                            </IconButton>
+                          )}
                           {(() => {
                             // Only the text span is editable, never the whole
                             // cell: see EditableText for why React must not
