@@ -66,6 +66,35 @@ describe('EditableText', () => {
     expect(document.activeElement).toBe(getBox());
   });
 
+  it('does not overwrite the box while the admin is typing in it', () => {
+    const { rerender } = renderCell('Flash Drive');
+
+    const box = getBox();
+    box.focus();
+    box.textContent = 'Flash Dr';
+    rerender(
+      createElement(EditableText, {
+        value: 'Another product',
+        onTextChange: vi.fn(),
+      }),
+    );
+
+    expect(box.textContent).toBe('Flash Dr');
+  });
+
+  it('shows a new value when the box is not being edited', () => {
+    const { rerender } = renderCell('Flash Drive');
+
+    rerender(
+      createElement(EditableText, {
+        value: 'Flash Drive 2',
+        onTextChange: vi.fn(),
+      }),
+    );
+
+    expect(getBox().textContent).toBe('Flash Drive 2');
+  });
+
   it('puts the last value back when left empty', () => {
     renderCell('Flash Drive');
 

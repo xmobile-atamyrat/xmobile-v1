@@ -285,116 +285,105 @@ export default function UpdatePrices() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
-    debounce(
-      (
-        value: string | null,
-        cellIndex: number,
-        rowIndex: number,
-        row: any[],
-      ) => {
-        // A cleared box is just the admin mid-edit (e.g. holding Backspace):
-        // ignore it quietly. The cell restores the last value on blur.
-        if (value == null || value.trim() === '') return;
+    debounce((value: string | null, cellIndex: number, row: any[]) => {
+      // A cleared box is just the admin mid-edit (e.g. holding Backspace):
+      // ignore it quietly. The cell restores the last value on blur.
+      if (value == null || value.trim() === '') return;
 
-        if (cellIndex !== PRICE_NAME_IDX && Number.isNaN(parseFloat(value))) {
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'invalidPrice',
-            severity: 'error',
-          });
-          return;
-        }
-
-        // Each row converts at its own rate, so a price filed under "Bazar"
-        // shows Bazar manat the moment it is typed rather than the default's.
-        const rowRate =
-          rateForPrice(
-            { dollarRateId: (row[PRICE_RATE_IDX] as number | null) ?? null },
-            rates,
-          )?.rate ?? 0;
-
-        if (
-          (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
-          !(rowRate > 0)
-        ) {
-          setSnackbarOpen(true);
-          setSnackbarMessage({
-            message: 'dollarRateNotLoaded',
-            severity: 'error',
-          });
-          return;
-        }
-
-        const priceId = row[PRICE_ID_IDX] as string;
-        const currPrice: Partial<Prices> = { id: priceId };
-
-        if (cellIndex === PRICE_MANAT_IDX) {
-          // An admin who wants a different shown price types it into the
-          // Display column instead.
-          currPrice.priceInTmt = value;
-          currPrice.displayPriceTmt = roundToDisplayTmt(
-            parseFloat(value),
-          ).toString();
-          currPrice.price = parsePrice(
-            (parseFloat(value) / rowRate).toString(),
-          ).toString();
-        } else if (cellIndex === PRICE_DOLLAR_IDX) {
-          currPrice.price = value;
-          Object.assign(currPrice, pricesFromUsd(parseFloat(value), rowRate));
-        } else if (cellIndex === PRICE_DISPLAY_IDX) {
-          // Only this field: pinning what is shown must not disturb the dollar
-          // price the business actually prices in.
-          currPrice.displayPriceTmt = value;
-        } else if (cellIndex === PRICE_NAME_IDX) {
-          currPrice.name = value;
-        }
-
-        setUpdatedPrices((prevPrices) => {
-          const next = {
-            ...prevPrices,
-            [priceId]: { ...prevPrices[priceId], ...currPrice },
-          };
-          updatedPricesRef.current = next;
-          return next;
+      if (cellIndex !== PRICE_NAME_IDX && Number.isNaN(parseFloat(value))) {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'invalidPrice',
+          severity: 'error',
         });
+        return;
+      }
 
-        setTableData((prevData) => {
-          const newData = prevData.map((prevRow, index) => {
-            if (index === rowIndex + 1) {
-              return prevRow.map((cell, idx) => {
-                if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
-                  return parsePrice(
-                    tmtFromUsd(parseFloat(value), rowRate).toString(),
-                  );
-                }
-                if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
-                  return parsePrice((parseFloat(value) / rowRate).toString());
-                }
-                if (
-                  cellIndex === PRICE_DOLLAR_IDX &&
-                  idx === PRICE_DISPLAY_IDX
-                ) {
-                  return displayTmtFromUsd(parseFloat(value), rowRate);
-                }
-                if (
-                  cellIndex === PRICE_MANAT_IDX &&
-                  idx === PRICE_DISPLAY_IDX
-                ) {
-                  return roundToDisplayTmt(parseFloat(value));
-                }
-                // The cell being typed in keeps what was typed, so the table
-                // data matches the screen and a re-render never reverts it.
-                if (idx === cellIndex) return value;
-                return cell;
-              });
-            }
-            return prevRow;
-          });
-          return newData;
+      // Each row converts at its own rate, so a price filed under "Bazar"
+      // shows Bazar manat the moment it is typed rather than the default's.
+      const rowRate =
+        rateForPrice(
+          { dollarRateId: (row[PRICE_RATE_IDX] as number | null) ?? null },
+          rates,
+        )?.rate ?? 0;
+
+      if (
+        (cellIndex === PRICE_DOLLAR_IDX || cellIndex === PRICE_MANAT_IDX) &&
+        !(rowRate > 0)
+      ) {
+        setSnackbarOpen(true);
+        setSnackbarMessage({
+          message: 'dollarRateNotLoaded',
+          severity: 'error',
         });
-      },
-      500,
-    ),
+        return;
+      }
+
+      const priceId = row[PRICE_ID_IDX] as string;
+      const currPrice: Partial<Prices> = { id: priceId };
+
+      if (cellIndex === PRICE_MANAT_IDX) {
+        // An admin who wants a different shown price types it into the
+        // Display column instead.
+        currPrice.priceInTmt = value;
+        currPrice.displayPriceTmt = roundToDisplayTmt(
+          parseFloat(value),
+        ).toString();
+        currPrice.price = parsePrice(
+          (parseFloat(value) / rowRate).toString(),
+        ).toString();
+      } else if (cellIndex === PRICE_DOLLAR_IDX) {
+        currPrice.price = value;
+        Object.assign(currPrice, pricesFromUsd(parseFloat(value), rowRate));
+      } else if (cellIndex === PRICE_DISPLAY_IDX) {
+        // Only this field: pinning what is shown must not disturb the dollar
+        // price the business actually prices in.
+        currPrice.displayPriceTmt = value;
+      } else if (cellIndex === PRICE_NAME_IDX) {
+        currPrice.name = value;
+      }
+
+      setUpdatedPrices((prevPrices) => {
+        const next = {
+          ...prevPrices,
+          [priceId]: { ...prevPrices[priceId], ...currPrice },
+        };
+        updatedPricesRef.current = next;
+        return next;
+      });
+
+      // Find the row by its price id, not its position: this runs after the
+      // debounce delay, and a re-sort or filter in that window would put a
+      // different price at the position the admin typed into.
+      setTableData((prevData) => {
+        const newData = prevData.map((prevRow, index) => {
+          if (index > 0 && prevRow[PRICE_ID_IDX] === priceId) {
+            return prevRow.map((cell, idx) => {
+              if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
+                return parsePrice(
+                  tmtFromUsd(parseFloat(value), rowRate).toString(),
+                );
+              }
+              if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DOLLAR_IDX) {
+                return parsePrice((parseFloat(value) / rowRate).toString());
+              }
+              if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_DISPLAY_IDX) {
+                return displayTmtFromUsd(parseFloat(value), rowRate);
+              }
+              if (cellIndex === PRICE_MANAT_IDX && idx === PRICE_DISPLAY_IDX) {
+                return roundToDisplayTmt(parseFloat(value));
+              }
+              // The cell being typed in keeps what was typed, so the table
+              // data matches the screen and a re-render never reverts it.
+              if (idx === cellIndex) return value;
+              return cell;
+            });
+          }
+          return prevRow;
+        });
+        return newData;
+      });
+    }, 500),
     [rates],
   );
 
@@ -810,7 +799,9 @@ export default function UpdatePrices() {
               <TableBody>
                 {tableData.slice(1).map((row, rowIndex) => (
                   <TableRow
-                    key={rowIndex}
+                    // Keyed by price id so a re-sort moves each row's cells
+                    // with it: an open editor stays on the price being edited.
+                    key={row[PRICE_ID_IDX] as string}
                     onMouseOver={() => {
                       setHoveredPrice(rowIndex);
                     }}
@@ -851,12 +842,7 @@ export default function UpdatePrices() {
                               <EditableText
                                 value={cell as string | number | null}
                                 onTextChange={(text) =>
-                                  handlePriceUpdate(
-                                    text,
-                                    cellIndex,
-                                    rowIndex,
-                                    row,
-                                  )
+                                  handlePriceUpdate(text, cellIndex, row)
                                 }
                               />
                             );

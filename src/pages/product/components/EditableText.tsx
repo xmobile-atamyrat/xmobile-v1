@@ -29,9 +29,14 @@ export default function EditableText({
   const text = value == null ? '' : String(value);
 
   useLayoutEffect(() => {
-    if (ref.current != null && ref.current.textContent !== text) {
-      ref.current.textContent = text;
-    }
+    const box = ref.current;
+    if (box == null || box.textContent === text) return;
+    // Never overwrite a box the admin is typing in. The table can re-derive
+    // mid-edit (a save, a categories refresh) before the typed value has
+    // reached the parent, and writing then would undo the typing and throw
+    // the caret to the start.
+    if (document.activeElement === box) return;
+    box.textContent = text;
   }, [text]);
 
   return (
