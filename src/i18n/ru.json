@@ -976,5 +976,10 @@
   "appInstallBarSubtitle": "В приложении удобнее",
   "appInstall": "Установить",
   "appScanQr": "Наведите камеру телефона на QR-код, чтобы скачать приложение",
-  "mobileApp": "Мобильное приложение"
+  "mobileApp": "Мобильное приложение",
+  "priceColumnDollars": "Доллары",
+  "priceColumnManat": "Манат",
+  "priceColumnDisplay": "Отображаемая",
+  "displayLowToHigh": "Отображаемая ↑",
+  "displayHighToLow": "Отображаемая ↓"
 }

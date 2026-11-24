@@ -976,5 +976,10 @@
   "appInstallBarSubtitle": "Priloženiýada has ýakşy",
   "appInstall": "Ustanowit",
   "appScanQr": "Priloženiýany skaçat etmek üçin telefonyňyzyň kamerasyny QR-koda tutuň",
-  "mobileApp": "Mobilny priloženiýa"
+  "mobileApp": "Mobilny priloženiýa",
+  "priceColumnDollars": "Dollar",
+  "priceColumnManat": "Manat",
+  "priceColumnDisplay": "Gorkaziladron",
+  "displayLowToHigh": "Gorkaziladron ↑",
+  "displayHighToLow": "Gorkaziladron ↓"
 }
