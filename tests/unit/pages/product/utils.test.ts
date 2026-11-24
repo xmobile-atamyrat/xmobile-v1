@@ -510,6 +510,20 @@ describe('debounce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(3);
   });
+
+  it('flush runs the waiting call now, and only once', () => {
+    const fn = vi.fn();
+    const d = debounce(fn, 100);
+
+    d(1);
+    d.flush();
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith(1);
+
+    vi.advanceTimersByTime(100);
+    d.flush();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── Variant tag parsing ──────────────────────────────────────────────────────
