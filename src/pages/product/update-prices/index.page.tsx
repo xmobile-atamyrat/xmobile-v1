@@ -40,6 +40,7 @@ import {
 import { findDefaultRate, rateForPrice } from '@/lib/dollarRates';
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Checkbox,
@@ -110,6 +111,12 @@ const PRICE_HEADER_KEYS = [
   'outOfStock',
   'updatedAt',
 ];
+
+// Name column layout, left to right: 8px gap, the 30px delete icon, 8px gap,
+// then the name text. The header label and every name start at the same x.
+const NAME_TEXT_START = 46;
+// Matches the padding EditableText puts around its text.
+const EDITOR_PADDING = 16;
 
 const pricesPath = (keyword: string) =>
   keyword === ''
@@ -796,9 +803,23 @@ export default function UpdatePrices() {
                     {tableData[0].map((_header, index) => (
                       <TableCell
                         key={index}
-                        sx={{ bgcolor: 'grey.100', whiteSpace: 'nowrap' }}
+                        sx={{
+                          bgcolor: 'grey.200',
+                          whiteSpace: 'nowrap',
+                          py: 1.5,
+                          borderBottom: '2px solid',
+                          borderBottomColor: alpha(
+                            theme.palette.primary.main,
+                            0.3,
+                          ),
+                          // Room for the delete icon that sits in each row's
+                          // Name cell, so the header lines up with the names.
+                          ...(index === PRICE_NAME_IDX && {
+                            pl: `${NAME_TEXT_START}px`,
+                          }),
+                        }}
                       >
-                        <Typography fontWeight={600} fontSize={14}>
+                        <Typography fontWeight={700} fontSize={15}>
                           {/* processPrices emits English labels; they are
                             translated here, where the locale is known. */}
                           {t(PRICE_HEADER_KEYS[index])}
@@ -828,6 +849,12 @@ export default function UpdatePrices() {
                               ? {
                                   p: 0,
                                   height: '1px',
+                                  // EditableText pads its own text by
+                                  // EDITOR_PADDING, so the cell only adds
+                                  // the rest of the way to the header's edge.
+                                  ...(cellIndex === PRICE_NAME_IDX && {
+                                    pl: `${NAME_TEXT_START - EDITOR_PADDING}px`,
+                                  }),
                                   '&:hover': { bgcolor: 'action.hover' },
                                 }
                               : undefined
@@ -841,7 +868,8 @@ export default function UpdatePrices() {
                           {cellIndex === PRICE_NAME_IDX && (
                             <IconButton
                               disableRipple
-                              className="absolute -left-4 top-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              size="small"
+                              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={() => {
                                 setSelectedPrice(row[PRICE_ID_IDX] as string);
                                 setShowDeleteDialog(true);
