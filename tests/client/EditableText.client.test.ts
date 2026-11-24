@@ -2,7 +2,7 @@
 
 import EditableText from '@/pages/product/components/EditableText';
 import { fireEvent, render } from '@testing-library/react';
-import { createElement } from 'react';
+import { createElement, useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 const renderCell = (value: string | number | null, onTextChange = vi.fn()) =>
@@ -104,14 +104,46 @@ describe('EditableText', () => {
     expect(getBox().textContent).toBe('Flash Drive');
   });
 
-  // Regression: the parent's copy of the value lags behind typing, so leaving
-  // a non-empty box must not revert it (this broke editing several rows).
-  it('keeps typed text when left, even if the value prop is stale', () => {
-    renderCell('Flash Drive');
+  // A parent like the update-prices page: typing is only recorded once
+  // onCommit runs, and only if `accept` says the text is valid.
+  const renderWithParent = (accept: (text: string) => boolean) => {
+    function Parent() {
+      const [value, setValue] = useState('Flash Drive');
+      const typed = useRef<string | null>(null);
+      return createElement(EditableText, {
+        value,
+        onTextChange: (text) => {
+          typed.current = text;
+        },
+        onCommit: () => {
+          if (typed.current != null && accept(typed.current)) {
+            setValue(typed.current);
+          }
+        },
+      });
+    }
+    render(createElement(Parent));
+  };
+
+  // Regression: leaving the box must not undo an edit the parent has only
+  // just recorded (this broke editing several rows).
+  it('keeps an accepted edit when left', () => {
+    renderWithParent(() => true);
 
     getBox().textContent = 'Renamed';
+    fireEvent.input(getBox());
     fireEvent.blur(getBox());
 
     expect(getBox().textContent).toBe('Renamed');
+  });
+
+  it('goes back to the real value when the edit is rejected', () => {
+    renderWithParent((text) => !Number.isNaN(parseFloat(text)));
+
+    getBox().textContent = 'abc';
+    fireEvent.input(getBox());
+    fireEvent.blur(getBox());
+
+    expect(getBox().textContent).toBe('Flash Drive');
   });
 });

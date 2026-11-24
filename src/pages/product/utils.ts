@@ -546,14 +546,23 @@ export const computeProductPrice = async ({
 
 // Use this function inside useCallBack to retain timeoutId across renders.
 // Without it, a new debounce is created each time, defining a new timeoutId to undefined
+// `flush()` runs the waiting call right away (if there is one) instead of
+// letting it wait out the delay.
 export const debounce = (func: (...args: any[]) => void, delay: number) => {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: any[]) => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
+  let timeoutId: NodeJS.Timeout | undefined;
+  let pendingArgs: any[] | undefined;
+  const run = () => {
+    const args = pendingArgs;
+    clearTimeout(timeoutId);
+    timeoutId = undefined;
+    pendingArgs = undefined;
+    if (args != null) func(...args);
   };
+  const debounced = (...args: any[]) => {
+    clearTimeout(timeoutId);
+    pendingArgs = args;
+    timeoutId = setTimeout(run, delay);
+  };
+  debounced.flush = run;
+  return debounced;
 };

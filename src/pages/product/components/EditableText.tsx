@@ -3,6 +3,8 @@ import { useLayoutEffect, useRef, useState } from 'react';
 interface EditableTextProps {
   value: string | number | null | undefined;
   onTextChange: (text: string | null) => void;
+  /** Called when the box is left: the parent records any waiting edit now. */
+  onCommit?: () => void;
 }
 
 /**
@@ -23,6 +25,7 @@ interface EditableTextProps {
 export default function EditableText({
   value,
   onTextChange,
+  onCommit,
 }: EditableTextProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState(false);
@@ -75,15 +78,16 @@ export default function EditableText({
         suppressContentEditableWarning
         onInput={(e) => onTextChange(e.currentTarget.textContent)}
         onFocus={() => setFocused(true)}
-        // Only an emptied box snaps back to the last real value when the
-        // admin leaves it, so nothing blank is left on screen. A non-empty
-        // edit is kept as typed: the parent's copy of it lags behind by a
-        // short delay, so restoring here would wrongly undo it.
+        // On leaving, the parent records the waiting edit right away, then
+        // the box shows the parent's value. An accepted edit comes straight
+        // back on the re-render this triggers (the layout effect writes it
+        // before paint, so nothing flickers). A rejected or emptied one
+        // leaves the value unchanged, so the box goes back to the real value
+        // instead of showing something that will never be saved.
         onBlur={(e) => {
           setFocused(false);
-          if ((e.currentTarget.textContent ?? '').trim() === '') {
-            e.currentTarget.textContent = text;
-          }
+          onCommit?.();
+          e.currentTarget.textContent = text;
         }}
         style={{
           flex: 1,

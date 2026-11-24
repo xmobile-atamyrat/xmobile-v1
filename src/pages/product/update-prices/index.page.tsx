@@ -844,6 +844,7 @@ export default function UpdatePrices() {
                                 onTextChange={(text) =>
                                   handlePriceUpdate(text, cellIndex, row)
                                 }
+                                onCommit={handlePriceUpdate.flush}
                               />
                             );
                           }
