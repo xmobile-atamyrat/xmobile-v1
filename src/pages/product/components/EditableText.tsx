@@ -76,6 +76,12 @@ export default function EditableText({
         ref={ref}
         contentEditable
         suppressContentEditableWarning
+        // Keep Grammarly out. It injects its own element next to any editable
+        // box, and inside a table row the browser lays that element out as an
+        // extra cell: the row shifts a column right and every column narrows.
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
         onInput={(e) => onTextChange(e.currentTarget.textContent)}
         onFocus={() => setFocused(true)}
         // On leaving, the parent records the waiting edit right away, then
