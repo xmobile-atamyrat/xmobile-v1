@@ -982,5 +982,7 @@
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Gorkaziladron",
   "displayLowToHigh": "Gorkaziladron ↑",
-  "displayHighToLow": "Gorkaziladron ↓"
+  "displayHighToLow": "Gorkaziladron ↓",
+  "unsavedChanges": "{count} sohranit edilmadik uytgashmalar",
+  "discard": "Izina et"
 }

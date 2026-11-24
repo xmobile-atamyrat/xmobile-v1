@@ -982,5 +982,7 @@
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Görkezilýän",
   "displayLowToHigh": "Görkezilýän ↑",
-  "displayHighToLow": "Görkezilýän ↓"
+  "displayHighToLow": "Görkezilýän ↓",
+  "unsavedChanges": "Ýatda saklanmadyk üýtgeşmeler: {count}",
+  "discard": "Yzyna et"
 }

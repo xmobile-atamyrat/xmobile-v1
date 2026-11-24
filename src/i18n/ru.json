@@ -982,5 +982,7 @@
   "priceColumnManat": "Манат",
   "priceColumnDisplay": "Отображаемая",
   "displayLowToHigh": "Отображаемая ↑",
-  "displayHighToLow": "Отображаемая ↓"
+  "displayHighToLow": "Отображаемая ↓",
+  "unsavedChanges": "Несохранённых изменений: {count}",
+  "discard": "Отменить"
 }
