@@ -347,7 +347,7 @@
   "adminCancelled": "Admin Cancelled",
   "allOrders": "All Orders",
   "filterOrders": "Filter Orders",
-  "clearFilters": "Clear Filters",
+  "clearFilters": "Clear filters",
   "applyFilters": "Apply Filters",
   "noOrdersFound": "No orders found",
   "selectStatus": "Select Status",
@@ -982,5 +982,6 @@
   "displayLowToHigh": "Display ↑",
   "displayHighToLow": "Display ↓",
   "unsavedChanges": "{count} unsaved changes",
-  "discard": "Discard"
+  "discard": "Discard",
+  "pricesCount": "{count} prices"
 }

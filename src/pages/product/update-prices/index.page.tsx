@@ -44,6 +44,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   FormControl,
   IconButton,
   InputLabel,
@@ -95,10 +96,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     },
   };
 };
-
-// Sentinel for the filter dropdown's "create a rate" row. Real values are
-// stringified ids, so this cannot collide with one.
-const ADD_RATE_OPTION = '__add_rate__';
 
 // Translation key for each table column, in the PRICE_*_IDX order.
 const PRICE_HEADER_KEYS = [
@@ -539,6 +536,21 @@ export default function UpdatePrices() {
 
   const pendingCount = Object.keys(updatedPrices).length;
 
+  const filtersActive =
+    searchKeyword !== '' ||
+    categoryFilter !== '' ||
+    outOfStockOnly ||
+    rateFilter !== '';
+
+  // Search runs server-side, so clearing it has to re-read the list too.
+  const handleClearFilters = () => {
+    setCategoryFilter('');
+    setOutOfStockOnly(false);
+    setRateFilter('');
+    setSearchKeyword('');
+    handleSearch('');
+  };
+
   // Edits are only ever held in updatedPrices until saved, so dropping them and
   // re-deriving the table from allPrices restores the saved values. The bumped counter
   // in the row keys also remounts every editor, so an EditableText that still
@@ -595,201 +607,222 @@ export default function UpdatePrices() {
           }}
           className="flex flex-col gap-8 w-full h-full"
         >
-          <Box className="flex flex-col w-full gap-3 max-w-[1100px]">
-            {/* Card 1: the exchange rate being edited (the filtered one, or the
-                default) */}
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-              <Box className="flex flex-row flex-wrap items-center gap-3">
-                <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                  {editingRate?.name ?? t('defaultRate')}
-                </Typography>
-                <Box className="flex flex-row items-center gap-2">
-                  <Typography color="text.secondary">$1 =</Typography>
-                  <TextField
-                    size="small"
-                    value={rateDraft}
-                    type="number"
-                    disabled={editingRate == null}
-                    onChange={(e) => setRateDraft(e.target.value)}
-                    sx={{ width: 110 }}
-                  />
-                  <Typography color="text.secondary">manat</Typography>
-                </Box>
-                <Box className="flex flex-row items-center gap-1">
-                  <Button
-                    variant="contained"
-                    size="small"
-                    disabled={
-                      editingRate == null ||
-                      !(parseFloat(rateDraft) > 0) ||
-                      parseFloat(rateDraft) === editingRate.rate
-                    }
-                    startIcon={<CheckCircleOutlineIcon />}
-                    sx={{ textTransform: 'none' }}
-                    onClick={() => setShowRateConfirm(true)}
-                  >
-                    {t('save')}
-                  </Button>
-                  {/* The default rate has no delete: every other rate falls
-                      back to it, and the server refuses to remove it. */}
-                  {editingRate != null && !editingRate.isDefault && (
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowDeleteRateDialog(true)}
-                    >
-                      <DeleteIcon color="error" />
-                    </IconButton>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
+          <Box className="flex flex-col w-full gap-3">
+            {/* Rates: picking one both filters the table to it and chooses the
+                rate the editor below changes, since they were always the same
+                thing. "All" shows every price. */}
+            <Box className="flex flex-row flex-wrap items-center gap-2">
+              <Typography fontWeight={600} color="text.secondary">
+                {t('rate')}:
+              </Typography>
+              <Chip
+                label={t('allRates')}
+                color="primary"
+                variant={rateFilter === '' ? 'filled' : 'outlined'}
+                onClick={() => setRateFilter('')}
+              />
+              {rates.map((rate) => (
+                <Chip
+                  key={rate.id}
+                  label={`${rate.name} · ${rate.rate}`}
+                  color="primary"
+                  variant={
+                    String(rate.id) === rateFilter ? 'filled' : 'outlined'
+                  }
+                  onClick={() => setRateFilter(String(rate.id))}
+                />
+              ))}
+              <Chip
+                label={`+ ${t('addRate')}`}
+                variant="outlined"
+                onClick={() => {
+                  setNewRateName('');
+                  setNewRateValue('');
+                  setShowAddRateDialog(true);
+                }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ textTransform: 'none', height: 40, ml: 'auto' }}
+                onClick={() => setShowCreatePriceDialog(true)}
+              >
+                {t('addPrice')}
+              </Button>
+            </Box>
 
-            {/* Card 2: find and narrow down prices, plus the actions that work
-                on what is left on screen */}
+            {/* The editor only appears once a rate is picked. */}
+            {selectedRate != null && (
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                <Box className="flex flex-row flex-wrap items-center gap-3">
+                  <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                    {selectedRate.name}
+                  </Typography>
+                  <Box className="flex flex-row items-center gap-2">
+                    <Typography color="text.secondary">$1 =</Typography>
+                    <TextField
+                      size="small"
+                      value={rateDraft}
+                      type="number"
+                      onChange={(e) => setRateDraft(e.target.value)}
+                      sx={{ width: 110 }}
+                    />
+                    <Typography color="text.secondary">manat</Typography>
+                  </Box>
+                  <Box className="flex flex-row items-center gap-1">
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={
+                        !(parseFloat(rateDraft) > 0) ||
+                        parseFloat(rateDraft) === selectedRate.rate
+                      }
+                      startIcon={<CheckCircleOutlineIcon />}
+                      sx={{ textTransform: 'none' }}
+                      onClick={() => setShowRateConfirm(true)}
+                    >
+                      {t('save')}
+                    </Button>
+                    {/* The default rate has no delete: every other rate falls
+                        back to it, and the server refuses to remove it. */}
+                    {!selectedRate.isDefault && (
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowDeleteRateDialog(true)}
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Search and filters in one slim bar. */}
             <Paper
               variant="outlined"
-              sx={{ p: 2, borderRadius: 2 }}
-              className="flex flex-col gap-3"
+              sx={{ p: 1.5, borderRadius: 2 }}
+              className="flex flex-row flex-wrap items-center gap-2"
             >
-              <Box className="flex flex-row flex-wrap items-center gap-2">
-                <Box className="flex-1 min-w-[220px]">
-                  <SearchBar
-                    handleSearch={handleSearch}
-                    setSearchKeyword={setSearchKeyword}
-                    searchPlaceholder={t('search')}
-                    searchKeyword={searchKeyword}
-                    width="100%"
-                  />
-                </Box>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  sx={{ textTransform: 'none', height: 40 }}
-                  onClick={() => setShowCreatePriceDialog(true)}
+              <Box className="flex-1 min-w-[220px]">
+                <SearchBar
+                  handleSearch={handleSearch}
+                  setSearchKeyword={setSearchKeyword}
+                  searchPlaceholder={t('search')}
+                  searchKeyword={searchKeyword}
+                  width="100%"
+                />
+              </Box>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>{t('category')}</InputLabel>
+                <Select
+                  label={t('category')}
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
                 >
-                  {t('addPrice')}
+                  <MenuItem value="">{t('allCategories')}</MenuItem>
+                  <MenuItem value={NO_CATEGORY_FILTER}>
+                    {t('noCategory')}
+                  </MenuItem>
+                  <MenuItem value={NO_PRODUCT_FILTER}>
+                    {t('noProduct')}
+                  </MenuItem>
+                  {categoryMenuItems(flattenedCats)}
+                </Select>
+              </FormControl>
+              <ToggleButton
+                size="small"
+                color="error"
+                value="outOfStockOnly"
+                selected={outOfStockOnly}
+                onChange={() => setOutOfStockOnly((prev) => !prev)}
+                sx={{ textTransform: 'none', lineHeight: 1.2, height: 40 }}
+              >
+                {t('outOfStockOnly')}
+              </ToggleButton>
+              <FormControl size="small" sx={{ minWidth: 170 }}>
+                <InputLabel>{t('sortBy')}</InputLabel>
+                <Select
+                  label={t('sortBy')}
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as PriceSortKey)}
+                >
+                  <MenuItem value="">{t('default')}</MenuItem>
+                  <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
+                  <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
+                  <MenuItem value="dollarAsc">{t('dollarsLowToHigh')}</MenuItem>
+                  <MenuItem value="dollarDesc">
+                    {t('dollarsHighToLow')}
+                  </MenuItem>
+                  <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
+                  <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
+                  <MenuItem value="displayAsc">
+                    {t('displayLowToHigh')}
+                  </MenuItem>
+                  <MenuItem value="displayDesc">
+                    {t('displayHighToLow')}
+                  </MenuItem>
+                  <MenuItem value="editedRecent">
+                    {t('recentlyEdited')}
+                  </MenuItem>
+                  <MenuItem value="editedStale">
+                    {t('longestNotEdited')}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Paper>
+
+            {/* How many rows the filters left, and a way out of them. Only
+                shown while something is filtered. */}
+            {filtersActive && (
+              <Box className="flex flex-row items-center gap-3">
+                <Typography color="text.secondary">
+                  {t('pricesCount', {
+                    count: Math.max(tableData.length - 1, 0),
+                  })}
+                </Typography>
+                <Button
+                  size="small"
+                  sx={{ textTransform: 'none' }}
+                  onClick={handleClearFilters}
+                >
+                  {t('clearFilters')}
                 </Button>
               </Box>
+            )}
 
-              <Box className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 items-center">
-                <FormControl size="small" fullWidth>
-                  <InputLabel>{t('sortBy')}</InputLabel>
+            {/* Acts on exactly what the filters left on screen, never the
+                whole table, and says how many that is. */}
+            {tableData.length > 1 && rates.length > 0 && (
+              <Paper
+                variant="outlined"
+                sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}
+                className="flex flex-row flex-wrap items-center gap-2"
+              >
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>{t('assignToRate')}</InputLabel>
                   <Select
-                    label={t('sortBy')}
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as PriceSortKey)}
+                    label={t('assignToRate')}
+                    value={bulkRateId}
+                    onChange={(e) => setBulkRateId(e.target.value)}
                   >
-                    <MenuItem value="">{t('default')}</MenuItem>
-                    <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
-                    <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
-                    <MenuItem value="dollarAsc">
-                      {t('dollarsLowToHigh')}
-                    </MenuItem>
-                    <MenuItem value="dollarDesc">
-                      {t('dollarsHighToLow')}
-                    </MenuItem>
-                    <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
-                    <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
-                    <MenuItem value="displayAsc">
-                      {t('displayLowToHigh')}
-                    </MenuItem>
-                    <MenuItem value="displayDesc">
-                      {t('displayHighToLow')}
-                    </MenuItem>
-                    <MenuItem value="editedRecent">
-                      {t('recentlyEdited')}
-                    </MenuItem>
-                    <MenuItem value="editedStale">
-                      {t('longestNotEdited')}
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>{t('category')}</InputLabel>
-                  <Select
-                    label={t('category')}
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                  >
-                    <MenuItem value="">{t('allCategories')}</MenuItem>
-                    <MenuItem value={NO_CATEGORY_FILTER}>
-                      {t('noCategory')}
-                    </MenuItem>
-                    <MenuItem value={NO_PRODUCT_FILTER}>
-                      {t('noProduct')}
-                    </MenuItem>
-                    {categoryMenuItems(flattenedCats)}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>{t('rate')}</InputLabel>
-                  <Select
-                    label={t('rate')}
-                    value={rateFilter}
-                    onChange={(e) => {
-                      // The create row is a command, not a filter value, so it
-                      // opens the dialog and leaves the selection alone.
-                      if (e.target.value === ADD_RATE_OPTION) {
-                        setNewRateName('');
-                        setNewRateValue('');
-                        setShowAddRateDialog(true);
-                        return;
-                      }
-                      setRateFilter(e.target.value);
-                    }}
-                  >
-                    <MenuItem value="">{t('allRates')}</MenuItem>
                     {rates.map((rate) => (
                       <MenuItem key={rate.id} value={String(rate.id)}>
                         {rate.name} ({rate.rate})
                       </MenuItem>
                     ))}
-                    <MenuItem value={ADD_RATE_OPTION}>
-                      + {t('addRate')}
-                    </MenuItem>
                   </Select>
                 </FormControl>
-                <ToggleButton
-                  size="small"
-                  color="error"
-                  value="outOfStockOnly"
-                  selected={outOfStockOnly}
-                  onChange={() => setOutOfStockOnly((prev) => !prev)}
-                  sx={{ textTransform: 'none', lineHeight: 1.2, height: 40 }}
+                <Button
+                  variant="outlined"
+                  disabled={bulkRateId === ''}
+                  sx={{ textTransform: 'none', height: 40 }}
+                  onClick={() => setShowBulkConfirm(true)}
                 >
-                  {t('outOfStockOnly')}
-                </ToggleButton>
-              </Box>
-
-              {/* Acts on exactly what the filters left on screen, never the
-                  whole table, and says how many that is. */}
-              {tableData.length > 1 && rates.length > 0 && (
-                <Box className="flex flex-row flex-wrap items-center gap-2 pt-3 border-t border-gray-200">
-                  <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel>{t('assignToRate')}</InputLabel>
-                    <Select
-                      label={t('assignToRate')}
-                      value={bulkRateId}
-                      onChange={(e) => setBulkRateId(e.target.value)}
-                    >
-                      {rates.map((rate) => (
-                        <MenuItem key={rate.id} value={String(rate.id)}>
-                          {rate.name} ({rate.rate})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Button
-                    variant="outlined"
-                    disabled={bulkRateId === ''}
-                    sx={{ textTransform: 'none', height: 40 }}
-                    onClick={() => setShowBulkConfirm(true)}
-                  >
-                    {t('assignToRate')} ({tableData.length - 1})
-                  </Button>
-                </Box>
-              )}
-            </Paper>
+                  {t('assignToRate')} ({tableData.length - 1})
+                </Button>
+              </Paper>
+            )}
           </Box>
           {tableData.length > 1 && (
             <TableContainer

@@ -349,7 +349,7 @@
   "adminCancelled": "Отменён администратором",
   "allOrders": "Все заказы",
   "filterOrders": "Фильтровать заказы",
-  "clearFilters": "Очистить фильтры",
+  "clearFilters": "Сбросить фильтры",
   "applyFilters": "Применить фильтры",
   "noOrdersFound": "Заказы не найдены",
   "selectStatus": "Выберите статус",
@@ -984,5 +984,6 @@
   "displayLowToHigh": "Отображаемая ↑",
   "displayHighToLow": "Отображаемая ↓",
   "unsavedChanges": "Несохранённых изменений: {count}",
-  "discard": "Отменить"
+  "discard": "Отменить",
+  "pricesCount": "Цен: {count}"
 }
