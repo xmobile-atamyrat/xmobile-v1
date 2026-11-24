@@ -120,6 +120,14 @@ const search = async (keyword: string) => {
   await waitFor(() => expect(screen.queryByText('Cable')).toBeNull());
 };
 
+// The page has two Save buttons: one on the exchange-rate card and one on the
+// bar that appears once the table has unsaved edits. This finds the bar's.
+const saveChangesButton = () =>
+  within(screen.getByText(/unsaved changes/).parentElement!).getByRole(
+    'button',
+    { name: 'Save' },
+  );
+
 const fillAddDialog = async () => {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'Add Price' }));
@@ -213,7 +221,7 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     const readsBeforeSave = priceReads().length;
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
     await waitFor(() => expect(sentWith('PUT')).toBeDefined());
     expect(priceReads()).toHaveLength(readsBeforeSave);
@@ -226,9 +234,16 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await renderPage();
     await search('iph');
 
-    await user.click(
-      screen.getByTestId('CheckCircleOutlineIcon').closest('button')!,
-    );
+    // The rate's Save stays disabled until the rate actually changes.
+    const rateSave = screen
+      .getByTestId('CheckCircleOutlineIcon')
+      .closest('button')!;
+    expect(rateSave).toBeDisabled();
+    await user.clear(screen.getByRole('spinbutton'));
+    await user.type(screen.getByRole('spinbutton'), '21');
+    expect(rateSave).toBeEnabled();
+
+    await user.click(rateSave);
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
     );
@@ -270,10 +285,11 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await search('iph');
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
+    // The unsaved-changes bar goes away once the save has gone through.
     await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull(),
+      expect(screen.queryByText(/unsaved changes/)).toBeNull(),
     );
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(
       true,
@@ -289,7 +305,7 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await search('iph');
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
     await waitFor(() => expect(sentWith('PUT')).toBeDefined());
     expect(sentWith('PUT')?.body.pricePairs).toEqual([
