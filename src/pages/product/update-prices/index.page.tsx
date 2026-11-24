@@ -95,6 +95,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 // stringified ids, so this cannot collide with one.
 const ADD_RATE_OPTION = '__add_rate__';
 
+// Translation key for each table column, in the PRICE_*_IDX order.
+const PRICE_HEADER_KEYS = [
+  'priceColumnName',
+  'rate',
+  'priceColumnDollars',
+  'priceColumnManat',
+  'priceColumnDisplay',
+  'category',
+  'outOfStock',
+  'updatedAt',
+];
+
 const pricesPath = (keyword: string) =>
   keyword === ''
     ? '/api/prices'
@@ -596,10 +608,12 @@ export default function UpdatePrices() {
                     </MenuItem>
                     <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
                     <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
-                    {/* Not localized, matching this table's hardcoded English
-                        column headers. */}
-                    <MenuItem value="displayAsc">Display ↑</MenuItem>
-                    <MenuItem value="displayDesc">Display ↓</MenuItem>
+                    <MenuItem value="displayAsc">
+                      {t('displayLowToHigh')}
+                    </MenuItem>
+                    <MenuItem value="displayDesc">
+                      {t('displayHighToLow')}
+                    </MenuItem>
                     <MenuItem value="editedRecent">
                       {t('recentlyEdited')}
                     </MenuItem>
@@ -778,10 +792,12 @@ export default function UpdatePrices() {
             <Table>
               <TableHead>
                 <TableRow>
-                  {tableData[0].map((header, index) => (
+                  {tableData[0].map((_header, index) => (
                     <TableCell key={index}>
                       <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                        {header}
+                        {/* processPrices emits English labels; they are
+                            translated here, where the locale is known. */}
+                        {t(PRICE_HEADER_KEYS[index])}
                       </Typography>
                     </TableCell>
                   ))}
