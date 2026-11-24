@@ -234,6 +234,9 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await renderPage();
     await search('iph');
 
+    // The rate editor only opens once a rate chip is picked.
+    await user.click(screen.getByRole('button', { name: 'Manat · 20' }));
+
     // The rate's Save stays disabled until the rate actually changes.
     const rateSave = screen
       .getByTestId('CheckCircleOutlineIcon')

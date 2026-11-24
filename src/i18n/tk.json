@@ -985,5 +985,6 @@
   "displayHighToLow": "Görkezilýän ↓",
   "unsavedChanges": "Ýatda saklanmadyk üýtgeşmeler: {count}",
   "discard": "Yzyna et",
-  "pricesCount": "Bahalar: {count}"
+  "pricesCount": "Bahalar: {count}",
+  "clearPriceFilters": "Süzgüçleri arassala"
 }

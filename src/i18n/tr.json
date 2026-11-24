@@ -375,7 +375,7 @@
   "adminCancelled": "Yönetici Tarafından İptal Edildi",
   "allOrders": "Tüm Siparişler",
   "filterOrders": "Siparişleri Filtrele",
-  "clearFilters": "Filtreleri temizle",
+  "clearFilters": "Filtreleri Temizle",
   "applyFilters": "Filtreleri Uygula",
   "noOrdersFound": "Sipariş bulunamadı",
   "selectStatus": "Durum Seç",
@@ -983,5 +983,6 @@
   "displayHighToLow": "Gösterilen ↓",
   "unsavedChanges": "{count} kaydedilmemiş değişiklik",
   "discard": "Vazgeç",
-  "pricesCount": "{count} fiyat"
+  "pricesCount": "{count} fiyat",
+  "clearPriceFilters": "Filtreleri temizle"
 }
