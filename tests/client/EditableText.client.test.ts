@@ -31,6 +31,17 @@ describe('EditableText', () => {
     expect(onTextChange).toHaveBeenCalledWith('Flash Drive 2');
   });
 
+  // Regression: Grammarly injected an element beside the box, which the table
+  // laid out as an extra cell, shifting the row and narrowing every column.
+  it('opts out of Grammarly', () => {
+    renderCell('Flash Drive');
+
+    const box = getBox();
+    expect(box.getAttribute('data-gramm')).toBe('false');
+    expect(box.getAttribute('data-gramm_editor')).toBe('false');
+    expect(box.getAttribute('data-enable-grammarly')).toBe('false');
+  });
+
   // Regression: deleting the last character makes the browser drop the text
   // node. When React owned that node, the next render threw removeChild and
   // crashed the whole page.
