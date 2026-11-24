@@ -51,6 +51,21 @@ describe('EditableText', () => {
     expect(getBox().textContent).toBe('');
   });
 
+  it('puts the caret at the end when the cell padding is pressed', () => {
+    renderCell('Flash Drive');
+
+    // The outer wrapper is the padded cell area around the text.
+    const padding = getBox().parentElement as HTMLElement;
+    fireEvent.mouseDown(padding);
+
+    const selection = window.getSelection();
+    expect(selection?.isCollapsed).toBe(true);
+    // "End of the text" is recorded as: inside the box, after its last child.
+    expect(selection?.anchorNode).toBe(getBox());
+    expect(selection?.anchorOffset).toBe(getBox().childNodes.length);
+    expect(document.activeElement).toBe(getBox());
+  });
+
   it('puts the last value back when left empty', () => {
     renderCell('Flash Drive');
 

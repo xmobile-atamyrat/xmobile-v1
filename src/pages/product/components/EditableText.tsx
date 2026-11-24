@@ -37,7 +37,23 @@ export default function EditableText({
   return (
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
-      onClick={() => ref.current?.focus()}
+      // A press on the padding (top or bottom of the cell) lands on this div,
+      // not on the text, and a plain focus() would leave the caret at the
+      // start. Send it to the end instead, which is where an admin who is
+      // about to delete or extend the value wants it. Presses on the text
+      // itself are left to the browser so a mid-word click still works.
+      onMouseDown={(e) => {
+        if (e.target !== e.currentTarget || ref.current == null) return;
+        e.preventDefault();
+        const box = ref.current;
+        box.focus();
+        const range = document.createRange();
+        range.selectNodeContents(box);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }}
       style={{
         height: '100%',
         boxSizing: 'border-box',
