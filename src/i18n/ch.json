@@ -991,5 +991,6 @@
   "refreshPrice": "Bahany obnowit et",
   "staleOrangeHint": "Minimum 1 ay tazalanmady",
   "staleRedHint": "Minimum 3 ay tazalanmady",
-  "staleOnly": "Diňa köna bahalar"
+  "staleOnly": "Diňa köna bahalar",
+  "stalePricesAttention": "Täzelenmeli bahalar bar"
 }

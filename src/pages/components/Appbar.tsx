@@ -7,6 +7,7 @@ import {
   replaceProductSearch,
 } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { LOCALE_COOKIE_NAME, SUPPORT_PHONES } from '@/pages/lib/constants';
 import { getCookie, parseName, setCookie } from '@/pages/lib/utils';
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 
 import CategoryMegaMenu from '@/pages/components/CategoryMegaMenu';
+import AttentionDot from '@/pages/components/AttentionDot';
 import CountBadge from '@/pages/components/CountBadge';
 import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
@@ -167,6 +169,8 @@ export default function CustomAppBar({
   setDeleteCategoriesModal,
 }: CustomAppBarProps) {
   const { user } = useUserContext();
+  // Staff only: the count is always 0 for everyone else.
+  const { staleCount } = useStalePrices();
   const { unreadCount } = useNotificationContext();
   const { cartCount } = useCartContext();
   const router = useRouter();
@@ -519,7 +523,12 @@ export default function CustomAppBar({
 
           <Box className={web.actions}>
             <Box className={web.account} onClick={() => router.push('/user')}>
-              <UserIcon className={web.accountIcon} />
+              <AttentionDot
+                show={staleCount > 0}
+                label={t('stalePricesAttention')}
+              >
+                <UserIcon className={web.accountIcon} />
+              </AttentionDot>
               <Box className="flex flex-col items-start">
                 <span
                   className={`${web.accountLabel} ${fontClassName.className}`}

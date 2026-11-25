@@ -989,5 +989,6 @@
   "refreshPrice": "Fiyatı güncel olarak işaretle",
   "staleOrangeHint": "Bir aydan fazla güncellenmedi",
   "staleRedHint": "3 aydan fazla güncellenmedi",
-  "staleOnly": "Sadece eski fiyatlar"
+  "staleOnly": "Sadece eski fiyatlar",
+  "stalePricesAttention": "Güncellenmesi gereken fiyatlar var"
 }

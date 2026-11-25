@@ -991,5 +991,6 @@
   "refreshPrice": "Bahany häzirki diýip belle",
   "staleOrangeHint": "1 aýdan gowrak täzelenmedi",
   "staleRedHint": "3 aýdan gowrak täzelenmedi",
-  "staleOnly": "Diňe köne bahalar"
+  "staleOnly": "Diňe köne bahalar",
+  "stalePricesAttention": "Täzelenmeli bahalar bar"
 }
