@@ -19,6 +19,8 @@ import {
   filterPricesWithoutProduct,
   foldSavedEdit,
   isEditablePriceCell,
+  isMoneyRevert,
+  mergePriceEdit,
   NO_CATEGORY_FILTER,
   NO_PRODUCT_FILTER,
   parsePrice,
@@ -31,6 +33,7 @@ import {
   PRICE_OUT_OF_STOCK_IDX,
   PRICE_RATE_IDX,
   PRICE_UPDATED_IDX,
+  PriceEdit,
   PriceSortKey,
   processPrices,
   sortPrices,
@@ -169,6 +172,10 @@ export default function UpdatePrices() {
   // The rendered `tableData` is derived from this via sort/filter below, so the
   // existing edit-by-row-index logic on `tableData` stays untouched.
   const [allPrices, setAllPrices] = useState<Prices[]>([]);
+  // Mirror of allPrices for the edit handlers, which compare each change with
+  // the saved price and are memoized too long to read the state directly.
+  const allPricesRef = useRef<Prices[]>([]);
+  allPricesRef.current = allPrices;
   const [sortKey, setSortKey] = useState<PriceSortKey>('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
@@ -302,6 +309,27 @@ export default function UpdatePrices() {
     }
   }, [hasAccessToken]);
 
+  // Records a change in the pending map, or removes it again once the price is
+  // back to its saved values.
+  const recordEdit = useCallback(
+    (priceId: string, change: PriceEdit, moneyReverted = false) => {
+      setUpdatedPrices((prevPrices) => {
+        const saved = allPricesRef.current.find((p) => p.id === priceId);
+        const edit = { id: priceId, ...change };
+        const merged =
+          saved == null
+            ? { ...prevPrices[priceId], ...edit }
+            : mergePriceEdit(saved, prevPrices[priceId], edit, moneyReverted);
+        const next = { ...prevPrices };
+        if (merged == null) delete next[priceId];
+        else next[priceId] = merged;
+        updatedPricesRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
     debounce((value: string | null, cellIndex: number, row: any[]) => {
@@ -362,14 +390,13 @@ export default function UpdatePrices() {
         currPrice.name = value;
       }
 
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], ...currPrice },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      const saved = allPricesRef.current.find((p) => p.id === priceId);
+      const moneyReverted =
+        saved != null && isMoneyRevert(saved, cellIndex, value);
+      // The saved row, to put the linked price cells back on a revert.
+      const savedRow = moneyReverted ? processPrices([saved])[1] : null;
+
+      recordEdit(priceId, currPrice, moneyReverted);
 
       // Find the row by its price id, not its position: this runs after the
       // debounce delay, and a re-sort or filter in that window would put a
@@ -378,6 +405,15 @@ export default function UpdatePrices() {
         const newData = prevData.map((prevRow, index) => {
           if (index > 0 && prevRow[PRICE_ID_IDX] === priceId) {
             return prevRow.map((cell, idx) => {
+              if (
+                savedRow != null &&
+                idx !== cellIndex &&
+                (idx === PRICE_DOLLAR_IDX ||
+                  idx === PRICE_MANAT_IDX ||
+                  idx === PRICE_DISPLAY_IDX)
+              ) {
+                return savedRow[idx];
+              }
               if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                 return parsePrice(
                   tmtFromUsd(parseFloat(value), rowRate).toString(),
@@ -411,14 +447,7 @@ export default function UpdatePrices() {
   // the Save button appear and rides along in the existing batched PUT.
   const handleCategoryChange = useCallback(
     (priceId: string, categoryId: string | null) => {
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, categoryId },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      recordEdit(priceId, { categoryId });
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
@@ -439,14 +468,7 @@ export default function UpdatePrices() {
   const handleRateChange = useCallback(
     (priceId: string, rateId: string | null) => {
       const dollarRateId = rateId == null ? null : Number(rateId);
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, dollarRateId },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      recordEdit(priceId, { dollarRateId });
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
@@ -466,14 +488,7 @@ export default function UpdatePrices() {
   // so the product column here can lag until the next load.
   const handleOutOfStockChange = useCallback(
     (priceId: string, isOutOfStock: boolean) => {
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, isOutOfStock },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      recordEdit(priceId, { isOutOfStock });
 
       setTableData((prevData) =>
         prevData.map((row, index) =>

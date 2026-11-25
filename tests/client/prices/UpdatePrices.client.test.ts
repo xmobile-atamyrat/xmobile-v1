@@ -4,7 +4,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import UpdatePrices from '@/pages/product/update-prices/index.page';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -337,6 +337,41 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     expect(sentWith('PUT')?.body.pricePairs).toEqual([
       { id: 'p2', isOutOfStock: true },
     ]);
+  });
+
+  it('drops a change that is reverted by hand', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    const [first, second] = screen.getAllByRole('checkbox');
+
+    await user.click(first);
+    await user.click(second);
+    expect(screen.getByText(/^2 unsaved changes/)).toBeTruthy();
+
+    await user.click(first);
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+
+    await user.click(second);
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+  });
+
+  it('restores the linked prices when a dollar price is typed back', async () => {
+    await renderPage();
+    const dollars = screen.getAllByText('10')[0];
+
+    dollars.textContent = '12';
+    fireEvent.input(dollars);
+    await screen.findByText(/^1 unsaved changes/);
+    expect(screen.getAllByText('240')).toHaveLength(2);
+
+    dollars.textContent = '10';
+    fireEvent.input(dollars);
+    await waitFor(() =>
+      expect(screen.queryByText(/unsaved changes/)).toBeNull(),
+    );
+    expect(screen.queryByText('240')).toBeNull();
+    // Manat and display, on both rows.
+    expect(screen.getAllByText('200')).toHaveLength(4);
   });
 
   it('does not reload the table when the access token rotates', async () => {
