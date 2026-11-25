@@ -97,8 +97,11 @@ export const notificationClasses = {
       mobile: 'text-[13px] font-semibold text-[#17161D]',
     },
     text: {
-      web: 'text-[13px] text-[#8B8A98] line-clamp-2 leading-[1.45]',
-      mobile: 'text-[12px] text-[#8B8A98] line-clamp-2 leading-[1.45]',
+      // pre-line keeps line breaks in the text (e.g. one colour per line in the
+      // stale price notification); runs of spaces still collapse.
+      web: 'text-[13px] text-[#8B8A98] line-clamp-2 leading-[1.45] whitespace-pre-line',
+      mobile:
+        'text-[12px] text-[#8B8A98] line-clamp-2 leading-[1.45] whitespace-pre-line',
     },
     time: {
       web: 'text-[11px] text-[#B6B5C2] mt-[4px]',

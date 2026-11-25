@@ -82,12 +82,12 @@ describe('price-staleness job', () => {
     expect(s).toMatchObject({ sent: 2, failed: 0, recipients: 2 });
   });
 
-  it('lists both colours with their counts', () => {
+  it('puts each colour on its own line', () => {
     expect(buildPriceStalenessContent(3, 4)).toBe(
-      'Оранжевые: 3\u2003\u2003Красные: 4',
+      'Оранжевые товары: 3\nКрасные товары: 4',
     );
     expect(buildPriceStalenessContent(0, 4)).toBe(
-      'Оранжевые: 0\u2003\u2003Красные: 4',
+      'Оранжевые товары: 0\nКрасные товары: 4',
     );
   });
 
