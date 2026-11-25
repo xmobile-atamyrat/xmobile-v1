@@ -26,6 +26,7 @@ export const PRODUCT_LISTING_PATHNAME = '/product';
 const LISTING_PATHNAMES = [
   PRODUCT_LISTING_PATHNAME,
   '/product-category/[categorySlug]',
+  '/sale',
 ];
 
 /**

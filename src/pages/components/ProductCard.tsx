@@ -73,14 +73,19 @@ export default function ProductCard({
   const cardImageSrc = productThumbnailUrl(product?.imgUrls[0]);
 
   // Quick-add from the grid can't ask which spec/color to buy, so it takes the
-  // variant priced like the card (the base price), else the first tag. Read from
-  // initialProduct: resolving the price drops the "[id]" part.
+  // first tag. A card advertising a base-price sale takes the variant at that
+  // price instead; `sale.base` also guarantees its row is in stock, which is not
+  // known for the base price otherwise. Read from initialProduct: resolving the
+  // price drops the "[id]" part.
+  const saleBasePrice = initialProduct?.sale?.base
+    ? initialProduct.price
+    : undefined;
   const defaultVariant = useMemo(() => {
-    const raw = quickAddTagOf(product?.tags, initialProduct?.price);
+    const raw = quickAddTagOf(product?.tags, saleBasePrice);
     if (raw == null) return undefined;
     const { spec, colorName } = resolveVariantDisplay(raw, colorsMap);
     return { raw, label: [spec, colorName].filter(Boolean).join(', ') };
-  }, [product?.tags, initialProduct?.price, colorsMap]);
+  }, [product?.tags, saleBasePrice, colorsMap]);
 
   useEffect(() => {
     if (initialProduct == null) return () => {};

@@ -31,9 +31,8 @@ export const basePriceIdOf = (
 ): string | undefined => price?.match(squareBracketRegex)?.[1];
 
 /**
- * The tag a quick-add buys: the one priced like the card, else the first. The
- * card shows the base price, so this keeps the cart line at the price the
- * shopper saw.
+ * The tag a quick-add buys: the one at `productPrice`'s price id, else the first.
+ * Pass the price only when that row is known to be in stock.
  */
 export const quickAddTagOf = (
   tags: string[] | null | undefined,

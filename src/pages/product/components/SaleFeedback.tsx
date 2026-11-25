@@ -52,6 +52,7 @@ export default function SaleFeedback({
       <Tooltip title={errorText} enterTouchDelay={0}>
         <ErrorOutlineIcon
           color="error"
+          titleAccess={errorText}
           sx={{ position: 'absolute', right: 4, top: 4, fontSize: 16 }}
         />
       </Tooltip>

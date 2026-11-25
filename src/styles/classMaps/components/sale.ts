@@ -1,4 +1,7 @@
 export const saleClasses = {
+  // The sale page's way on to the catalog when nothing is on sale.
+  catalogLink:
+    'mt-5 flex items-center h-11 px-6 rounded-full bg-navy text-white text-[14px] font-semibold',
   price: {
     root: {
       cardWeb: 'flex flex-col items-start gap-[3px] min-w-0',

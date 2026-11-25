@@ -128,9 +128,3 @@ export const homePageClasses = {
     priceUnit: 'text-[13px] font-normal text-muted ml-1',
   },
 };
-
-export const saleClasses = {
-  // The sale page's way on to the catalog when nothing is on sale.
-  catalogLink:
-    'mt-5 flex items-center h-11 px-6 rounded-full bg-navy text-white text-[14px] font-semibold',
-};

@@ -244,11 +244,28 @@ describe('ProductCard', () => {
     expect(screen.queryByText('1000')).not.toBeInTheDocument();
   });
 
-  it('quick-adds the variant priced like the card', async () => {
+  it('quick-adds the first variant when the base price is not on sale', async () => {
     renderCard(
       makeProduct({
         price: '[p2]{800}',
         tags: ['64gb [p1]', '128gb [p2]'],
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-to-cart')).toHaveAttribute(
+        'data-variant',
+        '64gb [p1]',
+      );
+    });
+  });
+
+  it('quick-adds the discounted base variant the card advertises', async () => {
+    renderCard(
+      makeProduct({
+        price: '[p2]{800}',
+        tags: ['64gb [p1]', '128gb [p2]'],
+        sale: { bestPercent: 20, base: { oldPrice: '1000', percent: 20 } },
       }),
     );
 

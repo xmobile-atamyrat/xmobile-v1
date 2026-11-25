@@ -19,7 +19,10 @@ import { PRODUCTS_PER_PAGE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { useFilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
-import { useSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
+import {
+  reportSaleAvailability,
+  useSaleAvailability,
+} from '@/pages/lib/hooks/useSaleAvailability';
 import {
   getListSnapshot,
   listKey,
@@ -45,7 +48,7 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
-import { saleClasses } from '@/styles/classMaps';
+import { saleClasses } from '@/styles/classMaps/components/sale';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
 import { fontClassName, red } from '@/styles/theme';
@@ -453,7 +456,17 @@ export default function ProductGridContent({
         // Total match count for the header (independent of pagination).
         fetchProductsCount(fetchProductsParams)
           .then((total) => {
-            if (isCurrent()) setTotalCount(total);
+            if (!isCurrent()) return;
+            setTotalCount(total);
+            // An unfiltered sale page knows the answer the header link needs.
+            const unfiltered =
+              !searchKeyword &&
+              effectiveCategoryIds.length === 0 &&
+              filters.brandIds.length === 0 &&
+              filters.colors.length === 0 &&
+              !filters.minPrice &&
+              !filters.maxPrice;
+            if (saleOnly && unfiltered) reportSaleAvailability(total > 0);
           })
           .catch(() => {
             if (isCurrent()) setTotalCount(null);

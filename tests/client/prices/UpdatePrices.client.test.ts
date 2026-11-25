@@ -595,11 +595,10 @@ describe('update-prices sale price', { timeout: 20_000 }, () => {
 
     expect(screen.getByTestId('ErrorOutlineIcon')).toBeTruthy();
     await save();
-    expect(
-      await screen.findByText(
-        'Sale price must be above 0 and lower than the normal price',
-      ),
-    ).toBeTruthy();
+    // The snackbar; the error icon carries the same text as its title.
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Sale price must be above 0 and lower than the normal price',
+    );
     expect(sentWith('PUT')).toBeUndefined();
     expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
   });
