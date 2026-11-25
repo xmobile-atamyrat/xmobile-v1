@@ -1,6 +1,11 @@
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  mobileAppBarHeight,
+  mobileBottomNavHeight,
+} from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
@@ -115,6 +120,11 @@ const NAME_TEXT_START = 46;
 // Matches the padding EditableText puts around its text.
 const EDITOR_PADDING = 16;
 
+// On mobile the unsaved-changes bar sits just above the fixed bottom nav, and
+// the floating chat button moves above the bar (which is at most 88px tall).
+const MOBILE_SAVE_BAR_BOTTOM = mobileBottomNavHeight + 8;
+const MOBILE_CHAT_BOTTOM_ABOVE_SAVE_BAR = MOBILE_SAVE_BAR_BOTTOM + 96;
+
 const pricesPath = (keyword: string) =>
   keyword === ''
     ? '/api/prices'
@@ -123,6 +133,7 @@ const pricesPath = (keyword: string) =>
 export default function UpdatePrices() {
   const router = useRouter();
   const theme = useTheme();
+  const platform = usePlatform();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const [tableData, setTableData] = useState<TableData>([]);
@@ -135,6 +146,7 @@ export default function UpdatePrices() {
   // without adding updatedPrices to its deps (which would re-sort mid-typing).
   const updatedPricesRef = useRef<Record<string, Partial<Prices>>>({});
   const [discardCount, setDiscardCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
@@ -563,6 +575,7 @@ export default function UpdatePrices() {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       const { success } = await fetchWithCreds<Prices[]>({
         accessToken,
@@ -592,11 +605,18 @@ export default function UpdatePrices() {
       console.error(error);
       setSnackbarOpen(true);
       setSnackbarMessage({ message: 'updatePricesError', severity: 'error' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout
+      handleHeaderBackButton={() => router.push('/')}
+      mobileChatFabBottom={
+        pendingCount > 0 ? MOBILE_CHAT_BOTTOM_ABOVE_SAVE_BAR : undefined
+      }
+    >
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Box
           sx={{
@@ -902,7 +922,10 @@ export default function UpdatePrices() {
                             <IconButton
                               disableRipple
                               size="small"
-                              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              // Unclickable while hidden, so a tap on that spot
+                              // cannot open the dialog. Devices without hover
+                              // always show it.
+                              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
                               onClick={() => {
                                 setSelectedPrice(row[PRICE_ID_IDX] as string);
                                 setShowDeleteDialog(true);
@@ -1018,28 +1041,36 @@ export default function UpdatePrices() {
               elevation={6}
               sx={{
                 position: 'sticky',
-                bottom: 16,
+                bottom: platform === 'mobile' ? MOBILE_SAVE_BAR_BOTTOM : 16,
                 zIndex: 10,
                 p: 1.5,
+                // Keeps Save clear of the floating chat button on web.
+                ...(platform === 'web' && { pr: '64px' }),
                 borderRadius: 2,
               }}
               className="flex flex-row items-center justify-between gap-3"
             >
-              <Typography fontWeight={600} color="warning.main">
+              <Typography
+                fontWeight={600}
+                fontSize={isMdUp ? 16 : 14}
+                color="warning.main"
+              >
                 {t('unsavedChanges', { count: pendingCount })}
               </Typography>
               <Box className="flex flex-row items-center gap-2">
                 <Button
                   variant="outlined"
                   color="error"
-                  sx={{ textTransform: 'none', minWidth: 120 }}
+                  sx={{ textTransform: 'none', minWidth: isMdUp ? 120 : 0 }}
+                  disabled={isSaving}
                   onClick={handleDiscard}
                 >
                   {t('discard')}
                 </Button>
                 <Button
                   variant="contained"
-                  sx={{ textTransform: 'none', minWidth: 140 }}
+                  sx={{ textTransform: 'none', minWidth: isMdUp ? 140 : 0 }}
+                  disabled={isSaving}
                   onClick={handleSave}
                 >
                   {t('save')}
@@ -1086,6 +1117,14 @@ export default function UpdatePrices() {
                     method: 'DELETE',
                   });
                   if (success) {
+                    // Forget its unsaved edit too, or the next save would
+                    // send a price that no longer exists.
+                    setUpdatedPrices((prev) => {
+                      const next = { ...prev };
+                      delete next[selectedPrice];
+                      updatedPricesRef.current = next;
+                      return next;
+                    });
                     setAllPrices((prev) =>
                       prev.filter((p) => p.id !== selectedPrice),
                     );

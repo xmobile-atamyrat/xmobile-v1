@@ -316,6 +316,29 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     ]);
   });
 
+  it('drops the unsaved edit of a deleted price from the next save', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+
+    const [first, second] = screen.getAllByRole('checkbox');
+    await user.click(first);
+    await user.click(second);
+    await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await user.click(saveChangesButton());
+
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p2', isOutOfStock: true },
+    ]);
+  });
+
   it('does not reload the table when the access token rotates', async () => {
     const { rerender } = await renderPage();
     await search('iph');
