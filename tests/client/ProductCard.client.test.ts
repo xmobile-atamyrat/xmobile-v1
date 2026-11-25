@@ -65,6 +65,7 @@ function makeProduct(
     brandId: null,
     outOfStockAt: null,
     recommendedOrder: null,
+    listingRank: null,
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
