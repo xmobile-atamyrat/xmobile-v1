@@ -41,6 +41,7 @@ import {
   tmtFromUsd,
 } from '@/pages/product/utils';
 import {
+  displayPriceOf,
   displayTmtFromUsd,
   pricesFromUsd,
   roundToDisplayTmt,
@@ -462,25 +463,78 @@ export default function UpdatePrices() {
     [],
   );
 
-  // Same discrete-event shape as a category pick. The manat figures are not
-  // recomputed here: the server re-derives them from the row's dollars when the
-  // batched PUT lands, which keeps one rule for the conversion.
+  // Same discrete-event shape as a category pick. The rate is linked to the
+  // manat and display figures, so they are re-derived from the row's dollars at
+  // the new rate right away (with pricesFromUsd, the same rule the server uses)
+  // and travel in the pending edit. A display price the admin pinned in this
+  // session, without touching dollars, is kept, as the server would.
   const handleRateChange = useCallback(
     (priceId: string, rateId: string | null) => {
       const dollarRateId = rateId == null ? null : Number(rateId);
-      recordEdit(priceId, { dollarRateId });
+      const change: PriceEdit = { dollarRateId };
+
+      const saved = allPricesRef.current.find((p) => p.id === priceId);
+      const pending = updatedPricesRef.current[priceId];
+      const newRate = rateForPrice({ dollarRateId }, rates)?.rate ?? 0;
+      const dollars = parseFloat(pending?.price ?? saved?.price ?? '');
+
+      if (saved != null && newRate > 0 && Number.isFinite(dollars)) {
+        // A pending display with no dollar change was typed by the admin,
+        // unless an earlier rate change in this session derived it.
+        const pendingRate =
+          pending != null && 'dollarRateId' in pending
+            ? rateForPrice(
+                { dollarRateId: pending.dollarRateId ?? null },
+                rates,
+              )?.rate ?? 0
+            : 0;
+        const derivedByRate =
+          pendingRate > 0 &&
+          Number(pending?.displayPriceTmt) ===
+            Number(pricesFromUsd(dollars, pendingRate).displayPriceTmt);
+        const pinnedDisplay =
+          pending?.price == null && !derivedByRate
+            ? pending?.displayPriceTmt
+            : undefined;
+        const backToSaved =
+          pending?.price == null &&
+          dollarRateId === (saved.dollarRateId ?? null);
+        // Back on the saved rate with the saved dollars: show the saved
+        // figures again rather than a fresh conversion, which could differ
+        // from what is stored.
+        const derived = backToSaved
+          ? {
+              priceInTmt: saved.priceInTmt,
+              displayPriceTmt: displayPriceOf(saved),
+            }
+          : pricesFromUsd(dollars, newRate);
+        change.priceInTmt = derived.priceInTmt;
+        change.displayPriceTmt = pinnedDisplay ?? derived.displayPriceTmt;
+      }
+
+      recordEdit(priceId, change);
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
           index > 0 && row[PRICE_ID_IDX] === priceId
-            ? row.map((cell, idx) =>
-                idx === PRICE_RATE_IDX ? dollarRateId : cell,
-              )
+            ? row.map((cell, idx) => {
+                if (idx === PRICE_RATE_IDX) return dollarRateId;
+                if (idx === PRICE_MANAT_IDX && change.priceInTmt != null) {
+                  return parsePrice(change.priceInTmt);
+                }
+                if (
+                  idx === PRICE_DISPLAY_IDX &&
+                  change.displayPriceTmt != null
+                ) {
+                  return parsePrice(change.displayPriceTmt);
+                }
+                return cell;
+              })
             : row,
         ),
       );
     },
-    [],
+    [rates, recordEdit],
   );
 
   // Same discrete-event shape again. Nothing cascades client-side: the owning

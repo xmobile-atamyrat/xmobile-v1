@@ -1091,6 +1091,36 @@ describe('reverting a pending price edit', () => {
     ).toEqual({ ...money, displayPriceTmt: '210' });
   });
 
+  it('drops the manat figures once the rate is switched back', () => {
+    expect(
+      mergePriceEdit(
+        saved,
+        {
+          id: 'p1',
+          dollarRateId: 2,
+          priceInTmt: '220',
+          displayPriceTmt: '220',
+        },
+        {
+          id: 'p1',
+          dollarRateId: 1,
+          priceInTmt: '200',
+          displayPriceTmt: '210',
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps a saved-looking manat while the dollar price is changing', () => {
+    expect(
+      mergePriceEdit(saved, money, {
+        id: 'p1',
+        price: '11',
+        priceInTmt: '200',
+      }),
+    ).toEqual({ ...money, price: '11', priceInTmt: '200' });
+  });
+
   it.each([
     [{ name: 'New' }, { name: 'iPhone' }],
     [{ categoryId: 'phones' }, { categoryId: null }],

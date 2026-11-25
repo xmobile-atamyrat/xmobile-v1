@@ -300,6 +300,16 @@ export const mergePriceEdit = (
     delete next.priceInTmt;
     delete next.displayPriceTmt;
   }
+  // A rate change carries manat figures re-derived from the dollars. Switching
+  // back to the saved rate restores the saved manat, which is no change while
+  // the dollar price itself is not changing.
+  if (
+    next.price == null &&
+    next.priceInTmt != null &&
+    Number(next.priceInTmt) === parsePrice(saved.priceInTmt)
+  ) {
+    delete next.priceInTmt;
+  }
   // While the price itself is changing, typing the old display value is a real
   // edit: it keeps the old shown price on a new dollar price.
   if (
