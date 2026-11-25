@@ -1,7 +1,11 @@
 // Database side of the stale-price warnings. The rules themselves live in
 // ./priceStaleness, which stays free of server imports so pages can use it.
 import { referencedPriceIds } from '@/lib/outOfStock';
-import { productStaleness, type ProductStaleness } from '@/lib/priceStaleness';
+import {
+  productStaleness,
+  type ProductStaleness,
+  type StaleProduct,
+} from '@/lib/priceStaleness';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import type { PrismaClient } from '@prisma/client';
 
@@ -44,19 +48,34 @@ export async function getProductStalenessMap(
   return result;
 }
 
-export async function countStaleProducts(
+/**
+ * Every in-stock active product with a stale tier, keyed by product id.
+ * Fresh products are left out, so the result stays small enough to send to
+ * an admin's browser in one response.
+ */
+export async function getStaleProducts(
   db: PrismaClient,
   now: Date = new Date(),
-): Promise<{ orange: number; red: number }> {
+): Promise<Record<string, StaleProduct>> {
   const products = await db.product.findMany({
     where: { ...whereActiveProduct, outOfStockAt: null },
     select: { id: true, price: true, tags: true },
   });
   const map = await getProductStalenessMap(db, products, now);
+  const result: Record<string, StaleProduct> = {};
+  map.forEach(({ tier, days }, id) => {
+    if (tier != null && days != null) result[id] = { tier, days };
+  });
+  return result;
+}
+
+export async function countStaleProducts(
+  db: PrismaClient,
+  now: Date = new Date(),
+): Promise<{ orange: number; red: number }> {
   const counts = { orange: 0, red: 0 };
-  map.forEach(({ tier }) => {
-    if (tier === 'red') counts.red += 1;
-    else if (tier === 'orange') counts.orange += 1;
+  Object.values(await getStaleProducts(db, now)).forEach(({ tier }) => {
+    counts[tier] += 1;
   });
   return counts;
 }

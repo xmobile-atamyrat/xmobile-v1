@@ -7,6 +7,7 @@ import {
 } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
   applyPendingEdits,
@@ -185,6 +186,7 @@ export default function UpdatePrices() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
   const { user, accessToken } = useUserContext();
+  const { refresh: refreshStalePrices } = useStalePrices();
   const { categories } = useCategoryContext();
   const fetchWithCreds = useFetchWithCreds();
   // The first load waits for a token, but must not repeat when one rotates: the
@@ -688,6 +690,8 @@ export default function UpdatePrices() {
         );
         setUpdatedPrices({});
         updatedPricesRef.current = {};
+        // Saved or refreshed prices may clear warnings on the product cards.
+        refreshStalePrices();
         setSnackbarOpen(true);
         setSnackbarMessage({ message: 'pricesUpdated', severity: 'success' });
       } else {

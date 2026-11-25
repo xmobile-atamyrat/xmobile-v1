@@ -3,6 +3,7 @@
 import ProductCard from '@/pages/components/ProductCard';
 import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { computeProductPrice } from '@/pages/product/utils';
@@ -23,6 +24,10 @@ vi.mock('@/pages/lib/UserContext', () => ({
 
 vi.mock('@/pages/lib/NetworkContext', () => ({
   useNetworkContext: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/StalePricesContext', () => ({
+  useStalePrices: vi.fn(),
 }));
 
 vi.mock('@/pages/lib/fetch', () => ({
@@ -77,6 +82,12 @@ describe('ProductCard', () => {
     });
 
     vi.mocked(useFetchWithCreds).mockReturnValue(vi.fn() as never);
+
+    vi.mocked(useStalePrices).mockReturnValue({
+      staleByProductId: {},
+      staleCount: 0,
+      refresh: vi.fn(),
+    });
 
     vi.mocked(computeProductPrice).mockImplementation(
       async ({ product }) => product,
@@ -174,6 +185,49 @@ describe('ProductCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/5\.00/)).toBeInTheDocument();
+    });
+  });
+
+  describe('stale price warning', () => {
+    function withStale(tier: 'orange' | 'red', days: number) {
+      vi.mocked(useStalePrices).mockReturnValue({
+        staleByProductId: { 'prod-1': { tier, days } },
+        staleCount: 1,
+        refresh: vi.fn(),
+      });
+    }
+
+    it('shows no badge when the product is not on the stale list', async () => {
+      renderCard(makeProduct());
+
+      await screen.findByText(/5\.00/);
+      expect(screen.queryByTestId('stale-price-badge')).not.toBeInTheDocument();
+    });
+
+    it('shows the age and the tier hint on a stale card', async () => {
+      withStale('red', 94);
+      renderCard(makeProduct());
+
+      const badge = await screen.findByTestId('stale-price-badge');
+      expect(badge).toHaveTextContent('94 d');
+      expect(badge).toHaveAccessibleName('Not updated for over 3 months: 94 d');
+      expect(badge.className).toContain('bg-[#E5484D]');
+    });
+
+    it('uses the orange colours for the orange tier', async () => {
+      withStale('orange', 40);
+      renderCard(makeProduct());
+
+      const badge = await screen.findByTestId('stale-price-badge');
+      expect(badge.className).toContain('bg-[#F59E0B]');
+    });
+
+    it('leaves a sold-out card to its out-of-stock badge', async () => {
+      withStale('red', 94);
+      renderCard(makeProduct({ outOfStockAt: new Date() }));
+
+      await screen.findByText('Out of stock');
+      expect(screen.queryByTestId('stale-price-badge')).not.toBeInTheDocument();
     });
   });
 });

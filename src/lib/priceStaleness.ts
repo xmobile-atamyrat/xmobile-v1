@@ -29,6 +29,9 @@ export function worstTier(tiers: StaleTier[]): StaleTier {
 
 export type ProductStaleness = { tier: StaleTier; days: number | null };
 
+/** A product that is stale: what the staff-only stale list holds per product. */
+export type StaleProduct = { tier: 'orange' | 'red'; days: number };
+
 /** Age of the oldest linked price; ids missing from the map are ignored. */
 export function productStaleness(
   priceIds: string[],

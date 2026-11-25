@@ -9,6 +9,7 @@ import {
 } from '@/lib/priceStaleness';
 import {
   countStaleProducts,
+  getStaleProducts,
   getProductStalenessMap,
 } from '@/lib/priceStalenessQueries';
 
@@ -155,6 +156,27 @@ describe('countStaleProducts', () => {
     expect(productFindMany).toHaveBeenCalledWith({
       where: { deletedAt: null, outOfStockAt: null },
       select: { id: true, price: true, tags: true },
+    });
+  });
+});
+
+describe('getStaleProducts', () => {
+  it('keeps only stale products, with their tier and age', async () => {
+    const { db } = makeDb(
+      [
+        { id: 'p1', price: '[a]', tags: [] },
+        { id: 'p2', price: '[b]', tags: [] },
+        { id: 'p3', price: '[c]', tags: [] },
+      ],
+      [
+        { id: 'a', priceCheckedAt: ago(40) },
+        { id: 'b', priceCheckedAt: ago(120) },
+        { id: 'c', priceCheckedAt: ago(3) },
+      ],
+    );
+    await expect(getStaleProducts(db, NOW)).resolves.toEqual({
+      p1: { tier: 'orange', days: 40 },
+      p2: { tier: 'red', days: 120 },
     });
   });
 });
