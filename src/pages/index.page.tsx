@@ -32,6 +32,7 @@ import {
 import { useBrandProducts } from '@/pages/lib/hooks/useBrandProducts';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
+import { reportSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { readSearchKeyword } from '@/pages/lib/productSearch';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -61,6 +62,7 @@ import geoip from 'geoip-lite';
 import {
   ArrowRight,
   Banknote,
+  Flame,
   Headset,
   ShieldCheck,
   Truck,
@@ -73,7 +75,7 @@ import {
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ParsedUrlQuery } from 'querystring';
 
 const web = homePageClasses.web;
@@ -86,6 +88,7 @@ const HOME_PROMO_TILES = 2;
 // going past what home had room for. Recommended's lists only the picks.
 const RECOMMENDED_LISTING_HREF = `/product?recommended=1&sortBy=${SORT_OPTIONS.RECOMMENDED}`;
 const NEWEST_LISTING_HREF = '/product';
+const SALE_LISTING_HREF = '/sale';
 // Staff only; see ProductGridContent.
 const IMAGELESS_LISTING_HREF = '/product?imageless=1';
 
@@ -228,54 +231,71 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   const brandId = brands.find((brand) => brand.id === brandParam)?.id ?? null;
   // The newest row leaves out picks so no card appears in both sections; a
   // pick past the recommended row's cap still shows in its "view all".
-  const [initialProducts, recommendedProducts, results, brandProducts] =
-    await Promise.all([
-      fetchProducts({
-        page: 1,
-        locale: productLocale,
-        inStock: true,
-        recommended: false,
-        sortBy: SORT_OPTIONS.NEWEST,
-        limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
-      }).catch((error): ExtendedProduct[] => {
-        console.error('Failed to load initial products:', error);
-        return [];
-      }),
-      fetchProducts({
-        page: 1,
-        locale: productLocale,
-        inStock: true,
-        recommended: true,
-        sortBy: SORT_OPTIONS.RECOMMENDED,
-        limit: HOME_RECOMMENDED_PRODUCTS,
-      }).catch((error): ExtendedProduct[] => {
-        console.error('Failed to load recommended products:', error);
-        return [];
-      }),
-      searchTerm
-        ? fetchProducts({
-            page: 1,
-            searchKeyword: searchTerm,
-            locale: productLocale,
-          }).catch((error): null => {
-            console.error('Failed to load search results:', error);
-            return null;
-          })
-        : null,
-      brandId
-        ? fetchProducts({
-            page: 1,
-            brandIds: [brandId],
-            inStock: true,
-            sortBy: SORT_OPTIONS.RECOMMENDED,
-            limit: HOME_RECOMMENDED_PRODUCTS,
-            locale: productLocale,
-          }).catch((error): null => {
-            console.error('Failed to load brand products:', error);
-            return null;
-          })
-        : null,
-    ]);
+  const [
+    initialProducts,
+    recommendedProducts,
+    results,
+    brandProducts,
+    saleProducts,
+  ] = await Promise.all([
+    fetchProducts({
+      page: 1,
+      locale: productLocale,
+      inStock: true,
+      recommended: false,
+      sortBy: SORT_OPTIONS.NEWEST,
+      limit: HOME_NEW_PRODUCTS + HOME_PROMO_TILES,
+    }).catch((error): ExtendedProduct[] => {
+      console.error('Failed to load initial products:', error);
+      return [];
+    }),
+    fetchProducts({
+      page: 1,
+      locale: productLocale,
+      inStock: true,
+      recommended: true,
+      sortBy: SORT_OPTIONS.RECOMMENDED,
+      limit: HOME_RECOMMENDED_PRODUCTS,
+    }).catch((error): ExtendedProduct[] => {
+      console.error('Failed to load recommended products:', error);
+      return [];
+    }),
+    searchTerm
+      ? fetchProducts({
+          page: 1,
+          searchKeyword: searchTerm,
+          locale: productLocale,
+        }).catch((error): null => {
+          console.error('Failed to load search results:', error);
+          return null;
+        })
+      : null,
+    brandId
+      ? fetchProducts({
+          page: 1,
+          brandIds: [brandId],
+          inStock: true,
+          sortBy: SORT_OPTIONS.RECOMMENDED,
+          limit: HOME_RECOMMENDED_PRODUCTS,
+          locale: productLocale,
+        }).catch((error): null => {
+          console.error('Failed to load brand products:', error);
+          return null;
+        })
+      : null,
+    // Products on sale stay in the rows below too. null (failed) is told
+    // apart from [] (nothing on sale), which hides the header's sale link.
+    fetchProducts({
+      page: 1,
+      locale: productLocale,
+      sale: true,
+      sortBy: SORT_OPTIONS.DISCOUNT,
+      limit: HOME_RECOMMENDED_PRODUCTS,
+    }).catch((error): null => {
+      console.error('Failed to load products on sale:', error);
+      return null;
+    }),
+  ]);
   const initialSearch = results ? { term: searchTerm, results } : null;
   const initialBrand =
     brandId && brandProducts ? { brandId, products: brandProducts } : null;
@@ -290,6 +310,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
       initialSearch,
       brands,
       initialBrand,
+      saleProducts,
     },
   };
 }) satisfies GetServerSideProps<{
@@ -300,6 +321,7 @@ export const getServerSideProps: GetServerSideProps = (async (context) => {
   initialSearch: { term: string; results: ExtendedProduct[] } | null;
   brands: HomeBrand[];
   initialBrand: { brandId: string; products: ExtendedProduct[] } | null;
+  saleProducts: ExtendedProduct[] | null;
 }>;
 
 /** A mobile section's title row, with its way on to the full catalog. */
@@ -322,6 +344,62 @@ function MobileSectionHead({ title, href }: { title: string; href?: string }) {
           <ArrowRight size={14} />
         </Link>
       )}
+    </Box>
+  );
+}
+
+/** The products on sale, set apart on a tinted panel. */
+function SaleSection({
+  products,
+  platform,
+}: {
+  products: Product[];
+  platform: 'web' | 'mobile';
+}) {
+  const t = useTranslations();
+  const sale = homePageClasses.sale;
+  return (
+    <Box component="section" className={sale.panel[platform]}>
+      <Box className={sale.head}>
+        <Box className={sale.icon[platform]} aria-hidden>
+          <Flame className={sale.flame} />
+        </Box>
+        <Box className="flex-1 min-w-0">
+          <Typography
+            component="h2"
+            className={`${fontClassName.className} ${sale.title[platform]}`}
+          >
+            {t('onSaleProducts')}
+          </Typography>
+          <Typography
+            className={`${fontClassName.className} ${sale.subtitle[platform]}`}
+          >
+            {t('saleHint')}
+          </Typography>
+        </Box>
+        <Link
+          href={SALE_LISTING_HREF}
+          className={`${fontClassName.className} ${sale.viewAll[platform]}`}
+        >
+          {t('viewAll')}
+          <ArrowRight size={platform === 'web' ? 16 : 14} />
+        </Link>
+      </Box>
+      <Box
+        className={
+          platform === 'web'
+            ? web.productGrid
+            : homePageClasses.newProductsBox.mobile
+        }
+      >
+        {products.map((product) => (
+          <ProductCard
+            product={product}
+            key={product.id}
+            cartProps={{ cartAction: 'add' }}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
@@ -362,6 +440,7 @@ export default function Home({
   initialSearch,
   brands,
   initialBrand,
+  saleProducts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const platform = usePlatform();
@@ -370,6 +449,12 @@ export default function Home({
   const { setProducts: setContextProducts } = useProductContext();
   const products: Product[] = initialProducts ?? [];
   const recommended: Product[] = recommendedProducts ?? [];
+  const onSale: Product[] = saleProducts ?? [];
+  // Home already knows whether anything is on sale; share it so the header
+  // needn't ask.
+  useEffect(() => {
+    if (saleProducts) reportSaleAvailability(saleProducts.length > 0);
+  }, [saleProducts]);
   // A header search on home stays on home: the results replace the banner and
   // sections, and clearing the field brings them back. The term is read from
   // home's URL (see HOME_PATHNAME), so back from a product restores them.
@@ -617,6 +702,10 @@ export default function Home({
             </Box>
           )}
 
+          {onSale.length > 0 && (
+            <SaleSection products={onSale} platform={platform} />
+          )}
+
           {/* admin-picked products, in their order — the design's
               "Recommended for you" slot (spec 1383-1390) */}
           {recommended.length > 0 && (
@@ -762,6 +851,9 @@ export default function Home({
                   <Typography>{t('noProductsFound')}</Typography>
                 )}
             </Box>
+          )}
+          {!search.isSearching && !selectedBrand && onSale.length > 0 && (
+            <SaleSection products={onSale} platform={platform} />
           )}
           {!search.isSearching && !selectedBrand && recommended.length > 0 && (
             <Box component="section" className={homePageClasses.mobileSection}>

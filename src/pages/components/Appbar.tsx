@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Flame,
   Globe,
   Heart,
   Menu as MenuIcon,
@@ -39,6 +40,7 @@ import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { switchLocale } from '@/pages/lib/switchLocale';
 import {
@@ -56,6 +58,7 @@ import InputBase from '@mui/material/InputBase';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
@@ -207,6 +210,7 @@ export default function CustomAppBar({
     { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const [menuStatus, setMenuStatus] = useState(false);
+  const saleAvailable = useSaleAvailability();
   const { categories, setSelectedCategoryId } = useCategoryContext();
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
@@ -293,28 +297,39 @@ export default function CustomAppBar({
             alt="Xmobile"
             className={appbarClasses.boxes.logo.mobile}
           />
-          {user && (
-            <>
-              <button
-                className={appbarClasses.notificationButton.mobile}
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                  setNotificationAnchorEl(e.currentTarget)
-                }
-                type="button"
-                aria-label="notifications"
+          <Box className={appbarClasses.headerActions.mobile}>
+            {saleAvailable && (
+              <Link
+                href="/sale"
+                className={`${appbarClasses.saleLink.mobile} ${fontClassName.className}`}
               >
-                <Bell size={20} className="text-[#20166E]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
-                )}
-              </button>
-              <NotificationMenu
-                anchorEl={notificationAnchorEl}
-                open={Boolean(notificationAnchorEl)}
-                onClose={() => setNotificationAnchorEl(null)}
-              />
-            </>
-          )}
+                <Flame size={18} aria-hidden />
+                {t('sale')}
+              </Link>
+            )}
+            {user && (
+              <>
+                <button
+                  className={appbarClasses.notificationButton.mobile}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                    setNotificationAnchorEl(e.currentTarget)
+                  }
+                  type="button"
+                  aria-label="notifications"
+                >
+                  <Bell size={20} className="text-[#20166E]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
+                  )}
+                </button>
+                <NotificationMenu
+                  anchorEl={notificationAnchorEl}
+                  open={Boolean(notificationAnchorEl)}
+                  onClose={() => setNotificationAnchorEl(null)}
+                />
+              </>
+            )}
+          </Box>
         </Box>
 
         {/* Search bar with filter */}
@@ -592,6 +607,20 @@ export default function CustomAppBar({
             <MenuIcon className="w-[18px] h-[18px]" />
             {t('allCategory')}
           </button>
+          {saleAvailable && (
+            <Link
+              href="/sale"
+              aria-current={router.pathname === '/sale' ? 'page' : undefined}
+              className={`${web.saleLink} ${
+                router.pathname === '/sale'
+                  ? web.saleLinkActive
+                  : web.saleLinkIdle
+              } ${fontClassName.className}`}
+            >
+              <Flame className="w-[18px] h-[18px]" aria-hidden />
+              {t('sale')}
+            </Link>
+          )}
           <Box className={web.categoryList}>
             {categories?.map((category) => (
               <button

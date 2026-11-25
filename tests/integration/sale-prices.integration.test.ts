@@ -232,7 +232,8 @@ describe('products on sale (integration)', () => {
         query: { categoryIds: categoryId, sale: '1', brandIds: 'nobody' },
       });
       expect(empty.json.data.total).toBe(0);
-      expect(empty.json.data.relaxations).toEqual({ brands: 3 });
+      // Every active filter is counted; dropping "sale" alone still finds none.
+      expect(empty.json.data.relaxations).toEqual({ brands: 3, sale: 0 });
     });
 
     it('annotates each product with its sale', async () => {

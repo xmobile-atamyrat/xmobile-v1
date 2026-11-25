@@ -14,12 +14,14 @@ const CLEARED: Record<FilterDimension, Partial<FilterState>> = {
   brands: { brandIds: [] },
   colors: { colors: [] },
   inStock: { inStock: false },
+  sale: { sale: false },
 };
 
 const LABEL_KEY: Record<FilterDimension, string> = {
   brands: 'brands',
   colors: 'color',
   inStock: 'inStockOnly',
+  sale: 'onSaleOnly',
 };
 
 interface FilterEmptyStateProps {

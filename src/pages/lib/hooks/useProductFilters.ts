@@ -11,6 +11,8 @@ export interface FilterState {
   maxPrice: string;
   sortBy: string;
   inStock: boolean;
+  /** Only products on sale. Optional: the favorites page has no such filter. */
+  sale?: boolean;
 }
 
 interface UseProductFiltersReturn {
@@ -34,8 +36,16 @@ function filtersFromQuery(
   query: NextRouter['query'],
   initialSortBy: string,
 ): FilterState {
-  const { categoryIds, brandIds, colors, minPrice, maxPrice, sortBy, inStock } =
-    query;
+  const {
+    categoryIds,
+    brandIds,
+    colors,
+    minPrice,
+    maxPrice,
+    sortBy,
+    inStock,
+    sale,
+  } = query;
 
   return {
     categoryIds: normalizeQueryStringArray(categoryIds),
@@ -45,6 +55,7 @@ function filtersFromQuery(
     maxPrice: (maxPrice as string) || '',
     sortBy: (sortBy as string) || initialSortBy,
     inStock: inStock === '1',
+    sale: sale === '1',
   };
 }
 
@@ -59,7 +70,8 @@ function sameFilters(a: FilterState, b: FilterState): boolean {
     a.minPrice === b.minPrice &&
     a.maxPrice === b.maxPrice &&
     a.sortBy === b.sortBy &&
-    a.inStock === b.inStock
+    a.inStock === b.inStock &&
+    a.sale === b.sale
   );
 }
 
@@ -88,6 +100,7 @@ export function useProductFilters(
         'maxPrice',
         'sortBy',
         'inStock',
+        'sale',
         'page',
       ];
       knownKeys.forEach((key) => delete query[key]);
@@ -117,6 +130,7 @@ export function useProductFilters(
       if (newFilters.minPrice) query.minPrice = newFilters.minPrice;
       if (newFilters.maxPrice) query.maxPrice = newFilters.maxPrice;
       if (newFilters.inStock) query.inStock = '1';
+      if (newFilters.sale) query.sale = '1';
 
       if (newFilters.sortBy && newFilters.sortBy !== initialSortBy) {
         query.sortBy = newFilters.sortBy;

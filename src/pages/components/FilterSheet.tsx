@@ -1,5 +1,6 @@
 import FilterSidebar from '@/pages/components/FilterSidebar';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { SORT_OPTIONS } from '@/pages/lib/constants';
 import {
   FilterOptions,
   FilterScope,
@@ -28,6 +29,7 @@ const noFilters: FilterState = {
   maxPrice: '',
   sortBy: '',
   inStock: false,
+  sale: false,
 };
 
 interface FilterSheetProps {
@@ -42,6 +44,10 @@ interface FilterSheetProps {
   computeOptions?: (filters: FilterState) => FilterOptions;
   /** Offer the admin-picked order among the sorts. */
   showRecommendedSort?: boolean;
+  /** See FilterSidebar. */
+  showSaleFilter?: boolean;
+  /** See FilterSidebar. */
+  saleScope?: boolean;
 }
 
 /** Mobile bottom sheet around FilterSidebar. Choices only apply on 'Apply'. */
@@ -54,10 +60,15 @@ export default function FilterSheet({
   optionsScope,
   computeOptions,
   showRecommendedSort = false,
+  showSaleFilter = false,
+  saleScope = false,
 }: FilterSheetProps) {
   const t = useTranslations();
   const { categories } = useCategoryContext();
   const [localFilters, setLocalFilters] = useState(noFilters);
+  const clearedFilters = saleScope
+    ? { ...noFilters, sortBy: SORT_OPTIONS.DISCOUNT }
+    : noFilters;
 
   useEffect(() => {
     if (open) setLocalFilters(filters);
@@ -104,7 +115,7 @@ export default function FilterSheet({
           </Typography>
           <Typography
             className={`${fontClassName.className} ${filterSidebarClasses.resetButton}`}
-            onClick={() => setLocalFilters(noFilters)}
+            onClick={() => setLocalFilters(clearedFilters)}
           >
             {t('clear') || 'Clear'}
           </Typography>
@@ -120,6 +131,9 @@ export default function FilterSheet({
             maxPrice={localFilters.maxPrice}
             sortBy={localFilters.sortBy}
             inStock={localFilters.inStock}
+            sale={localFilters.sale}
+            showSaleFilter={showSaleFilter}
+            saleScope={saleScope}
             onFilterChange={(newFilters) => {
               setLocalFilters((prev) => ({ ...prev, ...newFilters }));
             }}
@@ -132,7 +146,7 @@ export default function FilterSheet({
           <Button
             disableElevation
             className={`${fontClassName.className} ${filterSidebarClasses.clearButton}`}
-            onClick={() => setLocalFilters(noFilters)}
+            onClick={() => setLocalFilters(clearedFilters)}
           >
             {t('clear') || 'Clear'}
           </Button>

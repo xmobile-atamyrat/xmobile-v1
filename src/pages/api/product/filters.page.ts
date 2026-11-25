@@ -46,7 +46,7 @@ export default async function handler(
           ? (await getOnSaleProducts()).map(({ id }) => id)
           : undefined,
     };
-    const [where, brandWhere, colorWhere, priceWhere, stockWhere] =
+    const [where, brandWhere, colorWhere, priceWhere, stockWhere, saleWhere] =
       await Promise.all([
         buildProductWhere(query, options),
         buildProductWhere({ ...query, brandIds: undefined }, options),
@@ -59,6 +59,9 @@ export default async function handler(
           options,
         ),
         buildProductWhere({ ...query, inStock: undefined }, options),
+        query.sale === '1'
+          ? buildProductWhere({ ...query, sale: undefined }, options)
+          : null,
       ]);
     const count = (scope: Prisma.ProductWhereInput | null) =>
       scope ? dbClient.product.count({ where: scope }) : Promise.resolve(0);
@@ -118,6 +121,7 @@ export default async function handler(
         ['brands', query.brandIds != null, brandWhere],
         ['colors', query.colors != null || query.colorIds != null, colorWhere],
         ['inStock', query.inStock === '1', stockWhere],
+        ['sale', query.sale === '1', saleWhere],
       ];
       await Promise.all(
         active

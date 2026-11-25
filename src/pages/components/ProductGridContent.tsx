@@ -15,10 +15,11 @@ import {
   fetchProductsCount,
 } from '@/pages/lib/apis';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
+import { PRODUCTS_PER_PAGE, SORT_OPTIONS } from '@/pages/lib/constants';
 import { useFilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { useLoadMoreSentinel } from '@/pages/lib/hooks/useLoadMoreSentinel';
 import { useProductFilters } from '@/pages/lib/hooks/useProductFilters';
+import { useSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import {
   getListSnapshot,
   listKey,
@@ -44,9 +45,10 @@ import {
 } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
+import { saleClasses } from '@/styles/classMaps';
 import { appbarClasses } from '@/styles/classMaps/components/appbar';
 import { productIndexPageClasses } from '@/styles/classMaps/product';
-import { fontClassName } from '@/styles/theme';
+import { fontClassName, red } from '@/styles/theme';
 import {
   Alert,
   Box,
@@ -56,9 +58,16 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material';
-import { ArrowLeft, ChevronLeft, ChevronRight, SearchX } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  SearchX,
+  Tag,
+} from 'lucide-react';
 import { Product, UserRole } from '@prisma/client';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -68,6 +77,8 @@ interface ProductGridContentProps {
   categoryPath?: ExtendedCategory[];
   // Server-fetched first page so product links are in the SSR HTML, not the skeleton.
   initialProducts?: Product[];
+  // The /sale page: only products on sale, biggest discount first.
+  saleOnly?: boolean;
 }
 
 export default function ProductGridContent({
@@ -75,6 +86,7 @@ export default function ProductGridContent({
   category,
   categoryPath = [],
   initialProducts,
+  saleOnly = false,
 }: ProductGridContentProps) {
   const hasInitialProducts = (initialProducts?.length ?? 0) > 0;
   // Snapshot read once at mount so a back-nav restores the loaded list + scroll.
@@ -140,7 +152,22 @@ export default function ProductGridContent({
   const t = useTranslations();
   const platform = usePlatform();
 
-  const { filters, ready: filtersReady, setFilters } = useProductFilters();
+  const {
+    filters,
+    ready: filtersReady,
+    setFilters,
+  } = useProductFilters(saleOnly ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.NEWEST);
+  // Whether the query is limited to products on sale, by the page or the rail.
+  const saleScope = saleOnly || filters.sale || undefined;
+  // The discount sort also limits the list to products on sale, so only the
+  // sale page may use it; elsewhere a hand-made URL falls back to newest.
+  const sortBy =
+    !saleOnly && filters.sortBy === SORT_OPTIONS.DISCOUNT
+      ? SORT_OPTIONS.NEWEST
+      : filters.sortBy;
+  // The toggle hides when nothing is on sale, but stays while it is applied.
+  const saleAvailable = useSaleAvailability();
+  const showSaleFilter = !saleOnly && (saleAvailable || filters.sale);
 
   const { restoringRef } = useListRestoration(
     { products, page, hasMore, totalCount },
@@ -240,6 +267,7 @@ export default function ProductGridContent({
       maxPrice: filters.maxPrice,
       searchKeyword,
       inStock: filters.inStock,
+      sale: saleScope,
       staffToken: staffTokenRef.current,
     })
       .then((data) => {
@@ -259,6 +287,7 @@ export default function ProductGridContent({
     filters.minPrice,
     filters.maxPrice,
     filters.inStock,
+    saleScope,
   ]);
 
   // The API groups by the product's own (leaf) category; the pills show root
@@ -340,6 +369,7 @@ export default function ProductGridContent({
       searchKeyword,
       recommended: recommendedOnly || undefined,
       imageless: imagelessOnly || undefined,
+      sale: saleOnly || undefined,
       staffToken: isStaffViewer ? accessToken : undefined,
     }),
     [
@@ -347,6 +377,7 @@ export default function ProductGridContent({
       searchKeyword,
       recommendedOnly,
       imagelessOnly,
+      saleOnly,
       isStaffViewer,
       accessToken,
     ],
@@ -406,9 +437,10 @@ export default function ProductGridContent({
           colors: filters.colors,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
-          sortBy: filters.sortBy,
+          sortBy,
           locale: router.locale,
           inStock: filters.inStock,
+          sale: saleScope,
           recommended: recommendedOnly || undefined,
           imageless: imagelessOnly || undefined,
           staffToken: staffTokenRef.current,
@@ -464,6 +496,7 @@ export default function ProductGridContent({
     isStaffViewer,
     recommendedOnly,
     imagelessOnly,
+    saleOnly,
     waitForStaff,
     setProducts,
     setPrevProducts,
@@ -490,9 +523,10 @@ export default function ProductGridContent({
         colors: filters.colors,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
-        sortBy: filters.sortBy,
+        sortBy,
         locale: router.locale,
         inStock: filters.inStock,
+        sale: saleScope,
         recommended: recommendedOnly || undefined,
         imageless: imagelessOnly || undefined,
         staffToken: staffTokenRef.current,
@@ -521,7 +555,15 @@ export default function ProductGridContent({
       if (isCurrent()) setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, page, searchKeyword, filters, effectiveCategoryIds]);
+  }, [
+    isLoading,
+    hasMore,
+    page,
+    searchKeyword,
+    filters,
+    effectiveCategoryIds,
+    saleOnly,
+  ]);
 
   useLoadMoreSentinel({
     sentinelRef: loadMoreTriggerRef,
@@ -554,6 +596,8 @@ export default function ProductGridContent({
     titleText = t('imagelessProducts');
   } else if (recommendedOnly) {
     titleText = t('recommendedProducts');
+  } else if (saleOnly) {
+    titleText = t('onSaleProducts');
   }
 
   // The seeded first page keeps links in the SSR HTML until the first client
@@ -565,6 +609,18 @@ export default function ProductGridContent({
   // Real total for the current query (all pages); fall back to the loaded
   // count until the count request resolves.
   const displayCount = totalCount != null ? totalCount : products.length;
+
+  // The sale page with nothing narrowing it and a real count of zero: there is
+  // no filter to blame, so point at the catalog instead.
+  const nothingOnSale =
+    saleOnly &&
+    totalCount === 0 &&
+    !searchKeyword &&
+    effectiveCategoryIds.length === 0 &&
+    filters.brandIds.length === 0 &&
+    filters.colors.length === 0 &&
+    !filters.minPrice &&
+    !filters.maxPrice;
 
   // --- Pagination (spec 1473) ------------------------------------------
   const totalPages =
@@ -608,6 +664,8 @@ export default function ProductGridContent({
         <FilterSheet
           open={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
+          showSaleFilter={showSaleFilter}
+          saleScope={saleOnly}
           filters={filters}
           onApply={applyFilters}
           hideSections={hideSections}
@@ -646,6 +704,9 @@ export default function ProductGridContent({
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
                 inStock={filters.inStock}
+                sale={filters.sale}
+                showSaleFilter={showSaleFilter}
+                saleScope={saleOnly}
                 onFilterChange={applyFilters}
                 hideSections={hideSections}
                 options={filterOptions}
@@ -658,10 +719,12 @@ export default function ProductGridContent({
                   <ActiveFilterChips
                     filters={filters}
                     onChange={applyFilters}
+                    showSale={!saleOnly}
                   />
                   <SortDropdown
                     showRecommended
-                    value={filters.sortBy}
+                    showDiscount={saleOnly}
+                    value={sortBy}
                     onChange={(val) => applyFilters({ sortBy: val })}
                   />
                 </Box>
@@ -739,7 +802,34 @@ export default function ProductGridContent({
                 const isAdmin = ['SUPERUSER', 'ADMIN'].includes(
                   user?.grade || '',
                 );
-                if (displayProducts.length === 0 && !isAdmin) {
+                // A new product isn't on sale, so the sale page has no
+                // "add product" card.
+                const showAddCard = isAdmin && !saleOnly;
+                if (displayProducts.length === 0 && !showAddCard) {
+                  if (nothingOnSale) {
+                    return (
+                      <Box className={productIndexPageClasses.emptyState.wrap}>
+                        <Box
+                          className={
+                            productIndexPageClasses.emptyState.iconWrap
+                          }
+                        >
+                          <Tag size={28} color={red} />
+                        </Box>
+                        <Typography
+                          className={`${fontClassName.className} ${productIndexPageClasses.emptyState.title}`}
+                        >
+                          {t('noSaleProducts')}
+                        </Typography>
+                        <Link
+                          href="/product"
+                          className={`${fontClassName.className} ${saleClasses.catalogLink}`}
+                        >
+                          {t('allProducts')}
+                        </Link>
+                      </Box>
+                    );
+                  }
                   return (
                     <Box className={productIndexPageClasses.emptyState.wrap}>
                       <Box
@@ -772,7 +862,7 @@ export default function ProductGridContent({
                       productIndexPageClasses.boxes.productsGrid[platform]
                     }
                   >
-                    {isAdmin && (
+                    {showAddCard && (
                       <ProductCard
                         handleClickAddProduct={() =>
                           setAddEditProductDialog({

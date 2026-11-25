@@ -16,6 +16,8 @@ import { useEffect, useState } from 'react';
 interface ActiveFilterChipsProps {
   filters: FilterState;
   onChange: (filters: Partial<FilterState>) => void;
+  /** For listings that filter by sale; others ignore a `sale` in the URL. */
+  showSale?: boolean;
 }
 
 /**
@@ -25,6 +27,7 @@ interface ActiveFilterChipsProps {
 export default function ActiveFilterChips({
   filters,
   onChange,
+  showSale = false,
 }: ActiveFilterChipsProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -102,6 +105,14 @@ export default function ActiveFilterChips({
       key: 'in-stock',
       label: t('inStockOnly'),
       onRemove: () => onChange({ inStock: false }),
+    });
+  }
+
+  if (showSale && filters.sale) {
+    chips.push({
+      key: 'sale',
+      label: t('onSaleOnly'),
+      onRemove: () => onChange({ sale: false }),
     });
   }
 

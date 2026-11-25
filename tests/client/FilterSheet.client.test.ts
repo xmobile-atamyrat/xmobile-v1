@@ -3,7 +3,7 @@
 import FilterSheet from '@/pages/components/FilterSheet';
 import { FilterOptions } from '@/pages/lib/hooks/useFilterOptions';
 import { FilterState } from '@/pages/lib/hooks/useProductFilters';
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -74,5 +74,49 @@ describe('FilterSheet Apply button', () => {
     await renderSheet();
 
     expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+  });
+});
+
+describe('FilterSheet sale filter', () => {
+  const apply = async (
+    props: Partial<Parameters<typeof FilterSheet>[0]>,
+    ...clicks: string[]
+  ) => {
+    const onApply = vi.fn();
+    renderWithProviders(
+      createElement(FilterSheet, {
+        open: true,
+        onClose: vi.fn(),
+        filters,
+        onApply,
+        computeOptions: () => withTotal(1),
+        ...props,
+      }),
+    );
+    await act(async () => {});
+    clicks.forEach((name) =>
+      fireEvent.click(screen.getAllByText(name).at(-1) as HTMLElement),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Show 1 product' }));
+    return onApply;
+  };
+
+  it('applies the toggle only on Apply', async () => {
+    const onApply = await apply({ showSaleFilter: true }, 'On sale');
+
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({ sale: true }),
+    );
+  });
+
+  it('clears back to the discount order on the sale listing', async () => {
+    const onApply = await apply(
+      { saleScope: true, filters: { ...filters, sortBy: 'newest' } },
+      'Clear',
+    );
+
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'discount', sale: false }),
+    );
   });
 });
