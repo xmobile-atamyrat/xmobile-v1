@@ -1,5 +1,6 @@
 import { Color, Prices, Product } from '@prisma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { recomputedPriceFields } from '@/lib/dollarRates';
 
 import {
   applyPendingEdits,
@@ -12,6 +13,7 @@ import {
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  editChecksPrice,
   foldSavedEdit,
   isEditablePriceCell,
   isMoneyRevert,
@@ -88,7 +90,8 @@ describe('processPrices', () => {
         dollarRateId: 1,
         outOfStockAt: null,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-02-03T04:05:06.000Z'),
+        updatedAt: new Date('2026-05-05T00:00:00.000Z'),
+        priceCheckedAt: new Date('2026-02-03T04:05:06.000Z'),
       } as Prices,
     ];
     const table = processPrices(rows);
@@ -100,7 +103,7 @@ describe('processPrices', () => {
       'Display',
       'Category',
       'Out of stock',
-      'Updated',
+      'Checked',
     ]);
     // No displayPriceTmt stored, so Display falls back to the exact figure.
     expect(table[1]).toEqual([
@@ -139,7 +142,7 @@ describe('processPrices', () => {
         productId: null,
         dollarRateId: 1,
         outOfStockAt: new Date('2026-02-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-02-03T04:05:06.000Z'),
+        priceCheckedAt: new Date('2026-02-03T04:05:06.000Z'),
       },
     ] as Prices[]);
     expect(table[1]).toEqual([
@@ -336,6 +339,39 @@ describe('applyPendingEdits', () => {
   });
 });
 
+describe('editChecksPrice', () => {
+  const saved = { id: 'p1', price: '10', priceInTmt: '200' } as Prices;
+
+  it('counts the refresh icon and changed dollar or manat figures', () => {
+    expect(editChecksPrice(saved, { markChecked: true })).toBe(true);
+    expect(editChecksPrice(saved, { price: '11' })).toBe(true);
+    expect(editChecksPrice(saved, { priceInTmt: '210' })).toBe(true);
+  });
+
+  it('ignores renames, display-only edits, reverts and rate moves', () => {
+    expect(editChecksPrice(saved, { name: 'x' })).toBe(false);
+    expect(editChecksPrice(saved, { displayPriceTmt: '199' })).toBe(false);
+    expect(editChecksPrice(saved, { price: '10.00' })).toBe(false);
+    expect(editChecksPrice(saved, { dollarRateId: 2, priceInTmt: '230' })).toBe(
+      false,
+    );
+  });
+
+  it('judges a manat figure sent with a new rate against that rate', () => {
+    const rates = [
+      { id: 1, rate: 20, isDefault: true },
+      { id: 2, rate: 23, isDefault: false },
+    ];
+    const derived = recomputedPriceFields('10', 23)!.priceInTmt;
+    expect(
+      editChecksPrice(saved, { dollarRateId: 2, priceInTmt: derived }, rates),
+    ).toBe(false);
+    expect(
+      editChecksPrice(saved, { dollarRateId: 2, priceInTmt: '999' }, rates),
+    ).toBe(true);
+  });
+});
+
 describe('foldSavedEdit', () => {
   const base = {
     id: 'p1',
@@ -349,6 +385,7 @@ describe('foldSavedEdit', () => {
       ...base,
       name: 'iPhone 16',
       price: '12',
+      priceCheckedAt: expect.any(Date),
     });
   });
 
@@ -374,6 +411,35 @@ describe('foldSavedEdit', () => {
     expect(
       foldSavedEdit(outOfStock, { isOutOfStock: false }).outOfStockAt,
     ).toBeNull();
+  });
+
+  it('stamps a new check date when the dollar price changes', () => {
+    const old = new Date('2020-01-01T00:00:00Z');
+    const folded = foldSavedEdit(
+      { ...base, priceCheckedAt: old },
+      { price: '12' },
+    );
+    expect(folded.priceCheckedAt.getTime()).toBeGreaterThan(old.getTime());
+  });
+
+  it('stamps the check date for a markChecked edit without leaking the flag', () => {
+    const old = new Date('2020-01-01T00:00:00Z');
+    const folded = foldSavedEdit(
+      { ...base, priceCheckedAt: old },
+      { markChecked: true },
+    );
+    expect(folded.priceCheckedAt.getTime()).toBeGreaterThan(old.getTime());
+    expect(folded).not.toHaveProperty('markChecked');
+  });
+
+  it('keeps the check date on a rename or a rate-only move', () => {
+    const old = new Date('2020-01-01T00:00:00Z');
+    const withDate = { ...base, priceInTmt: '200', priceCheckedAt: old };
+    expect(foldSavedEdit(withDate, { name: 'X' }).priceCheckedAt).toBe(old);
+    expect(
+      foldSavedEdit(withDate, { dollarRateId: 2, priceInTmt: '250' })
+        .priceCheckedAt,
+    ).toBe(old);
   });
 
   it('leaves stock alone when the edit does not touch it', () => {
@@ -915,6 +981,44 @@ describe('isEditablePriceCell', () => {
   });
 });
 
+describe('sortPrices by price check date', () => {
+  const row = (id: string, name: string, checked: string): Prices =>
+    ({
+      id,
+      name,
+      price: '1',
+      priceInTmt: '1',
+      // updatedAt deliberately disagrees: it must not drive the sort.
+      updatedAt: new Date('2026-06-01T00:00:00Z'),
+      priceCheckedAt: new Date(checked),
+    }) as Prices;
+
+  const rows = [
+    row('a', 'Beta', '2026-03-01T00:00:00Z'),
+    row('b', 'Alpha', '2026-01-01T00:00:00Z'),
+    row('c', 'Zeta', '2026-03-01T00:00:00Z'),
+    row('d', 'Delta', '2026-05-01T00:00:00Z'),
+  ];
+
+  it('puts the longest-unchecked first, breaking ties by name', () => {
+    expect(sortPrices(rows, 'editedStale').map((p) => p.id)).toEqual([
+      'b',
+      'a',
+      'c',
+      'd',
+    ]);
+  });
+
+  it('puts the most recently checked first, breaking ties by name', () => {
+    expect(sortPrices(rows, 'editedRecent').map((p) => p.id)).toEqual([
+      'd',
+      'a',
+      'c',
+      'b',
+    ]);
+  });
+});
+
 describe('sortPrices by displayed price', () => {
   const row = (id: string, tmt: string, display: string | null): Prices =>
     ({
@@ -981,7 +1085,7 @@ describe('the Rate column', () => {
       'Display',
       'Category',
       'Out of stock',
-      'Updated',
+      'Checked',
     ]);
     expect(table[1][PRICE_RATE_IDX]).toBe(7);
   });

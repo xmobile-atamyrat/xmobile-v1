@@ -20,6 +20,8 @@ const product = (
   updatedAt: '2026-01-01T00:00:00.000Z',
   basePriceTmt: '4200',
   basePriceIssue: null,
+  staleTier: null,
+  staleDays: null,
   ...over,
 });
 
@@ -30,6 +32,7 @@ const noFilters = {
   recommendedOnly: false,
   brandId: '',
   missingPriceOnly: false,
+  staleOnly: false,
   locale: 'en',
 };
 
@@ -123,6 +126,36 @@ describe('filterOverviewProducts', () => {
     expect(result.map(({ id }) => id)).toEqual(['b', 'c']);
   });
 
+  it('keeps only products with a stale-price tier when staleOnly is on', () => {
+    const fresh = product({ id: 'a', staleTier: null, staleDays: 3 });
+    const orange = product({ id: 'b', staleTier: 'orange', staleDays: 40 });
+    const red = product({ id: 'c', staleTier: 'red', staleDays: 120 });
+
+    const result = filterOverviewProducts([fresh, orange, red], {
+      ...noFilters,
+      staleOnly: true,
+    });
+
+    expect(result.map(({ id }) => id)).toEqual(['b', 'c']);
+  });
+
+  it('ANDs staleOnly with other filters', () => {
+    const staleSold = product({
+      id: 'a',
+      staleTier: 'red',
+      isOutOfStock: true,
+    });
+    const staleInStock = product({ id: 'b', staleTier: 'red' });
+
+    const result = filterOverviewProducts([staleSold, staleInStock], {
+      ...noFilters,
+      staleOnly: true,
+      outOfStockOnly: true,
+    });
+
+    expect(result).toEqual([staleSold]);
+  });
+
   it('matches the localized name case-insensitively', () => {
     const iphone = product({
       id: 'a',
@@ -188,6 +221,7 @@ describe('filterOverviewProducts', () => {
         outOfStockOnly: true,
         recommendedOnly: false,
         missingPriceOnly: false,
+        staleOnly: false,
         locale: 'en',
       },
     );

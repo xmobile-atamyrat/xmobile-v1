@@ -54,6 +54,7 @@ import {
   TableRow,
   TextField,
   ToggleButton,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -92,6 +93,7 @@ export default function ProductsOverview() {
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
   const [recommendedOnly, setRecommendedOnly] = useState(false);
   const [missingPriceOnly, setMissingPriceOnly] = useState(false);
+  const [staleOnly, setStaleOnly] = useState(false);
   const [sortKey, setSortKey] = useState<OverviewSortKey>('nameAsc');
   // Pending category/brand/stock edits keyed by product id, mirroring
   // update-prices: a row edit is staged here and only written on Save, so a row
@@ -155,6 +157,7 @@ export default function ProductsOverview() {
         recommendedOnly,
         brandId: brandFilter,
         missingPriceOnly,
+        staleOnly,
         locale: router.locale ?? 'tk',
       }),
       router.locale ?? 'tk',
@@ -169,6 +172,7 @@ export default function ProductsOverview() {
     recommendedOnly,
     brandFilter,
     missingPriceOnly,
+    staleOnly,
     sortKey,
     router.locale,
   ]);
@@ -466,6 +470,15 @@ export default function ProductsOverview() {
               >
                 {t('missingPriceOnly')}
               </ToggleButton>
+              <ToggleButton
+                size="small"
+                color="warning"
+                value="staleOnly"
+                selected={staleOnly}
+                onChange={() => setStaleOnly((prev) => !prev)}
+              >
+                {t('staleOnly')}
+              </ToggleButton>
               {Object.keys(updatedProducts).length > 0 && (
                 <Button
                   variant="contained"
@@ -495,6 +508,30 @@ export default function ProductsOverview() {
                   <TableRow key={product.id}>
                     <TableCell>
                       {parseName(product.name, router.locale ?? 'tk')}
+                      {product.staleTier != null && (
+                        <Tooltip
+                          title={
+                            product.staleTier === 'red'
+                              ? t('staleRedHint')
+                              : t('staleOrangeHint')
+                          }
+                        >
+                          <Chip
+                            size="small"
+                            sx={{ ml: 1 }}
+                            color={
+                              product.staleTier === 'red' ? 'error' : 'warning'
+                            }
+                            label={t('daysShort', { days: product.staleDays })}
+                            tabIndex={0}
+                            aria-label={`${
+                              product.staleTier === 'red'
+                                ? t('staleRedHint')
+                                : t('staleOrangeHint')
+                            }: ${t('daysShort', { days: product.staleDays })}`}
+                          />
+                        </Tooltip>
+                      )}
                     </TableCell>
                     <TableCell>
                       <SelectCell

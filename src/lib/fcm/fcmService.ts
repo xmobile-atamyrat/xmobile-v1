@@ -293,6 +293,8 @@ export function createFCMNotificationPayload(
     notification.orderId
   ) {
     clickAction = `${baseUrl}/orders/${notification.orderId}`;
+  } else if (notification.type === 'PRICE_STALENESS') {
+    clickAction = `${baseUrl}/product/update-prices`;
   }
 
   return {

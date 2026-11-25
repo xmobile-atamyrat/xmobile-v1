@@ -983,5 +983,10 @@
   "displayHighToLow": "Display ↓",
   "unsavedChanges": "{count} unsaved changes",
   "discard": "Discard",
-  "pricesCount": "{count} prices"
+  "pricesCount": "{count} prices",
+  "daysShort": "{days} d",
+  "refreshPrice": "Mark price as up to date",
+  "staleOrangeHint": "Not updated for over a month",
+  "staleRedHint": "Not updated for over 3 months",
+  "staleOnly": "Stale prices only"
 }

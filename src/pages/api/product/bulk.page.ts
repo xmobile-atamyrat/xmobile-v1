@@ -4,6 +4,7 @@ import {
   whereActiveCategory,
   whereActiveProduct,
 } from '@/lib/prismaActiveScope';
+import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
 import { deriveVariantColumns } from '@/pages/api/product/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
@@ -1056,6 +1057,22 @@ async function syncCachedPrices(priceDisplayById: Map<string, number>) {
   `;
 }
 
+// `{ priceCheckedAt: now }` when the submitted USD/manat differs from the stored
+// row, else `{}` (display-only or name/category edits don't count).
+async function priceCheckedAtPatch(
+  db: Prisma.TransactionClient | typeof dbClient,
+  id: string,
+  submitted: { price?: string | null; priceInTmt?: string | null },
+): Promise<{ priceCheckedAt?: Date }> {
+  const stored = await db.prices.findUnique({
+    where: { id },
+    select: { price: true, priceInTmt: true },
+  });
+  return priceAmountsChanged(submitted, stored)
+    ? { priceCheckedAt: new Date() }
+    : {};
+}
+
 // Returns true if it wrote anything (product row and/or a shared Prices row);
 // false means the sheet matched the DB and nothing was touched.
 async function applyProductPlan(
@@ -1075,7 +1092,15 @@ async function applyProductPlan(
     if (priceId != null) {
       await db.prices.update({
         where: { id: priceId },
-        data: { price: usd, priceInTmt: tmt, displayPriceTmt: display },
+        data: {
+          price: usd,
+          priceInTmt: tmt,
+          displayPriceTmt: display,
+          ...(await priceCheckedAtPatch(db, priceId, {
+            price: usd,
+            priceInTmt: tmt,
+          })),
+        },
       });
       updatedPrices.push({ id: priceId, display: parseFloat(display) });
     } else {
@@ -1100,6 +1125,11 @@ async function applyProductPlan(
               price: variant.price.usd,
               priceInTmt: variant.price.tmt,
               displayPriceTmt: variant.price.display,
+              // eslint-disable-next-line no-await-in-loop
+              ...(await priceCheckedAtPatch(db, priceId, {
+                price: variant.price.usd,
+                priceInTmt: variant.price.tmt,
+              })),
             },
           });
           updatedPrices.push({
@@ -1453,7 +1483,11 @@ async function handleImport(
       // eslint-disable-next-line no-await-in-loop
       await dbClient.prices.update({
         where: { id: update.id },
-        data: update.data,
+        data: {
+          ...update.data,
+          // eslint-disable-next-line no-await-in-loop
+          ...(await priceCheckedAtPatch(dbClient, update.id, update.data)),
+        },
       });
       updatedPriceCount += 1;
       if (update.data.displayPriceTmt != null) {

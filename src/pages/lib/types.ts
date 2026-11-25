@@ -78,7 +78,7 @@ export interface InAppNotification {
   userId: string;
   sessionId?: string | null; // Optional - only for CHAT_MESSAGE type
   orderId?: string | null; // Optional - only for ORDER_STATUS_UPDATE type
-  type: 'CHAT_MESSAGE' | 'ORDER_STATUS_UPDATE';
+  type: 'CHAT_MESSAGE' | 'ORDER_STATUS_UPDATE' | 'PRICE_STALENESS';
   title?: string | null;
   content: string;
   isRead: boolean;

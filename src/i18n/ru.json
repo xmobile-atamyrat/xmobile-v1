@@ -985,5 +985,10 @@
   "displayHighToLow": "Отображаемая ↓",
   "unsavedChanges": "Несохранённых изменений: {count}",
   "discard": "Отменить",
-  "pricesCount": "Цен: {count}"
+  "pricesCount": "Цен: {count}",
+  "daysShort": "{days} дн.",
+  "refreshPrice": "Отметить цену как актуальную",
+  "staleOrangeHint": "Не обновлялась больше месяца",
+  "staleRedHint": "Не обновлялась больше 3 месяцев",
+  "staleOnly": "Только устаревшие цены"
 }

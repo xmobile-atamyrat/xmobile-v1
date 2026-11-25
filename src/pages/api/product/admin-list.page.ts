@@ -1,5 +1,6 @@
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
+import { getProductStalenessMap } from '@/lib/priceStalenessQueries';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
@@ -31,6 +32,10 @@ export interface AdminProductListItem {
   /** Resolved base price in manat, or null when there is none to show. */
   basePriceTmt: string | null;
   basePriceIssue: BasePriceIssue | null;
+  /** Worst stale tier among all linked prices, and the oldest price's age in
+   * days. Both are null when the product is out of stock. */
+  staleTier: 'orange' | 'red' | null;
+  staleDays: number | null;
 }
 
 /**
@@ -105,6 +110,7 @@ export default async function handler(
         recommendedOrder: true,
         updatedAt: true,
         price: true,
+        tags: true,
       },
       // Deliberately not ordered by name: it is a localized JSON blob, so the
       // database would sort by whichever locale key sits first inside each
@@ -128,6 +134,8 @@ export default async function handler(
       prices.map((price) => [price.id, displayPriceOf(price)]),
     );
 
+    const stalenessById = await getProductStalenessMap(dbClient, products);
+
     const data: AdminProductListItem[] = products.map(
       ({
         id,
@@ -149,6 +157,11 @@ export default async function handler(
         isRecommended: recommendedOrder != null,
         updatedAt: updatedAt.toISOString(),
         ...resolveBasePrice(price, pricesById),
+        // Out-of-stock products get no warning, whatever their prices say.
+        staleTier:
+          outOfStockAt != null ? null : stalenessById.get(id)?.tier ?? null,
+        staleDays:
+          outOfStockAt != null ? null : stalenessById.get(id)?.days ?? null,
       }),
     );
 

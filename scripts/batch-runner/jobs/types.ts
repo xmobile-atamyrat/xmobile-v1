@@ -4,7 +4,7 @@
 
 export type JobSchedule =
   | { type: 'interval'; ms: number }
-  | { type: 'cron'; expr: string };
+  | { type: 'cron'; expr: string; timezone?: string };
 
 export interface BatchJob {
   id: string;

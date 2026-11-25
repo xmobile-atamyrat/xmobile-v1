@@ -102,6 +102,8 @@ export default function NotificationMenu({
         notification.sessionId
       ) {
         router.push(`/chat?sessionId=${notification.sessionId}`);
+      } else if (notification.type === 'PRICE_STALENESS') {
+        router.push('/product/update-prices');
       } else {
         router.push('/');
       }

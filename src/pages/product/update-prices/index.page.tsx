@@ -17,6 +17,7 @@ import {
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
+  editChecksPrice,
   foldSavedEdit,
   isEditablePriceCell,
   isMoneyRevert,
@@ -47,6 +48,7 @@ import {
   roundToDisplayTmt,
 } from '@/pages/lib/priceDisplay';
 import { findDefaultRate, rateForPrice } from '@/lib/dollarRates';
+import { daysSince, staleTierFor } from '@/lib/priceStaleness';
 import {
   Alert,
   alpha,
@@ -74,6 +76,7 @@ import {
   TableRow,
   TextField,
   ToggleButton,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -95,6 +98,7 @@ import SelectCell from '@/pages/product/components/SelectCell';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import EditableText from '@/pages/product/components/EditableText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -143,12 +147,12 @@ export default function UpdatePrices() {
   const [tableData, setTableData] = useState<TableData>([]);
   // Pending edits keyed by price id. Row-index keying corrupts across
   // sort/filter/search re-ordering, so we key by the stable price id instead.
-  const [updatedPrices, setUpdatedPrices] = useState<
-    Record<string, Partial<Prices>>
-  >({});
+  const [updatedPrices, setUpdatedPrices] = useState<Record<string, PriceEdit>>(
+    {},
+  );
   // Mirror of updatedPrices read by the derive effect to overlay pending edits
   // without adding updatedPrices to its deps (which would re-sort mid-typing).
-  const updatedPricesRef = useRef<Record<string, Partial<Prices>>>({});
+  const updatedPricesRef = useRef<Record<string, PriceEdit>>({});
   const [discardCount, setDiscardCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
@@ -177,7 +181,7 @@ export default function UpdatePrices() {
   // the saved price and are memoized too long to read the state directly.
   const allPricesRef = useRef<Prices[]>([]);
   allPricesRef.current = allPrices;
-  const [sortKey, setSortKey] = useState<PriceSortKey>('');
+  const [sortKey, setSortKey] = useState<PriceSortKey>('editedStale');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
   const { user, accessToken } = useUserContext();
@@ -616,6 +620,13 @@ export default function UpdatePrices() {
   );
 
   const pendingCount = Object.keys(updatedPrices).length;
+  // One clock reading per render, shared by every row's age.
+  const now = new Date();
+  // Saved rows by id, so a pending edit can be judged against what is stored.
+  const savedById = useMemo(
+    () => new Map(allPrices.map((price) => [price.id, price])),
+    [allPrices],
+  );
 
   const filtersActive =
     searchKeyword !== '' ||
@@ -643,6 +654,17 @@ export default function UpdatePrices() {
     setDiscardCount((n) => n + 1);
   };
 
+  // Toggles "mark as checked" on a price. It is an ordinary pending edit: it
+  // counts in the save bar and only reaches the server with Save, and the row
+  // keeps its position until then.
+  const handleToggleChecked = useCallback(
+    (priceId: string) => {
+      const marked = updatedPricesRef.current[priceId]?.markChecked === true;
+      recordEdit(priceId, { markChecked: !marked });
+    },
+    [recordEdit],
+  );
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -659,7 +681,9 @@ export default function UpdatePrices() {
         // re-saving stale edits).
         setAllPrices((prev) =>
           prev.map((p) =>
-            updatedPrices[p.id] ? foldSavedEdit(p, updatedPrices[p.id]) : p,
+            updatedPrices[p.id]
+              ? foldSavedEdit(p, updatedPrices[p.id], rates)
+              : p,
           ),
         );
         setUpdatedPrices({});
@@ -948,156 +972,251 @@ export default function UpdatePrices() {
                         </Typography>
                       </TableCell>
                     ))}
+                    {/* Room for the per-row refresh icon. */}
+                    <TableCell
+                      sx={{
+                        bgcolor: 'grey.200',
+                        borderBottom: '2px solid',
+                        borderBottomColor: alpha(
+                          theme.palette.primary.main,
+                          0.3,
+                        ),
+                      }}
+                    />
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {tableData.slice(1).map((row) => (
-                    <TableRow
-                      hover
-                      className="group"
-                      // Keyed by price id so a re-sort moves each row's cells
-                      // with it: an open editor stays on the price being
-                      // edited. The discard counter forces a remount so
-                      // discarded text never lingers in an editor.
-                      key={`${discardCount}-${row[PRICE_ID_IDX] as string}`}
-                    >
-                      {/* The id trails every row as the edit key and is not a
+                  {tableData.slice(1).map((row) => {
+                    const checkedAt = row[PRICE_UPDATED_IDX];
+                    const days =
+                      typeof checkedAt === 'string'
+                        ? daysSince(checkedAt, now)
+                        : null;
+                    const rowEdit = updatedPrices[row[PRICE_ID_IDX] as string];
+                    const markedChecked = rowEdit?.markChecked === true;
+                    const savedRow = savedById.get(row[PRICE_ID_IDX] as string);
+                    // Pressing refresh or editing the dollar/manat price both
+                    // count as re-checking it on save, so the row shows as
+                    // resolved already.
+                    const pendingChecked =
+                      rowEdit != null &&
+                      savedRow != null &&
+                      editChecksPrice(savedRow, rowEdit, rates);
+                    const tier =
+                      days == null || pendingChecked
+                        ? null
+                        : staleTierFor(days);
+                    const tintColor =
+                      tier === 'red'
+                        ? theme.palette.error.main
+                        : theme.palette.warning.main;
+                    return (
+                      <TableRow
+                        hover
+                        className="group"
+                        sx={
+                          tier != null
+                            ? {
+                                bgcolor: alpha(tintColor, 0.12),
+                                // Hover deepens the warning colour instead of
+                                // the default grey, so a warned row never looks
+                                // like a clean one under the pointer.
+                                '&.MuiTableRow-hover:hover': {
+                                  bgcolor: alpha(tintColor, 0.24),
+                                },
+                              }
+                            : undefined
+                        }
+                        // Keyed by price id so a re-sort moves each row's cells
+                        // with it: an open editor stays on the price being
+                        // edited. The discard counter forces a remount so
+                        // discarded text never lingers in an editor.
+                        key={`${discardCount}-${row[PRICE_ID_IDX] as string}`}
+                      >
+                        {/* The id trails every row as the edit key and is not a
                         column, so only the header's worth of cells is drawn. */}
-                      {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
-                        <TableCell
-                          className="relative"
-                          sx={
-                            isEditablePriceCell(cellIndex)
-                              ? {
-                                  p: 0,
-                                  height: '1px',
-                                  // EditableText pads its own text by
-                                  // EDITOR_PADDING, so the cell only adds
-                                  // the rest of the way to the header's edge.
-                                  ...(cellIndex === PRICE_NAME_IDX && {
-                                    pl: `${NAME_TEXT_START - EDITOR_PADDING}px`,
-                                  }),
-                                  '&:hover': { bgcolor: 'action.hover' },
-                                }
-                              : undefined
-                          }
-                          key={cellIndex}
-                        >
-                          {/* Shown by CSS on row hover, not by React state:
+                        {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
+                          <TableCell
+                            className="relative"
+                            sx={
+                              isEditablePriceCell(cellIndex)
+                                ? {
+                                    p: 0,
+                                    height: '1px',
+                                    // EditableText pads its own text by
+                                    // EDITOR_PADDING, so the cell only adds
+                                    // the rest of the way to the header's edge.
+                                    ...(cellIndex === PRICE_NAME_IDX && {
+                                      pl: `${NAME_TEXT_START - EDITOR_PADDING}px`,
+                                    }),
+                                    '&:hover': { bgcolor: 'action.hover' },
+                                  }
+                                : undefined
+                            }
+                            key={cellIndex}
+                          >
+                            {/* Shown by CSS on row hover, not by React state:
                               a hover state re-rendered the whole table every
                               time the pointer crossed a row, which janked
                               wheel scrolling on long lists. */}
-                          {cellIndex === PRICE_NAME_IDX && (
-                            <IconButton
-                              disableRipple
-                              size="small"
-                              // Unclickable while hidden, so a tap on that spot
-                              // cannot open the dialog. Devices without hover
-                              // always show it.
-                              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
-                              onClick={() => {
-                                setSelectedPrice(row[PRICE_ID_IDX] as string);
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <DeleteIcon color="error" />
-                            </IconButton>
-                          )}
-                          {(() => {
-                            // Only the text span is editable, never the whole
-                            // cell: see EditableText for why React must not
-                            // own the edited text.
-                            if (isEditablePriceCell(cellIndex)) {
-                              return (
-                                <EditableText
-                                  value={cell as string | number | null}
-                                  onTextChange={(text) =>
-                                    handlePriceUpdate(text, cellIndex, row)
-                                  }
-                                  onCommit={handlePriceUpdate.flush}
+                            {cellIndex === PRICE_NAME_IDX && (
+                              <IconButton
+                                disableRipple
+                                size="small"
+                                // Unclickable while hidden, so a tap on that spot
+                                // cannot open the dialog. Devices without hover
+                                // always show it.
+                                className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
+                                onClick={() => {
+                                  setSelectedPrice(row[PRICE_ID_IDX] as string);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <DeleteIcon color="error" />
+                              </IconButton>
+                            )}
+                            {(() => {
+                              // Only the text span is editable, never the whole
+                              // cell: see EditableText for why React must not
+                              // own the edited text.
+                              if (isEditablePriceCell(cellIndex)) {
+                                return (
+                                  <EditableText
+                                    value={cell as string | number | null}
+                                    onTextChange={(text) =>
+                                      handlePriceUpdate(text, cellIndex, row)
+                                    }
+                                    onCommit={handlePriceUpdate.flush}
+                                  />
+                                );
+                              }
+                              if (cellIndex === PRICE_CATEGORY_IDX) {
+                                return (
+                                  <SelectCell
+                                    id={row[PRICE_ID_IDX] as string}
+                                    value={(cell as string | null) ?? null}
+                                    options={flattenedCats}
+                                    emptyLabel={t('noCategory')}
+                                    dirty={
+                                      'categoryId' in
+                                      (updatedPrices[
+                                        row[PRICE_ID_IDX] as string
+                                      ] ?? {})
+                                    }
+                                    onChange={handleCategoryChange}
+                                  />
+                                );
+                              }
+                              if (cellIndex === PRICE_RATE_IDX) {
+                                const priceId = row[PRICE_ID_IDX] as string;
+                                return (
+                                  <SelectCell
+                                    id={priceId}
+                                    value={cell == null ? null : String(cell)}
+                                    options={rateOptions}
+                                    emptyLabel={t('defaultRate')}
+                                    minWidth={120}
+                                    dirty={
+                                      'dollarRateId' in
+                                      (updatedPrices[priceId] ?? {})
+                                    }
+                                    onChange={handleRateChange}
+                                  />
+                                );
+                              }
+                              if (cellIndex === PRICE_UPDATED_IDX) {
+                                // Days since the price was last checked; the
+                                // row tint above carries the warning tier.
+                                if (days == null) return null;
+                                if (pendingChecked) {
+                                  return (
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                      sx={{ fontStyle: 'italic' }}
+                                    >
+                                      {t('daysShort', { days: 0 })}
+                                    </Typography>
+                                  );
+                                }
+                                const daysText = (
+                                  <Typography
+                                    variant="body2"
+                                    color={
+                                      tier == null
+                                        ? 'text.secondary'
+                                        : tintColor
+                                    }
+                                    fontWeight={tier == null ? undefined : 700}
+                                  >
+                                    {t('daysShort', { days })}
+                                  </Typography>
+                                );
+                                return tier == null ? (
+                                  daysText
+                                ) : (
+                                  <Tooltip
+                                    title={t(
+                                      tier === 'red'
+                                        ? 'staleRedHint'
+                                        : 'staleOrangeHint',
+                                    )}
+                                  >
+                                    {daysText}
+                                  </Tooltip>
+                                );
+                              }
+                              if (cellIndex === PRICE_OUT_OF_STOCK_IDX) {
+                                const priceId = row[PRICE_ID_IDX] as string;
+                                return (
+                                  <Checkbox
+                                    size="small"
+                                    checked={cell === true}
+                                    onChange={(e) =>
+                                      handleOutOfStockChange(
+                                        priceId,
+                                        e.target.checked,
+                                      )
+                                    }
+                                    // Matches the dirty affordance the category and
+                                    // product cells use: a pending edit is coloured
+                                    // until the batched save clears it.
+                                    color={
+                                      'isOutOfStock' in
+                                      (updatedPrices[priceId] ?? {})
+                                        ? 'warning'
+                                        : 'primary'
+                                    }
+                                  />
+                                );
+                              }
+                              return cell;
+                            })()}
+                          </TableCell>
+                        ))}
+                        <TableCell sx={{ py: 0, px: 1 }}>
+                          <Tooltip title={t('refreshPrice')}>
+                            <span>
+                              <IconButton
+                                disableRipple
+                                size="small"
+                                aria-label={t('refreshPrice')}
+                                onClick={() =>
+                                  handleToggleChecked(
+                                    row[PRICE_ID_IDX] as string,
+                                  )
+                                }
+                              >
+                                <RefreshIcon
+                                  color={markedChecked ? 'warning' : 'primary'}
                                 />
-                              );
-                            }
-                            if (cellIndex === PRICE_CATEGORY_IDX) {
-                              return (
-                                <SelectCell
-                                  id={row[PRICE_ID_IDX] as string}
-                                  value={(cell as string | null) ?? null}
-                                  options={flattenedCats}
-                                  emptyLabel={t('noCategory')}
-                                  dirty={
-                                    'categoryId' in
-                                    (updatedPrices[
-                                      row[PRICE_ID_IDX] as string
-                                    ] ?? {})
-                                  }
-                                  onChange={handleCategoryChange}
-                                />
-                              );
-                            }
-                            if (cellIndex === PRICE_RATE_IDX) {
-                              const priceId = row[PRICE_ID_IDX] as string;
-                              return (
-                                <SelectCell
-                                  id={priceId}
-                                  value={cell == null ? null : String(cell)}
-                                  options={rateOptions}
-                                  emptyLabel={t('defaultRate')}
-                                  minWidth={120}
-                                  dirty={
-                                    'dollarRateId' in
-                                    (updatedPrices[priceId] ?? {})
-                                  }
-                                  onChange={handleRateChange}
-                                />
-                              );
-                            }
-                            if (cellIndex === PRICE_UPDATED_IDX) {
-                              // ISO date, not a locale format: the table spans
-                              // five locales and an admin scanning for stale
-                              // prices needs one shape they can compare at a
-                              // glance.
-                              return (
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {typeof cell === 'string'
-                                    ? cell.slice(0, 10)
-                                    : ''}
-                                </Typography>
-                              );
-                            }
-                            if (cellIndex === PRICE_OUT_OF_STOCK_IDX) {
-                              const priceId = row[PRICE_ID_IDX] as string;
-                              return (
-                                <Checkbox
-                                  size="small"
-                                  checked={cell === true}
-                                  onChange={(e) =>
-                                    handleOutOfStockChange(
-                                      priceId,
-                                      e.target.checked,
-                                    )
-                                  }
-                                  // Matches the dirty affordance the category and
-                                  // product cells use: a pending edit is coloured
-                                  // until the batched save clears it.
-                                  color={
-                                    'isOutOfStock' in
-                                    (updatedPrices[priceId] ?? {})
-                                      ? 'warning'
-                                      : 'primary'
-                                  }
-                                />
-                              );
-                            }
-                            return cell;
-                          })()}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
                         </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
