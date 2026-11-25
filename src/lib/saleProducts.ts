@@ -1,4 +1,9 @@
 import dbClient from '@/lib/dbClient';
+import { productIdsWithPriceInTags } from '@/lib/outOfStock';
+import {
+  productIdsReferencingPrices,
+  productRevalidationPaths,
+} from '@/lib/revalidateTargets';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { regularPriceOf, salePercentOf } from '@/pages/lib/priceDisplay';
 import { ProductSale } from '@/pages/lib/types';
@@ -153,4 +158,22 @@ export async function withSale<T extends SaleCandidate>(
     ...product,
     sale: saleOf(product, rowsById),
   }));
+}
+
+/**
+ * Cached pages of every product carrying a price with a stored sale. A rate
+ * change moves normal prices, which can start or stop a sale, so these are the
+ * pages whose sale styling may have gone stale.
+ */
+export async function saleRevalidationPaths(): Promise<string[]> {
+  const rows = await dbClient.prices.findMany({
+    where: { salePriceTmt: { not: null } },
+    select: { id: true },
+  });
+  const ids = rows.map((row) => row.id);
+
+  return productRevalidationPaths([
+    ...(await productIdsReferencingPrices(ids)),
+    ...(await productIdsWithPriceInTags(ids)),
+  ]);
 }

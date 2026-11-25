@@ -11,6 +11,8 @@ import {
   recordRateDeleted,
   recordRateUpdated,
 } from '@/lib/rateActivity';
+import { revalidateInBackground } from '@/lib/revalidate';
+import { saleRevalidationPaths } from '@/lib/saleProducts';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -145,6 +147,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           name,
         });
         recordRateUpdated(userId, before, updated, updatedCount);
+        revalidateInBackground(res, saleRevalidationPaths);
         return res.status(200).json({
           success: true,
           message: 'Dollar rate updated',
@@ -180,6 +183,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           rate,
         });
         recordRateUpdated(userId, existing, updated, updatedCount);
+        revalidateInBackground(res, saleRevalidationPaths);
         return res.status(200).json({
           success: true,
           message: 'Dollar rate updated',
@@ -225,6 +229,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         .catch(() => null);
       const { reassignedCount } = await deleteRate(dbClient, id);
       if (before != null) recordRateDeleted(userId, before, reassignedCount);
+      revalidateInBackground(res, saleRevalidationPaths);
       return res.status(200).json({
         success: true,
         message: 'Dollar rate deleted',

@@ -598,7 +598,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         );
       }
       revalidateInBackground(res, async () =>
-        productRevalidationPaths(affectedProductIds),
+        productRevalidationPaths([
+          ...affectedProductIds,
+          // A deleted sale also shows on pages of products that only carry
+          // the price in a variant tag.
+          ...(deletedPrice.salePriceTmt != null
+            ? await productIdsWithPriceInTags([deletedPrice.id])
+            : []),
+        ]),
       );
       return res.status(200).json({
         success: true,
