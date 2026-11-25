@@ -26,19 +26,22 @@ export const roundToDisplayTmt = (tmt: number): number =>
 export const displayTmtFromUsd = (usd: number, rate: number): number =>
   roundToDisplayTmt(tmtFromUsd(usd, rate));
 
-// displayPriceTmt is required-and-nullable rather than optional on purpose: a
-// Prisma `select` that forgets the column is then a type error instead of a
-// silent fallback to the unrounded price.
+// displayPriceTmt and salePriceTmt are required-and-nullable rather than
+// optional on purpose: a Prisma `select` that forgets a column is then a type
+// error instead of a silent fallback to a different price.
 export interface PriceRowLike {
   priceInTmt: string;
   displayPriceTmt: string | null;
+  salePriceTmt: string | null;
 }
 
-// A stored zero counts as unset, not as a free product: priceInTmt already uses
-// '0' as its default, and charging nothing is the one failure worth being
-// paranoid about. Returns the stored string verbatim, so a pinned '1290.00'
-// reaches the customer as the admin typed it.
-export const displayPriceOf = (price: PriceRowLike): string => {
+// The normal price, ignoring any sale. A stored zero counts as unset, not as a
+// free product: priceInTmt already uses '0' as its default, and charging nothing
+// is the one failure worth being paranoid about. Returns the stored string
+// verbatim, so a pinned '1290.00' reaches the customer as the admin typed it.
+export const regularPriceOf = (
+  price: Pick<PriceRowLike, 'priceInTmt' | 'displayPriceTmt'>,
+): string => {
   const display = price.displayPriceTmt?.trim();
   if (!display) return price.priceInTmt;
 
@@ -47,6 +50,43 @@ export const displayPriceOf = (price: PriceRowLike): string => {
 
   return display;
 };
+
+// Digits with an optional fraction, nothing else. The SQL in
+// scripts/backfill_prices.sql applies the same pattern.
+const PLAIN_AMOUNT = /^[0-9]+(\.[0-9]+)?$/;
+
+// The sale price when it is active: a number above zero and strictly below the
+// regular price. Anything else, including a sale the regular price has since
+// dropped under, is no sale. The stored value is kept either way, so it becomes
+// active again if the regular price goes back up.
+export const salePriceOf = (price: PriceRowLike): string | null => {
+  const sale = price.salePriceTmt?.trim();
+  if (!sale || !PLAIN_AMOUNT.test(sale)) return null;
+
+  const amount = Number(sale);
+  if (!(amount > 0 && amount < Number(regularPriceOf(price)))) return null;
+
+  return sale;
+};
+
+// Whole percent off, rounded down and kept within 1..99, so an active sale
+// always has a badge to show. The toFixed is the same IEEE-754 guard as in
+// tmtFromUsd: 29 off 100 must not floor to 28.
+export const salePercentOf = (price: PriceRowLike): number | null => {
+  const sale = salePriceOf(price);
+  if (sale == null) return null;
+
+  const regular = Number(regularPriceOf(price));
+  const percent = Math.floor(
+    parseFloat((((regular - Number(sale)) / regular) * 100).toFixed(6)),
+  );
+  return Math.min(99, Math.max(1, percent));
+};
+
+// What the customer pays: the sale price while one is active, else the regular
+// price.
+export const displayPriceOf = (price: PriceRowLike): string =>
+  salePriceOf(price) ?? regularPriceOf(price);
 
 export const displayPriceOrNull = (
   price: PriceRowLike | null | undefined,
@@ -68,7 +108,7 @@ export const cachedPriceFrom = (
 };
 
 // Every write path starting from dollars goes through this, so the pair cannot
-// drift apart.
+// drift apart. The sale price is not part of the pair: a rate change keeps it.
 export const pricesFromUsd = (
   usd: number,
   rate: number,

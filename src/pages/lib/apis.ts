@@ -49,6 +49,7 @@ export const fetchProducts = async ({
   page,
   locale,
   inStock,
+  sale,
   recommended,
   limit,
   imageless,
@@ -62,6 +63,8 @@ export const fetchProducts = async ({
   maxPrice?: string;
   sortBy?: string;
   inStock?: boolean;
+  /** Only products on sale, which implies in stock. */
+  sale?: boolean;
   searchKeyword?: string;
   productId?: string;
   productSlug?: string;
@@ -109,6 +112,7 @@ export const fetchProducts = async ({
   appendParam('sortBy', sortBy);
   appendParam('locale', locale);
   appendParam('inStock', inStock ? '1' : undefined);
+  appendParam('sale', sale ? '1' : undefined);
   if (recommended != null) appendParam('recommended', recommended ? '1' : '0');
   appendParam('limit', limit);
   appendParam('imageless', imageless ? '1' : undefined);
@@ -131,6 +135,7 @@ export const fetchProductsCount = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  sale,
   recommended,
   imageless,
   staffToken,
@@ -143,6 +148,8 @@ export const fetchProductsCount = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** Only products on sale, which implies in stock. */
+  sale?: boolean;
   /** Only the admin's recommended picks. */
   recommended?: boolean;
   /** Only products without images; needs a staff `staffToken`. */
@@ -161,6 +168,7 @@ export const fetchProductsCount = async ({
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
   appendParam('inStock', inStock ? '1' : undefined);
+  appendParam('sale', sale ? '1' : undefined);
   appendParam('recommended', recommended ? '1' : undefined);
   appendParam('imageless', imageless ? '1' : undefined);
 
@@ -190,6 +198,7 @@ export const fetchCategoryFacets = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  sale,
   staffToken,
 }: {
   brandIds?: string[];
@@ -199,6 +208,8 @@ export const fetchCategoryFacets = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** Only products on sale, which implies in stock. */
+  sale?: boolean;
   /** See {@link staffInit}. */
   staffToken?: string;
 }): Promise<CategoryFacet[]> => {
@@ -212,6 +223,7 @@ export const fetchCategoryFacets = async ({
   appendParam('minPrice', minPrice);
   appendParam('searchKeyword', searchKeyword);
   appendParam('inStock', inStock ? '1' : undefined);
+  appendParam('sale', sale ? '1' : undefined);
 
   const { success, data }: ResponseApi<CategoryFacet[]> = await (
     await fetch(url, staffInit(staffToken))
@@ -375,6 +387,7 @@ export const fetchProductFilterOptions = async ({
   maxPrice,
   searchKeyword,
   inStock,
+  sale,
   recommended,
   imageless,
   staffToken,
@@ -386,6 +399,8 @@ export const fetchProductFilterOptions = async ({
   maxPrice?: string;
   searchKeyword?: string;
   inStock?: boolean;
+  /** Only products on sale, which implies in stock. */
+  sale?: boolean;
   /** Only the admin's recommended picks. */
   recommended?: boolean;
   /** Only products without images; needs a staff `staffToken`. */
@@ -401,6 +416,7 @@ export const fetchProductFilterOptions = async ({
   if (maxPrice) params.set('maxPrice', maxPrice);
   if (searchKeyword) params.set('searchKeyword', searchKeyword);
   if (inStock) params.set('inStock', '1');
+  if (sale) params.set('sale', '1');
   if (recommended) params.set('recommended', '1');
   if (imageless) params.set('imageless', '1');
 

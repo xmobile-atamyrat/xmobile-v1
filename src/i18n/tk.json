@@ -992,5 +992,17 @@
   "staleOrangeHint": "1 aýdan gowrak täzelenmedi",
   "staleRedHint": "3 aýdan gowrak täzelenmedi",
   "staleOnly": "Diňe köne bahalar",
-  "stalePricesAttention": "Täzelenmeli bahalar bar"
+  "stalePricesAttention": "Täzelenmeli bahalar bar",
+  "sale": "Arzanladyş",
+  "onSaleProducts": "Gyzgyn teklipler",
+  "onSaleOnly": "Arzanladyşdakylar",
+  "salePrice": "Arzanladyş bahasy",
+  "salePriceInvalid": "Arzanladyş bahasy 0-dan uly we adaty bahadan pes bolmaly",
+  "otherModelOnSale": "Başga modelde arzanladyş bar",
+  "sortBiggestDiscount": "Iň uly arzanladyş",
+  "salePageTitle": "{businessName} | Türkmenistanda smartfonlara we elektronika arzanladyşlar",
+  "salePageDescription": "{businessName}-da arzanladyşdaky smartfonlar, gadjetler we elektronika. Amatly bahadan çäkli teklipler we Türkmenistan boýunça çalt eltip bermek.",
+  "noSaleProducts": "Häzir arzanladyşdaky haryt ýok",
+  "saleHint": "Amatly bahadan çäkli teklipler",
+  "activityFieldSalePriceTmt": "arzanladyş bahasy (TMT)"
 }

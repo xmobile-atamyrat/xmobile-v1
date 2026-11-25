@@ -33,6 +33,7 @@ import {
   parseImageOrder,
 } from '@/lib/productImageOrder';
 import { revalidateInBackground } from '@/lib/revalidate';
+import { getOnSaleProducts, withSale } from '@/lib/saleProducts';
 import {
   categoryListingPaths,
   productRevalidationPaths,
@@ -448,15 +449,41 @@ async function getProduct(
 
   // product.price = [id]{value}
   const productPrice = await getPrice(product?.price as string);
-  if (product) {
-    // `?? undefined` keeps the dangling-reference shape: a missing price has
-    // always interpolated as "{undefined}", and the PDP keys off that text.
-    product.price = `${product?.price}{${
-      displayPriceOrNull(productPrice) ?? undefined
-    }}`;
-  }
+  if (!product) return product;
 
-  return product;
+  // `?? undefined` keeps the dangling-reference shape: a missing price has
+  // always interpolated as "{undefined}", and the PDP keys off that text.
+  product.price = `${product.price}{${
+    displayPriceOrNull(productPrice) ?? undefined
+  }}`;
+
+  const [annotated] = await withSale([product]);
+  return annotated;
+}
+
+// One page of the matches in the order of `rankedIds`, an order the database
+// cannot express. The ids are narrowed to the matches before paging, so a filter
+// never leaves a page short.
+async function findPageInRankedOrder(
+  where: Prisma.ProductWhereInput,
+  rankedIds: string[],
+  skip: number,
+  take: number,
+) {
+  const matches = await dbClient.product.findMany({
+    where,
+    select: { id: true },
+  });
+  const matching = new Set(matches.map(({ id }) => id));
+  const pageIds = rankedIds
+    .filter((id) => matching.has(id))
+    .slice(skip, skip + take);
+  const rows = await dbClient.product.findMany({
+    where: { id: { in: pageIds } },
+    include: { brand: true },
+  });
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  return pageIds.flatMap((id) => rowsById.get(id) ?? []);
 }
 
 async function handleGetProduct(
@@ -543,7 +570,19 @@ async function handleGetProduct(
     };
   }
 
-  const where = await buildProductWhere(query, whereOptions);
+  // sortBy=discount has an order only for products on sale, so it implies
+  // sale=1.
+  const sortByDiscount = sortBy === SORT_OPTIONS.DISCOUNT;
+  const saleOnly = sortByDiscount || query.sale === '1';
+  // Ranked biggest discount first, then newest.
+  const onSaleIds = saleOnly
+    ? (await getOnSaleProducts()).map(({ id }) => id)
+    : undefined;
+
+  const where = await buildProductWhere(
+    saleOnly ? { ...query, sale: '1' } : query,
+    { ...whereOptions, saleProductIds: onSaleIds },
+  );
   if (where == null) {
     return {
       resp: { success: true, data: wantCount ? 0 : [] },
@@ -611,15 +650,18 @@ async function handleGetProduct(
     }
   }
 
-  const products = await dbClient.product.findMany({
-    where,
-    orderBy,
-    skip,
-    take: pageSize,
-    include: { brand: true },
-  });
+  const products =
+    sortByDiscount && onSaleIds
+      ? await findPageInRankedOrder(where, onSaleIds, skip, pageSize)
+      : await dbClient.product.findMany({
+          where,
+          orderBy,
+          skip,
+          take: pageSize,
+          include: { brand: true },
+        });
 
-  const productsWithDisplayPrice = await Promise.all(
+  const pricedProducts = await Promise.all(
     products.map(async (product) => {
       const productPrice = await getPrice(product.price as string);
       if (productPrice) {
@@ -628,6 +670,7 @@ async function handleGetProduct(
       return product;
     }),
   );
+  const productsWithDisplayPrice = await withSale(pricedProducts);
 
   return {
     resp: {

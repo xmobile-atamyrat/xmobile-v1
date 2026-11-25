@@ -13,6 +13,7 @@ import {
 import dbClient from '@/lib/dbClient';
 import { whereActiveCategory } from '@/lib/prismaActiveScope';
 import { revalidateInBackground } from '@/lib/revalidate';
+import { withSale } from '@/lib/saleProducts';
 import {
   categoryRevalidationPaths,
   productRevalidationPaths,
@@ -96,7 +97,7 @@ export async function getCategory(
     }),
   );
 
-  category.products = categoryProductsWithPrices;
+  category.products = await withSale(categoryProductsWithPrices);
 
   return category;
 }

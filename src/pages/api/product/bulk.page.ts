@@ -11,7 +11,11 @@ import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { parseName } from '@/pages/lib/utils';
 import { ResponseApi } from '@/pages/lib/types';
-import { displayPriceOf, displayTmtFromUsd } from '@/pages/lib/priceDisplay';
+import {
+  cachedPriceFrom,
+  displayTmtFromUsd,
+  regularPriceOf,
+} from '@/pages/lib/priceDisplay';
 import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
 import { Prisma, Product } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -1064,19 +1068,35 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
 // table instead of one non-indexable LIKE scan per price. Runs outside the
 // per-product transactions: cachedPrice is a read cache, so a brief lag before
 // it catches up is acceptable, and it's rebuilt from the committed price values.
-async function syncCachedPrices(priceDisplayById: Map<string, number>) {
+// Those are re-read here because a row's stored sale price, which the sheet
+// does not carry, decides what is shown.
+async function syncCachedPrices(priceIds: Set<string>) {
+  const rows = await dbClient.prices.findMany({
+    where: { id: { in: [...priceIds] } },
+    select: {
+      id: true,
+      priceInTmt: true,
+      displayPriceTmt: true,
+      salePriceTmt: true,
+    },
+  });
+  const shown = rows.flatMap((row) => {
+    const value = cachedPriceFrom(row);
+    return value == null ? [] : [{ id: row.id, value }];
+  });
+  if (shown.length === 0) return;
+
   const values = Prisma.join(
-    [...priceDisplayById].map(
-      ([id, display]) =>
-        Prisma.sql`(${id}::text, ${display}::double precision)`,
+    shown.map(
+      ({ id, value }) => Prisma.sql`(${id}::text, ${value}::double precision)`,
     ),
   );
   // pid is a uuid (no % or _), so it needs no LIKE escaping; [ ] are literal in
   // Postgres LIKE, matching the "[id]" base-price format.
   await dbClient.$executeRaw`
     UPDATE "Product" AS p
-    SET "cachedPrice" = v.display
-    FROM (VALUES ${values}) AS v(pid, display)
+    SET "cachedPrice" = v.shown
+    FROM (VALUES ${values}) AS v(pid, shown)
     WHERE p."deletedAt" IS NULL
       AND (p."price" = v.pid OR p."price" LIKE '%[' || v.pid || ']%')
   `;
@@ -1110,10 +1130,10 @@ async function applyProductPlan(
   brandsToSync: Set<string>,
 ): Promise<{
   changed: boolean;
-  updatedPrices: { id: string; display: number }[];
+  updatedPriceIds: string[];
 }> {
   const data: Prisma.ProductUncheckedUpdateInput = { ...plan.data };
-  const updatedPrices: { id: string; display: number }[] = [];
+  const updatedPriceIds: string[] = [];
 
   if (plan.basePrice != null) {
     const { priceId, name, usd, tmt, display, tmtDerived } = plan.basePrice;
@@ -1132,7 +1152,7 @@ async function applyProductPlan(
           )),
         },
       });
-      updatedPrices.push({ id: priceId, display: parseFloat(display) });
+      updatedPriceIds.push(priceId);
     } else {
       const created = await db.prices.create({
         data: { name, price: usd, priceInTmt: tmt, displayPriceTmt: display },
@@ -1164,10 +1184,7 @@ async function applyProductPlan(
               )),
             },
           });
-          updatedPrices.push({
-            id: priceId,
-            display: parseFloat(variant.price.display),
-          });
+          updatedPriceIds.push(priceId);
         } else {
           // eslint-disable-next-line no-await-in-loop
           const created = await db.prices.create({
@@ -1211,8 +1228,8 @@ async function applyProductPlan(
   // cachedPrice fan-out is deferred: the caller batches every committed product's
   // changed prices into one pass after the run (see syncCachedPrices).
   return {
-    changed: productChanged || updatedPrices.length > 0,
-    updatedPrices,
+    changed: productChanged || updatedPriceIds.length > 0,
+    updatedPriceIds,
   };
 }
 
@@ -1285,6 +1302,8 @@ async function handleImport(
     const id = (row.priceId ?? '').trim();
     if (id !== '') priceIds.add(id);
   });
+  // `display` below is the normal price, never a sale: it is what the sheet
+  // edits and gets compared against.
   const prices = await dbClient.prices.findMany({
     where: { id: { in: [...priceIds] } },
     select: {
@@ -1313,7 +1332,7 @@ async function handleImport(
         {
           usd: price.price,
           tmt: price.priceInTmt,
-          display: displayPriceOf(price),
+          display: regularPriceOf(price),
         },
       ]),
     ),
@@ -1324,7 +1343,7 @@ async function handleImport(
           name: price.name,
           usd: price.price,
           tmt: price.priceInTmt,
-          display: displayPriceOf(price),
+          display: regularPriceOf(price),
           categoryId: price.categoryId,
         },
       ]),
@@ -1477,7 +1496,7 @@ async function handleImport(
 
   let updatedCount = 0;
   const brandsToSync = new Set<string>();
-  const priceDisplayById = new Map<string, number>();
+  const repricedIds = new Set<string>();
   for (let i = 0; i < planned.length; i += 1) {
     const { productRow, target, plan } = planned[i];
     try {
@@ -1485,16 +1504,14 @@ async function handleImport(
       // back together, so a mid-write failure can't leave it half-updated.
       // Scoped to a single product, so locks are held only briefly.
       // eslint-disable-next-line no-await-in-loop
-      const { changed, updatedPrices } = await dbClient.$transaction(
+      const { changed, updatedPriceIds } = await dbClient.$transaction(
         (tx) => applyProductPlan(tx, target, plan, brandsToSync),
         { timeout: 20000 },
       );
       if (changed) updatedCount += 1;
       // Record only committed price changes; a rolled-back product is skipped,
       // so its stale price never reaches the cachedPrice sync.
-      updatedPrices.forEach(({ id, display }) =>
-        priceDisplayById.set(id, display),
-      );
+      updatedPriceIds.forEach((id) => repricedIds.add(id));
     } catch (error) {
       console.error(filepath, error);
       errors.push({
@@ -1528,7 +1545,7 @@ async function handleImport(
       });
       updatedPriceCount += 1;
       if (update.data.displayPriceTmt != null) {
-        priceDisplayById.set(update.id, Number(update.data.displayPriceTmt));
+        repricedIds.add(update.id);
       }
     } catch (error) {
       console.error(filepath, error);
@@ -1542,8 +1559,8 @@ async function handleImport(
 
   // One pass over the products table for all changed prices, instead of a
   // non-indexable LIKE scan per price inside each transaction.
-  if (priceDisplayById.size > 0) {
-    await syncCachedPrices(priceDisplayById);
+  if (repricedIds.size > 0) {
+    await syncCachedPrices(repricedIds);
   }
 
   await Promise.all(

@@ -9,7 +9,10 @@ import {
   displayTmtFromUsd,
   pricesFromUsd,
   pricesPinned,
+  regularPriceOf,
   roundToDisplayTmt,
+  salePercentOf,
+  salePriceOf,
   tmtFromUsd,
 } from '@/pages/lib/priceDisplay';
 
@@ -63,17 +66,29 @@ describe('roundToDisplayTmt', () => {
 describe('displayPriceOf', () => {
   it('returns the display price when one is stored', () => {
     expect(
-      displayPriceOf({ priceInTmt: '1282', displayPriceTmt: '1290' }),
+      displayPriceOf({
+        priceInTmt: '1282',
+        displayPriceTmt: '1290',
+        salePriceTmt: null,
+      }),
     ).toBe('1290');
   });
 
   it('returns the stored string verbatim rather than reformatting it', () => {
     // A pinned price reaches the customer exactly as the admin typed it.
     expect(
-      displayPriceOf({ priceInTmt: '1282', displayPriceTmt: '1290.00' }),
+      displayPriceOf({
+        priceInTmt: '1282',
+        displayPriceTmt: '1290.00',
+        salePriceTmt: null,
+      }),
     ).toBe('1290.00');
     expect(
-      displayPriceOf({ priceInTmt: '1282', displayPriceTmt: ' 1290 ' }),
+      displayPriceOf({
+        priceInTmt: '1282',
+        displayPriceTmt: ' 1290 ',
+        salePriceTmt: null,
+      }),
     ).toBe('1290');
   });
 
@@ -90,7 +105,11 @@ describe('displayPriceOf', () => {
     'falls back to priceInTmt when the display price is %s',
     (_label, stored) => {
       expect(
-        displayPriceOf({ priceInTmt: '1282', displayPriceTmt: stored }),
+        displayPriceOf({
+          priceInTmt: '1282',
+          displayPriceTmt: stored,
+          salePriceTmt: null,
+        }),
       ).toBe('1282');
     },
   );
@@ -104,7 +123,11 @@ describe('displayPriceOrNull', () => {
 
   it('resolves a row like displayPriceOf does', () => {
     expect(
-      displayPriceOrNull({ priceInTmt: '1282', displayPriceTmt: '1290' }),
+      displayPriceOrNull({
+        priceInTmt: '1282',
+        displayPriceTmt: '1290',
+        salePriceTmt: null,
+      }),
     ).toBe('1290');
   });
 });
@@ -126,28 +149,42 @@ describe('write helpers', () => {
   });
 
   it('a pinned price survives displayPriceOf unrounded', () => {
-    expect(displayPriceOf(pricesPinned('1283'))).toBe('1283');
+    expect(
+      displayPriceOf({ ...pricesPinned('1283'), salePriceTmt: null }),
+    ).toBe('1283');
   });
 });
 
 describe('cachedPriceFrom', () => {
   it('resolves the shown price as a number for the Product cache', () => {
     expect(
-      cachedPriceFrom({ priceInTmt: '1283', displayPriceTmt: '1290' }),
+      cachedPriceFrom({
+        priceInTmt: '1283',
+        displayPriceTmt: '1290',
+        salePriceTmt: null,
+      }),
     ).toBe(1290);
   });
 
   it('falls back to the exact manat when nothing is stored yet', () => {
-    expect(cachedPriceFrom({ priceInTmt: '1283', displayPriceTmt: null })).toBe(
-      1283,
-    );
+    expect(
+      cachedPriceFrom({
+        priceInTmt: '1283',
+        displayPriceTmt: null,
+        salePriceTmt: null,
+      }),
+    ).toBe(1283);
   });
 
   it('returns null when there is nothing numeric to cache', () => {
     expect(cachedPriceFrom(null)).toBeNull();
     expect(cachedPriceFrom(undefined)).toBeNull();
     expect(
-      cachedPriceFrom({ priceInTmt: 'not-a-price', displayPriceTmt: null }),
+      cachedPriceFrom({
+        priceInTmt: 'not-a-price',
+        displayPriceTmt: null,
+        salePriceTmt: null,
+      }),
     ).toBeNull();
   });
 });
@@ -168,5 +205,66 @@ describe('derivedDisplayFrom', () => {
     const priceInTmt = '1282.23';
     expect(derivedDisplayFrom(priceInTmt)).toBe('1290');
     expect(priceInTmt).toBe('1282.23');
+  });
+});
+
+describe('sale prices', () => {
+  const row = (
+    salePriceTmt: string | null,
+    displayPriceTmt: string | null = '1000',
+    priceInTmt = '995',
+  ) => ({ priceInTmt, displayPriceTmt, salePriceTmt });
+
+  it('is active below the regular price and returned as stored', () => {
+    expect(salePriceOf(row('900.00'))).toBe('900.00');
+    expect(salePriceOf(row(' 900 '))).toBe('900');
+    expect(displayPriceOf(row('900.00'))).toBe('900.00');
+    expect(regularPriceOf(row('900.00'))).toBe('1000');
+  });
+
+  it.each([
+    ['null', null],
+    ['empty', ''],
+    ['zero', '0'],
+    ['negative', '-5'],
+    ['non-numeric', 'abc'],
+    ['exponent notation', '1e2'],
+    ['a decimal comma', '90,5'],
+    ['equal to the regular price', '1000'],
+    ['above the regular price', '1001'],
+  ])('is no sale when %s', (_label, stored) => {
+    expect(salePriceOf(row(stored))).toBeNull();
+    expect(salePercentOf(row(stored))).toBeNull();
+    expect(displayPriceOf(row(stored))).toBe('1000');
+  });
+
+  it('compares against priceInTmt when no display price is stored', () => {
+    expect(salePriceOf(row('994', null))).toBe('994');
+    expect(salePriceOf(row('995', null))).toBeNull();
+  });
+
+  it('is no sale when the regular price is not a number', () => {
+    expect(salePriceOf(row('5', null, 'call'))).toBeNull();
+  });
+
+  it.each([
+    ['900', 10],
+    // (100 - 71) / 100 is 28.999999999999996 in floating point.
+    ['710', 29],
+    ['895', 10],
+    ['999', 1],
+    ['0.5', 99],
+  ])('shows %s off 1000 as %s percent', (sale, percent) => {
+    expect(salePercentOf(row(sale))).toBe(percent);
+  });
+
+  it('is cached in place of the regular price', () => {
+    expect(cachedPriceFrom(row('900'))).toBe(900);
+    expect(cachedPriceFrom(row('1100'))).toBe(1000);
+  });
+
+  it('is left alone by the write helpers', () => {
+    expect(pricesFromUsd(50, 19.6)).not.toHaveProperty('salePriceTmt');
+    expect(pricesPinned('1000')).not.toHaveProperty('salePriceTmt');
   });
 });

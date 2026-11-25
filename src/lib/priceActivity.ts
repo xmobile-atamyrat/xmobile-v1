@@ -16,6 +16,7 @@ export type PriceSnapshot = Pick<
   | 'price'
   | 'priceInTmt'
   | 'displayPriceTmt'
+  | 'salePriceTmt'
   | 'productId'
   | 'categoryId'
   | 'dollarRateId'
@@ -50,6 +51,7 @@ function scalarChanges(
     'price',
     'priceInTmt',
     'displayPriceTmt',
+    'salePriceTmt',
   ]);
   const wasOut = before.outOfStockAt != null;
   const isOut = after.outOfStockAt != null;

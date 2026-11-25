@@ -1,4 +1,5 @@
 import dbClient from '@/lib/dbClient';
+import { getOnSaleProducts } from '@/lib/saleProducts';
 import {
   buildProductWhere,
   ProductFilterQuery,
@@ -37,7 +38,14 @@ export default async function handler(
   try {
     const query = req.query as ProductFilterQuery;
     // Staff count products without images too, matching the grid they see.
-    const options = { includeImageless: await hasStaffBearer(req) };
+    // The on-sale ids are looked up once for all the scopes below.
+    const options = {
+      includeImageless: await hasStaffBearer(req),
+      saleProductIds:
+        query.sale === '1'
+          ? (await getOnSaleProducts()).map(({ id }) => id)
+          : undefined,
+    };
     const [where, brandWhere, colorWhere, priceWhere, stockWhere] =
       await Promise.all([
         buildProductWhere(query, options),

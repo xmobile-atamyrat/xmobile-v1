@@ -108,6 +108,7 @@ const snapshotSelect = {
   price: true,
   priceInTmt: true,
   displayPriceTmt: true,
+  salePriceTmt: true,
   productId: true,
   categoryId: true,
   dollarRateId: true,

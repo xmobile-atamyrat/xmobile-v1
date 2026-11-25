@@ -21,7 +21,12 @@ import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
 import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
-import { cachedPriceFrom, derivedDisplayFrom } from '@/pages/lib/priceDisplay';
+import {
+  cachedPriceFrom,
+  derivedDisplayFrom,
+  PriceRowLike,
+  salePriceOf,
+} from '@/pages/lib/priceDisplay';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prices, Prisma } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -109,6 +114,19 @@ export function pricesWhere(query: {
   return where;
 }
 
+/** Doubles as the i18n key the admin page shows. */
+const SALE_PRICE_INVALID = 'salePriceInvalid';
+
+// A sale price as sent by the client, ready to store: empty or null clears it.
+// Whether the figure is acceptable is salePriceOf's call.
+const requestedSalePrice = (value: unknown): string | null =>
+  String(value ?? '').trim() || null;
+
+// True when storing the row would store a sale price that is not an active sale:
+// not a number above zero and below the row's shown price.
+const hasInvalidSale = (row: PriceRowLike): boolean =>
+  row.salePriceTmt != null && salePriceOf(row) == null;
+
 export async function getPrice(priceId: string): Promise<Prices | null> {
   if (priceId != null) {
     const priceMatch = priceId?.match(squareBracketRegex);
@@ -155,6 +173,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         price,
         priceInTmt,
         displayPriceTmt,
+        salePriceTmt,
         categoryId,
         productId,
         dollarRateId,
@@ -165,17 +184,26 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           message: 'Missing required fields',
         });
       }
+      const priceFields = {
+        priceInTmt,
+        // Derived, not pinned to priceInTmt: that is the exact conversion,
+        // so a new price would reach the storefront unrounded.
+        displayPriceTmt:
+          displayPriceTmt ?? derivedDisplayFrom(priceInTmt) ?? priceInTmt,
+        salePriceTmt: requestedSalePrice(salePriceTmt),
+      };
+      if (hasInvalidSale(priceFields)) {
+        return res
+          .status(400)
+          .json({ success: false, message: SALE_PRICE_INVALID });
+      }
       // A brand-new price has no owner yet, so it can always take the requested
       // product; an invalid id is caught by the foreign key.
       const newPrice = await dbClient.prices.create({
         data: {
           name,
           price,
-          priceInTmt,
-          // Derived, not pinned to priceInTmt: that is the exact conversion,
-          // so a new price would reach the storefront unrounded.
-          displayPriceTmt:
-            displayPriceTmt ?? derivedDisplayFrom(priceInTmt) ?? priceInTmt,
+          ...priceFields,
           categoryId: categoryId ?? null,
           dollarRateId: dollarRateId ?? null,
           productId: productId ?? null,
@@ -264,6 +292,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           price: true,
           priceInTmt: true,
           displayPriceTmt: true,
+          salePriceTmt: true,
           dollarRateId: true,
           priceCheckedAt: true,
         },
@@ -297,90 +326,113 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         ? await dbClient.dollarRate.findMany({ where: { currency: 'TMT' } })
         : [];
 
-      const updatedPrices = await Promise.all(
-        pricePairs.map(async (price) => {
-          const data: any = { name: price.name };
-          if (price.price != null) {
-            data.price = price.price;
-          }
-          if (price.priceInTmt != null) {
-            data.priceInTmt = price.priceInTmt;
-          }
-          // Only an edited USD/manat amount counts as the admin re-checking the
-          // price. Decided from the submitted figures, before the rate-driven
-          // repricing below fills priceInTmt itself. A manat figure that just
-          // follows a newly chosen rate is a rate move and does not count.
-          let rateDerivedTmt: string | null = null;
-          if ('dollarRateId' in price) {
-            const target = rateForPrice(
-              { dollarRateId: price.dollarRateId ?? null },
-              rates,
-            );
-            const derived =
-              target == null
-                ? null
-                : recomputedPriceFields(
-                    data.price ?? currentById.get(price.id as string)!.price,
-                    target.rate,
-                  );
-            rateDerivedTmt =
-              derived == null ? null : String(derived.priceInTmt);
-          }
-          // `markChecked` is the page's refresh icon: the admin confirms the
-          // price as still correct without changing it.
-          if (
-            price.markChecked === true ||
-            priceAmountsChanged(
-              data,
-              currentById.get(price.id as string),
-              rateDerivedTmt,
-            )
-          ) {
-            data.priceCheckedAt = new Date();
-          }
-          // Presence-keyed rather than inferred from priceInTmt: the shown
-          // price is an attribute an admin can pin away from the exact
-          // conversion, so an edit to one must not rewrite the other.
-          if ('displayPriceTmt' in price) {
-            data.displayPriceTmt = price.displayPriceTmt ?? null;
-          }
+      // Each pair's money fields are worked out before anything is written, so a
+      // sale price can be checked against what the row will show after this save
+      // and a rejected one leaves the whole batch unapplied.
+      const planned = pricePairs.map((price) => {
+        const before = currentById.get(price.id as string)!;
+        const data: any = { name: price.name };
+        if (price.price != null) {
+          data.price = price.price;
+        }
+        if (price.priceInTmt != null) {
+          data.priceInTmt = price.priceInTmt;
+        }
+        // Only an edited USD/manat amount counts as the admin re-checking the
+        // price. Decided from the submitted figures, before the rate-driven
+        // repricing below fills priceInTmt itself. A manat figure that just
+        // follows a newly chosen rate is a rate move and does not count.
+        let rateDerivedTmt: string | null = null;
+        if ('dollarRateId' in price) {
+          const target = rateForPrice(
+            { dollarRateId: price.dollarRateId ?? null },
+            rates,
+          );
+          const derived =
+            target == null
+              ? null
+              : recomputedPriceFields(data.price ?? before.price, target.rate);
+          rateDerivedTmt = derived == null ? null : String(derived.priceInTmt);
+        }
+        // `markChecked` is the page's refresh icon: the admin confirms the
+        // price as still correct without changing it.
+        if (
+          price.markChecked === true ||
+          priceAmountsChanged(data, before, rateDerivedTmt)
+        ) {
+          data.priceCheckedAt = new Date();
+        }
+        // Presence-keyed rather than inferred from priceInTmt: the shown
+        // price is an attribute an admin can pin away from the exact
+        // conversion, so an edit to one must not rewrite the other.
+        if ('displayPriceTmt' in price) {
+          data.displayPriceTmt = price.displayPriceTmt ?? null;
+        }
 
-          // Presence-keyed: clearing the rate drops the price onto the
-          // default, which is what prices it from then on. The manat figures
-          // are re-derived here rather than trusted from the client, so the
-          // stored price always matches the rate it is filed under.
-          if ('dollarRateId' in price) {
-            data.dollarRateId = price.dollarRateId ?? null;
-            const before = currentById.get(price.id as string)!;
-            const target = rateForPrice(
-              { dollarRateId: data.dollarRateId },
-              rates,
+        // Presence-keyed: clearing the rate drops the price onto the
+        // default, which is what prices it from then on. The manat figures
+        // are re-derived here rather than trusted from the client, so the
+        // stored price always matches the rate it is filed under.
+        if ('dollarRateId' in price) {
+          data.dollarRateId = price.dollarRateId ?? null;
+          const target = rateForPrice(
+            { dollarRateId: data.dollarRateId },
+            rates,
+          );
+          if (target != null && data.priceInTmt == null) {
+            const repriced = recomputedPriceFields(
+              data.price ?? before.price,
+              target.rate,
             );
-            if (target != null && data.priceInTmt == null) {
-              const repriced = recomputedPriceFields(
-                data.price ?? before.price,
-                target.rate,
-              );
-              if (repriced != null) {
-                data.priceInTmt = repriced.priceInTmt;
-                // A display price typed in the same save is a deliberate pin
-                // and outranks the figure the rate would derive.
-                if (!('displayPriceTmt' in data)) {
-                  data.displayPriceTmt = repriced.displayPriceTmt;
-                }
+            if (repriced != null) {
+              data.priceInTmt = repriced.priceInTmt;
+              // A display price typed in the same save is a deliberate pin
+              // and outranks the figure the rate would derive.
+              if (!('displayPriceTmt' in data)) {
+                data.displayPriceTmt = repriced.displayPriceTmt;
               }
             }
           }
+        }
 
-          if (data.priceInTmt != null || 'displayPriceTmt' in data) {
-            const before = currentById.get(price.id as string)!;
-            const shown = cachedPriceFrom({
-              priceInTmt: data.priceInTmt ?? before.priceInTmt,
-              displayPriceTmt:
-                'displayPriceTmt' in data
-                  ? data.displayPriceTmt
-                  : before.displayPriceTmt,
-            });
+        // Presence-keyed too: a save that leaves the sale alone must neither
+        // clear it nor be refused because the stored one no longer applies.
+        if ('salePriceTmt' in price) {
+          data.salePriceTmt = requestedSalePrice(price.salePriceTmt);
+        }
+
+        // The row's price columns as they will be once this pair is applied.
+        const after: PriceRowLike = {
+          priceInTmt: data.priceInTmt ?? before.priceInTmt,
+          displayPriceTmt:
+            'displayPriceTmt' in data
+              ? data.displayPriceTmt
+              : before.displayPriceTmt,
+          salePriceTmt:
+            'salePriceTmt' in data ? data.salePriceTmt : before.salePriceTmt,
+        };
+
+        return { price, data, after };
+      });
+
+      if (
+        planned.some(
+          ({ data, after }) => 'salePriceTmt' in data && hasInvalidSale(after),
+        )
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: SALE_PRICE_INVALID });
+      }
+
+      const updatedPrices = await Promise.all(
+        planned.map(async ({ price, data, after }) => {
+          if (
+            data.priceInTmt != null ||
+            'displayPriceTmt' in data ||
+            'salePriceTmt' in data
+          ) {
+            const shown = cachedPriceFrom(after);
             if (shown != null) {
               await dbClient.product.updateMany({
                 where: {
@@ -471,10 +523,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         Object.keys(price).some((key) => key !== 'id' && key !== 'markChecked'),
       );
       const priceIds = shownPairs.map((price) => price.id as string);
+      // A variant's sale also shows on cached pages (the sale badge), so the
+      // products carrying such a price in a tag are rebuilt too.
+      const salePriceIds = updatedPrices
+        .filter(
+          ({ id, salePriceTmt }) =>
+            priceIds.includes(id) &&
+            (salePriceTmt != null || currentById.get(id)!.salePriceTmt != null),
+        )
+        .map(({ id }) => id);
       revalidateInBackground(res, async () =>
         productRevalidationPaths([
           ...priceRevalidationProductIds(shownPairs, currentById),
           ...(await productIdsReferencingPrices(priceIds)),
+          ...(await productIdsWithPriceInTags(salePriceIds)),
         ]),
       );
 

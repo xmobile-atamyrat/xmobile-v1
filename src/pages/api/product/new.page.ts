@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import { whereListableProduct } from '@/lib/prismaActiveScope';
 import { productSearchWhere } from '@/lib/productSearchWhere';
+import { withSale } from '@/lib/saleProducts';
 import { getPrice } from '@/pages/api/prices/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { PRODUCTS_PER_PAGE } from '@/pages/lib/constants';
@@ -57,7 +58,7 @@ async function handleGetNewProducts(query: {
     return {
       resp: {
         success: true,
-        data: productsWithPrices,
+        data: await withSale(productsWithPrices),
       },
       status: 200,
     };
