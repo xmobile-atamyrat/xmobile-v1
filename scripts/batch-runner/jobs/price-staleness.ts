@@ -86,16 +86,18 @@ export function buildPriceStalenessTitle(
   });
 }
 
+// Two em spaces, written as escapes so they stay visible in the source.
+const GAP = '\u2003\u2003';
+
 export function buildPriceStalenessContent(
   orange: number,
   red: number,
 ): string {
-  // "Label — number" keeps the grammar right for every count (no "1 товаров").
-  // The buckets are exclusive: orange is 30–89 days, red is 90+.
-  const parts: string[] = [];
-  if (orange > 0) parts.push(`1–3 месяца — ${orange}`);
-  if (red > 0) parts.push(`больше 3 месяцев — ${red}`);
-  return `Товары без обновления цены: ${parts.join(', ')}`;
+  // Short enough to fit a collapsed push on a laptop. The colours match the
+  // rows on Update Prices: orange is 30–89 days, red is 90+. The gap is two
+  // em spaces, which a web page does not squash into one space the way it
+  // squashes ordinary ones.
+  return `Оранжевые: ${orange}${GAP}Красные: ${red}`;
 }
 
 export interface PriceStalenessSummary {

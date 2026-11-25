@@ -82,15 +82,12 @@ describe('price-staleness job', () => {
     expect(s).toMatchObject({ sent: 2, failed: 0, recipients: 2 });
   });
 
-  it('omits a part whose count is zero', () => {
-    expect(buildPriceStalenessContent(0, 4)).toBe(
-      'Товары без обновления цены: больше 3 месяцев — 4',
-    );
-    expect(buildPriceStalenessContent(3, 0)).toBe(
-      'Товары без обновления цены: 1–3 месяца — 3',
-    );
+  it('lists both colours with their counts', () => {
     expect(buildPriceStalenessContent(3, 4)).toBe(
-      'Товары без обновления цены: 1–3 месяца — 3, больше 3 месяцев — 4',
+      'Оранжевые: 3\u2003\u2003Красные: 4',
+    );
+    expect(buildPriceStalenessContent(0, 4)).toBe(
+      'Оранжевые: 0\u2003\u2003Красные: 4',
     );
   });
 
