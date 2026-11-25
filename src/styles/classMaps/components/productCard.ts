@@ -50,6 +50,11 @@ export const productCardClasses = {
     web: 'font-bold text-[24px] leading-none text-[#20166E] min-w-0 truncate',
     mobile: 'font-bold text-[15px] leading-none text-[#20166E] mt-auto',
   },
+  // Takes the plain price's place at the bottom of the card.
+  salePrice: {
+    web: 'min-w-0 overflow-hidden',
+    mobile: 'min-w-0 overflow-hidden mt-auto',
+  },
   footerRow: 'flex items-center justify-between gap-3 mt-auto pt-1',
   priceUnit: {
     web: 'text-[13px] font-normal text-[#8B8A98] ml-1',
