@@ -45,6 +45,42 @@ const noNames = {
 };
 
 describe('buildPriceUpdateMeta', () => {
+  it('records a refresh-icon check, which changes only the check date', () => {
+    const before = {
+      ...price,
+      priceCheckedAt: new Date('2026-08-01T00:00:00Z'),
+    };
+    const after = {
+      ...price,
+      priceCheckedAt: new Date('2026-11-25T00:00:00Z'),
+    };
+    expect(buildPriceUpdateMeta(before, after, noNames)).toEqual({
+      name: '128gb Black',
+      changes: {
+        checked: {
+          from: '2026-08-01T00:00:00.000Z',
+          to: '2026-11-25T00:00:00.000Z',
+        },
+      },
+    });
+  });
+
+  it('does not repeat the check when the amount itself was edited', () => {
+    const before = {
+      ...price,
+      priceCheckedAt: new Date('2026-08-01T00:00:00Z'),
+    };
+    const after = {
+      ...price,
+      price: '355',
+      priceCheckedAt: new Date('2026-11-25T00:00:00Z'),
+    };
+    expect(buildPriceUpdateMeta(before, after, noNames)).toEqual({
+      name: '128gb Black',
+      changes: { price: { from: '340', to: '355' } },
+    });
+  });
+
   it('returns null when nothing changed', () => {
     expect(buildPriceUpdateMeta(price, { ...price }, noNames)).toBeNull();
   });

@@ -804,6 +804,7 @@
   "activityFieldPriceInTmt": "baha (TMT)",
   "activityFieldDisplayPriceTmt": "görkezilýän baha (TMT)",
   "activityFieldOutOfStock": "ammarda ýok",
+  "activityFieldChecked": "barlandy",
   "activityFieldCategory": "kategoriýa",
   "activityFieldBrand": "brend",
   "activityFieldProduct": "haryt",

@@ -802,6 +802,7 @@
   "activityFieldPriceInTmt": "price (TMT)",
   "activityFieldDisplayPriceTmt": "shown price (TMT)",
   "activityFieldOutOfStock": "out of stock",
+  "activityFieldChecked": "checked",
   "activityFieldCategory": "category",
   "activityFieldBrand": "brand",
   "activityFieldProduct": "product",

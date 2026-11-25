@@ -1002,8 +1002,12 @@ export default function UpdatePrices() {
                       rowEdit != null &&
                       savedRow != null &&
                       editChecksPrice(savedRow, rowEdit, rates);
+                    // A sold-out price is not sold, so nobody needs to
+                    // re-check it; the overview and the daily alert skip it
+                    // the same way.
+                    const outOfStock = row[PRICE_OUT_OF_STOCK_IDX] === true;
                     const tier =
-                      days == null || pendingChecked
+                      days == null || pendingChecked || outOfStock
                         ? null
                         : staleTierFor(days);
                     const tintColor =

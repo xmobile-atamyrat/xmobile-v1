@@ -265,6 +265,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           priceInTmt: true,
           displayPriceTmt: true,
           dollarRateId: true,
+          priceCheckedAt: true,
         },
       });
       const currentById = new Map(current.map((price) => [price.id, price]));

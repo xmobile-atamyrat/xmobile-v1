@@ -12,8 +12,10 @@ async function loadCheckedAt(
   ids: string[],
 ): Promise<Map<string, Date>> {
   if (ids.length === 0) return new Map();
+  // Sold-out price rows are left out: nobody sells at that price, so its age
+  // must not make an in-stock product look stale.
   const rows = await db.prices.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, outOfStockAt: null },
     select: { id: true, priceCheckedAt: true },
   });
   return new Map(rows.map((r) => [r.id, r.priceCheckedAt]));

@@ -11,7 +11,13 @@ import Paper from '@mui/material/Paper';
 import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
 import Typography from '@mui/material/Typography';
-import { ArrowLeft, ChevronDown, MessageCircle, Truck } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronDown,
+  MessageCircle,
+  Tag,
+  Truck,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import React, {
@@ -170,6 +176,16 @@ export default function NotificationMenu({
 
   const renderSingle = (notification: InAppNotification) => {
     const isOrder = notification.type === 'ORDER_STATUS_UPDATE';
+    const isPrice = notification.type === 'PRICE_STALENESS';
+    let iconClass = notificationClasses.item.icon.chat;
+    let icon = <MessageCircle size={20} />;
+    if (isOrder) {
+      iconClass = notificationClasses.item.icon.order;
+      icon = <Truck size={20} />;
+    } else if (isPrice) {
+      iconClass = notificationClasses.item.icon.price;
+      icon = <Tag size={20} />;
+    }
     return (
       <div
         key={notification.id}
@@ -179,13 +195,9 @@ export default function NotificationMenu({
         onClick={() => handleNotificationClick(notification)}
       >
         <span
-          className={`w-[40px] h-[40px] rounded-[11px] flex items-center justify-center flex-none ${
-            isOrder
-              ? notificationClasses.item.icon.order
-              : notificationClasses.item.icon.chat
-          }`}
+          className={`w-[40px] h-[40px] rounded-[11px] flex items-center justify-center flex-none ${iconClass}`}
         >
-          {isOrder ? <Truck size={20} /> : <MessageCircle size={20} />}
+          {icon}
         </span>
         <div className={notificationClasses.item.content[platform]}>
           {notification.title && (

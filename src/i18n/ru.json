@@ -804,6 +804,7 @@
   "activityFieldPriceInTmt": "цена (TMT)",
   "activityFieldDisplayPriceTmt": "показываемая цена (TMT)",
   "activityFieldOutOfStock": "нет в наличии",
+  "activityFieldChecked": "проверена",
   "activityFieldCategory": "категория",
   "activityFieldBrand": "бренд",
   "activityFieldProduct": "товар",

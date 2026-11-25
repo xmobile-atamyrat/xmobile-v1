@@ -85,6 +85,8 @@ export const notificationClasses = {
     icon: {
       order: 'bg-[#EDEBF7] text-[#20166E]',
       chat: 'bg-[#F0EEF9] text-[#20166E]',
+      // amber, so a price warning stands apart from chat and order items
+      price: 'bg-[#FFF4E5] text-[#B45309]',
     },
     content: {
       web: 'flex flex-col gap-[2px] flex-1',
