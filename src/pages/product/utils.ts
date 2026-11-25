@@ -406,7 +406,7 @@ const byCheckedThenName = (a: Prices, b: Prices, direction: 1 | -1) =>
   direction * (editedTime(a) - editedTime(b)) || a.name.localeCompare(b.name);
 
 // Returns a sorted copy; '' (or unknown key) keeps the original order.
-export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
+const sortByKey = (prices: Prices[], key: PriceSortKey): Prices[] => {
   const sorted = [...prices];
   switch (key) {
     case 'nameAsc':
@@ -440,6 +440,18 @@ export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
     default:
       return sorted;
   }
+};
+
+// Sorts by `key`, then moves every out-of-stock price below the in-stock ones,
+// whatever the sort. Nobody sells at a sold-out price, so its age or amount
+// must not push it in between the rows that still need work. Each group keeps
+// the sort order.
+export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
+  const sorted = sortByKey(prices, key);
+  return [
+    ...sorted.filter((p) => p.outOfStockAt == null),
+    ...sorted.filter((p) => p.outOfStockAt != null),
+  ];
 };
 
 // Keeps prices whose own category relation is in categoryIds. Matches on

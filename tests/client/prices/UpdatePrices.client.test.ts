@@ -440,13 +440,15 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
       { id: 'p1', markChecked: true },
       { id: 'p2', isOutOfStock: true },
     ]);
-    // After saving, the freshly checked row re-sorts behind the older one.
+    // After saving, Cable is sold out, so it sinks to the bottom even though
+    // its price is older than iPhone's freshly checked one.
     await waitFor(() => {
-      const after = screen
-        .getAllByText(/^(iPhone|Cable)$/)
-        .map((node) => node.textContent);
-      expect(after).toEqual(['Cable', 'iPhone']);
+      expect(screen.getByText('Prices updated successfully!')).toBeTruthy();
     });
+    const after = screen
+      .getAllByText(/^(iPhone|Cable)$/)
+      .map((node) => node.textContent);
+    expect(after).toEqual(['iPhone', 'Cable']);
   });
 
   it('does not reload the table when the access token rotates', async () => {

@@ -1019,6 +1019,49 @@ describe('sortPrices by price check date', () => {
   });
 });
 
+describe('sortPrices keeps out-of-stock prices at the bottom', () => {
+  const row = (id: string, checked: string, soldOut: boolean): Prices =>
+    ({
+      id,
+      name: id,
+      price: id === 'old-sold' ? '1' : '5',
+      priceInTmt: '1',
+      priceCheckedAt: new Date(checked),
+      outOfStockAt: soldOut ? new Date('2026-01-01T00:00:00Z') : null,
+    }) as Prices;
+
+  const rows = [
+    row('fresh', '2026-05-01T00:00:00Z', false),
+    row('old-sold', '2025-01-01T00:00:00Z', true),
+    row('old', '2026-01-01T00:00:00Z', false),
+    row('newer-sold', '2026-04-01T00:00:00Z', true),
+  ];
+
+  it('for the oldest-first default, even when sold-out rows are older', () => {
+    expect(sortPrices(rows, 'editedStale').map((p) => p.id)).toEqual([
+      'old',
+      'fresh',
+      'old-sold',
+      'newer-sold',
+    ]);
+  });
+
+  it('for every other sort too, keeping each group in order', () => {
+    expect(sortPrices(rows, 'dollarAsc').map((p) => p.id)).toEqual([
+      'fresh',
+      'old',
+      'old-sold',
+      'newer-sold',
+    ]);
+    expect(sortPrices(rows, '').map((p) => p.id)).toEqual([
+      'fresh',
+      'old',
+      'old-sold',
+      'newer-sold',
+    ]);
+  });
+});
+
 describe('sortPrices by displayed price', () => {
   const row = (id: string, tmt: string, display: string | null): Prices =>
     ({
