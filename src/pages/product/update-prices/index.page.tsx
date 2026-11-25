@@ -15,11 +15,13 @@ import {
   debounce,
   filterPricesByCategories,
   filterPricesByRate,
+  filterPricesOnSale,
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
   editChecksPrice,
   foldSavedEdit,
+  hasInvalidSaleEdit,
   isEditablePriceCell,
   isMoneyRevert,
   mergePriceEdit,
@@ -34,18 +36,20 @@ import {
   PRICE_NAME_IDX,
   PRICE_OUT_OF_STOCK_IDX,
   PRICE_RATE_IDX,
+  PRICE_SALE_IDX,
   PRICE_UPDATED_IDX,
   PriceEdit,
   PriceSortKey,
   processPrices,
+  saleFeedbackOf,
   sortPrices,
   TableData,
   tmtFromUsd,
 } from '@/pages/product/utils';
 import {
-  displayPriceOf,
   displayTmtFromUsd,
   pricesFromUsd,
+  regularPriceOf,
   roundToDisplayTmt,
 } from '@/pages/lib/priceDisplay';
 import { findDefaultRate, rateForPrice } from '@/lib/dollarRates';
@@ -95,6 +99,7 @@ import {
   categoryMenuItems,
   flattenCategories,
 } from '@/pages/product/components/categoryOptions';
+import SaleFeedback from '@/pages/product/components/SaleFeedback';
 import SelectCell from '@/pages/product/components/SelectCell';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -118,6 +123,7 @@ const PRICE_HEADER_KEYS = [
   'priceColumnDollars',
   'priceColumnManat',
   'priceColumnDisplay',
+  'salePrice',
   'category',
   'outOfStock',
   'updatedAt',
@@ -185,6 +191,7 @@ export default function UpdatePrices() {
   const [sortKey, setSortKey] = useState<PriceSortKey>('editedStale');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
+  const [onSaleOnly, setOnSaleOnly] = useState(false);
   const { user, accessToken } = useUserContext();
   const { refresh: refreshStalePrices } = useStalePrices();
   const { categories } = useCategoryContext();
@@ -255,6 +262,7 @@ export default function UpdatePrices() {
     // Stacks on whichever filter ran above rather than replacing it, so
     // "out of stock" narrows the current category instead of leaving it.
     if (outOfStockOnly) filtered = filterPricesOutOfStock(filtered);
+    if (onSaleOnly) filtered = filterPricesOnSale(filtered);
     // Stacks last, so "prices on this rate" always narrows whatever is already
     // on screen rather than replacing it.
     filtered = filterPricesByRate(filtered, selectedRate);
@@ -270,6 +278,7 @@ export default function UpdatePrices() {
     categoryFilter,
     categories,
     outOfStockOnly,
+    onSaleOnly,
     selectedRate,
   ]);
 
@@ -340,6 +349,24 @@ export default function UpdatePrices() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
     debounce((value: string | null, cellIndex: number, row: any[]) => {
+      // Emptying the sale box is a real edit (it ends the sale), and a bad
+      // value is kept so the cell can flag it and Save can refuse it.
+      if (cellIndex === PRICE_SALE_IDX) {
+        const priceId = row[PRICE_ID_IDX] as string;
+        const salePriceTmt = value?.trim() || null;
+        recordEdit(priceId, { salePriceTmt });
+        setTableData((prevData) =>
+          prevData.map((prevRow, index) =>
+            index > 0 && prevRow[PRICE_ID_IDX] === priceId
+              ? prevRow.map((cell, idx) =>
+                  idx === PRICE_SALE_IDX ? salePriceTmt : cell,
+                )
+              : prevRow,
+          ),
+        );
+        return;
+      }
+
       // A cleared box is just the admin mid-edit (e.g. holding Backspace):
       // ignore it quietly. The cell restores the last value on blur.
       if (value == null || value.trim() === '') return;
@@ -511,7 +538,7 @@ export default function UpdatePrices() {
         const derived = backToSaved
           ? {
               priceInTmt: saved.priceInTmt,
-              displayPriceTmt: displayPriceOf(saved),
+              displayPriceTmt: regularPriceOf(saved),
             }
           : pricesFromUsd(dollars, newRate);
         change.priceInTmt = derived.priceInTmt;
@@ -634,12 +661,14 @@ export default function UpdatePrices() {
     searchKeyword !== '' ||
     categoryFilter !== '' ||
     outOfStockOnly ||
+    onSaleOnly ||
     rateFilter !== '';
 
   // Search runs server-side, so clearing it has to re-read the list too.
   const handleClearFilters = () => {
     setCategoryFilter('');
     setOutOfStockOnly(false);
+    setOnSaleOnly(false);
     setRateFilter('');
     setSearchKeyword('');
     handleSearch('');
@@ -668,9 +697,14 @@ export default function UpdatePrices() {
   );
 
   const handleSave = async () => {
+    if (hasInvalidSaleEdit(allPrices, updatedPrices)) {
+      setSnackbarOpen(true);
+      setSnackbarMessage({ message: 'salePriceInvalid', severity: 'error' });
+      return;
+    }
     setIsSaving(true);
     try {
-      const { success } = await fetchWithCreds<Prices[]>({
+      const { success, message } = await fetchWithCreds<Prices[]>({
         accessToken,
         path: `/api/prices`,
         method: 'PUT',
@@ -696,7 +730,11 @@ export default function UpdatePrices() {
         setSnackbarMessage({ message: 'pricesUpdated', severity: 'success' });
       } else {
         setSnackbarOpen(true);
-        setSnackbarMessage({ message: 'updatePricesError', severity: 'error' });
+        setSnackbarMessage({
+          message:
+            message === 'salePriceInvalid' ? message : 'updatePricesError',
+          severity: 'error',
+        });
       }
     } catch (error) {
       console.error(error);
@@ -856,6 +894,16 @@ export default function UpdatePrices() {
                 sx={{ textTransform: 'none', lineHeight: 1.2, height: 40 }}
               >
                 {t('outOfStockOnly')}
+              </ToggleButton>
+              <ToggleButton
+                size="small"
+                color="error"
+                value="onSaleOnly"
+                selected={onSaleOnly}
+                onChange={() => setOnSaleOnly((prev) => !prev)}
+                sx={{ textTransform: 'none', lineHeight: 1.2, height: 40 }}
+              >
+                {t('onSaleOnly')}
               </ToggleButton>
               <FormControl size="small" sx={{ minWidth: 170 }}>
                 <InputLabel>{t('sortBy')}</InputLabel>
@@ -1089,13 +1137,21 @@ export default function UpdatePrices() {
                               // own the edited text.
                               if (isEditablePriceCell(cellIndex)) {
                                 return (
-                                  <EditableText
-                                    value={cell as string | number | null}
-                                    onTextChange={(text) =>
-                                      handlePriceUpdate(text, cellIndex, row)
-                                    }
-                                    onCommit={handlePriceUpdate.flush}
-                                  />
+                                  <>
+                                    <EditableText
+                                      value={cell as string | number | null}
+                                      onTextChange={(text) =>
+                                        handlePriceUpdate(text, cellIndex, row)
+                                      }
+                                      onCommit={handlePriceUpdate.flush}
+                                    />
+                                    {cellIndex === PRICE_SALE_IDX && (
+                                      <SaleFeedback
+                                        feedback={saleFeedbackOf(row)}
+                                        errorText={t('salePriceInvalid')}
+                                      />
+                                    )}
+                                  </>
                                 );
                               }
                               if (cellIndex === PRICE_CATEGORY_IDX) {

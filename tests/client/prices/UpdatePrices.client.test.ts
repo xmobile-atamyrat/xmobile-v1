@@ -57,6 +57,7 @@ const price = (
   price: '10',
   priceInTmt: '200',
   displayPriceTmt: '200',
+  salePriceTmt: null as string | null,
   categoryId,
   productId: null as string | null,
   dollarRateId: 1,
@@ -470,5 +471,183 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     });
     expect(priceReads()).toHaveLength(readsBeforeRotation);
     expect(screen.queryByText('Cable')).toBeNull();
+  });
+});
+
+describe('update-prices sale price', { timeout: 20_000 }, () => {
+  // iPhone has no sale; Cable is already on sale.
+  const saleRows = [prices[0], { ...prices[1], salePriceTmt: '150' }];
+  let putResponse: { success: boolean; message?: string };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    putResponse = { success: true };
+    vi.mocked(useUserContext).mockReturnValue({
+      user: { id: 'me', grade: 'ADMIN' } as never,
+      setUser: vi.fn(),
+      accessToken: 'token',
+      setAccessToken: vi.fn(),
+      isLoading: false,
+    });
+    vi.mocked(useCategoryContext).mockReturnValue({ categories } as never);
+    vi.mocked(useFetchWithCreds).mockReturnValue(fetchMock as never);
+    fetchMock.mockImplementation(async ({ path, method }) => {
+      if (method === 'PUT') return putResponse;
+      if (path === '/api/prices/rate') return { success: true, data: rates };
+      return { success: true, data: saleRows };
+    });
+  });
+
+  // The editable boxes of a row, in column order.
+  const boxesOf = (name: string) => {
+    const [, dollars, , display, sale] = Array.from(
+      screen
+        .getByText(name)
+        .closest('tr')!
+        .querySelectorAll<HTMLElement>('[contenteditable]'),
+    );
+    return { dollars, display, sale };
+  };
+
+  // Types over a box and leaves it, which records the edit right away.
+  const typeInto = (box: HTMLElement, text: string) => {
+    box.textContent = text;
+    fireEvent.input(box);
+    fireEvent.blur(box);
+  };
+
+  const save = () => userEvent.setup().click(saveChangesButton());
+
+  it('sends a typed sale price on its own and shows the discount', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('iPhone').sale, '150');
+
+    expect(boxesOf('iPhone').sale.textContent).toBe('150');
+    // One chip for the typed sale, one for the stored one.
+    expect(screen.getAllByText('-25%')).toHaveLength(2);
+    await save();
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p1', salePriceTmt: '150' },
+    ]);
+  });
+
+  it('recomputes the discount from a pending display price', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('Cable').display, '300');
+
+    expect(screen.getByText('-50%')).toBeTruthy();
+  });
+
+  it('does not resend a stored sale when another cell is edited', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('Cable').display, '300');
+    await save();
+
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p2', displayPriceTmt: '300' },
+    ]);
+  });
+
+  it('sends null for an emptied sale cell and keeps it empty', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('Cable').sale, '');
+
+    expect(boxesOf('Cable').sale.textContent).toBe('');
+    expect(screen.queryByText('-25%')).toBeNull();
+    await save();
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p2', salePriceTmt: null },
+    ]);
+  });
+
+  it('drops a sale price typed back to the saved one', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('Cable').sale, '120');
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+    typeInto(boxesOf('Cable').sale, '150');
+
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+  });
+
+  it('restores the saved sale price on discard', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('Cable').sale, '120');
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Discard' }));
+
+    expect(boxesOf('Cable').sale.textContent).toBe('150');
+  });
+
+  it('flags an invalid sale price and refuses to save it', async () => {
+    await renderPage();
+
+    typeInto(boxesOf('iPhone').sale, '200');
+
+    expect(screen.getByTestId('ErrorOutlineIcon')).toBeTruthy();
+    await save();
+    expect(
+      await screen.findByText(
+        'Sale price must be above 0 and lower than the normal price',
+      ),
+    ).toBeTruthy();
+    expect(sentWith('PUT')).toBeUndefined();
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+  });
+
+  it('translates a refused sale price and keeps the edit', async () => {
+    putResponse = { success: false, message: 'salePriceInvalid' };
+    await renderPage();
+
+    typeInto(boxesOf('iPhone').sale, '150');
+    await save();
+
+    expect(
+      await screen.findByText(
+        'Sale price must be above 0 and lower than the normal price',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+    expect(boxesOf('iPhone').sale.textContent).toBe('150');
+  });
+
+  it('does not turn the sale price into the display price on a rate revert', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    // A rate cell is plain text until clicked.
+    const pickRate = async (current: string, next: string) => {
+      const row = screen.getByText('Cable').closest('tr')!;
+      await user.click(within(row).getByText(current));
+      await user.click(within(screen.getByRole('listbox')).getByText(next));
+      await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
+    };
+
+    await pickRate('Manat (20)', 'Bazar (25)');
+    expect(boxesOf('Cable').display.textContent).toBe('250');
+    await pickRate('Bazar (25)', 'Manat (20)');
+
+    expect(boxesOf('Cable').display.textContent).toBe('200');
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+  });
+
+  it('filters to the prices on sale until the filters are cleared', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'On sale' }));
+    expect(screen.queryByText('iPhone')).toBeNull();
+    expect(screen.getByText('Cable')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Clear Filters' }));
+    expect(await screen.findByText('iPhone')).toBeTruthy();
   });
 });
