@@ -349,7 +349,7 @@
   "adminCancelled": "Admin tarapyndan otmenit edildi",
   "allOrders": "Hemmä zakazlar",
   "filterOrders": "Zakazlary filtirle",
-  "clearFilters": "Zakazlary çistile",
+  "clearFilters": "Filtrlary ayyr",
   "applyFilters": "Filtileri ulan",
   "noOrdersFound": "Zakaz tapylmady",
   "selectStatus": "Statusy saýlaň",
@@ -985,6 +985,5 @@
   "displayHighToLow": "Gorkaziladron ↓",
   "unsavedChanges": "{count} sohranit edilmadik uytgashmalar",
   "discard": "Izina et",
-  "pricesCount": "{count}-ta baha",
-  "clearPriceFilters": "Filtrlary ayyr"
+  "pricesCount": "{count}-ta baha"
 }

@@ -875,7 +875,7 @@ export default function UpdatePrices() {
                   sx={{ textTransform: 'none' }}
                   onClick={handleClearFilters}
                 >
-                  {t('clearPriceFilters')}
+                  {t('clearFilters')}
                 </Button>
               </Box>
             )}

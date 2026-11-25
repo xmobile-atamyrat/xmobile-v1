@@ -985,6 +985,5 @@
   "displayHighToLow": "Отображаемая ↓",
   "unsavedChanges": "Несохранённых изменений: {count}",
   "discard": "Отменить",
-  "pricesCount": "Цен: {count}",
-  "clearPriceFilters": "Сбросить фильтры"
+  "pricesCount": "Цен: {count}"
 }

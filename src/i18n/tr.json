@@ -983,6 +983,5 @@
   "displayHighToLow": "Gösterilen ↓",
   "unsavedChanges": "{count} kaydedilmemiş değişiklik",
   "discard": "Vazgeç",
-  "pricesCount": "{count} fiyat",
-  "clearPriceFilters": "Filtreleri temizle"
+  "pricesCount": "{count} fiyat"
 }
