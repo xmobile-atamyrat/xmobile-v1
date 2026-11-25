@@ -980,5 +980,8 @@
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Display",
   "displayLowToHigh": "Display ↑",
-  "displayHighToLow": "Display ↓"
+  "displayHighToLow": "Display ↓",
+  "unsavedChanges": "{count} unsaved changes",
+  "discard": "Discard",
+  "pricesCount": "{count} prices"
 }

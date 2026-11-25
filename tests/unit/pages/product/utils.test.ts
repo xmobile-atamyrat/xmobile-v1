@@ -14,7 +14,9 @@ import {
   filterPricesWithoutProduct,
   foldSavedEdit,
   isEditablePriceCell,
+  isMoneyRevert,
   isPriceValid,
+  mergePriceEdit,
   parseOrderVariant,
   parsePrice,
   parseVariantTag,
@@ -1038,5 +1040,95 @@ describe('filterPricesByRate', () => {
     expect(
       filterPricesByRate(prices, { id: 1, rate: 19.5, isDefault: true }),
     ).toEqual([onDefault, unassigned]);
+  });
+});
+
+describe('reverting a pending price edit', () => {
+  const saved = {
+    id: 'p1',
+    name: 'iPhone',
+    price: '10',
+    priceInTmt: '200',
+    displayPriceTmt: '210',
+    categoryId: null,
+    dollarRateId: 1,
+    outOfStockAt: null,
+  } as unknown as Prices;
+  const money = {
+    id: 'p1',
+    price: '12',
+    priceInTmt: '240',
+    displayPriceTmt: '240',
+  };
+
+  it('matches money as numbers, in the column that was typed', () => {
+    expect(isMoneyRevert(saved, PRICE_DOLLAR_IDX, '10.00')).toBe(true);
+    expect(isMoneyRevert(saved, PRICE_MANAT_IDX, '200')).toBe(true);
+    expect(isMoneyRevert(saved, PRICE_DOLLAR_IDX, '200')).toBe(false);
+    expect(isMoneyRevert(saved, PRICE_DISPLAY_IDX, '210')).toBe(false);
+  });
+
+  it('drops all three money fields together and keeps other changes', () => {
+    expect(
+      mergePriceEdit(saved, { ...money, name: 'New' }, { id: 'p1' }, true),
+    ).toEqual({ id: 'p1', name: 'New' });
+    expect(mergePriceEdit(saved, money, { id: 'p1' }, true)).toBeNull();
+  });
+
+  it('drops a display price typed back on its own', () => {
+    expect(
+      mergePriceEdit(
+        saved,
+        { id: 'p1', displayPriceTmt: '300' },
+        { id: 'p1', displayPriceTmt: '210' },
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps the old display price while the dollar price is changing', () => {
+    expect(
+      mergePriceEdit(saved, money, { id: 'p1', displayPriceTmt: '210' }),
+    ).toEqual({ ...money, displayPriceTmt: '210' });
+  });
+
+  it('drops the manat figures once the rate is switched back', () => {
+    expect(
+      mergePriceEdit(
+        saved,
+        {
+          id: 'p1',
+          dollarRateId: 2,
+          priceInTmt: '220',
+          displayPriceTmt: '220',
+        },
+        {
+          id: 'p1',
+          dollarRateId: 1,
+          priceInTmt: '200',
+          displayPriceTmt: '210',
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps a saved-looking manat while the dollar price is changing', () => {
+    expect(
+      mergePriceEdit(saved, money, {
+        id: 'p1',
+        price: '11',
+        priceInTmt: '200',
+      }),
+    ).toEqual({ ...money, price: '11', priceInTmt: '200' });
+  });
+
+  it.each([
+    [{ name: 'New' }, { name: 'iPhone' }],
+    [{ categoryId: 'phones' }, { categoryId: null }],
+    [{ dollarRateId: 2 }, { dollarRateId: 1 }],
+    [{ isOutOfStock: true }, { isOutOfStock: false }],
+  ])('drops %o once changed back', (changed, back) => {
+    expect(
+      mergePriceEdit(saved, { id: 'p1', ...changed }, { id: 'p1', ...back }),
+    ).toBeNull();
   });
 });

@@ -980,5 +980,8 @@
   "priceColumnManat": "Manat",
   "priceColumnDisplay": "Gösterilen",
   "displayLowToHigh": "Gösterilen ↑",
-  "displayHighToLow": "Gösterilen ↓"
+  "displayHighToLow": "Gösterilen ↓",
+  "unsavedChanges": "{count} kaydedilmemiş değişiklik",
+  "discard": "Vazgeç",
+  "pricesCount": "{count} fiyat"
 }

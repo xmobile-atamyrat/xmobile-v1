@@ -1,6 +1,11 @@
 import Layout from '@/pages/components/Layout';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
-import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
+import {
+  appBarHeight,
+  mobileAppBarHeight,
+  mobileBottomNavHeight,
+} from '@/pages/lib/constants';
+import { usePlatform } from '@/pages/lib/PlatformContext';
 import { SnackbarProps } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import {
@@ -14,6 +19,8 @@ import {
   filterPricesWithoutProduct,
   foldSavedEdit,
   isEditablePriceCell,
+  isMoneyRevert,
+  mergePriceEdit,
   NO_CATEGORY_FILTER,
   NO_PRODUCT_FILTER,
   parsePrice,
@@ -26,6 +33,7 @@ import {
   PRICE_OUT_OF_STOCK_IDX,
   PRICE_RATE_IDX,
   PRICE_UPDATED_IDX,
+  PriceEdit,
   PriceSortKey,
   processPrices,
   sortPrices,
@@ -33,6 +41,7 @@ import {
   tmtFromUsd,
 } from '@/pages/product/utils';
 import {
+  displayPriceOf,
   displayTmtFromUsd,
   pricesFromUsd,
   roundToDisplayTmt,
@@ -40,13 +49,16 @@ import {
 import { findDefaultRate, rateForPrice } from '@/lib/dollarRates';
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Checkbox,
+  Chip,
   FormControl,
   IconButton,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Snackbar,
   Dialog,
@@ -57,6 +69,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -79,6 +92,7 @@ import {
   flattenCategories,
 } from '@/pages/product/components/categoryOptions';
 import SelectCell from '@/pages/product/components/SelectCell';
+import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditableText from '@/pages/product/components/EditableText';
@@ -92,10 +106,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-// Sentinel for the filter dropdown's "create a rate" row. Real values are
-// stringified ids, so this cannot collide with one.
-const ADD_RATE_OPTION = '__add_rate__';
-
 // Translation key for each table column, in the PRICE_*_IDX order.
 const PRICE_HEADER_KEYS = [
   'priceColumnName',
@@ -108,6 +118,17 @@ const PRICE_HEADER_KEYS = [
   'updatedAt',
 ];
 
+// Name column layout, left to right: 8px gap, the 30px delete icon, 8px gap,
+// then the name text. The header label and every name start at the same x.
+const NAME_TEXT_START = 46;
+// Matches the padding EditableText puts around its text.
+const EDITOR_PADDING = 16;
+
+// On mobile the unsaved-changes bar sits just above the fixed bottom nav, and
+// the floating chat button moves above the bar (which is at most 88px tall).
+const MOBILE_SAVE_BAR_BOTTOM = mobileBottomNavHeight + 8;
+const MOBILE_CHAT_BOTTOM_ABOVE_SAVE_BAR = MOBILE_SAVE_BAR_BOTTOM + 96;
+
 const pricesPath = (keyword: string) =>
   keyword === ''
     ? '/api/prices'
@@ -116,6 +137,7 @@ const pricesPath = (keyword: string) =>
 export default function UpdatePrices() {
   const router = useRouter();
   const theme = useTheme();
+  const platform = usePlatform();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const t = useTranslations();
   const [tableData, setTableData] = useState<TableData>([]);
@@ -127,7 +149,8 @@ export default function UpdatePrices() {
   // Mirror of updatedPrices read by the derive effect to overlay pending edits
   // without adding updatedPrices to its deps (which would re-sort mid-typing).
   const updatedPricesRef = useRef<Record<string, Partial<Prices>>>({});
-  const [hoveredPrice, setHoveredPrice] = useState<number>();
+  const [discardCount, setDiscardCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const [showDleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<string>();
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
@@ -150,6 +173,10 @@ export default function UpdatePrices() {
   // The rendered `tableData` is derived from this via sort/filter below, so the
   // existing edit-by-row-index logic on `tableData` stays untouched.
   const [allPrices, setAllPrices] = useState<Prices[]>([]);
+  // Mirror of allPrices for the edit handlers, which compare each change with
+  // the saved price and are memoized too long to read the state directly.
+  const allPricesRef = useRef<Prices[]>([]);
+  allPricesRef.current = allPrices;
   const [sortKey, setSortKey] = useState<PriceSortKey>('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [outOfStockOnly, setOutOfStockOnly] = useState(false);
@@ -283,6 +310,27 @@ export default function UpdatePrices() {
     }
   }, [hasAccessToken]);
 
+  // Records a change in the pending map, or removes it again once the price is
+  // back to its saved values.
+  const recordEdit = useCallback(
+    (priceId: string, change: PriceEdit, moneyReverted = false) => {
+      setUpdatedPrices((prevPrices) => {
+        const saved = allPricesRef.current.find((p) => p.id === priceId);
+        const edit = { id: priceId, ...change };
+        const merged =
+          saved == null
+            ? { ...prevPrices[priceId], ...edit }
+            : mergePriceEdit(saved, prevPrices[priceId], edit, moneyReverted);
+        const next = { ...prevPrices };
+        if (merged == null) delete next[priceId];
+        else next[priceId] = merged;
+        updatedPricesRef.current = next;
+        return next;
+      });
+    },
+    [],
+  );
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handlePriceUpdate = useCallback(
     debounce((value: string | null, cellIndex: number, row: any[]) => {
@@ -343,14 +391,13 @@ export default function UpdatePrices() {
         currPrice.name = value;
       }
 
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], ...currPrice },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      const saved = allPricesRef.current.find((p) => p.id === priceId);
+      const moneyReverted =
+        saved != null && isMoneyRevert(saved, cellIndex, value);
+      // The saved row, to put the linked price cells back on a revert.
+      const savedRow = moneyReverted ? processPrices([saved])[1] : null;
+
+      recordEdit(priceId, currPrice, moneyReverted);
 
       // Find the row by its price id, not its position: this runs after the
       // debounce delay, and a re-sort or filter in that window would put a
@@ -359,6 +406,15 @@ export default function UpdatePrices() {
         const newData = prevData.map((prevRow, index) => {
           if (index > 0 && prevRow[PRICE_ID_IDX] === priceId) {
             return prevRow.map((cell, idx) => {
+              if (
+                savedRow != null &&
+                idx !== cellIndex &&
+                (idx === PRICE_DOLLAR_IDX ||
+                  idx === PRICE_MANAT_IDX ||
+                  idx === PRICE_DISPLAY_IDX)
+              ) {
+                return savedRow[idx];
+              }
               if (cellIndex === PRICE_DOLLAR_IDX && idx === PRICE_MANAT_IDX) {
                 return parsePrice(
                   tmtFromUsd(parseFloat(value), rowRate).toString(),
@@ -392,14 +448,7 @@ export default function UpdatePrices() {
   // the Save button appear and rides along in the existing batched PUT.
   const handleCategoryChange = useCallback(
     (priceId: string, categoryId: string | null) => {
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, categoryId },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      recordEdit(priceId, { categoryId });
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
@@ -414,32 +463,78 @@ export default function UpdatePrices() {
     [],
   );
 
-  // Same discrete-event shape as a category pick. The manat figures are not
-  // recomputed here: the server re-derives them from the row's dollars when the
-  // batched PUT lands, which keeps one rule for the conversion.
+  // Same discrete-event shape as a category pick. The rate is linked to the
+  // manat and display figures, so they are re-derived from the row's dollars at
+  // the new rate right away (with pricesFromUsd, the same rule the server uses)
+  // and travel in the pending edit. A display price the admin pinned in this
+  // session, without touching dollars, is kept, as the server would.
   const handleRateChange = useCallback(
     (priceId: string, rateId: string | null) => {
       const dollarRateId = rateId == null ? null : Number(rateId);
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, dollarRateId },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      const change: PriceEdit = { dollarRateId };
+
+      const saved = allPricesRef.current.find((p) => p.id === priceId);
+      const pending = updatedPricesRef.current[priceId];
+      const newRate = rateForPrice({ dollarRateId }, rates)?.rate ?? 0;
+      const dollars = parseFloat(pending?.price ?? saved?.price ?? '');
+
+      if (saved != null && newRate > 0 && Number.isFinite(dollars)) {
+        // A pending display with no dollar change was typed by the admin,
+        // unless an earlier rate change in this session derived it.
+        const pendingRate =
+          pending != null && 'dollarRateId' in pending
+            ? rateForPrice(
+                { dollarRateId: pending.dollarRateId ?? null },
+                rates,
+              )?.rate ?? 0
+            : 0;
+        const derivedByRate =
+          pendingRate > 0 &&
+          Number(pending?.displayPriceTmt) ===
+            Number(pricesFromUsd(dollars, pendingRate).displayPriceTmt);
+        const pinnedDisplay =
+          pending?.price == null && !derivedByRate
+            ? pending?.displayPriceTmt
+            : undefined;
+        const backToSaved =
+          pending?.price == null &&
+          dollarRateId === (saved.dollarRateId ?? null);
+        // Back on the saved rate with the saved dollars: show the saved
+        // figures again rather than a fresh conversion, which could differ
+        // from what is stored.
+        const derived = backToSaved
+          ? {
+              priceInTmt: saved.priceInTmt,
+              displayPriceTmt: displayPriceOf(saved),
+            }
+          : pricesFromUsd(dollars, newRate);
+        change.priceInTmt = derived.priceInTmt;
+        change.displayPriceTmt = pinnedDisplay ?? derived.displayPriceTmt;
+      }
+
+      recordEdit(priceId, change);
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
           index > 0 && row[PRICE_ID_IDX] === priceId
-            ? row.map((cell, idx) =>
-                idx === PRICE_RATE_IDX ? dollarRateId : cell,
-              )
+            ? row.map((cell, idx) => {
+                if (idx === PRICE_RATE_IDX) return dollarRateId;
+                if (idx === PRICE_MANAT_IDX && change.priceInTmt != null) {
+                  return parsePrice(change.priceInTmt);
+                }
+                if (
+                  idx === PRICE_DISPLAY_IDX &&
+                  change.displayPriceTmt != null
+                ) {
+                  return parsePrice(change.displayPriceTmt);
+                }
+                return cell;
+              })
             : row,
         ),
       );
     },
-    [],
+    [rates, recordEdit],
   );
 
   // Same discrete-event shape again. Nothing cascades client-side: the owning
@@ -447,14 +542,7 @@ export default function UpdatePrices() {
   // so the product column here can lag until the next load.
   const handleOutOfStockChange = useCallback(
     (priceId: string, isOutOfStock: boolean) => {
-      setUpdatedPrices((prevPrices) => {
-        const next = {
-          ...prevPrices,
-          [priceId]: { ...prevPrices[priceId], id: priceId, isOutOfStock },
-        };
-        updatedPricesRef.current = next;
-        return next;
-      });
+      recordEdit(priceId, { isOutOfStock });
 
       setTableData((prevData) =>
         prevData.map((row, index) =>
@@ -527,8 +615,77 @@ export default function UpdatePrices() {
     [accessToken],
   );
 
+  const pendingCount = Object.keys(updatedPrices).length;
+
+  const filtersActive =
+    searchKeyword !== '' ||
+    categoryFilter !== '' ||
+    outOfStockOnly ||
+    rateFilter !== '';
+
+  // Search runs server-side, so clearing it has to re-read the list too.
+  const handleClearFilters = () => {
+    setCategoryFilter('');
+    setOutOfStockOnly(false);
+    setRateFilter('');
+    setSearchKeyword('');
+    handleSearch('');
+  };
+
+  // Edits are only ever held in updatedPrices until saved, so dropping them and
+  // re-deriving the table from allPrices restores the saved values. The bumped counter
+  // in the row keys also remounts every editor, so an EditableText that still
+  // has focus cannot keep showing the discarded text.
+  const handleDiscard = () => {
+    setUpdatedPrices({});
+    updatedPricesRef.current = {};
+    setAllPrices((prev) => [...prev]);
+    setDiscardCount((n) => n + 1);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { success } = await fetchWithCreds<Prices[]>({
+        accessToken,
+        path: `/api/prices`,
+        method: 'PUT',
+        body: { pricePairs: Object.values(updatedPrices) },
+      });
+
+      if (success) {
+        // Fold saved edits into the master list so re-derives keep showing
+        // them, then clear pending state (hides the Save bar and stops
+        // re-saving stale edits).
+        setAllPrices((prev) =>
+          prev.map((p) =>
+            updatedPrices[p.id] ? foldSavedEdit(p, updatedPrices[p.id]) : p,
+          ),
+        );
+        setUpdatedPrices({});
+        updatedPricesRef.current = {};
+        setSnackbarOpen(true);
+        setSnackbarMessage({ message: 'pricesUpdated', severity: 'success' });
+      } else {
+        setSnackbarOpen(true);
+        setSnackbarMessage({ message: 'updatePricesError', severity: 'error' });
+      }
+    } catch (error) {
+      console.error(error);
+      setSnackbarOpen(true);
+      setSnackbarMessage({ message: 'updatePricesError', severity: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout
+      handleHeaderBackButton={() => router.push('/')}
+      mobileChatFabBottom={
+        pendingCount > 0 ? MOBILE_CHAT_BOTTOM_ABOVE_SAVE_BAR : undefined
+      }
+    >
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Box
           sx={{
@@ -539,292 +696,305 @@ export default function UpdatePrices() {
           }}
           className="flex flex-col gap-8 w-full h-full"
         >
-          <Box className={`flex flex-col w-full justify-center gap-4 pl-2`}>
-            {/* the rate being edited: the filtered one, or the default */}
-            <Box className={`w-full flex flex-row justify-start items-center`}>
-              <Box className="flex flex-row gap-2 items-center justify-center flex-wrap">
-                <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                  {editingRate?.name ?? t('defaultRate')}: $1 =
-                </Typography>
-                <TextField
-                  value={rateDraft}
-                  type="number"
-                  disabled={editingRate == null}
-                  onChange={(e) => setRateDraft(e.target.value)}
+          <Box className="flex flex-col w-full gap-3">
+            {/* Rates: picking one both filters the table to it and chooses the
+                rate the editor below changes, since they were always the same
+                thing. "All" shows every price. */}
+            <Box className="flex flex-row flex-wrap items-center gap-2">
+              <Typography fontWeight={600} color="text.secondary">
+                {t('rate')}:
+              </Typography>
+              <Chip
+                label={t('allRates')}
+                color="primary"
+                variant={rateFilter === '' ? 'filled' : 'outlined'}
+                onClick={() => setRateFilter('')}
+              />
+              {rates.map((rate) => (
+                <Chip
+                  key={rate.id}
+                  label={`${rate.name} · ${rate.rate}`}
+                  color="primary"
+                  variant={
+                    String(rate.id) === rateFilter ? 'filled' : 'outlined'
+                  }
+                  onClick={() => setRateFilter(String(rate.id))}
                 />
-                <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                  manat
-                </Typography>
-                <IconButton
-                  disabled={editingRate == null || !(parseFloat(rateDraft) > 0)}
-                  onClick={() => setShowRateConfirm(true)}
-                >
-                  <CheckCircleOutlineIcon color={'success'} />
-                </IconButton>
-                {/* The default rate has no delete: every other rate falls back
-                    to it, and the server refuses to remove it. */}
-                {editingRate != null && !editingRate.isDefault && (
-                  <IconButton onClick={() => setShowDeleteRateDialog(true)}>
-                    <DeleteIcon color="error" />
-                  </IconButton>
-                )}
-              </Box>
+              ))}
+              <Chip
+                label={`+ ${t('addRate')}`}
+                variant="outlined"
+                onClick={() => {
+                  setNewRateName('');
+                  setNewRateValue('');
+                  setShowAddRateDialog(true);
+                }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ textTransform: 'none', height: 40, ml: 'auto' }}
+                onClick={() => setShowCreatePriceDialog(true)}
+              >
+                {t('addPrice')}
+              </Button>
             </Box>
 
-            {/* search, add price, save */}
-            <Box className={`flex flex-col gap-2 w-full max-w-[900px]`}>
-              <Box className="w-full flex flex-row flex-wrap gap-2 items-center">
-                <Box className="flex-1">
-                  <SearchBar
-                    handleSearch={handleSearch}
-                    setSearchKeyword={setSearchKeyword}
-                    searchPlaceholder={t('search')}
-                    searchKeyword={searchKeyword}
-                    width="100%"
-                  />
-                </Box>
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel>{t('sortBy')}</InputLabel>
-                  <Select
-                    label={t('sortBy')}
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as PriceSortKey)}
-                  >
-                    <MenuItem value="">{t('default')}</MenuItem>
-                    <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
-                    <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
-                    <MenuItem value="dollarAsc">
-                      {t('dollarsLowToHigh')}
-                    </MenuItem>
-                    <MenuItem value="dollarDesc">
-                      {t('dollarsHighToLow')}
-                    </MenuItem>
-                    <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
-                    <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
-                    <MenuItem value="displayAsc">
-                      {t('displayLowToHigh')}
-                    </MenuItem>
-                    <MenuItem value="displayDesc">
-                      {t('displayHighToLow')}
-                    </MenuItem>
-                    <MenuItem value="editedRecent">
-                      {t('recentlyEdited')}
-                    </MenuItem>
-                    <MenuItem value="editedStale">
-                      {t('longestNotEdited')}
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel>{t('category')}</InputLabel>
-                  <Select
-                    label={t('category')}
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                  >
-                    <MenuItem value="">{t('allCategories')}</MenuItem>
-                    <MenuItem value={NO_CATEGORY_FILTER}>
-                      {t('noCategory')}
-                    </MenuItem>
-                    <MenuItem value={NO_PRODUCT_FILTER}>
-                      {t('noProduct')}
-                    </MenuItem>
-                    {categoryMenuItems(flattenedCats)}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel>{t('rate')}</InputLabel>
-                  <Select
-                    label={t('rate')}
-                    value={rateFilter}
-                    onChange={(e) => {
-                      // The create row is a command, not a filter value, so it
-                      // opens the dialog and leaves the selection alone.
-                      if (e.target.value === ADD_RATE_OPTION) {
-                        setNewRateName('');
-                        setNewRateValue('');
-                        setShowAddRateDialog(true);
-                        return;
+            {/* The editor only appears once a rate is picked. */}
+            {selectedRate != null && (
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                <Box className="flex flex-row flex-wrap items-center gap-3">
+                  <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
+                    {selectedRate.name}
+                  </Typography>
+                  <Box className="flex flex-row items-center gap-2">
+                    <Typography color="text.secondary">$1 =</Typography>
+                    <TextField
+                      size="small"
+                      value={rateDraft}
+                      type="number"
+                      onChange={(e) => setRateDraft(e.target.value)}
+                      sx={{ width: 110 }}
+                    />
+                    <Typography color="text.secondary">manat</Typography>
+                  </Box>
+                  <Box className="flex flex-row items-center gap-1">
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={
+                        !(parseFloat(rateDraft) > 0) ||
+                        parseFloat(rateDraft) === selectedRate.rate
                       }
-                      setRateFilter(e.target.value);
-                    }}
+                      startIcon={<CheckCircleOutlineIcon />}
+                      sx={{ textTransform: 'none' }}
+                      onClick={() => setShowRateConfirm(true)}
+                    >
+                      {t('save')}
+                    </Button>
+                    {/* The default rate has no delete: every other rate falls
+                        back to it, and the server refuses to remove it. */}
+                    {!selectedRate.isDefault && (
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowDeleteRateDialog(true)}
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Search and filters in one slim bar. */}
+            <Paper
+              variant="outlined"
+              sx={{ p: 1.5, borderRadius: 2 }}
+              className="flex flex-row flex-wrap items-center gap-2"
+            >
+              <Box className="flex-1 min-w-[220px]">
+                <SearchBar
+                  handleSearch={handleSearch}
+                  setSearchKeyword={setSearchKeyword}
+                  searchPlaceholder={t('search')}
+                  searchKeyword={searchKeyword}
+                  width="100%"
+                />
+              </Box>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>{t('category')}</InputLabel>
+                <Select
+                  label={t('category')}
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <MenuItem value="">{t('allCategories')}</MenuItem>
+                  <MenuItem value={NO_CATEGORY_FILTER}>
+                    {t('noCategory')}
+                  </MenuItem>
+                  <MenuItem value={NO_PRODUCT_FILTER}>
+                    {t('noProduct')}
+                  </MenuItem>
+                  {categoryMenuItems(flattenedCats)}
+                </Select>
+              </FormControl>
+              <ToggleButton
+                size="small"
+                color="error"
+                value="outOfStockOnly"
+                selected={outOfStockOnly}
+                onChange={() => setOutOfStockOnly((prev) => !prev)}
+                sx={{ textTransform: 'none', lineHeight: 1.2, height: 40 }}
+              >
+                {t('outOfStockOnly')}
+              </ToggleButton>
+              <FormControl size="small" sx={{ minWidth: 170 }}>
+                <InputLabel>{t('sortBy')}</InputLabel>
+                <Select
+                  label={t('sortBy')}
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as PriceSortKey)}
+                >
+                  <MenuItem value="">{t('default')}</MenuItem>
+                  <MenuItem value="nameAsc">{t('nameAToZ')}</MenuItem>
+                  <MenuItem value="nameDesc">{t('nameZToA')}</MenuItem>
+                  <MenuItem value="dollarAsc">{t('dollarsLowToHigh')}</MenuItem>
+                  <MenuItem value="dollarDesc">
+                    {t('dollarsHighToLow')}
+                  </MenuItem>
+                  <MenuItem value="manatAsc">{t('manatLowToHigh')}</MenuItem>
+                  <MenuItem value="manatDesc">{t('manatHighToLow')}</MenuItem>
+                  <MenuItem value="displayAsc">
+                    {t('displayLowToHigh')}
+                  </MenuItem>
+                  <MenuItem value="displayDesc">
+                    {t('displayHighToLow')}
+                  </MenuItem>
+                  <MenuItem value="editedRecent">
+                    {t('recentlyEdited')}
+                  </MenuItem>
+                  <MenuItem value="editedStale">
+                    {t('longestNotEdited')}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Paper>
+
+            {/* How many rows the filters left, and a way out of them. Only
+                shown while something is filtered. */}
+            {filtersActive && (
+              <Box className="flex flex-row items-center gap-3">
+                <Typography color="text.secondary">
+                  {t('pricesCount', {
+                    count: Math.max(tableData.length - 1, 0),
+                  })}
+                </Typography>
+                <Button
+                  size="small"
+                  sx={{ textTransform: 'none' }}
+                  onClick={handleClearFilters}
+                >
+                  {t('clearFilters')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Acts on exactly what the filters left on screen, never the
+                whole table, and says how many that is. */}
+            {tableData.length > 1 && rates.length > 0 && (
+              <Paper
+                variant="outlined"
+                sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}
+                className="flex flex-row flex-wrap items-center gap-2"
+              >
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>{t('assignToRate')}</InputLabel>
+                  <Select
+                    label={t('assignToRate')}
+                    value={bulkRateId}
+                    onChange={(e) => setBulkRateId(e.target.value)}
                   >
-                    <MenuItem value="">{t('allRates')}</MenuItem>
                     {rates.map((rate) => (
                       <MenuItem key={rate.id} value={String(rate.id)}>
                         {rate.name} ({rate.rate})
                       </MenuItem>
                     ))}
-                    <MenuItem value={ADD_RATE_OPTION}>
-                      + {t('addRate')}
-                    </MenuItem>
                   </Select>
                 </FormControl>
-                <ToggleButton
-                  size="small"
-                  color="error"
-                  value="outOfStockOnly"
-                  selected={outOfStockOnly}
-                  onChange={() => setOutOfStockOnly((prev) => !prev)}
-                  // Russian and Turkmen render this label long enough to stack
-                  // into three lines, which leaves the control taller than the
-                  // dropdowns beside it. It wraps the row instead.
-                  sx={{ whiteSpace: 'nowrap', lineHeight: 1.2 }}
-                >
-                  {t('outOfStockOnly')}
-                </ToggleButton>
-              </Box>
-              <Box className="flex flex-row flex-wrap gap-2 w-full items-center">
                 <Button
-                  variant="contained"
-                  sx={{
-                    textTransform: 'none',
-                    fontSize: isMdUp ? 18 : 16,
-                    height: isMdUp ? 52 : 42,
-                    width: 120,
-                  }}
-                  onClick={() => setShowCreatePriceDialog(true)}
+                  variant="outlined"
+                  disabled={bulkRateId === ''}
+                  sx={{ textTransform: 'none', height: 40 }}
+                  onClick={() => setShowBulkConfirm(true)}
                 >
-                  <Typography>{t('addPrice')}</Typography>
+                  {t('assignToRate')} ({tableData.length - 1})
                 </Button>
-                {/* Acts on exactly what the filters left on screen, never the
-                    whole table, and says how many that is. */}
-                {tableData.length > 1 && rates.length > 0 && (
-                  <>
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                      <InputLabel>{t('assignToRate')}</InputLabel>
-                      <Select
-                        label={t('assignToRate')}
-                        value={bulkRateId}
-                        onChange={(e) => setBulkRateId(e.target.value)}
-                      >
-                        {rates.map((rate) => (
-                          <MenuItem key={rate.id} value={String(rate.id)}>
-                            {rate.name} ({rate.rate})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <Button
-                      variant="outlined"
-                      disabled={bulkRateId === ''}
-                      sx={{
-                        textTransform: 'none',
-                        fontSize: isMdUp ? 16 : 14,
-                        height: isMdUp ? 52 : 42,
-                      }}
-                      onClick={() => setShowBulkConfirm(true)}
-                    >
-                      <Typography>
-                        {t('assignToRate')} ({tableData.length - 1})
-                      </Typography>
-                    </Button>
-                  </>
-                )}
-                {Object.keys(updatedPrices).length > 0 && (
-                  <Button
-                    variant="contained"
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: isMdUp ? 18 : 16,
-                      height: isMdUp ? 52 : 42,
-                    }}
-                    onClick={async () => {
-                      try {
-                        const { success } = await fetchWithCreds<Prices[]>({
-                          accessToken,
-                          path: `/api/prices`,
-                          method: 'PUT',
-                          body: {
-                            pricePairs: Object.values(updatedPrices),
-                          },
-                        });
-
-                        if (success) {
-                          // Fold saved edits into the master list so re-derives
-                          // keep showing them, then clear pending state (hides
-                          // the Save button and stops re-saving stale edits).
-                          setAllPrices((prev) =>
-                            prev.map((p) =>
-                              updatedPrices[p.id]
-                                ? foldSavedEdit(p, updatedPrices[p.id])
-                                : p,
-                            ),
-                          );
-                          setUpdatedPrices({});
-                          updatedPricesRef.current = {};
-                          setSnackbarOpen(true);
-                          setSnackbarMessage({
-                            message: 'pricesUpdated',
-                            severity: 'success',
-                          });
-                        } else {
-                          setSnackbarOpen(true);
-                          setSnackbarMessage({
-                            message: 'updatePricesError',
-                            severity: 'error',
-                          });
-                        }
-                      } catch (error) {
-                        console.error(error);
-                        setSnackbarOpen(true);
-                        setSnackbarMessage({
-                          message: 'updatePricesError',
-                          severity: 'error',
-                        });
-                      }
-                    }}
-                  >
-                    <Typography>{t('save')}</Typography>
-                  </Button>
-                )}
-              </Box>
-            </Box>
+              </Paper>
+            )}
           </Box>
           {tableData.length > 1 && (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  {tableData[0].map((_header, index) => (
-                    <TableCell key={index}>
-                      <Typography fontWeight={600} fontSize={isMdUp ? 18 : 16}>
-                        {/* processPrices emits English labels; they are
-                            translated here, where the locale is known. */}
-                        {t(PRICE_HEADER_KEYS[index])}
-                      </Typography>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tableData.slice(1).map((row, rowIndex) => (
-                  <TableRow
-                    // Keyed by price id so a re-sort moves each row's cells
-                    // with it: an open editor stays on the price being edited.
-                    key={row[PRICE_ID_IDX] as string}
-                    onMouseOver={() => {
-                      setHoveredPrice(rowIndex);
-                    }}
-                    onMouseOut={() => {
-                      setHoveredPrice(undefined);
-                    }}
-                  >
-                    {/* The id trails every row as the edit key and is not a
-                        column, so only the header's worth of cells is drawn. */}
-                    {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
+            <TableContainer
+              component={Paper}
+              variant="outlined"
+              sx={{ borderRadius: 2, maxHeight: 'calc(100vh - 100px)' }}
+            >
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    {tableData[0].map((_header, index) => (
                       <TableCell
-                        className="relative"
-                        sx={
-                          isEditablePriceCell(cellIndex)
-                            ? { p: 0, height: '1px' }
-                            : undefined
-                        }
-                        key={cellIndex}
+                        key={index}
+                        sx={{
+                          bgcolor: 'grey.200',
+                          whiteSpace: 'nowrap',
+                          py: 1.5,
+                          borderBottom: '2px solid',
+                          borderBottomColor: alpha(
+                            theme.palette.primary.main,
+                            0.3,
+                          ),
+                          // Room for the delete icon that sits in each row's
+                          // Name cell, so the header lines up with the names.
+                          ...(index === PRICE_NAME_IDX && {
+                            pl: `${NAME_TEXT_START}px`,
+                          }),
+                        }}
                       >
-                        {cellIndex === PRICE_NAME_IDX &&
-                          hoveredPrice === rowIndex && (
+                        <Typography fontWeight={700} fontSize={15}>
+                          {/* processPrices emits English labels; they are
+                            translated here, where the locale is known. */}
+                          {t(PRICE_HEADER_KEYS[index])}
+                        </Typography>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tableData.slice(1).map((row) => (
+                    <TableRow
+                      hover
+                      className="group"
+                      // Keyed by price id so a re-sort moves each row's cells
+                      // with it: an open editor stays on the price being
+                      // edited. The discard counter forces a remount so
+                      // discarded text never lingers in an editor.
+                      key={`${discardCount}-${row[PRICE_ID_IDX] as string}`}
+                    >
+                      {/* The id trails every row as the edit key and is not a
+                        column, so only the header's worth of cells is drawn. */}
+                      {row.slice(0, PRICE_ID_IDX).map((cell, cellIndex) => (
+                        <TableCell
+                          className="relative"
+                          sx={
+                            isEditablePriceCell(cellIndex)
+                              ? {
+                                  p: 0,
+                                  height: '1px',
+                                  // EditableText pads its own text by
+                                  // EDITOR_PADDING, so the cell only adds
+                                  // the rest of the way to the header's edge.
+                                  ...(cellIndex === PRICE_NAME_IDX && {
+                                    pl: `${NAME_TEXT_START - EDITOR_PADDING}px`,
+                                  }),
+                                  '&:hover': { bgcolor: 'action.hover' },
+                                }
+                              : undefined
+                          }
+                          key={cellIndex}
+                        >
+                          {/* Shown by CSS on row hover, not by React state:
+                              a hover state re-rendered the whole table every
+                              time the pointer crossed a row, which janked
+                              wheel scrolling on long lists. */}
+                          {cellIndex === PRICE_NAME_IDX && (
                             <IconButton
-                              className="absolute -left-4 top-1"
+                              disableRipple
+                              size="small"
+                              // Unclickable while hidden, so a tap on that spot
+                              // cannot open the dialog. Devices without hover
+                              // always show it.
+                              className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
                               onClick={() => {
                                 setSelectedPrice(row[PRICE_ID_IDX] as string);
                                 setShowDeleteDialog(true);
@@ -833,102 +1003,149 @@ export default function UpdatePrices() {
                               <DeleteIcon color="error" />
                             </IconButton>
                           )}
-                        {(() => {
-                          // Only the text span is editable, never the whole
-                          // cell: see EditableText for why React must not own
-                          // the edited text.
-                          if (isEditablePriceCell(cellIndex)) {
-                            return (
-                              <EditableText
-                                value={cell as string | number | null}
-                                onTextChange={(text) =>
-                                  handlePriceUpdate(text, cellIndex, row)
-                                }
-                                onCommit={handlePriceUpdate.flush}
-                              />
-                            );
-                          }
-                          if (cellIndex === PRICE_CATEGORY_IDX) {
-                            return (
-                              <SelectCell
-                                id={row[PRICE_ID_IDX] as string}
-                                value={(cell as string | null) ?? null}
-                                options={flattenedCats}
-                                emptyLabel={t('noCategory')}
-                                dirty={
-                                  'categoryId' in
-                                  (updatedPrices[row[PRICE_ID_IDX] as string] ??
-                                    {})
-                                }
-                                onChange={handleCategoryChange}
-                              />
-                            );
-                          }
-                          if (cellIndex === PRICE_RATE_IDX) {
-                            const priceId = row[PRICE_ID_IDX] as string;
-                            return (
-                              <SelectCell
-                                id={priceId}
-                                value={cell == null ? null : String(cell)}
-                                options={rateOptions}
-                                emptyLabel={t('defaultRate')}
-                                minWidth={120}
-                                dirty={
-                                  'dollarRateId' in
-                                  (updatedPrices[priceId] ?? {})
-                                }
-                                onChange={handleRateChange}
-                              />
-                            );
-                          }
-                          if (cellIndex === PRICE_UPDATED_IDX) {
-                            // ISO date, not a locale format: the table spans
-                            // five locales and an admin scanning for stale
-                            // prices needs one shape they can compare at a
-                            // glance.
-                            return (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {typeof cell === 'string'
-                                  ? cell.slice(0, 10)
-                                  : ''}
-                              </Typography>
-                            );
-                          }
-                          if (cellIndex === PRICE_OUT_OF_STOCK_IDX) {
-                            const priceId = row[PRICE_ID_IDX] as string;
-                            return (
-                              <Checkbox
-                                size="small"
-                                checked={cell === true}
-                                onChange={(e) =>
-                                  handleOutOfStockChange(
-                                    priceId,
-                                    e.target.checked,
-                                  )
-                                }
-                                // Matches the dirty affordance the category and
-                                // product cells use: a pending edit is coloured
-                                // until the batched save clears it.
-                                color={
-                                  'isOutOfStock' in
-                                  (updatedPrices[priceId] ?? {})
-                                    ? 'warning'
-                                    : 'primary'
-                                }
-                              />
-                            );
-                          }
-                          return cell;
-                        })()}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          {(() => {
+                            // Only the text span is editable, never the whole
+                            // cell: see EditableText for why React must not
+                            // own the edited text.
+                            if (isEditablePriceCell(cellIndex)) {
+                              return (
+                                <EditableText
+                                  value={cell as string | number | null}
+                                  onTextChange={(text) =>
+                                    handlePriceUpdate(text, cellIndex, row)
+                                  }
+                                  onCommit={handlePriceUpdate.flush}
+                                />
+                              );
+                            }
+                            if (cellIndex === PRICE_CATEGORY_IDX) {
+                              return (
+                                <SelectCell
+                                  id={row[PRICE_ID_IDX] as string}
+                                  value={(cell as string | null) ?? null}
+                                  options={flattenedCats}
+                                  emptyLabel={t('noCategory')}
+                                  dirty={
+                                    'categoryId' in
+                                    (updatedPrices[
+                                      row[PRICE_ID_IDX] as string
+                                    ] ?? {})
+                                  }
+                                  onChange={handleCategoryChange}
+                                />
+                              );
+                            }
+                            if (cellIndex === PRICE_RATE_IDX) {
+                              const priceId = row[PRICE_ID_IDX] as string;
+                              return (
+                                <SelectCell
+                                  id={priceId}
+                                  value={cell == null ? null : String(cell)}
+                                  options={rateOptions}
+                                  emptyLabel={t('defaultRate')}
+                                  minWidth={120}
+                                  dirty={
+                                    'dollarRateId' in
+                                    (updatedPrices[priceId] ?? {})
+                                  }
+                                  onChange={handleRateChange}
+                                />
+                              );
+                            }
+                            if (cellIndex === PRICE_UPDATED_IDX) {
+                              // ISO date, not a locale format: the table spans
+                              // five locales and an admin scanning for stale
+                              // prices needs one shape they can compare at a
+                              // glance.
+                              return (
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {typeof cell === 'string'
+                                    ? cell.slice(0, 10)
+                                    : ''}
+                                </Typography>
+                              );
+                            }
+                            if (cellIndex === PRICE_OUT_OF_STOCK_IDX) {
+                              const priceId = row[PRICE_ID_IDX] as string;
+                              return (
+                                <Checkbox
+                                  size="small"
+                                  checked={cell === true}
+                                  onChange={(e) =>
+                                    handleOutOfStockChange(
+                                      priceId,
+                                      e.target.checked,
+                                    )
+                                  }
+                                  // Matches the dirty affordance the category and
+                                  // product cells use: a pending edit is coloured
+                                  // until the batched save clears it.
+                                  color={
+                                    'isOutOfStock' in
+                                    (updatedPrices[priceId] ?? {})
+                                      ? 'warning'
+                                      : 'primary'
+                                  }
+                                />
+                              );
+                            }
+                            return cell;
+                          })()}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+
+          {/* Pinned to the bottom so Save is always in reach, however far down
+              the list the admin has scrolled. */}
+          {pendingCount > 0 && (
+            <Paper
+              elevation={6}
+              sx={{
+                position: 'sticky',
+                bottom: platform === 'mobile' ? MOBILE_SAVE_BAR_BOTTOM : 16,
+                zIndex: 10,
+                p: 1.5,
+                // Keeps Save clear of the floating chat button on web.
+                ...(platform === 'web' && { pr: '64px' }),
+                borderRadius: 2,
+              }}
+              className="flex flex-row items-center justify-between gap-3"
+            >
+              <Typography
+                fontWeight={600}
+                fontSize={isMdUp ? 16 : 14}
+                color="warning.main"
+              >
+                {t('unsavedChanges', { count: pendingCount })}
+              </Typography>
+              <Box className="flex flex-row items-center gap-2">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  sx={{ textTransform: 'none', minWidth: isMdUp ? 120 : 0 }}
+                  disabled={isSaving}
+                  onClick={handleDiscard}
+                >
+                  {t('discard')}
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{ textTransform: 'none', minWidth: isMdUp ? 140 : 0 }}
+                  disabled={isSaving}
+                  onClick={handleSave}
+                >
+                  {t('save')}
+                </Button>
+              </Box>
+            </Paper>
           )}
 
           <Snackbar
@@ -969,6 +1186,14 @@ export default function UpdatePrices() {
                     method: 'DELETE',
                   });
                   if (success) {
+                    // Forget its unsaved edit too, or the next save would
+                    // send a price that no longer exists.
+                    setUpdatedPrices((prev) => {
+                      const next = { ...prev };
+                      delete next[selectedPrice];
+                      updatedPricesRef.current = next;
+                      return next;
+                    });
                     setAllPrices((prev) =>
                       prev.filter((p) => p.id !== selectedPrice),
                     );

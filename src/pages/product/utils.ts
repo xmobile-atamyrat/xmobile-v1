@@ -268,6 +268,71 @@ export const foldSavedEdit = (price: Prices, edit: PriceEdit): Prices => {
   };
 };
 
+// Whether the text typed into the dollar or manat box is the saved value again,
+// compared as numbers so "25" and "25.00" match.
+export const isMoneyRevert = (
+  saved: Prices,
+  cellIndex: number,
+  value: string,
+): boolean => {
+  if (cellIndex === PRICE_DOLLAR_IDX) {
+    return Number(value) === Number(saved.price);
+  }
+  if (cellIndex === PRICE_MANAT_IDX) {
+    return Number(value) === parsePrice(saved.priceInTmt);
+  }
+  return false;
+};
+
+// Adds a change to a price's pending edit, then drops whatever now matches the
+// saved price. Returns null when nothing is left to save.
+export const mergePriceEdit = (
+  saved: Prices,
+  pending: PriceEdit | undefined,
+  change: PriceEdit,
+  moneyReverted = false,
+): PriceEdit | null => {
+  const next: PriceEdit = { ...pending, ...change };
+
+  // Dollars, manat and display move together, so they are reverted together.
+  if (moneyReverted) {
+    delete next.price;
+    delete next.priceInTmt;
+    delete next.displayPriceTmt;
+  }
+  // A rate change carries manat figures re-derived from the dollars. Switching
+  // back to the saved rate restores the saved manat, which is no change while
+  // the dollar price itself is not changing.
+  if (
+    next.price == null &&
+    next.priceInTmt != null &&
+    Number(next.priceInTmt) === parsePrice(saved.priceInTmt)
+  ) {
+    delete next.priceInTmt;
+  }
+  // While the price itself is changing, typing the old display value is a real
+  // edit: it keeps the old shown price on a new dollar price.
+  if (
+    next.price == null &&
+    next.displayPriceTmt != null &&
+    Number(next.displayPriceTmt) === parsePrice(displayPriceOf(saved))
+  ) {
+    delete next.displayPriceTmt;
+  }
+  if (next.name === saved.name) delete next.name;
+  if ('categoryId' in next && next.categoryId === saved.categoryId) {
+    delete next.categoryId;
+  }
+  if ('dollarRateId' in next && next.dollarRateId === saved.dollarRateId) {
+    delete next.dollarRateId;
+  }
+  if (next.isOutOfStock === (saved.outOfStockAt != null)) {
+    delete next.isOutOfStock;
+  }
+
+  return Object.keys(next).some((key) => key !== 'id') ? next : null;
+};
+
 // Sort/filter helpers for the update-prices page. Pure functions over Prices[]
 // so the page can sort/filter client-side without touching the edit/save flow.
 export type PriceSortKey =

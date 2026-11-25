@@ -4,7 +4,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import UpdatePrices from '@/pages/product/update-prices/index.page';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -120,6 +120,14 @@ const search = async (keyword: string) => {
   await waitFor(() => expect(screen.queryByText('Cable')).toBeNull());
 };
 
+// The page has two Save buttons: one on the exchange-rate card and one on the
+// bar that appears once the table has unsaved edits. This finds the bar's.
+const saveChangesButton = () =>
+  within(screen.getByText(/unsaved changes/).parentElement!).getByRole(
+    'button',
+    { name: 'Save' },
+  );
+
 const fillAddDialog = async () => {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'Add Price' }));
@@ -213,7 +221,7 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     const readsBeforeSave = priceReads().length;
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
     await waitFor(() => expect(sentWith('PUT')).toBeDefined());
     expect(priceReads()).toHaveLength(readsBeforeSave);
@@ -226,9 +234,19 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await renderPage();
     await search('iph');
 
-    await user.click(
-      screen.getByTestId('CheckCircleOutlineIcon').closest('button')!,
-    );
+    // The rate editor only opens once a rate chip is picked.
+    await user.click(screen.getByRole('button', { name: 'Manat · 20' }));
+
+    // The rate's Save stays disabled until the rate actually changes.
+    const rateSave = screen
+      .getByTestId('CheckCircleOutlineIcon')
+      .closest('button')!;
+    expect(rateSave).toBeDisabled();
+    await user.clear(screen.getByRole('spinbutton'));
+    await user.type(screen.getByRole('spinbutton'), '21');
+    expect(rateSave).toBeEnabled();
+
+    await user.click(rateSave);
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }),
     );
@@ -270,10 +288,11 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await search('iph');
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
+    // The unsaved-changes bar goes away once the save has gone through.
     await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Save' })).toBeNull(),
+      expect(screen.queryByText(/unsaved changes/)).toBeNull(),
     );
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(
       true,
@@ -289,12 +308,70 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     await search('iph');
 
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(saveChangesButton());
 
     await waitFor(() => expect(sentWith('PUT')).toBeDefined());
     expect(sentWith('PUT')?.body.pricePairs).toEqual([
       { id: 'p1', isOutOfStock: true },
     ]);
+  });
+
+  it('drops the unsaved edit of a deleted price from the next save', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+
+    const [first, second] = screen.getAllByRole('checkbox');
+    await user.click(first);
+    await user.click(second);
+    await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await user.click(saveChangesButton());
+
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p2', isOutOfStock: true },
+    ]);
+  });
+
+  it('drops a change that is reverted by hand', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    const [first, second] = screen.getAllByRole('checkbox');
+
+    await user.click(first);
+    await user.click(second);
+    expect(screen.getByText(/^2 unsaved changes/)).toBeTruthy();
+
+    await user.click(first);
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+
+    await user.click(second);
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+  });
+
+  it('restores the linked prices when a dollar price is typed back', async () => {
+    await renderPage();
+    const dollars = screen.getAllByText('10')[0];
+
+    dollars.textContent = '12';
+    fireEvent.input(dollars);
+    await screen.findByText(/^1 unsaved changes/);
+    expect(screen.getAllByText('240')).toHaveLength(2);
+
+    dollars.textContent = '10';
+    fireEvent.input(dollars);
+    await waitFor(() =>
+      expect(screen.queryByText(/unsaved changes/)).toBeNull(),
+    );
+    expect(screen.queryByText('240')).toBeNull();
+    // Manat and display, on both rows.
+    expect(screen.getAllByText('200')).toHaveLength(4);
   });
 
   it('does not reload the table when the access token rotates', async () => {
