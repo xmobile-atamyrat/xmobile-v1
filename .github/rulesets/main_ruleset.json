@@ -3,7 +3,7 @@
   "name": "main_ruleset",
   "target": "branch",
   "source_type": "Repository",
-  "source": "xmobile-atamyrat/xmobile-v1",
+  "source": "xmobile-tm/ecom",
   "enforcement": "active",
   "conditions": {
     "ref_name": {

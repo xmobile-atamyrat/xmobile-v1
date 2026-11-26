@@ -20,8 +20,8 @@ Open-source e-commerce platform (Turkmenistan): online payment and delivery. Web
 ### 1. Clone and install
 
 ```bash
-git clone <repo-url>
-cd xmobile-v1
+git clone git@github.com:xmobile-tm/ecom.git
+cd ecom
 yarn install
 ```
 
