@@ -41,3 +41,25 @@ export async function nextSiblingSortOrder(
   });
   return (last?.sortOrder ?? -1) + 1;
 }
+
+/** The given ids plus every category above them. */
+export async function withAncestorCategoryIds(
+  categoryIds: string[],
+): Promise<string[]> {
+  if (categoryIds.length === 0) return [];
+  const all = await dbClient.category.findMany({
+    select: { id: true, predecessorId: true },
+  });
+  const parentOf = new Map(
+    all.map(({ id, predecessorId }) => [id, predecessorId]),
+  );
+  const result = new Set<string>();
+  categoryIds.forEach((start) => {
+    let current: string | null | undefined = start;
+    while (current != null && !result.has(current)) {
+      result.add(current);
+      current = parentOf.get(current);
+    }
+  });
+  return [...result];
+}
