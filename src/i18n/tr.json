@@ -802,6 +802,7 @@
   "activityFieldPriceInTmt": "fiyat (TMT)",
   "activityFieldDisplayPriceTmt": "gösterilen fiyat (TMT)",
   "activityFieldOutOfStock": "stokta yok",
+  "activityFieldChecked": "kontrol edildi",
   "activityFieldCategory": "kategori",
   "activityFieldBrand": "marka",
   "activityFieldProduct": "ürün",
@@ -983,5 +984,11 @@
   "displayHighToLow": "Gösterilen ↓",
   "unsavedChanges": "{count} kaydedilmemiş değişiklik",
   "discard": "Vazgeç",
-  "pricesCount": "{count} fiyat"
+  "pricesCount": "{count} fiyat",
+  "daysShort": "{days} gün",
+  "refreshPrice": "Fiyatı güncel olarak işaretle",
+  "staleOrangeHint": "Bir aydan fazla güncellenmedi",
+  "staleRedHint": "3 aydan fazla güncellenmedi",
+  "staleOnly": "Sadece eski fiyatlar",
+  "stalePricesAttention": "Güncellenmesi gereken fiyatlar var"
 }

@@ -46,3 +46,21 @@ describe('createFCMNotificationPayload', () => {
     expect(p.data.orderId).toBe('ord-1');
   });
 });
+
+describe('createFCMNotificationPayload PRICE_STALENESS', () => {
+  it('opens the update prices page', () => {
+    const p = createFCMNotificationPayload(
+      {
+        id: 'n9',
+        type: NotificationType.PRICE_STALENESS,
+        title: 'T',
+        content: 'C',
+      },
+      'https://app.example',
+    );
+    expect(p.data.click_action).toBe(
+      'https://app.example/product/update-prices',
+    );
+    expect(p.data.type).toBe('PRICE_STALENESS');
+  });
+});

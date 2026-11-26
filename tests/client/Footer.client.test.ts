@@ -3,6 +3,7 @@
 import Footer from '@/pages/components/Footer';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -23,6 +24,10 @@ vi.mock('@/pages/lib/ProductContext', () => ({
 
 vi.mock('@/pages/lib/UserContext', () => ({
   useUserContext: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/StalePricesContext', () => ({
+  useStalePrices: vi.fn(),
 }));
 
 describe('Footer navigation (web category links)', () => {
@@ -64,6 +69,12 @@ describe('Footer navigation (web category links)', () => {
       setAccessToken: vi.fn(),
       isLoading: false,
     });
+
+    vi.mocked(useStalePrices).mockReturnValue({
+      staleByProductId: {},
+      staleCount: 0,
+      refresh: vi.fn(),
+    });
   });
 
   it('clears products, selects category, and navigates to /product-category/:slug', async () => {
@@ -75,5 +86,46 @@ describe('Footer navigation (web category links)', () => {
     expect(setProducts).toHaveBeenCalledWith([]);
     expect(setSelectedCategoryId).toHaveBeenCalledWith('footer-category-id');
     expect(mockRouter.asPath).toBe('/product-category/footer-category-slug');
+  });
+});
+
+describe('Footer profile tab red dot', () => {
+  beforeEach(() => {
+    vi.mocked(useCategoryContext).mockReturnValue({
+      categories: [],
+      setCategories: vi.fn(),
+      selectedCategoryId: undefined,
+      setSelectedCategoryId: vi.fn(),
+    });
+    vi.mocked(useProductContext).mockReturnValue({
+      setProducts: vi.fn(),
+    } as never);
+  });
+
+  it('shows while any price is stale', () => {
+    vi.mocked(useStalePrices).mockReturnValue({
+      staleByProductId: {},
+      staleCount: 3,
+      refresh: vi.fn(),
+    });
+    renderWithProviders(createElement(Footer));
+
+    const dot = screen.getByRole('status', {
+      name: 'Some prices need updating',
+    });
+    expect(dot.closest('button')).toHaveTextContent('Profile');
+  });
+
+  it('is absent when nothing is stale', () => {
+    vi.mocked(useStalePrices).mockReturnValue({
+      staleByProductId: {},
+      staleCount: 0,
+      refresh: vi.fn(),
+    });
+    renderWithProviders(createElement(Footer));
+
+    expect(
+      screen.queryByRole('status', { name: 'Some prices need updating' }),
+    ).not.toBeInTheDocument();
   });
 });

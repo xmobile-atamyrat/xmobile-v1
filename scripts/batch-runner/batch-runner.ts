@@ -43,11 +43,20 @@ function scheduleJob(job: BatchJob): void {
     }, ms);
     wrappedRun().catch(() => {});
   } else if (schedule.type === 'cron') {
-    const { expr } = schedule as Extract<JobSchedule, { type: 'cron' }>;
-    console.log(`${LOG_PREFIX} Scheduling job "${id}" with cron "${expr}"`);
-    cron.schedule(expr, (): void => {
-      wrappedRun().catch(() => {});
-    });
+    const { expr, timezone } = schedule as Extract<
+      JobSchedule,
+      { type: 'cron' }
+    >;
+    console.log(
+      `${LOG_PREFIX} Scheduling job "${id}" with cron "${expr}"${timezone ? ` (${timezone})` : ''}`,
+    );
+    cron.schedule(
+      expr,
+      (): void => {
+        wrappedRun().catch(() => {});
+      },
+      timezone ? { timezone } : undefined,
+    );
   }
 }
 

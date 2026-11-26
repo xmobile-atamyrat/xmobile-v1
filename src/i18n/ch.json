@@ -140,7 +140,7 @@
   "confirmDeletePrice": "Bu towaryň bahasyny toçno öçürjakmy? Towardan hem aýyrmagy haýyş edämiz.",
   "priceDeleteSuccess": "Bahasy öçürildi!",
   "priceDeleteFailed": "Towaryň bahasyny öçürip bolmady.",
-  "addPrice": "Towar koş",
+  "addPrice": "Prays koş",
   "updateColors": "Reňkleri tazalaň",
   "color": "Reňk",
   "colorFamilyBlack": "Kara",
@@ -804,6 +804,7 @@
   "activityFieldPriceInTmt": "baha (TMT)",
   "activityFieldDisplayPriceTmt": "görkezilýän baha (TMT)",
   "activityFieldOutOfStock": "skladda ýok",
+  "activityFieldChecked": "barlandy",
   "activityFieldCategory": "kategoriýa",
   "activityFieldBrand": "brend",
   "activityFieldProduct": "towar",
@@ -985,5 +986,11 @@
   "displayHighToLow": "Gorkaziladron ↓",
   "unsavedChanges": "{count} sohranit edilmadik uytgashmalar",
   "discard": "Izina et",
-  "pricesCount": "{count}-ta baha"
+  "pricesCount": "{count}-ta baha",
+  "daysShort": "{days} gün",
+  "refreshPrice": "Bahany obnowit et",
+  "staleOrangeHint": "Minimum 1 ay tazalanmady",
+  "staleRedHint": "Minimum 3 ay tazalanmady",
+  "staleOnly": "Diňa köna bahalar",
+  "stalePricesAttention": "Täzelenmeli bahalar bar"
 }

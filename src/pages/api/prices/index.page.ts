@@ -20,6 +20,7 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
+import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
 import { cachedPriceFrom, derivedDisplayFrom } from '@/pages/lib/priceDisplay';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prices, Prisma } from '@prisma/client';
@@ -237,7 +238,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
     }
   } else if (method === 'PUT') {
     try {
-      const { pricePairs }: { pricePairs: Partial<Prices>[] } = req.body;
+      const {
+        pricePairs,
+      }: { pricePairs: (Partial<Prices> & { markChecked?: boolean })[] } =
+        req.body;
       if (pricePairs == null) {
         return res.status(400).json({
           success: false,
@@ -261,6 +265,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           priceInTmt: true,
           displayPriceTmt: true,
           dollarRateId: true,
+          priceCheckedAt: true,
         },
       });
       const currentById = new Map(current.map((price) => [price.id, price]));
@@ -300,6 +305,38 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           }
           if (price.priceInTmt != null) {
             data.priceInTmt = price.priceInTmt;
+          }
+          // Only an edited USD/manat amount counts as the admin re-checking the
+          // price. Decided from the submitted figures, before the rate-driven
+          // repricing below fills priceInTmt itself. A manat figure that just
+          // follows a newly chosen rate is a rate move and does not count.
+          let rateDerivedTmt: string | null = null;
+          if ('dollarRateId' in price) {
+            const target = rateForPrice(
+              { dollarRateId: price.dollarRateId ?? null },
+              rates,
+            );
+            const derived =
+              target == null
+                ? null
+                : recomputedPriceFields(
+                    data.price ?? currentById.get(price.id as string)!.price,
+                    target.rate,
+                  );
+            rateDerivedTmt =
+              derived == null ? null : String(derived.priceInTmt);
+          }
+          // `markChecked` is the page's refresh icon: the admin confirms the
+          // price as still correct without changing it.
+          if (
+            price.markChecked === true ||
+            priceAmountsChanged(
+              data,
+              currentById.get(price.id as string),
+              rateDerivedTmt,
+            )
+          ) {
+            data.priceCheckedAt = new Date();
           }
           // Presence-keyed rather than inferred from priceInTmt: the shown
           // price is an attribute an admin can pin away from the exact
@@ -427,10 +464,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
       //
       // Bulk edits from /product/price-list overshoot the batch cap and are
       // skipped inside revalidateInBackground, which is intended for them.
-      const priceIds = pricePairs.map((price) => price.id as string);
+      //
+      // A pair that only marks the price as checked changes nothing a customer
+      // sees, so it rebuilds no pages.
+      const shownPairs = pricePairs.filter((price) =>
+        Object.keys(price).some((key) => key !== 'id' && key !== 'markChecked'),
+      );
+      const priceIds = shownPairs.map((price) => price.id as string);
       revalidateInBackground(res, async () =>
         productRevalidationPaths([
-          ...priceRevalidationProductIds(pricePairs, currentById),
+          ...priceRevalidationProductIds(shownPairs, currentById),
           ...(await productIdsReferencingPrices(priceIds)),
         ]),
       );

@@ -16,6 +16,8 @@ import { useUserContext } from '@/pages/lib/UserContext';
 import { getCookie, setCookie } from '@/pages/lib/utils';
 import { switchLocale } from '@/pages/lib/switchLocale';
 import AccountNav from '@/pages/user/components/AccountNav';
+import AttentionDot from '@/pages/components/AttentionDot';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { cartIndexClasses } from '@/styles/classMaps/cart';
 import { profileClasses } from '@/styles/classMaps/user/profile';
 import { fontClassName, navy } from '@/styles/theme';
@@ -75,6 +77,8 @@ type MenuRow = {
   onClick?: () => void;
   tone?: 'primary' | 'muted';
   value?: string;
+  /** A red dot on the icon's corner, for something that needs attention. */
+  dot?: { show: boolean; label: string };
   toggle?: { checked: boolean; onChange: () => void; disabled?: boolean };
 };
 
@@ -104,13 +108,18 @@ function MenuCard({
         const rowCls = `${isWeb ? profileClasses.web.row : profileClasses.row} ${borderCls}`;
         const inner = (
           <>
-            {isWeb ? (
-              row.icon
-            ) : (
-              <span className={profileClasses.rowIcon[row.tone ?? 'primary']}>
-                {row.icon}
-              </span>
-            )}
+            <AttentionDot
+              show={row.dot?.show ?? false}
+              label={row.dot?.label ?? ''}
+            >
+              {isWeb ? (
+                row.icon
+              ) : (
+                <span className={profileClasses.rowIcon[row.tone ?? 'primary']}>
+                  {row.icon}
+                </span>
+              )}
+            </AttentionDot>
             <span
               className={`${
                 isWeb ? profileClasses.web.rowLabel : profileClasses.rowLabel
@@ -160,6 +169,7 @@ function MenuCard({
 export default function Profile() {
   const { user, setUser, accessToken, setAccessToken, isLoading } =
     useUserContext();
+  const { staleCount } = useStalePrices();
   const [open, setOpen] = useState(false);
   const [openLang, setOpenLang] = useState(false);
   const [openDeleteAccount, setOpenDeleteAccount] = useState(false);
@@ -323,6 +333,7 @@ export default function Profile() {
       icon: <Upload className={profileClasses.icon.primary} />,
       label: t('updatePrices'),
       onClick: () => router.push('/product/update-prices'),
+      dot: { show: staleCount > 0, label: t('stalePricesAttention') },
     },
     {
       icon: <Palette className={profileClasses.icon.primary} />,

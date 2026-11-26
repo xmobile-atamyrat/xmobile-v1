@@ -4,6 +4,26 @@ export const productCardClasses = {
     mobile:
       'w-full min-h-[200px] rounded-2xl overflow-hidden shadow-[0_4px_14px_rgba(20,16,60,0.05)] bg-white',
   },
+  // Staff-only stale-price warning: a coloured border around the whole card
+  // and a pill in the image's top-left corner (the heart sits top-right). A
+  // border rather than a ring, so a scrolling row can't clip it.
+  staleRing: {
+    orange: '!border-2 !border-solid !border-[#F59E0B]',
+    red: '!border-2 !border-solid !border-[#E5484D]',
+  },
+  staleBadge: {
+    base: {
+      web: 'absolute top-2 left-2 z-[1] flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold leading-none text-white shadow-sm',
+      mobile:
+        'absolute top-1.5 left-1.5 z-[1] flex items-center gap-0.5 rounded-full px-1.5 py-[3px] text-[10px] font-bold leading-none text-white shadow-sm',
+    },
+    icon: {
+      web: 'text-[15px]',
+      mobile: 'text-[12px]',
+    },
+    orange: 'bg-[#F59E0B]',
+    red: 'bg-[#E5484D] motion-safe:animate-pulse',
+  },
   boxes: {
     main: 'relative h-full w-full flex flex-col cursor-pointer',
     detail: {

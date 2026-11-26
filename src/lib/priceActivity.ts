@@ -20,7 +20,9 @@ export type PriceSnapshot = Pick<
   | 'categoryId'
   | 'dollarRateId'
   | 'outOfStockAt'
->;
+> &
+  // Optional: only the price-list save reads it, to log the refresh icon.
+  Partial<Pick<Prices, 'priceCheckedAt'>>;
 
 /**
  * A save touching more changed prices than this is logged as one summary row.
@@ -52,6 +54,23 @@ function scalarChanges(
   const wasOut = before.outOfStockAt != null;
   const isOut = after.outOfStockAt != null;
   if (wasOut !== isOut) changes.outOfStock = { from: wasOut, to: isOut };
+  // The refresh icon ("price is still correct") changes nothing but the
+  // check date, so it is logged on its own. An edited amount already shows
+  // the re-check, so it is not repeated there.
+  const checkedBefore = before.priceCheckedAt?.getTime();
+  const checkedAfter = after.priceCheckedAt?.getTime();
+  if (
+    checkedBefore != null &&
+    checkedAfter != null &&
+    checkedBefore !== checkedAfter &&
+    !('price' in changes) &&
+    !('priceInTmt' in changes)
+  ) {
+    changes.checked = {
+      from: before.priceCheckedAt!.toISOString(),
+      to: after.priceCheckedAt!.toISOString(),
+    };
+  }
   return changes;
 }
 

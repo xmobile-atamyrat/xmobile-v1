@@ -263,11 +263,13 @@ model Prices {
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  priceCheckedAt  DateTime    @default(now())
 
   @@index([price])
   @@index([categoryId])
   @@index([productId])
   @@index([dollarRateId])
+  @@index([priceCheckedAt])
 }
 
 model Color {
@@ -357,6 +359,7 @@ enum ChatStatus {
 enum NotificationType {
   CHAT_MESSAGE
   ORDER_STATUS_UPDATE
+  PRICE_STALENESS
 }
 
 enum NotificationDeliveryStatus {

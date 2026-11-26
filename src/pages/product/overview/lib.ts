@@ -81,6 +81,8 @@ export interface OverviewFilters {
   brandId: string;
   /** Keeps only products whose base price is absent or points at a dead row. */
   missingPriceOnly: boolean;
+  /** Keeps only products carrying a stale-price warning. */
+  staleOnly: boolean;
   locale: string;
 }
 
@@ -104,6 +106,7 @@ export function filterOverviewProducts(
     recommendedOnly,
     brandId,
     missingPriceOnly,
+    staleOnly,
     locale,
   }: OverviewFilters,
 ): AdminProductListItem[] {
@@ -117,6 +120,7 @@ export function filterOverviewProducts(
     // problem to an admin — neither shows a price to a customer — so one filter
     // covers both. The column still distinguishes them.
     if (missingPriceOnly && product.basePriceIssue == null) return false;
+    if (staleOnly && product.staleTier == null) return false;
     if (brandId === NO_BRAND_FILTER) {
       if (product.brandId != null) return false;
     } else if (brandId !== '' && product.brandId !== brandId) {

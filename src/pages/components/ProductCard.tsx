@@ -6,6 +6,7 @@ import {
 } from '@/pages/lib/mediaUrls';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -16,6 +17,7 @@ import {
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
 import { fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import {
   Box,
   Card,
@@ -61,6 +63,7 @@ export default function ProductCard({
   const { accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
   const platform = usePlatform();
+  const { staleByProductId } = useStalePrices();
 
   const cardImageSrc = productThumbnailUrl(product?.imgUrls[0]);
 
@@ -131,8 +134,22 @@ export default function ProductCard({
       </Box>
     ) : null;
 
+  // Staff only: the list is empty for everyone else. A sold-out product sells
+  // at no price, so it carries the out-of-stock badge instead.
+  const stale =
+    product != null && product.outOfStockAt == null
+      ? staleByProductId[product.id]
+      : undefined;
+  const staleHint =
+    stale == null
+      ? undefined
+      : `${t(stale.tier === 'red' ? 'staleRedHint' : 'staleOrangeHint')}: ${t('daysShort', { days: stale.days })}`;
+
   return (
-    <Card className={productCardClasses.card[platform]} elevation={0}>
+    <Card
+      className={`${productCardClasses.card[platform]}${stale != null ? ` ${productCardClasses.staleRing[stale.tier]}` : ''}`}
+      elevation={0}
+    >
       {product != null ? (
         <Box className={productCardClasses.boxes.main}>
           {/* Image and title are separate anchors so the product name is still
@@ -168,6 +185,20 @@ export default function ProductCard({
                     >
                       {t('outOfStock')}
                     </Typography>
+                  </Box>
+                )}
+                {stale != null && (
+                  <Box
+                    role="img"
+                    aria-label={staleHint}
+                    title={staleHint}
+                    data-testid="stale-price-badge"
+                    className={`${productCardClasses.staleBadge.base[platform]} ${productCardClasses.staleBadge[stale.tier]}`}
+                  >
+                    <WarningAmberRoundedIcon
+                      className={productCardClasses.staleBadge.icon[platform]}
+                    />
+                    {t('daysShort', { days: stale.days })}
                   </Box>
                 )}
               </Box>

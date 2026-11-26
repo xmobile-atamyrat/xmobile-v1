@@ -4,11 +4,12 @@ Central process that runs all periodic (cron/interval) jobs. Deploy once; it run
 
 ## Jobs
 
-| Job              | Schedule   | Description |
-|------------------|------------|-------------|
-| healthcheck      | Every 5s   | Pings `/api/ping`; Slack on down/recovery |
-| telekom-balance  | Daily 09:00| Fetches Telekom balance; Slack if below `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT` |
-| admin-activity-retention | Daily 05:00 | Deletes admin activity older than 13 months, in batches |
+| Job                      | Schedule                    | Description                                                                                                                                                                                                                                |
+| ------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| healthcheck              | Every 5s                    | Pings `/api/ping`; Slack on down/recovery                                                                                                                                                                                                  |
+| telekom-balance          | Daily 09:00                 | Fetches Telekom balance; Slack if below `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT`                                                                                                                                                              |
+| admin-activity-retention | Daily 05:00                 | Deletes admin activity older than 13 months, in batches                                                                                                                                                                                    |
+| price-staleness          | Daily 09:00 (Asia/Ashgabat) | Counts products whose prices were not confirmed for 30+ / 90+ days; sends an in-app + push notification to admins (opens `/product/update-prices`); the title rotates daily through `PRICE_STALENESS_TITLES`. Skips when both counts are 0 |
 
 ## Adding a job
 

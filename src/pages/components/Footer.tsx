@@ -1,3 +1,4 @@
+import AttentionDot from '@/pages/components/AttentionDot';
 import CountBadge from '@/pages/components/CountBadge';
 import StoreBadge from '@/pages/components/StoreBadge';
 import { useCartContext } from '@/pages/lib/CartContext';
@@ -5,6 +6,7 @@ import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { SUPPORT_EMAIL, SUPPORT_PHONES } from '@/pages/lib/constants';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { ExtendedCategory } from '@/pages/lib/types';
 import { parseName } from '@/pages/lib/utils';
 import { appDownloadClasses } from '@/styles/classMaps/components/appDownload';
@@ -70,6 +72,8 @@ export default function Footer() {
     useCategoryContext();
   const { setProducts } = useProductContext();
   const { cartCount } = useCartContext();
+  // Staff only: the count is always 0 for everyone else.
+  const { staleCount } = useStalePrices();
 
   const goTo = (href: string) => {
     router.push(href, href, { locale: router.locale });
@@ -141,10 +145,15 @@ export default function Footer() {
                 }`}
               >
                 <CountBadge count={href === '/cart' ? cartCount : 0}>
-                  <Icon
-                    className={footerClasses.navItem.icon}
-                    strokeWidth={1.75}
-                  />
+                  <AttentionDot
+                    show={href === '/user' && staleCount > 0}
+                    label={t('stalePricesAttention')}
+                  >
+                    <Icon
+                      className={footerClasses.navItem.icon}
+                      strokeWidth={1.75}
+                    />
+                  </AttentionDot>
                 </CountBadge>
                 <span
                   className={`${fontClassName.className} ${

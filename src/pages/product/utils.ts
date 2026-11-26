@@ -1,4 +1,9 @@
-import { RateLike } from '@/lib/dollarRates';
+import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
+import {
+  RateLike,
+  rateForPrice,
+  recomputedPriceFields,
+} from '@/lib/dollarRates';
 import { curlyBracketRegex, squareBracketRegex } from '@/pages/lib/constants';
 import {
   displayPriceOf,
@@ -138,7 +143,7 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
 
 // The category cell holds the raw categoryId, not a display name: resolving the
 // localized name needs the category tree, which lives in the page's context.
-// `updatedAt` is normalized to an ISO string because it arrives as a Date from
+// Dates are normalized to an ISO string because they arrive as a Date from
 // Prisma but as a string once it has been through JSON.
 /**
  * Whether a price-table column accepts typed text.
@@ -197,7 +202,9 @@ export const processPrices = (prices: Prices[]): TableData => {
     parsePrice(displayPriceOf(row)),
     row.categoryId,
     row.outOfStockAt != null,
-    row.updatedAt != null ? new Date(row.updatedAt).toISOString() : null,
+    row.priceCheckedAt != null
+      ? new Date(row.priceCheckedAt).toISOString()
+      : null,
     row.id,
   ]) as TableData;
 
@@ -210,7 +217,7 @@ export const processPrices = (prices: Prices[]): TableData => {
       'Display',
       'Category',
       'Out of stock',
-      'Updated',
+      'Checked',
     ],
     ...processedPrices,
   ];
@@ -223,7 +230,11 @@ export const isPriceValid = (price: string): boolean => {
 // A pending edit is column-shaped apart from stock, which stays a boolean all
 // the way from the checkbox to the PUT body: `outOfStockAt` is the server's to
 // stamp, and a client inventing one would overwrite the retention deadline.
-export type PriceEdit = Partial<Prices> & { isOutOfStock?: boolean };
+// `markChecked` is likewise edit-only: "set priceCheckedAt to now" on save.
+export type PriceEdit = Partial<Prices> & {
+  isOutOfStock?: boolean;
+  markChecked?: boolean;
+};
 
 // Overlays typed-but-unsaved edits onto derived table rows. Edits are keyed by
 // price id (not row index) so re-sorting/filtering/searching can never merge one
@@ -258,9 +269,47 @@ export const applyPendingEdits = (
 // sets is local only, since the PUT body is built from the edits themselves: the
 // table and the out-of-stock filter just need it non-null until the next load
 // brings the server's own.
-export const foldSavedEdit = (price: Prices, edit: PriceEdit): Prices => {
-  const { isOutOfStock, ...columns } = edit;
+// The manat figure the edit's newly chosen rate yields, worked out exactly as
+// PUT /api/prices does. Without the rates loaded it falls back to treating the
+// sent manat figure as rate-derived, so a rate move never reads as a re-check.
+const rateDerivedTmt = (
+  price: Prices,
+  edit: PriceEdit,
+  rates: RateLike[],
+): string | null | undefined => {
+  if (!('dollarRateId' in edit)) return null;
+  const target = rateForPrice(
+    { dollarRateId: edit.dollarRateId ?? null },
+    rates,
+  );
+  if (target == null) return edit.priceInTmt;
+  const derived = recomputedPriceFields(edit.price ?? price.price, target.rate);
+  return derived == null ? null : derived.priceInTmt;
+};
+
+// Whether saving `edit` will count as the admin re-checking `price`, which
+// clears its stale warning. Mirrors the server: the refresh icon, or a changed
+// dollar or manat figure. A manat figure that merely follows a rate change
+// does not count.
+export const editChecksPrice = (
+  price: Prices,
+  edit: PriceEdit,
+  rates: RateLike[] = [],
+): boolean => {
+  if (edit.markChecked === true) return true;
+  return priceAmountsChanged(edit, price, rateDerivedTmt(price, edit, rates));
+};
+
+export const foldSavedEdit = (
+  price: Prices,
+  edit: PriceEdit,
+  rates: RateLike[] = [],
+): Prices => {
+  // `markChecked` is pulled out only so the edit-only flag never lands on the row.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { isOutOfStock, markChecked, ...columns } = edit;
   const folded = { ...price, ...columns };
+  if (editChecksPrice(price, edit, rates)) folded.priceCheckedAt = new Date();
   if (isOutOfStock == null) return folded;
   return {
     ...folded,
@@ -319,6 +368,7 @@ export const mergePriceEdit = (
   ) {
     delete next.displayPriceTmt;
   }
+  if (next.markChecked !== true) delete next.markChecked;
   if (next.name === saved.name) delete next.name;
   if ('categoryId' in next && next.categoryId === saved.categoryId) {
     delete next.categoryId;
@@ -348,10 +398,15 @@ export type PriceSortKey =
   | 'editedRecent'
   | 'editedStale';
 
-const editedTime = (p: Prices) => new Date(p.updatedAt).getTime();
+// Rows with no check date sort as the oldest possible.
+const editedTime = (p: Prices) =>
+  p.priceCheckedAt == null ? 0 : new Date(p.priceCheckedAt).getTime();
+
+const byCheckedThenName = (a: Prices, b: Prices, direction: 1 | -1) =>
+  direction * (editedTime(a) - editedTime(b)) || a.name.localeCompare(b.name);
 
 // Returns a sorted copy; '' (or unknown key) keeps the original order.
-export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
+const sortByKey = (prices: Prices[], key: PriceSortKey): Prices[] => {
   const sorted = [...prices];
   switch (key) {
     case 'nameAsc':
@@ -379,12 +434,24 @@ export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
         (a, b) => parsePrice(displayPriceOf(b)) - parsePrice(displayPriceOf(a)),
       );
     case 'editedRecent':
-      return sorted.sort((a, b) => editedTime(b) - editedTime(a));
+      return sorted.sort((a, b) => byCheckedThenName(a, b, -1));
     case 'editedStale':
-      return sorted.sort((a, b) => editedTime(a) - editedTime(b));
+      return sorted.sort((a, b) => byCheckedThenName(a, b, 1));
     default:
       return sorted;
   }
+};
+
+// Sorts by `key`, then moves every out-of-stock price below the in-stock ones,
+// whatever the sort. Nobody sells at a sold-out price, so its age or amount
+// must not push it in between the rows that still need work. Each group keeps
+// the sort order.
+export const sortPrices = (prices: Prices[], key: PriceSortKey): Prices[] => {
+  const sorted = sortByKey(prices, key);
+  return [
+    ...sorted.filter((p) => p.outOfStockAt == null),
+    ...sorted.filter((p) => p.outOfStockAt != null),
+  ];
 };
 
 // Keeps prices whose own category relation is in categoryIds. Matches on

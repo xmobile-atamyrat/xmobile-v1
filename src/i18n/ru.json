@@ -804,6 +804,7 @@
   "activityFieldPriceInTmt": "цена (TMT)",
   "activityFieldDisplayPriceTmt": "показываемая цена (TMT)",
   "activityFieldOutOfStock": "нет в наличии",
+  "activityFieldChecked": "проверена",
   "activityFieldCategory": "категория",
   "activityFieldBrand": "бренд",
   "activityFieldProduct": "товар",
@@ -985,5 +986,11 @@
   "displayHighToLow": "Отображаемая ↓",
   "unsavedChanges": "Несохранённых изменений: {count}",
   "discard": "Отменить",
-  "pricesCount": "Цен: {count}"
+  "pricesCount": "Цен: {count}",
+  "daysShort": "{days} дн.",
+  "refreshPrice": "Отметить цену как актуальную",
+  "staleOrangeHint": "Не обновлялась больше месяца",
+  "staleRedHint": "Не обновлялась больше 3 месяцев",
+  "staleOnly": "Только устаревшие цены",
+  "stalePricesAttention": "Есть цены, которые пора обновить"
 }

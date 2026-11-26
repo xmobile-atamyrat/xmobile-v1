@@ -272,13 +272,28 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
+      // An FCM push that arrives before Firebase is set up in this worker lands
+      // here too. FCM nests the text under `notification` and our fields under
+      // `data`, so read those before falling back to the placeholder.
+      const fcmNotification = data.notification || {};
+      const fcmData = data.data || {};
       notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || data.content || notificationData.body,
+        title:
+          data.title ||
+          fcmNotification.title ||
+          fcmData.title ||
+          notificationData.title,
+        body:
+          data.body ||
+          data.content ||
+          fcmNotification.body ||
+          fcmData.body ||
+          notificationData.body,
         icon: data.icon || NOTIFICATION_ICON,
         badge: data.badge || NOTIFICATION_BADGE,
-        tag: data.tag || data.id || notificationData.tag,
-        data: data.data || {},
+        tag:
+          data.tag || data.id || fcmData.notificationId || notificationData.tag,
+        data: fcmData,
         requireInteraction: data.requireInteraction || false,
         silent: data.silent || false,
       };
@@ -319,10 +334,13 @@ self.addEventListener('notificationclick', (event) => {
       .then((clientList) => {
         // Determine the URL to navigate to based on notification type
         let url = '/';
+        const isPriceStaleness = notificationData.type === 'PRICE_STALENESS';
         if (orderId) {
           url = `/orders/${orderId}`;
         } else if (sessionId) {
           url = `/chat?sessionId=${sessionId}`;
+        } else if (isPriceStaleness) {
+          url = '/product/update-prices';
         }
 
         // If there's an open window, focus it and navigate if needed
@@ -334,7 +352,8 @@ self.addEventListener('notificationclick', (event) => {
               (orderId && !client.url.includes(`/orders/${orderId}`)) ||
               (sessionId &&
                 !orderId &&
-                !client.url.includes(`/chat?sessionId=${sessionId}`));
+                !client.url.includes(`/chat?sessionId=${sessionId}`)) ||
+              (isPriceStaleness && !client.url.includes(url));
 
             if (needsNavigation) {
               // Try to navigate if supported (some browsers don't support navigate)

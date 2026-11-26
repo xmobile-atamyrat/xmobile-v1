@@ -22,6 +22,7 @@ import {
   registerServiceWorker,
 } from '@/pages/lib/serviceWorker';
 import { HreflangLink, PageSeoData } from '@/pages/lib/types';
+import StalePricesContextProvider from '@/pages/lib/StalePricesContext';
 import UserContextProvider from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
@@ -307,9 +308,11 @@ export default function App({ Component, pageProps }: AppProps) {
                                   <UpdateModal type="hard" />
                                 ) : (
                                   <NotificationPromptProvider>
-                                    <FavoritesContextProvider>
-                                      <Component {...pageProps} />
-                                    </FavoritesContextProvider>
+                                    <StalePricesContextProvider>
+                                      <FavoritesContextProvider>
+                                        <Component {...pageProps} />
+                                      </FavoritesContextProvider>
+                                    </StalePricesContextProvider>
                                     {isLoading && <Loader />}
                                   </NotificationPromptProvider>
                                 )}

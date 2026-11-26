@@ -92,6 +92,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   priceInTmt: 'activityFieldPriceInTmt',
   displayPriceTmt: 'activityFieldDisplayPriceTmt',
   outOfStock: 'activityFieldOutOfStock',
+  checked: 'activityFieldChecked',
   category: 'activityFieldCategory',
   brand: 'activityFieldBrand',
   product: 'activityFieldProduct',
@@ -185,7 +186,7 @@ function formatValue(field: string, value: unknown, t: Translate): string {
   if (['priceInTmt', 'displayPriceTmt', 'deliveryPrice'].includes(field)) {
     return `${value} TMT`;
   }
-  if (field === 'startsAt' || field === 'endsAt') {
+  if (field === 'startsAt' || field === 'endsAt' || field === 'checked') {
     return formatDate(value as string);
   }
   if (field === 'status') {

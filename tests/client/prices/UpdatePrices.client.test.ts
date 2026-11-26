@@ -42,7 +42,16 @@ vi.mock('@/pages/components/Appbar', async () => {
   };
 });
 
-const price = (id: string, name: string, categoryId: string) => ({
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysAgo = (days: number) =>
+  new Date(Date.now() - days * DAY_MS - 60_000).toISOString();
+
+const price = (
+  id: string,
+  name: string,
+  categoryId: string,
+  checkedDaysAgo = 5,
+) => ({
   id,
   name,
   price: '10',
@@ -53,11 +62,12 @@ const price = (id: string, name: string, categoryId: string) => ({
   dollarRateId: 1,
   outOfStockAt: null as string | null,
   updatedAt: '2026-01-01T00:00:00Z',
+  priceCheckedAt: daysAgo(checkedDaysAgo),
 });
 
 const prices = [
-  price('p1', 'iPhone', 'phones'),
-  price('p2', 'Cable', 'accessories'),
+  price('p1', 'iPhone', 'phones', 100),
+  price('p2', 'Cable', 'accessories', 5),
 ];
 
 const rates = [
@@ -372,6 +382,73 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
     expect(screen.queryByText('240')).toBeNull();
     // Manat and display, on both rows.
     expect(screen.getAllByText('200')).toHaveLength(4);
+  });
+
+  it('shows the days since the price was checked, oldest first', async () => {
+    await renderPage();
+
+    expect(screen.getByText('100 d')).toBeTruthy();
+    expect(screen.getByText('5 d')).toBeTruthy();
+    const names = screen
+      .getAllByText(/^(iPhone|Cable)$/)
+      .map((node) => node.textContent);
+    expect(names).toEqual(['iPhone', 'Cable']);
+    expect(selectLabelled('Sort by').textContent).toBe('Longest not edited');
+  });
+
+  it('tints an old row and leaves a recent one alone', async () => {
+    await renderPage();
+
+    const rowOf = (text: string) =>
+      screen.getByText(text).closest('tr') as HTMLElement;
+    expect(getComputedStyle(rowOf('100 d')).backgroundColor).toMatch(
+      /rgba\(\d+, \d+, \d+, 0\.12\)/,
+    );
+    expect(getComputedStyle(rowOf('5 d')).backgroundColor).toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+  });
+
+  it('marks a row as checked as a pending edit and saves it with Save', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    const refresh = () =>
+      screen.getAllByTestId('RefreshIcon')[0].closest('button')!;
+
+    await user.click(refresh());
+    expect(screen.getByText(/^1 unsaved changes/)).toBeTruthy();
+    // No request yet, and the row neither moved nor kept its warning.
+    expect(sentWith('POST')).toBeUndefined();
+    expect(sentWith('PUT')).toBeUndefined();
+    expect(screen.getByText('0 d')).toBeTruthy();
+    expect(screen.queryByText('100 d')).toBeNull();
+    const names = screen
+      .getAllByText(/^(iPhone|Cable)$/)
+      .map((node) => node.textContent);
+    expect(names).toEqual(['iPhone', 'Cable']);
+
+    // A second click toggles it back off.
+    await user.click(refresh());
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+    expect(screen.getByText('100 d')).toBeTruthy();
+
+    await user.click(refresh());
+    await user.click(screen.getAllByRole('checkbox')[1]);
+    await user.click(saveChangesButton());
+    await waitFor(() => expect(sentWith('PUT')).toBeDefined());
+    expect(sentWith('PUT')?.body.pricePairs).toEqual([
+      { id: 'p1', markChecked: true },
+      { id: 'p2', isOutOfStock: true },
+    ]);
+    // After saving, Cable is sold out, so it sinks to the bottom even though
+    // its price is older than iPhone's freshly checked one.
+    await waitFor(() => {
+      expect(screen.getByText('Prices updated successfully!')).toBeTruthy();
+    });
+    const after = screen
+      .getAllByText(/^(iPhone|Cable)$/)
+      .map((node) => node.textContent);
+    expect(after).toEqual(['iPhone', 'Cable']);
   });
 
   it('does not reload the table when the access token rotates', async () => {

@@ -5,6 +5,7 @@ import { healthcheckJob } from './healthcheck';
 import { notificationRetryJob } from './notification-retry';
 import { outOfStockCleanupJob } from './out-of-stock-cleanup';
 import { outOfStockSyncJob } from './out-of-stock-sync';
+import { priceStalenessJob } from './price-staleness';
 import { telekomBalanceJob } from './telekom-balance';
 
 export const jobs: BatchJob[] = [
@@ -15,4 +16,5 @@ export const jobs: BatchJob[] = [
   outOfStockSyncJob,
   outOfStockCleanupJob,
   adminActivityRetentionJob,
+  priceStalenessJob,
 ];

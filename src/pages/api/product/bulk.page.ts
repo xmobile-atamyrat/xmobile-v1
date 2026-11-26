@@ -4,6 +4,7 @@ import {
   whereActiveCategory,
   whereActiveProduct,
 } from '@/lib/prismaActiveScope';
+import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
 import { deriveVariantColumns } from '@/pages/api/product/index.page';
 import addCors from '@/pages/api/utils/addCors';
 import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
@@ -131,6 +132,7 @@ export interface PriceUpdate {
     displayPriceTmt?: string;
     categoryId?: string | null;
   };
+  tmtDerived?: boolean; // see PlannedPrice
   changes: FieldChange[];
 }
 
@@ -204,6 +206,9 @@ export interface PlannedPrice {
   usd: string;
   tmt: string;
   display: string;
+  // The TMT cell was empty and the manat figure was computed from USD, so it
+  // says nothing about whether anyone re-checked the price.
+  tmtDerived?: boolean;
 }
 
 export interface PlannedVariant {
@@ -254,7 +259,10 @@ function resolvePriceCells(
   usdCell: string,
   tmtCell: string,
   rate: number | null,
-): { usd: string; tmt: string; display: string } | { error: string } | null {
+):
+  | Pick<PlannedPrice, 'usd' | 'tmt' | 'display' | 'tmtDerived'>
+  | { error: string }
+  | null {
   if (usdCell === '' && tmtCell === '') return null;
   const usd = usdCell === '' ? undefined : parsePriceCell(usdCell);
   const tmt = tmtCell === '' ? undefined : parsePriceCell(tmtCell);
@@ -280,6 +288,7 @@ function resolvePriceCells(
       usd: String(parsePrice(String(usd))),
       tmt: String(tmtFromUsd(usd, rate)),
       display: String(displayTmtFromUsd(usd, rate)),
+      tmtDerived: true,
     };
   }
   const pinned = String(parsePrice(String(tmt)));
@@ -528,7 +537,13 @@ export function planStandalonePrice(
     return { error: 'a price with no product needs a USD or TMT value' };
   if ('error' in resolved) return { error: resolved.error };
   const colorName = cellText(row.color);
-  return { name: colorName ? `${spec} ${colorName}` : spec, ...resolved };
+  const { usd, tmt, display } = resolved;
+  return {
+    name: colorName ? `${spec} ${colorName}` : spec,
+    usd,
+    tmt,
+    display,
+  };
 }
 
 const NO_CATEGORY = '—';
@@ -674,7 +689,10 @@ export function planPriceRows(
       cellText(row.priceTmt),
       refs.rate,
     );
-    let resolved: { usd: string; tmt: string; display: string } | null = null;
+    let resolved: Pick<
+      PlannedPrice,
+      'usd' | 'tmt' | 'display' | 'tmtDerived'
+    > | null = null;
     if (resolvedOrError != null) {
       if ('error' in resolvedOrError) {
         rowError(row.row, resolvedOrError.error);
@@ -685,6 +703,7 @@ export function planPriceRows(
 
     const data: PriceUpdate['data'] = {};
     const changes: FieldChange[] = [];
+    let tmtDerived: boolean | undefined;
     if (name !== meta.name) {
       data.name = name;
       changes.push({ label: 'Name', from: meta.name, to: name });
@@ -693,6 +712,7 @@ export function planPriceRows(
       data.price = resolved.usd;
       data.priceInTmt = resolved.tmt;
       data.displayPriceTmt = resolved.display;
+      tmtDerived = resolved.tmtDerived;
       changes.push({
         label: 'Price',
         from: `${meta.usd} / ${meta.tmt}`,
@@ -708,7 +728,13 @@ export function planPriceRows(
       });
     }
     if (changes.length > 0) {
-      updates.push({ id: priceId, label: meta.name, data, changes });
+      updates.push({
+        id: priceId,
+        label: meta.name,
+        data,
+        tmtDerived,
+        changes,
+      });
     }
   });
 
@@ -1056,6 +1082,25 @@ async function syncCachedPrices(priceDisplayById: Map<string, number>) {
   `;
 }
 
+// `{ priceCheckedAt: now }` when the submitted USD/manat differs from the stored
+// row, else `{}` (display-only or name/category edits don't count). A derived
+// manat figure moves with the rate, so then only the USD amount is compared.
+async function priceCheckedAtPatch(
+  db: Prisma.TransactionClient | typeof dbClient,
+  id: string,
+  submitted: { price?: string | null; priceInTmt?: string | null },
+  tmtDerived?: boolean,
+): Promise<{ priceCheckedAt?: Date }> {
+  const stored = await db.prices.findUnique({
+    where: { id },
+    select: { price: true, priceInTmt: true },
+  });
+  const compared = tmtDerived ? { price: submitted.price } : submitted;
+  return priceAmountsChanged(compared, stored)
+    ? { priceCheckedAt: new Date() }
+    : {};
+}
+
 // Returns true if it wrote anything (product row and/or a shared Prices row);
 // false means the sheet matched the DB and nothing was touched.
 async function applyProductPlan(
@@ -1071,11 +1116,21 @@ async function applyProductPlan(
   const updatedPrices: { id: string; display: number }[] = [];
 
   if (plan.basePrice != null) {
-    const { priceId, name, usd, tmt, display } = plan.basePrice;
+    const { priceId, name, usd, tmt, display, tmtDerived } = plan.basePrice;
     if (priceId != null) {
       await db.prices.update({
         where: { id: priceId },
-        data: { price: usd, priceInTmt: tmt, displayPriceTmt: display },
+        data: {
+          price: usd,
+          priceInTmt: tmt,
+          displayPriceTmt: display,
+          ...(await priceCheckedAtPatch(
+            db,
+            priceId,
+            { price: usd, priceInTmt: tmt },
+            tmtDerived,
+          )),
+        },
       });
       updatedPrices.push({ id: priceId, display: parseFloat(display) });
     } else {
@@ -1100,6 +1155,13 @@ async function applyProductPlan(
               price: variant.price.usd,
               priceInTmt: variant.price.tmt,
               displayPriceTmt: variant.price.display,
+              // eslint-disable-next-line no-await-in-loop
+              ...(await priceCheckedAtPatch(
+                db,
+                priceId,
+                { price: variant.price.usd, priceInTmt: variant.price.tmt },
+                variant.price.tmtDerived,
+              )),
             },
           });
           updatedPrices.push({
@@ -1453,7 +1515,16 @@ async function handleImport(
       // eslint-disable-next-line no-await-in-loop
       await dbClient.prices.update({
         where: { id: update.id },
-        data: update.data,
+        data: {
+          ...update.data,
+          // eslint-disable-next-line no-await-in-loop
+          ...(await priceCheckedAtPatch(
+            dbClient,
+            update.id,
+            update.data,
+            update.tmtDerived,
+          )),
+        },
       });
       updatedPriceCount += 1;
       if (update.data.displayPriceTmt != null) {
