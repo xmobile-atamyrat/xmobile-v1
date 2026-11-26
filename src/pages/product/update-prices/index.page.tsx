@@ -87,10 +87,10 @@ import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 
-import { SearchBar } from '@/pages/components/Appbar';
 import DeleteDialog from '@/pages/components/DeleteDialog';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import AddPrice from '@/pages/product/components/AddPrice';
+import PriceSearchBox from '@/pages/product/components/PriceSearchBox';
 import {
   categoryMenuItems,
   flattenCategories,
@@ -173,7 +173,16 @@ export default function UpdatePrices() {
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<SnackbarProps>();
+  // The last searched text. It trails the search box, which only reports once
+  // typing pauses.
   const [searchKeyword, setSearchKeyword] = useState('');
+  // The newest text asked for, for a re-read that was started before it.
+  const latestKeywordRef = useRef('');
+  // Numbers every read of the price list. Answers can arrive out of order, so
+  // only the newest read may replace the list.
+  const latestReadRef = useRef(0);
+  // Bumped to remount the search box, which empties it.
+  const [searchResetCount, setSearchResetCount] = useState(0);
   // Raw master list of all fetched prices (retains updatedAt for sorting).
   // The rendered `tableData` is derived from this via sort/filter below, so the
   // existing edit-by-row-index logic on `tableData` stays untouched.
@@ -276,20 +285,25 @@ export default function UpdatePrices() {
   useEffect(() => {
     if (hasAccessToken) {
       (async () => {
+        latestReadRef.current += 1;
+        const read = latestReadRef.current;
         const pricesResponse = await fetchWithCreds<Prices[]>({
           accessToken,
           path: '/api/prices',
           method: 'GET',
         });
 
-        if (pricesResponse.success && pricesResponse.data != null) {
-          setAllPrices(pricesResponse.data);
-        } else {
-          console.error(pricesResponse.message);
-          setSnackbarMessage({
-            message: 'fetchPricesError',
-            severity: 'error',
-          });
+        // A search sent while this was loading has the say over the list.
+        if (read === latestReadRef.current) {
+          if (pricesResponse.success && pricesResponse.data != null) {
+            setAllPrices(pricesResponse.data);
+          } else {
+            console.error(pricesResponse.message);
+            setSnackbarMessage({
+              message: 'fetchPricesError',
+              severity: 'error',
+            });
+          }
         }
 
         const dollarRateResponse = await fetchWithCreds<DollarRate[]>({
@@ -570,10 +584,12 @@ export default function UpdatePrices() {
   const refreshAfterReprice = useCallback(async () => {
     setUpdatedPrices({});
     updatedPricesRef.current = {};
+    latestReadRef.current += 1;
+    const read = latestReadRef.current;
     const [pricesResponse, ratesResponse] = await Promise.all([
       fetchWithCreds<Prices[]>({
         accessToken,
-        path: pricesPath(searchKeyword),
+        path: pricesPath(latestKeywordRef.current),
         method: 'GET',
       }),
       fetchWithCreds<DollarRate[]>({
@@ -582,7 +598,11 @@ export default function UpdatePrices() {
         method: 'GET',
       }),
     ]);
-    if (pricesResponse.success && pricesResponse.data != null) {
+    if (
+      read === latestReadRef.current &&
+      pricesResponse.success &&
+      pricesResponse.data != null
+    ) {
       setAllPrices(pricesResponse.data);
     }
     if (ratesResponse.success && ratesResponse.data != null) {
@@ -590,16 +610,23 @@ export default function UpdatePrices() {
         ratesResponse.data.filter((rate) => String(rate.currency) === 'TMT'),
       );
     }
-  }, [accessToken, searchKeyword]);
+  }, [accessToken]);
 
   const handleSearch = useCallback(
     async (keyword: string) => {
+      latestKeywordRef.current = keyword;
+      latestReadRef.current += 1;
+      const read = latestReadRef.current;
+      // The keyword is stored only once the answer is in, so the table is
+      // redrawn once per search rather than when it is sent as well.
       try {
         const { success, data, message } = await fetchWithCreds<Prices[]>({
           accessToken,
           path: pricesPath(keyword),
           method: 'GET',
         });
+        if (read !== latestReadRef.current) return;
+        setSearchKeyword(keyword);
         if (success) {
           setAllPrices(data ?? []);
         } else {
@@ -611,6 +638,8 @@ export default function UpdatePrices() {
         }
       } catch (error) {
         console.error(error);
+        if (read !== latestReadRef.current) return;
+        setSearchKeyword(keyword);
         setSnackbarOpen(true);
         setSnackbarMessage({
           message: 'fetchPricesError',
@@ -642,6 +671,7 @@ export default function UpdatePrices() {
     setOutOfStockOnly(false);
     setRateFilter('');
     setSearchKeyword('');
+    setSearchResetCount((n) => n + 1);
     handleSearch('');
   };
 
@@ -822,12 +852,10 @@ export default function UpdatePrices() {
               className="flex flex-row flex-wrap items-center gap-2"
             >
               <Box className="flex-1 min-w-[220px]">
-                <SearchBar
-                  handleSearch={handleSearch}
-                  setSearchKeyword={setSearchKeyword}
-                  searchPlaceholder={t('search')}
-                  searchKeyword={searchKeyword}
-                  width="100%"
+                <PriceSearchBox
+                  key={searchResetCount}
+                  placeholder={t('search')}
+                  onSearch={handleSearch}
                 />
               </Box>
               <FormControl size="small" sx={{ minWidth: 180 }}>
