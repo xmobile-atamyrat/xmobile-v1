@@ -137,13 +137,6 @@ export const appbarClasses = {
     saleLinkIdle: 'bg-[#FDECEE] border-[#FBD0D4] text-red hover:bg-[#FBDDE0]',
     saleLinkActive: 'bg-red border-red text-white',
   },
-  saleLink: {
-    mobile:
-      'flex flex-row items-center gap-1.5 h-11 px-4 rounded-full bg-red text-white text-[14px] font-bold shadow-[0_4px_12px_rgba(228,30,43,0.25)] active:scale-95 transition-transform',
-  },
-  headerActions: {
-    mobile: 'flex flex-row items-center gap-2',
-  },
   backButton: {
     web: 'hidden',
     mobile: 'flex justify-center',

@@ -89,22 +89,15 @@ describe('mobile home header', () => {
     expect(screen.getByLabelText('notifications')).toBeTruthy();
   });
 
-  it('links to the sale page only while something is on sale', () => {
+  it('has no sale link, even while something is on sale', () => {
     setUser(undefined);
-    vi.mocked(useSaleAvailability).mockReturnValue(false);
-    const { unmount } = renderHeader();
-    expect(screen.queryByRole('link', { name: 'Sale' })).toBeNull();
-    unmount();
-
     vi.mocked(useSaleAvailability).mockReturnValue(true);
     renderHeader();
 
-    expect(
-      screen.getByRole('link', { name: 'Sale' }).getAttribute('href'),
-    ).toBe('/sale');
+    expect(screen.queryByRole('link', { name: 'Sale' })).toBeNull();
   });
 
-  it('has the sale link in the web header too', () => {
+  it('has the sale link in the web header', () => {
     setUser(undefined);
     vi.mocked(usePlatform).mockReturnValue('web');
     vi.mocked(useSaleAvailability).mockReturnValue(true);
@@ -113,6 +106,15 @@ describe('mobile home header', () => {
     expect(
       screen.getByRole('link', { name: 'Sale' }).getAttribute('href'),
     ).toBe('/sale');
+  });
+
+  it('has no sale link in the web header when nothing is on sale', () => {
+    setUser(undefined);
+    vi.mocked(usePlatform).mockReturnValue('web');
+    vi.mocked(useSaleAvailability).mockReturnValue(false);
+    renderHeader();
+
+    expect(screen.queryByRole('link', { name: 'Sale' })).toBeNull();
   });
 
   it('Find pushes the term into the home URL immediately', async () => {

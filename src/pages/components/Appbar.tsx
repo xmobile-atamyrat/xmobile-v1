@@ -297,39 +297,28 @@ export default function CustomAppBar({
             alt="Xmobile"
             className={appbarClasses.boxes.logo.mobile}
           />
-          <Box className={appbarClasses.headerActions.mobile}>
-            {saleAvailable && (
-              <Link
-                href="/sale"
-                className={`${appbarClasses.saleLink.mobile} ${fontClassName.className}`}
+          {user && (
+            <>
+              <button
+                className={appbarClasses.notificationButton.mobile}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  setNotificationAnchorEl(e.currentTarget)
+                }
+                type="button"
+                aria-label="notifications"
               >
-                <Flame size={18} aria-hidden />
-                {t('sale')}
-              </Link>
-            )}
-            {user && (
-              <>
-                <button
-                  className={appbarClasses.notificationButton.mobile}
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                    setNotificationAnchorEl(e.currentTarget)
-                  }
-                  type="button"
-                  aria-label="notifications"
-                >
-                  <Bell size={20} className="text-[#20166E]" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
-                  )}
-                </button>
-                <NotificationMenu
-                  anchorEl={notificationAnchorEl}
-                  open={Boolean(notificationAnchorEl)}
-                  onClose={() => setNotificationAnchorEl(null)}
-                />
-              </>
-            )}
-          </Box>
+                <Bell size={20} className="text-[#20166E]" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-2.5 w-2 h-2 rounded-full bg-[#E41E2B]" />
+                )}
+              </button>
+              <NotificationMenu
+                anchorEl={notificationAnchorEl}
+                open={Boolean(notificationAnchorEl)}
+                onClose={() => setNotificationAnchorEl(null)}
+              />
+            </>
+          )}
         </Box>
 
         {/* Search bar with filter */}
