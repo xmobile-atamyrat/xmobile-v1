@@ -3,8 +3,15 @@
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
+import { PRICE_SEARCH_DELAY_MS } from '@/pages/product/components/PriceSearchBox';
 import UpdatePrices from '@/pages/product/update-prices/index.page';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -127,6 +134,11 @@ const filterByCategory = async (name: string) => {
 
 const search = async (keyword: string) => {
   await userEvent.setup().type(screen.getByLabelText('search'), keyword);
+  // The search is only sent once typing pauses, and a category filter may
+  // already hide the rows it removes, so wait for the request itself.
+  await waitFor(() =>
+    expect(priceReads().at(-1)).toBe(`/api/prices?searchKeyword=${keyword}`),
+  );
   await waitFor(() => expect(screen.queryByText('Cable')).toBeNull());
 };
 
@@ -449,6 +461,64 @@ describe('update-prices filters', { timeout: 20_000 }, () => {
       .getAllByText(/^(iPhone|Cable)$/)
       .map((node) => node.textContent);
     expect(after).toEqual(['iPhone', 'Cable']);
+  });
+
+  it('sends one search once typing pauses', async () => {
+    await renderPage();
+    const readsBeforeTyping = priceReads().length;
+
+    await search('iph');
+
+    expect(priceReads().slice(readsBeforeTyping)).toEqual([
+      '/api/prices?searchKeyword=iph',
+    ]);
+  });
+
+  it('ignores an answer that arrives after a newer search', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    const answer = fetchMock.getMockImplementation()!;
+    // Holds back the first search's answer until the second one has landed.
+    let releaseSlow = () => {};
+    fetchMock.mockImplementation(async (request) => {
+      if (request.path.endsWith('searchKeyword=c')) {
+        await new Promise<void>((resolve) => {
+          releaseSlow = resolve;
+        });
+      }
+      return answer(request);
+    });
+
+    const box = screen.getByLabelText('search');
+    await user.type(box, 'c');
+    await waitFor(() =>
+      expect(priceReads().at(-1)).toBe('/api/prices?searchKeyword=c'),
+    );
+    await user.clear(box);
+    await search('iph');
+
+    await act(async () => releaseSlow());
+
+    expect(screen.getByText('iPhone')).toBeTruthy();
+    expect(screen.queryByText('Cable')).toBeNull();
+  });
+
+  it('empties the search box and drops a waiting search on Clear filters', async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    await search('iph');
+
+    await user.type(screen.getByLabelText('search'), 'one');
+    await user.click(screen.getByRole('button', { name: 'Clear Filters' }));
+
+    expect(await screen.findByText('Cable')).toBeTruthy();
+    expect((screen.getByLabelText('search') as HTMLInputElement).value).toBe(
+      '',
+    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, PRICE_SEARCH_DELAY_MS + 100);
+    });
+    expect(priceReads().at(-1)).toBe('/api/prices');
   });
 
   it('does not reload the table when the access token rotates', async () => {
