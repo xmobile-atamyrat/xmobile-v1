@@ -15,7 +15,9 @@ export default function CountBadge({ count, children }: CountBadgeProps) {
       badgeContent={count > 99 ? '99+' : count}
       color="error"
       sx={{
-        '& .MuiBadge-badge': {
+        // Direct child only, so a badge nested inside (like AttentionDot)
+        // keeps its own size.
+        '& > .MuiBadge-badge': {
           backgroundColor: '#E41E2B',
           fontSize: platform === 'web' ? '11px' : '9px',
           fontWeight: 700,
