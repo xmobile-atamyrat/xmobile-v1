@@ -1,4 +1,7 @@
 import FavoriteButton from '@/pages/components/FavoriteButton';
+import OtherModelSaleBadge from '@/pages/components/sale/OtherModelSaleBadge';
+import SaleBadge from '@/pages/components/sale/SaleBadge';
+import SalePrice from '@/pages/components/sale/SalePrice';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import {
   PRODUCT_IMAGE_FALLBACK,
@@ -7,6 +10,7 @@ import {
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useStalePrices } from '@/pages/lib/StalePricesContext';
+import { canQuickAddAtPrice, quickAddTagOf } from '@/pages/lib/saleVariant';
 import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -15,6 +19,7 @@ import {
   resolveVariantDisplay,
 } from '@/pages/product/utils';
 import { productCardClasses } from '@/styles/classMaps/components/productCard';
+import { saleClasses } from '@/styles/classMaps/components/sale';
 import { fontClassName } from '@/styles/theme';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
@@ -67,14 +72,20 @@ export default function ProductCard({
 
   const cardImageSrc = productThumbnailUrl(product?.imgUrls[0]);
 
-  // Quick-add from the grid can't ask which spec/color to buy, so it defaults
-  // to the first variant tag — same as the product detail page's default.
+  // Quick-add from the grid can't ask which spec/color to buy, so it takes the
+  // first tag. A card advertising a base-price sale takes the variant at that
+  // price instead; `sale.base` also guarantees its row is in stock, which is not
+  // known for the base price otherwise. Read from initialProduct: resolving the
+  // price drops the "[id]" part.
+  const saleBasePrice = initialProduct?.sale?.base
+    ? initialProduct.price
+    : undefined;
   const defaultVariant = useMemo(() => {
-    const raw = product?.tags?.[0];
+    const raw = quickAddTagOf(product?.tags, saleBasePrice);
     if (raw == null) return undefined;
     const { spec, colorName } = resolveVariantDisplay(raw, colorsMap);
     return { raw, label: [spec, colorName].filter(Boolean).join(', ') };
-  }, [product?.tags, colorsMap]);
+  }, [product?.tags, saleBasePrice, colorsMap]);
 
   useEffect(() => {
     if (initialProduct == null) return () => {};
@@ -98,28 +109,60 @@ export default function ProductCard({
     };
   }, [initialProduct]);
 
+  // Sold-out cards show nothing about sales.
+  const sale = product?.outOfStockAt == null ? product?.sale : null;
+
+  let saleBadge = null;
+  if (sale?.base != null) {
+    saleBadge = <SaleBadge percent={sale.base.percent} size={platform} />;
+  } else if (sale != null) {
+    saleBadge = (
+      <OtherModelSaleBadge percent={sale.bestPercent} platform={platform} />
+    );
+  }
+
   // Out-of-stock products show no price; the badge on the image carries the
   // state instead.
-  const priceNode =
-    // eslint-disable-next-line no-nested-ternary
-    product == null ||
-    product.outOfStockAt != null ? null : product.price?.includes('[') ? (
-      <CircularProgress className={productCardClasses.circProgress[platform]} />
-    ) : (
-      <Typography
-        className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
-      >
-        {product?.price}
-        <span className={productCardClasses.priceUnit[platform]}>
-          {t('manat')}
-        </span>
-      </Typography>
-    );
+  let priceNode = null;
+  if (product != null && product.outOfStockAt == null) {
+    if (product.price?.includes('[')) {
+      priceNode = (
+        <CircularProgress
+          className={productCardClasses.circProgress[platform]}
+        />
+      );
+    } else if (sale?.base != null) {
+      priceNode = (
+        <Box className={productCardClasses.salePrice[platform]}>
+          <SalePrice
+            price={product.price}
+            oldPrice={sale.base.oldPrice}
+            size={platform === 'web' ? 'cardWeb' : 'cardMobile'}
+          />
+        </Box>
+      );
+    } else {
+      priceNode = (
+        <Typography
+          className={`${fontClassName.className} ${productCardClasses.typo2[platform]}`}
+        >
+          {product.price}
+          <span className={productCardClasses.priceUnit[platform]}>
+            {t('manat')}
+          </span>
+        </Typography>
+      );
+    }
+  }
 
+  // An advertised sale price no variant is sold at gets no quick-add: it would
+  // charge another price. The shopper picks on the product page instead.
   const quickAdd =
     product != null &&
     cartProps.cartAction === 'add' &&
-    product.outOfStockAt == null ? (
+    product.outOfStockAt == null &&
+    (saleBasePrice == null ||
+      canQuickAddAtPrice(product.tags, saleBasePrice)) ? (
       // Rendered outside the card's anchors, but keep the click contained so a
       // future wrapper can't turn "add to cart" into a navigation.
       <Box onClick={(e) => e.stopPropagation()}>
@@ -201,6 +244,13 @@ export default function ProductCard({
                     {t('daysShort', { days: stale.days })}
                   </Box>
                 )}
+                {saleBadge != null && (
+                  <Box
+                    className={`${saleClasses.cardBadge.base} ${stale == null ? saleClasses.cardBadge.top : saleClasses.cardBadge.belowStale[platform]}`}
+                  >
+                    {saleBadge}
+                  </Box>
+                )}
               </Box>
             )}
           </Link>
@@ -212,6 +262,10 @@ export default function ProductCard({
             />
           )}
           <Box className={productCardClasses.boxes.detail[platform]}>
+            {/* With no image box to sit on, the badge leads the details. */}
+            {cardImageSrc == null && saleBadge != null && (
+              <Box className="flex mb-1">{saleBadge}</Box>
+            )}
             {product.brand?.name != null && (
               <Typography
                 className={`${fontClassName.className} ${productCardClasses.brand[platform]}`}

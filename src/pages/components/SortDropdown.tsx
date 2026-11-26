@@ -17,6 +17,8 @@ interface SortDropdownProps {
    * favorites sorts on its own and doesn't know the order.
    */
   showRecommended?: boolean;
+  /** Offer biggest discount first; only for a listing of products on sale. */
+  showDiscount?: boolean;
 }
 
 // mobile
@@ -46,6 +48,7 @@ export default function SortDropdown({
   onChange,
   variant = 'dropdown',
   showRecommended = false,
+  showDiscount = false,
 }: SortDropdownProps) {
   const t = useTranslations();
 
@@ -54,6 +57,9 @@ export default function SortDropdown({
   };
 
   const sortOptions = [
+    ...(showDiscount
+      ? [{ value: SORT_OPTIONS.DISCOUNT, label: t('sortBiggestDiscount') }]
+      : []),
     ...(showRecommended
       ? [{ value: SORT_OPTIONS.RECOMMENDED, label: t('sortRecommended') }]
       : []),

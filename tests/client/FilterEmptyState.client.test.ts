@@ -60,6 +60,14 @@ describe('FilterEmptyState', () => {
     expect(screen.queryByText('Clear all')).not.toBeInTheDocument();
   });
 
+  it('offers to drop the sale filter', () => {
+    const onChange = renderState(empty({ sale: 4 }));
+
+    fireEvent.click(screen.getByText('Without “On sale”: 4 products'));
+
+    expect(onChange).toHaveBeenCalledWith({ sale: false });
+  });
+
   it('stays out of the way when results exist or nothing is known', () => {
     renderState({ ...empty({ brands: 3 }), total: 5 });
     renderState(null);

@@ -91,6 +91,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   price: 'activityFieldPrice',
   priceInTmt: 'activityFieldPriceInTmt',
   displayPriceTmt: 'activityFieldDisplayPriceTmt',
+  salePriceTmt: 'activityFieldSalePriceTmt',
   outOfStock: 'activityFieldOutOfStock',
   checked: 'activityFieldChecked',
   category: 'activityFieldCategory',
@@ -183,9 +184,13 @@ function formatValue(field: string, value: unknown, t: Translate): string {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'boolean') return t(value ? 'yes' : 'no');
   if (field === 'price') return `$${value}`;
-  if (['priceInTmt', 'displayPriceTmt', 'deliveryPrice'].includes(field)) {
-    return `${value} TMT`;
-  }
+  const manatFields = [
+    'priceInTmt',
+    'displayPriceTmt',
+    'salePriceTmt',
+    'deliveryPrice',
+  ];
+  if (manatFields.includes(field)) return `${value} TMT`;
   if (field === 'startsAt' || field === 'endsAt' || field === 'checked') {
     return formatDate(value as string);
   }

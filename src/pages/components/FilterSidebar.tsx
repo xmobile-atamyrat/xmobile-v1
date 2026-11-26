@@ -43,6 +43,7 @@ interface FilterSidebarProps {
   maxPrice: string;
   sortBy?: string;
   inStock?: boolean;
+  sale?: boolean;
   onFilterChange: (filters: {
     categoryIds?: string[];
     brandIds?: string[];
@@ -51,6 +52,7 @@ interface FilterSidebarProps {
     maxPrice?: string;
     sortBy?: string;
     inStock?: boolean;
+    sale?: boolean;
   }) => void;
   hideSections?: ('categories' | 'brands')[];
   variant?: 'sidebar' | 'mobile';
@@ -61,6 +63,13 @@ interface FilterSidebarProps {
   options: FilterOptions | null;
   /** Offer the admin-picked order in the mobile sort chips. */
   showRecommendedSort?: boolean;
+  /** Offer the "On sale" toggle. */
+  showSaleFilter?: boolean;
+  /**
+   * The listing holds only products on sale: sorts by discount by default, and
+   * has no in-stock toggle, as everything on sale is in stock.
+   */
+  saleScope?: boolean;
 }
 
 // Brand and colour lists scroll past 300px. Reserving the scrollbar's gutter
@@ -165,13 +174,17 @@ export default function FilterSidebar({
   maxPrice,
   sortBy,
   inStock = false,
+  sale = false,
   onFilterChange,
   hideSections = [],
   variant = 'sidebar',
   options,
   showRecommendedSort = false,
+  showSaleFilter = false,
+  saleScope = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
+  const defaultSort = saleScope ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.NEWEST;
   const router = useRouter();
   const locale = router.locale || 'en';
 
@@ -211,6 +224,7 @@ export default function FilterSidebar({
   const [sortByOpen, setSortByOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
+  const [saleOpen, setSaleOpen] = useState(true);
 
   // Sync with prop changes (e.g. Mode switch)
   useEffect(() => {
@@ -284,8 +298,9 @@ export default function FilterSidebar({
       categoryIds: [],
       brandIds: [],
       colors: [],
-      sortBy: SORT_OPTIONS.NEWEST,
+      sortBy: defaultSort,
       inStock: false,
+      sale: false,
     });
   };
 
@@ -503,18 +518,35 @@ export default function FilterSidebar({
           </Box>
         )}
 
-        <FilterSection
-          title={t('availability')}
-          open={availabilityOpen}
-          onToggle={() => setAvailabilityOpen(!availabilityOpen)}
-          variant={variant}
-        >
-          <FilterItem
-            label={t('inStockOnly')}
-            isSelected={inStock}
-            onClick={() => onFilterChange({ inStock: !inStock })}
-          />
-        </FilterSection>
+        {!saleScope && (
+          <FilterSection
+            title={t('availability')}
+            open={availabilityOpen}
+            onToggle={() => setAvailabilityOpen(!availabilityOpen)}
+            variant={variant}
+          >
+            <FilterItem
+              label={t('inStockOnly')}
+              isSelected={inStock}
+              onClick={() => onFilterChange({ inStock: !inStock })}
+            />
+          </FilterSection>
+        )}
+
+        {showSaleFilter && (
+          <FilterSection
+            title={t('sale')}
+            open={saleOpen}
+            onToggle={() => setSaleOpen(!saleOpen)}
+            variant={variant}
+          >
+            <FilterItem
+              label={t('onSaleOnly')}
+              isSelected={sale}
+              onClick={() => onFilterChange({ sale: !sale })}
+            />
+          </FilterSection>
+        )}
 
         {!hideSections.includes('categories') && (
           <FilterSection
@@ -619,7 +651,8 @@ export default function FilterSidebar({
               <SortDropdown
                 variant="chips"
                 showRecommended={showRecommendedSort}
-                value={sortBy || SORT_OPTIONS.NEWEST}
+                showDiscount={saleScope}
+                value={sortBy || defaultSort}
                 onChange={(v) => onFilterChange({ sortBy: v })}
               />
             </FilterSection>

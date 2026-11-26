@@ -174,6 +174,8 @@ export const SORT_OPTIONS = {
   NEWEST: 'newest',
   A_Z: 'a_z',
   RECOMMENDED: 'recommended',
+  // Biggest discount first. The API lists only on-sale products for it.
+  DISCOUNT: 'discount',
 } as const;
 
 export const FILTER_MAX_PRICE = 100000;

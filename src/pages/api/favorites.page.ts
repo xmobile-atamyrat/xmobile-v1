@@ -5,6 +5,7 @@ import {
   whereActiveProduct,
   whereListableProduct,
 } from '@/lib/prismaActiveScope';
+import { withSale } from '@/lib/saleProducts';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -21,7 +22,8 @@ const filepath = 'src/pages/api/favorites.page.ts';
 const FavoriteSchema = z.object({ productId: z.string().min(1) });
 
 // Unlike the paged catalog, this list has no size limit, so the prices are
-// looked up in one query rather than one per product.
+// looked up in bulk (one query, plus one for sales) rather than one per
+// product.
 async function listFavorites(userId: string, locale: unknown) {
   const products = await dbClient.product.findMany({
     // The ids behind the hearts keep image-less favorites; only the list
@@ -48,20 +50,28 @@ async function listFavorites(userId: string, locale: unknown) {
         ],
       },
     },
-    select: { id: true, priceInTmt: true, displayPriceTmt: true },
+    select: {
+      id: true,
+      priceInTmt: true,
+      displayPriceTmt: true,
+      salePriceTmt: true,
+      outOfStockAt: true,
+    },
   });
   const pricesById = new Map(
     prices.map((price) => [price.id, displayPriceOf(price)]),
   );
 
-  const priced = products.map((product) => {
-    const displayPrice = pricesById.get(priceIdOf(product.price));
-    // Cards never show the description, and it is most of a row's size.
-    const card = { ...product, description: null as string | null };
-    return displayPrice == null
-      ? card
-      : { ...card, price: `${product.price}{${displayPrice}}` };
-  });
+  const priced = await withSale(
+    products.map((product) => {
+      const displayPrice = pricesById.get(priceIdOf(product.price));
+      // Cards never show the description, and it is most of a row's size.
+      const card = { ...product, description: null as string | null };
+      return displayPrice == null
+        ? card
+        : { ...card, price: `${product.price}{${displayPrice}}` };
+    }),
+  );
 
   return typeof locale === 'string' && localeOptions.includes(locale)
     ? sanitizeProductsLocale(priced, locale)

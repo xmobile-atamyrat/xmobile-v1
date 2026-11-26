@@ -202,6 +202,7 @@ describe('stale price warnings (integration)', () => {
       ['a new USD amount', { price: '120' }],
       ['a new manat amount', { priceInTmt: '2000' }],
       ['the refresh icon', { markChecked: true }],
+      ['an added sale', { salePriceTmt: '1800' }],
     ])('resets the date for %s', async (_label, change) => {
       const price = await seedPrice(100);
       const startedAt = Date.now();
@@ -222,6 +223,36 @@ describe('stale price warnings (integration)', () => {
       const price = await seedPrice(100);
 
       await savePrices([{ id: price.id, ...change() }]);
+
+      expect(await checkedAtOf(price.id)).toEqual(price.priceCheckedAt);
+    });
+
+    const seedPriceOnSale = async () => {
+      const { id } = await seedPrice(100);
+      return prisma.prices.update({
+        where: { id },
+        data: { salePriceTmt: '1800' },
+      });
+    };
+
+    it('resets the date for a changed sale price', async () => {
+      const price = await seedPriceOnSale();
+      const startedAt = Date.now();
+
+      await savePrices([{ id: price.id, salePriceTmt: '1700' }]);
+
+      expect((await checkedAtOf(price.id)).getTime()).toBeGreaterThanOrEqual(
+        startedAt,
+      );
+    });
+
+    it.each<[string, string | null]>([
+      ['removing a sale', null],
+      ['resending the same sale price', '1800.00'],
+    ])('keeps the date for %s', async (_label, salePriceTmt) => {
+      const price = await seedPriceOnSale();
+
+      await savePrices([{ id: price.id, salePriceTmt }]);
 
       expect(await checkedAtOf(price.id)).toEqual(price.priceCheckedAt);
     });

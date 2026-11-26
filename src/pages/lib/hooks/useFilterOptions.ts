@@ -22,6 +22,8 @@ export interface FilterScope {
   recommended?: boolean;
   /** The staff-only listing of products without images. */
   imageless?: boolean;
+  /** The sale page: only products on sale, whatever the filters say. */
+  sale?: boolean;
   /**
    * A staff viewer's token, so the counts include products without images
    * like their grid does. Not part of the cache key: a silent refresh changes
@@ -56,6 +58,7 @@ export function useFilterOptions(
     maxPrice: filters.maxPrice,
     searchKeyword: scope.searchKeyword,
     inStock: filters.inStock,
+    sale: scope.sale || filters.sale || undefined,
     recommended: scope.recommended,
     imageless: scope.imageless,
     // Whether, not which: becoming staff changes the answer, a refresh doesn't.
@@ -75,6 +78,8 @@ export function useFilterOptions(
     })
       .then(({ total, relaxations, brandCounts, colorCounts, price }) => {
         if (!cancelled) {
+          // The sale page can't drop its own scope, so never suggest it.
+          if (scope.sale) delete relaxations.sale;
           setAnswer({
             key,
             options: { total, relaxations, brandCounts, colorCounts, price },

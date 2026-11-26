@@ -41,12 +41,23 @@ const config: Config = {
         'favorite-card-leave': {
           to: { opacity: '0', transform: 'scale(0.85)' },
         },
+        // One sweep, then a rest. Both ends look the same, so it loops cleanly.
+        'sale-shine': {
+          '0%': { backgroundPosition: '100% 0' },
+          '60%, 100%': { backgroundPosition: '-100% 0' },
+        },
+        'sale-twinkle': {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(0.7) rotate(0deg)' },
+          '50%': { opacity: '1', transform: 'scale(1.15) rotate(20deg)' },
+        },
       },
       animation: {
         breathe: 'breathe 2.4s ease-in-out infinite',
         'favorite-pop': 'favorite-pop 320ms ease-out',
         'favorite-shrink': 'favorite-shrink 240ms ease-in-out',
         'favorite-card-leave': 'favorite-card-leave 200ms ease-in forwards',
+        'sale-shine': 'sale-shine 2.8s linear infinite',
+        'sale-twinkle': 'sale-twinkle 1.8s ease-in-out infinite',
       },
     },
   },

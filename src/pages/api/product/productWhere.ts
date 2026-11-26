@@ -5,6 +5,7 @@ import {
   whereListableProduct,
 } from '@/lib/prismaActiveScope';
 import { productSearchWhere } from '@/lib/productSearchWhere';
+import { getOnSaleProducts } from '@/lib/saleProducts';
 import { colorFamilyOf, isColorFamily } from '@/pages/lib/colorFamilies';
 import { Prisma } from '@prisma/client';
 
@@ -22,6 +23,8 @@ export interface ProductFilterQuery {
   maxPrice?: string;
   inStock?: string;
   recommended?: string;
+  /** '1': only products on sale, which implies in stock. */
+  sale?: string;
   /** '1': only products without images. Staff only, see buildProductWhere. */
   imageless?: string;
 }
@@ -66,6 +69,11 @@ export interface ProductWhereOptions {
    * them as cards, but an admin has to find one to give it a photo.
    */
   includeImageless?: boolean;
+  /**
+   * The on-sale product ids, when the caller already has them: saves repeating
+   * the lookup. Only used with `sale=1`.
+   */
+  saleProductIds?: string[];
 }
 
 /**
@@ -74,7 +82,7 @@ export interface ProductWhereOptions {
  */
 export async function buildProductWhere(
   query: ProductFilterQuery,
-  { includeImageless = false }: ProductWhereOptions = {},
+  { includeImageless = false, saleProductIds }: ProductWhereOptions = {},
 ): Promise<Prisma.ProductWhereInput | null> {
   const {
     searchKeyword,
@@ -88,6 +96,7 @@ export async function buildProductWhere(
     inStock,
     recommended,
     imageless,
+    sale,
   } = query;
   // Asked for by staff only (home's "without photos" section). Anyone else
   // gets nothing rather than a hint of which products those are.
@@ -132,9 +141,20 @@ export async function buildProductWhere(
       : undefined;
   if (colorFilter) where.colors = { some: { id: { in: colorFilter } } };
 
-  if (searchKeyword) {
-    where.AND = productSearchWhere(searchKeyword);
+  // Conditions that must all hold, collected so that none overwrites another.
+  const and: Prisma.ProductWhereInput[] = searchKeyword
+    ? productSearchWhere(searchKeyword)
+    : [];
+
+  // In `AND` rather than on `id`/`outOfStockAt` directly, so it cannot be
+  // undone by another filter on the same field.
+  if (sale === '1') {
+    const ids =
+      saleProductIds ?? (await getOnSaleProducts()).map(({ id }) => id);
+    and.push({ id: { in: ids }, outOfStockAt: null });
   }
+
+  if (searchKeyword || and.length > 0) where.AND = and;
 
   if (imageless === '1') {
     where.imgUrls = { isEmpty: true };

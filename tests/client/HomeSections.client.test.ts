@@ -4,6 +4,7 @@ import Home from '@/pages/index.page';
 import { useBrandProducts } from '@/pages/lib/hooks/useBrandProducts';
 import { useHomeSearch } from '@/pages/lib/hooks/useHomeSearch';
 import { useImagelessProducts } from '@/pages/lib/hooks/useImagelessProducts';
+import { reportSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { fireEvent, screen, within } from '@testing-library/react';
 import mockRouter from 'next-router-mock';
@@ -22,6 +23,10 @@ vi.mock('@/pages/lib/hooks/useBrandProducts', () => ({
 
 vi.mock('@/pages/lib/hooks/useImagelessProducts', () => ({
   useImagelessProducts: vi.fn(() => null),
+}));
+
+vi.mock('@/pages/lib/hooks/useSaleAvailability', () => ({
+  reportSaleAvailability: vi.fn(),
 }));
 
 vi.mock('@/pages/lib/PlatformContext', async (importOriginal) => ({
@@ -67,7 +72,9 @@ function renderHome(
     recommended = products('Pick', 3),
     isSearching = false,
     brands = [],
+    onSale = [],
   }: {
+    onSale?: { id: string; name: string }[] | null;
     newest?: { id: string; name: string }[];
     recommended?: { id: string; name: string }[];
     isSearching?: boolean;
@@ -93,6 +100,7 @@ function renderHome(
       initialSearch: null,
       brands,
       initialBrand: null,
+      saleProducts: onSale,
     } as never),
     { locale: 'en' },
   );
@@ -183,6 +191,48 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
     expect(viewAllHrefs()).toEqual(['/product']);
   });
 
+  it('shows the products on sale between the picks and the newest', () => {
+    renderHome(platform, { onSale: products('Pick', 2) });
+
+    const headings = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(
+      headings.filter((heading) =>
+        ['Recommended products', 'Hot deals', 'New Products'].includes(
+          heading ?? '',
+        ),
+      ),
+    ).toEqual(['Recommended products', 'Hot deals', 'New Products']);
+    expect(screen.getByText('Limited offers at better prices')).toBeVisible();
+    expect(cardNames(sectionOf('Hot deals'))).toEqual(['Pick 0', 'Pick 1']);
+    expect(cardNames(sectionOf('Recommended products'))).toHaveLength(3);
+    expect(
+      screen
+        .getAllByRole('link', { name: 'View all' })
+        .map((link) => link.getAttribute('href')),
+    ).toContain('/sale');
+    expect(reportSaleAvailability).toHaveBeenCalledWith(true);
+  });
+
+  it('has no sale section when nothing is on sale', () => {
+    renderHome(platform);
+
+    expect(
+      screen.queryByRole('heading', { name: 'Hot deals' }),
+    ).not.toBeInTheDocument();
+    expect(reportSaleAvailability).toHaveBeenCalledWith(false);
+  });
+
+  it('reports nothing when the sale fetch failed', () => {
+    renderHome(platform, { onSale: null });
+
+    expect(
+      screen.queryByRole('heading', { name: 'Hot deals' }),
+    ).not.toBeInTheDocument();
+    expect(reportSaleAvailability).not.toHaveBeenCalled();
+  });
+
   it('shows staff the products without photos above the picks', () => {
     vi.mocked(useImagelessProducts).mockReturnValue({
       products: products('Bare', 2),
@@ -222,8 +272,14 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
 describe('home sections while searching on mobile', () => {
   it('hides both sections behind the results', () => {
     mockRouter.setCurrentUrl('/?searchKeyword=iphone');
-    renderHome('mobile', { isSearching: true });
+    renderHome('mobile', {
+      isSearching: true,
+      onSale: products('Deal', 2),
+    });
 
+    expect(
+      screen.queryByRole('heading', { name: 'Hot deals' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
@@ -282,6 +338,13 @@ describe('brand chips on mobile', () => {
     expect(mockRouter.query.brand).toBeUndefined();
     expect(mockRouter.query.x).toBe('1');
     expect(h2s()).toEqual(['Recommended products', 'New Products']);
+  });
+
+  it('hides the sale section behind a picked brand', () => {
+    mockRouter.setCurrentUrl('/?brand=b1');
+    renderHome('mobile', { brands, onSale: products('Deal', 2) });
+
+    expect(h2s()).toEqual(['Samsung']);
   });
 
   it('preselects the brand from ?brand=', () => {

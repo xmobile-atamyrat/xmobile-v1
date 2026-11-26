@@ -7,7 +7,7 @@ import { useStalePrices } from '@/pages/lib/StalePricesContext';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { computeProductPrice } from '@/pages/product/utils';
-import type { Product } from '@prisma/client';
+import type { ExtendedProduct } from '@/pages/lib/types';
 import { screen, waitFor } from '@testing-library/react';
 import { createElement, Suspense } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -34,15 +34,23 @@ vi.mock('@/pages/lib/fetch', () => ({
   useFetchWithCreds: vi.fn(),
 }));
 
-vi.mock('@/pages/product/utils', () => ({
+// Only the price lookup is faked; tag parsing stays real.
+vi.mock('@/pages/product/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/pages/product/utils')>()),
   computeProductPrice: vi.fn(),
 }));
 
 vi.mock('@/pages/components/AddToCart', () => ({
-  default: () => createElement('div', { 'data-testid': 'add-to-cart' }),
+  default: ({ selectedVariant }: { selectedVariant?: string }) =>
+    createElement('div', {
+      'data-testid': 'add-to-cart',
+      'data-variant': selectedVariant,
+    }),
 }));
 
-function makeProduct(overrides: Partial<Product> = {}): Product {
+function makeProduct(
+  overrides: Partial<ExtendedProduct> = {},
+): ExtendedProduct {
   return {
     id: 'prod-1',
     slug: 'test-product',
@@ -70,6 +78,7 @@ describe('ProductCard', () => {
 
     vi.mocked(useProductContext).mockReturnValue({
       setSelectedProduct: vi.fn(),
+      colorsMap: new Map(),
     } as never);
 
     vi.mocked(useUserContext).mockReturnValue({
@@ -95,7 +104,7 @@ describe('ProductCard', () => {
   });
 
   function renderCard(
-    product: Product,
+    product: ExtendedProduct,
     cartAction: 'add' | 'delete' | 'detail' = 'add',
   ) {
     return renderWithProviders(
@@ -186,6 +195,100 @@ describe('ProductCard', () => {
     await waitFor(() => {
       expect(screen.getByText(/5\.00/)).toBeInTheDocument();
     });
+  });
+
+  const baseSale = {
+    bestPercent: 20,
+    base: { oldPrice: '1000', percent: 20 },
+  };
+
+  it('crosses out the old price when the base price is on sale', async () => {
+    renderCard(makeProduct({ price: '800', sale: baseSale }));
+
+    const oldPrice = await screen.findByText('1000');
+    expect(oldPrice.tagName).toBe('DEL');
+    expect(screen.getByText('800').closest('del')).toBeNull();
+    expect(screen.getByText('-20%')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Another model/ })).toBeNull();
+  });
+
+  it('marks a sale on another model and leaves the price alone', async () => {
+    renderCard(
+      makeProduct({ price: '900', sale: { bestPercent: 15, base: null } }),
+    );
+
+    expect(
+      await screen.findByRole('img', {
+        name: 'Another model is on sale (-15%)',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/900/).closest('del')).toBeNull();
+    expect(document.querySelector('del')).toBeNull();
+  });
+
+  it('keeps the other-model mark on a product without an image', async () => {
+    renderCard(
+      makeProduct({ imgUrls: [], sale: { bestPercent: 15, base: null } }),
+    );
+
+    expect(
+      await screen.findByRole('img', { name: /Another model is on sale/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('says nothing about sales on a sold-out card', async () => {
+    renderCard(makeProduct({ outOfStockAt: new Date(), sale: baseSale }));
+
+    await screen.findByText('Out of stock');
+    expect(screen.queryByText('-20%')).not.toBeInTheDocument();
+    expect(screen.queryByText('1000')).not.toBeInTheDocument();
+  });
+
+  it('quick-adds the first variant when the base price is not on sale', async () => {
+    renderCard(
+      makeProduct({
+        price: '[p2]{800}',
+        tags: ['64gb [p1]', '128gb [p2]'],
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-to-cart')).toHaveAttribute(
+        'data-variant',
+        '64gb [p1]',
+      );
+    });
+  });
+
+  it('quick-adds the discounted base variant the card advertises', async () => {
+    renderCard(
+      makeProduct({
+        price: '[p2]{800}',
+        tags: ['64gb [p1]', '128gb [p2]'],
+        sale: { bestPercent: 20, base: { oldPrice: '1000', percent: 20 } },
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-to-cart')).toHaveAttribute(
+        'data-variant',
+        '128gb [p2]',
+      );
+    });
+  });
+
+  it('offers no quick-add when no variant has the advertised sale price', async () => {
+    renderCard(
+      makeProduct({
+        price: '[base]{800}',
+        tags: ['64gb [p1]', '128gb [p2]'],
+        sale: baseSale,
+      }),
+    );
+
+    await screen.findByText('-20%');
+    // The button is loaded lazily, so give it the chance to appear.
+    await expect(screen.findByTestId('add-to-cart')).rejects.toThrow();
   });
 
   describe('stale price warning', () => {

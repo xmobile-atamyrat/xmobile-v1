@@ -990,5 +990,17 @@
   "staleOrangeHint": "Bir aydan fazla güncellenmedi",
   "staleRedHint": "3 aydan fazla güncellenmedi",
   "staleOnly": "Sadece eski fiyatlar",
-  "stalePricesAttention": "Güncellenmesi gereken fiyatlar var"
+  "stalePricesAttention": "Güncellenmesi gereken fiyatlar var",
+  "sale": "İndirim",
+  "onSaleProducts": "Sıcak fırsatlar",
+  "onSaleOnly": "İndirimdekiler",
+  "salePrice": "İndirimli fiyat",
+  "salePriceInvalid": "İndirimli fiyat 0'dan büyük ve normal fiyattan düşük olmalıdır",
+  "otherModelOnSale": "Başka bir model indirimde",
+  "sortBiggestDiscount": "En büyük indirim",
+  "salePageTitle": "{businessName} | Türkmenistan'da Akıllı Telefon ve Elektronik İndirimleri",
+  "salePageDescription": "{businessName}'da indirimli akıllı telefon, gadget ve elektronik ürünler. Daha iyi fiyatlarla sınırlı fırsatlar ve Türkmenistan genelinde hızlı teslimat.",
+  "noSaleProducts": "Şu anda indirimde ürün yok",
+  "saleHint": "Daha iyi fiyatlarla sınırlı fırsatlar",
+  "activityFieldSalePriceTmt": "indirimli fiyat (TMT)"
 }

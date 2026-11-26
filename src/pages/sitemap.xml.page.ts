@@ -20,6 +20,17 @@ function generateSiteMap(
 `;
      }).join('')}
 
+     <!-- Sale page -->
+     ${INDEXABLE_LOCALES.map((locale) => {
+       return `
+     <url>
+       <loc>${getCanonicalUrl(locale, 'sale')}</loc>
+       <changefreq>daily</changefreq>
+       <priority>0.8</priority>
+     </url>
+`;
+     }).join('')}
+
      <!-- Category Product Landing Pages -->
      ${categories
        .map(({ slug, updatedAt }) => {

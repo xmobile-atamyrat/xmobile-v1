@@ -63,12 +63,12 @@ const repriceMatching = async (
 ): Promise<number> => {
   const prices = await db.prices.findMany({
     where,
-    select: { id: true, price: true },
+    select: { id: true, price: true, salePriceTmt: true, outOfStockAt: true },
   });
 
-  const repriced = prices.flatMap(({ id, price }) => {
+  const repriced = prices.flatMap(({ id, price, ...kept }) => {
     const fields = recomputedPriceFields(price, rate);
-    return fields == null ? [] : [{ id, fields }];
+    return fields == null ? [] : [{ id, fields, kept }];
   });
 
   if (repriced.length === 0) return 0;
@@ -83,8 +83,10 @@ const repriceMatching = async (
   // has to move with the price it mirrors or products fall out of the ranges
   // they belong in.
   await Promise.all(
-    repriced.map(({ id, fields }) => {
-      const shown = cachedPriceFrom(fields);
+    repriced.map(({ id, fields, kept }) => {
+      // The sale price survives a rate change, and may start or stop applying
+      // because of it.
+      const shown = cachedPriceFrom({ ...fields, ...kept });
       if (shown == null) return null;
       return db.product.updateMany({
         where: {

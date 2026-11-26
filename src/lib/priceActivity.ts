@@ -7,6 +7,7 @@ import {
 } from '@/lib/adminActivity';
 import { categoryLabel } from '@/lib/categoryActivity';
 import dbClient from '@/lib/dbClient';
+import { saleSetOrChanged } from '@/pages/api/prices/priceCheckedAt';
 import type { Prisma, Prices } from '@prisma/client';
 
 export type PriceSnapshot = Pick<
@@ -16,6 +17,7 @@ export type PriceSnapshot = Pick<
   | 'price'
   | 'priceInTmt'
   | 'displayPriceTmt'
+  | 'salePriceTmt'
   | 'productId'
   | 'categoryId'
   | 'dollarRateId'
@@ -50,13 +52,15 @@ function scalarChanges(
     'price',
     'priceInTmt',
     'displayPriceTmt',
+    'salePriceTmt',
   ]);
   const wasOut = before.outOfStockAt != null;
   const isOut = after.outOfStockAt != null;
   if (wasOut !== isOut) changes.outOfStock = { from: wasOut, to: isOut };
   // The refresh icon ("price is still correct") changes nothing but the
-  // check date, so it is logged on its own. An edited amount already shows
-  // the re-check, so it is not repeated there.
+  // check date, so it is logged on its own. An edited amount, or an added or
+  // changed sale, already shows the re-check, so it is not repeated there.
+  // Ending a sale doesn't reset the date, so a check alongside it is logged.
   const checkedBefore = before.priceCheckedAt?.getTime();
   const checkedAfter = after.priceCheckedAt?.getTime();
   if (
@@ -64,7 +68,8 @@ function scalarChanges(
     checkedAfter != null &&
     checkedBefore !== checkedAfter &&
     !('price' in changes) &&
-    !('priceInTmt' in changes)
+    !('priceInTmt' in changes) &&
+    !('salePriceTmt' in changes && saleSetOrChanged(before, after))
   ) {
     changes.checked = {
       from: before.priceCheckedAt!.toISOString(),

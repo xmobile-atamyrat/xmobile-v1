@@ -990,5 +990,17 @@
   "staleOrangeHint": "Not updated for over a month",
   "staleRedHint": "Not updated for over 3 months",
   "staleOnly": "Stale prices only",
-  "stalePricesAttention": "Some prices need updating"
+  "stalePricesAttention": "Some prices need updating",
+  "sale": "Sale",
+  "onSaleProducts": "Hot deals",
+  "onSaleOnly": "On sale",
+  "salePrice": "Sale price",
+  "salePriceInvalid": "Sale price must be above 0 and lower than the normal price",
+  "otherModelOnSale": "Another model is on sale",
+  "sortBiggestDiscount": "Biggest discount",
+  "salePageTitle": "{businessName} | Deals on Smartphones & Electronics in Turkmenistan",
+  "salePageDescription": "Smartphones, gadgets, and electronics on sale at {businessName}. Limited offers at better prices with fast delivery across Turkmenistan.",
+  "noSaleProducts": "No products are on sale right now",
+  "saleHint": "Limited offers at better prices",
+  "activityFieldSalePriceTmt": "sale price (TMT)"
 }

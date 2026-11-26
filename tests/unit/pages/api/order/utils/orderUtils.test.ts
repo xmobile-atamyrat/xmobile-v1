@@ -80,6 +80,8 @@ describe('calculateTotalPrice', () => {
     vi.mocked(getPrice).mockResolvedValue({
       priceInTmt: '1283',
       displayPriceTmt: '1290',
+      salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -91,6 +93,8 @@ describe('calculateTotalPrice', () => {
     vi.mocked(getPrice).mockResolvedValue({
       priceInTmt: '10.50',
       displayPriceTmt: null,
+      salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -102,6 +106,8 @@ describe('calculateTotalPrice', () => {
     vi.mocked(getPrice).mockResolvedValue({
       priceInTmt: '1283',
       displayPriceTmt: '0',
+      salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -112,10 +118,30 @@ describe('calculateTotalPrice', () => {
   // Fails the moment a reader switches back to priceInTmt or the fallback rule
   // changes.
   it('total always equals the sum of the shown prices', async () => {
-    const fixtures = [
-      { priceInTmt: '1283', displayPriceTmt: '1290', quantity: 2 },
-      { priceInTmt: '47', displayPriceTmt: null, quantity: 1 }, // not computed
-      { priceInTmt: '1290', displayPriceTmt: '1290', quantity: 3 }, // pinned
+    const fixtures: (Parameters<typeof displayPriceOf>[0] & {
+      quantity: number;
+    })[] = [
+      {
+        priceInTmt: '1283',
+        displayPriceTmt: '1290',
+        salePriceTmt: null,
+        outOfStockAt: null,
+        quantity: 2,
+      },
+      {
+        priceInTmt: '47',
+        displayPriceTmt: null,
+        salePriceTmt: null,
+        outOfStockAt: null,
+        quantity: 1,
+      }, // not computed
+      {
+        priceInTmt: '1290',
+        displayPriceTmt: '1290',
+        salePriceTmt: null,
+        outOfStockAt: null,
+        quantity: 3,
+      }, // pinned
     ];
     fixtures.forEach((row) =>
       vi.mocked(getPrice).mockResolvedValueOnce(row as unknown as Prices),
@@ -134,5 +160,18 @@ describe('calculateTotalPrice', () => {
     );
     expect(Number(total)).toBe(shown);
     expect(total).toBe('6497.00');
+  });
+
+  it('charges the sale price while one is active', async () => {
+    vi.mocked(getPrice).mockResolvedValue({
+      priceInTmt: '1283',
+      displayPriceTmt: '1290',
+      salePriceTmt: '1100',
+      outOfStockAt: null,
+    } as Prices);
+
+    expect(
+      await calculateTotalPrice([{ product: { price: '[a]' }, quantity: 2 }]),
+    ).toBe('2200.00');
   });
 });

@@ -153,6 +153,7 @@ describe('setProductOutOfStock', () => {
     vi.clearAllMocks();
     mockProductUpdateMany.mockResolvedValue({ count: 1 });
     mockPricesUpdateMany.mockResolvedValue({ count: 1 });
+    mockPricesFindMany.mockResolvedValue([]);
     mockTransaction.mockImplementation((ops: Promise<unknown>[]) =>
       Promise.all(ops),
     );

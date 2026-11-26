@@ -127,7 +127,13 @@ export default async function handler(
       referencedPriceIds.length > 0
         ? await dbClient.prices.findMany({
             where: { id: { in: [...new Set(referencedPriceIds)] } },
-            select: { id: true, priceInTmt: true, displayPriceTmt: true },
+            select: {
+              id: true,
+              priceInTmt: true,
+              displayPriceTmt: true,
+              salePriceTmt: true,
+              outOfStockAt: true,
+            },
           })
         : [];
     const pricesById = new Map(

@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import FilterSidebar from '@/pages/components/FilterSidebar';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -425,5 +431,65 @@ describe('FilterSidebar — availability section', () => {
     await renderSidebar({ inStock: true });
 
     expect(await screen.findByLabelText('In stock only')).toBeChecked();
+  });
+});
+
+describe('FilterSidebar sale filter', () => {
+  beforeEach(() => mockBrands([]));
+
+  it('has no toggle unless asked for', async () => {
+    await renderSidebar();
+
+    expect(screen.queryByLabelText('On sale')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sale')).not.toBeInTheDocument();
+  });
+
+  it('puts the toggle in its own Sale section', async () => {
+    await renderSidebar({ showSaleFilter: true });
+
+    // Collapsing Availability leaves the sale toggle in place.
+    fireEvent.click(screen.getByText('Availability'));
+    await waitFor(() =>
+      expect(screen.queryByLabelText('In stock only')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('On sale')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Sale'));
+    await waitFor(() =>
+      expect(screen.queryByLabelText('On sale')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('turns the sale filter on', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar({ showSaleFilter: true }, onFilterChange);
+
+    fireEvent.click(screen.getByLabelText('On sale'));
+
+    expect(onFilterChange).toHaveBeenCalledWith({ sale: true });
+  });
+
+  it('shows the active sale filter as checked, and clears it with the rest', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar({ showSaleFilter: true, sale: true }, onFilterChange);
+    expect(screen.getByLabelText('On sale')).toBeChecked();
+
+    fireEvent.click(screen.getByText('Clear all'));
+
+    expect(onFilterChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sale: false, sortBy: 'newest' }),
+    );
+  });
+
+  it('drops the availability section on the sale listing', async () => {
+    const onFilterChange = vi.fn();
+    await renderSidebar({ saleScope: true }, onFilterChange);
+
+    expect(screen.queryByText('In stock only')).not.toBeInTheDocument();
+    expect(screen.queryByText('Availability')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Clear all'));
+    expect(onFilterChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'discount' }),
+    );
   });
 });

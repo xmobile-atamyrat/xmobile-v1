@@ -992,5 +992,17 @@
   "staleOrangeHint": "Minimum 1 ay tazalanmady",
   "staleRedHint": "Minimum 3 ay tazalanmady",
   "staleOnly": "Diňa köna bahalar",
-  "stalePricesAttention": "Täzelenmeli bahalar bar"
+  "stalePricesAttention": "Täzelenmeli bahalar bar",
+  "sale": "Skidka",
+  "onSaleProducts": "Yanyp duran skidkalar",
+  "onSaleOnly": "Skidkadakilar",
+  "salePrice": "Skidkadaki baha",
+  "salePriceInvalid": "Skidka baha 0-dan katta i ozunin bahasyndan pas bolmaly",
+  "otherModelOnSale": "Baska modelinde skidka bar",
+  "sortBiggestDiscount": "Iň katta skidka birinji",
+  "salePageTitle": "{businessName} | Türkmenistanda smartfonlara we elektronika skidkalar",
+  "salePageDescription": "{businessName}-da skidkadaky smartfonlar, gadjetlär we elektronika. Zor bahadan çäkli teklipler we Türkmenistan boýunça tez dostawka.",
+  "noSaleProducts": "Hazyrlykca skidkada towar ýok",
+  "saleHint": "Otdushi bahadan towarlar",
+  "activityFieldSalePriceTmt": "skidka bahasy (TMT)"
 }

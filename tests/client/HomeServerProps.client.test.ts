@@ -40,28 +40,37 @@ const picks = [{ id: 'pick-1' }];
 const found = [{ id: 'found-1' }];
 const brandProducts = [{ id: 'brand-1' }];
 const brands = [{ id: 'b1', name: 'Samsung' }];
+const onSale = [{ id: 'sale-1' }];
 
 function mockFetches({
   newestFails = false,
   recommendedFails = false,
   searchFails = false,
   brandFails = false,
+  saleFails = false,
 }: {
   newestFails?: boolean;
   recommendedFails?: boolean;
   searchFails?: boolean;
   brandFails?: boolean;
+  saleFails?: boolean;
 }) {
   fetchProducts.mockImplementation(
     async ({
       searchKeyword,
       recommended,
       brandIds,
+      sale,
     }: {
+      sale?: boolean;
       searchKeyword?: string;
       recommended?: boolean;
       brandIds?: string[];
     }) => {
+      if (sale) {
+        if (saleFails) throw new Error('sale down');
+        return onSale;
+      }
       if (brandIds) {
         if (brandFails) throw new Error('brand down');
         return brandProducts;
@@ -134,7 +143,32 @@ describe('home getServerSideProps', () => {
 
     expect(props.initialProducts).toEqual(newest);
     expect(props.initialSearch).toBeNull();
-    expect(fetchProducts).toHaveBeenCalledTimes(2);
+    expect(fetchProducts).toHaveBeenCalledTimes(3);
+  });
+
+  it('seeds the products on sale, biggest discount first', async () => {
+    mockFetches({});
+
+    const props = await loadHome({});
+
+    expect(props.saleProducts).toEqual(onSale);
+    expect(fetchProducts).toHaveBeenCalledWith({
+      page: 1,
+      locale: 'en',
+      sale: true,
+      sortBy: 'discount',
+      limit: 20,
+    });
+  });
+
+  it('keeps the page up when the sale fetch fails, telling it from empty', async () => {
+    mockFetches({ saleFails: true });
+
+    const props = await loadHome({});
+
+    expect(props.saleProducts).toBeNull();
+    expect(props.initialProducts).toEqual(newest);
+    expect(props.recommendedProducts).toEqual(picks);
   });
 
   it('seeds the picks in-stock, in their order, one section long', async () => {
@@ -211,7 +245,7 @@ describe('home getServerSideProps', () => {
     const props = await loadHome({ brand: 'zzz' });
 
     expect(props.initialBrand).toBeNull();
-    expect(fetchProducts).toHaveBeenCalledTimes(2);
+    expect(fetchProducts).toHaveBeenCalledTimes(3);
   });
 
   it('keeps the page up when brands fail', async () => {

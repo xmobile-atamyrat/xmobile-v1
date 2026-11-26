@@ -1,4 +1,7 @@
-import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
+import {
+  priceAmountsChanged,
+  saleSetOrChanged,
+} from '@/pages/api/prices/priceCheckedAt';
 import {
   RateLike,
   rateForPrice,
@@ -9,6 +12,9 @@ import {
   displayPriceOf,
   displayPriceOrNull,
   parsePrice,
+  regularPriceOf,
+  salePercentOf,
+  salePriceOf,
 } from '@/pages/lib/priceDisplay';
 import { ExtendedCategory, FetchWithCredsType } from '@/pages/lib/types';
 import { Color, Prices, Product } from '@prisma/client';
@@ -19,7 +25,7 @@ import * as XLSX from 'xlsx';
 const regex = /(".*?"|[^",]+|(?<=,)(?=,)|(?<=,)$|^,)/g;
 export type TableData = (string | number | boolean | null)[][];
 // Column order for the update-prices table: the name and the rate it converts
-// at lead, then the three figures being edited, then the row's category, stock
+// at lead, then the four figures being edited, then the row's category, stock
 // state and how stale it is.
 // The id
 // trails every data row as the stable edit key but is never drawn — the table
@@ -30,10 +36,11 @@ export const PRICE_RATE_IDX = 1;
 export const PRICE_DOLLAR_IDX = 2;
 export const PRICE_MANAT_IDX = 3;
 export const PRICE_DISPLAY_IDX = 4;
-export const PRICE_CATEGORY_IDX = 5;
-export const PRICE_OUT_OF_STOCK_IDX = 6;
-export const PRICE_UPDATED_IDX = 7;
-export const PRICE_ID_IDX = 8;
+export const PRICE_SALE_IDX = 5;
+export const PRICE_CATEGORY_IDX = 6;
+export const PRICE_OUT_OF_STOCK_IDX = 7;
+export const PRICE_UPDATED_IDX = 8;
+export const PRICE_ID_IDX = 9;
 
 export const handleFileUpload = (
   event: ChangeEvent<HTMLInputElement>,
@@ -148,7 +155,7 @@ export const parseOrderVariant = (raw: string): VariantDisplay => {
 /**
  * Whether a price-table column accepts typed text.
  *
- * The row's `onInput` handler is bound to every cell, but only these four are
+ * The row's `onInput` handler is bound to every cell, but only these five are
  * `contentEditable`. The rest render widgets — a category select, an
  * out-of-stock checkbox — whose own native events bubble up to that same
  * handler, so the two have to agree on one definition of "editable".
@@ -157,7 +164,8 @@ export const isEditablePriceCell = (cellIndex: number): boolean =>
   cellIndex === PRICE_NAME_IDX ||
   cellIndex === PRICE_DOLLAR_IDX ||
   cellIndex === PRICE_MANAT_IDX ||
-  cellIndex === PRICE_DISPLAY_IDX;
+  cellIndex === PRICE_DISPLAY_IDX ||
+  cellIndex === PRICE_SALE_IDX;
 
 export interface VariantStockChoice {
   specText: string;
@@ -199,7 +207,8 @@ export const processPrices = (prices: Prices[]): TableData => {
     row.dollarRateId ?? null,
     row.price,
     parsePrice(row.priceInTmt),
-    parsePrice(displayPriceOf(row)),
+    parsePrice(regularPriceOf(row)),
+    row.salePriceTmt ?? null,
     row.categoryId,
     row.outOfStockAt != null,
     row.priceCheckedAt != null
@@ -215,6 +224,7 @@ export const processPrices = (prices: Prices[]): TableData => {
       'Dollars',
       'Manat',
       'Display',
+      'Sale price',
       'Category',
       'Out of stock',
       'Checked',
@@ -254,6 +264,9 @@ export const applyPendingEdits = (
       next[PRICE_MANAT_IDX] = parsePrice(edit.priceInTmt);
     if (edit.displayPriceTmt != null)
       next[PRICE_DISPLAY_IDX] = parsePrice(edit.displayPriceTmt);
+    // Presence-keyed: a null sale price is the admin ending the sale.
+    if ('salePriceTmt' in edit)
+      next[PRICE_SALE_IDX] = edit.salePriceTmt ?? null;
     // Keyed on presence, not null-ness: clearing a category is a legitimate
     // edit whose value is null, which a `!= null` guard would silently drop.
     if ('categoryId' in edit)
@@ -288,15 +301,21 @@ const rateDerivedTmt = (
 };
 
 // Whether saving `edit` will count as the admin re-checking `price`, which
-// clears its stale warning. Mirrors the server: the refresh icon, or a changed
-// dollar or manat figure. A manat figure that merely follows a rate change
-// does not count.
+// clears its stale warning. Mirrors the server: the refresh icon, a changed
+// dollar or manat figure, or a new or changed sale price. A manat figure that
+// merely follows a rate change does not count.
 export const editChecksPrice = (
   price: Prices,
   edit: PriceEdit,
   rates: RateLike[] = [],
 ): boolean => {
   if (edit.markChecked === true) return true;
+  if (
+    'salePriceTmt' in edit &&
+    saleSetOrChanged(price, { ...price, ...edit })
+  ) {
+    return true;
+  }
   return priceAmountsChanged(edit, price, rateDerivedTmt(price, edit, rates));
 };
 
@@ -333,6 +352,43 @@ export const isMoneyRevert = (
   return false;
 };
 
+// Whether two sale prices mean the same thing, compared as numbers like the
+// other money cells. Null is "no sale".
+const isSameSale = (a: string | null, b: string | null): boolean =>
+  a === b || (a != null && b != null && Number(a) === Number(b));
+
+/**
+ * What the sale cell of a table row should say: the percent off the row's
+ * current (pending included) normal price, or a null percent when the sale
+ * price typed or stored there is not an active sale. Null for an empty cell.
+ */
+export const saleFeedbackOf = (
+  row: TableData[number],
+): { percent: number | null } | null => {
+  const sale = row[PRICE_SALE_IDX];
+  if (sale == null || sale === '') return null;
+  return {
+    percent: salePercentOf({
+      priceInTmt: String(row[PRICE_MANAT_IDX]),
+      displayPriceTmt: String(row[PRICE_DISPLAY_IDX]),
+      salePriceTmt: String(sale),
+    }),
+  };
+};
+
+// Whether any pending sale price would be refused by the server: not above zero
+// and below what the row will show after the save. An edit whose price is not in
+// the list (searched away) is left for the server to judge.
+export const hasInvalidSaleEdit = (
+  prices: Prices[],
+  edits: Record<string, PriceEdit>,
+): boolean =>
+  prices.some((price) => {
+    const edit = edits[price.id];
+    if (edit?.salePriceTmt == null) return false;
+    return salePriceOf(foldSavedEdit(price, edit)) == null;
+  });
+
 // Adds a change to a price's pending edit, then drops whatever now matches the
 // saved price. Returns null when nothing is left to save.
 export const mergePriceEdit = (
@@ -364,9 +420,15 @@ export const mergePriceEdit = (
   if (
     next.price == null &&
     next.displayPriceTmt != null &&
-    Number(next.displayPriceTmt) === parsePrice(displayPriceOf(saved))
+    Number(next.displayPriceTmt) === parsePrice(regularPriceOf(saved))
   ) {
     delete next.displayPriceTmt;
+  }
+  if (
+    'salePriceTmt' in next &&
+    isSameSale(next.salePriceTmt ?? null, saved.salePriceTmt ?? null)
+  ) {
+    delete next.salePriceTmt;
   }
   if (next.markChecked !== true) delete next.markChecked;
   if (next.name === saved.name) delete next.name;
@@ -427,11 +489,11 @@ const sortByKey = (prices: Prices[], key: PriceSortKey): Prices[] => {
       );
     case 'displayAsc':
       return sorted.sort(
-        (a, b) => parsePrice(displayPriceOf(a)) - parsePrice(displayPriceOf(b)),
+        (a, b) => parsePrice(regularPriceOf(a)) - parsePrice(regularPriceOf(b)),
       );
     case 'displayDesc':
       return sorted.sort(
-        (a, b) => parsePrice(displayPriceOf(b)) - parsePrice(displayPriceOf(a)),
+        (a, b) => parsePrice(regularPriceOf(b)) - parsePrice(regularPriceOf(a)),
       );
     case 'editedRecent':
       return sorted.sort((a, b) => byCheckedThenName(a, b, -1));
@@ -504,6 +566,11 @@ export const filterPricesWithoutProduct = (prices: Prices[]): Prices[] =>
 // only" toggle, mirroring the same filter on the products overview.
 export const filterPricesOutOfStock = (prices: Prices[]): Prices[] =>
   prices.filter((p) => p.outOfStockAt != null);
+
+// Prices with a stored sale price, active or not, so one the normal price has
+// dropped under can still be found and fixed. Backs the "on sale" toggle.
+export const filterPricesOnSale = (prices: Prices[]): Prices[] =>
+  prices.filter((p) => Boolean(p.salePriceTmt));
 
 // Collects a category id plus all descendant ids from the nested category tree
 // (as returned by /api/category). Used to make a category filter include the

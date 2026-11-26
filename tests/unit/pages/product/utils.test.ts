@@ -10,11 +10,13 @@ import {
   debounce,
   filterPricesByCategories,
   filterPricesByRate,
+  filterPricesOnSale,
   filterPricesOutOfStock,
   filterPricesWithoutCategory,
   filterPricesWithoutProduct,
   editChecksPrice,
   foldSavedEdit,
+  hasInvalidSaleEdit,
   isEditablePriceCell,
   isMoneyRevert,
   isPriceValid,
@@ -28,11 +30,13 @@ import {
   PRICE_DOLLAR_IDX,
   PRICE_ID_IDX,
   PRICE_RATE_IDX,
+  PRICE_SALE_IDX,
   PRICE_MANAT_IDX,
   PRICE_NAME_IDX,
   PRICE_OUT_OF_STOCK_IDX,
   PRICE_UPDATED_IDX,
   processPrices,
+  saleFeedbackOf,
   sortPrices,
   resolveVariantDisplay,
   tmtFromUsd,
@@ -101,6 +105,7 @@ describe('processPrices', () => {
       'Dollars',
       'Manat',
       'Display',
+      'Sale price',
       'Category',
       'Out of stock',
       'Checked',
@@ -112,6 +117,7 @@ describe('processPrices', () => {
       '10',
       35.5,
       35.5,
+      null,
       'c1',
       false,
       '2026-02-03T04:05:06.000Z',
@@ -152,6 +158,7 @@ describe('processPrices', () => {
       35,
       35,
       null,
+      null,
       true,
       '2026-02-03T04:05:06.000Z',
       'p1',
@@ -167,7 +174,8 @@ describe('processPrices', () => {
 });
 
 describe('applyPendingEdits', () => {
-  // [Name, Rate, Dollars, Manat, Display, Category, Out of stock, Updated, ID]
+  // [Name, Rate, Dollars, Manat, Display, Sale, Category, Out of stock,
+  // Updated, ID]
   const updated = '2026-02-03T04:05:06.000Z';
   const table = [
     [
@@ -176,12 +184,13 @@ describe('applyPendingEdits', () => {
       'Dollars',
       'Manat',
       'Display',
+      'Sale price',
       'Category',
       'Out of stock',
       'Updated',
     ],
-    ['A', 1, '10', 200, 200, 'c1', false, updated, 'p1'],
-    ['B', null, '20', 400, 400, null, false, updated, 'p2'],
+    ['A', 1, '10', 200, 200, null, 'c1', false, updated, 'p1'],
+    ['B', null, '20', 400, 400, null, null, false, updated, 'p2'],
   ];
 
   it('passes rows through unchanged when there are no edits', () => {
@@ -205,6 +214,7 @@ describe('applyPendingEdits', () => {
       '10',
       200,
       200,
+      null,
       'c1',
       false,
       updated,
@@ -216,6 +226,7 @@ describe('applyPendingEdits', () => {
       '25',
       500,
       510,
+      null,
       null,
       false,
       updated,
@@ -237,6 +248,7 @@ describe('applyPendingEdits', () => {
       400,
       400,
       null,
+      null,
       false,
       updated,
       'p2',
@@ -248,6 +260,7 @@ describe('applyPendingEdits', () => {
       '10',
       999,
       200,
+      null,
       'c1',
       false,
       updated,
@@ -265,6 +278,7 @@ describe('applyPendingEdits', () => {
       '20',
       400,
       400,
+      null,
       'c9',
       false,
       updated,
@@ -284,6 +298,7 @@ describe('applyPendingEdits', () => {
       200,
       200,
       null,
+      null,
       false,
       updated,
       'p1',
@@ -301,6 +316,7 @@ describe('applyPendingEdits', () => {
       400,
       400,
       null,
+      null,
       true,
       updated,
       'p2',
@@ -312,7 +328,7 @@ describe('applyPendingEdits', () => {
     // absent field.
     const outOfStockTable = [
       table[0],
-      ['A', 1, '10', 200, 200, 'c1', true, updated, 'p1'],
+      ['A', 1, '10', 200, 200, null, 'c1', true, updated, 'p1'],
       table[2],
     ];
     const result = applyPendingEdits(outOfStockTable, {
@@ -324,6 +340,7 @@ describe('applyPendingEdits', () => {
       '10',
       200,
       200,
+      null,
       'c1',
       false,
       updated,
@@ -430,6 +447,25 @@ describe('foldSavedEdit', () => {
     );
     expect(folded.priceCheckedAt.getTime()).toBeGreaterThan(old.getTime());
     expect(folded).not.toHaveProperty('markChecked');
+  });
+
+  it('stamps the check date when a sale is added or changed', () => {
+    const old = new Date('2020-01-01T00:00:00Z');
+    const regular = { ...base, priceInTmt: '200', priceCheckedAt: old };
+    const onSale = { ...regular, salePriceTmt: '150' };
+
+    expect(
+      foldSavedEdit(regular, { salePriceTmt: '150' }).priceCheckedAt.getTime(),
+    ).toBeGreaterThan(old.getTime());
+    expect(
+      foldSavedEdit(onSale, { salePriceTmt: '140' }).priceCheckedAt.getTime(),
+    ).toBeGreaterThan(old.getTime());
+    expect(
+      foldSavedEdit(onSale, { salePriceTmt: '150.00' }).priceCheckedAt,
+    ).toBe(old);
+    expect(foldSavedEdit(onSale, { salePriceTmt: null }).priceCheckedAt).toBe(
+      old,
+    );
   });
 
   it('keeps the check date on a rename or a rate-only move', () => {
@@ -962,12 +998,13 @@ describe('pickVariantColorForSpec', () => {
 });
 
 describe('isEditablePriceCell', () => {
-  it('accepts the four text columns the admin types into', () => {
+  it('accepts the five text columns the admin types into', () => {
     expect(isEditablePriceCell(PRICE_NAME_IDX)).toBe(true);
     expect(isEditablePriceCell(PRICE_DOLLAR_IDX)).toBe(true);
     expect(isEditablePriceCell(PRICE_MANAT_IDX)).toBe(true);
     // The shown price is pinned by typing over it, so it edits like the rest.
     expect(isEditablePriceCell(PRICE_DISPLAY_IDX)).toBe(true);
+    expect(isEditablePriceCell(PRICE_SALE_IDX)).toBe(true);
   });
 
   // The out-of-stock cell holds a real checkbox whose native input event
@@ -1126,6 +1163,7 @@ describe('the Rate column', () => {
       'Dollars',
       'Manat',
       'Display',
+      'Sale price',
       'Category',
       'Out of stock',
       'Checked',
@@ -1277,5 +1315,140 @@ describe('reverting a pending price edit', () => {
     expect(
       mergePriceEdit(saved, { id: 'p1', ...changed }, { id: 'p1', ...back }),
     ).toBeNull();
+  });
+});
+
+describe('the Sale price column', () => {
+  const saved = {
+    id: 'p1',
+    name: 'iPhone',
+    price: '10',
+    priceInTmt: '200',
+    displayPriceTmt: '200',
+    salePriceTmt: '150',
+    categoryId: null,
+    dollarRateId: 1,
+    outOfStockAt: null,
+    updatedAt: new Date('2026-01-01T00:00:00Z'),
+  } as unknown as Prices;
+  const noSale: Prices = { ...saved, salePriceTmt: null };
+
+  it('keeps the normal price in Display and the sale in its own column', () => {
+    const [, row] = processPrices([saved]);
+
+    expect(row[PRICE_DISPLAY_IDX]).toBe(200);
+    expect(row[PRICE_SALE_IDX]).toBe('150');
+  });
+
+  it('overlays a pending sale price, including a cleared one', () => {
+    const table = processPrices([saved]);
+
+    expect(
+      applyPendingEdits(table, { p1: { salePriceTmt: '120' } })[1][
+        PRICE_SALE_IDX
+      ],
+    ).toBe('120');
+    expect(
+      applyPendingEdits(table, { p1: { salePriceTmt: null } })[1][
+        PRICE_SALE_IDX
+      ],
+    ).toBeNull();
+  });
+
+  it('drops a sale price typed back to the saved one', () => {
+    expect(
+      mergePriceEdit(
+        saved,
+        { id: 'p1', salePriceTmt: '120' },
+        { id: 'p1', salePriceTmt: '150.00' },
+      ),
+    ).toBeNull();
+    expect(
+      mergePriceEdit(
+        noSale,
+        { id: 'p1', salePriceTmt: '120' },
+        { id: 'p1', salePriceTmt: null },
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps a cleared sale as an edit', () => {
+    expect(
+      mergePriceEdit(saved, undefined, { id: 'p1', salePriceTmt: null }),
+    ).toEqual({ id: 'p1', salePriceTmt: null });
+  });
+
+  it('reverts the display price against the normal price, not the sale', () => {
+    expect(
+      mergePriceEdit(saved, undefined, { id: 'p1', displayPriceTmt: '200' }),
+    ).toBeNull();
+    expect(
+      mergePriceEdit(saved, undefined, { id: 'p1', displayPriceTmt: '150' }),
+    ).toEqual({ id: 'p1', displayPriceTmt: '150' });
+  });
+
+  it('sorts the Display column by the normal price', () => {
+    const rows = [
+      { ...saved, id: 'dear', salePriceTmt: '10' },
+      { ...noSale, id: 'cheap', displayPriceTmt: '100' },
+    ];
+
+    expect(sortPrices(rows, 'displayAsc').map((p) => p.id)).toEqual([
+      'cheap',
+      'dear',
+    ]);
+    expect(sortPrices(rows, 'displayDesc').map((p) => p.id)).toEqual([
+      'dear',
+      'cheap',
+    ]);
+  });
+
+  it('measures the discount against the current Display value', () => {
+    const table = processPrices([saved]);
+
+    expect(saleFeedbackOf(table[1])).toEqual({ percent: 25 });
+    const edited = applyPendingEdits(table, {
+      p1: { displayPriceTmt: '300' },
+    });
+    expect(saleFeedbackOf(edited[1])).toEqual({ percent: 50 });
+  });
+
+  it.each(['0', '200', '250', 'abc', '1,5'])(
+    'flags %s as not a sale',
+    (salePriceTmt) => {
+      const [, row] = processPrices([{ ...saved, salePriceTmt }]);
+
+      expect(saleFeedbackOf(row)).toEqual({ percent: null });
+    },
+  );
+
+  it('says nothing for an empty cell', () => {
+    expect(saleFeedbackOf(processPrices([noSale])[1])).toBeNull();
+  });
+
+  it('judges a pending sale against the price after the same save', () => {
+    expect(hasInvalidSaleEdit([noSale], { p1: { salePriceTmt: '250' } })).toBe(
+      true,
+    );
+    expect(
+      hasInvalidSaleEdit([noSale], {
+        p1: { salePriceTmt: '250', displayPriceTmt: '300' },
+      }),
+    ).toBe(false);
+  });
+
+  it('ignores cleared sales and stale stored ones it will not resend', () => {
+    const stale = { ...saved, salePriceTmt: '500' };
+
+    expect(hasInvalidSaleEdit([stale], { p1: { name: 'New' } })).toBe(false);
+    expect(hasInvalidSaleEdit([stale], { p1: { salePriceTmt: null } })).toBe(
+      false,
+    );
+  });
+
+  it('filters to the prices with a stored sale price', () => {
+    const rows = [saved, { ...noSale, id: 'p2' }];
+
+    expect(filterPricesOnSale(rows).map((p) => p.id)).toEqual(['p1']);
   });
 });

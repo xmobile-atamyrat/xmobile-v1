@@ -58,6 +58,54 @@ describe('useProductFilters inStock', () => {
   });
 });
 
+describe('useProductFilters sale', () => {
+  afterEach(() => {
+    mockRouter.query = {};
+    vi.clearAllMocks();
+  });
+
+  it('reads the flag from the URL and follows back/forward', () => {
+    mockRouter.query = { sale: '1' };
+    const { result, rerender } = renderHook(() => useProductFilters());
+    expect(result.current.filters.sale).toBe(true);
+
+    mockRouter.query = {};
+    rerender();
+
+    expect(result.current.filters.sale).toBe(false);
+  });
+
+  it('writes the flag to the URL and drops it again', () => {
+    mockRouter.query = { searchKeyword: 'iphone' };
+    const { result } = renderHook(() => useProductFilters());
+
+    act(() => {
+      result.current.setFilters({ sale: true });
+    });
+    expect(pushedQuery()).toEqual({ searchKeyword: 'iphone', sale: '1' });
+
+    act(() => {
+      result.current.setFilters({ sale: false });
+    });
+    expect(pushedQuery()).toEqual({ searchKeyword: 'iphone' });
+  });
+
+  it('keeps the page default sort out of the URL', () => {
+    const { result } = renderHook(() => useProductFilters('discount'));
+    expect(result.current.filters.sortBy).toBe('discount');
+
+    act(() => {
+      result.current.setFilters({ sortBy: 'newest' });
+    });
+    expect(pushedQuery()).toEqual({ sortBy: 'newest' });
+
+    act(() => {
+      result.current.setFilters({ sortBy: 'discount' });
+    });
+    expect(pushedQuery()).toEqual({});
+  });
+});
+
 describe('useProductFilters URL sync', () => {
   afterEach(() => {
     mockRouter.isReady = true;

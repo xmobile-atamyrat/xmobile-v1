@@ -132,6 +132,10 @@ export const appbarClasses = {
       'px-[14px] py-2 rounded-[8px] text-[14px] whitespace-nowrap transition-colors',
     categoryChipActive: 'text-navy font-semibold bg-[#F3F2F8]',
     categoryChipInactive: 'text-[#4A4959] font-medium hover:bg-fill',
+    saleLink:
+      'flex flex-row items-center gap-1.5 h-[36px] px-4 ml-2 rounded-[10px] border text-[14px] font-bold whitespace-nowrap flex-shrink-0 transition-colors',
+    saleLinkIdle: 'bg-[#FDECEE] border-[#FBD0D4] text-red hover:bg-[#FBDDE0]',
+    saleLinkActive: 'bg-red border-red text-white',
   },
   backButton: {
     web: 'hidden',

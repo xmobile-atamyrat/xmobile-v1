@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Flame,
   Globe,
   Heart,
   Menu as MenuIcon,
@@ -39,6 +40,7 @@ import NotificationBadge from '@/pages/components/NotificationBadge';
 import NotificationMenu from '@/pages/components/NotificationMenu';
 import { useCartContext } from '@/pages/lib/CartContext';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
+import { useSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import { useNotificationContext } from '@/pages/lib/NotificationContext';
 import { switchLocale } from '@/pages/lib/switchLocale';
 import {
@@ -56,6 +58,7 @@ import InputBase from '@mui/material/InputBase';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 
@@ -207,6 +210,7 @@ export default function CustomAppBar({
     { val: 'en', name: 'English', img: '/flags/UnitedKingdom.png' },
   ];
   const [menuStatus, setMenuStatus] = useState(false);
+  const saleAvailable = useSaleAvailability();
   const { categories, setSelectedCategoryId } = useCategoryContext();
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
@@ -592,6 +596,20 @@ export default function CustomAppBar({
             <MenuIcon className="w-[18px] h-[18px]" />
             {t('allCategory')}
           </button>
+          {saleAvailable && (
+            <Link
+              href="/sale"
+              aria-current={router.pathname === '/sale' ? 'page' : undefined}
+              className={`${web.saleLink} ${
+                router.pathname === '/sale'
+                  ? web.saleLinkActive
+                  : web.saleLinkIdle
+              } ${fontClassName.className}`}
+            >
+              <Flame className="w-[18px] h-[18px]" aria-hidden />
+              {t('sale')}
+            </Link>
+          )}
           <Box className={web.categoryList}>
             {categories?.map((category) => (
               <button

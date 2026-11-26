@@ -2,7 +2,12 @@
 // and says how many products that would bring back. Price is never offered:
 // it's the customer's budget, not a choice to talk them out of.
 
-export const FILTER_DIMENSIONS = ['brands', 'colors', 'inStock'] as const;
+export const FILTER_DIMENSIONS = [
+  'brands',
+  'colors',
+  'inStock',
+  'sale',
+] as const;
 
 export type FilterDimension = (typeof FILTER_DIMENSIONS)[number];
 

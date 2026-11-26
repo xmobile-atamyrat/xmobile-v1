@@ -34,8 +34,20 @@ export interface ExtendedCategory extends Category {
   successorCategories?: ExtendedCategory[];
 }
 
+export interface ProductSale {
+  /** Biggest discount, in whole percent, among the in-stock prices on sale. */
+  bestPercent: number;
+  /**
+   * Set only when the base price itself is on sale and in stock. `oldPrice` is
+   * its normal manat price; `product.price` already carries the sale one.
+   */
+  base: { oldPrice: string; percent: number } | null;
+}
+
 export interface ExtendedProduct extends Product {
   brand?: Brand | null;
+  /** Null when sold out or nothing is on sale. */
+  sale?: ProductSale | null;
 }
 
 export interface ProtectedUser extends Omit<User, 'password'> {}

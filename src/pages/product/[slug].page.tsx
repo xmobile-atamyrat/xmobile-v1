@@ -5,6 +5,8 @@ import FavoriteButton from '@/pages/components/FavoriteButton';
 import Layout from '@/pages/components/Layout';
 import ProductImageGallery from '@/pages/components/ProductImageGallery';
 import ProductImageLightbox from '@/pages/components/ProductImageLightbox';
+import SaleBadge from '@/pages/components/sale/SaleBadge';
+import SalePrice from '@/pages/components/sale/SalePrice';
 import SimpleBreadcrumbs from '@/pages/components/SimpleBreadcrumbs';
 import { ProductDetailSkeleton } from '@/pages/components/SkeletonLoader';
 import TikTokIcon from '@/pages/components/TikTokIcon';
@@ -31,6 +33,12 @@ import { useNetworkContext } from '@/pages/lib/NetworkContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { usePrevProductContext } from '@/pages/lib/PrevProductContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
+import {
+  basePriceIdOf,
+  pickDefaultVariant,
+  VariantSale,
+  variantSaleOf,
+} from '@/pages/lib/saleVariant';
 import {
   generateBreadcrumbJsonLd,
   generateHreflangLinks,
@@ -79,7 +87,7 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'slick-carousel/slick/slick-theme.css';
 import 'slick-carousel/slick/slick.css';
 
@@ -115,8 +123,10 @@ async function resolveJsonLdVariants(tags: string[]) {
     const { priceId } = parseVariantTag(tag);
     const row = priceId ? rows.get(priceId) ?? null : null;
     return {
+      priceId,
       priceTmt: displayPriceOrNull(row),
       isOutOfStock: row == null || row.outOfStockAt != null,
+      sale: variantSaleOf(row),
     };
   });
 }
@@ -220,10 +230,15 @@ export const getStaticProps: GetStaticProps = async ({
         );
       });
 
+      // The Offer describes the variant the page opens on.
+      const openedVariant = pickDefaultVariant(
+        await resolveJsonLdVariants(product.tags ?? []),
+        basePriceIdOf(product.price),
+      );
       const offer = pickJsonLdOffer({
         basePrice: priceValue,
         productOutOfStock: product.outOfStockAt != null,
-        variants: await resolveJsonLdVariants(product.tags ?? []),
+        variants: openedVariant ? [openedVariant] : [],
       });
 
       const productJsonLd = generateProductJsonLd({
@@ -363,12 +378,17 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
       colorId?: string;
       priceTmt?: string;
       isOutOfStock: boolean;
+      priceId?: string;
+      sale: VariantSale | null;
     }[]
   >([]);
   // Selection is two-dimensional: a spec (e.g. "128GB 12GB RAM") and a color
   const [selectedSpec, setSelectedSpec] = useState<string>();
   const [selectedColorId, setSelectedColorId] = useState<string | undefined>();
   const [colorsMap, setColorsMap] = useState<Map<string, Color>>(new Map());
+  // The product whose spec or colour the shopper picked by hand, so reloading
+  // its prices doesn't move them back to the default.
+  const pickedProductId = useRef<string>();
 
   useEffect(() => {
     (async () => {
@@ -378,7 +398,12 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   }, []);
 
   useEffect(() => {
-    if (initialProduct == null) return;
+    if (initialProduct == null) return undefined;
+    // A slower load for the previous product must not land on this one.
+    let cancelled = false;
+    if (pickedProductId.current !== initialProduct.id) {
+      pickedProductId.current = undefined;
+    }
     (async () => {
       const tags = (initialProduct.tags ?? []).map((raw) => ({
         raw,
@@ -420,18 +445,36 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
           // deleted and a tag that never carried a reference at all. The
           // server reaches the same verdict in unavailableVariantTags.
           isOutOfStock: price == null || price.outOfStockAt != null,
+          priceId,
+          sale: variantSaleOf(price),
         };
       });
+      if (cancelled) return;
       // Set together so the base price never shows before the variant's.
       setProduct(pricedProduct);
       setVariants(resolved);
-      // Open on something the user can actually buy; fall back to the first
-      // variant when every one of them is sold out.
-      const firstAvailable =
-        resolved.find((variant) => !variant.isOutOfStock) ?? resolved[0];
-      setSelectedSpec(firstAvailable?.specText);
-      setSelectedColorId(firstAvailable?.colorId);
+      // Open on a discounted variant if one can be bought, else on the first
+      // buyable one, else on the first. The shopper's own pick wins for as long
+      // as it still exists.
+      const opened = pickDefaultVariant(
+        resolved,
+        basePriceIdOf(initialProduct.price),
+      );
+      const keepPick = pickedProductId.current === initialProduct.id;
+      setSelectedSpec((current) =>
+        keepPick && resolved.some((variant) => variant.specText === current)
+          ? current
+          : opened?.specText,
+      );
+      setSelectedColorId((current) =>
+        keepPick && resolved.some((variant) => variant.colorId === current)
+          ? current
+          : opened?.colorId,
+      );
     })();
+    return () => {
+      cancelled = true;
+    };
     // accessToken intentionally omitted: prices are public
   }, [initialProduct]);
 
@@ -494,10 +537,16 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   // actually buyable, which is why this cannot just check "does the new spec
   // have this colour".
   const handleSelectSpec = (spec: string) => {
+    pickedProductId.current = product?.id;
     setSelectedSpec(spec);
     setSelectedColorId(
       pickVariantColorForSpec(variants, spec, selectedColorId),
     );
+  };
+
+  const handleSelectColor = (colorId: string) => {
+    pickedProductId.current = product?.id;
+    setSelectedColorId(colorId);
   };
 
   // The product's own flag still wins — it covers products with no variants at
@@ -509,6 +558,26 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
   // otherwise the product's base resolved price.
   const displayPrice =
     variants.length > 0 ? selectedVariant?.priceTmt ?? '' : product?.price;
+
+  // The sale on that price: the selected variant's, or the base price's.
+  const selectedSale =
+    variants.length > 0
+      ? selectedVariant?.sale
+      : (product as ExtendedProduct | null)?.sale?.base;
+
+  // Biggest discount per spec among its buyable colours, to mark the option.
+  const specSalePercents = useMemo(() => {
+    const percents = new Map<string, number>();
+    if (product?.outOfStockAt != null) return percents;
+    variants.forEach(({ specText, sale, isOutOfStock }) => {
+      if (sale == null || isOutOfStock) return;
+      percents.set(
+        specText,
+        Math.max(sale.percent, percents.get(specText) ?? 0),
+      );
+    });
+    return percents;
+  }, [variants, product?.outOfStockAt]);
 
   // Brand name (real data — included by getStaticProps, not on the base type)
   const brandName = (product as ExtendedProduct | null)?.brand?.name;
@@ -779,7 +848,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                       !soldOutColorIds.has(colorId);
                     const isSel = colorId === selectedColorId && available;
                     const select = () =>
-                      available && setSelectedColorId(colorId);
+                      available && handleSelectColor(colorId);
                     return canUseSwatches ? (
                       <Box
                         key={colorId}
@@ -818,6 +887,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                   {specOptions.map((spec) => {
                     const delta = specPriceDelta(spec);
                     const soldOut = soldOutSpecs.has(spec);
+                    const salePercent = specSalePercents.get(spec);
                     return (
                       <Box
                         key={spec}
@@ -834,6 +904,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                             {`+${delta}`}
                           </Box>
                         )}
+                        {salePercent != null && (
+                          <SaleBadge percent={salePercent} size="chip" />
+                        )}
                       </Box>
                     );
                   })}
@@ -848,9 +921,17 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 carries the state instead. */}
             {!selectionOutOfStock && (
               <Box className={detailPageClasses.buyBox.priceRow}>
+                {/* eslint-disable-next-line no-nested-ternary */}
                 {priceIsLoading ? (
                   <CircularProgress
                     className={detailPageClasses.circProgress.web}
+                  />
+                ) : selectedSale != null && !priceIsNull ? (
+                  <SalePrice
+                    price={displayPrice}
+                    oldPrice={selectedSale.oldPrice}
+                    percent={selectedSale.percent}
+                    size="detailWeb"
                   />
                 ) : (
                   <>
@@ -1062,9 +1143,17 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 {/* Out-of-stock products never show a price. */}
                 {!selectionOutOfStock && (
                   <Box className="flex items-baseline gap-2 mt-[10px]">
-                    {displayPrice == null || displayPrice?.includes('[') ? (
+                    {/* eslint-disable-next-line no-nested-ternary */}
+                    {priceIsLoading ? (
                       <CircularProgress
                         className={detailPageClasses.circProgress.mobile}
+                      />
+                    ) : selectedSale != null && !priceIsNull ? (
+                      <SalePrice
+                        price={displayPrice}
+                        oldPrice={selectedSale.oldPrice}
+                        percent={selectedSale.percent}
+                        size="detailMobile"
                       />
                     ) : (
                       <>
@@ -1102,6 +1191,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                     <Box className="flex flex-col items-start gap-2">
                       {specOptions.map((spec) => {
                         const soldOut = soldOutSpecs.has(spec);
+                        const salePercent = specSalePercents.get(spec);
                         return (
                           <Box
                             key={spec}
@@ -1113,6 +1203,9 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                             )}
                           >
                             {spec}
+                            {salePercent != null && (
+                              <SaleBadge percent={salePercent} size="chip" />
+                            )}
                           </Box>
                         );
                       })}
@@ -1142,7 +1235,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                             <Box
                               key={colorId}
                               onClick={() =>
-                                available && setSelectedColorId(colorId)
+                                available && handleSelectColor(colorId)
                               }
                               className={fontClassName.className}
                               sx={chipSx(isSel, !available)}

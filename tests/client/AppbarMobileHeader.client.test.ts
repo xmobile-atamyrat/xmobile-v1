@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import CustomAppBar from '@/pages/components/Appbar';
+import { useSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import { useCategoryContext } from '@/pages/lib/CategoryContext';
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
@@ -23,6 +24,10 @@ vi.mock('@/pages/lib/ProductContext', () => ({
 
 vi.mock('@/pages/lib/UserContext', () => ({
   useUserContext: vi.fn(),
+}));
+
+vi.mock('@/pages/lib/hooks/useSaleAvailability', () => ({
+  useSaleAvailability: vi.fn(() => false),
 }));
 
 vi.mock('@/pages/lib/PlatformContext', async (importOriginal) => ({
@@ -82,6 +87,34 @@ describe('mobile home header', () => {
 
     expect(screen.getByAltText('Xmobile')).toBeTruthy();
     expect(screen.getByLabelText('notifications')).toBeTruthy();
+  });
+
+  it('has no sale link, even while something is on sale', () => {
+    setUser(undefined);
+    vi.mocked(useSaleAvailability).mockReturnValue(true);
+    renderHeader();
+
+    expect(screen.queryByRole('link', { name: 'Sale' })).toBeNull();
+  });
+
+  it('has the sale link in the web header', () => {
+    setUser(undefined);
+    vi.mocked(usePlatform).mockReturnValue('web');
+    vi.mocked(useSaleAvailability).mockReturnValue(true);
+    renderHeader();
+
+    expect(
+      screen.getByRole('link', { name: 'Sale' }).getAttribute('href'),
+    ).toBe('/sale');
+  });
+
+  it('has no sale link in the web header when nothing is on sale', () => {
+    setUser(undefined);
+    vi.mocked(usePlatform).mockReturnValue('web');
+    vi.mocked(useSaleAvailability).mockReturnValue(false);
+    renderHeader();
+
+    expect(screen.queryByRole('link', { name: 'Sale' })).toBeNull();
   });
 
   it('Find pushes the term into the home URL immediately', async () => {

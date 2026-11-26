@@ -66,3 +66,24 @@ describe('SortDropdown (dropdown)', () => {
     expect(screen.getByText(/Recommended$/)).toBeInTheDocument();
   });
 });
+
+describe('SortDropdown biggest discount', () => {
+  it('is offered only when asked to', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const props = {
+      value: SORT_OPTIONS.NEWEST,
+      onChange,
+      variant: 'chips' as const,
+    };
+    const { rerender } = renderWithProviders(
+      createElement(SortDropdown, props),
+    );
+    expect(screen.queryByText('Biggest discount')).not.toBeInTheDocument();
+
+    rerender(createElement(SortDropdown, { ...props, showDiscount: true }));
+    await user.click(screen.getByText('Biggest discount'));
+
+    expect(onChange).toHaveBeenCalledWith(SORT_OPTIONS.DISCOUNT);
+  });
+});

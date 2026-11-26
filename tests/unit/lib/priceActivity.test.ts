@@ -81,6 +81,43 @@ describe('buildPriceUpdateMeta', () => {
     });
   });
 
+  const checkedPair = (
+    saleBefore: string | null,
+    saleAfter: string | null,
+  ) => ({
+    before: {
+      ...price,
+      salePriceTmt: saleBefore,
+      priceCheckedAt: new Date('2026-08-01T00:00:00Z'),
+    },
+    after: {
+      ...price,
+      salePriceTmt: saleAfter,
+      priceCheckedAt: new Date('2026-11-25T00:00:00Z'),
+    },
+  });
+
+  it.each([
+    ['added', null, '6000'],
+    ['changed', '6000', '5500'],
+  ])('does not repeat the check when a sale is %s', (_label, from, to) => {
+    const { before, after } = checkedPair(from, to);
+    expect(buildPriceUpdateMeta(before, after, noNames)).toEqual({
+      name: '128gb Black',
+      changes: { salePriceTmt: { from, to } },
+    });
+  });
+
+  it('records a check made while ending a sale', () => {
+    const { before, after } = checkedPair('6000', null);
+    expect(buildPriceUpdateMeta(before, after, noNames)).toMatchObject({
+      changes: {
+        salePriceTmt: { from: '6000', to: null },
+        checked: { to: '2026-11-25T00:00:00.000Z' },
+      },
+    });
+  });
+
   it('returns null when nothing changed', () => {
     expect(buildPriceUpdateMeta(price, { ...price }, noNames)).toBeNull();
   });

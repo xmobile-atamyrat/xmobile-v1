@@ -42,6 +42,36 @@ export const homePageClasses = {
   mobileSectionHead: 'flex items-center justify-between gap-3 mb-3',
   mobileViewAll:
     'flex items-center gap-1 text-[13px] font-semibold text-navy shrink-0',
+  // Home's "on sale" section: a warm tinted panel that stands out from the
+  // plain rows around it. The only motion is the flame, and only when the
+  // visitor hasn't asked for less of it.
+  sale: {
+    panel: {
+      web: 'mb-11 rounded-[24px] border border-[#FBD0D4] bg-gradient-to-br from-[#FDE3E6] via-[#FFF3E8] to-white p-5',
+      mobile:
+        'w-[calc(100%+24px)] -mx-3 mb-8 rounded-[20px] border border-[#FBD0D4] bg-gradient-to-b from-[#FDE3E6] via-[#FFF3E8] to-white p-3',
+    },
+    head: 'flex items-center gap-3 mb-4',
+    icon: {
+      web: 'w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF7A29] to-red flex items-center justify-center text-white shrink-0 shadow-[0_6px_16px_rgba(228,30,43,0.25)]',
+      mobile:
+        'w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF7A29] to-red flex items-center justify-center text-white shrink-0 shadow-[0_4px_12px_rgba(228,30,43,0.25)]',
+    },
+    flame: 'w-6 h-6 motion-safe:animate-breathe',
+    title: {
+      web: 'text-[24px] leading-tight font-bold tracking-[-0.01em] text-ink',
+      mobile: 'text-[16px] leading-tight font-bold tracking-[-0.01em] text-ink',
+    },
+    subtitle: {
+      web: 'text-[14px] leading-snug text-[#7A4A4E]',
+      mobile: 'text-[12px] leading-snug text-[#7A4A4E]',
+    },
+    viewAll: {
+      web: 'flex shrink-0 items-center gap-1 h-9 px-4 rounded-full bg-red text-white text-[14px] font-semibold hover:bg-[#C81926] transition-colors',
+      mobile:
+        'flex shrink-0 items-center gap-1 text-[13px] font-semibold text-red',
+    },
+  },
   // Staff-only note under a section title (products without photos).
   staffHint: 'text-[13px] text-muted -mt-2 mb-3',
   // Desktop storefront (spec 1268-1391). Horizontal padding comes from

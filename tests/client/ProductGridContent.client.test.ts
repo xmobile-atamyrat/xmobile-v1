@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import ProductGridContent from '@/pages/components/ProductGridContent';
+import { resetSaleAvailability } from '@/pages/lib/hooks/useSaleAvailability';
 import PrevProductContextProvider from '@/pages/lib/PrevProductContext';
 import ProductContextProvider from '@/pages/lib/ProductContext';
 import { Product } from '@prisma/client';
@@ -209,5 +210,88 @@ describe('ProductGridContent with a seeded first page', () => {
     expect(
       await screen.findByText('Without “Brands”: 5 products'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('ProductGridContent on the sale page', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSaleAvailability();
+    mockFilterApis();
+    session.current = { user: null, isLoading: false };
+    apis.fetchProducts.mockResolvedValue([
+      { id: 'p5', name: 'Cheaper Phone' } as Product,
+    ]);
+    mockRouter.setCurrentUrl('/sale');
+  });
+
+  it('asks for products on sale only, biggest discount first', async () => {
+    renderWithProviders(grid({ saleOnly: true }));
+
+    expect(await screen.findByText('Cheaper Phone')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Hot deals' }),
+    ).toBeInTheDocument();
+    const saleQuery = expect.objectContaining({ sale: true });
+    expect(apis.fetchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ sale: true, sortBy: 'discount' }),
+    );
+    expect(apis.fetchProductsCount).toHaveBeenCalledWith(saleQuery);
+    expect(apis.fetchProductFilterOptions).toHaveBeenCalledWith(saleQuery);
+  });
+
+  it('points to the catalog when nothing is on sale, staff too', async () => {
+    session.current = {
+      user: { id: 'u1', grade: 'ADMIN' },
+      accessToken: 'token',
+      isLoading: false,
+    };
+    apis.fetchProducts.mockResolvedValue([]);
+
+    renderWithProviders(grid({ saleOnly: true }));
+
+    expect(
+      await screen.findByText('No products are on sale right now'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'All Products' })).toHaveAttribute(
+      'href',
+      '/product',
+    );
+  });
+
+  it('blames the filters, not the sale, when they empty the list', async () => {
+    mockRouter.setCurrentUrl('/sale?brandIds=b1');
+    apis.fetchProducts.mockResolvedValue([]);
+
+    renderWithProviders(grid({ saleOnly: true }));
+
+    expect(await screen.findByText('No Products Found!')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No products are on sale right now'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('applies ?sale=1 in the catalog to every query', async () => {
+    mockRouter.setCurrentUrl('/product?sale=1');
+
+    renderWithProviders(grid({}));
+
+    expect(await screen.findByText('Cheaper Phone')).toBeInTheDocument();
+    const saleQuery = expect.objectContaining({ sale: true });
+    expect(apis.fetchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ sale: true, sortBy: 'newest' }),
+    );
+    expect(apis.fetchProductFilterOptions).toHaveBeenCalledWith(saleQuery);
+  });
+
+  it('does not let a hand-made discount sort narrow the catalog', async () => {
+    mockRouter.setCurrentUrl('/product?sortBy=discount');
+
+    renderWithProviders(grid({}));
+
+    expect(await screen.findByText('Cheaper Phone')).toBeInTheDocument();
+    expect(apis.fetchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'newest', sale: undefined }),
+    );
   });
 });
