@@ -81,6 +81,7 @@ describe('calculateTotalPrice', () => {
       priceInTmt: '1283',
       displayPriceTmt: '1290',
       salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -93,6 +94,7 @@ describe('calculateTotalPrice', () => {
       priceInTmt: '10.50',
       displayPriceTmt: null,
       salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -105,6 +107,7 @@ describe('calculateTotalPrice', () => {
       priceInTmt: '1283',
       displayPriceTmt: '0',
       salePriceTmt: null,
+      outOfStockAt: null,
     } as Prices);
 
     expect(
@@ -122,18 +125,21 @@ describe('calculateTotalPrice', () => {
         priceInTmt: '1283',
         displayPriceTmt: '1290',
         salePriceTmt: null,
+        outOfStockAt: null,
         quantity: 2,
       },
       {
         priceInTmt: '47',
         displayPriceTmt: null,
         salePriceTmt: null,
+        outOfStockAt: null,
         quantity: 1,
       }, // not computed
       {
         priceInTmt: '1290',
         displayPriceTmt: '1290',
         salePriceTmt: null,
+        outOfStockAt: null,
         quantity: 3,
       }, // pinned
     ];
@@ -161,6 +167,7 @@ describe('calculateTotalPrice', () => {
       priceInTmt: '1283',
       displayPriceTmt: '1290',
       salePriceTmt: '1100',
+      outOfStockAt: null,
     } as Prices);
 
     expect(

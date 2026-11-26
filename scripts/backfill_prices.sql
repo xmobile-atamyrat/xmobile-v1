@@ -1,8 +1,8 @@
 BEGIN;
 
 -- Rebuilds Product."cachedPrice", the manat figure the storefront sorts and
--- range-filters on. Mirrors displayPriceOf: an active sale price first, else
--- the display price, else priceInTmt.
+-- range-filters on. Mirrors displayPriceOf: an active sale price of an in-stock
+-- row first, else the display price, else priceInTmt.
 
 -- 1. Update products that reference Prices table via [id]
 -- Matches format [some-uuid]
@@ -10,19 +10,23 @@ BEGIN;
 -- not a number becomes NULL instead of aborting the script.
 UPDATE "Product" p
 SET "cachedPrice" = CASE
-  -- A sale counts only above zero and below the regular price.
-  WHEN v.sale > 0 AND v.sale < v.regular THEN v.sale
+  -- A sale counts only on an in-stock row, above zero and below the regular
+  -- price.
+  WHEN v."outOfStockAt" IS NULL AND v.sale > 0 AND v.sale < v.regular
+    THEN v.sale
   ELSE v.regular
 END
 FROM (
   SELECT
     n.id,
+    n."outOfStockAt",
     n.sale,
     -- A stored zero display price counts as unset.
     CASE WHEN n.display > 0 THEN n.display ELSE n.exact END AS regular
   FROM (
     SELECT
       pr.id,
+      pr."outOfStockAt",
       CASE WHEN btrim(pr."priceInTmt") ~ '^[0-9]+(\.[0-9]+)?$'
         THEN btrim(pr."priceInTmt")::double precision END AS exact,
       CASE WHEN btrim(pr."displayPriceTmt") ~ '^[0-9]+(\.[0-9]+)?$'

@@ -367,6 +367,24 @@ describe('products on sale (integration)', () => {
       expect(await salePriceOf(price.id)).toBeNull();
     });
 
+    it('drops a sale from cachedPrice while its row is sold out', async () => {
+      const price = await newPrice('1000', '900');
+      const product = await newProduct('sold-out-sale', {
+        price: `[${price.id}]`,
+        cachedPrice: 900,
+      });
+
+      await putPrices([{ id: price.id, isOutOfStock: true }]);
+      expect(await cachedPriceOf(product.id)).toBe(1000);
+
+      // A sale typed onto a sold-out row is stored but not shown yet.
+      await putPrices([{ id: price.id, salePriceTmt: '800' }]);
+      expect(await cachedPriceOf(product.id)).toBe(1000);
+
+      await putPrices([{ id: price.id, isOutOfStock: false }]);
+      expect(await cachedPriceOf(product.id)).toBe(800);
+    });
+
     it.each(['0', '-1', 'abc', '1e2', '1000', '1500'])(
       'rejects the sale price %s without writing any pair',
       async (salePriceTmt) => {
@@ -459,6 +477,26 @@ describe('products on sale (integration)', () => {
     expect(await cachedPriceOf(product.id)).toBe(800);
   });
 
+  it('follows the stock of a product in the cached sale price', async () => {
+    const product = await newProduct('product-stock', { cachedPrice: 900 });
+    const price = await newPrice('1000', '900');
+    await prisma.prices.update({
+      where: { id: price.id },
+      data: { productId: product.id },
+    });
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { price: `[${price.id}]` },
+    });
+
+    const { setProductOutOfStock } = await import('@/lib/outOfStock');
+    await setProductOutOfStock(product.id, true);
+    expect(await cachedPriceOf(product.id)).toBe(1000);
+
+    await setProductOutOfStock(product.id, false);
+    expect(await cachedPriceOf(product.id)).toBe(900);
+  });
+
   it('charges the sale price on an order', async () => {
     const base = await newPrice('1000', '900');
     const variant = await newPrice('2000', '1500');
@@ -534,6 +572,15 @@ describe('products on sale (integration)', () => {
         });
       }),
     );
+    const soldOut = await newPrice('1000', '900', {
+      outOfStockAt: new Date(),
+    });
+    products.push(
+      await newProduct('backfill-sold-out', {
+        price: `[${soldOut.id}]`,
+        cachedPrice: null,
+      }),
+    );
     const sql = readFileSync(
       path.join(process.cwd(), 'scripts/backfill_prices.sql'),
       'utf8',
@@ -562,6 +609,9 @@ describe('products on sale (integration)', () => {
       }),
     ).rejects.toBe(rollback);
 
-    expect(cached).toEqual(cases.map(([, , , expected]) => expected));
+    expect(cached).toEqual([
+      ...cases.map(([, , , expected]) => expected),
+      1000,
+    ]);
   });
 });

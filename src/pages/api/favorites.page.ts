@@ -55,6 +55,7 @@ async function listFavorites(userId: string, locale: unknown) {
       priceInTmt: true,
       displayPriceTmt: true,
       salePriceTmt: true,
+      outOfStockAt: true,
     },
   });
   const pricesById = new Map(

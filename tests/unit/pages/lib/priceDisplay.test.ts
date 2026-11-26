@@ -70,6 +70,7 @@ describe('displayPriceOf', () => {
         priceInTmt: '1282',
         displayPriceTmt: '1290',
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe('1290');
   });
@@ -81,6 +82,7 @@ describe('displayPriceOf', () => {
         priceInTmt: '1282',
         displayPriceTmt: '1290.00',
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe('1290.00');
     expect(
@@ -88,6 +90,7 @@ describe('displayPriceOf', () => {
         priceInTmt: '1282',
         displayPriceTmt: ' 1290 ',
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe('1290');
   });
@@ -109,6 +112,7 @@ describe('displayPriceOf', () => {
           priceInTmt: '1282',
           displayPriceTmt: stored,
           salePriceTmt: null,
+          outOfStockAt: null,
         }),
       ).toBe('1282');
     },
@@ -127,6 +131,7 @@ describe('displayPriceOrNull', () => {
         priceInTmt: '1282',
         displayPriceTmt: '1290',
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe('1290');
   });
@@ -150,7 +155,11 @@ describe('write helpers', () => {
 
   it('a pinned price survives displayPriceOf unrounded', () => {
     expect(
-      displayPriceOf({ ...pricesPinned('1283'), salePriceTmt: null }),
+      displayPriceOf({
+        ...pricesPinned('1283'),
+        salePriceTmt: null,
+        outOfStockAt: null,
+      }),
     ).toBe('1283');
   });
 });
@@ -162,6 +171,7 @@ describe('cachedPriceFrom', () => {
         priceInTmt: '1283',
         displayPriceTmt: '1290',
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe(1290);
   });
@@ -172,6 +182,7 @@ describe('cachedPriceFrom', () => {
         priceInTmt: '1283',
         displayPriceTmt: null,
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBe(1283);
   });
@@ -184,6 +195,7 @@ describe('cachedPriceFrom', () => {
         priceInTmt: 'not-a-price',
         displayPriceTmt: null,
         salePriceTmt: null,
+        outOfStockAt: null,
       }),
     ).toBeNull();
   });
@@ -213,7 +225,12 @@ describe('sale prices', () => {
     salePriceTmt: string | null,
     displayPriceTmt: string | null = '1000',
     priceInTmt = '995',
-  ) => ({ priceInTmt, displayPriceTmt, salePriceTmt });
+  ) => ({
+    priceInTmt,
+    displayPriceTmt,
+    salePriceTmt,
+    outOfStockAt: null as Date | null,
+  });
 
   it('is active below the regular price and returned as stored', () => {
     expect(salePriceOf(row('900.00'))).toBe('900.00');
@@ -236,6 +253,14 @@ describe('sale prices', () => {
     expect(salePriceOf(row(stored))).toBeNull();
     expect(salePercentOf(row(stored))).toBeNull();
     expect(displayPriceOf(row(stored))).toBe('1000');
+  });
+
+  it('is not shown or cached while the row is sold out', () => {
+    const soldOut = { ...row('900'), outOfStockAt: new Date() };
+    expect(displayPriceOf(soldOut)).toBe('1000');
+    expect(cachedPriceFrom(soldOut)).toBe(1000);
+    // The stored sale stays valid, so admins can still edit it.
+    expect(salePriceOf(soldOut)).toBe('900');
   });
 
   it('compares against priceInTmt when no display price is stored', () => {

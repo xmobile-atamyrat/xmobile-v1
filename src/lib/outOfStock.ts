@@ -1,4 +1,5 @@
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import { syncCachedPrices } from '@/lib/cachedPriceSync';
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { Prisma } from '@prisma/client';
@@ -101,6 +102,8 @@ export async function setProductOutOfStock(
         data: { outOfStockAt: now },
       }),
     ]);
+    // A sale only shows while its row is in stock, so the cache follows.
+    await syncCachedPrices({ productId, salePriceTmt: { not: null } });
     return;
   }
 
@@ -114,6 +117,7 @@ export async function setProductOutOfStock(
       data: { outOfStockAt: null },
     }),
   ]);
+  await syncCachedPrices({ productId, salePriceTmt: { not: null } });
 }
 
 /** Re-derives one product's state from the prices it owns. */

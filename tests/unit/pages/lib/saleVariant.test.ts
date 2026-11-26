@@ -155,14 +155,21 @@ describe('variantSaleOf', () => {
     priceInTmt: '995',
     displayPriceTmt: '1000',
     salePriceTmt: '800',
+    outOfStockAt: null as Date | null,
   };
 
   it('gives the normal price and the percent off', () => {
     expect(variantSaleOf(row)).toEqual({ oldPrice: '1000', percent: 20 });
   });
 
+  it('is null for a sold-out row', () => {
+    expect(variantSaleOf({ ...row, outOfStockAt: new Date() })).toBeNull();
+  });
+
   it('is null without an active sale', () => {
-    expect(variantSaleOf({ ...row, salePriceTmt: null })).toBeNull();
+    expect(
+      variantSaleOf({ ...row, salePriceTmt: null, outOfStockAt: null }),
+    ).toBeNull();
     expect(variantSaleOf({ ...row, salePriceTmt: '1000' })).toBeNull();
     expect(variantSaleOf(null)).toBeNull();
   });

@@ -1,4 +1,5 @@
 import { syncBrandProductCount } from '@/lib/brandProductCount';
+import { syncCachedPrices } from '@/lib/cachedPriceSync';
 import dbClient from '@/lib/dbClient';
 import {
   whereActiveCategory,
@@ -11,11 +12,7 @@ import { requireSuperuserBearerAuth } from '@/pages/api/utils/staffAuth';
 import { squareBracketRegex } from '@/pages/lib/constants';
 import { parseName } from '@/pages/lib/utils';
 import { ResponseApi } from '@/pages/lib/types';
-import {
-  cachedPriceFrom,
-  displayTmtFromUsd,
-  regularPriceOf,
-} from '@/pages/lib/priceDisplay';
+import { displayTmtFromUsd, regularPriceOf } from '@/pages/lib/priceDisplay';
 import { parsePrice, parseVariantTag, tmtFromUsd } from '@/pages/product/utils';
 import { Prisma, Product } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -1063,45 +1060,6 @@ async function handleExport(res: NextApiResponse<ResponseApi>) {
 
 // ---------- POST import ----------
 
-// Refresh the denormalized cachedPrice on every product whose base price points
-// at one of these Prices rows (raw id or [id] format), in a single pass over the
-// table instead of one non-indexable LIKE scan per price. Runs outside the
-// per-product transactions: cachedPrice is a read cache, so a brief lag before
-// it catches up is acceptable, and it's rebuilt from the committed price values.
-// Those are re-read here because a row's stored sale price, which the sheet
-// does not carry, decides what is shown.
-async function syncCachedPrices(priceIds: Set<string>) {
-  const rows = await dbClient.prices.findMany({
-    where: { id: { in: [...priceIds] } },
-    select: {
-      id: true,
-      priceInTmt: true,
-      displayPriceTmt: true,
-      salePriceTmt: true,
-    },
-  });
-  const shown = rows.flatMap((row) => {
-    const value = cachedPriceFrom(row);
-    return value == null ? [] : [{ id: row.id, value }];
-  });
-  if (shown.length === 0) return;
-
-  const values = Prisma.join(
-    shown.map(
-      ({ id, value }) => Prisma.sql`(${id}::text, ${value}::double precision)`,
-    ),
-  );
-  // pid is a uuid (no % or _), so it needs no LIKE escaping; [ ] are literal in
-  // Postgres LIKE, matching the "[id]" base-price format.
-  await dbClient.$executeRaw`
-    UPDATE "Product" AS p
-    SET "cachedPrice" = v.shown
-    FROM (VALUES ${values}) AS v(pid, shown)
-    WHERE p."deletedAt" IS NULL
-      AND (p."price" = v.pid OR p."price" LIKE '%[' || v.pid || ']%')
-  `;
-}
-
 // `{ priceCheckedAt: now }` when the submitted USD/manat differs from the stored
 // row, else `{}` (display-only or name/category edits don't count). A derived
 // manat figure moves with the rate, so then only the USD amount is compared.
@@ -1560,7 +1518,7 @@ async function handleImport(
   // One pass over the products table for all changed prices, instead of a
   // non-indexable LIKE scan per price inside each transaction.
   if (repricedIds.size > 0) {
-    await syncCachedPrices(repricedIds);
+    await syncCachedPrices({ id: { in: [...repricedIds] } });
   }
 
   await Promise.all(

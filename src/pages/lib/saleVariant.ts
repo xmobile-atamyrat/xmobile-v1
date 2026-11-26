@@ -1,8 +1,8 @@
 import { squareBracketRegex } from '@/pages/lib/constants';
 import {
-  PriceRowLike,
   regularPriceOf,
   salePercentOf,
+  ShownPriceRow,
 } from '@/pages/lib/priceDisplay';
 import { ProductSale } from '@/pages/lib/types';
 import { parseVariantTag } from '@/pages/product/utils';
@@ -16,11 +16,11 @@ export interface SaleVariantChoice {
   sale: VariantSale | null;
 }
 
-/** Null when the price row is missing or has no active sale. */
+/** Null when the price row is missing, sold out or has no active sale. */
 export const variantSaleOf = (
-  row: PriceRowLike | null | undefined,
+  row: ShownPriceRow | null | undefined,
 ): VariantSale | null => {
-  if (row == null) return null;
+  if (row == null || row.outOfStockAt != null) return null;
   const percent = salePercentOf(row);
   return percent == null ? null : { oldPrice: regularPriceOf(row), percent };
 };

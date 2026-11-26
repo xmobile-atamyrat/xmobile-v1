@@ -35,6 +35,12 @@ export interface PriceRowLike {
   salePriceTmt: string | null;
 }
 
+// What deciding the shown price needs: a sold-out row's sale is not on offer.
+// Required for the same reason as the columns above.
+export interface ShownPriceRow extends PriceRowLike {
+  outOfStockAt: Date | string | null;
+}
+
 // The normal price, ignoring any sale. A stored zero counts as unset, not as a
 // free product: priceInTmt already uses '0' as its default, and charging nothing
 // is the one failure worth being paranoid about. Returns the stored string
@@ -83,13 +89,14 @@ export const salePercentOf = (price: PriceRowLike): number | null => {
   return Math.min(99, Math.max(1, percent));
 };
 
-// What the customer pays: the sale price while one is active, else the regular
-// price.
-export const displayPriceOf = (price: PriceRowLike): string =>
-  salePriceOf(price) ?? regularPriceOf(price);
+// What the customer pays: the sale price while one is active and the row is in
+// stock, else the regular price.
+export const displayPriceOf = (price: ShownPriceRow): string =>
+  (price.outOfStockAt == null ? salePriceOf(price) : null) ??
+  regularPriceOf(price);
 
 export const displayPriceOrNull = (
-  price: PriceRowLike | null | undefined,
+  price: ShownPriceRow | null | undefined,
 ): string | null => (price == null ? null : displayPriceOf(price));
 
 export const derivedDisplayFrom = (priceInTmt: string): string | null => {
@@ -100,7 +107,7 @@ export const derivedDisplayFrom = (priceInTmt: string): string | null => {
 // Null rather than 0, so a product with no usable price sorts last and matches
 // no price range instead of leading every ascending list.
 export const cachedPriceFrom = (
-  price: PriceRowLike | null | undefined,
+  price: ShownPriceRow | null | undefined,
 ): number | null => {
   if (price == null) return null;
   const shown = parseFloat(displayPriceOf(price));

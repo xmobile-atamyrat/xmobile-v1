@@ -132,6 +132,7 @@ export default async function handler(
               priceInTmt: true,
               displayPriceTmt: true,
               salePriceTmt: true,
+              outOfStockAt: true,
             },
           })
         : [];

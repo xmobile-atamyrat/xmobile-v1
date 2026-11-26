@@ -29,6 +29,7 @@ import {
   derivedDisplayFrom,
   PriceRowLike,
   salePriceOf,
+  ShownPriceRow,
 } from '@/pages/lib/priceDisplay';
 import { ResponseApi } from '@/pages/lib/types';
 import { Prices, Prisma } from '@prisma/client';
@@ -397,7 +398,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
         }
 
         // The row's price columns as they will be once this pair is applied.
-        const after: PriceRowLike = {
+        const after: ShownPriceRow = {
           priceInTmt: data.priceInTmt ?? before.priceInTmt,
           displayPriceTmt:
             'displayPriceTmt' in data
@@ -405,7 +406,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
               : before.displayPriceTmt,
           salePriceTmt:
             'salePriceTmt' in data ? data.salePriceTmt : before.salePriceTmt,
+          // Only whether it is set matters here; the timestamp that gets
+          // stored is decided with the write below.
+          outOfStockAt: before.outOfStockAt,
         };
+        if ('isOutOfStock' in price) {
+          after.outOfStockAt = price.isOutOfStock === true ? new Date() : null;
+        }
 
         // `markChecked` is the page's refresh icon: the admin confirms the
         // price as still correct without changing it. A save that does not
@@ -436,7 +443,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           if (
             data.priceInTmt != null ||
             'displayPriceTmt' in data ||
-            'salePriceTmt' in data
+            'salePriceTmt' in data ||
+            // A sale only shows while its row is in stock.
+            ('isOutOfStock' in price && after.salePriceTmt != null)
           ) {
             const shown = cachedPriceFrom(after);
             if (shown != null) {
