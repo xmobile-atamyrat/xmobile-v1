@@ -1,4 +1,7 @@
-import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
+import {
+  priceAmountsChanged,
+  saleSetOrChanged,
+} from '@/pages/api/prices/priceCheckedAt';
 import {
   RateLike,
   rateForPrice,
@@ -298,15 +301,21 @@ const rateDerivedTmt = (
 };
 
 // Whether saving `edit` will count as the admin re-checking `price`, which
-// clears its stale warning. Mirrors the server: the refresh icon, or a changed
-// dollar or manat figure. A manat figure that merely follows a rate change
-// does not count.
+// clears its stale warning. Mirrors the server: the refresh icon, a changed
+// dollar or manat figure, or a new or changed sale price. A manat figure that
+// merely follows a rate change does not count.
 export const editChecksPrice = (
   price: Prices,
   edit: PriceEdit,
   rates: RateLike[] = [],
 ): boolean => {
   if (edit.markChecked === true) return true;
+  if (
+    'salePriceTmt' in edit &&
+    saleSetOrChanged(price, { ...price, ...edit })
+  ) {
+    return true;
+  }
   return priceAmountsChanged(edit, price, rateDerivedTmt(price, edit, rates));
 };
 

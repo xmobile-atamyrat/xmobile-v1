@@ -449,6 +449,25 @@ describe('foldSavedEdit', () => {
     expect(folded).not.toHaveProperty('markChecked');
   });
 
+  it('stamps the check date when a sale is added or changed', () => {
+    const old = new Date('2020-01-01T00:00:00Z');
+    const regular = { ...base, priceInTmt: '200', priceCheckedAt: old };
+    const onSale = { ...regular, salePriceTmt: '150' };
+
+    expect(
+      foldSavedEdit(regular, { salePriceTmt: '150' }).priceCheckedAt.getTime(),
+    ).toBeGreaterThan(old.getTime());
+    expect(
+      foldSavedEdit(onSale, { salePriceTmt: '140' }).priceCheckedAt.getTime(),
+    ).toBeGreaterThan(old.getTime());
+    expect(
+      foldSavedEdit(onSale, { salePriceTmt: '150.00' }).priceCheckedAt,
+    ).toBe(old);
+    expect(foldSavedEdit(onSale, { salePriceTmt: null }).priceCheckedAt).toBe(
+      old,
+    );
+  });
+
   it('keeps the check date on a rename or a rate-only move', () => {
     const old = new Date('2020-01-01T00:00:00Z');
     const withDate = { ...base, priceInTmt: '200', priceCheckedAt: old };

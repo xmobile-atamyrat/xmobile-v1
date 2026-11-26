@@ -20,7 +20,10 @@ import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
 } from '@/pages/api/utils/authMiddleware';
-import { priceAmountsChanged } from '@/pages/api/prices/priceCheckedAt';
+import {
+  priceAmountsChanged,
+  saleSetOrChanged,
+} from '@/pages/api/prices/priceCheckedAt';
 import {
   cachedPriceFrom,
   derivedDisplayFrom,
@@ -354,14 +357,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
               : recomputedPriceFields(data.price ?? before.price, target.rate);
           rateDerivedTmt = derived == null ? null : String(derived.priceInTmt);
         }
-        // `markChecked` is the page's refresh icon: the admin confirms the
-        // price as still correct without changing it.
-        if (
-          price.markChecked === true ||
-          priceAmountsChanged(data, before, rateDerivedTmt)
-        ) {
-          data.priceCheckedAt = new Date();
-        }
         // Presence-keyed rather than inferred from priceInTmt: the shown
         // price is an attribute an admin can pin away from the exact
         // conversion, so an edit to one must not rewrite the other.
@@ -411,6 +406,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           salePriceTmt:
             'salePriceTmt' in data ? data.salePriceTmt : before.salePriceTmt,
         };
+
+        // `markChecked` is the page's refresh icon: the admin confirms the
+        // price as still correct without changing it. A save that does not
+        // send the sale cannot set one, even if it revives a stored sale.
+        if (
+          price.markChecked === true ||
+          priceAmountsChanged(data, before, rateDerivedTmt) ||
+          ('salePriceTmt' in data && saleSetOrChanged(before, after))
+        ) {
+          data.priceCheckedAt = new Date();
+        }
 
         return { price, data, after };
       });
