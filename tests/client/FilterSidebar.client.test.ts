@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import FilterSidebar from '@/pages/components/FilterSidebar';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -435,6 +441,23 @@ describe('FilterSidebar sale filter', () => {
     await renderSidebar();
 
     expect(screen.queryByLabelText('On sale')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sale')).not.toBeInTheDocument();
+  });
+
+  it('puts the toggle in its own Sale section', async () => {
+    await renderSidebar({ showSaleFilter: true });
+
+    // Collapsing Availability leaves the sale toggle in place.
+    fireEvent.click(screen.getByText('Availability'));
+    await waitFor(() =>
+      expect(screen.queryByLabelText('In stock only')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('On sale')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Sale'));
+    await waitFor(() =>
+      expect(screen.queryByLabelText('On sale')).not.toBeInTheDocument(),
+    );
   });
 
   it('turns the sale filter on', async () => {

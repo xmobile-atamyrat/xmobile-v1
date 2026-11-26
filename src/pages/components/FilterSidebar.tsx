@@ -224,6 +224,7 @@ export default function FilterSidebar({
   const [sortByOpen, setSortByOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
+  const [saleOpen, setSaleOpen] = useState(true);
 
   // Sync with prop changes (e.g. Mode switch)
   useEffect(() => {
@@ -517,27 +518,33 @@ export default function FilterSidebar({
           </Box>
         )}
 
-        {(!saleScope || showSaleFilter) && (
+        {!saleScope && (
           <FilterSection
             title={t('availability')}
             open={availabilityOpen}
             onToggle={() => setAvailabilityOpen(!availabilityOpen)}
             variant={variant}
           >
-            {!saleScope && (
-              <FilterItem
-                label={t('inStockOnly')}
-                isSelected={inStock}
-                onClick={() => onFilterChange({ inStock: !inStock })}
-              />
-            )}
-            {showSaleFilter && (
-              <FilterItem
-                label={t('onSaleOnly')}
-                isSelected={sale}
-                onClick={() => onFilterChange({ sale: !sale })}
-              />
-            )}
+            <FilterItem
+              label={t('inStockOnly')}
+              isSelected={inStock}
+              onClick={() => onFilterChange({ inStock: !inStock })}
+            />
+          </FilterSection>
+        )}
+
+        {showSaleFilter && (
+          <FilterSection
+            title={t('sale')}
+            open={saleOpen}
+            onToggle={() => setSaleOpen(!saleOpen)}
+            variant={variant}
+          >
+            <FilterItem
+              label={t('onSaleOnly')}
+              isSelected={sale}
+              onClick={() => onFilterChange({ sale: !sale })}
+            />
           </FilterSection>
         )}
 
