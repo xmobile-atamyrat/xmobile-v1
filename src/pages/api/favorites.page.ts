@@ -1,6 +1,7 @@
 import dbClient from '@/lib/dbClient';
 import { activeFavoriteIds, whereActiveFavorite } from '@/lib/favorites';
 import {
+  byListingRank,
   inStockFirst,
   whereActiveProduct,
   whereListableProduct,
@@ -33,7 +34,7 @@ async function listFavorites(userId: string, locale: unknown) {
       brand: true,
       colors: { select: { id: true, name: true, hex: true } },
     },
-    orderBy: [inStockFirst, { createdAt: 'desc' }],
+    orderBy: [inStockFirst, byListingRank, { createdAt: 'desc' }],
   });
 
   const priceIdOf = (price: string | null) =>

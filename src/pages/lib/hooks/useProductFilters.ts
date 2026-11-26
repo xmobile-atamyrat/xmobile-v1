@@ -76,7 +76,7 @@ function sameFilters(a: FilterState, b: FilterState): boolean {
 }
 
 export function useProductFilters(
-  initialSortBy: string = SORT_OPTIONS.NEWEST,
+  initialSortBy: string = SORT_OPTIONS.DEFAULT,
 ): UseProductFiltersReturn {
   const router = useRouter();
   const [filters, setFiltersState] = useState<FilterState>(() =>

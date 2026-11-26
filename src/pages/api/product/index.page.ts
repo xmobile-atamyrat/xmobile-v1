@@ -7,7 +7,7 @@ import {
   syncProductOutOfStockFromPrices,
 } from '@/lib/outOfStock';
 import { recordPricesUpdated } from '@/lib/priceActivity';
-import { inStockFirst } from '@/lib/prismaActiveScope';
+import { byListingRank, inStockFirst } from '@/lib/prismaActiveScope';
 import {
   lockRecommendedList,
   RecommendedChange,
@@ -620,8 +620,9 @@ async function handleGetProduct(
 
   let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
     inStockFirst,
+    byListingRank,
     { createdAt: 'desc' },
-  ]; // default
+  ];
   if (sortBy) {
     switch (sortBy) {
       case SORT_OPTIONS.PRICE_ASC:
@@ -636,12 +637,14 @@ async function handleGetProduct(
       case SORT_OPTIONS.NEWEST:
         orderBy = [inStockFirst, { createdAt: 'desc' }];
         break;
-      // The admin-picked order first, then everything else newest first, so
-      // the "view all" listing continues past the picks instead of ending.
+      // The admin-picked order first, then everything else in the default
+      // order (listing number, then newest), so the "view all" listing
+      // continues past the picks instead of ending.
       case SORT_OPTIONS.RECOMMENDED:
         orderBy = [
           inStockFirst,
           { recommendedOrder: { sort: 'asc', nulls: 'last' } },
+          byListingRank,
           { createdAt: 'desc' },
         ];
         break;
@@ -1031,7 +1034,7 @@ export default async function handler(
       await dbClient.$transaction([
         dbClient.product.update({
           where: { id: existing.id },
-          data: { deletedAt: now, recommendedOrder: null },
+          data: { deletedAt: now, recommendedOrder: null, listingRank: null },
         }),
         dbClient.cartItem.deleteMany({ where: { productId: existing.id } }),
       ]);

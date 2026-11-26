@@ -477,7 +477,7 @@ describe('FilterSidebar sale filter', () => {
     fireEvent.click(screen.getByText('Clear all'));
 
     expect(onFilterChange).toHaveBeenCalledWith(
-      expect.objectContaining({ sale: false, sortBy: 'newest' }),
+      expect.objectContaining({ sale: false, sortBy: 'default' }),
     );
   });
 

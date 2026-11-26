@@ -60,6 +60,7 @@ export default function SortDropdown({
     ...(showDiscount
       ? [{ value: SORT_OPTIONS.DISCOUNT, label: t('sortBiggestDiscount') }]
       : []),
+    { value: SORT_OPTIONS.DEFAULT, label: t('sortDefault') },
     ...(showRecommended
       ? [{ value: SORT_OPTIONS.RECOMMENDED, label: t('sortRecommended') }]
       : []),
@@ -85,7 +86,7 @@ export default function SortDropdown({
             label={sortOption.label}
             isActive={
               value === sortOption.value ||
-              (!value && sortOption.value === SORT_OPTIONS.NEWEST)
+              (!value && sortOption.value === SORT_OPTIONS.DEFAULT)
             }
             onClick={() => onChange(sortOption.value)}
           />
@@ -97,7 +98,7 @@ export default function SortDropdown({
   // desktop — pill trigger, see xmobile-app-redesign/project/XMobile.dc.html:1458
   const selectedLabel =
     sortOptions.find((o) => o.value === value)?.label ||
-    sortOptions.find((o) => o.value === SORT_OPTIONS.NEWEST)?.label;
+    sortOptions.find((o) => o.value === SORT_OPTIONS.DEFAULT)?.label;
 
   return (
     <FormControl sx={{ minWidth: 170 }}>

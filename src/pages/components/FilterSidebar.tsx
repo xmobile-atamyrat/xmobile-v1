@@ -184,7 +184,7 @@ export default function FilterSidebar({
   saleScope = false,
 }: FilterSidebarProps) {
   const t = useTranslations();
-  const defaultSort = saleScope ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.NEWEST;
+  const defaultSort = saleScope ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.DEFAULT;
   const router = useRouter();
   const locale = router.locale || 'en';
 

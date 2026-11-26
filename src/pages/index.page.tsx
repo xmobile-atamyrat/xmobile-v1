@@ -87,7 +87,7 @@ const HOME_PROMO_TILES = 2;
 // Each section's "view all" opens the catalog in the same order, which keeps
 // going past what home had room for. Recommended's lists only the picks.
 const RECOMMENDED_LISTING_HREF = `/product?recommended=1&sortBy=${SORT_OPTIONS.RECOMMENDED}`;
-const NEWEST_LISTING_HREF = '/product';
+const NEWEST_LISTING_HREF = `/product?sortBy=${SORT_OPTIONS.NEWEST}`;
 const SALE_LISTING_HREF = '/sale';
 // Staff only; see ProductGridContent.
 const IMAGELESS_LISTING_HREF = '/product?imageless=1';

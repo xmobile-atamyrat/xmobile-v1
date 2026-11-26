@@ -169,6 +169,7 @@ export const X_MOBILE_DOMAIN = 'xmobile.com.tm';
 export const ALL_PRODUCTS_CATEGORY_CARD = 'ALL_PRODUCTS_CATEGORY_CARD';
 
 export const SORT_OPTIONS = {
+  DEFAULT: 'default',
   PRICE_ASC: 'price_asc',
   PRICE_DESC: 'price_desc',
   NEWEST: 'newest',

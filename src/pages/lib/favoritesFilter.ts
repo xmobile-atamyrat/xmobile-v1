@@ -50,6 +50,9 @@ function compareFor(sortBy: string, locale: string): Compare | null {
       return byPrice(-1);
     case SORT_OPTIONS.A_Z:
       return (a, b) => a.name.localeCompare(b.name, locale);
+    case SORT_OPTIONS.NEWEST:
+      return (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     default:
       return null;
   }
@@ -57,8 +60,8 @@ function compareFor(sortBy: string, locale: string): Compare | null {
 
 /**
  * The catalog's filters and sort, applied in the browser: the API sends the
- * whole favorites list, so changing them costs no request. Newest needs no
- * sorting because that is the order the list arrives in.
+ * whole favorites list, so changing them costs no request. The default order
+ * needs no sorting because that is the order the list arrives in.
  */
 export function filterAndSortFavorites(
   products: FavoriteProduct[],
