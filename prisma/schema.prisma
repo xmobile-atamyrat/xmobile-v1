@@ -290,17 +290,6 @@ model Color {
   @@unique([brandId, hex])
 }
 
-model UserVisitRecord {
-  id              String  @id @default(uuid())
-  ip              String
-  dailyVisitCount Int @default(1)
-
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  @@index([createdAt, ip])
-}
-
 model DollarRate {
   id                  Int         @id @default(autoincrement())
   rate                Float
