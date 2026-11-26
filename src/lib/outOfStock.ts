@@ -411,7 +411,11 @@ export async function retireLongOutOfStockProducts(
   await dbClient.$transaction([
     dbClient.product.updateMany({
       where: { id: { in: ids }, deletedAt: null },
-      data: { deletedAt: new Date(), recommendedOrder: null },
+      data: {
+        deletedAt: new Date(),
+        recommendedOrder: null,
+        listingRank: null,
+      },
     }),
     dbClient.cartItem.deleteMany({ where: { productId: { in: ids } } }),
     // The prices are released rather than left pointing at a row no admin

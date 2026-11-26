@@ -19,6 +19,10 @@ export const inStockFirst = {
   outOfStockAt: { sort: 'asc', nulls: 'first' },
 } satisfies Prisma.ProductOrderByWithRelationInput;
 
+export const byListingRank = {
+  listingRank: { sort: 'asc', nulls: 'last' },
+} satisfies Prisma.ProductOrderByWithRelationInput;
+
 export const whereActiveCategory: Prisma.CategoryWhereInput = {
   deletedAt: null,
 };
