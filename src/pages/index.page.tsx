@@ -702,10 +702,6 @@ export default function Home({
             </Box>
           )}
 
-          {onSale.length > 0 && (
-            <SaleSection products={onSale} platform={platform} />
-          )}
-
           {/* admin-picked products, in their order — the design's
               "Recommended for you" slot (spec 1383-1390) */}
           {recommended.length > 0 && (
@@ -732,6 +728,10 @@ export default function Home({
                 ))}
               </Box>
             </Box>
+          )}
+
+          {onSale.length > 0 && (
+            <SaleSection products={onSale} platform={platform} />
           )}
 
           {/* new arrivals grid */}
@@ -852,9 +852,6 @@ export default function Home({
                 )}
             </Box>
           )}
-          {!search.isSearching && !selectedBrand && onSale.length > 0 && (
-            <SaleSection products={onSale} platform={platform} />
-          )}
           {!search.isSearching && !selectedBrand && recommended.length > 0 && (
             <Box component="section" className={homePageClasses.mobileSection}>
               <MobileSectionHead
@@ -871,6 +868,9 @@ export default function Home({
                 ))}
               </Box>
             </Box>
+          )}
+          {!search.isSearching && !selectedBrand && onSale.length > 0 && (
+            <SaleSection products={onSale} platform={platform} />
           )}
           {/* A picked brand is the whole feed: New products would bury it. */}
           {(search.isSearching || !selectedBrand) && (

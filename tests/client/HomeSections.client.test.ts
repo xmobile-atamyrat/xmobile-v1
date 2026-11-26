@@ -191,16 +191,19 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
     expect(viewAllHrefs()).toEqual(['/product']);
   });
 
-  it('shows the products on sale above the picks, without taking them out', () => {
+  it('shows the products on sale between the picks and the newest', () => {
     renderHome(platform, { onSale: products('Pick', 2) });
 
     const headings = screen
       .getAllByRole('heading', { level: 2 })
       .map((heading) => heading.textContent);
-    expect(headings.indexOf('Hot deals')).toBeGreaterThanOrEqual(0);
-    expect(headings.indexOf('Hot deals')).toBeLessThan(
-      headings.indexOf('Recommended products'),
-    );
+    expect(
+      headings.filter((heading) =>
+        ['Recommended products', 'Hot deals', 'New Products'].includes(
+          heading ?? '',
+        ),
+      ),
+    ).toEqual(['Recommended products', 'Hot deals', 'New Products']);
     expect(screen.getByText('Limited offers at better prices')).toBeVisible();
     expect(cardNames(sectionOf('Hot deals'))).toEqual(['Pick 0', 'Pick 1']);
     expect(cardNames(sectionOf('Recommended products'))).toHaveLength(3);
