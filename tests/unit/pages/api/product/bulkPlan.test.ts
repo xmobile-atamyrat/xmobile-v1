@@ -87,6 +87,7 @@ describe('planProductUpdate variants', () => {
           usd: '100',
           tmt: '2000',
           display: '2000',
+          tmtDerived: true,
         },
       },
     ]);
@@ -104,7 +105,13 @@ describe('planProductUpdate variants', () => {
         spec: '512gb',
         colorId: undefined,
         priceId: undefined,
-        price: { name: '512gb', usd: '200', tmt: '4000', display: '4000' },
+        price: {
+          name: '512gb',
+          usd: '200',
+          tmt: '4000',
+          display: '4000',
+          tmtDerived: true,
+        },
       },
     ]);
   });
@@ -326,6 +333,7 @@ describe('planProductUpdate prices', () => {
       usd: '1000',
       tmt: '20000',
       display: '20000',
+      tmtDerived: true,
     });
     // cachedPrice caches the shown manat, not the dollars.
     expect(plan.data?.cachedPrice).toBe(20000);
@@ -340,6 +348,7 @@ describe('planProductUpdate prices', () => {
     );
     expect(plan.basePrice?.usd).toBe('123.5');
     expect(plan.basePrice?.tmt).toBe('2470');
+    expect(plan.basePrice?.tmtDerived).toBeUndefined();
   });
 
   it('takes both values as-is when both are given', () => {
@@ -652,6 +661,7 @@ describe('planProductUpdate skips unchanged values', () => {
       usd: '100',
       tmt: '2000',
       display: '2000',
+      tmtDerived: true,
     });
   });
 
@@ -786,6 +796,17 @@ describe('planPriceRows', () => {
     expect(plan.updates[0].id).toBe('pr1');
     expect(plan.updates[0].data.price).toBe('150');
     expect(plan.updates[0].data.priceInTmt).toBe('3000');
+    expect(plan.updates[0].tmtDerived).toBe(true);
+  });
+
+  it('does not mark a typed TMT as derived', () => {
+    const plan = planPriceRows(
+      [poolRow({ priceUsd: '100', priceTmt: '2100' })],
+      poolRefs(),
+      new Set(),
+    );
+
+    expect(plan.updates[0].tmtDerived).toBeUndefined();
   });
 
   it('plans nothing for a row that still matches the stored price', () => {
