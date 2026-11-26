@@ -10,7 +10,7 @@ import {
 import { usePlatform } from '@/pages/lib/PlatformContext';
 import { useProductContext } from '@/pages/lib/ProductContext';
 import { useStalePrices } from '@/pages/lib/StalePricesContext';
-import { quickAddTagOf } from '@/pages/lib/saleVariant';
+import { canQuickAddAtPrice, quickAddTagOf } from '@/pages/lib/saleVariant';
 import { AddToCartProps, ExtendedProduct } from '@/pages/lib/types';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { parseName } from '@/pages/lib/utils';
@@ -155,10 +155,14 @@ export default function ProductCard({
     }
   }
 
+  // An advertised sale price no variant is sold at gets no quick-add: it would
+  // charge another price. The shopper picks on the product page instead.
   const quickAdd =
     product != null &&
     cartProps.cartAction === 'add' &&
-    product.outOfStockAt == null ? (
+    product.outOfStockAt == null &&
+    (saleBasePrice == null ||
+      canQuickAddAtPrice(product.tags, saleBasePrice)) ? (
       // Rendered outside the card's anchors, but keep the click contained so a
       // future wrapper can't turn "add to cart" into a navigation.
       <Box onClick={(e) => e.stopPropagation()}>

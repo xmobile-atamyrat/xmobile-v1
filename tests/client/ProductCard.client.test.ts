@@ -277,6 +277,20 @@ describe('ProductCard', () => {
     });
   });
 
+  it('offers no quick-add when no variant has the advertised sale price', async () => {
+    renderCard(
+      makeProduct({
+        price: '[base]{800}',
+        tags: ['64gb [p1]', '128gb [p2]'],
+        sale: baseSale,
+      }),
+    );
+
+    await screen.findByText('-20%');
+    // The button is loaded lazily, so give it the chance to appear.
+    await expect(screen.findByTestId('add-to-cart')).rejects.toThrow();
+  });
+
   describe('stale price warning', () => {
     function withStale(tier: 'orange' | 'red', days: number) {
       vi.mocked(useStalePrices).mockReturnValue({

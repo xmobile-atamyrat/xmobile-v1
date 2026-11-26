@@ -47,6 +47,22 @@ export const quickAddTagOf = (
 };
 
 /**
+ * Whether a quick-add buys what `productPrice` shows: a product without
+ * variants does, otherwise one of its tags has to use that price id.
+ */
+export const canQuickAddAtPrice = (
+  tags: string[] | null | undefined,
+  productPrice: string | null | undefined,
+): boolean => {
+  if (tags == null || tags.length === 0) return true;
+  const basePriceId = basePriceIdOf(productPrice);
+  return (
+    basePriceId != null &&
+    tags.some((tag) => parseVariantTag(tag).priceId === basePriceId)
+  );
+};
+
+/**
  * The variant the product page opens on. Only in-stock variants count as being
  * on sale. In order: the one on sale at the base price; the first in-stock one
  * if it is on sale; the biggest discount; the first in-stock one; the first.

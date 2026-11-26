@@ -1,5 +1,6 @@
 import {
   basePriceIdOf,
+  canQuickAddAtPrice,
   pickDefaultVariant,
   quickAddTagOf,
   SaleVariantChoice,
@@ -128,6 +129,24 @@ describe('quickAddTagOf', () => {
   it('returns nothing without tags', () => {
     expect(quickAddTagOf([], '[p1]')).toBeUndefined();
     expect(quickAddTagOf(undefined, '[p1]')).toBeUndefined();
+  });
+});
+
+describe('canQuickAddAtPrice', () => {
+  const tags = ['64gb [p1]{red}', '128gb [p2]{red}'];
+
+  it('allows a price one of the tags is sold at', () => {
+    expect(canQuickAddAtPrice(tags, '[p2]{100}')).toBe(true);
+  });
+
+  it('allows a product without variants', () => {
+    expect(canQuickAddAtPrice([], '[p1]{100}')).toBe(true);
+    expect(canQuickAddAtPrice(undefined, '[p1]{100}')).toBe(true);
+  });
+
+  it('refuses a price no tag is sold at', () => {
+    expect(canQuickAddAtPrice(tags, '[base]{100}')).toBe(false);
+    expect(canQuickAddAtPrice(['64gb'], '100')).toBe(false);
   });
 });
 
