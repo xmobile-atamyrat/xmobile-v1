@@ -1,3 +1,4 @@
+import { trackServer } from '@/lib/analytics/server';
 import addCors from '@/pages/api/utils/addCors';
 import { getOrCreateGuestSessionId } from '@/pages/api/utils/guestSession';
 import { ResponseApi } from '@/pages/lib/types';
@@ -28,6 +29,7 @@ export default async function handler(
         notes: validated.notes,
         userName: validated.userName,
       });
+      trackServer(req, 'order_placed', { orderId: order.id });
       return res.status(200).json({ success: true, data: order });
     } catch (error: any) {
       console.error(filepath, error);

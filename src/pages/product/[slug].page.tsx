@@ -1,3 +1,4 @@
+import { useProductView } from '@/lib/analytics/client';
 import BASE_URL from '@/lib/ApiEndpoints';
 import AddEditProductDialog from '@/pages/components/AddEditProductDialog';
 import DeleteDialog from '@/pages/components/DeleteDialog';
@@ -332,6 +333,7 @@ function buildEditProductDialogProps(source: Product): AddEditProductProps {
 
 export default function Product({ product: initialProduct }: ProductPageProps) {
   const [product, setProduct] = useState<Product | null>(initialProduct);
+  useProductView(initialProduct?.id);
   const router = useRouter();
   const t = useTranslations();
   const { user, accessToken } = useUserContext();

@@ -1,3 +1,4 @@
+import { AnalyticsRequest, trackSearch } from '@/lib/analytics/server';
 import dbClient from '@/lib/dbClient';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import {
@@ -497,7 +498,9 @@ async function handleGetProduct(
     locale?: string | string[];
     limit?: string;
   },
-  whereOptions: ProductWhereOptions = {},
+  whereOptions: ProductWhereOptions,
+  /** The storefront request, for the `search` analytics event. */
+  analyticsReq?: AnalyticsRequest,
 ): Promise<{ resp: ResponseApi; status: number }> {
   const { productId, productSlug, page, sortBy, count, facets, locale, limit } =
     query;
@@ -674,6 +677,23 @@ async function handleGetProduct(
     }),
   );
   const productsWithDisplayPrice = await withSale(pricedProducts);
+
+  // Page 1 only, so infinite scroll doesn't count the search again. Staff
+  // requests (admin tools searching the catalog) aren't customer demand.
+  if (
+    analyticsReq != null &&
+    query.searchKeyword &&
+    parsedPage === 1 &&
+    !whereOptions.includeImageless
+  ) {
+    trackSearch(analyticsReq, query.searchKeyword, {
+      // A short page is the whole result set; a full one needs the count.
+      results:
+        products.length < pageSize
+          ? products.length
+          : () => dbClient.product.count({ where }),
+    });
+  }
 
   return {
     resp: {
@@ -976,9 +996,11 @@ export default async function handler(
     try {
       // Only requests that send a token pay for the staff lookup.
       const includeImageless = await hasStaffBearer(req);
-      const { resp, status } = await handleGetProduct(query, {
-        includeImageless,
-      });
+      const { resp, status } = await handleGetProduct(
+        query,
+        { includeImageless },
+        req,
+      );
       return res.status(status).json(resp);
     } catch (error) {
       console.error(filepath, error);

@@ -1,3 +1,4 @@
+import { trackServer } from '@/lib/analytics/server';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -20,6 +21,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
   if (method === 'POST') {
     try {
       const { resp, status } = await createOrderController(body, userId!);
+      if (resp.success && resp.data != null) {
+        trackServer(req, 'order_placed', { orderId: resp.data.id }, { userId });
+      }
       return res.status(status).json(resp);
     } catch (error: any) {
       console.error(filepath, error);

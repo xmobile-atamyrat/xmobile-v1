@@ -181,7 +181,6 @@ export const SERIES_LABEL_KEYS = {
   pageviewsWeb: 'analyticsPageviewsWeb',
   pageviewsApp: 'analyticsPageviewsApp',
   revenue: 'analyticsRevenue',
-  ordersCompleted: 'analyticsOrdersCompleted',
   funnelProductView: 'analyticsFunnelProductView',
   funnelCartAdd: 'analyticsFunnelCartAdd',
   funnelOrderPlaced: 'analyticsFunnelOrderPlaced',

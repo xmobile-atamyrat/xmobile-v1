@@ -1,0 +1,115 @@
+import type { KpiData, MetricUnit } from '@/lib/analytics/metrics/types';
+import { fontClassName, muted, navy, onlineGreen, red } from '@/styles/theme';
+import { Box, Typography } from '@mui/material';
+import { useTranslations } from 'next-intl';
+
+import { cardSx } from './WidgetCard';
+import { formatValue, kpiDelta } from './format';
+
+type Props = {
+  title: string;
+  unit: MetricUnit;
+  /** null when the widget failed to load. */
+  data: KpiData | null;
+  locale: string | undefined;
+};
+
+const DELTA_COLORS = { up: onlineGreen, down: red, flat: muted } as const;
+const DELTA_ARROWS = { up: '▲', down: '▼', flat: '–' } as const;
+
+/** A single number, with its change against the previous period. */
+export default function KpiCard({ title, unit, data, locale }: Props) {
+  const t = useTranslations();
+  const delta = data && kpiDelta(data.value, data.previous, unit, locale);
+  return (
+    <Box
+      component="section"
+      aria-label={title}
+      sx={{ ...cardSx, display: 'flex', flexDirection: 'column', gap: 0.5 }}
+    >
+      <Typography
+        fontSize={13}
+        color={muted}
+        className={fontClassName.className}
+        sx={{ lineHeight: 1.3 }}
+      >
+        {title}
+      </Typography>
+      {data ? (
+        <Typography
+          fontWeight={700}
+          fontSize={22}
+          color={navy}
+          className={fontClassName.className}
+          sx={{ wordBreak: 'break-word', lineHeight: 1.2 }}
+        >
+          {formatValue(data.value, unit, locale)}
+        </Typography>
+      ) : (
+        <Typography
+          fontSize={13}
+          color="error"
+          role="alert"
+          className={fontClassName.className}
+        >
+          {t('analyticsWidgetError')}
+        </Typography>
+      )}
+      {delta && (
+        <Typography
+          fontSize={12}
+          className={fontClassName.className}
+          data-testid="kpi-delta"
+          data-direction={delta.direction}
+        >
+          <Box
+            component="span"
+            sx={{ color: DELTA_COLORS[delta.direction], fontWeight: 600 }}
+          >
+            {`${DELTA_ARROWS[delta.direction]} ${
+              delta.points
+                ? t('analyticsPercentPoints', { value: delta.text })
+                : delta.text
+            }`}
+          </Box>
+          <Box component="span" sx={{ color: muted }}>
+            {` ${t('analyticsVsPrevious')}`}
+          </Box>
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+/** A plain number card (user count, Telekom balance) without a delta. */
+export function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | null;
+}) {
+  return (
+    <Box
+      component="section"
+      aria-label={title}
+      sx={{ ...cardSx, display: 'flex', flexDirection: 'column', gap: 0.5 }}
+    >
+      <Typography
+        fontSize={13}
+        color={muted}
+        className={fontClassName.className}
+      >
+        {title}
+      </Typography>
+      <Typography
+        fontWeight={700}
+        fontSize={22}
+        color={navy}
+        className={fontClassName.className}
+      >
+        {value ?? '—'}
+      </Typography>
+    </Box>
+  );
+}

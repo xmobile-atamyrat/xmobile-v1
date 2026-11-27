@@ -1,3 +1,4 @@
+import { trackServer } from '@/lib/analytics/server';
 import addCors from '@/pages/api/utils/addCors';
 import withAuth, {
   AuthenticatedRequest,
@@ -108,6 +109,7 @@ async function handler(
             },
           },
         });
+        trackServer(req, 'chat_started', {}, { userId });
 
         try {
           const notifications = await createNotificationsForSessionRequest(
