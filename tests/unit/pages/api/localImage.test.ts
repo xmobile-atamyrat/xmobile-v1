@@ -21,7 +21,7 @@ vi.mock('@/lib/dbClient', () => ({
     category: { findMany: vi.fn().mockResolvedValue([]), update: vi.fn() },
   },
 }));
-vi.mock('@/pages/api/product/index.page', () => ({
+vi.mock('@/lib/productImages', () => ({
   createCompressedImg: vi.fn(),
   createCompressedImgUrl: vi.fn(),
 }));

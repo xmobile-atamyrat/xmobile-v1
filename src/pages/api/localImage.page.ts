@@ -2,7 +2,7 @@ import dbClient from '@/lib/dbClient';
 import {
   createCompressedImg,
   createCompressedImgUrl,
-} from '@/pages/api/product/index.page';
+} from '@/lib/productImages';
 import addCors from '@/pages/api/utils/addCors';
 import { requireStaffBearerAuth } from '@/pages/api/utils/staffAuth';
 import fs from 'fs';

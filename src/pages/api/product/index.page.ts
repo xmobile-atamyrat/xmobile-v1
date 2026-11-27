@@ -33,6 +33,10 @@ import {
   fileToken,
   parseImageOrder,
 } from '@/lib/productImageOrder';
+import {
+  createCompressedImg,
+  deleteProductImageFiles,
+} from '@/lib/productImages';
 import { revalidateInBackground } from '@/lib/revalidate';
 import { getOnSaleProducts, withSale } from '@/lib/saleProducts';
 import {
@@ -51,15 +55,11 @@ import {
   requireStaffBearerAuth,
 } from '@/pages/api/utils/staffAuth';
 import {
-  IMG_COMPRESSION_MAX_QUALITY,
-  IMG_COMPRESSION_MIN_QUALITY,
-  IMG_COMPRESSION_OPTIONS,
   PRODUCTS_PER_PAGE,
   RECOMMENDED_FULL_MESSAGE,
   SORT_OPTIONS,
   localeOptions,
 } from '@/pages/lib/constants';
-import { isRemoteImageUrl } from '@/pages/lib/mediaUrls';
 import { ExtendedProduct, ResponseApi, SortOption } from '@/pages/lib/types';
 import {
   cachedPriceFrom,
@@ -73,11 +73,8 @@ import {
   slugify,
 } from '@/pages/lib/utils';
 import { Prisma, Product } from '@prisma/client';
-import fs from 'fs';
 import multiparty from 'multiparty';
 import { NextApiRequest, NextApiResponse } from 'next';
-import path from 'path';
-import sharp from 'sharp';
 
 export const config = {
   api: {
@@ -130,90 +127,6 @@ interface CreateProductReturnType {
   priceLinkChanges?: PriceLinkChange[];
   /** Edit only. How the save moved the product on the recommended list. */
   recommendedChange?: RecommendedChange | null;
-}
-
-// changes url from images/products/img -> images/compressed/products/img
-export function createCompressedImgUrl(
-  imgUrl: string,
-  type: 'bad' | 'good',
-): string | null {
-  // A pasted external URL has no file on disk, so no compressed copy either.
-  if (isRemoteImageUrl(imgUrl)) return null;
-
-  // Windows uses '\' in path format, replace it with '/'
-  const normalizedUrl = imgUrl.replace(/\\/g, '/');
-  const imgName = path.basename(imgUrl);
-
-  if (!normalizedUrl.includes('products/')) {
-    console.error(
-      filepath,
-      "incorrect imgUrl, products folder doesn't exist in image path: ",
-      imgUrl,
-    );
-  }
-
-  return `${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/${imgName}`;
-}
-
-/** Removes a product image and its compressed copies from disk. */
-export function deleteProductImageFiles(imgUrl: string) {
-  if (isRemoteImageUrl(imgUrl)) return;
-  [
-    imgUrl,
-    createCompressedImgUrl(imgUrl, 'bad'),
-    createCompressedImgUrl(imgUrl, 'good'),
-  ].forEach((file) => {
-    if (file && fs.existsSync(file)) fs.unlinkSync(file);
-  });
-}
-
-export async function createCompressedImg(
-  imgUrl: string,
-  type: 'bad' | 'good',
-): Promise<Buffer> | null {
-  if (imgUrl != null && fs.existsSync(imgUrl)) {
-    try {
-      if (
-        !fs.existsSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`)
-      ) {
-        fs.mkdirSync(`${process.env.COMPRESSED_PRODUCT_IMAGES_DIR}/${type}/`, {
-          recursive: true,
-        });
-      }
-      const img = fs.readFileSync(imgUrl);
-      let compressedImg: Buffer = img;
-
-      const targetUrl = createCompressedImgUrl(imgUrl, type);
-      const targetSize = IMG_COMPRESSION_OPTIONS[type].size;
-      const targetWidth =
-        IMG_COMPRESSION_OPTIONS[type].width === 0
-          ? null
-          : IMG_COMPRESSION_OPTIONS[type].width;
-      let quality = IMG_COMPRESSION_MAX_QUALITY;
-
-      while (
-        compressedImg.length > targetSize &&
-        quality > IMG_COMPRESSION_MIN_QUALITY
-      ) {
-        compressedImg = await sharp(img)
-          .resize({ width: targetWidth })
-          // JPEG has no alpha; without this, transparent pixels turn black.
-          .flatten({ background: '#ffffff' })
-          .jpeg({ quality, progressive: true })
-          .toBuffer();
-        quality -= 10;
-      }
-      fs.writeFileSync(targetUrl, new Uint8Array(compressedImg));
-
-      return compressedImg;
-    } catch (error) {
-      console.error(filepath, 'function createCompressedImg:', error);
-      return null;
-    }
-  } else {
-    console.error(filepath, `image not found: ${imgUrl}`);
-    return null;
-  }
 }
 
 // Kept images, then pasted URLs, then uploads, rearranged by the admin's
