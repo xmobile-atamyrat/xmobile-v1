@@ -627,3 +627,41 @@ model OrderNumberCounter {
   
   @@map("order_number_counter")
 }
+
+// See docs/analytics-design.md. Raw events are deleted after 90 days.
+enum AnalyticsPlatform {
+  WEB
+  APP
+}
+
+model AnalyticsEvent {
+  id          BigInt            @id @default(autoincrement())
+  occurredAt  DateTime          @default(now())
+  name        String
+  // From the xa_vid / xa_sid cookies
+  visitorId   String
+  sessionId   String?
+  userId      String?
+  // Product, category or order id, depending on the event
+  entityId    String?
+  platform    AnalyticsPlatform
+  locale      String
+  props       Json?
+
+  @@index([occurredAt])
+  @@index([name, occurredAt])
+}
+
+// Daily rollups of AnalyticsEvent and UserOrder, kept forever.
+model AnalyticsDaily {
+  day             DateTime
+  metric          String
+  // What the metric is split by, e.g. 'locale' or 'product'. '' = the day's total.
+  dimension       String   @default("")
+  // Which part of that split, e.g. 'tk' or a product id. '' = the day's total.
+  // So (pageviews, locale, tk, 4310) means 4310 page views in Turkmen that day.
+  dimensionValue  String   @default("")
+  value           BigInt
+
+  @@id([metric, day, dimension, dimensionValue])
+}

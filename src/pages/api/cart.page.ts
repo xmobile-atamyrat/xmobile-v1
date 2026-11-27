@@ -1,3 +1,4 @@
+import { trackServer } from '@/lib/analytics/server';
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { unavailableVariantTags } from '@/lib/variantStock';
@@ -48,6 +49,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
           where: { id: cartItemExist.id },
           data: { quantity },
         });
+        trackServer(req, 'cart_add', { productId, qty: quantity }, { userId });
         res.status(200).json({ success: true, data: { quantity } });
         return;
       }
@@ -72,6 +74,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse<ResponseApi>) {
             selectedVariant: selectedVariant ?? null,
           },
         });
+        // Adds only: quantity edits (PUT) and removals aren't cart_add.
+        trackServer(req, 'cart_add', { productId, qty: quantity }, { userId });
 
         res.status(200).json({ success: true, data: { quantity } });
       } else {

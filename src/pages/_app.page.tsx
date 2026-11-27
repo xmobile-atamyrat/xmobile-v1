@@ -1,3 +1,4 @@
+import { initAnalytics } from '@/lib/analytics/client';
 import Loader from '@/pages/components/Loader';
 import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
@@ -71,6 +72,9 @@ export default function App({ Component, pageProps }: AppProps) {
   const noIndex = pageProps?.seoData === undefined || seoData?.noIndex === true;
   const siteVerificationKey =
     process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION_KEY;
+
+  // First-party analytics: automatic page views, batched beacons.
+  useEffect(() => initAnalytics(), []);
 
   // Register Service Worker for notifications (skip in WebView)
   useEffect(() => {

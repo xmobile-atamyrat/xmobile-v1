@@ -1,3 +1,4 @@
+import { useCategoryView } from '@/lib/analytics/client';
 import BASE_URL from '@/lib/ApiEndpoints';
 import CategoryCard from '@/pages/components/CategoryCard';
 import Layout from '@/pages/components/Layout';
@@ -247,6 +248,7 @@ export default function CategoryPage({
   const t = useTranslations();
   const { setSelectedCategoryId } = useCategoryContext();
   const { setProducts } = useProductContext();
+  useCategoryView(category?.id);
 
   // Update selected category ID in context for drawer highlighting
   useEffect(() => {

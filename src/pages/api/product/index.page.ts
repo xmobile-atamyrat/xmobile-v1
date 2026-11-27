@@ -1,3 +1,4 @@
+import { AnalyticsRequest, trackSearch } from '@/lib/analytics/server';
 import dbClient from '@/lib/dbClient';
 import { syncBrandProductCount } from '@/lib/brandProductCount';
 import {
@@ -486,6 +487,32 @@ async function findPageInRankedOrder(
   return pageIds.flatMap((id) => rowsById.get(id) ?? []);
 }
 
+/** Query params that narrow a storefront listing beyond its keyword. */
+const LISTING_FILTER_KEYS = [
+  'categoryId',
+  'categoryIds',
+  'brandIds',
+  'colorIds',
+  'colors',
+  'minPrice',
+  'maxPrice',
+  'inStock',
+  'recommended',
+  'sale',
+  'imageless',
+] as const satisfies readonly (keyof ProductFilterQuery)[];
+
+function hasListingFilters(query: ProductFilterQuery): boolean {
+  return LISTING_FILTER_KEYS.some((key) => {
+    const value = query[key];
+    return (
+      value != null &&
+      value !== '' &&
+      !(Array.isArray(value) && value.length === 0)
+    );
+  });
+}
+
 async function handleGetProduct(
   query: ProductFilterQuery & {
     productId?: string;
@@ -497,7 +524,9 @@ async function handleGetProduct(
     locale?: string | string[];
     limit?: string;
   },
-  whereOptions: ProductWhereOptions = {},
+  whereOptions: ProductWhereOptions,
+  /** The storefront request, for the `search` analytics event. */
+  analyticsReq?: AnalyticsRequest,
 ): Promise<{ resp: ResponseApi; status: number }> {
   const { productId, productSlug, page, sortBy, count, facets, locale, limit } =
     query;
@@ -674,6 +703,32 @@ async function handleGetProduct(
     }),
   );
   const productsWithDisplayPrice = await withSale(pricedProducts);
+
+  // Page 1 only, so infinite scroll doesn't count the search again. Staff
+  // requests (admin tools searching the catalog) aren't customer demand.
+  if (
+    analyticsReq != null &&
+    query.searchKeyword &&
+    parsedPage === 1 &&
+    !whereOptions.includeImageless
+  ) {
+    const { searchKeyword } = query;
+    trackSearch(analyticsReq, searchKeyword, {
+      // Matches for the keyword alone, so a term searched inside a narrow
+      // filter isn't counted as "we don't stock it". Without filters a short
+      // page is that whole set; otherwise it costs a count, which only runs
+      // for the term the visitor settled on.
+      results:
+        !saleOnly && !hasListingFilters(query) && products.length < pageSize
+          ? products.length
+          : async () => {
+              const keywordWhere = await buildProductWhere({ searchKeyword });
+              return keywordWhere == null
+                ? 0
+                : dbClient.product.count({ where: keywordWhere });
+            },
+    });
+  }
 
   return {
     resp: {
@@ -976,9 +1031,11 @@ export default async function handler(
     try {
       // Only requests that send a token pay for the staff lookup.
       const includeImageless = await hasStaffBearer(req);
-      const { resp, status } = await handleGetProduct(query, {
-        includeImageless,
-      });
+      const { resp, status } = await handleGetProduct(
+        query,
+        { includeImageless },
+        req,
+      );
       return res.status(status).json(resp);
     } catch (error) {
       console.error(filepath, error);

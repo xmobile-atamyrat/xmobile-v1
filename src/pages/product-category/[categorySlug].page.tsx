@@ -1,3 +1,4 @@
+import { useCategoryView } from '@/lib/analytics/client';
 import BASE_URL from '@/lib/ApiEndpoints';
 import ProductGridContent from '@/pages/components/ProductGridContent';
 import { fetchProducts } from '@/pages/lib/apis';
@@ -198,6 +199,7 @@ export default function ProductCategoryPage({
   categoryPath,
   initialProducts,
 }: ProductCategoryPageProps) {
+  useCategoryView(category?.id);
   return (
     <ProductGridContent
       landingCategoryId={category?.id}

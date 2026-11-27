@@ -11,12 +11,32 @@ const isWeakWord = (word: string) =>
   word.length < 2 || LOCALE_JSON_SKELETON.includes(word);
 
 /**
+ * Drops NUL and unpaired UTF-16 surrogates. Postgres rejects both in a text
+ * parameter, so a keyword like "/a%00b" made the whole search request fail.
+ * Iterates by code point (no lookbehind regex, which old iOS Safari lacks).
+ */
+function withoutUnstorableChars(value: string): string {
+  return Array.from(value)
+    .filter((char) => {
+      if (char === '\u0000') return false;
+      const code = char.charCodeAt(0);
+      // A paired surrogate arrives as one 2-unit char; a lone one as 1 unit.
+      return !(char.length === 1 && code >= 0xd800 && code <= 0xdfff);
+    })
+    .join('');
+}
+
+/**
  * Splits a query into terms. A weak word, like the "s" in "galaxy s", would
  * match nearly anything on its own, so it stays attached to its neighbour and
  * is searched as part of that phrase.
  */
 export function productSearchTerms(keyword: string): string[] {
-  const words = keyword.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const words = withoutUnstorableChars(keyword)
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
   const terms: string[] = [];
   let leadingWeak: string[] = [];
 

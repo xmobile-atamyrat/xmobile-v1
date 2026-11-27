@@ -378,7 +378,7 @@ export default function Profile() {
     {
       icon: <BarChart3 className={profileClasses.icon.primary} />,
       label: t('analytics'),
-      onClick: () => router.push('/analytics'),
+      onClick: () => router.push('/admin/analytics'),
     },
     {
       icon: <ScrollText className={profileClasses.icon.primary} />,

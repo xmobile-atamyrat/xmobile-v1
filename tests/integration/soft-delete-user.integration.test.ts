@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { createMocks } from 'node-mocks-http';
@@ -20,6 +22,24 @@ function getSetCookie(res: {
 }): string {
   const h = res.getHeader('Set-Cookie');
   return Array.isArray(h) ? h.join(';') : String(h ?? '');
+}
+
+/** An analytics event naming `userId`; returns its id. */
+async function analyticsEventFor(
+  prisma: PrismaClient,
+  userId: string,
+): Promise<bigint> {
+  const row = await prisma.analyticsEvent.create({
+    data: {
+      name: 'page_view',
+      visitorId: randomUUID(),
+      userId,
+      platform: 'WEB',
+      locale: 'ru',
+      props: { path: '/' },
+    },
+  });
+  return row.id;
 }
 
 /** Force a user's deletedAt to a specific point in the past (or null). */
@@ -255,6 +275,32 @@ describe('Soft-delete user lifecycle (integration)', () => {
       expect(row).toBeNull();
     });
 
+    it('keeps the analytics events of a permanently deleted account, without the user', async () => {
+      const session = await signupTestUser('sd-expire-analytics');
+      const eventId = await analyticsEventFor(prisma, session.userId);
+      await setDeletedAt(prisma, session.userId, GRACE_DAYS + 1);
+
+      const signin = (await import('@/pages/api/user/signin.page')).default;
+      const { req, res } = createMocks({
+        method: 'POST',
+        url: '/api/user/signin',
+        body: { email: session.email, password: TEST_PASSWORD },
+      });
+      await signin(
+        req as unknown as NextApiRequest,
+        res as unknown as NextApiResponse,
+      );
+
+      expect(JSON.parse(res._getData() as string).message).toBe(
+        'accountPermanentlyDeleted',
+      );
+      const event = await prisma.analyticsEvent.findUnique({
+        where: { id: eventId },
+      });
+      expect(event).not.toBeNull();
+      expect(event?.userId).toBeNull();
+    });
+
     it('rejects wrong password before touching a soft-deleted account', async () => {
       const session = await signupTestUser('sd-wrongpw');
       await setDeletedAt(prisma, session.userId, GRACE_DAYS + 5);
@@ -316,6 +362,29 @@ describe('Soft-delete user lifecycle (integration)', () => {
       expect(recentRow?.deletedAt).not.toBeNull();
       expect(activeRow).not.toBeNull();
       expect(activeRow?.deletedAt).toBeNull();
+    });
+
+    it('detaches analytics events from purged accounts only', async () => {
+      const expired = await signupTestUser('sd-job-analytics-expired');
+      const recent = await signupTestUser('sd-job-analytics-recent');
+      const expiredEvent = await analyticsEventFor(prisma, expired.userId);
+      const recentEvent = await analyticsEventFor(prisma, recent.userId);
+      await setDeletedAt(prisma, expired.userId, GRACE_DAYS + 2);
+      await setDeletedAt(prisma, recent.userId, GRACE_DAYS - 2);
+
+      const { accountDeletionJob } = await import(
+        '../../scripts/batch-runner/jobs/account-deletion'
+      );
+      await accountDeletionJob.run();
+
+      const events = await prisma.analyticsEvent.findMany({
+        where: { id: { in: [expiredEvent, recentEvent] } },
+        orderBy: { id: 'asc' },
+      });
+      expect(events.map((e) => e.userId)).toEqual([null, recent.userId]);
+      expect(
+        await prisma.user.findUnique({ where: { id: expired.userId } }),
+      ).toBeNull();
     });
 
     it('is configured as a daily cron job', async () => {

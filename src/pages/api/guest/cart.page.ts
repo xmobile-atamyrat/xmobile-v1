@@ -1,3 +1,4 @@
+import { trackServer } from '@/lib/analytics/server';
 import dbClient from '@/lib/dbClient';
 import { whereActiveProduct } from '@/lib/prismaActiveScope';
 import { unavailableVariantTags } from '@/lib/variantStock';
@@ -123,6 +124,7 @@ export default async function handler(
           where: { id: existing.id },
           data: { quantity },
         });
+        trackServer(req, 'cart_add', { productId, qty: quantity });
         return res.status(200).json({ success: true, data: { quantity } });
       }
       if (existing) {
@@ -139,6 +141,8 @@ export default async function handler(
           selectedVariant: selectedVariant ?? null,
         },
       });
+      // Adds only: quantity edits (PUT) and removals aren't cart_add.
+      trackServer(req, 'cart_add', { productId, qty: quantity });
       return res.status(200).json({ success: true, data: { quantity } });
     } catch (error) {
       logRequestError(filepath, error);
