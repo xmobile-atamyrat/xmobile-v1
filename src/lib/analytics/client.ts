@@ -55,6 +55,12 @@ export const RELOAD_DEDUPE_MS = 5_000;
 export const LAST_PAGE_VIEW_STORAGE_KEY = 'xa_lpv';
 
 /**
+ * Set while an ADMIN or SUPERUSER is signed in on this browser, so the next
+ * page load stops tracking before the session has even loaded.
+ */
+export const STAFF_OPT_OUT_STORAGE_KEY = 'xa_staff';
+
+/**
  * Staff-only pages. Matched on whole path segments, so `/admin` and
  * `/admin/banners` are excluded but `/administrator` is not.
  */
@@ -130,6 +136,8 @@ let cachedDevice: AnalyticsDevice | null = null;
 let cachedPlatform: AnalyticsPlatform | null = null;
 // Whether this page load repeats the previous load's page view; computed once.
 let reloadDuplicate: boolean | null = null;
+// Staff aren't tracked (see setStaffOptOut). null until first read.
+let staffOptOut: boolean | null = null;
 // Events tracked while the page is still being prerendered.
 let prerenderQueue: Array<() => void> = [];
 // Bumped on every routeChangeStart, so an entity view is recorded once per
@@ -419,6 +427,51 @@ function onPrerenderingChange() {
 }
 
 // ---------------------------------------------------------------------------
+// Staff opt-out
+// ---------------------------------------------------------------------------
+
+function isStaffOptedOut(): boolean {
+  if (staffOptOut == null) {
+    try {
+      staffOptOut =
+        window.localStorage.getItem(STAFF_OPT_OUT_STORAGE_KEY) === '1';
+    } catch {
+      staffOptOut = false;
+    }
+  }
+  return staffOptOut;
+}
+
+/**
+ * Stops (or resumes) tracking for a signed-in ADMIN or SUPERUSER, and
+ * remembers it for the next page load. Turning it on also drops what's
+ * queued, e.g. the page view recorded before the session loaded. The server
+ * drops staff events too; this saves the requests. Never throws.
+ */
+export function setStaffOptOut(staff: boolean): void {
+  try {
+    if (!isBrowser()) return;
+    staffOptOut = staff;
+    if (staff) {
+      queue = [];
+      prerenderQueue = [];
+      if (flushTimer != null) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+    }
+    try {
+      if (staff) window.localStorage.setItem(STAFF_OPT_OUT_STORAGE_KEY, '1');
+      else window.localStorage.removeItem(STAFF_OPT_OUT_STORAGE_KEY);
+    } catch {
+      // Storage blocked: the opt-out still holds for this page load.
+    }
+  } catch {
+    // Never throw from analytics.
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Sending
 // ---------------------------------------------------------------------------
 
@@ -526,7 +579,7 @@ export function track<N extends ClientEventName>(
   props: EventProps<N>,
 ): void {
   try {
-    if (!isBrowser()) return;
+    if (!isBrowser() || isStaffOptedOut()) return;
     if (isPrerendering()) {
       // Not seen by anyone yet: replay once the visitor opens the page.
       if (prerenderQueue.length === 0) {
