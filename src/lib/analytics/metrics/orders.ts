@@ -6,6 +6,7 @@ import { SERIES_LABEL_KEYS } from './catalog';
 import {
   eventSumUntil,
   round2,
+  storedOnlyTo,
   sumDailyBy,
   uniqueVisitors,
   type KpiRange,
@@ -86,6 +87,24 @@ function funnelSelect(from: string, to: string): Prisma.Sql {
       (SELECT count(*) FROM s4)::bigint AS order_completed`;
 }
 
+const emptyFunnel = (): Record<FunnelStep, number> =>
+  Object.fromEntries(FUNNEL_STEPS.map((step) => [step, 0])) as Record<
+    FunnelStep,
+    number
+  >;
+
+/** Sum of the stored daily funnels over `from`..`to`. */
+async function storedFunnel(
+  from: string,
+  to: string,
+): Promise<Record<FunnelStep, number>> {
+  const rows = await sumDailyBy(STORED.funnel, DIM.step, from, to);
+  const byStep = new Map(rows.map((r) => [r.key, r.value]));
+  return Object.fromEntries(
+    FUNNEL_STEPS.map((step) => [step, byStep.get(step) ?? 0]),
+  ) as Record<FunnelStep, number>;
+}
+
 /** Exact funnel over `from`..`to` from raw events. */
 export async function rawFunnel(
   from: string,
@@ -161,20 +180,24 @@ export const ordersWidgets = {
     }),
 
   /**
-   * Exact inside the raw window. Further back it sums the stored daily
-   * funnels, which only see journeys that happened within one day.
+   * Exact inside the raw window. A range that starts before it is split at
+   * the window's first day, like kpi_visitors: the older days sum their
+   * stored daily funnels (which only see journeys within one day, and count
+   * a visitor once per day), the rest is counted exactly from raw events.
+   * So today is always live, whatever the range's start.
    */
   funnel: async ({ from, to, ctx }) => {
-    let values: Record<FunnelStep, number>;
-    if (from >= ctx.rawFrom) {
-      values = await rawFunnel(from, to);
-    } else {
-      const rows = await sumDailyBy(STORED.funnel, DIM.step, from, to);
-      const byStep = new Map(rows.map((r) => [r.key, r.value]));
-      values = Object.fromEntries(
-        FUNNEL_STEPS.map((step) => [step, byStep.get(step) ?? 0]),
-      ) as Record<FunnelStep, number>;
-    }
+    const [old, recent] = await Promise.all([
+      from < ctx.rawFrom
+        ? storedFunnel(from, storedOnlyTo(to, ctx))
+        : emptyFunnel(),
+      to >= ctx.rawFrom
+        ? rawFunnel(from < ctx.rawFrom ? ctx.rawFrom : from, to)
+        : emptyFunnel(),
+    ]);
+    const values = Object.fromEntries(
+      FUNNEL_STEPS.map((step) => [step, old[step] + recent[step]]),
+    ) as Record<FunnelStep, number>;
     return {
       kind: 'funnel',
       steps: FUNNEL_STEPS.map((step) => ({

@@ -115,6 +115,19 @@ export default function AnalyticsControls({
     }
   };
 
+  // Both rows pick dates in a way, so each says what it controls.
+  const rowLabel = (key: string) => (
+    <Typography
+      fontSize={13}
+      fontWeight={600}
+      color={muted}
+      className={fontClassName.className}
+      aria-hidden
+    >
+      {t(key)}
+    </Typography>
+  );
+
   const dateInputProps = (testId: string) => ({
     min: MIN_ANALYTICS_DAY,
     max: today,
@@ -140,8 +153,9 @@ export default function AnalyticsControls({
       <Box
         role="group"
         aria-label={t('analyticsRangeLabel')}
-        className="flex flex-row flex-wrap gap-2"
+        className="flex flex-row flex-wrap items-center gap-2"
       >
+        {rowLabel('analyticsRangeLabel')}
         {([...RANGE_PRESETS, 'custom'] as RangeChoice[]).map((value) => {
           const selected = value === choice;
           return (
@@ -203,27 +217,32 @@ export default function AnalyticsControls({
           appliedLabel
         )}
 
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={granularity}
-          aria-label={t('analyticsGranularityLabel')}
-          onChange={(_event, value: Granularity | null) => {
-            if (value) onGranularity(value);
-          }}
+        <Box
+          className="flex flex-row items-center gap-2"
           sx={{ ml: { sm: 'auto' } }}
         >
-          {GRANULARITIES.map((value) => (
-            <ToggleButton
-              key={value}
-              value={value}
-              className={fontClassName.className}
-              sx={{ textTransform: 'none', px: 1.5, py: 0.5 }}
-            >
-              {t(GRANULARITY_LABEL_KEYS[value])}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+          {rowLabel('analyticsGranularityLabel')}
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={granularity}
+            aria-label={t('analyticsGranularityLabel')}
+            onChange={(_event, value: Granularity | null) => {
+              if (value) onGranularity(value);
+            }}
+          >
+            {GRANULARITIES.map((value) => (
+              <ToggleButton
+                key={value}
+                value={value}
+                className={fontClassName.className}
+                sx={{ textTransform: 'none', px: 1.5, py: 0.5 }}
+              >
+                {t(GRANULARITY_LABEL_KEYS[value])}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {error && (

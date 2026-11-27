@@ -187,5 +187,24 @@ export const SERIES_LABEL_KEYS = {
   funnelOrderCompleted: 'analyticsFunnelOrderCompleted',
 } as const;
 
+/**
+ * A one-sentence definition shown behind an info icon next to the title, for
+ * widgets whose name alone is ambiguous. Same five-locale rule as labelKey.
+ */
+export const WIDGET_HINT_KEYS: Partial<Record<MetricId, string>> = {
+  kpi_visitors: 'analyticsVisitorsHint',
+  kpi_sessions: 'analyticsSessionsHint',
+  kpi_pageviews: 'analyticsPageviewsHint',
+  kpi_orders_placed: 'analyticsOrdersPlacedHint',
+  kpi_conversion: 'analyticsConversionRateHint',
+  kpi_revenue: 'analyticsRevenueHint',
+  kpi_orders_completed: 'analyticsOrdersCompletedHint',
+  kpi_aov: 'analyticsAverageOrderValueHint',
+  revenue: 'analyticsRevenueHint',
+  funnel: 'analyticsFunnelHint',
+  zero_result_searches: 'analyticsZeroResultSearchesHint',
+  top_referrers: 'analyticsTopReferrersHint',
+};
+
 export const widgetMeta = (id: string): WidgetMeta | undefined =>
   WIDGETS.find((w) => w.id === id);

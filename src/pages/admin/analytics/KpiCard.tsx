@@ -3,11 +3,13 @@ import { fontClassName, muted, navy, onlineGreen, red } from '@/styles/theme';
 import { Box, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 
-import { cardSx } from './WidgetCard';
+import { cardSx, InfoHint } from './WidgetCard';
 import { formatValue, kpiDelta } from './format';
 
 type Props = {
   title: string;
+  /** Definition behind an info icon next to the title. */
+  hint?: string;
   unit: MetricUnit;
   /** null when the widget failed to load. */
   data: KpiData | null;
@@ -22,8 +24,24 @@ const DELTA_LABEL_KEYS = {
   flat: 'analyticsDeltaFlat',
 } as const;
 
+/**
+ * The title with its info icon glued to the last word, so a wrapping title
+ * never leaves the icon alone on a line.
+ */
+function TitleWithHint({ title, hint }: { title: string; hint: string }) {
+  const cut = title.lastIndexOf(' ');
+  return (
+    <>
+      {cut > 0 && `${title.slice(0, cut)} `}
+      <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+        {title.slice(cut + 1)} <InfoHint text={hint} />
+      </Box>
+    </>
+  );
+}
+
 /** A single number, with its change against the previous period. */
-export default function KpiCard({ title, unit, data, locale }: Props) {
+export default function KpiCard({ title, hint, unit, data, locale }: Props) {
   const t = useTranslations();
   const delta = data && kpiDelta(data.value, data.previous, unit, locale);
   const points = (value: string) =>
@@ -40,7 +58,7 @@ export default function KpiCard({ title, unit, data, locale }: Props) {
         className={fontClassName.className}
         sx={{ lineHeight: 1.3 }}
       >
-        {title}
+        {hint ? <TitleWithHint title={title} hint={hint} /> : title}
       </Typography>
       {data ? (
         <Typography

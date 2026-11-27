@@ -210,20 +210,6 @@ export function rawEventCount(
   );
 }
 
-/** Exact distinct visitors per platform over `from`..`to`. */
-export async function rawVisitorsByPlatform(
-  from: string,
-  to: string,
-): Promise<{ key: string; value: number }[]> {
-  const rows = await dbClient.$queryRaw<{ key: string; total: bigint }[]>`
-    SELECT "platform"::text AS key, count(DISTINCT "visitorId")::bigint AS total
-    FROM "AnalyticsEvent"
-    WHERE ${eventsWhere(from, to)}
-    GROUP BY 1
-    ORDER BY total DESC, key ASC`;
-  return rows.map((r) => ({ key: r.key, value: toNumber(r.total) }));
-}
-
 /**
  * Whether a stored week/month uniques row can be used as the period's value.
  * rollupPeriodUniques only stores a period once it is complete (computed at
