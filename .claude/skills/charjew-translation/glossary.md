@@ -74,7 +74,7 @@ Where ch.json uses two forms, both are listed, the more frequent one first.
 - **çistila / çistile** (arassala)
 - **kopýala** (göçür)
 - **period** (döwür), **data** (sene), **blok** (bölüm)
-- **konwersiýa** (öwrülişik), **wyruçka** (girdeji), **srednii çek** (ortaça sargyt bahasy), **woronka** (basgançaklar), **seans** (sessiýa), **ustroýstwo** (enjam), **perehod** (geçiş), **gruppirle** (toparla), **poisk** (gözleg)
+- **konwersiýa** (öwrülişik), **wyruçka** (girdeji), **sredniý çek** (ortaça sargyt bahasy), **woronka** (basgançaklar; `Pokupka woronkasy`), **seans** (sessiýa), **ustroýstwo** (enjam), **perehod** (geçiş), **gruppirle** (toparla), **ahtaryş** (gözleg)
 - **bazaga koş** (BASG goş)
 
 ## Native dialect words (not Russian)
