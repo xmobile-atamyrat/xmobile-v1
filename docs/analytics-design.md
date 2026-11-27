@@ -108,29 +108,34 @@ enum AnalyticsPlatform {
   APP
 }
 
-// Raw events. Kept 90 days, then deleted by the analytics-retention job.
 model AnalyticsEvent {
   id          BigInt            @id @default(autoincrement())
   occurredAt  DateTime          @default(now())
-  name        String            // an EventName from src/lib/analytics/events.ts
-  visitorId   String            @db.Uuid   // the xa_vid cookie
-  sessionId   String?           @db.Uuid
-  userId      String?           // set when logged in
-  entityId    String?           // productId / categoryId: what top-N queries group on
+  // An EventName from src/lib/analytics/events.ts
+  name        String
+  // From the xa_vid / xa_sid cookies
+  visitorId   String
+  sessionId   String?
+  userId      String?
+  // Product, category or order id, depending on the event
+  entityId    String?
   platform    AnalyticsPlatform
-  locale      String            @db.VarChar(2)  // ru, en, tk, tr, ch
-  props       Json?             // the rest of the event's payload
+  locale      String
+  props       Json?
 
   @@index([occurredAt])
   @@index([name, occurredAt])
 }
 
-// Daily rollups. Small, kept forever.
+// Daily rollups of AnalyticsEvent and UserOrder, kept forever.
 model AnalyticsDaily {
-  day             DateTime @db.Date      // Asia/Ashgabat calendar day, not UTC
-  metric          String                 // a MetricId from the registry
-  dimension       String   @default("")  // what the row is broken down by; '' = total
-  dimensionValue  String   @default("")  // the value of that breakdown; '' = total
+  // Midnight of an Asia/Ashgabat calendar day (not UTC). Week and month rows
+  // use the first day of the period.
+  day             DateTime
+  metric          String
+  // Both '' for the total row
+  dimension       String   @default("")
+  dimensionValue  String   @default("")
   value           BigInt
 
   @@id([metric, day, dimension, dimensionValue])

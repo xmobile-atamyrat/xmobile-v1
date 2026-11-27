@@ -64,9 +64,7 @@ import {
 const EVENT_CHUNK = 5000; // × 9 columns, well under 65535 bind parameters
 const ORDER_CHUNK = 1000;
 
-const SEED_UUID_MIN = `${SEED_UUID_PREFIX}0000-0000-0000-0000-000000000000`;
-const SEED_UUID_MAX = `${SEED_UUID_PREFIX}ffff-ffff-ffff-ffff-ffffffffffff`;
-const isSeedVisitorSql = Prisma.sql`"visitorId" BETWEEN ${SEED_UUID_MIN}::uuid AND ${SEED_UUID_MAX}::uuid`;
+const isSeedVisitorSql = Prisma.sql`"visitorId" LIKE ${`${SEED_UUID_PREFIX}%`}`;
 
 const seedOrderWhere: Prisma.UserOrderWhereInput = {
   orderNumber: { startsWith: SEED_ORDER_PREFIX },
