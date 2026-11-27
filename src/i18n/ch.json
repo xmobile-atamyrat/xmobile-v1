@@ -1059,6 +1059,7 @@
   "analyticsFrom": "Kaçandan",
   "analyticsTo": "Kaçanaça",
   "analyticsGranularityLabel": "Grafikläri gruppirle",
+  "analyticsGranularityHint": "Grafiklärdäki nokatlar nähili gruppirlenedi: her gün, hepde ýa-da aý üçin bir nokat. «Hepde» ýa-da «Aý» saýlansa, period duşenbeden ýa-da aýyň 1-inden başlanady, şonuň üçin ýokardaky başlangyç data birnäçe gün irräk bolady. Kartoçkalardaky sanlar hem şol datalar üçin.",
   "analyticsGranularityDay": "Gün",
   "analyticsGranularityWeek": "Hepde",
   "analyticsGranularityMonth": "Aý",

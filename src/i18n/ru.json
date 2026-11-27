@@ -1059,6 +1059,7 @@
   "analyticsFrom": "С",
   "analyticsTo": "По",
   "analyticsGranularityLabel": "Графики по",
+  "analyticsGranularityHint": "Как группируются точки на графиках: одна точка за день, неделю или месяц. «Неделя» и «Месяц» начинают период с понедельника или с 1-го числа, поэтому дата начала выше может сдвинуться на несколько дней раньше. Цифры в карточках считаются за те же даты.",
   "analyticsGranularityDay": "День",
   "analyticsGranularityWeek": "Неделя",
   "analyticsGranularityMonth": "Месяц",

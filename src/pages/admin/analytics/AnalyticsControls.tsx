@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { formatDay } from './format';
+import { InfoHint } from './WidgetCard';
 
 export type RangeChoice = RangePreset | 'custom';
 
@@ -221,7 +222,10 @@ export default function AnalyticsControls({
           className="flex flex-row items-center gap-2"
           sx={{ ml: { sm: 'auto' } }}
         >
-          {rowLabel('analyticsGranularityLabel')}
+          <Box className="flex flex-row items-center">
+            {rowLabel('analyticsGranularityLabel')}
+            <InfoHint text={t('analyticsGranularityHint')} />
+          </Box>
           <ToggleButtonGroup
             exclusive
             size="small"

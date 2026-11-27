@@ -1057,6 +1057,7 @@
   "analyticsFrom": "Başlangıç",
   "analyticsTo": "Bitiş",
   "analyticsGranularityLabel": "Grafikleri grupla",
+  "analyticsGranularityHint": "Grafik noktalarının nasıl gruplandığı: gün, hafta veya ay başına bir nokta. «Hafta» ve «Ay» dönemi pazartesiden veya ayın 1'inden başlatır, bu yüzden yukarıdaki başlangıç tarihi birkaç gün öne kayabilir. Kartlardaki sayılar da aynı tarihleri kapsar.",
   "analyticsGranularityDay": "Gün",
   "analyticsGranularityWeek": "Hafta",
   "analyticsGranularityMonth": "Ay",

@@ -1057,6 +1057,7 @@
   "analyticsFrom": "From",
   "analyticsTo": "To",
   "analyticsGranularityLabel": "Group charts by",
+  "analyticsGranularityHint": "How chart points are grouped: one point per day, week or month. Week and Month start the period on a Monday or on the 1st, so the start date above can move a few days earlier. The numbers in the cards cover the same dates.",
   "analyticsGranularityDay": "Day",
   "analyticsGranularityWeek": "Week",
   "analyticsGranularityMonth": "Month",

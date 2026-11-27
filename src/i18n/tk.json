@@ -1059,6 +1059,7 @@
   "analyticsFrom": "Başlanýar",
   "analyticsTo": "Gutarýar",
   "analyticsGranularityLabel": "Grafikleri toparla",
+  "analyticsGranularityHint": "Grafiklerdäki nokatlaryň nähili toparlanýandygy: her gün, hepde ýa-da aý üçin bir nokat. «Hepde» we «Aý» döwri duşenbeden ýa-da aýyň 1-inden başlaýar, şonuň üçin ýokardaky başlangyç sene birnäçe gün irä süýşüp biler. Kartlardaky sanlar şol seneler üçin hasaplanýar.",
   "analyticsGranularityDay": "Gün",
   "analyticsGranularityWeek": "Hepde",
   "analyticsGranularityMonth": "Aý",
