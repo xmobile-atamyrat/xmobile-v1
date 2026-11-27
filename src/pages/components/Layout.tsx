@@ -23,8 +23,9 @@ import { deleteCategory } from '@/pages/lib/utils';
 import { layoutClasses } from '@/styles/classMaps/components/layout';
 import { snackbarClasses } from '@/styles/classMaps/components/snackbar';
 import { fontClassName } from '@/styles/theme';
-import { Box, Snackbar, Typography } from '@mui/material';
-import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { appbarClasses } from '@/styles/classMaps/components/appbar';
+import { Box, IconButton, Snackbar, Typography } from '@mui/material';
+import { AlertTriangle, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useState } from 'react';
 
@@ -39,6 +40,12 @@ type SnackbarSeverity = 'success' | 'error' | 'warning';
 interface LayoutProps {
   children: ReactNode;
   handleHeaderBackButton?: () => void;
+  /**
+   * Also show handleHeaderBackButton on mobile, where the Appbar renders
+   * nothing off the home screen. For pages that don't draw their own mobile
+   * back button (the admin tools); the button sits in the page's top margin.
+   */
+  mobileBackButton?: boolean;
   showHomeHeader?: boolean;
   onHomeFilterClick?: () => void;
   mobileChatFabBottom?: number;
@@ -47,6 +54,7 @@ interface LayoutProps {
 export default function Layout({
   children,
   handleHeaderBackButton,
+  mobileBackButton = false,
   showHomeHeader = false,
   onHomeFilterClick,
   mobileChatFabBottom,
@@ -96,6 +104,17 @@ export default function Layout({
         component="main"
         className={`bg-[${MAIN_BG_COLOR}] min-h-screen w-full relative flex flex-col`}
       >
+        {platform === 'mobile' &&
+          mobileBackButton &&
+          handleHeaderBackButton && (
+            <IconButton
+              aria-label={t('back')}
+              className={`${layoutClasses.mobileBackButton} ${appbarClasses.backButtonCircle.mobile}`}
+              onClick={handleHeaderBackButton}
+            >
+              <ArrowLeft className={appbarClasses.backIconCircle.mobile} />
+            </IconButton>
+          )}
         <Box
           className="flex-1 flex flex-col w-full"
           // clearance for the fixed mobile bottom nav (Footer.tsx) so page

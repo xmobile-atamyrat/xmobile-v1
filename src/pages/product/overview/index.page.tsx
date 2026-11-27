@@ -358,7 +358,7 @@ export default function ProductsOverview() {
   };
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout mobileBackButton handleHeaderBackButton={() => router.push('/')}>
       <Box
         sx={{
           mt: `${isMdUp ? appBarHeight : mobileAppBarHeight}px`,

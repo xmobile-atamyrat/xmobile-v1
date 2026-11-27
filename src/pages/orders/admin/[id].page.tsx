@@ -218,7 +218,10 @@ export default function UserOrderDetailPage() {
 
   if (loading) {
     return (
-      <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
+      <Layout
+        mobileBackButton
+        handleHeaderBackButton={() => router.push('/orders/admin')}
+      >
         <Box
           sx={{
             mt:
@@ -237,7 +240,10 @@ export default function UserOrderDetailPage() {
 
   if (!order) {
     return (
-      <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
+      <Layout
+        mobileBackButton
+        handleHeaderBackButton={() => router.push('/orders/admin')}
+      >
         <Box
           sx={{
             mt:
@@ -264,7 +270,10 @@ export default function UserOrderDetailPage() {
   const canSetDeliveryPrice = !isPickup && !isClosedOrder(order);
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/orders/admin')}>
+    <Layout
+      mobileBackButton
+      handleHeaderBackButton={() => router.push('/orders/admin')}
+    >
       {['ADMIN', 'SUPERUSER'].includes(user?.grade) && (
         <Box
           sx={{

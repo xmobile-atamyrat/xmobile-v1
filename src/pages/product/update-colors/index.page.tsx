@@ -140,7 +140,7 @@ export default function UpdateColors() {
   const sortedBrands = [...brands].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout mobileBackButton handleHeaderBackButton={() => router.push('/')}>
       {['SUPERUSER', 'ADMIN'].includes(user?.grade) && (
         <Box
           sx={{

@@ -258,7 +258,10 @@ export default function AdminActivityPage() {
     filters.from && filters.from === filters.to ? filters.from : undefined;
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/user')}>
+    <Layout
+      mobileBackButton
+      handleHeaderBackButton={() => router.push('/user')}
+    >
       <Box
         sx={{
           mt: isMdUp

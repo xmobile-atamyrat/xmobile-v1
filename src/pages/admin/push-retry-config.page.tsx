@@ -210,7 +210,10 @@ export default function PushRetryConfigPage({ initialConfig }: Props) {
   };
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/user')}>
+    <Layout
+      mobileBackButton
+      handleHeaderBackButton={() => router.push('/user')}
+    >
       <Box
         sx={{
           mt: isMdUp
