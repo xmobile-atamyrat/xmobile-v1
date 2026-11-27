@@ -111,7 +111,6 @@ enum AnalyticsPlatform {
 model AnalyticsEvent {
   id          BigInt            @id @default(autoincrement())
   occurredAt  DateTime          @default(now())
-  // An EventName from src/lib/analytics/events.ts
   name        String
   // From the xa_vid / xa_sid cookies
   visitorId   String
@@ -129,12 +128,12 @@ model AnalyticsEvent {
 
 // Daily rollups of AnalyticsEvent and UserOrder, kept forever.
 model AnalyticsDaily {
-  // Midnight of an Asia/Ashgabat calendar day (not UTC). Week and month rows
-  // use the first day of the period.
   day             DateTime
   metric          String
-  // Both '' for the total row
+  // What the metric is split by, e.g. 'locale' or 'product'. '' = the day's total.
   dimension       String   @default("")
+  // Which part of that split, e.g. 'tk' or a product id. '' = the day's total.
+  // So (pageviews, locale, tk, 4310) means 4310 page views in Turkmen that day.
   dimensionValue  String   @default("")
   value           BigInt
 
