@@ -1090,5 +1090,13 @@
   "analyticsLocaleCh": "Çärjov Türkmencesi",
   "analyticsReferrerDirect": "Doğrudan",
   "analyticsUnknown": "Bilinmiyor",
-  "analyticsSuperuserOnly": "Yalnızca süper kullanıcı"
+  "analyticsSuperuserOnly": "Yalnızca süper kullanıcı",
+  "mcpConnectTitle": "{client} xmobile ile bağlansın mı?",
+  "mcpConnectBody": "{client} sizin adınıza işlem yapacak: ürün arayabilir, sitedeki ürün görsellerini ekleyebilir, değiştirebilir, sıralayabilir ve kaldırabilir.",
+  "mcpConnectBodyNoUploads": "{client} sizin adınıza işlem yapacak: ürün arayabilir, sitedeki ürün görsellerini sıralayabilir ve kaldırabilir. Yeni görsel ekleyemez.",
+  "mcpConnectRedirect": "Seçiminizden sonra {host} adresine döneceksiniz.",
+  "mcpConnectAllow": "İzin ver",
+  "mcpConnectSignIn": "Devam etmek için süper kullanıcı hesabıyla giriş yapın.",
+  "mcpConnectNotSuperuser": "Yapay zeka uygulamalarını yalnızca süper kullanıcılar bağlayabilir.",
+  "mcpConnectInvalid": "Bu bağlantı geçersiz ya da süresi dolmuş. Yapay zeka uygulamasından yeniden başlayın."
 }

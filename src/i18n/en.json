@@ -1090,5 +1090,13 @@
   "analyticsLocaleCh": "Chärjew Turkmen",
   "analyticsReferrerDirect": "Direct",
   "analyticsUnknown": "Unknown",
-  "analyticsSuperuserOnly": "Superuser only"
+  "analyticsSuperuserOnly": "Superuser only",
+  "mcpConnectTitle": "Connect {client} to xmobile?",
+  "mcpConnectBody": "{client} will act as you: it can search products and add, replace, reorder and remove product images on the live site.",
+  "mcpConnectBodyNoUploads": "{client} will act as you: it can search products and reorder and remove product images on the live site. It can't add new images.",
+  "mcpConnectRedirect": "After you choose, you will return to {host}.",
+  "mcpConnectAllow": "Allow",
+  "mcpConnectSignIn": "Sign in with a superuser account to continue.",
+  "mcpConnectNotSuperuser": "Only superusers can connect AI apps.",
+  "mcpConnectInvalid": "This connection link is invalid or has expired. Start again from the AI app."
 }

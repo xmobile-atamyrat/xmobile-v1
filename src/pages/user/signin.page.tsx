@@ -54,11 +54,24 @@ export default function Signin() {
   const t = useTranslations();
   const platform = usePlatform();
 
+  // Only the AI-app consent page may send people here to come back: a fixed
+  // path, so this can't be turned into a redirect to another site.
+  const next =
+    typeof router.query.next === 'string' &&
+    router.query.next.startsWith('/oauth/authorize?')
+      ? router.query.next
+      : null;
+
   useEffect(() => {
     if (!isLoading && user) {
-      router.push('/user');
+      // A full page load, not a client-side push: the consent page's
+      // anti-framing headers only come with its own document, so pushed to
+      // inside this one (which a page could have framed) it could be
+      // clickjacked.
+      if (next != null) window.location.assign(next);
+      else router.push('/user');
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user, router, next]);
 
   if (isLoading) {
     return null;
@@ -166,7 +179,7 @@ export default function Signin() {
                     credentials: 'include',
                   });
                   refreshCartCount();
-                  router.push('/');
+                  router.push(next ?? '/');
                 }
               } catch (error) {
                 if (error.name === 'JsonWebTokenError') {

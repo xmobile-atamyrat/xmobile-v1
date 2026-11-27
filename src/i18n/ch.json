@@ -1092,5 +1092,13 @@
   "analyticsLocaleCh": "Çärjowça",
   "analyticsReferrerDirect": "Göni girişler",
   "analyticsUnknown": "Näbelli",
-  "analyticsSuperuserOnly": "Diňe superpolzowatel üçin"
+  "analyticsSuperuserOnly": "Diňe superpolzowatel üçin",
+  "mcpConnectTitle": "{client} xmobile bilen birikdirilsinmi?",
+  "mcpConnectBody": "{client} siziň adyňyzdan hereket eder: harytlary gözläp, saýtdaky haryt suratlaryny goşup, çalşyp, tertibini üýtgedip we aýyryp biler.",
+  "mcpConnectBodyNoUploads": "{client} siziň adyňyzdan hereket eder: harytlary gözläp, saýtdaky haryt suratlarynyň tertibini üýtgedip we olary aýyryp biler. Täze surat goşup bilmez.",
+  "mcpConnectRedirect": "Saýlanyňyzdan soň {host} sahypasyna gaýdyp barersiňiz.",
+  "mcpConnectAllow": "Rugsat ber",
+  "mcpConnectSignIn": "Dowam etmek üçin superulanyjy akkaunty bilen giriň.",
+  "mcpConnectNotSuperuser": "AI programmalaryny diňe superulanyjylar birikdirip bilýär.",
+  "mcpConnectInvalid": "Birikdirme ssylkasy nädogry ýa-da onuň möhleti geçdi. AI programmasyndan täzeden başlaň."
 }

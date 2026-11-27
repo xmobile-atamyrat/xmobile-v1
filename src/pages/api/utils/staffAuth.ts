@@ -122,6 +122,17 @@ export async function requireStaffBearerAuth(
 }
 
 /**
+ * Requires `Authorization: Bearer <access JWT>` of any signed-in account
+ * that still exists, whatever its grade.
+ */
+export async function requireUserBearerAuth(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseApi>,
+): Promise<BearerActor | null> {
+  return requireBearerGrade(req, res, (grade) => grade != null, 401);
+}
+
+/**
  * Requires `Authorization: Bearer <access JWT>` with SUPERUSER.
  * A valid non-superuser token gets 403 — it is authenticated, just not allowed.
  */
