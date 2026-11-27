@@ -5,6 +5,7 @@ import dbClient from '@/lib/dbClient';
 import type { EventName } from '../events';
 import {
   dayFromDb,
+  daysInRange,
   eachDay,
   localDay,
   periodEnd,
@@ -235,17 +236,25 @@ export function clipPeriod(
   return { from: start < from ? from : start, to: end > to ? to : end };
 }
 
-/** One zero-filled point per period overlapping `from`..`to`. */
+/**
+ * One zero-filled point per period overlapping `from`..`to`. A week or month
+ * the range cuts short (at either end) says how many of its days it covers,
+ * so the chart can show it isn't comparable with the full periods.
+ */
 export function toPoints(
   values: Map<string, number>,
   from: string,
   to: string,
   granularity: Granularity,
 ): TimeseriesPoint[] {
-  return periodStarts(from, to, granularity).map((period) => ({
-    period,
-    value: values.get(period) ?? 0,
-  }));
+  return periodStarts(from, to, granularity).map((period) => {
+    const point: TimeseriesPoint = { period, value: values.get(period) ?? 0 };
+    const clip = clipPeriod(period, granularity, from, to);
+    const days = daysInRange(clip.from, clip.to);
+    const of = daysInRange(period, periodEnd(period, granularity));
+    if (days < of) point.partial = { days, of };
+    return point;
+  });
 }
 
 /** Stored uniques of a range older than the raw window. */

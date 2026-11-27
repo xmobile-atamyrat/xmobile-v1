@@ -9,7 +9,6 @@ import {
   withTimeout,
 } from '@/lib/analytics/adminApi';
 import {
-  alignRangeToPeriods,
   analyticsRequestPath,
   ashgabatDay,
   isValidDay,
@@ -17,6 +16,8 @@ import {
   maxAnalyticsDay,
   MIN_ANALYTICS_DAY,
   parseAnalyticsQuery,
+  chartIntervals,
+  defaultChartInterval,
   periodStartOf,
   presetRange,
   rangeDays,
@@ -128,43 +129,41 @@ describe('period alignment', () => {
     expect(periodStartOf('2026-11-28', 'month')).toBe('2026-11-01');
     expect(periodStartOf('2026-11-28', 'day')).toBe('2026-11-28');
   });
+});
 
-  it('starts week and month ranges on a whole period', () => {
-    const range = presetRange('12m', TODAY);
-    expect(alignRangeToPeriods(range, 'day')).toEqual(range);
-    expect(alignRangeToPeriods(range, 'month')).toEqual({
-      from: '2025-11-01',
-      to: TODAY,
-    });
-    // 2025-11-29 is a Saturday.
-    expect(alignRangeToPeriods(range, 'week')).toEqual({
-      from: '2025-11-24',
-      to: TODAY,
-    });
-    const aligned = { from: '2026-11-01', to: TODAY };
-    expect(alignRangeToPeriods(aligned, 'month')).toEqual(aligned);
+describe('chart intervals', () => {
+  it('opens each preset with a readable number of points', () => {
+    const interval = (preset: Parameters<typeof presetRange>[0]) => {
+      const { from, to } = presetRange(preset, TODAY);
+      return defaultChartInterval(from, to);
+    };
+    expect(interval('7d')).toBe('day');
+    expect(interval('30d')).toBe('day');
+    expect(interval('90d')).toBe('week');
+    expect(interval('12m')).toBe('month');
+    // Daily up to 60 days, weekly from 61.
+    expect(defaultChartInterval(shiftDay(TODAY, -59), TODAY)).toBe('day');
+    expect(defaultChartInterval(shiftDay(TODAY, -60), TODAY)).toBe('week');
   });
 
-  it('moves forward instead when moving back breaks a limit', () => {
-    // Exactly two years: a month further back would be too long.
-    const from = shiftDay(TODAY, -(MAX_RANGE_DAYS - 1));
-    const month = alignRangeToPeriods({ from, to: TODAY }, 'month');
-    expect(month.from.endsWith('-01')).toBe(true);
-    expect(month.from > from).toBe(true);
-    expect(rangeDays(month.from, TODAY)).toBeLessThanOrEqual(MAX_RANGE_DAYS);
-    const week = alignRangeToPeriods({ from, to: TODAY }, 'week');
-    expect(periodStartOf(week.from, 'week')).toBe(week.from);
-    expect(week.from > from).toBe(true);
+  it('offers only intervals that make sense for the range', () => {
+    const offered = (preset: Parameters<typeof presetRange>[0]) => {
+      const { from, to } = presetRange(preset, TODAY);
+      return chartIntervals(from, to);
+    };
+    expect(offered('7d')).toEqual(['day']);
+    expect(offered('30d')).toEqual(['day', 'week']);
+    expect(offered('90d')).toEqual(['day', 'week', 'month']);
+    expect(offered('12m')).toEqual(['week', 'month']);
+  });
 
-    // 2020-01-01 is a Wednesday; its Monday is before the API's first day.
-    expect(
-      alignRangeToPeriods({ from: MIN_ANALYTICS_DAY, to: '2020-03-01' }, 'week')
-        .from,
-    ).toBe('2020-01-06');
-    // Every aligned range is one the API accepts.
-    [month, week].forEach((range) =>
-      expect(ok({ ...range, granularity: 'week' }).from).toBe(range.from),
-    );
+  it('always offers the interval it opens with', () => {
+    for (let days = 1; days <= MAX_RANGE_DAYS; days += 1) {
+      const from = shiftDay(TODAY, -(days - 1));
+      expect(chartIntervals(from, TODAY)).toContain(
+        defaultChartInterval(from, TODAY),
+      );
+    }
   });
 });
 

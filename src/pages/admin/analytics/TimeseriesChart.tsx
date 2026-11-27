@@ -15,18 +15,16 @@ import {
   formatPeriod,
   formatValue,
   periodContaining,
+  periodSpan,
 } from './format';
 
 const CHART_HEIGHT = 240;
 
 // The chart library only ever loads on this admin page, in the browser.
-const LineChart = dynamic(
-  () => import('@mui/x-charts/LineChart').then((module) => module.LineChart),
-  {
-    ssr: false,
-    loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT} />,
-  },
-);
+const LineChart = dynamic(() => import('./PartialLineChart'), {
+  ssr: false,
+  loading: () => <Skeleton variant="rounded" height={CHART_HEIGHT} />,
+});
 
 export const SERIES_COLORS = [
   '#20166E',
@@ -44,7 +42,10 @@ type Props = {
   locale: string | undefined;
   /** Today (Ashgabat), to flag a last period that isn't over yet. */
   today?: string;
-  /** For the chart's spoken summary: its title and the range it covers. */
+  /**
+   * The chart's title (for its spoken summary) and the selected range, which
+   * the first and last week or month may only partly cover.
+   */
   title: string;
   from: string;
   to: string;
@@ -95,10 +96,35 @@ export default function TimeseriesChart({
       )
       .join(', '),
   });
+  // A week or month the range cuts short: drawn faded, and its tooltip says
+  // how many of its days it covers.
+  const partialByPeriod = new Map(
+    data.series.flatMap((s) =>
+      s.points.flatMap((p) => (p.partial ? [[p.period, p.partial]] : [])),
+    ) as [string, { days: number; of: number }][],
+  );
+  const partialIndexes = periods.flatMap((period, index) =>
+    partialByPeriod.has(period) ? [index] : [],
+  );
   const showMarks = periods.length <= 31;
-  // The last point covers today, so it is lower than it will end up.
-  const lastIsPartial =
-    today != null && periods.at(-1) === periodContaining(today, granularity);
+  // The last point covers today, so it is lower than it will end up. When it
+  // is already marked partial, the partial note says enough.
+  const lastIsToday =
+    today != null &&
+    periods.at(-1) === periodContaining(today, granularity) &&
+    !partialByPeriod.has(periods.at(-1) ?? '');
+  const tooltipTitle = (period: string) => {
+    if (granularity === 'day') return formatDay(period);
+    const span = periodSpan(period, granularity, from, to);
+    const dates =
+      span.from === span.to
+        ? formatDay(span.from)
+        : `${formatDay(span.from)} – ${formatDay(span.to)}`;
+    const partial = partialByPeriod.get(period);
+    return partial
+      ? `${dates} (${t('analyticsPartialPointDays', partial)})`
+      : dates;
+  };
 
   return (
     <Box>
@@ -140,6 +166,7 @@ export default function TimeseriesChart({
         sx={{ height: CHART_HEIGHT, mx: -1 }}
       >
         <LineChart
+          partialIndexes={partialIndexes}
           height={CHART_HEIGHT}
           // The right margin leaves room for half of the last tick label
           // ("11.2026"), which is centred on the last point.
@@ -152,8 +179,15 @@ export default function TimeseriesChart({
               data: periods,
               valueFormatter: (period: string, context) =>
                 context.location === 'tooltip'
-                  ? formatDay(period)
-                  : formatPeriod(period, granularity),
+                  ? tooltipTitle(period)
+                  : // A week the range starts mid-way is labelled by its
+                    // first day in range, not a Monday before the range.
+                    formatPeriod(
+                      granularity === 'week'
+                        ? periodSpan(period, granularity, from, to).from
+                        : period,
+                      granularity,
+                    ),
             },
           ]}
           yAxis={[
@@ -169,13 +203,25 @@ export default function TimeseriesChart({
             data: values[index],
             label: label(s.labelKey, s.key),
             color: SERIES_COLORS[index % SERIES_COLORS.length],
-            showMark: showMarks,
+            showMark: ({ index: point }: { index: number }) =>
+              showMarks || partialIndexes.includes(point),
             curve: 'linear' as const,
             valueFormatter: format,
           }))}
         />
       </Box>
-      {lastIsPartial && (
+      {partialIndexes.length > 0 && (
+        <Typography
+          fontSize={12}
+          color={muted}
+          className={fontClassName.className}
+          data-testid="partial-points-note"
+          sx={{ mt: 0.5 }}
+        >
+          {t('analyticsPartialPointsNote')}
+        </Typography>
+      )}
+      {lastIsToday && (
         <Typography
           fontSize={12}
           color={muted}

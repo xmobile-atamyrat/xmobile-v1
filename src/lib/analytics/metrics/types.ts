@@ -26,6 +26,11 @@ export interface TimeseriesPoint {
   /** Start day of the period: the day, the Monday of the week, or the 1st of the month. */
   period: string;
   value: number;
+  /**
+   * Set when the range covers only part of this week or month (its first or
+   * last period): how many of the period's days the value includes.
+   */
+  partial?: { days: number; of: number };
 }
 
 export interface TimeseriesData {

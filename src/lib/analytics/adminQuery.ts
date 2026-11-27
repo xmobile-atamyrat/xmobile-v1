@@ -76,30 +76,28 @@ export function periodStartOf(day: string, granularity: Granularity): string {
 }
 
 /**
- * The range the dashboard requests for week and month charts: `from` moves
- * back to the start of its period, so the first point is a whole week or
- * month rather than its last few days. When that would make the range longer
- * than the API allows (or earlier than MIN_ANALYTICS_DAY), `from` moves
- * forward to the next period start instead.
+ * Chart intervals that make sense for a range: days up to about three months
+ * (a point a day is unreadable past that), weeks from two weeks, months from
+ * two months (fewer gives one or two points).
  */
-export function alignRangeToPeriods(
-  range: { from: string; to: string },
-  granularity: Granularity,
-): { from: string; to: string } {
-  if (granularity === 'day') return range;
-  const start = periodStartOf(range.from, granularity);
-  if (start === range.from) return range;
-  if (
-    start >= MIN_ANALYTICS_DAY &&
-    rangeDays(start, range.to) <= MAX_RANGE_DAYS
-  ) {
-    return { from: start, to: range.to };
-  }
-  const next =
-    granularity === 'week'
-      ? shiftDay(start, 7)
-      : periodStartOf(shiftDay(start, 31), 'month');
-  return next <= range.to ? { from: next, to: range.to } : range;
+export function chartIntervals(from: string, to: string): Granularity[] {
+  const days = rangeDays(from, to);
+  return GRANULARITIES.filter((interval) => {
+    if (interval === 'day') return days <= 92;
+    if (interval === 'week') return days >= 14;
+    return days >= 60;
+  });
+}
+
+/**
+ * The interval a chart opens with, aiming for roughly 7–60 points: daily up
+ * to 60 days, weekly up to about six months, monthly beyond.
+ */
+export function defaultChartInterval(from: string, to: string): Granularity {
+  const days = rangeDays(from, to);
+  if (days <= 60) return 'day';
+  if (days <= 183) return 'week';
+  return 'month';
 }
 
 const WIDGET_IDS = new Set<string>(WIDGETS.map((widget) => widget.id));

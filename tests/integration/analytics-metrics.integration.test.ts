@@ -300,6 +300,41 @@ describe('analytics metric queries (integration)', () => {
       expect(s.pageviews_app.values).toEqual([0, 2, 0]);
     });
 
+    it('marks the weeks and months the range cuts short', async () => {
+      // Wednesday 29.01 to Monday 03.02: 5 days of one week, 1 of the next.
+      const week = (await query('traffic', {
+        from: '2025-01-29',
+        to: '2025-02-03',
+        granularity: 'week',
+      })) as TimeseriesData;
+      expect(week.series[0].points.map((p) => p.partial)).toEqual([
+        { days: 5, of: 7 },
+        { days: 1, of: 7 },
+      ]);
+      // Whole weeks and single days are never partial.
+      const whole = (await query('traffic', {
+        from: '2025-01-27',
+        to: '2025-02-02',
+        granularity: 'week',
+      })) as TimeseriesData;
+      expect(whole.series[0].points[0].partial).toBeUndefined();
+      const days = (await query('traffic', {
+        from: '2025-01-29',
+        to: '2025-01-30',
+      })) as TimeseriesData;
+      expect(days.series[0].points.every((p) => !p.partial)).toBe(true);
+      // January 2025 has 31 days; 18.01–31.01 is 14 of them.
+      const month = (await query('revenue', {
+        from: '2025-01-18',
+        to: '2025-02-05',
+        granularity: 'month',
+      })) as TimeseriesData;
+      expect(month.series[0].points.map((p) => p.partial)).toEqual([
+        { days: 14, of: 31 },
+        { days: 5, of: 28 },
+      ]);
+    });
+
     it('counts distinct visitors per week, from the week rollup when it is final', async () => {
       const params = {
         from: '2025-01-27',
