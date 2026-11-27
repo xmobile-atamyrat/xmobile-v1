@@ -676,10 +676,13 @@ model McpGrant {
 
   scope                     String
   accessTokenHash           String      @unique
+  accessIssuedAt            DateTime
   accessExpiresAt           DateTime
+  accessUsedAt              DateTime?
   previousAccessTokenHash   String?     @unique
   previousAccessExpiresAt   DateTime?
   refreshTokenHash          String
+  refreshGeneration         DateTime
   previousRefreshTokenHash  String?
   authCodeHash              String      @unique
   refreshExpiresAt          DateTime
