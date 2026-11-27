@@ -1102,5 +1102,9 @@
   "analyticsAverageOrderValueHint": "Gelir ÷ tamamlanan siparişler.",
   "analyticsFunnelHint": "Bu dönemde adımları sırayla geçen ziyaretçiler. Her adım yalnızca önceki adımı geçenleri sayar.",
   "analyticsZeroResultSearchesHint": "Ürün bulunamayan aramalar: müşterilerin aradığı ama bizde olmayanlar.",
-  "analyticsTopReferrersHint": "Ziyaretçileri buraya yönlendiren diğer siteler, örneğin Google veya Instagram."
+  "analyticsTopReferrersHint": "Ziyaretçileri buraya yönlendiren diğer siteler, örneğin Google veya Instagram.",
+  "analyticsTopProductsHint": "Ürün sayfalarının tüm görüntülemeleri, tekrarlar dahil (benzersiz ziyaretçi değil).",
+  "analyticsTopCategoriesHint": "Kategori sayfalarının tüm görüntülemeleri, tekrarlar dahil (benzersiz ziyaretçi değil).",
+  "analyticsTopSearchesHint": "Her terimin kaç kez arandığı. Aynı ziyaretçinin 30 dakika içinde aynı aramayı tekrarlaması bir kez sayılır.",
+  "analyticsTopCartAddsHint": "Ürünün sepete kaç kez eklendiği. Adet değişikliği sayılmaz."
 }

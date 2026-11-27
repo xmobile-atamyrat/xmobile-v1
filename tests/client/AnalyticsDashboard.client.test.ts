@@ -740,9 +740,16 @@ describe('AnalyticsDashboard', () => {
       await user.click(screen.getByText('Period'));
       await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
 
-      // Self-explanatory titles get no icon.
+      // Top lists say they count every view, not unique visitors.
       expect(
-        within(card('Most viewed products')).queryByTestId('analytics-hint'),
+        within(card('Most viewed products')).getByRole('button', {
+          name: /repeat views included \(not unique visitors\)/,
+        }),
+      ).toBeTruthy();
+
+      // Titles that already say what they count get no icon.
+      expect(
+        within(card('Page views by platform')).queryByTestId('analytics-hint'),
       ).toBeNull();
     });
 

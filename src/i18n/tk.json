@@ -1104,5 +1104,9 @@
   "analyticsAverageOrderValueHint": "Girdeji ÷ tamamlanan sargytlar.",
   "analyticsFunnelHint": "Bu döwürde ädimleri yzygiderli geçen gelýänler. Her ädim diňe öňki ädimi geçenleri sanaýar.",
   "analyticsZeroResultSearchesHint": "Haryt tapylmadyk gözlegler: müşderiler gözleýär, emma bizde ýok.",
-  "analyticsTopReferrersHint": "Gelýänleri bize iberen beýleki saýtlar, meselem Google ýa-da Instagram."
+  "analyticsTopReferrersHint": "Gelýänleri bize iberen beýleki saýtlar, meselem Google ýa-da Instagram.",
+  "analyticsTopProductsHint": "Haryt sahypalarynyň ähli görülişleri, gaýtadan görülenler hem (aýratyn gelýänler däl).",
+  "analyticsTopCategoriesHint": "Kategoriýa sahypalarynyň ähli görülişleri, gaýtadan görülenler hem (aýratyn gelýänler däl).",
+  "analyticsTopSearchesHint": "Her sözüň näçe gezek gözlenendigi. Bir gelýäniň şol sözi 30 minudyň içinde gaýtalamagy bir gezek hasaplanýar.",
+  "analyticsTopCartAddsHint": "Harydyň sebede näçe gezek goşulandygy. Mukdaryň üýtgemegi hasaba alynmaýar."
 }

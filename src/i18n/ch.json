@@ -1104,5 +1104,9 @@
   "analyticsAverageOrderValueHint": "Wyruçka ÷ tamamlanan zakazlar.",
   "analyticsFunnelHint": "Bu periodda şaglary yzly-yzyna geçen gelenler. Her şag diňe öňki şagy geçenleri sanady.",
   "analyticsZeroResultSearchesHint": "Towar tapylmadyk ahtaryşlar: klientler ahtarady, bizde ýok.",
-  "analyticsTopReferrersHint": "Gelenleri bize iberen başga saýtlar, meselem Google ýa-da Instagram."
+  "analyticsTopReferrersHint": "Gelenleri bize iberen başga saýtlar, meselem Google ýa-da Instagram.",
+  "analyticsTopProductsHint": "Towar stranisalarynyň hämmä görülişläri, kaýtadan görülenlär hem (aýry gelenlär ämäz).",
+  "analyticsTopCategoriesHint": "Kategoriýa stranisalarynyň hämmä görülişläri, kaýtadan görülenlär hem (aýry gelenlär ämäz).",
+  "analyticsTopSearchesHint": "Her sözüň neçitä gezek ahtarylany. Bir gelen şol sözi 30 minudyň içinde kaýtalasa, bir gezek sanalady.",
+  "analyticsTopCartAddsHint": "Towaryň korzinaga neçitä gezek koşulany. Sanyny üýtgätmek hasaba alynmaýady."
 }

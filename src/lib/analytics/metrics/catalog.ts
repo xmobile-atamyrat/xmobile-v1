@@ -202,7 +202,11 @@ export const WIDGET_HINT_KEYS: Partial<Record<MetricId, string>> = {
   kpi_aov: 'analyticsAverageOrderValueHint',
   revenue: 'analyticsRevenueHint',
   funnel: 'analyticsFunnelHint',
+  top_products: 'analyticsTopProductsHint',
+  top_categories: 'analyticsTopCategoriesHint',
+  top_searches: 'analyticsTopSearchesHint',
   zero_result_searches: 'analyticsZeroResultSearchesHint',
+  top_cart_adds: 'analyticsTopCartAddsHint',
   top_referrers: 'analyticsTopReferrersHint',
 };
 

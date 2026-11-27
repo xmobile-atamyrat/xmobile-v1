@@ -1102,5 +1102,9 @@
   "analyticsAverageOrderValueHint": "Revenue ÷ completed orders.",
   "analyticsFunnelHint": "Visitors who took the steps in order during this period. Each step only counts visitors from the step before.",
   "analyticsZeroResultSearchesHint": "Searches that found no products: what customers want and we don't stock.",
-  "analyticsTopReferrersHint": "Other sites that sent visitors here, such as Google or Instagram."
+  "analyticsTopReferrersHint": "Other sites that sent visitors here, such as Google or Instagram.",
+  "analyticsTopProductsHint": "Total product page views, repeat views included (not unique visitors).",
+  "analyticsTopCategoriesHint": "Total category page views, repeat views included (not unique visitors).",
+  "analyticsTopSearchesHint": "Times each term was searched. The same visitor repeating a term within 30 minutes counts once.",
+  "analyticsTopCartAddsHint": "Times the product was added to a cart. Changing the quantity doesn't count."
 }
