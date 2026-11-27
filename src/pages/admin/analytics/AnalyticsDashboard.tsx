@@ -1,6 +1,8 @@
 import {
-  alignRangeToPeriods,
   analyticsRequestPath,
+  chartIntervals,
+  defaultChartInterval,
+  GRANULARITIES,
   presetRange,
   type RangePreset,
 } from '@/lib/analytics/adminQuery';
@@ -16,7 +18,16 @@ import type {
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { fontClassName } from '@/styles/theme';
-import { Alert, Box, Button, LinearProgress, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  LinearProgress,
+  Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useRef, useState } from 'react';
@@ -73,6 +84,138 @@ type Range = { from: string; to: string };
  */
 type CachedResponse = { owner: string; response: AnalyticsResponse };
 
+type Fetcher = (key: [string, string]) => Promise<CachedResponse>;
+
+const SWR_OPTIONS = {
+  revalidateOnFocus: false,
+  shouldRetryOnError: false,
+  dedupingInterval: 30_000,
+} as const;
+
+const INTERVAL_LABEL_KEYS: Record<Granularity, string> = {
+  day: 'analyticsGranularityDay',
+  week: 'analyticsGranularityWeek',
+  month: 'analyticsGranularityMonth',
+};
+
+type ChartCardProps = {
+  /** The chart as the dashboard's request returned it, at `defaultInterval`. */
+  widget: AnalyticsWidgetResult;
+  title: string;
+  hint?: string;
+  interval: Granularity;
+  defaultInterval: Granularity;
+  /** Intervals that make sense for the range; the others are disabled. */
+  intervals: readonly Granularity[];
+  onInterval: (interval: Granularity) => void;
+  range: Range;
+  locale: string | undefined;
+  today: string;
+  /** User and role the cache belongs to; null while signed out. */
+  owner: string | null;
+  fetcher: Fetcher;
+};
+
+/**
+ * A line chart with its own interval. At the default interval it shows what
+ * the dashboard's request returned; at another it fetches just this chart.
+ * The interval changes only how the chart groups its points: every other
+ * number on the page follows the range alone.
+ */
+function ChartCard({
+  widget,
+  title,
+  hint,
+  interval,
+  defaultInterval,
+  intervals,
+  onInterval,
+  range,
+  locale,
+  today,
+  owner,
+  fetcher,
+}: ChartCardProps) {
+  const t = useTranslations();
+  const ownRequest = interval !== defaultInterval;
+  const path = analyticsRequestPath({
+    ...range,
+    granularity: interval,
+    locale,
+    widgets: [widget.id],
+  });
+  // No keepPreviousData: the last interval's points under this interval's
+  // labels would be wrong, so a skeleton shows while it loads.
+  const { data: cached, error } = useSWR(
+    ownRequest && owner ? [path, owner] : null,
+    fetcher,
+    SWR_OPTIONS,
+  );
+  const own =
+    cached && cached.owner === owner
+      ? cached.response.widgets.find((w) => w.id === widget.id)
+      : undefined;
+  const data = ownRequest ? own?.data : widget.data;
+
+  let body;
+  if (ownRequest && own === undefined) {
+    body = error ? (
+      <WidgetMessage kind="error" />
+    ) : (
+      <Skeleton variant="rounded" height={240} />
+    );
+  } else if (data?.kind === 'timeseries') {
+    body = (
+      <TimeseriesChart
+        unit={widget.unit}
+        granularity={interval}
+        data={data}
+        locale={locale}
+        today={today}
+        title={title}
+        from={range.from}
+        to={range.to}
+      />
+    );
+  } else {
+    body = <WidgetMessage kind="error" />;
+  }
+
+  return (
+    <WidgetCard
+      title={title}
+      hint={hint}
+      widgetId={widget.id}
+      testId={`widget-${widget.id}`}
+      action={
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={interval}
+          aria-label={t('analyticsChartInterval', { title })}
+          onChange={(_event, value: Granularity | null) => {
+            if (value) onInterval(value);
+          }}
+        >
+          {GRANULARITIES.map((value) => (
+            <ToggleButton
+              key={value}
+              value={value}
+              disabled={!intervals.includes(value)}
+              className={fontClassName.className}
+              sx={{ textTransform: 'none', px: 1.25, py: 0.25, fontSize: 13 }}
+            >
+              {t(INTERVAL_LABEL_KEYS[value])}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      }
+    >
+      {body}
+    </WidgetCard>
+  );
+}
+
 export default function AnalyticsDashboard({ today: todayProp }: Props) {
   const t = useTranslations();
   const label = useAnalyticsLabel();
@@ -88,15 +231,33 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
   const today = useAshgabatToday(todayProp);
   const [choice, setChoice] = useState<RangeChoice>(DEFAULT_PRESET);
   const [customRange, setCustomRange] = useState<Range | null>(null);
-  const [granularity, setGranularity] = useState<Granularity>('day');
 
-  const selected: Range =
+  // The one range every number on the page covers.
+  const range: Range =
     choice === 'custom' && customRange
       ? customRange
       : presetRange(choice === 'custom' ? DEFAULT_PRESET : choice, today);
-  // Whole weeks or months only; the KPIs use the same range, so every number
-  // on the page covers the days the range label shows.
-  const range = alignRangeToPeriods(selected, granularity);
+
+  // Charts open at an interval that suits the range; one picked on a chart
+  // lasts until the range changes.
+  const defaultInterval = defaultChartInterval(range.from, range.to);
+  const intervals = chartIntervals(range.from, range.to);
+  const rangeKey = `${range.from}|${range.to}`;
+  const [picked, setPicked] = useState<{
+    rangeKey: string;
+    byChart: Partial<Record<string, Granularity>>;
+  }>({ rangeKey, byChart: {} });
+  const intervalOf = (id: string): Granularity =>
+    (picked.rangeKey === rangeKey ? picked.byChart[id] : undefined) ??
+    defaultInterval;
+  const pickInterval = (id: string, interval: Granularity) =>
+    setPicked((current) => ({
+      rangeKey,
+      byChart: {
+        ...(current.rangeKey === rangeKey ? current.byChart : {}),
+        [id]: interval,
+      },
+    }));
 
   // The token goes through a ref: fetchWithCreds stores a silently refreshed
   // one, and a token in the SWR key would refetch for nothing.
@@ -106,33 +267,32 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
   // Who the response is for: what the server decides the widgets by. Another
   // user signing in on this tab (no reload) must never get this one's cache.
   const owner = user ? `${user.id}:${user.grade}` : null;
-  const path = analyticsRequestPath({ ...range, granularity, locale });
+  const path = analyticsRequestPath({
+    ...range,
+    granularity: defaultInterval,
+    locale,
+  });
+  const fetcher: Fetcher = async ([key, keyOwner]) => {
+    const response = await fetchWithCreds<AnalyticsResponse>({
+      accessToken: tokenRef.current ?? '',
+      path: key,
+      method: 'GET',
+    });
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'Analytics request failed');
+    }
+    return { owner: keyOwner, response: response.data };
+  };
   const {
     data: cached,
     error,
     isLoading,
     isValidating,
     mutate,
-  } = useSWR(
-    accessToken && owner ? [path, owner] : null,
-    async ([key, keyOwner]: [string, string]): Promise<CachedResponse> => {
-      const response = await fetchWithCreds<AnalyticsResponse>({
-        accessToken: tokenRef.current ?? '',
-        path: key,
-        method: 'GET',
-      });
-      if (!response.success || !response.data) {
-        throw new Error(response.message || 'Analytics request failed');
-      }
-      return { owner: keyOwner, response: response.data };
-    },
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-      shouldRetryOnError: false,
-      dedupingInterval: 30_000,
-    },
-  );
+  } = useSWR(accessToken && owner ? [path, owner] : null, fetcher, {
+    ...SWR_OPTIONS,
+    keepPreviousData: true,
+  });
   const data = cached && cached.owner === owner ? cached.response : undefined;
 
   const byKind = (kind: AnalyticsWidgetResult['kind']) =>
@@ -148,21 +308,27 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
 
   const renderWide = (widget: AnalyticsWidgetResult) => {
     const title = label(widget.labelKey, widget.id);
-    let body;
-    if (widget.data == null) body = <WidgetMessage kind="error" />;
-    else if (widget.data.kind === 'timeseries')
-      body = (
-        <TimeseriesChart
-          unit={widget.unit}
-          granularity={data?.granularity ?? granularity}
-          data={widget.data}
+    if (widget.kind === 'timeseries') {
+      return (
+        <ChartCard
+          key={widget.id}
+          widget={widget}
+          title={title}
+          hint={hintFor(widget.id)}
+          interval={intervalOf(widget.id)}
+          defaultInterval={defaultInterval}
+          intervals={intervals}
+          onInterval={(interval) => pickInterval(widget.id, interval)}
+          range={range}
           locale={locale}
           today={today}
-          title={title}
-          from={data?.from ?? range.from}
-          to={data?.to ?? range.to}
+          owner={owner}
+          fetcher={fetcher}
         />
       );
+    }
+    let body;
+    if (widget.data == null) body = <WidgetMessage kind="error" />;
     else if (widget.data.kind === 'funnel')
       body = <FunnelWidget data={widget.data} locale={locale} />;
     return (
@@ -182,20 +348,16 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
     <Box className="flex flex-col gap-4">
       <AnalyticsControls
         choice={choice}
-        from={selected.from}
-        to={selected.to}
-        appliedFrom={range.from}
-        appliedTo={range.to}
+        from={range.from}
+        to={range.to}
         today={today}
-        granularity={granularity}
         onPreset={setChoice}
         onCustom={() => {
           // Start from the dates on screen.
-          setCustomRange(selected);
+          setCustomRange(range);
           setChoice('custom');
         }}
         onCustomRange={(from, to) => setCustomRange({ from, to })}
-        onGranularity={setGranularity}
       />
 
       <Box sx={{ height: 4 }}>

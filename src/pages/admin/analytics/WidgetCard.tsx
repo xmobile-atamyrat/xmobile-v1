@@ -75,6 +75,8 @@ type Props = {
   widgetId?: string;
   /** Definition behind an info icon next to the title. */
   hint?: string;
+  /** A control on the right of the title row (a chart's interval). */
+  action?: ReactNode;
   children: ReactNode;
   testId?: string;
 };
@@ -83,6 +85,7 @@ export default function WidgetCard({
   title,
   widgetId,
   hint,
+  action,
   children,
   testId,
 }: Props) {
@@ -123,6 +126,7 @@ export default function WidgetCard({
             {t('analyticsSuperuserOnly')}
           </Typography>
         )}
+        {action && <Box sx={{ ml: 'auto' }}>{action}</Box>}
       </Box>
       {children}
     </Box>

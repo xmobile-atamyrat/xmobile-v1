@@ -1,4 +1,4 @@
-import { periodStartOf } from '@/lib/analytics/adminQuery';
+import { periodStartOf, shiftDay } from '@/lib/analytics/adminQuery';
 import type { Granularity, MetricUnit } from '@/lib/analytics/metrics/types';
 
 /**
@@ -147,6 +147,25 @@ export const periodContaining = (
   day: string,
   granularity: Granularity,
 ): string => periodStartOf(day, granularity);
+
+/**
+ * The days a chart point covers: its day, week or month, cut to the range
+ * `from`..`to` (the first and last weeks or months may be partial).
+ */
+export function periodSpan(
+  period: string,
+  granularity: Granularity,
+  from: string,
+  to: string,
+): { from: string; to: string } {
+  let end = period;
+  if (granularity === 'week') end = shiftDay(period, 6);
+  if (granularity === 'month') {
+    const [year, month] = period.split('-').map(Number);
+    end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  }
+  return { from: period < from ? from : period, to: end > to ? to : end };
+}
 
 /** Full date for tooltips: dd.mm.yyyy. */
 export function formatDay(day: string): string {

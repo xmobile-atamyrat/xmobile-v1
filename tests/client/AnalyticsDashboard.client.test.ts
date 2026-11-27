@@ -36,7 +36,13 @@ vi.mock('@mui/x-charts/LineChart', async () => {
   const { createElement: h } = await import('react');
   return {
     LineChart: (props: {
-      xAxis: { data: string[] }[];
+      xAxis: {
+        data: string[];
+        valueFormatter: (
+          value: string,
+          context: { location: string },
+        ) => string;
+      }[];
       yAxis: { valueFormatter: (value: number) => string }[];
       series: { label: string; data: number[] }[];
       margin?: { right?: number };
@@ -46,6 +52,16 @@ vi.mock('@mui/x-charts/LineChart', async () => {
         'data-margin-right': String(props.margin?.right ?? ''),
         'data-y-label': props.yAxis[0].valueFormatter(1200),
         'data-x': JSON.stringify(props.xAxis[0].data),
+        'data-x-labels': JSON.stringify(
+          props.xAxis[0].data.map((x) =>
+            props.xAxis[0].valueFormatter(x, { location: 'tick' }),
+          ),
+        ),
+        'data-tooltips': JSON.stringify(
+          props.xAxis[0].data.map((x) =>
+            props.xAxis[0].valueFormatter(x, { location: 'tooltip' }),
+          ),
+        ),
         'data-series': JSON.stringify(
           props.series.map((s) => ({ label: s.label, data: s.data })),
         ),
@@ -538,9 +554,66 @@ describe('AnalyticsDashboard', () => {
       fetchMock.mockResolvedValue(
         ok(response(widgets, { granularity: 'week' })),
       );
+      const user = userEvent.setup();
       renderDashboard();
-      const traffic = await screen.findByRole('region', { name: 'Traffic' });
-      expect(within(traffic).getByTestId('partial-period-note')).toBeTruthy();
+      await screen.findByText('1,250');
+      // 90 days opens its charts by week.
+      await user.click(screen.getByRole('button', { name: '90 days' }));
+      await waitFor(() => expect(lastQuery().get('granularity')).toBe('week'));
+      const traffic = screen.getByRole('region', { name: 'Traffic' });
+      expect(
+        await within(traffic).findByTestId('partial-period-note'),
+      ).toBeTruthy();
+    });
+
+    it('fades weeks the range cuts short and says how many days they cover', async () => {
+      const widgets = staffWidgets().map((w) =>
+        w.id === 'traffic'
+          ? {
+              ...w,
+              data: {
+                kind: 'timeseries' as const,
+                series: [
+                  {
+                    key: 'visitors',
+                    labelKey: 'analyticsVisitors',
+                    points: [
+                      // 30.10 is a Friday: its week has 3 days in range.
+                      {
+                        period: '2026-10-26',
+                        value: 3,
+                        partial: { days: 3, of: 7 },
+                      },
+                      { period: '2026-11-02', value: 30 },
+                    ],
+                  },
+                ],
+              },
+            }
+          : w,
+      );
+      fetchMock.mockResolvedValue(ok(response(widgets)));
+      const user = userEvent.setup();
+      renderDashboard();
+      await screen.findByText('1,250');
+      const traffic = screen.getByRole('region', { name: 'Traffic' });
+      await user.click(within(traffic).getByRole('button', { name: 'Week' }));
+
+      const chart = await within(traffic).findByTestId('line-chart');
+      // Labelled by its first day in range, not the Monday before it.
+      expect(JSON.parse(chart.dataset.xLabels ?? '')).toEqual([
+        '30.10',
+        '02.11',
+      ]);
+      expect(JSON.parse(chart.dataset.tooltips ?? '')).toEqual([
+        '30.10.2026 – 01.11.2026 (3 of 7 days)',
+        '02.11.2026 – 08.11.2026',
+      ]);
+      expect(
+        within(traffic).getByTestId('partial-points-note').textContent,
+      ).toBe(
+        'Faded points cover only part of their week or month, so they read lower.',
+      );
     });
 
     it('says so when a chart has no points', async () => {
@@ -753,14 +826,15 @@ describe('AnalyticsDashboard', () => {
       ).toBeNull();
     });
 
-    it('says what each breakdown counts and labels both control rows', async () => {
+    it('says what each breakdown counts and labels the range row', async () => {
       renderDashboard();
       await screen.findByText('1,250');
       expect(card('Page views by platform')).toBeTruthy();
       expect(card('Page views by language')).toBeTruthy();
       expect(card('Page views by device')).toBeTruthy();
       expect(screen.getByText('Period')).toBeTruthy();
-      expect(screen.getByText('Group charts by')).toBeTruthy();
+      // There is no page-wide grouping any more: charts have their own.
+      expect(screen.queryByText('Group charts by')).toBeNull();
     });
   });
 
@@ -789,68 +863,87 @@ describe('AnalyticsDashboard', () => {
       expect(lastQuery().get('from')).toBe('2026-08-31');
     });
 
-    it('changes the granularity', async () => {
+    it("changes only the chart's grouping when a chart's interval changes", async () => {
       const user = userEvent.setup();
       renderDashboard();
       await screen.findByText('1,250');
+      expect(lastQuery().get('granularity')).toBe('day');
 
-      await user.click(screen.getByRole('button', { name: 'Week' }));
+      const traffic = screen.getByRole('region', { name: 'Traffic' });
+      await user.click(within(traffic).getByRole('button', { name: 'Week' }));
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      // Only this chart is fetched again, over the same days.
+      expect(lastQuery().get('widgets')).toBe('traffic');
       expect(lastQuery().get('granularity')).toBe('week');
-      // 30 days back is Friday 30.10; the first week starts on its Monday.
-      expect(lastQuery().get('from')).toBe('2026-10-26');
-      expect(screen.getByTestId('analytics-range').textContent).toBe(
-        '26.10.2026 – 28.11.2026',
-      );
-
-      await user.click(screen.getByRole('button', { name: 'Month' }));
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-      expect(lastQuery().get('granularity')).toBe('month');
-      expect(lastQuery().get('from')).toBe('2026-10-01');
+      expect(lastQuery().get('from')).toBe('2026-10-30');
       expect(lastQuery().get('to')).toBe(TODAY);
-
-      // Back to day: the range the preset chose, served from the cache.
-      await user.click(screen.getByRole('button', { name: 'Day' }));
       expect(screen.getByTestId('analytics-range').textContent).toBe(
         '30.10.2026 – 28.11.2026',
       );
+      expect(within(card('Visitors')).getByText('1,250')).toBeTruthy();
+      expect(
+        within(traffic)
+          .getByRole('button', { name: 'Week' })
+          .getAttribute('aria-pressed'),
+      ).toBe('true');
+
+      // Back to the default interval: the dashboard's own data, no request.
+      await user.click(within(traffic).getByRole('button', { name: 'Day' }));
+      expect(await within(traffic).findByTestId('line-chart')).toBeTruthy();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it('starts 12 months by month on a whole month, and says so', async () => {
+    it('opens charts at an interval that suits the range, without moving it', async () => {
       const user = userEvent.setup();
       renderDashboard();
       await screen.findByText('1,250');
+
+      await user.click(screen.getByRole('button', { name: '90 days' }));
+      await waitFor(() => expect(lastQuery().get('granularity')).toBe('week'));
+      expect(lastQuery().get('from')).toBe('2026-08-31');
 
       await user.click(screen.getByRole('button', { name: '12 months' }));
-      await user.click(screen.getByRole('button', { name: 'Month' }));
       await waitFor(() => expect(lastQuery().get('granularity')).toBe('month'));
-      // Not 29.11.2025, whose month would hold only two days.
-      expect(lastQuery().get('from')).toBe('2025-11-01');
+      // Not moved back to 01.11.2025: the cards cover exactly 12 months.
+      expect(lastQuery().get('from')).toBe('2025-11-29');
       expect(screen.getByTestId('analytics-range').textContent).toBe(
-        '01.11.2025 – 28.11.2026',
+        '29.11.2025 – 28.11.2026',
       );
+      // A point a day over a year is unreadable, so it isn't offered.
+      const traffic = screen.getByRole('region', { name: 'Traffic' });
+      expect(
+        (
+          within(traffic).getByRole('button', {
+            name: 'Day',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
     });
 
-    it('widens a custom range to whole weeks and shows the range used', async () => {
+    it('keeps a picked interval until the range changes', async () => {
       const user = userEvent.setup();
       renderDashboard();
       await screen.findByText('1,250');
+      const traffic = screen.getByRole('region', { name: 'Traffic' });
+      const pressed = (name: string) =>
+        within(screen.getByRole('region', { name: 'Traffic' }))
+          .getByRole('button', { name })
+          .getAttribute('aria-pressed');
 
-      await user.click(screen.getByRole('button', { name: 'Custom' }));
-      fireEvent.change(screen.getByTestId('analytics-from'), {
-        target: { value: '2026-11-04' },
-      });
-      await waitFor(() => expect(lastQuery().get('from')).toBe('2026-11-04'));
-      expect(screen.queryByTestId('analytics-range')).toBeNull();
+      await user.click(within(traffic).getByRole('button', { name: 'Week' }));
+      expect(pressed('Week')).toBe('true');
 
-      await user.click(screen.getByRole('button', { name: 'Week' }));
-      await waitFor(() => expect(lastQuery().get('from')).toBe('2026-11-02'));
+      await user.click(screen.getByRole('button', { name: '7 days' }));
+      await waitFor(() => expect(lastQuery().get('from')).toBe('2026-11-22'));
+      expect(pressed('Day')).toBe('true');
       expect(
-        (screen.getByTestId('analytics-from') as HTMLInputElement).value,
-      ).toBe('2026-11-04');
-      expect(screen.getByTestId('analytics-range').textContent).toBe(
-        '02.11.2026 – 28.11.2026',
-      );
+        (
+          within(screen.getByRole('region', { name: 'Traffic' })).getByRole(
+            'button',
+            { name: 'Week' },
+          ) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
     });
 
     it('takes a custom range, and holds off while it is invalid', async () => {
