@@ -13,5 +13,6 @@ Concise reference for contributors. Start here, then jump to the topic you need.
 | [**Environment**](environment.md) | All env vars with short descriptions. |
 | [**FCM setup**](fcm-setup.md) | Firebase and VAPID setup for push notifications. |
 | [**Deployment**](deployment.md) | Build and Deploy, Deploy Batch Runner, Daily Backup to Drive (GitHub Actions). |
+| [**MCP server**](mcp.md) | AI apps (ChatGPT) managing product images: tools, OAuth, turning it on and off. |
 | [**SEO**](seo-knowledge.md) | Meta tags, structured data, sitemap, and SEO implementation. |
 | [**Mobile App**](mobile/README.md) | React Native WebView wrapper for Android and iOS. |

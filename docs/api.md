@@ -10,6 +10,7 @@ REST API lives under **`src/pages/api/`**. File name `*.page.ts` → route by pa
   - Refresh token in cookie (`AUTH_REFRESH_COOKIE_NAME`).
 - **Public GET (no auth):** `GET /api/prices`, `GET /api/prices/rate`, `GET /api/brand`.
 - **Validation:** Zod in request handlers where used.
+- **Exception, MCP and OAuth:** `api/mcp/index`, `api/mcp/oauth/**` and `api/mcp/well-known/**` (rewritten from `/.well-known/oauth-*`) don't call `addCors` or return `ResponseApi`. Those routes answer AI clients, not this site: OAuth errors are RFC 6749 `{ error, error_description }`, tokens RFC 6749 token responses, and `/api/mcp` JSON-RPC 2.0. Keep those shapes (see `docs/mcp.md`). `api/mcp/grants` is for superusers on this site and uses the normal conventions.
 
 ## Main endpoint groups
 

@@ -25,6 +25,17 @@ Copy `.env.example` to `.env.local` for local dev. Below: purpose and whether th
 | `SLACK_HEALTH_BOT_WEBHOOK`                         | Slack health/alert (batch-runner)                       |
 | `TELEKOM_BALANCE_ALERT_THRESHOLD_TMT`              | Alert when balance below this (batch-runner)            |
 
+## MCP server (AI apps)
+
+| Variable                     | Description                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MCP_ENABLED`                | Kill switch. Unless exactly `true`, `/api/mcp`, its OAuth routes and the consent page all 404                                                           |
+| `MCP_PUBLIC_ORIGIN`          | The site's public origin, e.g. `https://xmobile.com.tm`. Never taken from the Host header                                                               |
+| `MCP_ALLOWED_REDIRECT_HOSTS` | Comma-separated hosts an AI app may redirect back to after login. Unset or blank: `chatgpt.com`, `claude.ai` and `oauth-redirect.googleusercontent.com` |
+| `MCP_CLIENTS`                | The AI apps allowed to connect: a JSON array printed by `yarn mcp:create-client-*`. Empty: none can connect                                             |
+
+See [mcp.md](mcp.md).
+
 ## Firebase / FCM
 
 | Variable                         | Description                                     |
