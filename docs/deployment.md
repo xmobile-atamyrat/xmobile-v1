@@ -20,12 +20,12 @@ The workflow **Build and Deploy** (`.github/workflows/build-and-deploy.yml`) bui
 
 Configure these in **Settings → Secrets and variables → Actions** (only users with write/admin access can view or edit them):
 
-| Secret | Description |
-|--------|-------------|
-| `VM_HOST` | VM hostname or IP (e.g. `1.2.3.4` or `vm.example.com`) |
-| `VM_USER` | SSH user (e.g. `ubuntu`) |
-| `VM_SSH_PORT` | SSH port (e.g. `2222`) |
-| `VM_SSH_PRIVATE_KEY` | Full contents of the private key used to SSH to the VM |
+| Secret                  | Description                                                               |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `VM_HOST`               | VM hostname or IP (e.g. `1.2.3.4` or `vm.example.com`)                    |
+| `VM_USER`               | SSH user (e.g. `ubuntu`)                                                  |
+| `VM_SSH_PORT`           | SSH port (e.g. `2222`)                                                    |
+| `VM_SSH_PRIVATE_KEY`    | Full contents of the private key used to SSH to the VM                    |
 | `VM_SSH_KEY_PASSPHRASE` | Passphrase for the private key (leave empty if the key has no passphrase) |
 
 ## How to run
@@ -97,6 +97,18 @@ include /etc/nginx/snippets/xmobile-locale-redirect.conf;
 
 `scripts/prod_scripts/restart-nginx.sh` copies `/home/ubuntu/xmobile-v1/nginx/default` (untracked, VM only) over that file, so add the same line there too, or the next run of the script removes it.
 
+## MCP rate limit (nginx)
+
+nginx limits `/api/mcp` and `/.well-known/oauth-*`, with or without a locale prefix such as `/en` (Next serves them under one too), to 5 requests a second per IP (bursts of 40), so a flood of made-up tokens is turned away before it reaches Next and the database. Every other path is untouched. The rules are in `scripts/prod_scripts/nginx-mcp-limit-zone.conf` and `nginx-mcp-limit.conf`, copied by hand like the language files:
+
+```bash
+cd /home/ubuntu/xmobile-v1
+sudo cp scripts/prod_scripts/nginx-mcp-limit-zone.conf /etc/nginx/conf.d/xmobile-mcp-limit-zone.conf
+sudo cp scripts/prod_scripts/nginx-mcp-limit.conf /etc/nginx/snippets/xmobile-mcp-limit.conf
+```
+
+Then add `include /etc/nginx/snippets/xmobile-mcp-limit.conf;` inside the same `location / {` as the language include (and in `nginx/default`), and run `sudo nginx -t && sudo systemctl reload nginx`. If `/api/` has its own `location` block, put the include there instead: it has to be in the block that proxies the MCP paths to Next.
+
 Check and reload (a failed `nginx -t` changes nothing that is running):
 
 ```bash
@@ -127,6 +139,7 @@ Scheduled runs on GitHub are frequently delayed under load, so treat the times a
 ### Flow (each job runs in parallel)
 
 **Job: Backup DB to Drive**
+
 1. SSH to VM → run `backup-data.sh db` → copy `db_backup.sql` to runner → configure rclone → upload to `gdrive:<date>/` → prune (daily run only, keep `BACKUP_RETENTION_COUNT` = 30 folders) → delete `db_backup.sql` from VM.
 
 The midnight run uploads the canonical **`db_backup.sql`**; the seven intraday runs upload **`db_backup_<HHMM>.sql`** (e.g. `db_backup_1500.sql`) alongside it. The restore scripts (`scripts/apply-backup.sh`, `scripts/apply-backup-local.sh`) expect the file at `backup/db_backup.sql`, so **to restore from an intraday dump, download it and rename it to `db_backup.sql` first.**
@@ -134,19 +147,21 @@ The midnight run uploads the canonical **`db_backup.sql`**; the seven intraday r
 The job uses a `backup-db` concurrency group so a slow run and the next 3-hourly tick queue instead of racing on the VM's single `db_backup.sql`.
 
 **Job: Backup images to Drive**
+
 1. SSH to VM → run `backup-data.sh images` → copy `images.tar.gz` to runner → configure rclone → upload to `gdrive:<date>/` → prune (keep 30) → delete `images.tar.gz` from VM.
 
 **Job: Backup script logs to Drive**
+
 1. Copy `/home/ubuntu/scripts/*.log` to runner → configure rclone → upload to `gdrive:<date>/` → truncate `nginx.access.log` and `nginx.error.log` on the VM → prune (keep 30).
 
 All jobs write to the same date folder (e.g. `2025-03-09/`), so a full day produces `db_backup.sql`, seven `db_backup_<HHMM>.sql` files, `images.tar.gz`, and the log files in that folder. Retention is **30 date folders**, so intraday dumps are kept for the same 30 days as everything else. Each job has its own 45-minute timeout.
 
 ### Required repository secrets (in addition to VM secrets)
 
-| Secret | Description |
-|--------|-------------|
-| `GDRIVE_FOLDER_ID` | Google Drive folder ID. Open your backup folder in the browser; the ID is in the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`. |
-| `GDRIVE_OAUTH_TOKEN` | rclone OAuth token (JSON). See below to obtain it. |
+| Secret               | Description                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GDRIVE_FOLDER_ID`   | Google Drive folder ID. Open your backup folder in the browser; the ID is in the URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`. |
+| `GDRIVE_OAUTH_TOKEN` | rclone OAuth token (JSON). See below to obtain it.                                                                                          |
 
 ### Google Drive setup (OAuth)
 
