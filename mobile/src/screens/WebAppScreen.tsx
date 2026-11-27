@@ -754,6 +754,10 @@ function WebAppScreen() {
         key={`${isDevMode ? 'dev' : 'prod'}-${reloadKey}`}
         ref={webViewRef}
         source={{ uri: `${baseUrl}${initialPath}` }}
+        // On iPad, WKWebView sends the desktop Safari UA ("Macintosh", no
+        // "iPad"), so the server can't tell app traffic from a Mac browser.
+        // detectPlatform() in src/lib/analytics/server/userAgent.ts keys on this.
+        applicationNameForUserAgent={`XMobileApp/${DeviceInfo.getVersion()}`}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         cacheEnabled={true}
