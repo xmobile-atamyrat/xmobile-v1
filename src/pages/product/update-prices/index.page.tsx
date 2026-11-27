@@ -777,6 +777,7 @@ export default function UpdatePrices() {
 
   return (
     <Layout
+      mobileBackButton
       handleHeaderBackButton={() => router.push('/')}
       mobileChatFabBottom={
         pendingCount > 0 ? MOBILE_CHAT_BOTTOM_ABOVE_SAVE_BAR : undefined

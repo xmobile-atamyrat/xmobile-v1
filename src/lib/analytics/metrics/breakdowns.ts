@@ -1,11 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-import {
-  plainRows,
-  rawVisitorsByPlatform,
-  storedOnlyTo,
-  sumDailyBy,
-} from './sql';
+import { plainRows, sumDailyBy } from './sql';
 import {
   DIM,
   eventsWhere,
@@ -18,10 +13,9 @@ import type { WidgetGroup } from './widget';
 
 /**
  * Breakdowns. `key` (and `label`) is the raw value; the dashboard translates.
- * - by_platform: unique visitors per platform ('WEB' / 'APP'). Exact inside
- *   the raw window. A range reaching past it adds the exact count of its days
- *   inside the window to the sum of daily uniques before it (an upper bound).
- *   A visitor who used both counts in both.
+ * The first three all count page views, so the cards are comparable and each
+ * one adds up to the range's page views.
+ * - by_platform: page views per platform ('WEB' / 'APP').
  * - by_locale: page views per locale code.
  * - by_device: page views per device ('mobile' / 'tablet' / 'desktop', or
  *   'unknown' when the tracker sent none).
@@ -52,24 +46,12 @@ export const breakdownsRollups: DailyRollup[] = [
 ];
 
 export const breakdownsWidgets = {
-  by_platform: async ({ from, to, limit, ctx }) => {
-    if (from >= ctx.rawFrom) {
-      const rows = await rawVisitorsByPlatform(from, to);
-      return { kind: 'topN', rows: plainRows(rows.slice(0, limit)) };
-    }
-    const [old, recent] = await Promise.all([
-      sumDailyBy(STORED.visitors, DIM.platform, from, storedOnlyTo(to, ctx)),
-      to >= ctx.rawFrom ? rawVisitorsByPlatform(ctx.rawFrom, to) : [],
-    ]);
-    const totals = new Map<string, number>();
-    [...old, ...recent].forEach(({ key, value }) =>
-      totals.set(key, (totals.get(key) ?? 0) + value),
-    );
-    const rows = Array.from(totals, ([key, value]) => ({ key, value })).sort(
-      (a, b) => b.value - a.value || (a.key < b.key ? -1 : 1),
-    );
-    return { kind: 'topN', rows: plainRows(rows.slice(0, limit)) };
-  },
+  by_platform: async ({ from, to, limit }) => ({
+    kind: 'topN',
+    rows: plainRows(
+      await sumDailyBy(STORED.pageviews, DIM.platform, from, to, limit),
+    ),
+  }),
   by_locale: async ({ from, to, limit }) => ({
     kind: 'topN',
     rows: plainRows(

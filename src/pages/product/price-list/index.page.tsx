@@ -222,7 +222,7 @@ export default function PriceList() {
   };
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout mobileBackButton handleHeaderBackButton={() => router.push('/')}>
       {isStaff && (
         <Box
           sx={{

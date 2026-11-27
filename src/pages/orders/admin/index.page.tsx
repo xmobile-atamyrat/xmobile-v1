@@ -155,7 +155,7 @@ export default function UserOrdersPage() {
   }, [status, debouncedSearchKeyword, dateFrom, dateTo]);
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout mobileBackButton handleHeaderBackButton={() => router.push('/')}>
       {['ADMIN', 'SUPERUSER'].includes(user?.grade) && (
         <Box
           sx={{

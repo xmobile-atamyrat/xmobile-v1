@@ -236,7 +236,7 @@ export default function BulkEdit() {
   };
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/')}>
+    <Layout mobileBackButton handleHeaderBackButton={() => router.push('/')}>
       <Box
         sx={{
           mt: isMdUp

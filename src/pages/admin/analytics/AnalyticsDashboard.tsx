@@ -4,6 +4,10 @@ import {
   presetRange,
   type RangePreset,
 } from '@/lib/analytics/adminQuery';
+import {
+  WIDGET_HINT_KEYS,
+  type MetricId,
+} from '@/lib/analytics/metrics/catalog';
 import type {
   AnalyticsResponse,
   AnalyticsWidgetResult,
@@ -72,6 +76,10 @@ type CachedResponse = { owner: string; response: AnalyticsResponse };
 export default function AnalyticsDashboard({ today: todayProp }: Props) {
   const t = useTranslations();
   const label = useAnalyticsLabel();
+  const hintFor = (id: string): string | undefined => {
+    const key = WIDGET_HINT_KEYS[id as MetricId];
+    return key ? label(key) : undefined;
+  };
   const { locale } = useRouter();
   const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
@@ -161,6 +169,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
       <WidgetCard
         key={widget.id}
         title={title}
+        hint={hintFor(widget.id)}
         widgetId={widget.id}
         testId={`widget-${widget.id}`}
       >
@@ -237,6 +246,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
               <KpiCard
                 key={widget.id}
                 title={label(widget.labelKey, widget.id)}
+                hint={hintFor(widget.id)}
                 unit={widget.unit}
                 data={widget.data?.kind === 'kpi' ? widget.data : null}
                 locale={locale}
@@ -270,6 +280,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
                 <WidgetCard
                   key={widget.id}
                   title={label(widget.labelKey, widget.id)}
+                  hint={hintFor(widget.id)}
                   widgetId={widget.id}
                   testId={`widget-${widget.id}`}
                 >

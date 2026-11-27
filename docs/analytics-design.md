@@ -182,7 +182,7 @@ Revisit this if raw volume heads towards a few hundred thousand events a day and
 - **TimescaleDB** columnar compression gives 10–20x on raw data. Whether that's possible depends on installing the extension offline on the VM.
 - **Archive old rows to Parquet** with DuckDB (zstd, about 10x) before deleting them, if raw history is wanted for ad-hoc analysis.
 
-**Unique visitors.** These can't be summed: daily uniques don't add up to monthly uniques. They're stored as separate metrics (`visitors`, `visitors_week`, `visitors_month`, with `day` = the start of the period). The dashboard counts the part of a range inside the 90-day raw window exactly with `COUNT(DISTINCT)` on raw events, and adds the tightest upper bound for any older part (per week and month, the smaller of the stored row and the summed daily uniques). Sessions and the platform breakdown work the same way. The traffic chart sums daily sessions, so a session that crosses midnight counts on both days there. At this scale an exact `COUNT(DISTINCT)` is fine, so HyperLogLog isn't needed.
+**Unique visitors.** These can't be summed: daily uniques don't add up to monthly uniques. They're stored as separate metrics (`visitors`, `visitors_week`, `visitors_month`, with `day` = the start of the period). The dashboard counts the part of a range inside the 90-day raw window exactly with `COUNT(DISTINCT)` on raw events, and adds the tightest upper bound for any older part (per week and month, the smaller of the stored row and the summed daily uniques). Sessions work the same way. The traffic chart sums daily sessions, so a session that crosses midnight counts on both days there. At this scale an exact `COUNT(DISTINCT)` is fine, so HyperLogLog isn't needed.
 
 ## 5. Rollup jobs (batch runner)
 
@@ -201,7 +201,7 @@ Two pieces:
 - **`src/lib/analytics/metrics/catalog.ts`** lists every dashboard widget in display order: `{ id, kind, access, unit, labelKey }`, where `kind` is `kpi | timeseries | topN | funnel` and `unit` is `count | tmt | percent` (percent values are 0–100).
 - **`src/lib/analytics/metrics/*.ts`**, one file per group (`traffic`, `orders`, `revenue`, `products`, `search`, `breakdowns`), each holding its daily rollups and its widget queries. `metrics/index.ts` exports `queryWidget(id, params)` and a registry typed so that a catalog id without a query, or a query returning the wrong `kind`, is a type error.
 
-The rollup jobs loop over the rollups (`DAILY_ROLLUPS`); the API and dashboard loop over the catalog. The dashboard renders widgets by `kind`, so a new widget needs no dashboard code. Adding an analytic means: an event (if it needs a new one), a rollup and a query in the right group file, a catalog entry, and its translation key in all five locales (a unit test checks the keys).
+The rollup jobs loop over the rollups (`DAILY_ROLLUPS`); the API and dashboard loop over the catalog. The dashboard renders widgets by `kind`, so a new widget needs no dashboard code. Adding an analytic means: an event (if it needs a new one), a rollup and a query in the right group file, a catalog entry, and its translation key in all five locales (a unit test checks the keys). A widget whose name alone is ambiguous also gets a one-sentence definition in `WIDGET_HINT_KEYS`, shown behind an info icon next to its title (hover on desktop, tap on a phone).
 
 **Access.** Revenue widgets (revenue, revenue over time, completed orders, average order value) have `access: 'superuser'`. Everything else has `access: 'staff'`. The API checks this per widget, so an admin requesting a superuser widget gets it left out of the response, and the dashboard hides widgets the viewer can't see.
 
@@ -218,12 +218,12 @@ The rollup jobs loop over the rollups (`DAILY_ROLLUPS`); the API and dashboard l
 
 ## 8. Starter metrics, in priority order
 
-1. Visitors, sessions and page views over time, split by web and app.
+1. Visitors, sessions (shown as "Visits" on the dashboard: one per 30 minutes of activity, not chats) and page views over time, split by web and app.
 2. Top N viewed products and top categories.
 3. Top searches and **searches with zero results**. These are usually the most useful for a shop: they show what customers want and we don't stock.
-4. Funnel: product view → add to cart → order placed → order completed, with conversion rates per step. Every step counts visitors, each step requires the previous one by the same visitor in the range (with 2 minutes of slack for clock differences), and the last step joins `order_placed` events to `UserOrder` by `orderId`. The completed step is a count, not money, so admins see it too.
+4. Funnel: product view → add to cart → order placed → order completed, with conversion rates per step. Every step counts visitors, each step requires the previous one by the same visitor in the range (with 2 minutes of slack for clock differences), and the last step joins `order_placed` events to `UserOrder` by `orderId`. The completed step is a count, not money, so admins see it too. A range that starts before the raw window is split at the window's first day: the days inside it are counted exactly (so today is always live), and the older days add up their stored daily funnels, which only see same-day journeys and count a visitor once per day.
 5. Revenue (superuser only): completed-order revenue in TMT over time, number of completed orders, and average order value.
-6. Breakdowns by locale and device, and the top referrer domains.
+6. Breakdowns of page views by platform, locale and device (all three count page views, so they're comparable and each adds up to the range's page views), and the top referrer domains.
 
 ## Local development: seed data
 

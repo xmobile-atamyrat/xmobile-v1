@@ -490,20 +490,19 @@ describe('analytics metric queries (integration)', () => {
   });
 
   describe('breakdowns', () => {
-    it('splits unique visitors by platform', async () => {
-      expect(
-        await top('by_platform', { from: '2025-01-27', to: '2025-02-02' }),
-      ).toEqual([
-        { key: 'WEB', label: 'WEB', value: 6 },
-        { key: 'APP', label: 'APP', value: 2 },
+    it('splits page views by platform', async () => {
+      const range = { from: '2025-01-27', to: '2025-02-02' };
+      const rows = await top('by_platform', range);
+      expect(rows.map((r) => [r.key, r.value])).toEqual([
+        ['WEB', 6],
+        ['APP', 3],
       ]);
-      expect(
-        await top('by_platform', {
-          from: '2025-01-27',
-          to: '2025-02-02',
-          limit: 1,
-        }),
-      ).toHaveLength(1);
+      // Page views, like by_locale and by_device: the split adds up to the
+      // range's page views.
+      expect(rows.reduce((sum, r) => sum + r.value, 0)).toBe(
+        (await kpi('kpi_pageviews', range.from, range.to)).value,
+      );
+      expect(await top('by_platform', { ...range, limit: 1 })).toHaveLength(1);
     });
 
     it('splits page views by locale and device', async () => {
@@ -574,7 +573,7 @@ describe('analytics metric queries (integration)', () => {
       );
     });
 
-    it('sums sessions, platform visitors and daily funnels', async () => {
+    it('sums sessions, platform page views and daily funnels', async () => {
       expect((await kpi('kpi_sessions', OLD.from, OLD.to)).value).toBe(3);
       expect(
         (await top('by_platform', OLD)).map((r) => [r.key, r.value]),
@@ -614,12 +613,45 @@ describe('analytics metric queries (integration)', () => {
       expect((await kpi('kpi_visitors', RANGE.from, RANGE.to)).value).toBe(10);
       // Sessions: 3 daily sessions in October + 3 distinct in the window.
       expect((await kpi('kpi_sessions', RANGE.from, RANGE.to)).value).toBe(6);
-      expect(
-        (await top('by_platform', RANGE)).map((r) => [r.key, r.value]),
-      ).toEqual([
-        ['WEB', 8],
-        ['APP', 3],
+      // Page views are summable, so the split is exact over any range.
+      const platform = await top('by_platform', RANGE);
+      expect(platform.reduce((sum, r) => sum + r.value, 0)).toBe(
+        (await kpi('kpi_pageviews', RANGE.from, RANGE.to)).value,
+      );
+    });
+
+    it('adds the exact raw-window funnel to the older daily funnels', async () => {
+      const inWindow = (await funnel('2024-11-08', RANGE.to)).map(
+        (s) => s.value,
+      );
+      // October's stored daily funnels: X's product view on the 7th (the
+      // cart add on the 8th is another day).
+      const october = [1, 0, 0, 0];
+      expect((await funnel(RANGE.from, RANGE.to)).map((s) => s.value)).toEqual(
+        inWindow.map((value, i) => value + october[i]),
+      );
+    });
+
+    it('counts today live, before the next rollup', async () => {
+      const visitor = '00000000-0000-4000-8000-0000000000f1';
+      const before = await funnel(RANGE.from, RANGE.to);
+      await insertEvents(prisma, [
+        // 11:30 in Ashgabat on NOW's day; no rollup runs after it.
+        {
+          at: '2025-02-05T06:30:00Z',
+          name: 'product_view',
+          v: visitor,
+          entity: fx.p1,
+        },
       ]);
+      try {
+        const after = await funnel(RANGE.from, RANGE.to);
+        expect(after[0].value).toBe(before[0].value + 1);
+      } finally {
+        await prisma.analyticsEvent.deleteMany({
+          where: { visitorId: visitor },
+        });
+      }
     });
 
     it('splits a chart period that straddles the window start', async () => {

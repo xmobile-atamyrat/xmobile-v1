@@ -8,7 +8,11 @@ import en from '@/i18n/en.json';
 import ru from '@/i18n/ru.json';
 import tk from '@/i18n/tk.json';
 import tr from '@/i18n/tr.json';
-import { SERIES_LABEL_KEYS, WIDGETS } from '@/lib/analytics/metrics/catalog';
+import {
+  SERIES_LABEL_KEYS,
+  WIDGET_HINT_KEYS,
+  WIDGETS,
+} from '@/lib/analytics/metrics/catalog';
 import { BREAKDOWN_LABEL_KEYS } from '@/pages/admin/analytics/format';
 
 const locales: Record<string, Record<string, string>> = {
@@ -44,6 +48,7 @@ const usedKeys = (): string[] => {
 const requiredKeys = [
   ...WIDGETS.map((widget) => widget.labelKey),
   ...Object.values(SERIES_LABEL_KEYS),
+  ...Object.values(WIDGET_HINT_KEYS),
   ...Object.values(BREAKDOWN_LABEL_KEYS).flatMap((map) => Object.values(map)),
   ...usedKeys(),
   // Reused from the old /analytics page.

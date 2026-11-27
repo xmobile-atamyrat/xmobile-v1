@@ -231,6 +231,16 @@ describe('Favorites API (integration)', () => {
     const older = await createProduct('fav-order-older');
     const newer = await createProduct('fav-order-newer');
     const soldOut = await createProduct('fav-order-sold-out');
+    // "Newest" is the product's createdAt. Products created back to back can
+    // share a millisecond, which leaves their order to Postgres, so pin it.
+    await prisma.product.update({
+      where: { id: older.id },
+      data: { createdAt: new Date('2026-01-01T00:00:00Z') },
+    });
+    await prisma.product.update({
+      where: { id: newer.id },
+      data: { createdAt: new Date('2026-01-02T00:00:00Z') },
+    });
     await prisma.product.update({
       where: { id: soldOut.id },
       data: { outOfStockAt: new Date() },

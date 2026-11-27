@@ -30,7 +30,10 @@ export default function AdminAnalyticsPage() {
   if (isUserLoading || !isAuthorized) return null;
 
   return (
-    <Layout handleHeaderBackButton={() => router.push('/user')}>
+    <Layout
+      mobileBackButton
+      handleHeaderBackButton={() => router.push('/user')}
+    >
       <Box
         sx={{
           mt: isMdUp

@@ -307,14 +307,14 @@ describe('AnalyticsDashboard', () => {
         'Up 25% vs previous period',
       );
       expect(
-        within(card('Sessions')).getByTestId('kpi-delta-label').textContent,
+        within(card('Visits')).getByTestId('kpi-delta-label').textContent,
       ).toBe('Down 50% vs previous period');
       expect(
         within(card('Conversion rate')).getByTestId('kpi-delta-label')
           .textContent,
       ).toBe('Up 0.5 pp vs previous period');
 
-      const sessions = within(card('Sessions')).getByTestId('kpi-delta');
+      const sessions = within(card('Visits')).getByTestId('kpi-delta');
       expect(sessions.dataset.direction).toBe('down');
       expect(sessions.textContent).toContain('−50%');
 
@@ -354,7 +354,7 @@ describe('AnalyticsDashboard', () => {
       renderDashboard();
       await screen.findByText('1,250');
 
-      ['Visitors', 'Sessions', 'Conversion rate'].forEach((name) => {
+      ['Visitors', 'Visits', 'Conversion rate'].forEach((name) => {
         const kpi = card(name);
         expect(within(kpi).queryByTestId('kpi-delta')).toBeNull();
         expect(within(kpi).queryByTestId('kpi-delta-label')).toBeNull();
@@ -633,15 +633,17 @@ describe('AnalyticsDashboard', () => {
     it('translates breakdown values but leaves search terms alone', async () => {
       renderDashboard();
       const platform = await screen.findByRole('region', {
-        name: 'By platform',
+        name: 'Page views by platform',
       });
       expect(
         within(platform)
           .getAllByTestId('topn-row')
           .map((row) => row.textContent),
       ).toEqual(['1App60', '2Website40']);
-      expect(within(card('By language')).getByText('Turkmen')).toBeTruthy();
-      const device = card('By device');
+      expect(
+        within(card('Page views by language')).getByText('Turkmen'),
+      ).toBeTruthy();
+      const device = card('Page views by device');
       expect(within(device).getByText('Phone')).toBeTruthy();
       expect(within(device).getByText('Unknown')).toBeTruthy();
       expect(within(card('Top searches')).getByText('ru')).toBeTruthy();
@@ -673,7 +675,7 @@ describe('AnalyticsDashboard', () => {
     await screen.findByText('1,250');
 
     expect(
-      within(card('Sessions')).getByText('Could not load this block.'),
+      within(card('Visits')).getByText('Could not load this block.'),
     ).toBeTruthy();
     expect(
       within(card('Traffic')).getByText('Could not load this block.'),
@@ -691,9 +693,9 @@ describe('AnalyticsDashboard', () => {
     expect(screen.getByRole('status').textContent).toBe(
       'Blocks that could not load: 3.',
     );
-    expect(within(card('By platform')).getAllByTestId('topn-row')).toHaveLength(
-      2,
-    );
+    expect(
+      within(card('Page views by platform')).getAllByTestId('topn-row'),
+    ).toHaveLength(2);
   });
 
   it('shows a retry when the whole request fails', async () => {
@@ -711,6 +713,55 @@ describe('AnalyticsDashboard', () => {
     expect(
       screen.queryByText('Could not load analytics. Please try again.'),
     ).toBeNull();
+  });
+
+  describe('definitions', () => {
+    it('explains ambiguous metrics behind an info icon', async () => {
+      const user = userEvent.setup();
+      renderDashboard();
+      await screen.findByText('1,250');
+
+      const hint = within(card('Visits')).getByRole('button', {
+        name: /ends after 30 minutes without activity/,
+      });
+      await user.hover(hint);
+      expect(
+        await screen.findByRole('tooltip', {
+          name: /ends after 30 minutes without activity/,
+        }),
+      ).toBeTruthy();
+
+      await user.unhover(hint);
+      await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
+
+      // Phones have no hover: a tap opens it, a tap elsewhere closes it.
+      await user.click(hint);
+      expect(await screen.findByRole('tooltip')).toBeTruthy();
+      await user.click(screen.getByText('Period'));
+      await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
+
+      // Top lists say they count every view, not unique visitors.
+      expect(
+        within(card('Most viewed products')).getByRole('button', {
+          name: /repeat views included \(not unique visitors\)/,
+        }),
+      ).toBeTruthy();
+
+      // Titles that already say what they count get no icon.
+      expect(
+        within(card('Page views by platform')).queryByTestId('analytics-hint'),
+      ).toBeNull();
+    });
+
+    it('says what each breakdown counts and labels both control rows', async () => {
+      renderDashboard();
+      await screen.findByText('1,250');
+      expect(card('Page views by platform')).toBeTruthy();
+      expect(card('Page views by language')).toBeTruthy();
+      expect(card('Page views by device')).toBeTruthy();
+      expect(screen.getByText('Period')).toBeTruthy();
+      expect(screen.getByText('Group charts by')).toBeTruthy();
+    });
   });
 
   describe('controls', () => {
