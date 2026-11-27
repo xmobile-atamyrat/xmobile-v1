@@ -496,6 +496,8 @@ describe('payload', () => {
     expect(payload).toEqual({
       platform: 'WEB',
       locale: 'ru',
+      // Send time on the same clock as ts, so the server can correct skew.
+      sentAt: 9_000,
       events: [
         { name: 'product_view', props: { productId: 'p1' }, ts: 1_000 },
         { name: 'category_view', props: { categoryId: 'c1' }, ts: 2_000 },
@@ -509,6 +511,28 @@ describe('payload', () => {
     analytics.flush();
 
     expect((await sentPayloads())[0].platform).toBe('APP');
+  });
+
+  it.each([
+    [
+      'an Android WebView of another app (Instagram)',
+      'Mozilla/5.0 (Linux; Android 13; SM-A515F Build/TP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36 Instagram 300.0.0.0',
+    ],
+    [
+      'a generic Android WebView UA',
+      'Mozilla/5.0 (Linux; Android 13; SM-A515F; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36',
+    ],
+  ])('tags %s without ReactNativeWebView as WEB', async (_label, ua) => {
+    setUserAgent(ua);
+    // iOS in-app browsers expose WKWebView message handlers too.
+    (window as any).webkit = { messageHandlers: {} };
+    try {
+      analytics.track('product_view', { productId: 'p1' });
+      analytics.flush();
+      expect((await sentPayloads())[0].platform).toBe('WEB');
+    } finally {
+      delete (window as any).webkit;
+    }
   });
 
   it('uses the router locale', async () => {
@@ -603,6 +627,14 @@ describe('normalizePath / isExcludedPath', () => {
     ['/product/%E0%A4%A', '/product/%E0%A4%A'],
   ])('%s → %s', (input, expected) => {
     expect(analytics.normalizePath(input)).toBe(expected);
+  });
+
+  it('caps the path without splitting a surrogate pair', () => {
+    // '/' + 298 'a' + an emoji = 301 units; a plain slice would keep half of it.
+    const path = analytics.normalizePath(`/${'a'.repeat(298)}😀x`);
+    expect(path).toBe(`/${'a'.repeat(298)}`);
+    expect(analytics.truncateText('a😀', 2)).toBe('a');
+    expect(analytics.truncateText('a😀', 3)).toBe('a😀');
   });
 
   it('caps the path at 300 characters', () => {
@@ -869,6 +901,25 @@ describe('automatic page views', () => {
     expect(events[1].props).not.toHaveProperty('referrer');
   });
 
+  it('sends the referrer host name, lowercased, without a port', async () => {
+    setReferrer('https://WWW.Example.COM:8443/path?q=1');
+    analytics.initAnalytics(createFakeRouter());
+    analytics.flush();
+
+    expect((await sentEvents())[0].props.referrer).toBe('example.com');
+  });
+
+  it.each([
+    ['an IPv6 host', 'http://[::1]:8080/'],
+    ['a too-long host', `https://${'a'.repeat(100)}.com/`],
+  ])('omits a referrer that is %s', async (_label, referrer) => {
+    setReferrer(referrer);
+    analytics.initAnalytics(createFakeRouter());
+    analytics.flush();
+
+    expect((await sentEvents())[0].props).not.toHaveProperty('referrer');
+  });
+
   it('omits the referrer for internal navigation and direct visits', async () => {
     setReferrer(`${window.location.origin}/category/x`);
     analytics.initAnalytics(createFakeRouter());
@@ -887,6 +938,55 @@ describe('automatic page views', () => {
       '/',
       '/product/from-mock',
     ]);
+  });
+});
+
+describe('back/forward cache', () => {
+  function pageShow(persisted: boolean) {
+    const event = new Event('pageshow') as PageTransitionEvent;
+    Object.defineProperty(event, 'persisted', { value: persisted });
+    window.dispatchEvent(event);
+  }
+
+  it('records a page view when the page is restored from bfcache', async () => {
+    const router = createFakeRouter();
+    analytics.initAnalytics(router);
+    router.navigate('/product/a');
+    window.history.replaceState({}, '', '/product/a');
+    // The visitor leaves for another site and comes back with Back.
+    window.dispatchEvent(new Event('pagehide'));
+    pageShow(true);
+    analytics.flush();
+
+    expect(
+      (await sentEvents())
+        .filter((e) => e.name === 'page_view')
+        .map((e) => e.props.path),
+    ).toEqual(['/', '/product/a', '/product/a']);
+  });
+
+  it('ignores a normal pageshow; a restore is deduped like any page view', async () => {
+    const router = createFakeRouter();
+    analytics.initAnalytics(router);
+    pageShow(false);
+    pageShow(true);
+    router.navigate('/');
+    analytics.flush();
+
+    expect(
+      (await sentEvents())
+        .filter((e) => e.name === 'page_view')
+        .map((e) => e.props.path),
+    ).toEqual(['/', '/']);
+  });
+
+  it('does not record a restored staff page', async () => {
+    window.history.replaceState({}, '', '/admin/banners');
+    analytics.initAnalytics(createFakeRouter());
+    pageShow(true);
+    analytics.flush();
+
+    expect(await sentEvents()).toEqual([]);
   });
 });
 

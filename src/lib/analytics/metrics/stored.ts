@@ -57,16 +57,19 @@ export type FunnelStep = (typeof FUNNEL_STEPS)[number];
 export const TMT_MINOR_UNITS = 100;
 
 /**
- * One daily rollup. `build(day)` returns the INSERT statements that write the
- * day's rows for `metrics`; rollupDay deletes those metrics' rows for the day
- * and runs the statements in one transaction. `reads` says which source data
- * the rows come from, so days whose raw events were pruned can still refresh
- * the order-based ones without overwriting the rest with zeros.
+ * One daily rollup. `build(day)` returns the INSERT … SELECT statements that
+ * write the day's rows for `metrics`; rollupDay deletes those metrics' rows
+ * for the day and runs the statements in one transaction, after taking the
+ * rollup advisory lock. `build` is synchronous on purpose: every read happens
+ * inside that transaction, so an older, slower run can't overwrite a newer
+ * one with data it read before the lock. `reads` says which source data the
+ * rows come from, so days whose raw events were pruned can still refresh the
+ * order-based ones without overwriting the rest with zeros.
  */
 export interface DailyRollup {
   metrics: readonly StoredMetric[];
   reads: readonly ('events' | 'orders')[];
-  build: (day: string) => Promise<Prisma.Sql[]> | Prisma.Sql[];
+  build: (day: string) => Prisma.Sql[];
 }
 
 /**
@@ -86,13 +89,17 @@ export function insertDaily(
     DO UPDATE SET "value" = EXCLUDED."value"`;
 }
 
-/** WHERE clause for raw events of Ashgabat days `from`..`to` (and names). */
+/**
+ * WHERE clause for raw events of Ashgabat days `from`..`to` (and names).
+ * With `until`, the last day only counts events before that instant.
+ */
 export function eventsWhere(
   from: string,
   to: string,
   names?: readonly EventName[],
+  until?: Date,
 ): Prisma.Sql {
-  const range = sqlDayRange(Prisma.sql`"occurredAt"`, from, to);
+  const range = sqlDayRange(Prisma.sql`"occurredAt"`, from, to, until);
   if (!names || names.length === 0) return range;
   return names.length === 1
     ? Prisma.sql`"name" = ${names[0]} AND ${range}`

@@ -1,44 +1,17 @@
-import { currentGrade, verifyToken } from '@/pages/api/utils/authMiddleware';
-import { isStaff } from '@/pages/api/utils/staffAuth';
-import { REFRESH_SECRET } from '@/pages/api/utils/tokenUtils';
 import Layout from '@/pages/components/Layout';
-import {
-  appBarHeight,
-  AUTH_REFRESH_COOKIE_NAME,
-  mobileAppBarHeight,
-} from '@/pages/lib/constants';
+import { appBarHeight, mobileAppBarHeight } from '@/pages/lib/constants';
 import { useUserContext } from '@/pages/lib/UserContext';
 import { colors, fontClassName } from '@/styles/theme';
 import AnalyticsIcon from '@mui/icons-material/Insights';
 import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { GetServerSideProps } from 'next';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
 import AnalyticsDashboard from './AnalyticsDashboard';
+import { adminAnalyticsServerProps } from './serverProps';
 
-// No seoData: _app marks the page noindex.
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const home = {
-    redirect: { destination: `/${ctx.locale || 'ru'}/`, permanent: false },
-  };
-  const refreshToken = ctx.req.cookies[AUTH_REFRESH_COOKIE_NAME];
-  if (!refreshToken) return home;
-  try {
-    const { userId } = await verifyToken(refreshToken, REFRESH_SECRET);
-    // Go by the account's current grade, not the one baked into the cookie.
-    if (!isStaff((await currentGrade(userId)) ?? undefined)) return home;
-  } catch {
-    return home;
-  }
-
-  return {
-    props: {
-      messages: (await import(`../../../i18n/${ctx.locale}.json`)).default,
-    },
-  };
-};
+export const getServerSideProps = adminAnalyticsServerProps;
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();

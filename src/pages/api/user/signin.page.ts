@@ -1,4 +1,5 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import { detachAnalyticsFromUsers } from '@/lib/analytics/server/userData';
 import dbClient from '@/lib/dbClient';
 import addCors from '@/pages/api/utils/addCors';
 import { secureCookieAttr } from '@/pages/api/utils/requestScheme';
@@ -45,7 +46,11 @@ export default async function handler(
       if (user.deletedAt != null) {
         const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
         if (Date.now() - user.deletedAt.getTime() > ninetyDaysMs) {
-          await dbClient.user.delete({ where: { id: user.id } });
+          // Its analytics events stay, without the account.
+          await dbClient.$transaction([
+            detachAnalyticsFromUsers(dbClient, [user.id]),
+            dbClient.user.delete({ where: { id: user.id } }),
+          ]);
           console.warn(
             `${filepath}: permanently deleted expired account. email: ${email}`,
           );

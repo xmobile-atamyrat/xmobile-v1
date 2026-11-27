@@ -6,6 +6,7 @@ import {
   dayStartUtc,
   daysInRange,
   eachDay,
+  isComplete,
   isoWeekStart,
   localDay,
   monthStart,
@@ -14,8 +15,11 @@ import {
   periodStarts,
   previousRange,
   rawWindowStart,
+  sqlDayRange,
+  sqlLocalDay,
   sqlTimestamp,
 } from '@/lib/analytics/time';
+import { Prisma } from '@prisma/client';
 import { periodContaining } from '@/pages/admin/analytics/format';
 
 describe('Ashgabat day boundaries', () => {
@@ -162,7 +166,52 @@ describe('rawWindowStart', () => {
   });
 });
 
+describe('isComplete', () => {
+  it('waits an hour after the last day for late events', () => {
+    // 2026-11-29 (a Sunday) ends at 2026-11-29T19:00Z.
+    expect(isComplete('2026-11-29', new Date('2026-11-29T19:59:59Z'))).toBe(
+      false,
+    );
+    expect(isComplete('2026-11-29', new Date('2026-11-29T20:00:00Z'))).toBe(
+      true,
+    );
+    expect(isComplete('2026-11-29', new Date('2026-11-29T12:00:00Z'))).toBe(
+      false,
+    );
+  });
+});
+
 describe('SQL helpers', () => {
+  it('ends a day range early at `until`, never late', () => {
+    const column = Prisma.sql`"occurredAt"`;
+    expect(sqlDayRange(column, '2026-11-26', '2026-11-27').values).toEqual([
+      '2026-11-25 19:00:00.000',
+      '2026-11-27 19:00:00.000',
+    ]);
+    expect(
+      sqlDayRange(
+        column,
+        '2026-11-26',
+        '2026-11-27',
+        new Date('2026-11-27T04:30:00Z'),
+      ).values,
+    ).toEqual(['2026-11-25 19:00:00.000', '2026-11-27 04:30:00.000']);
+    expect(
+      sqlDayRange(
+        column,
+        '2026-11-26',
+        '2026-11-27',
+        new Date('2026-11-28T04:30:00Z'),
+      ).values,
+    ).toEqual(['2026-11-25 19:00:00.000', '2026-11-27 19:00:00.000']);
+  });
+
+  it('takes the local day with interval arithmetic, not AT TIME ZONE', () => {
+    const sql = sqlLocalDay(Prisma.sql`"completedAt"`).sql;
+    expect(sql).toContain(`interval '5 hours'`);
+    expect(sql).not.toMatch(/time zone/i);
+  });
+
   it('passes timestamps as zone-less UTC text', () => {
     const sql = sqlTimestamp(new Date('2026-11-25T19:00:00.000Z'));
     expect(sql.values).toEqual(['2026-11-25 19:00:00.000']);

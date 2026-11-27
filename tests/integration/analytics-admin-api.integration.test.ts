@@ -1,5 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
+import type {
+  GetServerSidePropsContext,
+  NextApiRequest,
+  NextApiResponse,
+} from 'next';
+import { PrismaClient, type UserRole } from '@prisma/client';
 import { createMocks, type RequestMethod } from 'node-mocks-http';
 import {
   afterAll,
@@ -282,13 +286,20 @@ describe('GET /api/admin/analytics (integration)', () => {
       });
 
       const { queryWidget } = await mocks();
-      expect(queryWidget).toHaveBeenCalledWith('by_locale', {
-        from: SEED_DAYS[0],
-        to: SEED_DAYS[2],
-        granularity: 'day',
-        limit: 2,
-        locale: 'en',
-      });
+      expect(queryWidget).toHaveBeenCalledWith(
+        'by_locale',
+        {
+          from: SEED_DAYS[0],
+          to: SEED_DAYS[2],
+          granularity: 'day',
+          limit: 2,
+          locale: 'en',
+        },
+        { ctx: expect.anything() },
+      );
+      // Every widget of the request shares the one context.
+      const contexts = queryWidget.mock.calls.map((args) => args[2]?.ctx);
+      expect(new Set(contexts).size).toBe(1);
     });
   });
 
@@ -308,6 +319,30 @@ describe('GET /api/admin/analytics (integration)', () => {
       expect(status).toBe(400);
       expect(body.success).toBe(false);
       expect(body.message).toMatch(/^Invalid/);
+    });
+
+    it('is 400 for days before 2020 or after tomorrow', async () => {
+      const { ashgabatDay, shiftDay } = await import(
+        '@/lib/analytics/adminQuery'
+      );
+      const today = ashgabatDay();
+      const early = await call(adminToken, {
+        from: '0001-01-01',
+        to: '0001-01-31',
+      });
+      expect(early.status).toBe(400);
+      expect(early.body.message).toMatch(/^Invalid to: .*2020-01-01/);
+
+      const tooLate = await call(adminToken, { to: shiftDay(today, 2) });
+      expect(tooLate.status).toBe(400);
+      expect(tooLate.body.message).toMatch(/^Invalid to/);
+
+      // Tomorrow is tolerated: a browser clock a little ahead.
+      const tomorrow = await call(adminToken, {
+        widgets: 'kpi_visitors',
+        to: shiftDay(today, 1),
+      });
+      expect(tomorrow.status).toBe(200);
     });
 
     it('accepts the longest allowed range and every granularity', async () => {
@@ -374,6 +409,112 @@ describe('GET /api/admin/analytics (integration)', () => {
       expect(status).toBe(200);
       expect(body.data!.telekomBalance).toBeNull();
       expect(body.data!.widgets[0].data).not.toBeNull();
+    });
+  });
+
+  describe('/admin/analytics page gate', () => {
+    type Result = {
+      redirect?: { destination: string; permanent: boolean };
+      props?: { messages?: Record<string, string> };
+    };
+
+    const open = async (refreshToken: string | null, locale = 'en') => {
+      // The page's getServerSideProps (index.page.tsx re-exports it).
+      const { adminAnalyticsServerProps: getServerSideProps } = await import(
+        '@/pages/admin/analytics/serverProps'
+      );
+      const { AUTH_REFRESH_COOKIE_NAME } = await import(
+        '@/pages/lib/constants'
+      );
+      return (await getServerSideProps({
+        req: {
+          cookies: refreshToken
+            ? { [AUTH_REFRESH_COOKIE_NAME]: refreshToken }
+            : {},
+        },
+        res: {},
+        query: {},
+        resolvedUrl: '/admin/analytics',
+        locale,
+      } as unknown as GetServerSidePropsContext)) as Result;
+    };
+
+    const refreshTokenFor = async (userId: string, grade: UserRole) =>
+      (await import('@/pages/api/utils/tokenUtils')).generateTokens(
+        userId,
+        grade,
+      ).refreshToken;
+
+    const home = (locale: string) => ({
+      redirect: { destination: `/${locale}/`, permanent: false },
+    });
+
+    it('sends anonymous visitors and broken cookies home', async () => {
+      expect(await open(null)).toEqual(home('en'));
+      expect(await open('not-a-jwt', 'tk')).toEqual(home('tk'));
+    });
+
+    it('sends a FREE user home', async () => {
+      const free = userIds[2];
+      expect(await open(await refreshTokenFor(free, 'FREE'))).toEqual(
+        home('en'),
+      );
+    });
+
+    it('goes by the current grade, not the one in the cookie', async () => {
+      // A FREE account holding a cookie minted while it was an ADMIN.
+      const free = userIds[2];
+      expect(await open(await refreshTokenFor(free, 'ADMIN'))).toEqual(
+        home('en'),
+      );
+    });
+
+    it('sends a deleted staff account home', async () => {
+      const deleted = await createStaffPrincipal(prisma, 'SUPERUSER');
+      userIds.push(deleted.userId);
+      await prisma.user.update({
+        where: { id: deleted.userId },
+        data: { deletedAt: new Date() },
+      });
+      expect(
+        await open(await refreshTokenFor(deleted.userId, 'SUPERUSER')),
+      ).toEqual(home('en'));
+    });
+
+    it.each([
+      ['ADMIN', 1],
+      ['SUPERUSER', 0],
+    ] as const)('renders for an %s, in their language', async (grade, at) => {
+      const result = await open(
+        await refreshTokenFor(userIds[at], grade),
+        'ru',
+      );
+      expect(result.redirect).toBeUndefined();
+      expect(result.props?.messages?.analytics).toBe(
+        (await import('@/i18n/ru.json')).default.analytics,
+      );
+    });
+  });
+
+  describe('/analytics (retired)', () => {
+    it('redirects to the dashboard in the same language', async () => {
+      const { getServerSideProps } = await import(
+        '@/pages/analytics/index.page'
+      );
+      const at = (locale?: string) =>
+        getServerSideProps({
+          req: { cookies: {} },
+          res: {},
+          query: {},
+          resolvedUrl: '/analytics',
+          locale,
+        } as unknown as GetServerSidePropsContext);
+      expect(await at('tk')).toEqual({
+        redirect: { destination: '/tk/admin/analytics', permanent: false },
+      });
+      expect(await at(undefined)).toEqual({
+        redirect: { destination: '/ru/admin/analytics', permanent: false },
+      });
     });
   });
 

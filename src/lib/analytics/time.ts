@@ -17,7 +17,14 @@ import type { Granularity } from './metrics/types';
 
 export { localDay, shiftDay };
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * How long after an Ashgabat midnight events of the day before may still be
+ * arriving (beacons flushed on the next page load, the 5s server buffer). A
+ * day or period counts as complete once this has passed after its end.
+ */
+export const LATE_EVENTS_GRACE_MS = 60 * 60 * 1000;
 
 const dayMs = (day: string) => Date.parse(`${day}T00:00:00Z`);
 
@@ -33,6 +40,14 @@ export function dayBoundsUtc(
 ): { start: Date; end: Date } {
   const range = dayRangeUtc(from, to);
   return { start: range.gte as Date, end: range.lt as Date };
+}
+
+/** Whether every event of the days up to `lastDay` should be stored at `now`. */
+export function isComplete(lastDay: string, now: Date): boolean {
+  return (
+    now.getTime() >=
+    dayStartUtc(shiftDay(lastDay, 1)).getTime() + LATE_EVENTS_GRACE_MS
+  );
 }
 
 /** Number of days in `from`..`to`, inclusive. */
@@ -121,19 +136,34 @@ export function sqlTimestamp(date: Date): Prisma.Sql {
   return Prisma.sql`${text}::timestamp`;
 }
 
+/**
+ * The Ashgabat day of a UTC `timestamp` column, as a `date`. Plain interval
+ * arithmetic on a zone-less timestamp, so the session TimeZone doesn't matter
+ * (UTC+05:00 all year, see above).
+ */
+export function sqlLocalDay(column: Prisma.Sql): Prisma.Sql {
+  return Prisma.sql`(${column} + interval '5 hours')::date`;
+}
+
 /** An Ashgabat day as a `date` SQL parameter. */
 export function sqlDate(day: string): Prisma.Sql {
   return Prisma.sql`${day}::date`;
 }
 
-/** `"col" >= start AND "col" < end` for Ashgabat days `from`..`to`. */
+/**
+ * `"col" >= start AND "col" < end` for Ashgabat days `from`..`to`. `until`
+ * moves the end earlier (it never extends the range): the last day then only
+ * counts up to that instant.
+ */
 export function sqlDayRange(
   column: Prisma.Sql,
   from: string,
   to: string,
+  until?: Date,
 ): Prisma.Sql {
   const { start, end } = dayBoundsUtc(from, to);
-  return Prisma.sql`${column} >= ${sqlTimestamp(start)} AND ${column} < ${sqlTimestamp(end)}`;
+  const stop = until && until < end ? until : end;
+  return Prisma.sql`${column} >= ${sqlTimestamp(start)} AND ${column} < ${sqlTimestamp(stop)}`;
 }
 
 /** Converts a `date` column value read back from Postgres to 'YYYY-MM-DD'. */

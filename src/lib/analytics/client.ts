@@ -16,6 +16,8 @@
  *   that navigates twice), not a new visit.
  * - A page Chrome prerenders sends nothing until the visitor actually opens
  *   it, so a discarded prerender never shows up as a page view.
+ * - A page restored from the back/forward cache (`pageshow` with `persisted`)
+ *   records a page view again: the visitor came back to it.
  *
  * Identity lives in first-party cookies that ride along with the beacon:
  * `xa_vid` (visitor, 1 year) and `xa_sid` (session, 30 min sliding idle).
@@ -28,13 +30,14 @@ import {
   CLIENT_FLUSH_INTERVAL_MS,
   DEFAULT_ANALYTICS_LOCALE,
   MAX_EVENTS_PER_BATCH,
+  MAX_REFERRER_LENGTH,
+  REFERRER_HOST_PATTERN,
   SESSION_COOKIE,
   SESSION_IDLE_S,
   VISITOR_COOKIE,
   VISITOR_COOKIE_MAX_AGE_S,
 } from '@/lib/analytics/constants';
 import type { ClientEventName, EventProps } from '@/lib/analytics/events';
-import { isWebView } from '@/pages/lib/serviceWorker';
 import cookie from 'cookie';
 import Router from 'next/router';
 import { useEffect } from 'react';
@@ -50,7 +53,6 @@ const MAX_PATH_LENGTH = 300;
 export const RELOAD_DEDUPE_MS = 5_000;
 /** sessionStorage key holding the last page view of this tab. */
 export const LAST_PAGE_VIEW_STORAGE_KEY = 'xa_lpv';
-const MAX_REFERRER_LENGTH = 200;
 
 /**
  * Staff-only pages. Matched on whole path segments, so `/admin` and
@@ -88,6 +90,12 @@ export interface WireEvent {
 export interface EventsPayload {
   platform: AnalyticsPlatform;
   locale: string;
+  /**
+   * `Date.now()` when the batch is sent. The server compares it with its own
+   * clock and shifts every `ts` by the difference, so a phone with a wrong
+   * clock still lands its events in order with server events.
+   */
+  sentAt: number;
   events: WireEvent[];
 }
 
@@ -218,9 +226,19 @@ function touchIdentity() {
 // Context: platform, locale, device, path, referrer
 // ---------------------------------------------------------------------------
 
+/**
+ * 'APP' only inside our React Native WebView: react-native-webview defines
+ * `window.ReactNativeWebView` before any page script runs. Not `isWebView()`,
+ * which is also true for other apps' in-app browsers (Instagram, Facebook),
+ * where this is the web site opened from a link.
+ */
 function getPlatform(): AnalyticsPlatform {
   if (cachedPlatform == null) {
-    cachedPlatform = isWebView() ? 'APP' : 'WEB';
+    cachedPlatform =
+      typeof (window as Window & { ReactNativeWebView?: unknown })
+        .ReactNativeWebView !== 'undefined'
+        ? 'APP'
+        : 'WEB';
   }
   return cachedPlatform;
 }
@@ -279,6 +297,18 @@ function getDevice(): AnalyticsDevice {
 }
 
 /**
+ * The first `max` UTF-16 units of `value`, one fewer when the cut would split
+ * a surrogate pair: the server's length limits count UTF-16 units, and half
+ * a pair is a string Postgres can't store in JSON.
+ */
+export function truncateText(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max);
+  const last = cut.charCodeAt(cut.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut;
+}
+
+/**
  * Path for `page_view`: no query or hash, no locale prefix, at most 300
  * characters. Percent-encoded slugs are decoded so the dashboard is readable.
  */
@@ -303,7 +333,7 @@ export function normalizePath(url: string): string {
   } catch {
     // Malformed escape: keep the raw path.
   }
-  return pathname.slice(0, MAX_PATH_LENGTH);
+  return truncateText(pathname, MAX_PATH_LENGTH);
 }
 
 export function isExcludedPath(path: string): boolean {
@@ -312,14 +342,22 @@ export function isExcludedPath(path: string): boolean {
   );
 }
 
-/** Host of `document.referrer` when it's another site, without `www.`. */
+/**
+ * Host name of `document.referrer` when it's another site, without `www.`
+ * or a port. Omitted when it isn't a plain host name (the server would drop
+ * it anyway).
+ */
 function externalReferrer(): string | undefined {
   const raw = document.referrer;
   if (!raw) return undefined;
   try {
-    const { host } = new URL(raw);
-    if (!host || host === window.location.host) return undefined;
-    return host.replace(/^www\./i, '').slice(0, MAX_REFERRER_LENGTH);
+    const { host, hostname } = new URL(raw);
+    if (!hostname || host === window.location.host) return undefined;
+    const name = hostname.toLowerCase().replace(/^www\./, '');
+    return name.length <= MAX_REFERRER_LENGTH &&
+      REFERRER_HOST_PATTERN.test(name)
+      ? name
+      : undefined;
   } catch {
     return undefined;
   }
@@ -431,6 +469,7 @@ export function flush(): void {
       const payload: EventsPayload = {
         platform,
         locale: batchLocale,
+        sentAt: Date.now(),
         events: batch,
       };
       send(JSON.stringify(payload));
@@ -453,11 +492,28 @@ function onVisibilityChange() {
   if (document.visibilityState === 'hidden') flush();
 }
 
+/**
+ * Back/forward cache restore: the page comes back as it was left, without a
+ * load or a route change, so its page view is recorded here. The last page
+ * view is forgotten first, since it is usually this same page.
+ */
+function onPageShow(event: PageTransitionEvent) {
+  try {
+    if (!event.persisted) return;
+    lastPageViewKey = null;
+    // eslint-disable-next-line no-use-before-define
+    trackPageView(window.location.pathname);
+  } catch {
+    // Never throw from analytics.
+  }
+}
+
 function attachPageListeners() {
   if (listenersAttached) return;
   listenersAttached = true;
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('pagehide', flush);
+  window.addEventListener('pageshow', onPageShow);
 }
 
 // ---------------------------------------------------------------------------

@@ -67,3 +67,19 @@ describe('productSearchTerms', () => {
     expect(productSearchTerms('s e')).toEqual(['s e']);
   });
 });
+
+describe('productSearchTerms: characters Postgres cannot store', () => {
+  it('drops NUL characters', () => {
+    expect(productSearchTerms('iph\u0000one')).toEqual(['iphone']);
+  });
+
+  it('drops lone surrogates but keeps paired ones (emoji)', () => {
+    expect(productSearchTerms('phone\ud800')).toEqual(['phone']);
+    expect(productSearchTerms('\udc00case')).toEqual(['case']);
+    expect(productSearchTerms('phone 📱')).toEqual(['phone', '📱']);
+  });
+
+  it('yields no terms when nothing storable is left', () => {
+    expect(productSearchTerms('\u0000\ud800')).toEqual([]);
+  });
+});

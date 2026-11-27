@@ -3,7 +3,14 @@ import { Prisma } from '@prisma/client';
 import dbClient from '@/lib/dbClient';
 
 import { SERIES_LABEL_KEYS } from './catalog';
-import { round2, sumDaily, sumDailyBy, uniqueVisitors } from './sql';
+import {
+  eventSumUntil,
+  round2,
+  sumDailyBy,
+  uniqueVisitors,
+  type KpiRange,
+  type QueryContext,
+} from './sql';
 import {
   DIM,
   eventsWhere,
@@ -28,7 +35,15 @@ import { kpi, type WidgetGroup } from './widget';
  *    first such cart_add;
  * 4. order_completed: of those, visitors for whom at least one of those
  *    step-3 orders is COMPLETED in UserOrder right now.
+ *
+ * "At or after" allows FUNNEL_CLOCK_SLACK of clock skew: product_view is
+ * stamped by the browser, cart_add and order_placed by the server, so a cart
+ * add a few seconds "before" its product view still follows it.
  */
+
+/** SQL interval a later step may appear to precede the earlier one by. */
+export const FUNNEL_CLOCK_SLACK = '2 minutes';
+const SLACK_SQL = Prisma.raw(`interval '${FUNNEL_CLOCK_SLACK}'`);
 
 const FUNNEL_LABEL_KEYS: Record<FunnelStep, string> = {
   product_view: SERIES_LABEL_KEYS.funnelProductView,
@@ -50,13 +65,13 @@ function funnelSelect(from: string, to: string): Prisma.Sql {
     ),
     s2 AS (
       SELECT ev.v, min(ev.t) AS t
-      FROM ev JOIN s1 ON s1.v = ev.v AND ev.t >= s1.t
+      FROM ev JOIN s1 ON s1.v = ev.v AND ev.t >= s1.t - ${SLACK_SQL}
       WHERE ev.n = 'cart_add'
       GROUP BY ev.v
     ),
     s3 AS (
       SELECT ev.v, ev.e
-      FROM ev JOIN s2 ON s2.v = ev.v AND ev.t >= s2.t
+      FROM ev JOIN s2 ON s2.v = ev.v AND ev.t >= s2.t - ${SLACK_SQL}
       WHERE ev.n = 'order_placed'
     ),
     s4 AS (
@@ -123,19 +138,26 @@ export const ordersRollups: DailyRollup[] = [
   },
 ];
 
-const ordersPlaced = (from: string, to: string) =>
-  sumDaily(STORED.ordersPlaced, from, to);
+const ordersPlaced = (ctx: QueryContext, range: KpiRange) =>
+  eventSumUntil(ctx, STORED.ordersPlaced, range, 'order_placed', {
+    distinctEntity: true,
+  });
 
 export const ordersWidgets = {
-  kpi_orders_placed: (p) => kpi(p, ordersPlaced),
+  kpi_orders_placed: (p) => kpi(p, (range) => ordersPlaced(p.ctx, range)),
 
+  // A lower bound when the visitor count is only an upper bound.
   kpi_conversion: (p) =>
-    kpi(p, async (from, to) => {
+    kpi(p, async (range) => {
       const [orders, visitors] = await Promise.all([
-        ordersPlaced(from, to),
-        uniqueVisitors(from, to, p.ctx),
+        ordersPlaced(p.ctx, range),
+        uniqueVisitors(range, p.ctx),
       ]);
-      return visitors > 0 ? round2((orders / visitors) * 100) : null;
+      return {
+        value:
+          visitors.value > 0 ? round2((orders / visitors.value) * 100) : null,
+        exact: visitors.exact,
+      };
     }),
 
   /**

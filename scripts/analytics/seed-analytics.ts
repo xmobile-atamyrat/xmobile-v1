@@ -14,17 +14,23 @@
  *   yarn seed:analytics-dev --days 30 --seed 7
  *   yarn seed:analytics-dev --clean               # remove seed data, recompute rollups
  *
- * Seed data is tagged (see generate.ts) and re-running replaces it. The
- * generator itself is pure and lives in ./generate.ts.
+ * Seed data is tagged (see generate.ts) and re-running replaces it. The days
+ * a run owns are recorded in a marker row (see safety.ts); re-seeding and
+ * --clean rebuild rollups for those days only. The script refuses to run on
+ * production or staging (NEXT_PUBLIC_APP_ENV) and on a database that holds
+ * real history it would overwrite, unless --force is given. The generator
+ * itself is pure and lives in ./generate.ts.
  */
 import { Prisma } from '@prisma/client';
 
 import {
-  rollupPeriodUniques,
+  DAILY_ROLLUPS,
+  refreshRevenue,
+  rollupPeriods,
   rollupRange,
 } from '../../src/lib/analytics/rollup';
-import { STORED } from '../../src/lib/analytics/metrics/stored';
 import { pruneAnalyticsEvents } from '../../src/lib/analytics/retention';
+import { rawWindowStart } from '../../src/lib/analytics/time';
 import dbClient from '../../src/lib/dbClient';
 import {
   whereActiveCategory,
@@ -35,16 +41,25 @@ import {
   addDays,
   ashgabatDay,
   generateSeed,
-  monthStart,
-  periodDays,
   SEED_ORDER_NOTES,
   SEED_ORDER_PREFIX,
   SEED_UUID_PREFIX,
   type SeedCatalog,
   type SeedEvent,
   type SeedOrder,
-  weekStart,
 } from './generate';
+import {
+  checkAppEnv,
+  type DayRange,
+  historyRefusals,
+  MAX_FOREIGN_EVENTS,
+  parseMarker,
+  rangesOutside,
+  SEED_MARKER_DIMENSION,
+  SEED_MARKER_METRIC,
+  seedRange,
+  unionRanges,
+} from './safety';
 
 const EVENT_CHUNK = 5000; // × 9 columns, well under 65535 bind parameters
 const ORDER_CHUNK = 1000;
@@ -58,8 +73,19 @@ const seedOrderWhere: Prisma.UserOrderWhereInput = {
   notes: SEED_ORDER_NOTES,
 };
 
-const minDay = (...days: (string | null | undefined)[]): string | null =>
-  days.filter((d): d is string => !!d).sort()[0] ?? null;
+/** Metrics recomputed from UserOrder alone: a rebuild never loses them. */
+const ORDER_ONLY_METRICS = [
+  ...new Set(
+    DAILY_ROLLUPS.filter((r) => !r.reads.includes('events')).flatMap(
+      (r) => r.metrics,
+    ),
+  ),
+];
+
+const dayText = (value: Date | string): string =>
+  typeof value === 'string'
+    ? value.slice(0, 10)
+    : value.toISOString().slice(0, 10);
 
 const fmt = (n: number | bigint) => Number(n).toLocaleString('en-US');
 
@@ -115,89 +141,132 @@ async function loadCatalog(): Promise<SeedCatalog> {
   };
 }
 
-/**
- * Deletes every seed event and seed order. Returns the first day whose
- * rollups may contain seed numbers, or null when there was no seed data.
- *
- * Seed events older than the retention window were pruned after the last
- * seed, so the days they covered can't be found from raw data. The earliest
- * rollup day is included for that reason: on a local database every rollup
- * older than the raw window comes from a seed run.
- */
-async function removeSeedData(): Promise<{
-  from: string | null;
-  events: number;
-  orders: number;
-}> {
-  const [[eventRange], firstOrder, [dailyRange]] = await Promise.all([
-    dbClient.$queryRaw<{ min: Date | null }[]>`
-      SELECT min("occurredAt") AS min FROM "AnalyticsEvent" WHERE ${isSeedVisitorSql}`,
-    dbClient.userOrder.findFirst({
-      where: seedOrderWhere,
-      orderBy: { createdAt: 'asc' },
-      select: { createdAt: true },
-    }),
-    dbClient.$queryRaw<{ min: Date | null }[]>`
-      SELECT min("day") AS min FROM "AnalyticsDaily"`,
-  ]);
+async function readMarker(): Promise<DayRange | null> {
+  const rows = await dbClient.$queryRaw<{ day: Date; to: string }[]>`
+    SELECT "day", "dimensionValue" AS "to" FROM "AnalyticsDaily"
+    WHERE "metric" = ${SEED_MARKER_METRIC}`;
+  return parseMarker(rows);
+}
 
+/** Replaces the marker with `range`, or removes it (null). */
+async function writeMarker(range: DayRange | null): Promise<void> {
+  await dbClient.$transaction([
+    dbClient.$executeRaw`
+      DELETE FROM "AnalyticsDaily" WHERE "metric" = ${SEED_MARKER_METRIC}`,
+    ...(range
+      ? [
+          dbClient.$executeRaw`
+            INSERT INTO "AnalyticsDaily" ("day", "metric", "dimension", "dimensionValue", "value")
+            VALUES (${range.from}::date, ${SEED_MARKER_METRIC}, ${SEED_MARKER_DIMENSION}, ${range.to}, 1)`,
+        ]
+      : []),
+  ]);
+}
+
+/**
+ * The Ashgabat days the remaining seed events and orders touch (an order's
+ * revenue lands on its completion day). Covers seed data whose marker is
+ * missing: a run from before the marker existed, or one that crashed.
+ */
+async function seedDataSpan(): Promise<DayRange | null> {
+  const [[events], [orders]] = await Promise.all([
+    dbClient.$queryRaw<{ min: Date | null; max: Date | null }[]>`
+      SELECT min("occurredAt") AS min, max("occurredAt") AS max
+      FROM "AnalyticsEvent" WHERE ${isSeedVisitorSql}`,
+    dbClient.$queryRaw<{ min: Date | null; max: Date | null }[]>`
+      SELECT min("createdAt") AS min,
+             max(GREATEST("createdAt", "updatedAt", "completedAt")) AS max
+      FROM "UserOrder"
+      WHERE "orderNumber" LIKE ${`${SEED_ORDER_PREFIX}%`}
+        AND "notes" = ${SEED_ORDER_NOTES}`,
+  ]);
+  const span = (row: { min: Date | null; max: Date | null }) =>
+    row.min && row.max
+      ? { from: ashgabatDay(row.min), to: ashgabatDay(row.max) }
+      : null;
+  return unionRanges(span(events), span(orders));
+}
+
+/** Deletes every seed event and seed order. */
+async function removeSeedData(): Promise<{ events: number; orders: number }> {
   const events = await dbClient.$executeRaw`
     DELETE FROM "AnalyticsEvent" WHERE ${isSeedVisitorSql}`;
   // Items go with their order (ON DELETE CASCADE).
   const { count: orders } = await dbClient.userOrder.deleteMany({
     where: seedOrderWhere,
   });
-
-  if (events === 0 && orders === 0) return { from: null, events, orders };
-  return {
-    from: minDay(
-      eventRange.min && ashgabatDay(eventRange.min),
-      firstOrder && ashgabatDay(firstOrder.createdAt),
-      dailyRange.min && dailyRange.min.toISOString().slice(0, 10),
-    ),
-    events,
-    orders,
-  };
+  return { events, orders };
 }
 
-const PERIOD_METRICS = [STORED.visitorsWeek, STORED.visitorsMonth];
+/**
+ * Days in `range`, older than the raw window and outside `owned`, with
+ * non-zero event-based rollups: history a rebuild of `range` would destroy.
+ */
+async function findForeignRollupDays(
+  range: DayRange,
+  owned: DayRange | null,
+  rawStart: string,
+): Promise<string[]> {
+  const to = range.to < rawStart ? range.to : addDays(rawStart, -1);
+  if (to < range.from) return [];
+  const rows = await dbClient.$queryRaw<{ day: Date }[]>`
+    SELECT DISTINCT "day" FROM "AnalyticsDaily"
+    WHERE "day" >= ${range.from}::date AND "day" <= ${to}::date
+      AND "metric" NOT IN (${Prisma.join([SEED_MARKER_METRIC, ...ORDER_ONLY_METRICS])})
+      AND "value" <> 0
+      ${
+        owned
+          ? Prisma.sql`AND NOT ("day" >= ${owned.from}::date AND "day" <= ${owned.to}::date)`
+          : Prisma.empty
+      }
+    ORDER BY "day"`;
+  return rows.map((row) => dayText(row.day));
+}
+
+/** Non-seed raw events older than a day, counted up to MAX_FOREIGN_EVENTS + 1. */
+async function countForeignEvents(): Promise<number> {
+  const [{ count }] = await dbClient.$queryRaw<{ count: bigint }[]>`
+    SELECT count(*) AS count FROM (
+      SELECT 1 FROM "AnalyticsEvent"
+      WHERE NOT (${isSeedVisitorSql})
+        AND "occurredAt" < (now() AT TIME ZONE 'UTC') - interval '1 day'
+      LIMIT ${MAX_FOREIGN_EVENTS + 1}
+    ) AS foreign_events`;
+  return Number(count);
+}
 
 /**
- * Recomputes the rollups of `from`..`to`: every daily metric, then the week
- * and month uniques of every period touching the range (stored on the
- * period's first day, which may be before `from`). The range's rows are
- * deleted first, so values that no longer exist (views of a seed product)
- * don't linger.
+ * Recomputes the rollups of `range`: every daily metric, the week and month
+ * uniques of every period touching it (rollupPeriods stores complete periods
+ * only and clears in-progress ones), and revenue for every day from
+ * UserOrder (refreshRevenue, the source of truth, so real orders keep their
+ * rows). Only rows dated inside `range` are deleted first (so values that no
+ * longer exist, such as views of a seed product, don't linger); a week or
+ * month starting before `range` is recomputed in place when its raw events
+ * allow, and otherwise left alone.
  *
  * `ignoreRetention` is for the seed run, whose raw events older than the
  * retention window exist until the prune that follows. Without it (--clean),
  * days and periods older than the window keep only order-based metrics.
  */
 async function rebuildRollups(
-  from: string,
-  to: string,
+  range: DayRange,
   options: { ignoreRetention: boolean },
 ): Promise<number> {
-  const periodsFrom = minDay(weekStart(from), monthStart(from))!;
+  const { from, to } = range;
   await dbClient.$executeRaw`
     DELETE FROM "AnalyticsDaily"
-    WHERE ("day" >= ${from}::date AND "day" <= ${to}::date)
-       OR ("metric" IN (${Prisma.join(PERIOD_METRICS)})
-           AND "day" >= ${periodsFrom}::date AND "day" <= ${to}::date)`;
+    WHERE "day" >= ${from}::date AND "day" <= ${to}::date
+      AND "metric" <> ${SEED_MARKER_METRIC}`;
 
   await rollupRange(from, to, options);
-
-  // One day per week and month of the range: each call recomputes the week
-  // and the month containing it.
-  // eslint-disable-next-line no-restricted-syntax
-  for (const day of periodDays(from, to)) {
-    // eslint-disable-next-line no-await-in-loop
-    await rollupPeriodUniques(day, options);
-  }
+  await rollupPeriods(from, to, options);
+  await refreshRevenue();
 
   const [{ count }] = await dbClient.$queryRaw<{ count: bigint }[]>`
     SELECT count(*) AS count FROM "AnalyticsDaily"
-    WHERE "day" >= ${periodsFrom}::date AND "day" <= ${to}::date`;
+    WHERE "day" >= ${from}::date AND "day" <= ${to}::date
+      AND "metric" <> ${SEED_MARKER_METRIC}`;
   return Number(count);
 }
 
@@ -267,17 +336,29 @@ function printCounts(title: string, counts: Map<string, number>) {
     );
 }
 
-async function seed(args: SeedArgs, previousFrom: string | null) {
+async function seed(
+  args: SeedArgs,
+  previous: DayRange | null,
+  owned: DayRange,
+  now: Date,
+) {
   const catalog = await loadCatalog();
   console.log(
     `Catalog: ${catalog.products.length} products, ${catalog.categories.length} categories, ${catalog.users.length} users.`,
   );
 
-  const now = new Date();
-  const today = ashgabatDay(now);
+  // Recorded first, covering the old and the new days, so a run that dies
+  // half-way still leaves --clean knowing what to clean.
+  await writeMarker(unionRanges(previous, owned));
+  const removed = await removeSeedData();
+  if (previous) {
+    console.log(
+      `Removed previous seed data: ${fmt(removed.events)} events, ${fmt(removed.orders)} orders (${previous.from} .. ${previous.to}).`,
+    );
+  }
+
   const eventCounts = new Map<string, number>();
   const orderCounts = new Map<string, number>();
-  let firstDay = today;
   let totalEvents = 0;
   let totalOrders = 0;
 
@@ -289,7 +370,6 @@ async function seed(args: SeedArgs, previousFrom: string | null) {
     now,
     orders: args.orders,
   })) {
-    if (day < firstDay) firstDay = day;
     // Orders first: an order_placed event never points at a missing order.
     // eslint-disable-next-line no-await-in-loop
     await insertOrders(orders);
@@ -310,20 +390,16 @@ async function seed(args: SeedArgs, previousFrom: string | null) {
   process.stdout.write('\n');
 
   // Days only the previous seed covered lose its numbers, keeping what real
-  // data (orders) still supports.
-  if (previousFrom && previousFrom < firstDay) {
-    console.log(
-      `Clearing earlier seed rollups ${previousFrom} .. ${addDays(firstDay, -1)}…`,
-    );
-    await rebuildRollups(previousFrom, addDays(firstDay, -1), {
-      ignoreRetention: false,
-    });
+  // data (orders, raw events still in the window) supports.
+  // eslint-disable-next-line no-restricted-syntax
+  for (const stale of previous ? rangesOutside(previous, owned) : []) {
+    console.log(`Clearing earlier seed rollups ${stale.from} .. ${stale.to}…`);
+    // eslint-disable-next-line no-await-in-loop
+    await rebuildRollups(stale, { ignoreRetention: false });
   }
-  const from = firstDay;
-  console.log(`Rolling up ${from} .. ${today}…`);
-  const rollupRows = await rebuildRollups(from, today, {
-    ignoreRetention: true,
-  });
+  console.log(`Rolling up ${owned.from} .. ${owned.to}…`);
+  const rollupRows = await rebuildRollups(owned, { ignoreRetention: true });
+  await writeMarker(owned);
 
   console.log('Pruning raw events past the retention window…');
   const pruned = await pruneAnalyticsEvents();
@@ -339,8 +415,36 @@ async function seed(args: SeedArgs, previousFrom: string | null) {
     `Prune result: ${JSON.stringify(pruned, (_, v) => (typeof v === 'bigint' ? Number(v) : v))}`,
   );
   console.log(
-    `AnalyticsDaily rows for ${from} .. ${today}: ${fmt(rollupRows)}`,
+    `AnalyticsDaily rows for ${owned.from} .. ${owned.to}: ${fmt(rollupRows)} (recorded as ${SEED_MARKER_METRIC}).`,
   );
+}
+
+async function clean(previous: DayRange | null) {
+  const removed = await removeSeedData();
+  if (!previous) {
+    await writeMarker(null);
+    console.log('No seed data found.');
+    return;
+  }
+  console.log(
+    `Removed seed data: ${fmt(removed.events)} events, ${fmt(removed.orders)} orders.`,
+  );
+  console.log(`Recomputing rollups ${previous.from} .. ${previous.to}…`);
+  await rebuildRollups(previous, { ignoreRetention: false });
+  await writeMarker(null);
+}
+
+/** Prints the refusals; true when the run may go on (none, or --force). */
+function allowed(reasons: string[], force: boolean): boolean {
+  if (reasons.length === 0) return true;
+  const lines = reasons.map((reason) => `  - ${reason}`).join('\n');
+  if (!force) {
+    console.error(`Refusing to run:\n${lines}\nPass --force to run anyway.`);
+    process.exitCode = 1;
+    return false;
+  }
+  console.warn(`--force: running anyway, although:\n${lines}`);
+  return true;
 }
 
 async function main() {
@@ -359,35 +463,36 @@ async function main() {
   }
 
   const check = checkDatabaseUrl(process.env.DATABASE_URL);
-  if (!check.ok) {
-    if (!args.force) {
-      console.error(`Refusing to run: ${check.reason}`);
-      process.exitCode = 1;
-      return;
-    }
-    console.warn(`--force: running against ${check.host} anyway.`);
-  } else {
-    console.log(`Database host: ${check.host}`);
-  }
+  const setupReasons = [
+    checkAppEnv(process.env.NEXT_PUBLIC_APP_ENV),
+    check.ok ? null : check.reason,
+  ].filter((reason): reason is string => reason != null);
+  if (!allowed(setupReasons, args.force)) return;
+  if (check.host) console.log(`Database host: ${check.host}`);
 
   const started = Date.now();
-  const removed = await removeSeedData();
-  if (removed.from) {
-    console.log(
-      `Removed previous seed data: ${fmt(removed.events)} events, ${fmt(removed.orders)} orders (from ${removed.from}).`,
-    );
-  }
+  const now = new Date();
+  // Everything earlier seed runs may have left numbers in.
+  const previous = unionRanges(await readMarker(), await seedDataSpan());
 
   if (args.clean) {
-    if (removed.from) {
-      const today = ashgabatDay(new Date());
-      console.log(`Recomputing rollups ${removed.from} .. ${today}…`);
-      await rebuildRollups(removed.from, today, { ignoreRetention: false });
-    } else {
-      console.log('No seed data found.');
-    }
+    await clean(previous);
   } else {
-    await seed(args, removed.from);
+    const today = ashgabatDay(now);
+    const owned = seedRange(addDays(today, -(args.days - 1)), today);
+    const [foreignRollupDays, foreignEvents] = await Promise.all([
+      findForeignRollupDays(owned, previous, rawWindowStart(now)),
+      countForeignEvents(),
+    ]);
+    if (
+      !allowed(
+        historyRefusals({ foreignRollupDays, foreignEvents }),
+        args.force,
+      )
+    ) {
+      return;
+    }
+    await seed(args, previous, owned, now);
   }
   console.log(`Done in ${((Date.now() - started) / 1000).toFixed(1)}s.`);
 }

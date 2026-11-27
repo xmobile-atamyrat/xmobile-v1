@@ -487,6 +487,32 @@ async function findPageInRankedOrder(
   return pageIds.flatMap((id) => rowsById.get(id) ?? []);
 }
 
+/** Query params that narrow a storefront listing beyond its keyword. */
+const LISTING_FILTER_KEYS = [
+  'categoryId',
+  'categoryIds',
+  'brandIds',
+  'colorIds',
+  'colors',
+  'minPrice',
+  'maxPrice',
+  'inStock',
+  'recommended',
+  'sale',
+  'imageless',
+] as const satisfies readonly (keyof ProductFilterQuery)[];
+
+function hasListingFilters(query: ProductFilterQuery): boolean {
+  return LISTING_FILTER_KEYS.some((key) => {
+    const value = query[key];
+    return (
+      value != null &&
+      value !== '' &&
+      !(Array.isArray(value) && value.length === 0)
+    );
+  });
+}
+
 async function handleGetProduct(
   query: ProductFilterQuery & {
     productId?: string;
@@ -686,12 +712,21 @@ async function handleGetProduct(
     parsedPage === 1 &&
     !whereOptions.includeImageless
   ) {
-    trackSearch(analyticsReq, query.searchKeyword, {
-      // A short page is the whole result set; a full one needs the count.
+    const { searchKeyword } = query;
+    trackSearch(analyticsReq, searchKeyword, {
+      // Matches for the keyword alone, so a term searched inside a narrow
+      // filter isn't counted as "we don't stock it". Without filters a short
+      // page is that whole set; otherwise it costs a count, which only runs
+      // for the term the visitor settled on.
       results:
-        products.length < pageSize
+        !saleOnly && !hasListingFilters(query) && products.length < pageSize
           ? products.length
-          : () => dbClient.product.count({ where }),
+          : async () => {
+              const keywordWhere = await buildProductWhere({ searchKeyword });
+              return keywordWhere == null
+                ? 0
+                : dbClient.product.count({ where: keywordWhere });
+            },
     });
   }
 

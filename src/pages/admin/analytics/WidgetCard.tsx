@@ -90,7 +90,6 @@ export function WidgetMessage({
     <Typography
       fontSize={13}
       color={kind === 'error' ? 'error' : muted}
-      role={kind === 'error' ? 'alert' : undefined}
       className={fontClassName.className}
       sx={{ py: 2 }}
     >

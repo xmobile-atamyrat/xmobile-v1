@@ -2,7 +2,7 @@ import dbClient from '@/lib/dbClient';
 import { fetchTelekomBalance } from '@/lib/telekom';
 
 import type { AnalyticsQuery } from './adminQuery';
-import { queryWidget } from './metrics';
+import { createQueryContext, queryWidget } from './metrics';
 import { widgetMeta, type MetricId } from './metrics/catalog';
 import type { AnalyticsResponse, AnalyticsWidgetResult } from './metrics/types';
 
@@ -164,8 +164,11 @@ async function computeAnalytics(
   const { widgets: ids, from, to, granularity, limit, locale } = query;
   const params = { from, to, granularity, limit, locale };
 
+  // One context per request: widgets needing the same raw COUNT(DISTINCT)
+  // scan (visitors for kpi_visitors and kpi_conversion) share it.
+  const ctx = createQueryContext();
   const [settled, userCount, telekomBalance] = await Promise.all([
-    Promise.allSettled(ids.map((id) => queryWidget(id, params))),
+    Promise.allSettled(ids.map((id) => queryWidget(id, params, { ctx }))),
     loadUserCount(),
     loadTelekomBalance(),
   ]);

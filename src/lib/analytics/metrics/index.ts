@@ -5,7 +5,7 @@ import { ordersWidgets } from './orders';
 import { productsWidgets } from './products';
 import { revenueWidgets } from './revenue';
 import { searchWidgets } from './search';
-import { contextFor } from './sql';
+import { contextFor, type QueryContext } from './sql';
 import { trafficWidgets } from './traffic';
 import type { MetricQueryParams, WidgetData } from './types';
 import type { WidgetRegistry } from './widget';
@@ -29,14 +29,27 @@ export const widgetQueries: WidgetRegistry = {
 };
 
 /**
+ * A query context for one dashboard request: the clock (`now`, default the
+ * real one) and a memo of raw-event scans. Pass the same context to every
+ * queryWidget call of a request so widgets that need the same
+ * `COUNT(DISTINCT)` (kpi_visitors and kpi_conversion, for both ranges) share
+ * one scan.
+ */
+export function createQueryContext(now: Date = new Date()): QueryContext {
+  return contextFor(now, rawWindowStart(now));
+}
+
+/**
  * Data for one widget over the Ashgabat days `params.from`..`params.to`.
- * `options.now` pins the clock (tests): it decides which days still have raw
- * events, and so whether unique counts and the funnel are exact.
+ * `options.ctx` shares a request's context (see createQueryContext);
+ * without it each call gets its own, on `options.now` (tests pin the clock:
+ * it decides which days still have raw events, and so whether unique counts
+ * and the funnel are exact).
  */
 export function queryWidget(
   id: MetricId,
   params: MetricQueryParams,
-  options: { now?: Date } = {},
+  options: { now?: Date; ctx?: QueryContext } = {},
 ): Promise<WidgetData> {
   const query = widgetQueries[id] as (
     p: Parameters<WidgetRegistry[MetricId]>[0],
@@ -44,8 +57,9 @@ export function queryWidget(
   if (!query) {
     return Promise.reject(new Error(`Unknown analytics widget: ${id}`));
   }
-  const now = options.now ?? new Date();
-  return query({ ...params, ctx: contextFor(now, rawWindowStart(now)) });
+  const ctx = options.ctx ?? createQueryContext(options.now);
+  return query({ ...params, ctx });
 }
 
 export type { WidgetRegistry } from './widget';
+export type { QueryContext } from './sql';

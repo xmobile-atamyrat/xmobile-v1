@@ -11,6 +11,7 @@ import {
   flushAnalyticsBuffer,
   holdAnalyticsEvent,
   MAX_BUFFERED_EVENTS,
+  MAX_INSERT_SPLITS,
   resetAnalyticsBuffer,
   trackPendingAnalytics,
 } from '@/lib/analytics/server/buffer';
@@ -179,6 +180,95 @@ describe('analytics buffer', () => {
     expect(error).toHaveBeenCalledTimes(2);
   });
 
+  describe('a row Postgres rejects', () => {
+    /** createMany that fails any statement containing a row named 'bad'. */
+    function rejectBadRows() {
+      createMany.mockImplementation(
+        async ({ data }: { data: AnalyticsEventRow[] }) => {
+          if (data.some((r) => r.name === 'bad')) {
+            throw Object.assign(new Error('invalid byte sequence'), {
+              code: 'P2010',
+            });
+          }
+          return { count: data.length };
+        },
+      );
+    }
+
+    /** Rows of the createMany calls that succeeded. */
+    async function storedRows(): Promise<AnalyticsEventRow[]> {
+      const settled = await Promise.allSettled(
+        createMany.mock.results.map((r) => r.value),
+      );
+      return createMany.mock.calls.flatMap(([args], i) =>
+        settled[i].status === 'fulfilled'
+          ? (args as { data: AnalyticsEventRow[] }).data
+          : [],
+      );
+    }
+
+    it('only drops itself: the chunk is retried in halves', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      rejectBadRows();
+      for (let i = 0; i < 300; i += 1) {
+        enqueueAnalyticsEvent(row(i === 137 ? 'bad' : `ok${i}`));
+      }
+      await expect(flushAnalyticsBuffer()).resolves.toBe(299);
+      const stored = (await storedRows()).map((r) => r.name);
+      expect(stored).toHaveLength(299);
+      expect(stored).not.toContain('bad');
+      expect(stored).toEqual(
+        Array.from({ length: 300 }, (_v, i) => `ok${i}`).filter(
+          (name) => name !== 'ok137',
+        ),
+      );
+      // Bounded: about two statements per halving (log2 300 ≈ 9).
+      expect(createMany.mock.calls.length).toBeLessThanOrEqual(1 + 2 * 9);
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(String(error.mock.calls[0][0])).toContain('dropped 1 of 300');
+    });
+
+    it('keeps the rest of a mixed batch across chunks', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      rejectBadRows();
+      // Over SERVER_FLUSH_AT_EVENTS and INSERT_CHUNK: several writes and
+      // chunks, each with a bad row in it.
+      enqueueAnalyticsEvent(row('bad'));
+      for (let i = 0; i < 1500; i += 1) enqueueAnalyticsEvent(row('ok'));
+      enqueueAnalyticsEvent(row('bad'));
+      await flushAnalyticsBuffer();
+      expect((await storedRows()).map((r) => r.name)).toEqual(
+        Array(1500).fill('ok'),
+      );
+    });
+
+    it(`gives up after ${MAX_INSERT_SPLITS} halvings`, async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      rejectBadRows();
+      // Every other row bad: isolating all of them would cost ~400 statements.
+      // (Under SERVER_FLUSH_AT_EVENTS, so this is one write.)
+      for (let i = 0; i < 400; i += 1) {
+        enqueueAnalyticsEvent(row(i % 2 === 0 ? 'bad' : 'ok'));
+      }
+      await flushAnalyticsBuffer();
+      expect(createMany.mock.calls.length).toBeLessThanOrEqual(
+        1 + 2 * MAX_INSERT_SPLITS,
+      );
+    });
+
+    it('is not split up when the database is unreachable', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      createMany.mockRejectedValue(
+        Object.assign(new Error("Can't reach database server"), {
+          code: 'P1001',
+        }),
+      );
+      for (let i = 0; i < 400; i += 1) enqueueAnalyticsEvent(row());
+      await expect(flushAnalyticsBuffer()).resolves.toBe(0);
+      expect(createMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it(`caps the buffer at ${MAX_BUFFERED_EVENTS} rows while the database is stuck`, async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     let release: () => void = () => undefined;
@@ -236,6 +326,32 @@ describe('analytics buffer', () => {
       expect(createMany).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(1 + SERVER_FLUSH_INTERVAL_MS);
       expect(writtenRows().map((r) => r.name)).toEqual(['b']);
+    });
+
+    it('builds a held function once, when it is released', async () => {
+      vi.useFakeTimers();
+      const first = vi.fn(async () => row('first'));
+      const second = vi.fn(async () => row('second'));
+      holdAnalyticsEvent('k', first, 3000);
+      holdAnalyticsEvent('k', second, 3000);
+      expect(second).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(3000 + SERVER_FLUSH_INTERVAL_MS);
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(writtenRows().map((r) => r.name)).toEqual(['second']);
+    });
+
+    it('a held function resolving to null records nothing', async () => {
+      holdAnalyticsEvent('k', async () => null, 3000);
+      await expect(flushAnalyticsBuffer()).resolves.toBe(0);
+      expect(createMany).not.toHaveBeenCalled();
+    });
+
+    it('ignores an event older than the one held (by seq)', async () => {
+      expect(holdAnalyticsEvent('k', row('newer'), 3000, 5)).toBe(true);
+      expect(holdAnalyticsEvent('k', row('older'), 3000, 4)).toBe(false);
+      await flushAnalyticsBuffer();
+      expect(writtenRows().map((r) => r.name)).toEqual(['newer']);
     });
 
     it(`holds at most ${MAX_BUFFERED_EVENTS} keys, releasing the oldest`, async () => {

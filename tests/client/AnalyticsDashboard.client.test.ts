@@ -7,12 +7,24 @@ import type {
 import AnalyticsDashboard from '@/pages/admin/analytics/AnalyticsDashboard';
 import { useFetchWithCreds } from '@/pages/lib/fetch';
 import { useUserContext } from '@/pages/lib/UserContext';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  renderHook,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import mockRouter from 'next-router-mock';
 import { createElement } from 'react';
 import { SWRConfig } from 'swr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  msUntilAshgabatMidnight,
+  useAshgabatToday,
+} from '@/pages/admin/analytics/useAshgabatToday';
 
 import { renderWithProviders } from './helpers/renderWithProviders';
 
@@ -25,12 +37,14 @@ vi.mock('@mui/x-charts/LineChart', async () => {
   return {
     LineChart: (props: {
       xAxis: { data: string[] }[];
+      yAxis: { valueFormatter: (value: number) => string }[];
       series: { label: string; data: number[] }[];
       margin?: { right?: number };
     }) =>
       h('div', {
         'data-testid': 'line-chart',
         'data-margin-right': String(props.margin?.right ?? ''),
+        'data-y-label': props.yAxis[0].valueFormatter(1200),
         'data-x': JSON.stringify(props.xAxis[0].data),
         'data-series': JSON.stringify(
           props.series.map((s) => ({ label: s.label, data: s.data })),
@@ -287,6 +301,18 @@ describe('AnalyticsDashboard', () => {
       const up = within(visitors).getByTestId('kpi-delta');
       expect(up.dataset.direction).toBe('up');
       expect(up.textContent).toBe('▲ +25% vs previous period');
+      // The arrow is hidden from screen readers, which get a sentence.
+      expect(up.getAttribute('aria-hidden')).toBe('true');
+      expect(within(visitors).getByTestId('kpi-delta-label').textContent).toBe(
+        'Up 25% vs previous period',
+      );
+      expect(
+        within(card('Sessions')).getByTestId('kpi-delta-label').textContent,
+      ).toBe('Down 50% vs previous period');
+      expect(
+        within(card('Conversion rate')).getByTestId('kpi-delta-label')
+          .textContent,
+      ).toBe('Up 0.5 pp vs previous period');
 
       const sessions = within(card('Sessions')).getByTestId('kpi-delta');
       expect(sessions.dataset.direction).toBe('down');
@@ -306,11 +332,63 @@ describe('AnalyticsDashboard', () => {
       );
     });
 
+    it('shows no change at all when the previous period is unknown', async () => {
+      // e.g. a 90-day range whose previous period is past the raw window, so
+      // only an upper bound exists for it and the API sends previous: null.
+      const unknown = new Set([
+        'kpi_visitors',
+        'kpi_sessions',
+        'kpi_conversion',
+      ]);
+      fetchMock.mockResolvedValue(
+        ok(
+          response(
+            staffWidgets().map((w) =>
+              unknown.has(w.id) && w.data?.kind === 'kpi'
+                ? { ...w, data: { ...w.data, previous: null } }
+                : w,
+            ),
+          ),
+        ),
+      );
+      renderDashboard();
+      await screen.findByText('1,250');
+
+      ['Visitors', 'Sessions', 'Conversion rate'].forEach((name) => {
+        const kpi = card(name);
+        expect(within(kpi).queryByTestId('kpi-delta')).toBeNull();
+        expect(within(kpi).queryByTestId('kpi-delta-label')).toBeNull();
+        expect(within(kpi).queryByText(/previous period/)).toBeNull();
+        expect(
+          within(kpi).queryByText('Could not load this block.'),
+        ).toBeNull();
+      });
+      expect(within(card('Conversion rate')).getByText('2.5%')).toBeTruthy();
+      // The others still compare.
+      expect(
+        within(card('Orders placed')).getByTestId('kpi-delta'),
+      ).toBeTruthy();
+    });
+
     it('shows the user count and Telekom balance', async () => {
       renderDashboard();
       await screen.findByText('1,250');
       expect(within(card('Total User Count')).getByText('4,321')).toBeTruthy();
-      expect(within(card('Telekom Balance')).getByText('150 TMT')).toBeTruthy();
+      // With kopecks, as the old /analytics page showed it.
+      expect(
+        within(card('Telekom Balance')).getByText('150.00 TMT'),
+      ).toBeTruthy();
+    });
+
+    it('keeps two decimals of the balance', async () => {
+      fetchMock.mockResolvedValue(
+        ok(response(staffWidgets(), { telekomBalance: 1234.567 })),
+      );
+      renderDashboard();
+      await screen.findByText('1,250');
+      expect(
+        within(card('Telekom Balance')).getByText('1,234.57 TMT'),
+      ).toBeTruthy();
     });
 
     it('shows a dash when the balance is unknown', async () => {
@@ -369,6 +447,30 @@ describe('AnalyticsDashboard', () => {
           .getAllByTestId('series-legend')
           .map((item) => item.textContent),
       ).toEqual(['Visitors', 'Page views (app)']);
+    });
+
+    it('describes each chart for screen readers', async () => {
+      renderDashboard();
+      const traffic = await screen.findByRole('region', { name: 'Traffic' });
+      expect(
+        within(traffic).getByRole('img', {
+          name: 'Traffic, 30.10.2026 – 28.11.2026. Latest point (28.11.2026): Visitors 0, Page views (app) 9.',
+        }),
+      ).toBeTruthy();
+    });
+
+    it("formats the y-axis in the viewer's language", async () => {
+      mockRouter.locale = 'ru';
+      renderDashboard();
+      const traffic = await screen.findByRole('region', { name: 'Traffic' });
+      const chart = await within(traffic).findByTestId('line-chart');
+      expect(chart.dataset.yLabel).toBe(
+        new Intl.NumberFormat('ru-RU', {
+          notation: 'compact',
+          maximumFractionDigits: 1,
+        }).format(1200),
+      );
+      expect(chart.dataset.yLabel).not.toBe('1.2K');
     });
 
     it('leaves room for the last x-axis label', async () => {
@@ -570,14 +672,25 @@ describe('AnalyticsDashboard', () => {
     renderDashboard();
     await screen.findByText('1,250');
 
-    expect(within(card('Sessions')).getByRole('alert').textContent).toBe(
-      'Could not load this block.',
-    );
-    expect(within(card('Traffic')).getByRole('alert')).toBeTruthy();
     expect(
-      within(card('Most viewed products')).getByRole('alert'),
+      within(card('Sessions')).getByText('Could not load this block.'),
     ).toBeTruthy();
-    expect(within(card('Visitors')).queryByRole('alert')).toBeNull();
+    expect(
+      within(card('Traffic')).getByText('Could not load this block.'),
+    ).toBeTruthy();
+    expect(
+      within(card('Most viewed products')).getByText(
+        'Could not load this block.',
+      ),
+    ).toBeTruthy();
+    expect(
+      within(card('Visitors')).queryByText('Could not load this block.'),
+    ).toBeNull();
+    // One polite announcement, not an alert per card.
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.getByRole('status').textContent).toBe(
+      'Blocks that could not load: 3.',
+    );
     expect(within(card('By platform')).getAllByTestId('topn-row')).toHaveLength(
       2,
     );
@@ -633,11 +746,60 @@ describe('AnalyticsDashboard', () => {
       await user.click(screen.getByRole('button', { name: 'Week' }));
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
       expect(lastQuery().get('granularity')).toBe('week');
+      // 30 days back is Friday 30.10; the first week starts on its Monday.
+      expect(lastQuery().get('from')).toBe('2026-10-26');
+      expect(screen.getByTestId('analytics-range').textContent).toBe(
+        '26.10.2026 – 28.11.2026',
+      );
 
       await user.click(screen.getByRole('button', { name: 'Month' }));
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
       expect(lastQuery().get('granularity')).toBe('month');
-      expect(lastQuery().get('from')).toBe('2026-10-30');
+      expect(lastQuery().get('from')).toBe('2026-10-01');
+      expect(lastQuery().get('to')).toBe(TODAY);
+
+      // Back to day: the range the preset chose, served from the cache.
+      await user.click(screen.getByRole('button', { name: 'Day' }));
+      expect(screen.getByTestId('analytics-range').textContent).toBe(
+        '30.10.2026 – 28.11.2026',
+      );
+    });
+
+    it('starts 12 months by month on a whole month, and says so', async () => {
+      const user = userEvent.setup();
+      renderDashboard();
+      await screen.findByText('1,250');
+
+      await user.click(screen.getByRole('button', { name: '12 months' }));
+      await user.click(screen.getByRole('button', { name: 'Month' }));
+      await waitFor(() => expect(lastQuery().get('granularity')).toBe('month'));
+      // Not 29.11.2025, whose month would hold only two days.
+      expect(lastQuery().get('from')).toBe('2025-11-01');
+      expect(screen.getByTestId('analytics-range').textContent).toBe(
+        '01.11.2025 – 28.11.2026',
+      );
+    });
+
+    it('widens a custom range to whole weeks and shows the range used', async () => {
+      const user = userEvent.setup();
+      renderDashboard();
+      await screen.findByText('1,250');
+
+      await user.click(screen.getByRole('button', { name: 'Custom' }));
+      fireEvent.change(screen.getByTestId('analytics-from'), {
+        target: { value: '2026-11-04' },
+      });
+      await waitFor(() => expect(lastQuery().get('from')).toBe('2026-11-04'));
+      expect(screen.queryByTestId('analytics-range')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Week' }));
+      await waitFor(() => expect(lastQuery().get('from')).toBe('2026-11-02'));
+      expect(
+        (screen.getByTestId('analytics-from') as HTMLInputElement).value,
+      ).toBe('2026-11-04');
+      expect(screen.getByTestId('analytics-range').textContent).toBe(
+        '02.11.2026 – 28.11.2026',
+      );
     });
 
     it('takes a custom range, and holds off while it is invalid', async () => {
@@ -669,5 +831,110 @@ describe('AnalyticsDashboard', () => {
       expect(lastQuery().get('from')).toBe('2026-11-01');
       expect(screen.queryByRole('alert')).toBeNull();
     });
+
+    it('asks for both dates while one is empty, and keeps dates in bounds', async () => {
+      const user = userEvent.setup();
+      renderDashboard();
+      await screen.findByText('1,250');
+      await user.click(screen.getByRole('button', { name: 'Custom' }));
+      const from = screen.getByTestId('analytics-from') as HTMLInputElement;
+      const to = screen.getByTestId('analytics-to') as HTMLInputElement;
+
+      expect(from.min).toBe('2020-01-01');
+      expect(from.max).toBe(TODAY);
+      expect(to.min).toBe('2020-01-01');
+      expect(to.max).toBe(TODAY);
+
+      // A date input reports '' while its date is only partly typed.
+      fireEvent.change(to, { target: { value: '' } });
+      expect(screen.getByRole('alert').textContent).toBe('Enter both dates.');
+
+      fireEvent.change(to, { target: { value: TODAY } });
+      fireEvent.change(from, { target: { value: '0001-01-01' } });
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Pick dates between 01.01.2020 and 28.11.2026.',
+      );
+      fireEvent.change(from, { target: { value: '2026-11-01' } });
+      fireEvent.change(to, { target: { value: '2026-11-29' } });
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Pick dates between 01.01.2020 and 28.11.2026.',
+      );
+      // Nothing out of bounds was requested.
+      requestedPaths().forEach((path) => {
+        const query = new URLSearchParams(path.split('?')[1]);
+        expect(query.get('from')! >= '2020-01-01').toBe(true);
+        expect(query.get('to')! <= TODAY).toBe(true);
+      });
+    });
+  });
+});
+
+describe('useAshgabatToday', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('counts down to just after the next Ashgabat midnight', () => {
+    // 18:59:59 UTC is 23:59:59 in Ashgabat.
+    expect(msUntilAshgabatMidnight(Date.parse('2026-11-27T18:59:59Z'))).toBe(
+      2_000,
+    );
+    expect(msUntilAshgabatMidnight(Date.parse('2026-11-27T19:00:00Z'))).toBe(
+      86_401_000,
+    );
+  });
+
+  it('moves to the new day at midnight, and on focus after a sleep', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-27T18:59:00Z')); // 23:59 Ashgabat
+    const { result } = renderHook(() => useAshgabatToday());
+    expect(result.current).toBe('2026-11-27');
+
+    act(() => {
+      vi.advanceTimersByTime(61_000);
+    });
+    expect(result.current).toBe('2026-11-28');
+
+    // A sleeping laptop: the clock jumps, no timer has fired yet.
+    vi.setSystemTime(new Date('2026-11-29T20:00:00Z'));
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(result.current).toBe('2026-11-30');
+  });
+
+  it('keeps a fixed day as given', () => {
+    const { result } = renderHook(() => useAshgabatToday('2026-01-01'));
+    expect(result.current).toBe('2026-01-01');
+  });
+
+  it('moves presets on with the day', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-11-27T18:59:30Z')); // 23:59:30 Ashgabat
+    vi.mocked(useUserContext).mockReturnValue({
+      user: { id: 'me', grade: 'ADMIN' } as never,
+      setUser: vi.fn(),
+      accessToken: 'token',
+      setAccessToken: vi.fn(),
+      isLoading: false,
+    });
+    vi.mocked(useFetchWithCreds).mockReturnValue(fetchMock as never);
+    fetchMock.mockReset().mockResolvedValue(ok(response(staffWidgets())));
+    mockRouter.locale = 'en';
+    renderWithProviders(
+      createElement(
+        SWRConfig,
+        { value: { provider: () => new Map(), dedupingInterval: 0 } },
+        createElement(AnalyticsDashboard),
+      ),
+      { locale: 'en' },
+    );
+    await waitFor(() => expect(lastQuery().get('to')).toBe('2026-11-27'));
+
+    act(() => {
+      vi.advanceTimersByTime(31_000);
+    });
+    await waitFor(() => expect(lastQuery().get('to')).toBe('2026-11-28'));
+    expect(lastQuery().get('from')).toBe('2026-10-30');
   });
 });

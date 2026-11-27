@@ -4,11 +4,11 @@ import { periodEnd, periodStarts } from '../time';
 import { SERIES_LABEL_KEYS } from './catalog';
 import {
   clipPeriod,
+  eventSumUntil,
   isFinalPeriod,
   periodRows,
-  rawDistinct,
   sessionCount,
-  sumDaily,
+  storedOnlyTo,
   sumDailyByPeriod,
   toPoints,
   uniqueVisitors,
@@ -89,10 +89,10 @@ export const trafficRollups: DailyRollup[] = [
 /**
  * Unique visitors per day/week/month period, clipped to `from`..`to`:
  * - day: the daily `visitors` rows;
- * - a whole, final week/month: its stored `visitors_week`/`visitors_month` row;
- * - otherwise, inside the raw window: exact from raw events;
- * - otherwise: the smaller of the period's daily-uniques sum and its stored
- *   row (both are upper bounds).
+ * - a whole week/month with a final stored row: that row;
+ * - otherwise uniqueVisitors over the clipped period: exact inside the raw
+ *   window, and for a period reaching past it, exact for its days inside the
+ *   window plus the tightest stored upper bound for the days before.
  */
 export async function visitorsByPeriod(
   from: string,
@@ -106,36 +106,38 @@ export async function visitorsByPeriod(
   const metric =
     granularity === 'week' ? STORED.visitorsWeek : STORED.visitorsMonth;
   const starts = periodStarts(from, to, granularity);
-  const [stored, dailySums] = await Promise.all([
-    periodRows(metric, starts),
-    sumDailyByPeriod(STORED.visitors, from, to, granularity),
-  ]);
+  const stored = await periodRows(metric, starts);
+  const preload =
+    from < ctx.rawFrom ? { from, to: storedOnlyTo(to, ctx) } : undefined;
 
   const values = await Promise.all(
     starts.map(async (start): Promise<[string, number]> => {
       const clip = clipPeriod(start, granularity, from, to);
       const whole =
         clip.from === start && clip.to === periodEnd(start, granularity);
-      const final = isFinalPeriod(start, granularity, ctx.today);
       const row = stored.get(start);
-      if (whole && final && row !== undefined) return [start, row];
-      if (clip.from >= ctx.rawFrom) {
-        return [start, await rawDistinct('visitorId', clip.from, clip.to)];
+      if (
+        whole &&
+        row !== undefined &&
+        isFinalPeriod(start, granularity, ctx.today)
+      ) {
+        return [start, row];
       }
-      const daily = dailySums.get(start) ?? 0;
-      return [start, final && row !== undefined ? Math.min(daily, row) : daily];
+      return [start, (await uniqueVisitors(clip, ctx, preload)).value];
     }),
   );
   return new Map(values);
 }
 
 export const trafficWidgets = {
-  kpi_visitors: (p) => kpi(p, (from, to) => uniqueVisitors(from, to, p.ctx)),
+  kpi_visitors: (p) => kpi(p, (range) => uniqueVisitors(range, p.ctx)),
 
-  kpi_sessions: (p) => kpi(p, (from, to) => sessionCount(from, to, p.ctx)),
+  kpi_sessions: (p) => kpi(p, (range) => sessionCount(range, p.ctx)),
 
   kpi_pageviews: (p) =>
-    kpi(p, (from, to) => sumDaily(STORED.pageviews, from, to)),
+    kpi(p, (range) =>
+      eventSumUntil(p.ctx, STORED.pageviews, range, 'page_view'),
+    ),
 
   traffic: async ({ from, to, granularity, ctx }) => {
     const [visitors, sessions, pageviews, web, app] = await Promise.all([

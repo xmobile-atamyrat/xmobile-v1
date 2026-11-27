@@ -5,10 +5,12 @@ import type {
 } from '@/lib/analytics/metrics/types';
 import { fontClassName, muted } from '@/styles/theme';
 import { Box, Skeleton, Typography } from '@mui/material';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 
 import { useAnalyticsLabel, WidgetMessage } from './WidgetCard';
 import {
+  formatCompact,
   formatDay,
   formatPeriod,
   formatValue,
@@ -42,6 +44,10 @@ type Props = {
   locale: string | undefined;
   /** Today (Ashgabat), to flag a last period that isn't over yet. */
   today?: string;
+  /** For the chart's spoken summary: its title and the range it covers. */
+  title: string;
+  from: string;
+  to: string;
 };
 
 /** Every period any series has, sorted; a series without a point there counts 0. */
@@ -65,13 +71,30 @@ export default function TimeseriesChart({
   data,
   locale,
   today,
+  title,
+  from,
+  to,
 }: Props) {
+  const t = useTranslations();
   const label = useAnalyticsLabel();
   const { periods, values } = alignSeries(data);
   if (periods.length === 0) return <WidgetMessage kind="empty" />;
 
   const format = (value: number | null) =>
     value == null ? '' : formatValue(value, unit, locale);
+  // The SVG means nothing to a screen reader: say what it shows instead.
+  const summary = t('analyticsChartSummary', {
+    title,
+    from: formatDay(from),
+    to: formatDay(to),
+    period: formatDay(periods[periods.length - 1]),
+    values: data.series
+      .map(
+        (s, index) =>
+          `${label(s.labelKey, s.key)} ${format(values[index].at(-1) ?? 0)}`,
+      )
+      .join(', '),
+  });
   const showMarks = periods.length <= 31;
   // The last point covers today, so it is lower than it will end up.
   const lastIsPartial =
@@ -110,7 +133,12 @@ export default function TimeseriesChart({
           </Box>
         ))}
       </Box>
-      <Box sx={{ height: CHART_HEIGHT, mx: -1 }}>
+      <Box
+        role="img"
+        aria-label={summary}
+        data-testid="chart-summary"
+        sx={{ height: CHART_HEIGHT, mx: -1 }}
+      >
         <LineChart
           height={CHART_HEIGHT}
           // The right margin leaves room for half of the last tick label
@@ -133,10 +161,7 @@ export default function TimeseriesChart({
               valueFormatter: (value: number) =>
                 unit === 'percent'
                   ? formatValue(value, unit, locale)
-                  : new Intl.NumberFormat('en-US', {
-                      notation: 'compact',
-                      maximumFractionDigits: 1,
-                    }).format(value),
+                  : formatCompact(value, locale),
             },
           ]}
           series={data.series.map((s, index) => ({

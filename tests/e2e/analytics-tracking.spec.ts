@@ -14,6 +14,7 @@ interface WireEvent {
 interface EventsPayload {
   platform: 'WEB' | 'APP';
   locale: string;
+  sentAt: number;
   events: WireEvent[];
 }
 
@@ -165,8 +166,11 @@ test.describe('Analytics tracking', () => {
     payloads.forEach((payload) => {
       expect(payload.platform).toBe('WEB');
       expect(payload.locale).toBe('ru');
+      // The send time, on the same clock as ts, for skew correction.
+      expect(typeof payload.sentAt).toBe('number');
       payload.events.forEach((event) => {
         expect(typeof event.ts).toBe('number');
+        expect(event.ts).toBeLessThanOrEqual(payload.sentAt);
       });
     });
     const pageView = payloads[0].events.find((e) => e.name === 'page_view')!;
@@ -245,6 +249,14 @@ test.describe('Analytics tracking', () => {
         'Mozilla/5.0 (Linux; Android 13; SM-A515F; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36',
       locale: 'ru',
       timezoneId: 'Asia/Ashgabat',
+    });
+    // react-native-webview defines this before any page script runs; it, not
+    // the `; wv)` user agent, is what marks our app (other apps' in-app
+    // browsers have that UA too).
+    await context.addInitScript(() => {
+      (
+        window as unknown as { ReactNativeWebView: unknown }
+      ).ReactNativeWebView = { postMessage: (): void => undefined };
     });
     try {
       const page = await context.newPage();

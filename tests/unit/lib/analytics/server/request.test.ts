@@ -104,26 +104,74 @@ describe('resolveLocale', () => {
     ).toBe('tk');
   });
 
-  it('falls back to the NEXT_LOCALE cookie when the explicit value is not a locale', () => {
+  it('falls back to the NEXT_LOCALE cookie when there is no usable Referer', () => {
     expect(resolveLocale(req({}, { NEXT_LOCALE: 'en' }), 'de')).toBe('en');
     expect(resolveLocale(req({}, { NEXT_LOCALE: 'ch' }), undefined)).toBe('ch');
     expect(resolveLocale(req({}, { NEXT_LOCALE: 'en' }), 42)).toBe('en');
+    // Another site's Referer, or one that isn't a URL, isn't usable.
+    expect(
+      resolveLocale(
+        req(
+          { host: 'x.tm', referer: 'https://google.com/tr/search' },
+          { NEXT_LOCALE: 'en' },
+        ),
+      ),
+    ).toBe('en');
+    expect(
+      resolveLocale(
+        req({ host: 'x.tm', referer: 'not a url' }, { NEXT_LOCALE: 'tk' }),
+      ),
+    ).toBe('tk');
   });
 
-  it('then the first path segment of the Referer', () => {
+  it('prefers the locale of a same-origin Referer over the cookie', () => {
+    // The cookie is the last locale picked; the page making the request is
+    // what the client tracker reports, so server events agree with it.
     expect(
-      resolveLocale(req({ referer: 'https://x.tm/tr/product/a?b=1' }, {})),
+      resolveLocale(
+        req(
+          { host: 'x.tm', referer: 'https://x.tm/tr/product/a?b=1' },
+          { NEXT_LOCALE: 'en' },
+        ),
+      ),
     ).toBe('tr');
     expect(
-      resolveLocale(req({ referer: 'https://x.tm/en' }, { NEXT_LOCALE: 'xx' })),
+      resolveLocale(
+        req(
+          { host: 'X.tm:443', referer: 'https://x.tm/en' },
+          { NEXT_LOCALE: 'xx' },
+        ),
+      ),
     ).toBe('en');
+    expect(
+      resolveLocale(
+        req({ host: 'localhost:3003', referer: 'http://localhost:3003/ch/' }),
+      ),
+    ).toBe('ch');
   });
 
-  it('ignores a Referer whose first segment is not a locale', () => {
-    expect(resolveLocale(req({ referer: 'https://x.tm/product/en' }, {}))).toBe(
-      'ru',
-    );
-    expect(resolveLocale(req({ referer: 'not a url' }, {}))).toBe('ru');
+  it('takes an unprefixed same-origin Referer path as the default locale', () => {
+    expect(
+      resolveLocale(
+        req(
+          { host: 'x.tm', referer: 'https://x.tm/product/en' },
+          { NEXT_LOCALE: 'en' },
+        ),
+      ),
+    ).toBe('ru');
+    expect(
+      resolveLocale(
+        req({ host: 'x.tm', referer: 'https://x.tm/' }, { NEXT_LOCALE: 'tk' }),
+      ),
+    ).toBe('ru');
+  });
+
+  it('ignores a Referer when the request has no Host', () => {
+    expect(
+      resolveLocale(
+        req({ referer: 'https://x.tm/tr/product/a' }, { NEXT_LOCALE: 'en' }),
+      ),
+    ).toBe('en');
   });
 
   it('defaults to ru', () => {

@@ -9,11 +9,13 @@ export {
   flushAnalyticsBuffer,
   holdAnalyticsEvent,
   MAX_BUFFERED_EVENTS,
+  MAX_INSERT_SPLITS,
   resetAnalyticsBuffer,
   trackPendingAnalytics,
 } from './buffer';
-export type { AnalyticsEventRow } from './buffer';
+export type { AnalyticsEventRow, HeldAnalyticsEvent } from './buffer';
 export {
+  CLIENT_MAX_HOLD_MS,
   CLIENT_TS_MAX_AGE_MS,
   CLIENT_TS_MAX_SKEW_MS,
   parseBeaconBody,
@@ -49,11 +51,15 @@ export {
   trackServer,
 } from './track';
 export type { TrackSearchOptions, TrackServerOptions } from './track';
+export { sanitizeString, sanitizeValue, truncateUtf16 } from './sanitize';
 export {
-  cachedIsStaffUser,
+  cachedAnalyticsUser,
   isStaffUser,
+  lookupAnalyticsUser,
   resetStaffGradeCache,
   STAFF_GRADE_MAX_KEYS,
   STAFF_GRADE_TTL_MS,
 } from './staff';
+export type { AnalyticsUserStatus } from './staff';
 export { detectPlatform, isBot } from './userAgent';
+export { detachAnalyticsFromUsers } from './userData';

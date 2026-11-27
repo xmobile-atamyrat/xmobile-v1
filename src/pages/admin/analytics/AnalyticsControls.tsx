@@ -1,6 +1,7 @@
 import {
   GRANULARITIES,
   MAX_RANGE_DAYS,
+  MIN_ANALYTICS_DAY,
   RANGE_PRESETS,
   type RangePreset,
   isValidDay,
@@ -39,8 +40,17 @@ const GRANULARITY_LABEL_KEYS: Record<Granularity, string> = {
 
 type Props = {
   choice: RangeChoice;
+  /** The selected range: a preset's days, or the custom dates. */
   from: string;
   to: string;
+  /**
+   * The range actually shown, which for week and month starts at the
+   * beginning of the first period (see alignRangeToPeriods).
+   */
+  appliedFrom: string;
+  appliedTo: string;
+  /** Today in Ashgabat: the latest day a custom range may end on. */
+  today: string;
   granularity: Granularity;
   onPreset: (preset: RangePreset) => void;
   /** Called with a valid custom range only. */
@@ -49,12 +59,27 @@ type Props = {
   onGranularity: (granularity: Granularity) => void;
 };
 
-type RangeError = 'analyticsInvalidRange' | 'analyticsRangeTooLong' | null;
+type RangeError =
+  | 'analyticsRangeIncomplete'
+  | 'analyticsRangeOutOfBounds'
+  | 'analyticsInvalidRange'
+  | 'analyticsRangeTooLong'
+  | null;
 
-export const customRangeError = (from: string, to: string): RangeError => {
-  if (!isValidDay(from) || !isValidDay(to) || from > to) {
-    return 'analyticsInvalidRange';
+/**
+ * What's wrong with a custom range, or null. A date input reports '' while
+ * its date is empty or only partly typed.
+ */
+export const customRangeError = (
+  from: string,
+  to: string,
+  today: string,
+): RangeError => {
+  if (!isValidDay(from) || !isValidDay(to)) return 'analyticsRangeIncomplete';
+  if (from < MIN_ANALYTICS_DAY || to < MIN_ANALYTICS_DAY || to > today) {
+    return 'analyticsRangeOutOfBounds';
   }
+  if (from > to) return 'analyticsInvalidRange';
   if (rangeDays(from, to) > MAX_RANGE_DAYS) return 'analyticsRangeTooLong';
   return null;
 };
@@ -63,6 +88,9 @@ export default function AnalyticsControls({
   choice,
   from,
   to,
+  appliedFrom,
+  appliedTo,
+  today,
   granularity,
   onPreset,
   onCustomRange,
@@ -78,14 +106,34 @@ export default function AnalyticsControls({
   }, [choice, from, to]);
 
   const error =
-    choice === 'custom' ? customRangeError(draft.from, draft.to) : null;
+    choice === 'custom' ? customRangeError(draft.from, draft.to, today) : null;
 
   const changeDraft = (next: { from: string; to: string }) => {
     setDraft(next);
-    if (customRangeError(next.from, next.to) == null) {
+    if (customRangeError(next.from, next.to, today) == null) {
       onCustomRange(next.from, next.to);
     }
   };
+
+  const dateInputProps = (testId: string) => ({
+    min: MIN_ANALYTICS_DAY,
+    max: today,
+    'data-testid': testId,
+  });
+  const appliedLabel = (
+    <Typography
+      fontSize={13}
+      color={muted}
+      className={fontClassName.className}
+      data-testid="analytics-range"
+    >
+      {`${formatDay(appliedFrom)} – ${formatDay(appliedTo)}`}
+    </Typography>
+  );
+  // In custom mode the inputs show the dates; the label only adds the range
+  // the charts were widened to.
+  const customWidened =
+    error == null && (appliedFrom !== draft.from || appliedTo !== draft.to);
 
   return (
     <Box className="flex flex-col gap-3">
@@ -132,7 +180,7 @@ export default function AnalyticsControls({
                 changeDraft({ ...draft, from: event.target.value })
               }
               InputLabelProps={{ shrink: true }}
-              inputProps={{ 'data-testid': 'analytics-from' }}
+              inputProps={dateInputProps('analytics-from')}
               error={error != null}
               sx={{ width: 160 }}
             />
@@ -145,20 +193,14 @@ export default function AnalyticsControls({
                 changeDraft({ ...draft, to: event.target.value })
               }
               InputLabelProps={{ shrink: true }}
-              inputProps={{ 'data-testid': 'analytics-to' }}
+              inputProps={dateInputProps('analytics-to')}
               error={error != null}
               sx={{ width: 160 }}
             />
+            {customWidened && appliedLabel}
           </>
         ) : (
-          <Typography
-            fontSize={13}
-            color={muted}
-            className={fontClassName.className}
-            data-testid="analytics-range"
-          >
-            {`${formatDay(from)} – ${formatDay(to)}`}
-          </Typography>
+          appliedLabel
         )}
 
         <ToggleButtonGroup
@@ -186,7 +228,12 @@ export default function AnalyticsControls({
 
       {error && (
         <Typography fontSize={13} color="error" role="alert">
-          {t(error)}
+          {error === 'analyticsRangeOutOfBounds'
+            ? t(error, {
+                min: formatDay(MIN_ANALYTICS_DAY),
+                max: formatDay(today),
+              })
+            : t(error)}
         </Typography>
       )}
     </Box>

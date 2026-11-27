@@ -1,6 +1,6 @@
 import {
+  alignRangeToPeriods,
   analyticsRequestPath,
-  ashgabatDay,
   presetRange,
   type RangePreset,
 } from '@/lib/analytics/adminQuery';
@@ -15,7 +15,7 @@ import { fontClassName } from '@/styles/theme';
 import { Alert, Box, Button, LinearProgress, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/router';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import AnalyticsControls, { type RangeChoice } from './AnalyticsControls';
@@ -28,7 +28,8 @@ import WidgetCard, {
   WidgetMessage,
   WidgetSkeleton,
 } from './WidgetCard';
-import { formatNumber } from './format';
+import { formatNumber, formatTmtExact } from './format';
+import { useAshgabatToday } from './useAshgabatToday';
 
 const DEFAULT_PRESET: RangePreset = '30d';
 
@@ -54,31 +55,59 @@ const LIST_GRID = {
 } as const;
 
 type Props = {
-  /** Today in Ashgabat; injectable for tests. */
+  /** Today in Ashgabat, fixed; injectable for tests. */
   today?: string;
 };
+
+type Range = { from: string; to: string };
+
+/**
+ * What the SWR cache holds: the response plus whose it is. The key carries
+ * the user too, but `keepPreviousData` would still hand the last user's
+ * response to the next one while theirs loads, so the owner is checked again
+ * on read.
+ */
+type CachedResponse = { owner: string; response: AnalyticsResponse };
 
 export default function AnalyticsDashboard({ today: todayProp }: Props) {
   const t = useTranslations();
   const label = useAnalyticsLabel();
   const { locale } = useRouter();
-  const { accessToken } = useUserContext();
+  const { user, accessToken } = useUserContext();
   const fetchWithCreds = useFetchWithCreds();
 
-  const today = useMemo(() => todayProp ?? ashgabatDay(), [todayProp]);
+  // Kept current past midnight, so presets keep ending today.
+  const today = useAshgabatToday(todayProp);
   const [choice, setChoice] = useState<RangeChoice>(DEFAULT_PRESET);
-  const [range, setRange] = useState(() => presetRange(DEFAULT_PRESET, today));
+  const [customRange, setCustomRange] = useState<Range | null>(null);
   const [granularity, setGranularity] = useState<Granularity>('day');
+
+  const selected: Range =
+    choice === 'custom' && customRange
+      ? customRange
+      : presetRange(choice === 'custom' ? DEFAULT_PRESET : choice, today);
+  // Whole weeks or months only; the KPIs use the same range, so every number
+  // on the page covers the days the range label shows.
+  const range = alignRangeToPeriods(selected, granularity);
 
   // The token goes through a ref: fetchWithCreds stores a silently refreshed
   // one, and a token in the SWR key would refetch for nothing.
   const tokenRef = useRef(accessToken);
   tokenRef.current = accessToken;
 
+  // Who the response is for: what the server decides the widgets by. Another
+  // user signing in on this tab (no reload) must never get this one's cache.
+  const owner = user ? `${user.id}:${user.grade}` : null;
   const path = analyticsRequestPath({ ...range, granularity, locale });
-  const { data, error, isLoading, isValidating, mutate } = useSWR(
-    accessToken ? path : null,
-    async (key: string) => {
+  const {
+    data: cached,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useSWR(
+    accessToken && owner ? [path, owner] : null,
+    async ([key, keyOwner]: [string, string]): Promise<CachedResponse> => {
       const response = await fetchWithCreds<AnalyticsResponse>({
         accessToken: tokenRef.current ?? '',
         path: key,
@@ -87,7 +116,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Analytics request failed');
       }
-      return response.data;
+      return { owner: keyOwner, response: response.data };
     },
     {
       keepPreviousData: true,
@@ -96,6 +125,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
       dedupingInterval: 30_000,
     },
   );
+  const data = cached && cached.owner === owner ? cached.response : undefined;
 
   const byKind = (kind: AnalyticsWidgetResult['kind']) =>
     (data?.widgets ?? []).filter((widget) => widget.kind === kind);
@@ -104,6 +134,9 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
     (widget) => widget.kind === 'timeseries' || widget.kind === 'funnel',
   );
   const lists = byKind('topN');
+  const failedCount = (data?.widgets ?? []).filter(
+    (widget) => widget.data == null,
+  ).length;
 
   const renderWide = (widget: AnalyticsWidgetResult) => {
     const title = label(widget.labelKey, widget.id);
@@ -117,6 +150,9 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
           data={widget.data}
           locale={locale}
           today={today}
+          title={title}
+          from={data?.from ?? range.from}
+          to={data?.to ?? range.to}
         />
       );
     else if (widget.data.kind === 'funnel')
@@ -137,15 +173,19 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
     <Box className="flex flex-col gap-4">
       <AnalyticsControls
         choice={choice}
-        from={range.from}
-        to={range.to}
+        from={selected.from}
+        to={selected.to}
+        appliedFrom={range.from}
+        appliedTo={range.to}
+        today={today}
         granularity={granularity}
-        onPreset={(preset) => {
-          setChoice(preset);
-          setRange(presetRange(preset, today));
+        onPreset={setChoice}
+        onCustom={() => {
+          // Start from the dates on screen.
+          setCustomRange(selected);
+          setChoice('custom');
         }}
-        onCustom={() => setChoice('custom')}
-        onCustomRange={(from, to) => setRange({ from, to })}
+        onCustomRange={(from, to) => setCustomRange({ from, to })}
         onGranularity={setGranularity}
       />
 
@@ -153,6 +193,14 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
         {isValidating && data && (
           <LinearProgress aria-label={t('loading')} sx={{ borderRadius: 2 }} />
         )}
+      </Box>
+
+      {/* One polite announcement for failed blocks, rather than an alert per
+          card. Always rendered, so screen readers pick up its changes. */}
+      <Box role="status" className="sr-only" data-testid="analytics-status">
+        {failedCount > 0
+          ? t('analyticsWidgetsFailed', { count: failedCount })
+          : ''}
       </Box>
 
       {error && !isValidating && (
@@ -207,7 +255,7 @@ export default function AnalyticsDashboard({ today: todayProp }: Props) {
               value={
                 data.telekomBalance == null
                   ? null
-                  : `${formatNumber(data.telekomBalance, locale)} TMT`
+                  : formatTmtExact(data.telekomBalance, locale)
               }
             />
           </Box>

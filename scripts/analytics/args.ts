@@ -1,4 +1,8 @@
-/** CLI parsing and the local-database safety check for `seed-analytics.ts`. */
+/**
+ * CLI parsing and the DATABASE_URL host check for `seed-analytics.ts`. The
+ * host check alone can't spot production (its Postgres is on the same VM, so
+ * its URL says localhost too); safety.ts has the checks that can.
+ */
 
 export interface SeedArgs {
   days: number;
@@ -28,11 +32,18 @@ export const USAGE = `Seeds realistic analytics data (events, orders, rollups) i
   --visitors-per-day N   average visitors per day; traffic grows around it (default ${DEFAULT_ARGS.visitorsPerDay})
   --seed N               PRNG seed: the same seed and catalog give the same data (default ${DEFAULT_ARGS.seed})
   --no-orders            no checkouts: no order_placed events and no seed orders
-  --clean                remove all seed data, recompute the affected rollups, and exit
-  --force                skip the local-database check (never point this at production)
+  --clean                remove all seed data, recompute the rollups of the days seed runs recorded, and exit
+  --force                run even though a safety check below refuses (never point this at production)
   --help                 show this help
 
-Re-running replaces earlier seed data instead of adding to it.`;
+Re-running replaces earlier seed data instead of adding to it. Rollups are
+only rebuilt for the days seed runs recorded (a seed_marker row in
+AnalyticsDaily) plus the days of the new run.
+
+It refuses to run when NEXT_PUBLIC_APP_ENV is production or staging, when
+DATABASE_URL isn't a local or docker host, and when the database holds history
+it would overwrite: rollups older than the raw-event window that no seed run
+recorded, or more than a handful of non-seed raw events older than a day.`;
 
 const INT_OPTIONS: Record<string, 'days' | 'visitorsPerDay' | 'seed'> = {
   '--days': 'days',

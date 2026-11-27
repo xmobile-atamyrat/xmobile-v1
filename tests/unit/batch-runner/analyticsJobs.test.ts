@@ -6,6 +6,7 @@ import {
 } from '../../../scripts/batch-runner/jobs/analytics-retention';
 import {
   analyticsRollupJob,
+  createAnalyticsRollupJob,
   daysToRollup,
   runAnalyticsRollup,
 } from '../../../scripts/batch-runner/jobs/analytics-rollup';
@@ -15,26 +16,36 @@ import {
 } from '../../../scripts/batch-runner/jobs/analytics-rollup-nightly';
 import { jobs } from '../../../scripts/batch-runner/jobs/registry';
 
-const { rollupDay, rollupPeriodUniques, refreshOrderOutcomes, prune } =
-  vi.hoisted(() => ({
-    rollupDay: vi.fn(),
-    rollupPeriodUniques: vi.fn(),
-    refreshOrderOutcomes: vi.fn(),
-    prune: vi.fn(),
-  }));
+const { rollupDay, catchUp, refreshFunnel, prune } = vi.hoisted(() => ({
+  rollupDay: vi.fn(),
+  catchUp: vi.fn(),
+  refreshFunnel: vi.fn(),
+  prune: vi.fn(),
+}));
 
 vi.mock('../../../src/lib/analytics/rollup', () => ({
   rollupDay,
-  rollupPeriodUniques,
-  refreshOrderOutcomes,
+  catchUp,
+  refreshFunnel,
 }));
 vi.mock('../../../src/lib/analytics/retention', () => ({
   pruneAnalyticsEvents: prune,
 }));
 vi.mock('../../../src/lib/dbClient', () => ({ default: {} }));
 
+// What the real catchUp returns: the CATCH_UP_DAYS days before today.
+const catchUpResult = (today: string) => {
+  const shift = (days: number) => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  return { from: shift(-7), to: shift(-1) };
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
   vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
@@ -75,6 +86,36 @@ describe('analytics-rollup', () => {
     ]);
   });
 
+  it('catches up first when asked, then rolls up only what is left', async () => {
+    // 00:30 Ashgabat on 2026-11-27: yesterday is part of the catch-up.
+    const now = new Date('2026-11-26T19:30:00Z');
+    catchUp.mockResolvedValueOnce(catchUpResult('2026-11-27'));
+    expect(await runAnalyticsRollup(now, { catchUp: true })).toEqual([
+      '2026-11-27',
+    ]);
+    expect(catchUp).toHaveBeenCalledWith({ now, onlyMissingPeriods: true });
+    expect(rollupDay.mock.calls).toEqual([['2026-11-27', { now }]]);
+    expect(catchUp.mock.invocationCallOrder[0]).toBeLessThan(
+      rollupDay.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('catches up on the first run after start-up only, retrying until it succeeds', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-27T05:00:00Z'));
+    catchUp.mockResolvedValue(catchUpResult('2026-11-27'));
+    const job = createAnalyticsRollupJob();
+
+    catchUp.mockRejectedValueOnce(new Error('db down'));
+    await expect(job.run()).rejects.toThrow('db down');
+    expect(rollupDay).not.toHaveBeenCalled();
+
+    await job.run();
+    await job.run();
+    expect(catchUp).toHaveBeenCalledTimes(2);
+    expect(rollupDay).toHaveBeenCalledTimes(2);
+  });
+
   it('runs every 10 minutes', () => {
     expect(analyticsRollupJob.schedule).toEqual({
       type: 'interval',
@@ -84,21 +125,23 @@ describe('analytics-rollup', () => {
 });
 
 describe('analytics-rollup-nightly', () => {
-  it('finalizes yesterday, its periods and refreshes order outcomes', async () => {
+  it('catches up the last 7 days, then refreshes the older funnels', async () => {
     // 01:30 Ashgabat on 2026-11-27.
     const now = new Date('2026-11-26T20:30:00Z');
+    catchUp.mockResolvedValueOnce(catchUpResult('2026-11-27'));
     expect(await runAnalyticsRollupNightly(now)).toEqual({
-      yesterday: '2026-11-26',
-      refreshedFrom: '2026-08-30',
-      refreshedTo: '2026-11-25',
+      rerolledFrom: '2026-11-20',
+      rerolledTo: '2026-11-26',
+      funnelFrom: '2026-08-30',
+      funnelTo: '2026-11-19',
     });
-    expect(rollupDay).toHaveBeenCalledWith('2026-11-26', { now });
-    expect(rollupPeriodUniques).toHaveBeenCalledWith('2026-11-26', { now });
-    expect(refreshOrderOutcomes).toHaveBeenCalledWith(
-      '2026-08-30',
-      '2026-11-25',
-      { now },
-    );
+    // Every period touching the re-rolled days, and all revenue: in catchUp
+    // (and recounted, not only filled in where missing).
+    expect(catchUp).toHaveBeenCalledWith({ now });
+    expect(refreshFunnel).toHaveBeenCalledWith('2026-08-30', '2026-11-19', {
+      now,
+    });
+    expect(rollupDay).not.toHaveBeenCalled();
   });
 
   it('runs at 01:30 Ashgabat time, not the VM time zone', () => {

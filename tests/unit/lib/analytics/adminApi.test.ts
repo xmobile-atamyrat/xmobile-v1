@@ -9,11 +9,15 @@ import {
   withTimeout,
 } from '@/lib/analytics/adminApi';
 import {
+  alignRangeToPeriods,
   analyticsRequestPath,
   ashgabatDay,
   isValidDay,
   MAX_RANGE_DAYS,
+  maxAnalyticsDay,
+  MIN_ANALYTICS_DAY,
   parseAnalyticsQuery,
+  periodStartOf,
   presetRange,
   rangeDays,
   shiftDay,
@@ -25,7 +29,10 @@ import { WIDGETS } from '@/lib/analytics/metrics/catalog';
 import dbClient from '@/lib/dbClient';
 import { fetchTelekomBalance } from '@/lib/telekom';
 
-vi.mock('@/lib/analytics/metrics', () => ({ queryWidget: vi.fn() }));
+vi.mock('@/lib/analytics/metrics', () => ({
+  queryWidget: vi.fn(),
+  createQueryContext: vi.fn(() => ({ fake: 'ctx' })),
+}));
 vi.mock('@/lib/telekom', () => ({ fetchTelekomBalance: vi.fn() }));
 vi.mock('@/lib/dbClient', () => ({
   default: { user: { count: vi.fn() } },
@@ -112,6 +119,55 @@ describe('day helpers', () => {
   });
 });
 
+describe('period alignment', () => {
+  it('finds the Monday and the 1st of a day', () => {
+    // 2026-11-28 is a Saturday.
+    expect(periodStartOf('2026-11-28', 'week')).toBe('2026-11-23');
+    expect(periodStartOf('2026-11-23', 'week')).toBe('2026-11-23');
+    expect(periodStartOf('2027-01-01', 'week')).toBe('2026-12-28');
+    expect(periodStartOf('2026-11-28', 'month')).toBe('2026-11-01');
+    expect(periodStartOf('2026-11-28', 'day')).toBe('2026-11-28');
+  });
+
+  it('starts week and month ranges on a whole period', () => {
+    const range = presetRange('12m', TODAY);
+    expect(alignRangeToPeriods(range, 'day')).toEqual(range);
+    expect(alignRangeToPeriods(range, 'month')).toEqual({
+      from: '2025-11-01',
+      to: TODAY,
+    });
+    // 2025-11-29 is a Saturday.
+    expect(alignRangeToPeriods(range, 'week')).toEqual({
+      from: '2025-11-24',
+      to: TODAY,
+    });
+    const aligned = { from: '2026-11-01', to: TODAY };
+    expect(alignRangeToPeriods(aligned, 'month')).toEqual(aligned);
+  });
+
+  it('moves forward instead when moving back breaks a limit', () => {
+    // Exactly two years: a month further back would be too long.
+    const from = shiftDay(TODAY, -(MAX_RANGE_DAYS - 1));
+    const month = alignRangeToPeriods({ from, to: TODAY }, 'month');
+    expect(month.from.endsWith('-01')).toBe(true);
+    expect(month.from > from).toBe(true);
+    expect(rangeDays(month.from, TODAY)).toBeLessThanOrEqual(MAX_RANGE_DAYS);
+    const week = alignRangeToPeriods({ from, to: TODAY }, 'week');
+    expect(periodStartOf(week.from, 'week')).toBe(week.from);
+    expect(week.from > from).toBe(true);
+
+    // 2020-01-01 is a Wednesday; its Monday is before the API's first day.
+    expect(
+      alignRangeToPeriods({ from: MIN_ANALYTICS_DAY, to: '2020-03-01' }, 'week')
+        .from,
+    ).toBe('2020-01-06');
+    // Every aligned range is one the API accepts.
+    [month, week].forEach((range) =>
+      expect(ok({ ...range, granularity: 'week' }).from).toBe(range.from),
+    );
+  });
+});
+
 describe('parseAnalyticsQuery', () => {
   it('defaults to the last 30 days, by day, top 10, ru, every visible widget', () => {
     expect(ok({})).toEqual({
@@ -175,6 +231,26 @@ describe('parseAnalyticsQuery', () => {
     const to = '2026-11-28';
     expect(ok({ from: shiftDay(to, -(MAX_RANGE_DAYS - 1)), to }).to).toBe(to);
     expect(error({ from: shiftDay(to, -MAX_RANGE_DAYS), to })).toMatch(/range/);
+  });
+
+  it('rejects days before 2020 and after tomorrow', () => {
+    expect(MIN_ANALYTICS_DAY).toBe('2020-01-01');
+    expect(maxAnalyticsDay(NOW)).toBe('2026-11-29');
+    // Used to reach Postgres as year 1 and fail every KPI.
+    expect(error({ from: '0001-01-01', to: '0001-12-31' })).toMatch(
+      /^Invalid to: .*2020-01-01/,
+    );
+    expect(error({ from: '2019-12-31', to: '2020-01-10' })).toMatch(
+      /^Invalid from: .*2020-01-01/,
+    );
+    expect(ok({ from: '2020-01-01', to: '2020-01-10' }).from).toBe(
+      '2020-01-01',
+    );
+    expect(error({ to: '2026-11-30' })).toMatch(/^Invalid to: .*2026-11-29/);
+    expect(error({ from: '9999-01-01', to: '9999-01-02' })).toMatch(
+      /^Invalid to/,
+    );
+    expect(ok({ to: '2026-11-29' }).to).toBe('2026-11-29');
   });
 
   it('accepts a single day', () => {
@@ -387,13 +463,33 @@ describe('getAnalytics', () => {
         },
       ],
     });
-    expect(queryWidget).toHaveBeenCalledWith('traffic', {
-      from: '2026-11-01',
-      to: '2026-11-28',
-      granularity: 'week',
-      limit: 5,
-      locale: 'en',
+    expect(queryWidget).toHaveBeenCalledWith(
+      'traffic',
+      {
+        from: '2026-11-01',
+        to: '2026-11-28',
+        granularity: 'week',
+        limit: 5,
+        locale: 'en',
+      },
+      { ctx: { fake: 'ctx' } },
+    );
+  });
+
+  it('shares one query context between the widgets of a request', async () => {
+    vi.mocked(queryWidget).mockResolvedValue({
+      kind: 'kpi',
+      value: 1,
+      previous: null,
     });
+    await getAnalytics(
+      { ...query, widgets: ['kpi_visitors', 'kpi_conversion'] },
+      false,
+    );
+    const contexts = vi.mocked(queryWidget).mock.calls.map((call) => call[2]);
+    expect(contexts).toHaveLength(2);
+    expect(contexts[0]?.ctx).toBeDefined();
+    expect(contexts[1]?.ctx).toBe(contexts[0]?.ctx);
   });
 
   it('turns a failed widget into data: null and keeps the rest', async () => {

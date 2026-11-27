@@ -1,3 +1,4 @@
+import { periodStartOf } from '@/lib/analytics/adminQuery';
 import type { Granularity, MetricUnit } from '@/lib/analytics/metrics/types';
 
 /**
@@ -21,10 +22,31 @@ export function formatNumber(
   value: number,
   locale: string | undefined,
   maximumFractionDigits = 0,
+  minimumFractionDigits = 0,
 ): string {
   return new Intl.NumberFormat(intlLocale(locale), {
     maximumFractionDigits,
+    minimumFractionDigits,
   }).format(value);
+}
+
+/** Short axis label in the viewer's language: `1.2K`, `1,2 тыс.`. */
+export function formatCompact(
+  value: number,
+  locale: string | undefined,
+): string {
+  return new Intl.NumberFormat(intlLocale(locale), {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+/** A manat amount with kopecks, as the Telekom balance is shown: `150.25 TMT`. */
+export function formatTmtExact(
+  value: number,
+  locale: string | undefined,
+): string {
+  return `${formatNumber(value, locale, 2, 2)} TMT`;
 }
 
 /** A value in its widget's unit: `1 234`, `84 500 TMT`, `2.5%`. */
@@ -42,6 +64,8 @@ export type Delta = {
   direction: 'up' | 'down' | 'flat';
   /** Signed, ready to show: `+12.5%`, `−3 pp` (pp filled in by the caller). */
   text: string;
+  /** The same without its sign, for the spoken label ("up 12.5%"). */
+  magnitude: string;
   /** Percentage points (percent unit) rather than a relative change. */
   points: boolean;
 };
@@ -70,23 +94,29 @@ export function kpiDelta(
     // eslint-disable-next-line no-nested-ternary
     diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
   if (unit === 'percent') {
+    const magnitude = formatNumber(Math.abs(diff), locale, 1);
     return {
       direction,
-      text: signed(formatNumber(Math.abs(diff), locale, 1), diff),
+      text: signed(magnitude, diff),
+      magnitude,
       points: true,
     };
   }
   if (previous === 0) {
+    const magnitude = formatValue(Math.abs(diff), unit, locale);
     return {
       direction,
-      text: signed(formatValue(Math.abs(diff), unit, locale), diff),
+      text: signed(magnitude, diff),
+      magnitude,
       points: false,
     };
   }
   const change = (diff / Math.abs(previous)) * 100;
+  const magnitude = `${formatNumber(Math.abs(change), locale, 1)}%`;
   return {
     direction,
     text: `${signed(formatNumber(Math.abs(change), locale, 1), change)}%`,
+    magnitude,
     points: false,
   };
 }
@@ -113,18 +143,10 @@ export function formatPeriod(period: string, granularity: Granularity): string {
  * contains `day`, as 'YYYY-MM-DD'. Pure, so the dashboard can mark the
  * period that includes today as still in progress.
  */
-export function periodContaining(
+export const periodContaining = (
   day: string,
   granularity: Granularity,
-): string {
-  if (granularity === 'month') return `${day.slice(0, 7)}-01`;
-  if (granularity === 'week') {
-    const date = new Date(`${day}T00:00:00Z`);
-    date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
-    return date.toISOString().slice(0, 10);
-  }
-  return day;
-}
+): string => periodStartOf(day, granularity);
 
 /** Full date for tooltips: dd.mm.yyyy. */
 export function formatDay(day: string): string {

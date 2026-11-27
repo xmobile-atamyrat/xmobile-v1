@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { MetricId } from '@/lib/analytics/metrics/catalog';
 import type {
@@ -20,6 +20,7 @@ import {
   OLD_EVENTS,
   OLD_NOW,
   seedAnalyticsFixture,
+  useSessionTimeZone,
   wipeAnalytics,
   type AnalyticsFixture,
 } from './shared/analytics-fixture';
@@ -109,8 +110,9 @@ describe('analytics metric queries (integration)', () => {
     });
 
   beforeAll(async () => {
-    const { databaseUrl, catalog: integrationCatalog } =
+    const { databaseUrl: baseUrl, catalog: integrationCatalog } =
       await prepareIntegrationWorker();
+    const databaseUrl = useSessionTimeZone(baseUrl);
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
     await prisma.$connect();
     fx = await seedAnalyticsFixture(prisma, integrationCatalog);
@@ -119,7 +121,11 @@ describe('analytics metric queries (integration)', () => {
     const rollup = await import('@/lib/analytics/rollup');
     await rollup.rollupRange('2025-01-18', '2025-02-05', { now: NOW });
     await rollup.rollupRange('2024-10-05', '2024-10-08', { now: OLD_NOW });
-    await rollup.rollupPeriodUniques('2024-10-08', { now: OLD_NOW });
+    // October's week and month rows, counted once October was over (while
+    // its raw events still existed).
+    await rollup.rollupPeriodUniques('2024-10-08', {
+      now: new Date('2024-11-02T07:00:00Z'),
+    });
 
     metrics = await import('@/lib/analytics/metrics');
     catalog = await import('@/lib/analytics/metrics/catalog');
@@ -586,6 +592,248 @@ describe('analytics metric queries (integration)', () => {
         { now: OLD_NOW },
       )) as FunnelData;
       expect(exact.steps.map((s) => s.value)).toEqual([1, 1, 0, 0]);
+    });
+  });
+
+  describe('ranges ending today that reach past the raw window', () => {
+    // At NOW the raw window starts 2024-11-08. October has X and Y (daily
+    // uniques 2 + 1, week and month rows 2); 11-08..02-05 has A..H.
+    const RANGE = { from: '2024-10-07', to: '2025-02-05' };
+
+    beforeAll(async () => {
+      // An earlier test deletes October's period rows.
+      const rollup = await import('@/lib/analytics/rollup');
+      await rollup.rollupPeriodUniques('2024-10-08', {
+        now: new Date('2024-11-02T07:00:00Z'),
+      });
+    });
+
+    it('counts the raw-window part exactly and bounds only the older days', async () => {
+      // Old code: the sum of every daily unique (16), since the current
+      // week and month have no final row.
+      expect((await kpi('kpi_visitors', RANGE.from, RANGE.to)).value).toBe(10);
+      // Sessions: 3 daily sessions in October + 3 distinct in the window.
+      expect((await kpi('kpi_sessions', RANGE.from, RANGE.to)).value).toBe(6);
+      expect(
+        (await top('by_platform', RANGE)).map((r) => [r.key, r.value]),
+      ).toEqual([
+        ['WEB', 8],
+        ['APP', 3],
+      ]);
+    });
+
+    it('splits a chart period that straddles the window start', async () => {
+      const s = await series('traffic', {
+        from: '2024-10-01',
+        to: RANGE.to,
+        granularity: 'month',
+      });
+      expect(s.visitors.periods).toEqual([
+        '2024-10-01',
+        '2024-11-01',
+        '2024-12-01',
+        '2025-01-01',
+        '2025-02-01',
+      ]);
+      expect(s.visitors.values).toEqual([2, 0, 0, 7, 3]);
+    });
+
+    it('has no previous value when only one side is exact', async () => {
+      // 11-08..02-05 is all raw (exact); the 90 days before only bounded.
+      const exactNow = { from: '2024-11-08', to: '2025-02-05' };
+      expect(await kpi('kpi_visitors', exactNow.from, exactNow.to)).toEqual({
+        value: 8,
+        previous: null,
+      });
+      expect(
+        (await kpi('kpi_sessions', exactNow.from, exactNow.to)).previous,
+      ).toBeNull();
+      expect(
+        (await kpi('kpi_conversion', exactNow.from, exactNow.to)).previous,
+      ).toBeNull();
+      // Sums of daily rows are exact either way.
+      expect(await kpi('kpi_pageviews', exactNow.from, exactNow.to)).toEqual({
+        value: 11,
+        previous: 3,
+      });
+      // Both bounds: compared.
+      expect(await kpi('kpi_visitors', RANGE.from, RANGE.to)).toEqual({
+        value: 10,
+        previous: 0,
+      });
+    });
+  });
+
+  describe('ranges ending today, compared at the same time of day', () => {
+    // 11:00 on 2025-01-28 in Ashgabat. Yesterday (D1) up to 11:00 had A's
+    // page view at 00:00, A's and B's events up to 10:55, o1 placed at 10:20
+    // and o3 completed at 00:00; B's page views start at 11:00 sharp.
+    const AT = new Date('2025-01-28T06:00:00Z');
+    const TODAY = '2025-01-28';
+
+    it('cuts the previous day at the same time for event KPIs', async () => {
+      expect(await kpi('kpi_pageviews', TODAY, TODAY, AT)).toEqual({
+        value: 1,
+        previous: 1,
+      });
+      expect(await kpi('kpi_visitors', TODAY, TODAY, AT)).toEqual({
+        value: 1,
+        previous: 2,
+      });
+      expect(await kpi('kpi_sessions', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 2,
+      });
+      expect(await kpi('kpi_orders_placed', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 1,
+      });
+      expect(await kpi('kpi_conversion', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 50,
+      });
+    });
+
+    it('cuts revenue and completed orders by completedAt', async () => {
+      expect(await kpi('kpi_revenue', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 200,
+      });
+      expect(await kpi('kpi_orders_completed', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 1,
+      });
+      expect(await kpi('kpi_aov', TODAY, TODAY, AT)).toEqual({
+        value: 0,
+        previous: 200,
+      });
+    });
+
+    it('uses full days from the rollups for the rest of the ranges', async () => {
+      // 01-27..01-28 now vs 01-25..01-26 up to 11:00 on the 26th: E's page
+      // view at 23:59:59 on the 26th is after the cut.
+      expect(await kpi('kpi_pageviews', D1, TODAY, AT)).toEqual({
+        value: 5,
+        previous: 0,
+      });
+      expect(await kpi('kpi_revenue', D1, TODAY, AT)).toEqual({
+        value: 1505.5,
+        previous: 0,
+      });
+    });
+
+    it('counts a range ending today live, not from the 10-minute rollup', async () => {
+      const visitor = '00000000-0000-4000-8000-000000000050';
+      await insertEvents(prisma, [
+        { at: '2025-01-28T05:00:00Z', name: 'page_view', v: visitor },
+      ]);
+      try {
+        // Not rolled up yet, but already counted.
+        expect((await kpi('kpi_pageviews', TODAY, TODAY, AT)).value).toBe(2);
+      } finally {
+        await prisma.analyticsEvent.deleteMany({
+          where: { visitorId: visitor },
+        });
+      }
+    });
+  });
+
+  describe('per-request context', () => {
+    it('runs each raw distinct count once per context', async () => {
+      const dbClient = (await import('@/lib/dbClient')).default;
+      const spy = vi.spyOn(dbClient, '$queryRaw');
+      try {
+        const ctx = metrics.createQueryContext(NOW);
+        const params = {
+          from: '2025-01-27',
+          to: '2025-02-02',
+          granularity: 'day' as const,
+          limit: 10,
+          locale: 'en',
+        };
+        // rawDistinct's template is the only one with `count(DISTINCT `
+        // followed by an interpolated column.
+        const distinctScans = () =>
+          spy.mock.calls.filter(([strings]) =>
+            (strings as unknown as readonly string[])
+              .join('?')
+              .includes('count(DISTINCT ?)'),
+          ).length;
+
+        const visitors = (await metrics.queryWidget('kpi_visitors', params, {
+          ctx,
+        })) as KpiData;
+        const afterFirst = distinctScans();
+        const conversion = (await metrics.queryWidget(
+          'kpi_conversion',
+          params,
+          {
+            ctx,
+          },
+        )) as KpiData;
+        expect(visitors.value).toBe(8);
+        expect(conversion.value).toBe(37.5);
+        // Current and previous range: two scans, none repeated.
+        expect(afterFirst).toBe(2);
+        expect(distinctScans()).toBe(2);
+
+        await metrics.queryWidget('kpi_visitors', params, { now: NOW });
+        expect(distinctScans()).toBe(4);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
+  describe('funnel clock skew', () => {
+    const SKEW = '00000000-0000-4000-8000-000000000051';
+    const LATE = '00000000-0000-4000-8000-000000000052';
+
+    afterAll(async () => {
+      await prisma.analyticsEvent.deleteMany({
+        where: { visitorId: { in: [SKEW, LATE] } },
+      });
+    });
+
+    it('counts a cart add stamped a few seconds before its product view', async () => {
+      // 2025-01-29 has no other events.
+      await insertEvents(prisma, [
+        // Browser clock a little ahead of the server's.
+        {
+          at: '2025-01-29T05:00:10Z',
+          name: 'product_view',
+          v: SKEW,
+          entity: fx.p1,
+        },
+        {
+          at: '2025-01-29T05:00:05Z',
+          name: 'cart_add',
+          v: SKEW,
+          entity: fx.p1,
+        },
+        {
+          at: '2025-01-29T05:00:00Z',
+          name: 'order_placed',
+          v: SKEW,
+          entity: fx.orders.o8,
+        },
+        // Three minutes apart is a real "added before viewing".
+        {
+          at: '2025-01-29T06:03:00Z',
+          name: 'product_view',
+          v: LATE,
+          entity: fx.p1,
+        },
+        {
+          at: '2025-01-29T06:00:00Z',
+          name: 'cart_add',
+          v: LATE,
+          entity: fx.p1,
+        },
+      ]);
+      expect(
+        (await funnel('2025-01-29', '2025-01-29')).map((s) => s.value),
+      ).toEqual([2, 1, 1, 1]);
     });
   });
 });

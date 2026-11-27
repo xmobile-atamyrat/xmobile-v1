@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+import {
+  ENTITY_UUID_PATTERN,
+  REFERRER_HOST_PATTERN,
+} from '@/lib/analytics/constants';
+
+// Product and category ids become rollup dimension values that are kept
+// forever, so anything but a real id format is rejected rather than stored.
+const entityUuid = z.string().regex(ENTITY_UUID_PATTERN);
+
 /**
  * Event catalog (extension point #1 in docs/analytics-design.md).
  *
@@ -11,13 +20,18 @@ export const events = {
   // Client events: sent by the browser / WebView beacon.
   page_view: z.object({
     path: z.string().max(300),
-    // Host of an external document.referrer, e.g. 'google.com'. Omitted for
-    // internal navigation and direct visits.
-    referrer: z.string().max(200).optional(),
+    // Host name of an external document.referrer, e.g. 'google.com'. Omitted
+    // for internal navigation and direct visits. Anything that doesn't look
+    // like a host name is dropped (the event is kept).
+    referrer: z
+      .string()
+      .regex(REFERRER_HOST_PATTERN)
+      .optional()
+      .catch(undefined),
     device: z.enum(['mobile', 'tablet', 'desktop']).optional(),
   }),
-  product_view: z.object({ productId: z.string().min(1).max(64) }),
-  category_view: z.object({ categoryId: z.string().min(1).max(64) }),
+  product_view: z.object({ productId: entityUuid }),
+  category_view: z.object({ categoryId: entityUuid }),
 
   // Server events: only `trackServer()` may record these, so they can't be
   // blocked or faked.
@@ -26,7 +40,7 @@ export const events = {
     results: z.number().int().min(0),
   }),
   cart_add: z.object({
-    productId: z.string().min(1).max(64),
+    productId: entityUuid,
     qty: z.number().int().min(1),
   }),
   // Everything else about the order (status, total) is read from UserOrder.
@@ -79,7 +93,12 @@ export function splitEntity(
   props: Record<string, unknown>,
 ): { entityId: string | null; props: Record<string, unknown> | null } {
   const key = entityKey[name];
-  const rest = { ...props };
+  const rest: Record<string, unknown> = {};
+  // Keys an optional field parsed to `undefined` (a dropped referrer) are left
+  // out instead of reaching the JSON column.
+  Object.entries(props).forEach(([k, v]) => {
+    if (v !== undefined) rest[k] = v;
+  });
   let entityId: string | null = null;
   if (key && typeof rest[key] === 'string') {
     entityId = rest[key] as string;

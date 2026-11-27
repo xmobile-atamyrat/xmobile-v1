@@ -28,6 +28,30 @@ import type { IntegrationCatalog } from './integration-types';
  */
 
 export const NOW = new Date('2025-02-05T07:00:00Z');
+
+/**
+ * The analytics SQL must not depend on the session TimeZone (the columns are
+ * zone-less UTC timestamps). The analytics integration tests connect with a
+ * far-off zone to prove it: `-c TimeZone=…` in libpq's `options` parameter,
+ * which Prisma passes through.
+ */
+export const SESSION_TIME_ZONE = 'Asia/Seoul';
+
+export function withSessionTimeZone(databaseUrl: string): string {
+  const options = encodeURIComponent(`-c TimeZone=${SESSION_TIME_ZONE}`);
+  return `${databaseUrl}${databaseUrl.includes('?') ? '&' : '?'}options=${options}`;
+}
+
+/**
+ * The integration worker's database URL with SESSION_TIME_ZONE, also set as
+ * DATABASE_URL so the app's Prisma singleton (created on first import) uses
+ * it. Call right after prepareIntegrationWorker.
+ */
+export function useSessionTimeZone(databaseUrl: string): string {
+  const url = withSessionTimeZone(databaseUrl);
+  process.env.DATABASE_URL = url;
+  return url;
+}
 export const OLD_NOW = new Date('2024-10-10T07:00:00Z');
 export const D1 = '2025-01-27';
 
@@ -244,9 +268,10 @@ export async function seedAnalyticsFixture(
       locale: 'tk',
       props: { path: '/x', referrer: 'yandex.ru' },
     },
-    // B adds to the cart before viewing the product: not a funnel step 2.
+    // B adds to the cart well before viewing the product (more than the
+    // funnel's 2-minute clock slack): not a funnel step 2.
     {
-      at: '2025-01-27T06:02:00Z',
+      at: '2025-01-27T05:55:00Z',
       name: 'cart_add',
       v: V.B,
       s: S.B1,

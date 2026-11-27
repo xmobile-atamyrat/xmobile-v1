@@ -16,11 +16,18 @@ type Props = {
 
 const DELTA_COLORS = { up: onlineGreen, down: red, flat: muted } as const;
 const DELTA_ARROWS = { up: '▲', down: '▼', flat: '–' } as const;
+const DELTA_LABEL_KEYS = {
+  up: 'analyticsDeltaUp',
+  down: 'analyticsDeltaDown',
+  flat: 'analyticsDeltaFlat',
+} as const;
 
 /** A single number, with its change against the previous period. */
 export default function KpiCard({ title, unit, data, locale }: Props) {
   const t = useTranslations();
   const delta = data && kpiDelta(data.value, data.previous, unit, locale);
+  const points = (value: string) =>
+    delta?.points ? t('analyticsPercentPoints', { value }) : value;
   return (
     <Box
       component="section"
@@ -49,32 +56,36 @@ export default function KpiCard({ title, unit, data, locale }: Props) {
         <Typography
           fontSize={13}
           color="error"
-          role="alert"
           className={fontClassName.className}
         >
           {t('analyticsWidgetError')}
         </Typography>
       )}
       {delta && (
-        <Typography
-          fontSize={12}
-          className={fontClassName.className}
-          data-testid="kpi-delta"
-          data-direction={delta.direction}
-        >
+        <Typography fontSize={12} className={fontClassName.className}>
+          {/* Arrows and signs read badly aloud ("black up-pointing
+              triangle"), so screen readers get a sentence instead. */}
           <Box
             component="span"
-            sx={{ color: DELTA_COLORS[delta.direction], fontWeight: 600 }}
+            aria-hidden
+            data-testid="kpi-delta"
+            data-direction={delta.direction}
           >
-            {`${DELTA_ARROWS[delta.direction]} ${
-              delta.points
-                ? t('analyticsPercentPoints', { value: delta.text })
-                : delta.text
-            }`}
+            <Box
+              component="span"
+              sx={{ color: DELTA_COLORS[delta.direction], fontWeight: 600 }}
+            >
+              {`${DELTA_ARROWS[delta.direction]} ${points(delta.text)}`}
+            </Box>
+            <Box component="span" sx={{ color: muted }}>
+              {` ${t('analyticsVsPrevious')}`}
+            </Box>
           </Box>
-          <Box component="span" sx={{ color: muted }}>
-            {` ${t('analyticsVsPrevious')}`}
-          </Box>
+          <span className="sr-only" data-testid="kpi-delta-label">
+            {t(DELTA_LABEL_KEYS[delta.direction], {
+              change: points(delta.magnitude),
+            })}
+          </span>
         </Typography>
       )}
     </Box>

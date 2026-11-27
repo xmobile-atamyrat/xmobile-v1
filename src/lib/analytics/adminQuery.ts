@@ -20,6 +20,11 @@ export const MAX_RANGE_DAYS = 731;
 export const DEFAULT_TOP_LIMIT = 10;
 export const MAX_TOP_LIMIT = 50;
 export const GRANULARITIES = ['day', 'week', 'month'] as const;
+/**
+ * Earliest day the API answers. Nothing was tracked before it, and without a
+ * floor a typo like 0001-01-01 reaches Postgres as a negative year.
+ */
+export const MIN_ANALYTICS_DAY = '2020-01-01';
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86_400_000;
@@ -47,6 +52,54 @@ export function ashgabatDay(date: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: ANALYTICS_TIME_ZONE,
   }).format(date);
+}
+
+/**
+ * Latest `to` the API answers: tomorrow in Ashgabat, so a browser whose clock
+ * is slightly ahead still gets an answer.
+ */
+export const maxAnalyticsDay = (now: Date = new Date()): string =>
+  shiftDay(ashgabatDay(now), 1);
+
+/**
+ * First day of the chart period (day, ISO week from Monday, or calendar
+ * month) that contains `day`.
+ */
+export function periodStartOf(day: string, granularity: Granularity): string {
+  if (granularity === 'month') return `${day.slice(0, 7)}-01`;
+  if (granularity === 'week') {
+    const date = new Date(`${day}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+    return date.toISOString().slice(0, 10);
+  }
+  return day;
+}
+
+/**
+ * The range the dashboard requests for week and month charts: `from` moves
+ * back to the start of its period, so the first point is a whole week or
+ * month rather than its last few days. When that would make the range longer
+ * than the API allows (or earlier than MIN_ANALYTICS_DAY), `from` moves
+ * forward to the next period start instead.
+ */
+export function alignRangeToPeriods(
+  range: { from: string; to: string },
+  granularity: Granularity,
+): { from: string; to: string } {
+  if (granularity === 'day') return range;
+  const start = periodStartOf(range.from, granularity);
+  if (start === range.from) return range;
+  if (
+    start >= MIN_ANALYTICS_DAY &&
+    rangeDays(start, range.to) <= MAX_RANGE_DAYS
+  ) {
+    return { from: start, to: range.to };
+  }
+  const next =
+    granularity === 'week'
+      ? shiftDay(start, 7)
+      : periodStartOf(shiftDay(start, 31), 'month');
+  return next <= range.to ? { from: next, to: range.to } : range;
 }
 
 const WIDGET_IDS = new Set<string>(WIDGETS.map((widget) => widget.id));
@@ -107,8 +160,8 @@ const first = (value: string | string[] | undefined): string | undefined => {
 /**
  * Validates and fills in the query. Widgets the viewer may not see are left
  * out silently (an ADMIN asking for a superuser widget just doesn't get it);
- * unknown ids, bad days, `from` after `to` and ranges over two years are
- * errors.
+ * unknown ids, bad days, days before MIN_ANALYTICS_DAY or after tomorrow,
+ * `from` after `to` and ranges over two years are errors.
  */
 export function parseAnalyticsQuery(
   query: RawQuery,
@@ -133,6 +186,22 @@ export function parseAnalyticsQuery(
 
   const to = data.to ?? ashgabatDay(now);
   const from = data.from ?? shiftDay(to, -(DEFAULT_RANGE_DAYS - 1));
+  if (to < MIN_ANALYTICS_DAY) {
+    return {
+      ok: false,
+      message: `Invalid to: must not be before ${MIN_ANALYTICS_DAY}`,
+    };
+  }
+  if (from < MIN_ANALYTICS_DAY) {
+    return {
+      ok: false,
+      message: `Invalid from: must not be before ${MIN_ANALYTICS_DAY}`,
+    };
+  }
+  const latest = maxAnalyticsDay(now);
+  if (to > latest) {
+    return { ok: false, message: `Invalid to: must not be after ${latest}` };
+  }
   if (from > to) {
     return { ok: false, message: 'Invalid range: from is after to' };
   }

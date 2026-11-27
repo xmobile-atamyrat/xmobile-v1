@@ -435,6 +435,116 @@ describe('server-side analytics events (integration)', () => {
     });
   });
 
+  describe('search results and edge cases', () => {
+    const search = async (
+      query: Record<string, string>,
+      opts: { cookies?: Record<string, string> } = {},
+    ) => {
+      const products = (await import('@/pages/api/product/index.page')).default;
+      return call(products, {
+        method: 'GET',
+        url: '/api/product',
+        query,
+        ...opts,
+      });
+    };
+
+    it('counts results for the keyword alone, not the listing filters', async () => {
+      const vid = randomUUID();
+      // The integration phone exists, but not under an unknown brand or this
+      // price range: the listing is empty, the term isn't "not stocked".
+      const res = await search(
+        {
+          searchKeyword: 'integration phone',
+          page: '1',
+          brandIds: randomUUID(),
+          minPrice: '999999',
+        },
+        { cookies: { xa_vid: vid } },
+      );
+      expect(res.json.data).toEqual([]);
+      const keywordOnly = await search({
+        searchKeyword: 'integration phone',
+        count: 'true',
+      });
+      expect(keywordOnly.json.data).toBeGreaterThan(0);
+      const rows = await eventsFor(vid);
+      expect(rows.map((r) => r.props)).toEqual([
+        { q: 'integration phone', results: keywordOnly.json.data },
+      ]);
+    });
+
+    it('still records zero when the keyword itself matches nothing', async () => {
+      const vid = randomUUID();
+      await search(
+        { searchKeyword: 'zzqx-nothing', page: '1', brandIds: randomUUID() },
+        { cookies: { xa_vid: vid } },
+      );
+      expect((await eventsFor(vid)).map((r) => r.props)).toEqual([
+        { q: 'zzqx-nothing', results: 0 },
+      ]);
+    });
+
+    it('stores terms with NUL and lone surrogates (cleaned) in Postgres', async () => {
+      // Straight to trackSearch: the product query itself can't take these
+      // (see the report), but the analytics row must never break a flush.
+      const { trackSearch } = await import('@/lib/analytics/server');
+      const vids = [randomUUID(), randomUUID(), randomUUID()];
+      const terms = ['gal\u0000axy', 'phone\uD83D', '\uDE00tab'];
+      terms.forEach((q, i) =>
+        trackSearch(
+          { headers: { 'user-agent': BROWSER }, cookies: { xa_vid: vids[i] } },
+          q,
+          { results: 1 },
+        ),
+      );
+      await flush();
+      const rows = await prisma.analyticsEvent.findMany({
+        where: { visitorId: { in: vids } },
+      });
+      expect(rows.map((r) => (r.props as { q: string }).q).sort()).toEqual(
+        ['galaxy', 'phone\uFFFD', '\uFFFDtab'].sort(),
+      );
+    });
+
+    it("records a soft-deleted user's search without the userId", async () => {
+      const session = await signupTestUser('analytics-search-deleted');
+      await prisma.user.update({
+        where: { id: session.userId },
+        data: { deletedAt: new Date() },
+      });
+      const vid = randomUUID();
+      await search(
+        { searchKeyword: 'integration', page: '1' },
+        { cookies: { xa_vid: vid, REFRESH_TOKEN: session.refreshToken } },
+      );
+      const rows = await eventsFor(vid);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].userId).toBeNull();
+    });
+  });
+
+  it('takes the locale of a same-origin Referer over the NEXT_LOCALE cookie', async () => {
+    const guestCart = (await import('@/pages/api/guest/cart.page')).default;
+    const vid = randomUUID();
+    const { status } = await call(guestCart, {
+      url: '/api/guest/cart',
+      cookies: {
+        xa_vid: vid,
+        NEXT_LOCALE: 'en',
+        GUEST_SESSION_ID: randomUUID(),
+      },
+      headers: {
+        host: 'shop.test',
+        referer: `https://shop.test/tk/product/x`,
+      },
+      body: { productId, quantity: 1 },
+    });
+    expect(status).toBe(200);
+    const rows = await eventsFor(vid);
+    expect(rows.map((r) => [r.name, r.locale])).toEqual([['cart_add', 'tk']]);
+  });
+
   describe('tracking failures never break a handler', () => {
     it('a database error while flushing is swallowed', async () => {
       const guestCart = (await import('@/pages/api/guest/cart.page')).default;

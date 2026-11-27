@@ -63,11 +63,36 @@ export const isAnalyticsLocale = (value: unknown): value is AnalyticsLocale =>
   typeof value === 'string' &&
   (ANALYTICS_LOCALES as readonly string[]).includes(value);
 
-function localeFromReferer(referer: string): AnalyticsLocale | null {
-  if (referer === '') return null;
+/** The request's own host name (no port), lowercased, or '' if unknown. */
+function requestHostname(req: AnalyticsRequest): string {
+  // nginx forwards the browser's Host (`proxy_set_header Host $host`).
+  const host = headerValue(req.headers.host);
+  if (host === '') return '';
   try {
-    const [first] = new URL(referer).pathname.split('/').filter(Boolean);
-    return isAnalyticsLocale(first) ? first : null;
+    return new URL(`http://${host}`).hostname;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * The locale of the page that made this request, read from a same-origin
+ * Referer: its locale prefix (`/en/…`), or the default locale when the path
+ * has none (Next serves `ru` unprefixed). Null when there's no usable Referer
+ * (missing, malformed, or another site's).
+ */
+function localeFromSameOriginReferer(
+  req: AnalyticsRequest,
+): AnalyticsLocale | null {
+  const referer = headerValue(req.headers.referer);
+  if (referer === '') return null;
+  const ownHost = requestHostname(req);
+  if (ownHost === '') return null;
+  try {
+    const url = new URL(referer);
+    if (url.hostname !== ownHost) return null;
+    const [first] = url.pathname.split('/').filter(Boolean);
+    return isAnalyticsLocale(first) ? first : DEFAULT_ANALYTICS_LOCALE;
   } catch {
     return null;
   }
@@ -75,20 +100,20 @@ function localeFromReferer(referer: string): AnalyticsLocale | null {
 
 /**
  * The visitor's locale: an explicit value (the beacon's `locale`), else the
- * `NEXT_LOCALE` cookie, else the first path segment of the Referer (`/en/…`),
- * else the default. Only the app's own locales are returned.
+ * locale of the page that made the request (same-origin Referer, matching
+ * what the client tracker reports for that page), else the `NEXT_LOCALE`
+ * cookie, else the default. Only the app's own locales are returned.
  */
 export function resolveLocale(
   req: AnalyticsRequest,
   explicit?: unknown,
 ): AnalyticsLocale {
   if (isAnalyticsLocale(explicit)) return explicit;
+  const fromReferer = localeFromSameOriginReferer(req);
+  if (fromReferer != null) return fromReferer;
   const cookie = readCookie(req, LOCALE_COOKIE_NAME);
   if (isAnalyticsLocale(cookie)) return cookie;
-  return (
-    localeFromReferer(headerValue(req.headers.referer)) ??
-    DEFAULT_ANALYTICS_LOCALE
-  );
+  return DEFAULT_ANALYTICS_LOCALE;
 }
 
 export interface AnalyticsIdentity {

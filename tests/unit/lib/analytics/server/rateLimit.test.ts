@@ -76,4 +76,20 @@ describe('createRateLimiter', () => {
     expect(limiter.size()).toBe(0);
     expect(limiter.hit('a', 0)).toBe(true);
   });
+
+  it('counts a cost per hit, so a limit can be on events, not requests', () => {
+    const limiter = createRateLimiter({
+      limit: 10,
+      windowMs: 1000,
+      maxKeys: 10,
+    });
+    expect(limiter.hit('ip', 0, 4)).toBe(true);
+    expect(limiter.hit('ip', 0, 6)).toBe(true);
+    expect(limiter.hit('ip', 0, 1)).toBe(false);
+    // A rejected hit still counts: a flood stays rejected for the window.
+    expect(limiter.hit('ip', 500, 1)).toBe(false);
+    expect(limiter.hit('ip', 1000, 10)).toBe(true);
+    // One batch over the limit on its own is refused.
+    expect(limiter.hit('other', 0, 11)).toBe(false);
+  });
 });

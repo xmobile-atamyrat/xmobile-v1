@@ -18,12 +18,23 @@ import {
   weekStart,
 } from '../../../scripts/analytics/generate';
 
+// Catalog ids are UUIDs, as in the database (the event schemas require it).
+const uuid = (group: number, n: number) =>
+  `0000000${group}-0000-4000-8000-${String(n).padStart(12, '0')}`;
+const CAT = {
+  phones: uuid(1, 1),
+  apple: uuid(1, 2),
+  samsung: uuid(1, 3),
+  audio: uuid(1, 4),
+  empty: uuid(1, 5),
+};
+
 const categories = [
-  { id: 'cat-phones', slug: 'phones', parentId: null },
-  { id: 'cat-apple', slug: 'apple', parentId: 'cat-phones' },
-  { id: 'cat-samsung', slug: 'samsung', parentId: 'cat-phones' },
-  { id: 'cat-audio', slug: 'audio', parentId: null },
-  { id: 'cat-empty', slug: 'empty', parentId: null },
+  { id: CAT.phones, slug: 'phones', parentId: null },
+  { id: CAT.apple, slug: 'apple', parentId: CAT.phones },
+  { id: CAT.samsung, slug: 'samsung', parentId: CAT.phones },
+  { id: CAT.audio, slug: 'audio', parentId: null },
+  { id: CAT.empty, slug: 'empty', parentId: null },
 ];
 
 const names = [
@@ -41,10 +52,10 @@ const catalog: SeedCatalog = {
   products: Array.from({ length: 40 }, (_, i) => {
     const name = `${names[i % names.length]} ${i}`;
     return {
-      id: `prod-${i}`,
+      id: uuid(2, i),
       slug: `product-${i}`,
       name: JSON.stringify({ ru: name, en: name, tk: name }),
-      categoryId: ['cat-apple', 'cat-samsung', 'cat-audio'][i % 3],
+      categoryId: [CAT.apple, CAT.samsung, CAT.audio][i % 3],
       priceTmt: i % 4 === 0 ? null : 500 + i * 100,
       outOfStock: i % 10 === 9,
     };
@@ -196,7 +207,7 @@ describe('generateSeed', () => {
         expect(productIds.has(e.entityId!)).toBe(true);
       }
       if (e.name === 'category_view') {
-        expect(e.entityId).not.toBe('cat-empty');
+        expect(e.entityId).not.toBe(CAT.empty);
       }
       if (e.name === 'page_view') {
         const path = e.props!.path as string;

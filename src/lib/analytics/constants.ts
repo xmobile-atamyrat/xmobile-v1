@@ -24,3 +24,14 @@ export const CLIENT_FLUSH_AT_EVENTS = 20;
 /** Server buffer batching. */
 export const SERVER_FLUSH_INTERVAL_MS = 5_000;
 export const SERVER_FLUSH_AT_EVENTS = 500;
+
+/**
+ * Product and category ids (Prisma `@default(uuid())`). Client-sent ids that
+ * don't match are dropped at ingest: they would become permanent rollup rows.
+ */
+export const ENTITY_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `page_view.referrer`: a lowercase host name such as `google.com`. */
+export const MAX_REFERRER_LENGTH = 100;
+export const REFERRER_HOST_PATTERN = /^[a-z0-9.-]{1,100}$/;

@@ -18,8 +18,27 @@ export const MAX_BUFFERED_EVENTS = 5000;
 /** Rows per `createMany`, well under Postgres's 65535 bind parameters. */
 const INSERT_CHUNK = 1000;
 
+/**
+ * Halvings one write may spend isolating rows Postgres rejects (each costs
+ * two statements). One bad row in a 1000-row chunk takes ~10; past the
+ * budget the rest of a failing chunk is dropped, so a flood of bad rows
+ * can't turn one flush into thousands of statements.
+ */
+export const MAX_INSERT_SPLITS = 64;
+
+/**
+ * A held event: the row itself, or a function building it when it's
+ * released (so work like a count query runs once, for the event that is
+ * actually kept). The function must not reject; null means "nothing to
+ * record".
+ */
+export type HeldAnalyticsEvent =
+  | AnalyticsEventRow
+  | (() => Promise<AnalyticsEventRow | null>);
+
 interface HeldRow {
-  row: AnalyticsEventRow;
+  event: HeldAnalyticsEvent;
+  seq: number;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -33,6 +52,8 @@ interface BufferState {
   /** A failing streak logs once, not on every flush. */
   failing: boolean;
   dropping: boolean;
+  /** Last sequence number handed out for held events. */
+  seq: number;
 }
 
 // On globalThis so `next dev` hot reloads (and test module resets) keep one
@@ -51,35 +72,76 @@ function state(): BufferState {
       inFlight: null,
       failing: false,
       dropping: false,
+      seq: 0,
     };
   }
   return globalForAnalytics.analyticsBuffer;
 }
 
+/** Prisma's connection / engine failures: retrying row by row won't help. */
+function isConnectionError(error: unknown): boolean {
+  const { code, name } = (error ?? {}) as { code?: unknown; name?: unknown };
+  // P1xxx: can't reach / lost the server. P2024: no pool connection in time.
+  if (typeof code === 'string' && (code.startsWith('P1') || code === 'P2024')) {
+    return true;
+  }
+  return (
+    name === 'PrismaClientInitializationError' ||
+    name === 'PrismaClientRustPanicError'
+  );
+}
+
 async function writeRows(rows: AnalyticsEventRow[]): Promise<number> {
   const s = state();
   let written = 0;
-  try {
-    for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
-      // Sequential on purpose: one connection, one statement at a time.
-      // eslint-disable-next-line no-await-in-loop
+  let dropped = 0;
+  let splits = MAX_INSERT_SPLITS;
+  let outage = false;
+  let firstError: unknown = null;
+
+  // Sequential on purpose: one connection, one statement at a time.
+  const insert = async (chunk: AnalyticsEventRow[]): Promise<void> => {
+    if (outage) {
+      dropped += chunk.length;
+      return;
+    }
+    try {
       const { count } = await dbClient.analyticsEvent.createMany({
-        data: rows.slice(i, i + INSERT_CHUNK),
+        data: chunk,
       });
       written += count;
+    } catch (error) {
+      if (firstError == null) firstError = error;
+      if (isConnectionError(error)) outage = true;
+      if (outage || chunk.length === 1 || splits <= 0) {
+        dropped += chunk.length;
+        return;
+      }
+      // One bad row fails the whole statement: retry each half, down to
+      // single rows, so it can't take the rest of the chunk with it.
+      splits -= 1;
+      const mid = Math.ceil(chunk.length / 2);
+      await insert(chunk.slice(0, mid));
+      await insert(chunk.slice(mid));
     }
-    s.failing = false;
-  } catch (error) {
-    // Analytics is best-effort: the batch is dropped, never retried, so an
-    // outage can't pile rows up in memory.
-    if (!s.failing) {
-      console.error(
-        `[analytics] flush failed, dropped ${rows.length - written} events:`,
-        error,
-      );
-    }
-    s.failing = true;
+  };
+
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+    // eslint-disable-next-line no-await-in-loop
+    await insert(rows.slice(i, i + INSERT_CHUNK));
   }
+
+  // Analytics is best-effort: what failed is dropped, never re-queued, so an
+  // outage can't pile rows up in memory. At most one log line per write, and
+  // one per streak of writes that wrote nothing.
+  const wroteNothing = dropped > 0 && written === 0;
+  if (dropped > 0 && !(wroteNothing && s.failing)) {
+    console.error(
+      `[analytics] flush failed, dropped ${dropped} of ${rows.length} events:`,
+      firstError,
+    );
+  }
+  s.failing = wroteNothing;
   return written;
 }
 
@@ -147,38 +209,6 @@ export function enqueueAnalyticsEvent(row: AnalyticsEventRow): void {
   push(state(), row);
 }
 
-function release(s: BufferState, key: string): void {
-  const held = s.held.get(key);
-  if (held == null) return;
-  clearTimeout(held.timer);
-  s.held.delete(key);
-  push(s, held.row);
-}
-
-/**
- * Holds a row under `key` for `quietMs` before queuing it; another row under
- * the same key replaces it and restarts the wait. Search-as-you-type uses this
- * so "sam", "sams", "samsung" end up as one `search` event, not three.
- * `flushAnalyticsBuffer()` releases everything held.
- */
-export function holdAnalyticsEvent(
-  key: string,
-  row: AnalyticsEventRow,
-  quietMs: number,
-): void {
-  const s = state();
-  const previous = s.held.get(key);
-  if (previous != null) {
-    clearTimeout(previous.timer);
-    s.held.delete(key);
-  } else if (s.held.size >= MAX_BUFFERED_EVENTS) {
-    release(s, s.held.keys().next().value as string);
-  }
-  const timer = setTimeout(() => release(s, key), quietMs);
-  timer.unref?.();
-  s.held.set(key, { row, timer });
-}
-
 /**
  * Registers tracking work that is still building its row, so
  * `flushAnalyticsBuffer()` waits for it. The promise must not reject.
@@ -188,6 +218,59 @@ export function trackPendingAnalytics(work: Promise<unknown>): void {
   if (pending.size >= MAX_BUFFERED_EVENTS) return;
   pending.add(work);
   work.finally(() => pending.delete(work)).catch(() => undefined);
+}
+
+function release(s: BufferState, key: string): void {
+  const held = s.held.get(key);
+  if (held == null) return;
+  clearTimeout(held.timer);
+  s.held.delete(key);
+  const { event } = held;
+  if (typeof event !== 'function') {
+    push(s, event);
+    return;
+  }
+  trackPendingAnalytics(
+    Promise.resolve()
+      .then(event)
+      .then((row) => {
+        if (row != null) push(s, row);
+      })
+      .catch((error) => {
+        console.warn('[analytics] held event failed:', error);
+      }),
+  );
+}
+
+/**
+ * Holds an event under `key` for `quietMs` before queuing it; a newer event
+ * under the same key replaces it and restarts the wait. Search-as-you-type
+ * uses this so "sam", "sams", "samsung" end up as one `search` event, not
+ * three. `seq` orders events under one key (default: call order); an event
+ * older than the one held is ignored, and the call returns false.
+ * `flushAnalyticsBuffer()` releases everything held.
+ */
+export function holdAnalyticsEvent(
+  key: string,
+  event: HeldAnalyticsEvent,
+  quietMs: number,
+  seq?: number,
+): boolean {
+  const s = state();
+  s.seq += 1;
+  const order = seq ?? s.seq;
+  const previous = s.held.get(key);
+  if (previous != null) {
+    if (previous.seq > order) return false;
+    clearTimeout(previous.timer);
+    s.held.delete(key);
+  } else if (s.held.size >= MAX_BUFFERED_EVENTS) {
+    release(s, s.held.keys().next().value as string);
+  }
+  const timer = setTimeout(() => release(s, key), quietMs);
+  timer.unref?.();
+  s.held.set(key, { event, seq: order, timer });
+  return true;
 }
 
 /**
@@ -200,6 +283,8 @@ export async function flushAnalyticsBuffer(): Promise<number> {
   const s = state();
   await Promise.allSettled(Array.from(s.pending));
   Array.from(s.held.keys()).forEach((key) => release(s, key));
+  // Released events may still be building their rows.
+  await Promise.allSettled(Array.from(s.pending));
   return flushQueued(s);
 }
 

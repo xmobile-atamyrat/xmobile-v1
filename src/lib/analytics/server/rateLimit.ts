@@ -7,8 +7,11 @@ export interface RateLimiterOptions {
 }
 
 export interface RateLimiter {
-  /** Counts a hit for `key`; false once the key is over its limit. */
-  hit(key: string, now?: number): boolean;
+  /**
+   * Counts `cost` hits (default 1) for `key`; false once the key is over its
+   * limit. A rejected hit still counts, so a flood stays rejected.
+   */
+  hit(key: string, now?: number, cost?: number): boolean;
   /** Keys currently tracked. */
   size(): number;
   reset(): void;
@@ -29,19 +32,19 @@ export function createRateLimiter({
   const windows = new Map<string, { count: number; resetAt: number }>();
 
   return {
-    hit(key, now = Date.now()) {
+    hit(key, now = Date.now(), cost = 1) {
       const current = windows.get(key);
       if (current != null && current.resetAt > now) {
-        current.count += 1;
+        current.count += cost;
         return current.count <= limit;
       }
       windows.delete(key);
-      windows.set(key, { count: 1, resetAt: now + windowMs });
+      windows.set(key, { count: cost, resetAt: now + windowMs });
       while (windows.size > maxKeys) {
         const oldest = windows.keys().next().value as string;
         windows.delete(oldest);
       }
-      return limit >= 1;
+      return cost <= limit;
     },
     size: () => windows.size,
     reset: () => windows.clear(),

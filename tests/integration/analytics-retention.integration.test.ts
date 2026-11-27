@@ -10,7 +10,11 @@ import {
 } from 'vitest';
 
 import { resetPrismaGlobalSingleton } from './helpers/reset-prisma-global';
-import { insertEvents, wipeAnalytics } from './shared/analytics-fixture';
+import {
+  insertEvents,
+  useSessionTimeZone,
+  wipeAnalytics,
+} from './shared/analytics-fixture';
 import {
   prepareIntegrationWorker,
   teardownIntegrationWorker,
@@ -60,7 +64,9 @@ describe('analytics raw-event retention (integration)', () => {
     ).map((e) => e.occurredAt.toISOString());
 
   beforeAll(async () => {
-    const { databaseUrl } = await prepareIntegrationWorker();
+    const { databaseUrl: baseUrl } = await prepareIntegrationWorker();
+    // The cut-off is a zone-less UTC timestamp: a non-UTC session mustn't move it.
+    const databaseUrl = useSessionTimeZone(baseUrl);
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
     await prisma.$connect();
     retention = await import('@/lib/analytics/retention');
