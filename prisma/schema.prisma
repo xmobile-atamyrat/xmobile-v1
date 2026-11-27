@@ -41,6 +41,7 @@ model User {
   fcmTokens       FCMToken[]
   adminActivities AdminActivity[] @relation("AdminActivityActor")
   favorites       Product[]       @relation("UserFavorites")
+  mcpGrants       McpGrant[]
 
   lastSeenAt      DateTime?
   deletedAt       DateTime?
@@ -664,4 +665,29 @@ model AnalyticsDaily {
   value           BigInt
 
   @@id([metric, day, dimension, dimensionValue])
+}
+
+model McpGrant {
+  id                        String      @id @default(uuid())
+
+  clientId                  String
+  user                      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String
+
+  scope                     String
+  accessTokenHash           String      @unique
+  accessExpiresAt           DateTime
+  previousAccessTokenHash   String?     @unique
+  previousAccessExpiresAt   DateTime?
+  refreshTokenHash          String
+  previousRefreshTokenHash  String?
+  authCodeHash              String      @unique
+  refreshExpiresAt          DateTime
+  expiresAt                 DateTime
+
+  lastUsedAt                DateTime?
+  revokedAt                 DateTime?
+  createdAt                 DateTime    @default(now())
+
+  @@index([userId])
 }
