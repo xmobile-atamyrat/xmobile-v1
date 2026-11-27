@@ -627,3 +627,51 @@ model OrderNumberCounter {
   
   @@map("order_number_counter")
 }
+
+// ---------------------------------------------------------------------------
+// Analytics (see docs/analytics-design.md)
+// ---------------------------------------------------------------------------
+
+enum AnalyticsPlatform {
+  WEB
+  APP
+}
+
+// Raw events. Kept 90 days, then deleted by the analytics-retention job.
+model AnalyticsEvent {
+  id          BigInt            @id @default(autoincrement())
+  occurredAt  DateTime          @default(now())
+  // An EventName from src/lib/analytics/events.ts
+  name        String
+  // The xa_vid cookie
+  visitorId   String            @db.Uuid
+  sessionId   String?           @db.Uuid
+  // Set when the visitor is logged in
+  userId      String?
+  // productId / categoryId / orderId: what top-N queries group on
+  entityId    String?
+  platform    AnalyticsPlatform
+  // ru, en, tk, tr, ch
+  locale      String            @db.VarChar(2)
+  // The rest of the event's payload
+  props       Json?
+
+  @@index([occurredAt])
+  @@index([name, occurredAt])
+}
+
+// Daily rollups. Small, kept forever.
+model AnalyticsDaily {
+  // Asia/Ashgabat calendar day, not UTC. For week/month uniques it's the
+  // first day of the period.
+  day             DateTime @db.Date
+  // A MetricId (or one of its stored series) from src/lib/analytics/metrics
+  metric          String
+  // What the row is broken down by; '' = total
+  dimension       String   @default("")
+  // The value of that breakdown; '' = total
+  dimensionValue  String   @default("")
+  value           BigInt
+
+  @@id([metric, day, dimension, dimensionValue])
+}
