@@ -1,0 +1,21 @@
+---
+description: Writing or editing src/i18n/ch.json — the ch locale is the Chärjew Turkmen dialect, not Chinese and not standard Turkmen
+globs: src/i18n/ch.json,src/i18n/*.json,scripts/translations/**
+alwaysApply: false
+---
+
+# `ch` = Chärjew dialect
+
+`src/i18n/ch.json` is the **Chärjew (Çärjow) dialect of Turkmen** (Lebap / Türkmenabat).
+Never copy a `tk.json` value into it.
+
+Before writing or editing any `ch` value, **read and follow
+`.claude/skills/charjew-translation/SKILL.md`** and its `glossary.md`. To see how
+the file already renders a word:
+
+```bash
+node .claude/skills/charjew-translation/compare.mjs "<regex>" --dialect
+```
+
+`scripts/translations/add-translation-row.mjs` can only write standard Turkmen
+into `ch.json`. Rewrite that value by hand right after running it.

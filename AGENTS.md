@@ -42,3 +42,9 @@ Use these numbers when reasoning about memory-heavy features, build pipelines on
 - Avoid **chatty clients** and unnecessary round-trips; prefer **fewer, richer** requests where the architecture allows.
 - Be cautious with **assumptions about Google fonts, public CDNs, analytics hosts, or OAuth** unless the project already uses them in a way that is known to work in TM.
 - When proposing infra changes, assume **limited managed services** and **DIY operations** unless stated otherwise.
+
+## Translations: the `ch` locale is the Chärjew dialect
+
+- `src/i18n/ch.json` is the **Chärjew (Çärjow) dialect of Turkmen** spoken in Lebap / Türkmenabat. It is **not Chinese**, and it is **not standard Turkmen**: never copy a `tk.json` value into `ch.json`.
+- Before writing or editing any `ch` value, read and follow **`.claude/skills/charjew-translation/SKILL.md`** (plus `glossary.md` next to it). It has the vocabulary, verb endings and tone, all drawn from the existing file.
+- `scripts/translations/add-translation-row.mjs` can only write standard Turkmen into `ch.json`. Rewrite that value by hand right after running it.
