@@ -17,9 +17,20 @@ readdir(i18nDir, (err, files) => {
   files.forEach((file) => {
     const filePath = join(i18nDir, file);
     let lang = basename(file, '.json'); // assumes file names are like 'en.json', 'es.json', etc.
-    if (lang === 'ch') {
+    // `ch` is the Chärjew Turkmen dialect, which no machine translator speaks.
+    // Seed it with standard Turkmen as a readable placeholder; it must then be
+    // rewritten by hand (see .claude/skills/charjew-translation/SKILL.md).
+    const isCharjew = lang === 'ch';
+    if (isCharjew) {
       lang = 'tk';
     }
+    const warnCharjew = (key) => {
+      if (isCharjew) {
+        console.log(
+          `ch.json: "${key}" has standard Turkmen — rewrite it in Chärjew by hand.`,
+        );
+      }
+    };
 
     readFile(filePath, 'utf8', (error, data) => {
       if (error) {
@@ -43,6 +54,7 @@ readdir(i18nDir, (err, files) => {
       translate(value, { to: lang })
         .then((res) => {
           json[key] = lang === 'en' ? value : res.text;
+          warnCharjew(key);
 
           writeFile(filePath, JSON.stringify(json, null, 2), 'utf8', (e) => {
             if (e) {
@@ -53,6 +65,7 @@ readdir(i18nDir, (err, files) => {
         .catch((e) => {
           console.error(e.message);
           json[key] = value;
+          warnCharjew(key);
           writeFile(filePath, JSON.stringify(json, null, 2), 'utf8', (errr) => {
             if (errr) {
               console.error(errr);
