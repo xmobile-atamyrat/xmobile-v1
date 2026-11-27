@@ -35,7 +35,7 @@ import {
 } from '@/lib/productImageOrder';
 import {
   createCompressedImg,
-  deleteProductImageFiles,
+  deleteUnusedProductImageFiles,
 } from '@/lib/productImages';
 import { revalidateInBackground } from '@/lib/revalidate';
 import { getOnSaleProducts, withSale } from '@/lib/saleProducts';
@@ -743,8 +743,8 @@ async function handleEditProduct(
         currProduct.outOfStockAt != null,
       );
 
-      // Checked before the image files below are deleted; the transaction
-      // re-checks under the list lock.
+      // Checked before anything is written; the transaction re-checks under
+      // the list lock.
       if (
         requestedRecommended === true &&
         currProduct.recommendedOrder == null &&
@@ -770,8 +770,7 @@ async function handleEditProduct(
         data.price !== undefined ? data.price : currProduct.price,
         data.tags ?? currProduct.tags,
       );
-      // Checked before the image files below are deleted, which no rollback
-      // can bring back.
+      // Checked before anything is written.
       if (
         priceLinksTouched &&
         (await hasPriceLinkConflict(
@@ -788,9 +787,12 @@ async function handleEditProduct(
       const deleteImageUrls = fields.deleteImageUrls
         ? JSON.parse(fields.deleteImageUrls[0])
         : [];
+      // Their files go once the save has landed (below), not before: a failed
+      // save can't bring deleted files back.
+      const removedImgUrls: string[] = [];
       currProduct?.imgUrls.forEach((imgUrl: string) => {
         if (deleteImageUrls.includes(imgUrl)) {
-          deleteProductImageFiles(imgUrl);
+          removedImgUrls.push(imgUrl);
         } else {
           data.imgUrls!.push(imgUrl);
         }
@@ -894,6 +896,9 @@ async function handleEditProduct(
       if (product.brandId && product.brandId !== currProduct.brandId) {
         await syncBrandProductCount(product.brandId);
       }
+
+      // Kept while another product still shows the same file.
+      await Promise.all(removedImgUrls.map(deleteUnusedProductImageFiles));
 
       resolve({
         success: true,
