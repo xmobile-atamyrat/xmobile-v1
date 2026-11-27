@@ -1,4 +1,4 @@
-import { initAnalytics } from '@/lib/analytics/client';
+import { initAnalytics, setStaffOptOut } from '@/lib/analytics/client';
 import Loader from '@/pages/components/Loader';
 import NotificationPromptProvider from '@/pages/components/NotificationPrompt';
 import UpdateModal from '@/pages/components/UpdateModal';
@@ -24,7 +24,7 @@ import {
 } from '@/pages/lib/serviceWorker';
 import { HreflangLink, PageSeoData } from '@/pages/lib/types';
 import StalePricesContextProvider from '@/pages/lib/StalePricesContext';
-import UserContextProvider from '@/pages/lib/UserContext';
+import UserContextProvider, { useUserContext } from '@/pages/lib/UserContext';
 import { theme } from '@/pages/lib/utils';
 import { WebSocketContextProvider } from '@/pages/lib/WebSocketContext';
 import '@/styles/globals.css';
@@ -45,6 +45,20 @@ const handleIntlError = (error: IntlError) => {
   }
   console.error(error);
 };
+
+/**
+ * Staff (ADMIN, SUPERUSER) browsing the shop aren't tracked, so their clicks
+ * don't skew the numbers: once the session has loaded, the tracker stops
+ * sending for them (and resumes after they sign out).
+ */
+function AnalyticsStaffOptOut(): null {
+  const { user, isLoading } = useUserContext();
+  const staff = user?.grade === 'ADMIN' || user?.grade === 'SUPERUSER';
+  useEffect(() => {
+    if (!isLoading) setStaffOptOut(staff);
+  }, [isLoading, staff]);
+  return null;
+}
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -291,6 +305,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <NetworkContextProvider>
         <AbortControllerContextProvider>
           <UserContextProvider>
+            <AnalyticsStaffOptOut />
             <CartContextProvider>
               <WebSocketContextProvider>
                 <NotificationContextProvider>

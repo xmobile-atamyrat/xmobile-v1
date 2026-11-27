@@ -155,6 +155,7 @@ beforeEach(async () => {
   setReferrer('');
   setPrerendering(undefined);
   window.sessionStorage.clear();
+  window.localStorage.clear();
   window.history.replaceState({}, '', '/');
   beacon = vi.fn().mockReturnValue(true);
   fetchMock = vi.fn().mockResolvedValue({ ok: true });
@@ -1082,6 +1083,47 @@ describe('useProductView / useCategoryView', () => {
         ts: expect.any(Number),
       },
     ]);
+  });
+});
+
+describe('staff opt-out', () => {
+  it('drops what was queued and tracks nothing more for staff', async () => {
+    const router = createFakeRouter('en');
+    analytics.initAnalytics(router);
+    analytics.track('product_view', { productId: 'p1' });
+
+    // The session loads and turns out to be an admin's.
+    analytics.setStaffOptOut(true);
+    router.navigate('/en/product/x');
+    analytics.track('product_view', { productId: 'p2' });
+    analytics.flush();
+
+    expect(await sentEvents()).toEqual([]);
+  });
+
+  it('remembers it, so the next page load sends nothing from the start', async () => {
+    analytics.setStaffOptOut(true);
+    expect(
+      window.localStorage.getItem(analytics.STAFF_OPT_OUT_STORAGE_KEY),
+    ).toBe('1');
+
+    await reloadPage();
+    analytics.initAnalytics(createFakeRouter('en'));
+    analytics.track('product_view', { productId: 'p1' });
+    analytics.flush();
+    expect(await sentEvents()).toEqual([]);
+  });
+
+  it('resumes after a staff member signs out', async () => {
+    analytics.setStaffOptOut(true);
+    analytics.setStaffOptOut(false);
+    expect(
+      window.localStorage.getItem(analytics.STAFF_OPT_OUT_STORAGE_KEY),
+    ).toBeNull();
+
+    analytics.track('product_view', { productId: 'p1' });
+    analytics.flush();
+    expect((await sentEvents()).map((e) => e.name)).toEqual(['product_view']);
   });
 });
 

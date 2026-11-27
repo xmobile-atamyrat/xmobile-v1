@@ -50,7 +50,7 @@ API handlers (orders, cart, search) ──trackServer()────────�
 - Server events take their locale from the same-origin `Referer` path (no prefix means `ru`), then the `NEXT_LOCALE` cookie, so they agree with the page the visitor was on.
 - `order_placed` is sent for logged-in and guest checkout, `chat_started` when a new chat session is created, `signup` when an account is created.
 
-**Staff are excluded.** No events are recorded for ADMIN or SUPERUSER users, so staff browsing the shop doesn't skew the numbers. `/api/events` and `trackServer()` look up the user's current role (cached for 5 minutes, so a role change takes up to 5 minutes to apply) and drop staff events. Events from a soft-deleted account are recorded without a `userId`.
+**Staff are excluded.** No events are recorded for ADMIN or SUPERUSER users, so staff browsing the shop doesn't skew the numbers. `/api/events` and `trackServer()` look up the user's current role (cached for 5 minutes, so a role change takes up to 5 minutes to apply) and drop staff events. Events from a soft-deleted account are recorded without a `userId`. The browser also stops sending for them: once the session loads as ADMIN or SUPERUSER, the client tracker drops its queue and tracks nothing more, and remembers that in `localStorage` (`xa_staff`) so the next page load sends nothing from the start; signing out resumes tracking. The server check stays as the backstop (a first visit before the session loads, a role change).
 
 **Orders and revenue**
 
