@@ -1136,6 +1136,7 @@ export default function Product({ product: initialProduct }: ProductPageProps) {
                 <Box className={detailPageClasses.titleRow}>
                   <Typography
                     variant="h5"
+                    component="h1"
                     className={`${fontClassName.className} ${detailPageClasses.productName.mobile} min-w-0`}
                   >
                     {parseName(product?.name ?? '{}', router.locale ?? 'tk')}

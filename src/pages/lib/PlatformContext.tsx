@@ -1,14 +1,6 @@
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {
-  createContext,
-  ReactNode,
-  startTransition,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, ReactNode, useContext, useMemo } from 'react';
 
 export type Platform = 'mobile' | 'web';
 
@@ -26,16 +18,16 @@ export default function PlatformContextProvider({
   children: ReactNode;
 }) {
   const theme = useTheme();
-  const isMobileQuery = useMediaQuery(theme.breakpoints.down('md'));
-  const [platform, setPlatform] = useState<Platform>('web');
+  // Most visitors are on phones, so the server renders the mobile layout and
+  // desktops switch once hydration has read the real media query.
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), {
+    defaultMatches: true,
+  });
 
-  useEffect(() => {
-    startTransition(() => {
-      setPlatform(isMobileQuery ? 'mobile' : 'web');
-    });
-  }, [isMobileQuery]);
-
-  const value = useMemo(() => ({ platform }), [platform]);
+  const value = useMemo<PlatformContextType>(
+    () => ({ platform: isMobile ? 'mobile' : 'web' }),
+    [isMobile],
+  );
 
   return (
     <PlatformContext.Provider value={value}>
@@ -52,7 +44,7 @@ export const usePlatform = (): Platform => {
         'usePlatform must be used within <PlatformContextProvider />',
       );
     }
-    return 'web';
+    return 'mobile';
   }
   return context.platform;
 };
