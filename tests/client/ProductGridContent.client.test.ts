@@ -279,7 +279,7 @@ describe('ProductGridContent on the sale page', () => {
     expect(await screen.findByText('Cheaper Phone')).toBeInTheDocument();
     const saleQuery = expect.objectContaining({ sale: true });
     expect(apis.fetchProducts).toHaveBeenCalledWith(
-      expect.objectContaining({ sale: true, sortBy: 'newest' }),
+      expect.objectContaining({ sale: true, sortBy: 'default' }),
     );
     expect(apis.fetchProductFilterOptions).toHaveBeenCalledWith(saleQuery);
   });
@@ -291,7 +291,7 @@ describe('ProductGridContent on the sale page', () => {
 
     expect(await screen.findByText('Cheaper Phone')).toBeInTheDocument();
     expect(apis.fetchProducts).toHaveBeenCalledWith(
-      expect.objectContaining({ sortBy: 'newest', sale: undefined }),
+      expect.objectContaining({ sortBy: 'default', sale: undefined }),
     );
   });
 });

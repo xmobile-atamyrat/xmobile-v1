@@ -111,6 +111,7 @@ const FIELD_LABEL_KEYS: Record<string, string> = {
   tags: 'activityFieldTags',
   videos: 'activityFieldVideos',
   recommended: 'activityFieldRecommended',
+  listingRank: 'activityFieldListingRank',
 };
 
 const ORDER_STATUS_KEYS: Record<string, string> = {

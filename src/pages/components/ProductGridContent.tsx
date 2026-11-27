@@ -159,14 +159,16 @@ export default function ProductGridContent({
     filters,
     ready: filtersReady,
     setFilters,
-  } = useProductFilters(saleOnly ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.NEWEST);
+  } = useProductFilters(
+    saleOnly ? SORT_OPTIONS.DISCOUNT : SORT_OPTIONS.DEFAULT,
+  );
   // Whether the query is limited to products on sale, by the page or the rail.
   const saleScope = saleOnly || filters.sale || undefined;
   // The discount sort also limits the list to products on sale, so only the
-  // sale page may use it; elsewhere a hand-made URL falls back to newest.
+  // sale page may use it; elsewhere a hand-made URL falls back to the default.
   const sortBy =
     !saleOnly && filters.sortBy === SORT_OPTIONS.DISCOUNT
-      ? SORT_OPTIONS.NEWEST
+      ? SORT_OPTIONS.DEFAULT
       : filters.sortBy;
   // The toggle hides when nothing is on sale, but stays while it is applied.
   const saleAvailable = useSaleAvailability();

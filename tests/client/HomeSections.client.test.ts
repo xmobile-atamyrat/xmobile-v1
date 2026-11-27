@@ -166,7 +166,7 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
 
     expect(viewAllHrefs()).toEqual([
       '/product?recommended=1&sortBy=recommended',
-      '/product',
+      '/product?sortBy=newest',
     ]);
   });
 
@@ -188,7 +188,7 @@ describe.each(['web', 'mobile'] as const)('home sections on %s', (platform) => {
     expect(
       screen.queryByRole('heading', { name: 'Recommended products' }),
     ).not.toBeInTheDocument();
-    expect(viewAllHrefs()).toEqual(['/product']);
+    expect(viewAllHrefs()).toEqual(['/product?sortBy=newest']);
   });
 
   it('shows the products on sale between the picks and the newest', () => {

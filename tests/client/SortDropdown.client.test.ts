@@ -54,6 +54,17 @@ describe('SortDropdown (chips)', () => {
 });
 
 describe('SortDropdown (dropdown)', () => {
+  it('names the default order when no sort is chosen', () => {
+    renderWithProviders(
+      createElement(SortDropdown, {
+        value: SORT_OPTIONS.DEFAULT,
+        onChange: vi.fn(),
+      }),
+    );
+
+    expect(screen.getByText(/Default$/)).toBeInTheDocument();
+  });
+
   it('names the recommended order when the listing is sorted by it', () => {
     renderWithProviders(
       createElement(SortDropdown, {

@@ -576,7 +576,7 @@ export default async function handler(
             categoryId: { in: subtreeIds },
             deletedAt: null,
           },
-          data: { deletedAt: now, recommendedOrder: null },
+          data: { deletedAt: now, recommendedOrder: null, listingRank: null },
         });
         await tx.category.updateMany({
           where: { id: { in: subtreeIds } },

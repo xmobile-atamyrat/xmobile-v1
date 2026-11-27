@@ -26,7 +26,7 @@ const noFilters: FilterState = {
   colors: [],
   minPrice: '',
   maxPrice: '',
-  sortBy: SORT_OPTIONS.NEWEST,
+  sortBy: SORT_OPTIONS.DEFAULT,
   inStock: false,
 };
 
@@ -158,6 +158,17 @@ describe('filterAndSortFavorites', () => {
       product({ id: 'cheap', cachedPrice: 100 }),
       product({ id: 'dear', cachedPrice: 300 }),
     ];
+
+    it('puts the newest first when asked for newest', () => {
+      const dated = [
+        product({ id: 'old', createdAt: new Date('2024-01-01') }),
+        product({ id: 'new', createdAt: new Date('2025-01-01') }),
+      ];
+      expect(apply(dated, { sortBy: SORT_OPTIONS.NEWEST })).toEqual([
+        'new',
+        'old',
+      ]);
+    });
 
     it('puts the cheapest first', () => {
       expect(apply(priced, { sortBy: SORT_OPTIONS.PRICE_ASC })).toEqual([
